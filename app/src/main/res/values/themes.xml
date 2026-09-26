@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.MtgTrader" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+    </style>
+    <color name="bg">#FF15131A</color>
+    <color name="ic_bg">#FF1F1A2E</color>
+</resources>
