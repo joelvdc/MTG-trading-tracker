@@ -1,11 +1,15 @@
 package com.mtgtrader.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -28,6 +33,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -35,21 +41,35 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.mtgtrader.container
 import com.mtgtrader.data.Balance
 import com.mtgtrader.data.CONDITIONS
 import com.mtgtrader.data.CardRef
@@ -80,8 +100,10 @@ object Fmt {
     fun parseMoney(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
 }
 
+/** Card image; with [enlargeable], tapping it opens the full-screen [CardImageDialog]. */
 @Composable
-fun CardThumb(url: String?, modifier: Modifier = Modifier, width: Int = 44) {
+fun CardThumb(url: String?, modifier: Modifier = Modifier, width: Int = 44, enlargeable: Boolean = false) {
+    var enlarged by remember { mutableStateOf(false) }
     AsyncImage(
         model = url,
         contentDescription = null,
@@ -90,8 +112,105 @@ fun CardThumb(url: String?, modifier: Modifier = Modifier, width: Int = 44) {
             .width(width.dp)
             .height((width * 88 / 63).dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .then(if (enlargeable && url != null) Modifier.clickable(onClickLabel = "Enlarge card image") { enlarged = true } else Modifier),
     )
+    if (enlarged && url != null) CardImageDialog(url) { enlarged = false }
+}
+
+/** Scryfall serves every card image in several sizes under the same path; "large" is 672×936. */
+fun largeImageUrl(url: String): String = url.replace("/normal/", "/large/")
+
+/** Full-screen card image. Pinch or double-tap to zoom, drag to pan, tap to close. */
+@Composable
+fun CardImageDialog(url: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        var scale by remember { mutableFloatStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+        var imageSize by remember { mutableStateOf(IntSize.Zero) }
+        fun clamp(o: Offset): Offset {
+            val maxX = imageSize.width * (scale - 1) / 2
+            val maxY = imageSize.height * (scale - 1) / 2
+            return Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY))
+        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.8f))
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onDismiss() },
+                        onDoubleTap = {
+                            scale = if (scale > 1f) 1f else 2.5f
+                            offset = Offset.Zero
+                        },
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(1f, 5f)
+                        offset = clamp(offset + pan)
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier
+                    .padding(16.dp)
+                    .aspectRatio(63f / 88f)
+                    .onSizeChanged { imageSize = it }
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                    }
+                    .clip(RoundedCornerShape(16.dp)),
+            ) {
+                // The small image is usually cached already, so it shows at once while the sharper one loads.
+                AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                AsyncImage(model = largeImageUrl(url), contentDescription = "Card image", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                Icon(Icons.Default.Close, "Close", tint = Color.White)
+            }
+        }
+    }
+}
+
+/** Symbols are drawn in their rarity's colour, like on the card. */
+@Composable
+fun rarityColor(rarity: String): Color = when (rarity) {
+    "uncommon" -> Color(0xFF8AA0AC)
+    "rare" -> Color(0xFFC9A03E)
+    "mythic", "bonus" -> Color(0xFFE0572A)
+    "special" -> Color(0xFF9B5CC4)
+    else -> MaterialTheme.colorScheme.onSurface
+}
+
+/** The expansion symbol of [setCode]; takes no space until the symbol list has loaded. */
+@Composable
+fun SetSymbol(setCode: String, rarity: String, size: Dp = 16.dp) {
+    val icons = LocalContext.current.container.setIcons
+    val map by icons.icons.collectAsStateWithLifecycle()
+    val url = map[setCode.lowercase()]
+    LaunchedEffect(url == null, map.isEmpty()) { if (url == null) icons.onMissing() }
+    if (url == null) return
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        colorFilter = ColorFilter.tint(rarityColor(rarity)),
+        modifier = Modifier.size(size),
+    )
+}
+
+/** Expansion symbol followed by e.g. "MKM #123" and an optional [suffix]. */
+@Composable
+fun SetLine(card: CardRef, suffix: String = "") {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        SetSymbol(card.setCode, card.rarity)
+        Text(card.setLabel + suffix, style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 @Composable
@@ -257,11 +376,11 @@ fun EditCardDialog(
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CardThumb(card.imageUrl, width = 72)
+                    CardThumb(card.imageUrl, width = 72, enlargeable = true)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(card.setName, style = MaterialTheme.typography.bodyMedium)
-                        Text("${card.setLabel} · ${card.rarity}", style = MaterialTheme.typography.bodySmall)
+                        SetLine(card, " · ${card.rarity}")
                         TextButton(onClick = onChangePrinting, enabled = enabled) { Text("Change printing") }
                     }
                 }

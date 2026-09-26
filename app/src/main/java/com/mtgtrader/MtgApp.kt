@@ -4,10 +4,12 @@ import android.app.Application
 import android.content.Context
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import coil.decode.SvgDecoder
 import com.mtgtrader.data.AppDatabase
 import com.mtgtrader.data.MtgRepository
 import com.mtgtrader.data.PriceGuideRepository
 import com.mtgtrader.data.ScryfallApi
+import com.mtgtrader.data.SetIcons
 import com.mtgtrader.data.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +27,10 @@ class MtgApp : Application(), ImageLoaderFactory {
     }
 
     // Card images come from Scryfall's CDN, which rejects OkHttp's default User-Agent.
+    // Set symbols are SVGs.
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
         .okHttpClient { container.http }
+        .components { add(SvgDecoder.Factory()) }
         .crossfade(true)
         .build()
 }
@@ -45,6 +49,7 @@ class AppContainer(context: Context) {
     val settings = Settings(context)
     val scryfall = ScryfallApi(http)
     val prices = PriceGuideRepository(context, http, db, settings)
+    val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices)
 }
 

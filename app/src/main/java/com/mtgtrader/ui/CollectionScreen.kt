@@ -242,7 +242,7 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, onClick:
             Column(Modifier.weight(1f)) {
                 Text("${item.quantity}× ${item.card.name}", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(item.card.setLabel, style = MaterialTheme.typography.bodySmall)
+                    SetLine(item.card)
                     if (item.foil) FoilTag()
                     Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)

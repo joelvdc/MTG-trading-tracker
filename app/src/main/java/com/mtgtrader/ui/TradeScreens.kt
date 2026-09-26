@@ -73,6 +73,7 @@ import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.PriceEntity
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.Side
+import com.mtgtrader.data.Trade
 import com.mtgtrader.data.TradeItem
 import com.mtgtrader.data.TradeWithItems
 import com.mtgtrader.data.Verdict
@@ -162,13 +163,13 @@ private fun TradeCard(t: TradeWithItems, priceType: PriceType, tolerance: Int, o
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    t.trade.partner.ifBlank { "Trade #${t.trade.id}" },
+                    tradeTitle(t.trade),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(Fmt.date(t.trade.createdAt), style = MaterialTheme.typography.bodySmall)
+                if (t.trade.partner.isNotBlank()) Text(Fmt.dateTime(t.trade.createdAt), style = MaterialTheme.typography.bodySmall)
             }
             Spacer(Modifier.size(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -223,7 +224,12 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (partner.isNullOrBlank()) "Trade" else "Trade with $partner", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    Column {
+                        Text(if (partner.isNullOrBlank()) "Trade" else "Trade with $partner", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        t?.let { Text(Fmt.dateTime(it.trade.createdAt), style = MaterialTheme.typography.bodySmall) }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
@@ -487,7 +493,7 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onC
             Column(Modifier.weight(1f)) {
                 Text(item.card.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(item.card.setLabel, style = MaterialTheme.typography.bodySmall)
+                    SetLine(item.card)
                     if (item.foil) FoilTag()
                     Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
@@ -508,6 +514,9 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onC
         }
     }
 }
+
+/** Trades are named after their partner, or else when they were started. */
+private fun tradeTitle(trade: Trade) = trade.partner.ifBlank { "Trade · ${Fmt.dateTime(trade.createdAt)}" }
 
 private fun tradeSummary(t: TradeWithItems, type: PriceType, tolerance: Int): String {
     val b = t.balance(type, tolerance)
