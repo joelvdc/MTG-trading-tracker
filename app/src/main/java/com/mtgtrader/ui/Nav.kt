@@ -57,7 +57,10 @@ fun NavController.openScanner(target: CardTarget) = navigate("scan?target=${Uri.
 fun AppNav() {
     val nav = rememberNavController()
     val c = LocalContext.current.container
-    LaunchedEffect(Unit) { c.appScope.launch { c.prices.refreshIfStale() } }
+    LaunchedEffect(Unit) {
+        c.appScope.launch { c.prices.refreshIfStale() }
+        c.appScope.launch { c.setIcons.load() }
+    }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val topLevel = tabs.any { it.route == route }

@@ -2,8 +2,9 @@ package com.mtgtrader.data
 
 import androidx.room.withTransaction
 import kotlinx.serialization.json.JsonObject
-import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 /** Where a card picked in search or the scanner goes. */
 sealed interface CardTarget {
@@ -286,14 +287,15 @@ class MtgRepository(
     }
 
     suspend fun exportTradesCsv(type: PriceType): String {
-        val df = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+        // Trades are identified by when they were started; this format sorts correctly in spreadsheets.
+        val df = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
         val sb = StringBuilder()
-        sb.appendLine(Csv.row("Trade", "Date", "Partner", "Applied to collection", "Side", "Name", "Set code", "Collector number", "Foil", "Condition", "Language", "Quantity", "Unit price EUR (${type.short})", "Custom price", "Line total EUR", "Scryfall ID"))
+        sb.appendLine(Csv.row("Trade started", "Partner", "Applied to collection", "Side", "Name", "Set code", "Collector number", "Foil", "Condition", "Language", "Quantity", "Unit price EUR (${type.short})", "Custom price", "Line total EUR", "Scryfall ID"))
         for (t in trades.all()) {
             for (i in t.items) {
                 sb.appendLine(
                     Csv.row(
-                        t.trade.id, df.format(Date(t.trade.createdAt)), t.trade.partner, if (t.trade.applied) "yes" else "no",
+                        df.format(Date(t.trade.createdAt)), t.trade.partner, if (t.trade.applied) "yes" else "no",
                         if (i.side == Side.GET) "received" else "given", i.card.name, i.card.setCode.uppercase(),
                         i.card.collectorNumber, if (i.foil) "foil" else "normal", i.condition, i.language, i.quantity,
                         i.unitPrice(type), i.customPrice, i.lineTotal(type), i.card.scryfallId,

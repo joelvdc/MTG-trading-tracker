@@ -231,14 +231,11 @@ private fun PrintRow(
         modifier = if (replaceMode) Modifier.clickable(onClick = onPick) else Modifier,
     ) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            CardThumb(card.image, width = 60)
+            CardThumb(card.image, width = 60, enlargeable = true)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(card.setName, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    "${ref.setLabel} · ${card.rarity}${card.releasedAt?.let { " · ${it.take(4)}" } ?: ""}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                SetLine(ref, " · ${card.rarity}${card.releasedAt?.let { " · ${it.take(4)}" } ?: ""}")
                 if (card.lang != "en") Text("Language: ${card.lang.uppercase()}", style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (ref.hasNonFoil) {

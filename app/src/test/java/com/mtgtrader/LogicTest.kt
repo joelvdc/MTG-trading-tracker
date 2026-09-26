@@ -5,6 +5,7 @@ import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Csv
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
+import com.mtgtrader.data.SetIcons
 import com.mtgtrader.data.Side
 import com.mtgtrader.data.TradeItem
 import com.mtgtrader.data.Verdict
@@ -176,5 +177,15 @@ class CsvTest {
         assertEquals("EX", parseCondition("Excellent"))
         assertEquals("JA", parseLanguage("jp"))
         assertEquals("DE", parseLanguage("German"))
+    }
+}
+
+class SetIconsTest {
+    @Test
+    fun roundTripsCachedSymbolList() {
+        val map = mapOf("mkm" to "https://svgs.scryfall.io/sets/mkm.svg?1706", "pmkm" to "https://svgs.scryfall.io/sets/mkm.svg?1706")
+        assertEquals(map, SetIcons.decode(SetIcons.encode(map)))
+        // Blank or malformed lines are skipped.
+        assertEquals(mapOf("m11" to "u"), SetIcons.decode("\nm11\tu\nbroken\n"))
     }
 }

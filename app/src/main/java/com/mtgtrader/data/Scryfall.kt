@@ -83,6 +83,15 @@ private data class ScryList(
 @Serializable
 private data class ScryCatalog(val data: List<String> = emptyList())
 
+@Serializable
+data class ScrySet(
+    val code: String,
+    @SerialName("icon_svg_uri") val iconSvgUri: String? = null,
+)
+
+@Serializable
+private data class ScrySetList(val data: List<ScrySet> = emptyList())
+
 /**
  * Minimal Scryfall REST client. Scryfall asks for ≤10 requests/second and a descriptive
  * User-Agent, so every call goes through a small throttle.
@@ -159,6 +168,12 @@ class ScryfallApi(private val http: OkHttpClient) {
     suspend fun search(query: String): List<ScryCard> {
         val body = call(url("cards/search", "q" to "$query game:paper", "order" to "name")) ?: return emptyList()
         return json.decodeFromString<ScryList>(body).data
+    }
+
+    /** Every set Scryfall knows, including promo and token sets. */
+    suspend fun sets(): List<ScrySet> {
+        val body = call(url("sets")) ?: return emptyList()
+        return json.decodeFromString<ScrySetList>(body).data
     }
 
     suspend fun fuzzy(name: String, set: String? = null): ScryCard? {

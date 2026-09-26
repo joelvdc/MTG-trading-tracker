@@ -289,11 +289,11 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                 val card = found.card
                 Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
                     Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        CardThumb(card.image)
+                        CardThumb(card.image, enlargeable = true)
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
                             Text(card.name, style = MaterialTheme.typography.titleSmall)
-                            Text("${card.set.uppercase()} #${card.collectorNumber}", style = MaterialTheme.typography.bodySmall)
+                            SetLine(card.toRef())
                         }
                         Button(onClick = { scope.launch { controller.add(found, lang) } }) { Text("Add") }
                     }
@@ -318,8 +318,8 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                             Spacer(Modifier.width(8.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(e.card.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(e.card.setLabel, style = MaterialTheme.typography.bodySmall)
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    SetLine(e.card)
                                     if (e.foil) FoilTag()
                                     if (e.language != "EN") Tag(e.language)
                                 }
