@@ -60,6 +60,9 @@ fun AppNav() {
     LaunchedEffect(Unit) {
         c.appScope.launch { c.prices.refreshIfStale() }
         c.appScope.launch { c.setIcons.load() }
+        c.appScope.launch {
+            if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1
+        }
     }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route

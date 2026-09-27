@@ -71,6 +71,13 @@ fun manaBoxCondition(code: String) = when (code) {
     else -> "near_mint"
 }
 
+/** ManaBox's "Foil" column values; special foils like surge foil are just "foil" there. */
+fun manaBoxFinish(finish: Finish) = when (finish) {
+    Finish.NONFOIL -> "normal"
+    Finish.FOIL -> "foil"
+    Finish.ETCHED -> "etched"
+}
+
 fun parseLanguage(raw: String?): String {
     val s = raw?.trim()?.lowercase() ?: return "EN"
     LANGUAGES.firstOrNull { (code, name) -> s == code.lowercase() || s == name.lowercase() }?.let { return it.first }

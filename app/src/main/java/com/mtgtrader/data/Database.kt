@@ -11,6 +11,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -46,11 +48,14 @@ interface CollectionDao {
     @Query("SELECT scryfallId, SUM(quantity) AS qty FROM collection GROUP BY scryfallId")
     fun observeOwned(): Flow<List<OwnedCount>>
 
-    @Query("SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil AND condition = :cond AND language = :lang LIMIT 1")
-    suspend fun find(sid: String, foil: Boolean, cond: String, lang: String): CollectionItem?
+    @Query(
+        """SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil AND etched = :etched
+           AND condition = :cond AND language = :lang LIMIT 1"""
+    )
+    suspend fun find(sid: String, foil: Boolean, etched: Boolean, cond: String, lang: String): CollectionItem?
 
-    @Query("SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil ORDER BY quantity DESC")
-    suspend fun findAny(sid: String, foil: Boolean): List<CollectionItem>
+    @Query("SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil AND etched = :etched ORDER BY quantity DESC")
+    suspend fun findAny(sid: String, foil: Boolean, etched: Boolean): List<CollectionItem>
 
     @Query("SELECT * FROM collection WHERE id = :id")
     suspend fun byId(id: Long): CollectionItem?
@@ -124,14 +129,17 @@ interface TradeDao {
 
     @Query(
         """SELECT * FROM trade_items WHERE tradeId = :tradeId AND side = :side AND scryfallId = :sid
-           AND foil = :foil AND language = :lang AND customPrice IS NULL LIMIT 1"""
+           AND foil = :foil AND etched = :etched AND language = :lang AND customPrice IS NULL LIMIT 1"""
     )
-    suspend fun findSame(tradeId: Long, side: String, sid: String, foil: Boolean, lang: String): TradeItem?
+    suspend fun findSame(tradeId: Long, side: String, sid: String, foil: Boolean, etched: Boolean, lang: String): TradeItem?
+
+    @Query("SELECT * FROM trade_items")
+    suspend fun allItems(): List<TradeItem>
 }
 
 @Database(
     entities = [PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -141,6 +149,24 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         fun build(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db").build()
+            Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
+                .addMigrations(MIGRATION_1_2)
+                .build()
+
+        /** Version 2 (app 1.2): special foil type, etched finish, and etched copies kept apart in the collection. */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                for (table in listOf("collection", "trade_items")) {
+                    db.execSQL("ALTER TABLE `$table` ADD COLUMN `foilType` TEXT")
+                    db.execSQL("ALTER TABLE `$table` ADD COLUMN `hasEtched` INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE `$table` ADD COLUMN `etched` INTEGER NOT NULL DEFAULT 0")
+                }
+                db.execSQL("DROP INDEX IF EXISTS `index_collection_scryfallId_foil_condition_language`")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_collection_scryfallId_foil_etched_condition_language` " +
+                        "ON `collection` (`scryfallId`, `foil`, `etched`, `condition`, `language`)"
+                )
+            }
+        }
     }
 }

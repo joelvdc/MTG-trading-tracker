@@ -361,7 +361,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
         }
         EditCardDialog(
             card = item.card,
-            initial = EditValues(item.quantity, item.foil, item.condition, item.language, item.customPrice),
+            initial = EditValues(item.quantity, item.finish, item.condition, item.language, item.customPrice),
             prices = { f -> if (f == item.foil) item.prices else entity?.toSet(f) },
             priceType = priceType,
             allowCustomPrice = true,
@@ -371,7 +371,10 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                 editing = null
                 scope.launch {
                     c.repo.updateTradeItem(
-                        item.copy(quantity = v.quantity, foil = v.foil, condition = v.condition, language = v.language, customPrice = v.customPrice)
+                        item.copy(
+                            quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition,
+                            language = v.language, customPrice = v.customPrice,
+                        )
                     )
                 }
             },
@@ -494,7 +497,7 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onC
                 Text(item.card.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     SetLine(item.card)
-                    if (item.foil) FoilTag()
+                    FinishTag(item.card, item.finish)
                     Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
                 }
@@ -521,7 +524,7 @@ private fun tradeTitle(trade: Trade) = trade.partner.ifBlank { "Trade · ${Fmt.d
 private fun tradeSummary(t: TradeWithItems, type: PriceType, tolerance: Int): String {
     val b = t.balance(type, tolerance)
     fun lines(items: List<TradeItem>) = items.joinToString("\n") { i ->
-        "  ${i.quantity}× ${i.card.name} (${i.card.setLabel})${if (i.foil) " foil" else ""} ${i.condition} — ${Fmt.money(i.lineTotal(type))}"
+        "  ${i.quantity}× ${i.card.name} (${i.card.setLabel})${if (i.foil) " " + i.card.finishName(i.finish).lowercase() else ""} ${i.condition} — ${Fmt.money(i.lineTotal(type))}"
     }
     return buildString {
         appendLine(if (t.trade.partner.isBlank()) "MTG trade — ${Fmt.date(t.trade.createdAt)}" else "MTG trade with ${t.trade.partner} — ${Fmt.date(t.trade.createdAt)}")

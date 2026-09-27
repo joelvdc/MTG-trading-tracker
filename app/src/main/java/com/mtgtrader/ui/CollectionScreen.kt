@@ -162,7 +162,8 @@ fun CollectionScreen(nav: NavController) {
             val f = filter.trim()
             all.filter { r ->
                 f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.setCode.equals(f, true) ||
-                    r.item.card.setName.contains(f, true)
+                    r.item.card.setName.contains(f, true) ||
+                    (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true))
             }.let { list ->
                 when (sort) {
                     SortBy.NAME -> list
@@ -184,7 +185,7 @@ fun CollectionScreen(nav: NavController) {
             OutlinedTextField(
                 value = filter,
                 onValueChange = { filter = it },
-                placeholder = { Text("Filter by name or set") },
+                placeholder = { Text("Filter by name, set or foil type") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 trailingIcon = { if (filter.isNotEmpty()) IconButton(onClick = { filter = "" }) { Icon(Icons.Default.Clear, "Clear") } },
                 singleLine = true,
@@ -210,7 +211,7 @@ fun CollectionScreen(nav: NavController) {
         val item = row.item
         EditCardDialog(
             card = item.card,
-            initial = EditValues(item.quantity, item.foil, item.condition, item.language, null),
+            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null),
             prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
             priceType = priceType,
             allowCustomPrice = false,
@@ -219,7 +220,9 @@ fun CollectionScreen(nav: NavController) {
             onSave = { v ->
                 editing = null
                 scope.launch {
-                    c.repo.updateCollectionItem(item.copy(quantity = v.quantity, foil = v.foil, condition = v.condition, language = v.language))
+                    c.repo.updateCollectionItem(
+                        item.copy(quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language)
+                    )
                 }
             },
             onDelete = { editing = null; scope.launch { c.repo.deleteCollectionItem(item.id) } },
@@ -243,7 +246,7 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, onClick:
                 Text("${item.quantity}× ${item.card.name}", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     SetLine(item.card)
-                    if (item.foil) FoilTag()
+                    FinishTag(item.card, item.finish)
                     Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
                 }

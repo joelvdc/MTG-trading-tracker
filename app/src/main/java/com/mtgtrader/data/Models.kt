@@ -1,5 +1,6 @@
 package com.mtgtrader.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -67,6 +68,57 @@ data class PriceEntity(
         else PriceSet(trend = trend, avg = avg, low = low, avg1 = avg1, avg7 = avg7, avg30 = avg30)
 }
 
+/**
+ * How a copy is finished. Etched counts as foil for pricing: Cardmarket lists etched cards as
+ * separate products and prices them in the foil columns.
+ */
+enum class Finish(val foil: Boolean, val etched: Boolean) {
+    NONFOIL(false, false),
+    FOIL(true, false),
+    ETCHED(true, true);
+
+    companion object {
+        fun of(foil: Boolean, etched: Boolean) = when {
+            etched -> ETCHED
+            foil -> FOIL
+            else -> NONFOIL
+        }
+    }
+}
+
+/** Special foil treatments, as Scryfall names them in a printing's `promo_types`. */
+object FoilTypes {
+    private val names = linkedMapOf(
+        "serialized" to "Serialized",
+        "surgefoil" to "Surge foil",
+        "galaxyfoil" to "Galaxy foil",
+        "textured" to "Textured foil",
+        "gilded" to "Gilded foil",
+        "oilslick" to "Oil slick foil",
+        "stepandcompleat" to "Step-and-compleat foil",
+        "neonink" to "Neon ink foil",
+        "confettifoil" to "Confetti foil",
+        "halofoil" to "Halo foil",
+        "doublerainbow" to "Double rainbow foil",
+        "raisedfoil" to "Raised foil",
+        "rainbowfoil" to "Rainbow foil",
+        "fracturefoil" to "Fracture foil",
+        "ripplefoil" to "Ripple foil",
+        "silverfoil" to "Silver foil",
+        "manafoil" to "Mana foil",
+        "dragonscalefoil" to "Dragon scale foil",
+        "singularityfoil" to "Singularity foil",
+        "cosmicfoil" to "Cosmic foil",
+    )
+
+    /** The printing's special foil treatment, if any. New treatments Scryfall adds end in "foil". */
+    fun pick(promoTypes: List<String>): String? =
+        names.keys.firstOrNull { it in promoTypes } ?: promoTypes.firstOrNull { it.endsWith("foil") && it != "foil" }
+
+    fun name(type: String): String =
+        names[type] ?: (type.removeSuffix("foil").replaceFirstChar { it.uppercase() } + " foil")
+}
+
 /** The printing-specific card data we keep, copied from Scryfall. */
 data class CardRef(
     val scryfallId: String,
@@ -81,23 +133,50 @@ data class CardRef(
     val fallbackEur: Double?,
     val fallbackEurFoil: Double?,
     val hasNonFoil: Boolean,
+    /** Has a (non-etched) foil finish. Rows saved before version 1.2 also count etched here. */
     val hasFoil: Boolean,
+    /** Scryfall promo type of the foil finish's special treatment, e.g. "surgefoil". */
+    val foilType: String? = null,
+    @ColumnInfo(defaultValue = "0") val hasEtched: Boolean = false,
 ) {
     fun fallback(foil: Boolean) = if (foil) fallbackEurFoil else fallbackEur
     val setLabel get() = "${setCode.uppercase()} #$collectorNumber"
 
-    /** Picks a finish that exists for this printing, preferring [wantFoil]. */
-    fun resolveFoil(wantFoil: Boolean) = when {
-        wantFoil && hasFoil -> true
-        !hasNonFoil && hasFoil -> true
-        else -> false
+    val finishes: List<Finish>
+        get() = buildList {
+            if (hasNonFoil) add(Finish.NONFOIL)
+            if (hasFoil) add(Finish.FOIL)
+            if (hasEtched) add(Finish.ETCHED)
+        }.ifEmpty { listOf(Finish.NONFOIL) }
+
+    /** Picks a finish that exists for this printing: [want] if possible, else another foil finish for a foil. */
+    fun resolveFinish(want: Finish): Finish {
+        val available = finishes
+        return when {
+            want in available -> want
+            want.foil -> available.firstOrNull { it.foil } ?: available.first()
+            else -> available.first()
+        }
     }
+
+    /** "Normal", "Foil", "Etched foil" or the special treatment, e.g. "Surge foil". */
+    fun finishName(finish: Finish): String = when (finish) {
+        Finish.NONFOIL -> "Normal"
+        Finish.FOIL -> foilType?.let(FoilTypes::name) ?: "Foil"
+        Finish.ETCHED -> "Etched foil"
+    }
+
+    /**
+     * Etched copies of a printing that also comes in regular foil share its Cardmarket product,
+     * so the only price available is the regular foil one.
+     */
+    fun etchedPriceIsApprox(finish: Finish) = finish == Finish.ETCHED && hasFoil
 }
 
 @Entity(
     tableName = "collection",
     indices = [
-        Index(value = ["scryfallId", "foil", "condition", "language"], unique = true),
+        Index(value = ["scryfallId", "foil", "etched", "condition", "language"], unique = true),
         Index("name"),
     ],
 )
@@ -109,7 +188,11 @@ data class CollectionItem(
     val language: String = "EN",
     val quantity: Int,
     val addedAt: Long = System.currentTimeMillis(),
-)
+    /** Only ever true together with [foil]. */
+    @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
+) {
+    val finish get() = Finish.of(foil, etched)
+}
 
 /** Collection row joined with today's price guide entry. */
 data class CollectionRow(
@@ -159,7 +242,11 @@ data class TradeItem(
     /** How many copies were actually added (+) / removed (−) from the collection when the trade was applied. */
     val appliedDelta: Int = 0,
     val addedAt: Long = System.currentTimeMillis(),
+    /** Only ever true together with [foil]. */
+    @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
 ) {
+    val finish get() = Finish.of(foil, etched)
+
     fun unitPrice(type: PriceType): Double? = customPrice ?: prices.best(type) ?: card.fallback(foil)
     fun lineTotal(type: PriceType): Double = (unitPrice(type) ?: 0.0) * quantity
 }

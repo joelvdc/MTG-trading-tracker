@@ -19,6 +19,11 @@ class Settings(context: Context) {
     private val _guideDate = MutableStateFlow(prefs.getString("priceGuideDate", null))
     val priceGuideDate: StateFlow<String?> = _guideDate
 
+    /** How far saved cards have been upgraded; see [MtgRepository.backfillFinishDetails]. */
+    var cardDetailsVersion: Int
+        get() = prefs.getInt("cardDetailsVersion", 0)
+        set(v) = prefs.edit().putInt("cardDetailsVersion", v).apply()
+
     fun setPriceType(t: PriceType) {
         _priceType.value = t
         prefs.edit().putString("priceType", t.key).apply()

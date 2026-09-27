@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -58,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
 import com.mtgtrader.data.CardTarget
+import com.mtgtrader.data.Finish
 import com.mtgtrader.data.PriceEntity
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.ScryCard
@@ -125,10 +128,11 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
         }
     }
 
-    fun add(card: ScryCard, foil: Boolean) = scope.launch {
-        c.repo.add(target, card.toRef(), foil)
+    fun add(card: ScryCard, finish: Finish) = scope.launch {
+        val ref = card.toRef()
+        c.repo.add(target, ref, finish)
         snackbar.currentSnackbarData?.dismiss()
-        snackbar.showSnackbar("Added ${card.name} (${card.set.uppercase()})${if (foil) " foil" else ""}")
+        snackbar.showSnackbar("Added ${card.name} (${card.set.uppercase()})${if (finish.foil) " " + ref.finishName(finish).lowercase() else ""}")
     }
 
     Scaffold(
@@ -206,7 +210,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                                     nav.popBackStack()
                                 }
                             },
-                            onAdd = { foil -> add(card, foil) },
+                            onAdd = { finish -> add(card, finish) },
                         )
                     }
                 }
@@ -215,6 +219,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PrintRow(
     card: ScryCard,
@@ -222,10 +227,19 @@ private fun PrintRow(
     priceType: PriceType,
     replaceMode: Boolean,
     onPick: () -> Unit,
-    onAdd: (foil: Boolean) -> Unit,
+    onAdd: (Finish) -> Unit,
 ) {
     val ref = card.toRef()
     fun priceOf(foil: Boolean) = price?.toSet(foil)?.best(priceType) ?: ref.fallback(foil)
+    /** e.g. "€1.20", "Surge foil €8.50"; "~" marks etched copies priced as regular foil. */
+    fun label(finish: Finish): String {
+        val money = (if (ref.etchedPriceIsApprox(finish)) "~" else "") + Fmt.money(priceOf(finish.foil))
+        return when {
+            finish.foil -> "${ref.finishName(finish)} $money"
+            replaceMode -> "Normal $money"
+            else -> money
+        }
+    }
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = if (replaceMode) Modifier.clickable(onClick = onPick) else Modifier,
@@ -237,23 +251,20 @@ private fun PrintRow(
                 Text(card.setName, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 SetLine(ref, " · ${card.rarity}${card.releasedAt?.let { " · ${it.take(4)}" } ?: ""}")
                 if (card.lang != "en") Text("Language: ${card.lang.uppercase()}", style = MaterialTheme.typography.bodySmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (ref.hasNonFoil) {
-                        if (replaceMode) Text("Normal ${Fmt.money(priceOf(false))}", style = MaterialTheme.typography.bodyMedium)
-                        else AssistChip(
-                            onClick = { onAdd(false) },
-                            label = { Text(Fmt.money(priceOf(false))) },
-                            leadingIcon = { Icon(Icons.Default.Add, null, Modifier.width(18.dp)) },
-                        )
-                    }
-                    if (ref.hasFoil) {
-                        if (replaceMode) Text("Foil ${Fmt.money(priceOf(true))}", style = MaterialTheme.typography.bodyMedium, color = FoilColor)
-                        else AssistChip(
-                            onClick = { onAdd(true) },
-                            label = { Text("Foil ${Fmt.money(priceOf(true))}") },
-                            leadingIcon = { Icon(Icons.Default.Add, null, Modifier.width(18.dp)) },
-                            colors = AssistChipDefaults.assistChipColors(labelColor = FoilColor, leadingIconContentColor = FoilColor),
-                        )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ref.finishes.forEach { finish ->
+                        val color = if (finish.foil) FoilColor else MaterialTheme.colorScheme.onSurface
+                        if (replaceMode) {
+                            Text(label(finish), style = MaterialTheme.typography.bodyMedium, color = color)
+                        } else {
+                            AssistChip(
+                                onClick = { onAdd(finish) },
+                                label = { Text(label(finish)) },
+                                leadingIcon = { Icon(Icons.Default.Add, null, Modifier.width(18.dp)) },
+                                colors = if (finish.foil) AssistChipDefaults.assistChipColors(labelColor = color, leadingIconContentColor = color)
+                                else AssistChipDefaults.assistChipColors(),
+                            )
+                        }
                     }
                 }
             }
