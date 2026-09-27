@@ -43,6 +43,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.delay
+import coil.network.HttpException
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -106,18 +111,68 @@ object Fmt {
 @Composable
 fun CardThumb(url: String?, modifier: Modifier = Modifier, width: Int = 44, enlargeable: Boolean = false) {
     var enlarged by remember { mutableStateOf(false) }
-    AsyncImage(
-        model = url,
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = modifier
+    var failed by remember(url) { mutableStateOf(false) }
+    Box(
+        modifier
             .width(width.dp)
             .height((width * 88 / 63).dp)
             .clip(RoundedCornerShape(4.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .then(if (enlargeable && url != null) Modifier.clickable(onClickLabel = "Enlarge card image") { enlarged = true } else Modifier),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        // No image, or it couldn't be loaded (yet): show a card symbol rather than an empty box.
+        if (url == null || failed) Text("🃏", fontSize = (width / 2.5f).sp)
+        if (url != null) RetryingImage(url, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) { failed = it }
+    }
     if (enlarged && url != null) CardImageDialog(url) { enlarged = false }
+}
+
+private data class ImageFailure(val missing: Boolean, val atReconnect: Int)
+
+/** Pauses between retries of a failed image; the last one repeats while the image is on screen. */
+private val RETRY_DELAYS_MS = longArrayOf(1_500, 3_000, 6_000, 12_000, 30_000, 60_000)
+
+/**
+ * Loads an image and keeps trying if that fails: after a growing pause, and at once when the phone
+ * reconnects. On its own the image loader never retries a failed load (and while offline it only
+ * answers from cache), so a short network drop used to leave cards and set symbols blank. An image
+ * that doesn't exist on the server (HTTP 404) isn't retried.
+ */
+@Composable
+fun RetryingImage(
+    url: String,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    contentScale: ContentScale = ContentScale.Fit,
+    colorFilter: ColorFilter? = null,
+    onFailedChange: (Boolean) -> Unit = {},
+) {
+    val reconnects by LocalContext.current.container.network.reconnects.collectAsStateWithLifecycle()
+    var attempt by remember(url) { mutableIntStateOf(0) }
+    var failure by remember(url) { mutableStateOf<ImageFailure?>(null) }
+    LaunchedEffect(failure, reconnects) {
+        val f = failure ?: return@LaunchedEffect
+        if (f.missing) return@LaunchedEffect
+        if (reconnects == f.atReconnect) delay(RETRY_DELAYS_MS[minOf(attempt, RETRY_DELAYS_MS.lastIndex)])
+        failure = null
+        attempt++
+    }
+    key(url, attempt) {
+        AsyncImage(
+            model = url,
+            contentDescription = contentDescription,
+            contentScale = contentScale,
+            colorFilter = colorFilter,
+            modifier = modifier,
+            onSuccess = { onFailedChange(false) },
+            onError = { state ->
+                val missing = (state.result.throwable as? HttpException)?.response?.code == 404
+                failure = ImageFailure(missing, reconnects)
+                onFailedChange(true)
+            },
+        )
+    }
 }
 
 /** Scryfall serves every card image in several sizes under the same path; "large" is 672×936. */
@@ -171,7 +226,7 @@ fun CardImageDialog(url: String, onDismiss: () -> Unit) {
             ) {
                 // The small image is usually cached already, so it shows at once while the sharper one loads.
                 AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-                AsyncImage(model = largeImageUrl(url), contentDescription = "Card image", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                RetryingImage(largeImageUrl(url), Modifier.fillMaxSize(), contentDescription = "Card image")
             }
             IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                 Icon(Icons.Default.Close, "Close", tint = Color.White)
@@ -198,12 +253,7 @@ fun SetSymbol(setCode: String, rarity: String, size: Dp = 16.dp) {
     val url = map[setCode.lowercase()]
     LaunchedEffect(url == null, map.isEmpty()) { if (url == null) icons.onMissing() }
     if (url == null) return
-    AsyncImage(
-        model = url,
-        contentDescription = null,
-        colorFilter = ColorFilter.tint(rarityColor(rarity)),
-        modifier = Modifier.size(size),
-    )
+    RetryingImage(url, Modifier.size(size), colorFilter = ColorFilter.tint(rarityColor(rarity)))
 }
 
 /** Expansion symbol followed by e.g. "MKM #123" and an optional [suffix]. */
