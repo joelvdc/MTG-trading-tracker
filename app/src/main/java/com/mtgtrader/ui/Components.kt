@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
@@ -57,6 +58,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -369,6 +371,7 @@ fun EditCardDialog(
     onChangePrinting: () -> Unit,
 ) {
     var v by remember { mutableStateOf(initial) }
+    val uriHandler = LocalUriHandler.current
     // Cards saved before version 1.2 may not list the finish they were saved with.
     val finishOptions = remember(card) { (card.finishes + initial.finish).distinct() }
     var customText by remember { mutableStateOf(initial.customPrice?.let { "%.2f".format(it) } ?: "") }
@@ -384,6 +387,11 @@ fun EditCardDialog(
                         Text(card.setName, style = MaterialTheme.typography.bodyMedium)
                         SetLine(card, " · ${card.rarity}")
                         TextButton(onClick = onChangePrinting, enabled = enabled) { Text("Change printing") }
+                        TextButton(onClick = { runCatching { uriHandler.openUri(card.cardmarketUrl) } }) {
+                            Text("Open on Cardmarket")
+                            Spacer(Modifier.width(4.dp))
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
+                        }
                     }
                 }
                 if (!enabled) {
