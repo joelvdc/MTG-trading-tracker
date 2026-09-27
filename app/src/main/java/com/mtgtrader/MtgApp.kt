@@ -5,8 +5,10 @@ import android.content.Context
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.SvgDecoder
+import coil.util.DebugLogger
 import com.mtgtrader.data.AppDatabase
 import com.mtgtrader.data.MtgRepository
+import com.mtgtrader.data.NetworkMonitor
 import com.mtgtrader.data.PriceGuideRepository
 import com.mtgtrader.data.ScryfallApi
 import com.mtgtrader.data.SetIcons
@@ -32,6 +34,7 @@ class MtgApp : Application(), ImageLoaderFactory {
         .okHttpClient { container.http }
         .components { add(SvgDecoder.Factory()) }
         .crossfade(true)
+        .apply { if (BuildConfig.DEBUG) logger(DebugLogger()) }
         .build()
 }
 
@@ -48,6 +51,7 @@ class AppContainer(context: Context) {
     val db = AppDatabase.build(context)
     val settings = Settings(context)
     val scryfall = ScryfallApi(http)
+    val network = NetworkMonitor(context)
     val prices = PriceGuideRepository(context, http, db, settings)
     val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices)
