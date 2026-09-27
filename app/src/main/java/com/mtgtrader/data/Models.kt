@@ -7,6 +7,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
+import java.net.URLEncoder
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -141,6 +142,11 @@ data class CardRef(
 ) {
     fun fallback(foil: Boolean) = if (foil) fallbackEurFoil else fallbackEur
     val setLabel get() = "${setCode.uppercase()} #$collectorNumber"
+
+    /** This printing's Cardmarket page (the same links Scryfall uses), or a name search if the id is unknown. */
+    val cardmarketUrl: String
+        get() = if (cardmarketId != null) "https://www.cardmarket.com/en/Magic/Products?idProduct=$cardmarketId"
+        else "https://www.cardmarket.com/en/Magic/Products/Search?searchString=" + URLEncoder.encode(name, "UTF-8")
 
     val finishes: List<Finish>
         get() = buildList {

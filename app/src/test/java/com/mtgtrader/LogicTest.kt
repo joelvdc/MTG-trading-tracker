@@ -232,4 +232,11 @@ class FinishTest {
         assertEquals(true, all.etchedPriceIsApprox(Finish.ETCHED))
         assertEquals(false, etchedOnly.etchedPriceIsApprox(Finish.ETCHED))
     }
+
+    @Test
+    fun linksToCardmarket() {
+        assertEquals("https://www.cardmarket.com/en/Magic/Products?idProduct=1", card(true, true).cardmarketUrl)
+        val noId = CardRef("id", "Jace, the Mind Sculptor", "wwk", "Worldwake", "31", "mythic", null, null, null, null, true, true)
+        assertEquals("https://www.cardmarket.com/en/Magic/Products/Search?searchString=Jace%2C+the+Mind+Sculptor", noId.cardmarketUrl)
+    }
 }
