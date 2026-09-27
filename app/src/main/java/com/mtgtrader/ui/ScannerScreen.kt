@@ -84,6 +84,7 @@ import com.mtgtrader.container
 import com.mtgtrader.data.AddResult
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CardTarget
+import com.mtgtrader.data.Finish
 import com.mtgtrader.data.MtgRepository
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.scan.CardRecognizer
@@ -97,7 +98,7 @@ import java.util.concurrent.Executors
 
 data class ScannedEntry(
     val card: CardRef,
-    val foil: Boolean,
+    val finish: Finish,
     val language: String,
     val result: AddResult,
     val unitPrice: Double?,
@@ -178,10 +179,11 @@ class ScanController(
     suspend fun add(found: Identified, language: String?) {
         val card = found.card
         val ref = card.toRef()
-        val f = ref.resolveFoil(foil)
+        // Foil-only printings (e.g. surge or etched foils) resolve to their foil finish by themselves.
+        val f = ref.resolveFinish(if (foil) Finish.FOIL else Finish.NONFOIL)
         val lang = language ?: "EN"
         val result = repo.add(target, ref, f, lang) ?: return
-        val price = repo.snapshot(ref, f).best(PriceType.TREND)
+        val price = repo.snapshot(ref, f.foil).best(PriceType.TREND)
         added.add(0, ScannedEntry(ref, f, lang, result, price, found.exactPrinting))
         pending = null
         status = "Added ${card.name} (${card.set.uppercase()})"
@@ -189,7 +191,7 @@ class ScanController(
     }
 
     fun addAgain(e: ScannedEntry) = scope.launch {
-        val result = repo.add(target, e.card, e.foil, e.language) ?: return@launch
+        val result = repo.add(target, e.card, e.finish, e.language) ?: return@launch
         added.add(0, e.copy(result = result))
         onAdded()
     }
@@ -320,7 +322,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                                 Text(e.card.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     SetLine(e.card)
-                                    if (e.foil) FoilTag()
+                                    FinishTag(e.card, e.finish)
                                     if (e.language != "EN") Tag(e.language)
                                 }
                                 if (!e.exactPrinting) {

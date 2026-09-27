@@ -37,7 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -73,6 +72,7 @@ import com.mtgtrader.container
 import com.mtgtrader.data.Balance
 import com.mtgtrader.data.CONDITIONS
 import com.mtgtrader.data.CardRef
+import com.mtgtrader.data.Finish
 import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
@@ -226,8 +226,11 @@ fun Tag(text: String, color: Color = MaterialTheme.colorScheme.secondaryContaine
     )
 }
 
+/** "FOIL", "ETCHED FOIL", "SURGE FOIL"…; nothing for non-foil copies. */
 @Composable
-fun FoilTag() = Tag("FOIL", FoilColor, Color.White)
+fun FinishTag(card: CardRef, finish: Finish) {
+    if (finish.foil) Tag(card.finishName(finish).uppercase(), FoilColor, Color.White)
+}
 
 @Composable
 fun <T> DropdownSelector(
@@ -326,12 +329,9 @@ fun BalanceCard(balance: Balance, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun PriceTable(prices: PriceSet?, highlight: PriceType, foil: Boolean) {
+fun PriceTable(prices: PriceSet?, highlight: PriceType, title: String) {
     Column {
-        Text(
-            if (foil) "Cardmarket prices (foil)" else "Cardmarket prices",
-            style = MaterialTheme.typography.labelLarge,
-        )
+        Text(title, style = MaterialTheme.typography.labelLarge)
         if (prices == null || PriceType.entries.all { prices.get(it) == null }) {
             Text("No price guide data for this printing.", style = MaterialTheme.typography.bodySmall)
             return
@@ -348,7 +348,7 @@ fun PriceTable(prices: PriceSet?, highlight: PriceType, foil: Boolean) {
 
 data class EditValues(
     val quantity: Int,
-    val foil: Boolean,
+    val finish: Finish,
     val condition: String,
     val language: String,
     val customPrice: Double?,
@@ -369,6 +369,8 @@ fun EditCardDialog(
     onChangePrinting: () -> Unit,
 ) {
     var v by remember { mutableStateOf(initial) }
+    // Cards saved before version 1.2 may not list the finish they were saved with.
+    val finishOptions = remember(card) { (card.finishes + initial.finish).distinct() }
     var customText by remember { mutableStateOf(initial.customPrice?.let { "%.2f".format(it) } ?: "") }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -395,11 +397,21 @@ fun EditCardDialog(
                     Text("Quantity", Modifier.weight(1f))
                     if (enabled) QuantityStepper(v.quantity, { v = v.copy(quantity = it) }) else Text("${v.quantity}")
                 }
-                if (card.hasFoil && card.hasNonFoil) {
+                if (finishOptions.size > 1) {
+                    DropdownSelector("Finish", v.finish, finishOptions, card::finishName, { v = v.copy(finish = it) }, Modifier.fillMaxWidth(), enabled)
+                } else if (v.finish.foil) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Foil", Modifier.weight(1f))
-                        Switch(checked = v.foil, onCheckedChange = { v = v.copy(foil = it) }, enabled = enabled)
+                        Text("Finish", Modifier.weight(1f))
+                        Text(card.finishName(v.finish), color = FoilColor, fontWeight = FontWeight.SemiBold)
                     }
+                }
+                if (card.etchedPriceIsApprox(v.finish)) {
+                    Text(
+                        "Cardmarket has no separate price for etched copies of this printing, so the regular foil price is used." +
+                            if (allowCustomPrice) " Enter an agreed price if it differs." else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DropdownSelector("Condition", v.condition, CONDITIONS.map { it.first }, { c -> CONDITIONS.first { it.first == c }.second }, { v = v.copy(condition = it) }, Modifier.weight(1f), enabled)
@@ -421,7 +433,11 @@ fun EditCardDialog(
                     )
                 }
                 HorizontalDivider()
-                PriceTable(prices(v.foil), priceType, v.foil)
+                PriceTable(
+                    prices(v.finish.foil),
+                    priceType,
+                    if (v.finish.foil) "Cardmarket prices (${card.finishName(v.finish).lowercase()})" else "Cardmarket prices",
+                )
             }
         },
         confirmButton = {

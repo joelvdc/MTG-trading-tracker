@@ -3,6 +3,8 @@ package com.mtgtrader
 import com.mtgtrader.data.Balance
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Csv
+import com.mtgtrader.data.Finish
+import com.mtgtrader.data.FoilTypes
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.SetIcons
@@ -187,5 +189,47 @@ class SetIconsTest {
         assertEquals(map, SetIcons.decode(SetIcons.encode(map)))
         // Blank or malformed lines are skipped.
         assertEquals(mapOf("m11" to "u"), SetIcons.decode("\nm11\tu\nbroken\n"))
+    }
+}
+
+class FinishTest {
+    private fun card(nonFoil: Boolean, foil: Boolean, etched: Boolean = false, foilType: String? = null) =
+        CardRef("id", "X", "set", "Set", "1", "rare", null, 1, null, null, nonFoil, foil, foilType, etched)
+
+    @Test
+    fun picksSpecialFoilFromPromoTypes() {
+        assertEquals("surgefoil", FoilTypes.pick(listOf("boosterfun", "surgefoil")))
+        assertEquals("serialized", FoilTypes.pick(listOf("doublerainbow", "serialized")))
+        // Treatments Scryfall adds later are recognised by their "foil" suffix.
+        assertEquals("sparklefoil", FoilTypes.pick(listOf("promopack", "sparklefoil")))
+        assertNull(FoilTypes.pick(listOf("boosterfun", "prerelease")))
+        assertEquals("Surge foil", FoilTypes.name("surgefoil"))
+        assertEquals("Sparkle foil", FoilTypes.name("sparklefoil"))
+    }
+
+    @Test
+    fun namesFinishes() {
+        val surge = card(nonFoil = true, foil = true, foilType = "surgefoil")
+        assertEquals("Normal", surge.finishName(Finish.NONFOIL))
+        assertEquals("Surge foil", surge.finishName(Finish.FOIL))
+        assertEquals("Foil", card(true, true).finishName(Finish.FOIL))
+        assertEquals("Etched foil", card(false, false, etched = true).finishName(Finish.ETCHED))
+    }
+
+    @Test
+    fun resolvesToAnAvailableFinish() {
+        val etchedOnly = card(nonFoil = false, foil = false, etched = true)
+        assertEquals(Finish.ETCHED, etchedOnly.resolveFinish(Finish.FOIL))
+        assertEquals(Finish.ETCHED, etchedOnly.resolveFinish(Finish.NONFOIL))
+        val all = card(nonFoil = true, foil = true, etched = true)
+        assertEquals(Finish.ETCHED, all.resolveFinish(Finish.ETCHED))
+        assertEquals(Finish.NONFOIL, all.resolveFinish(Finish.NONFOIL))
+        val nonFoilOnly = card(nonFoil = true, foil = false)
+        assertEquals(Finish.NONFOIL, nonFoilOnly.resolveFinish(Finish.ETCHED))
+        assertEquals(Finish.FOIL, card(nonFoil = false, foil = true).resolveFinish(Finish.NONFOIL))
+        assertEquals(Finish.ETCHED, Finish.of(foil = true, etched = true))
+        // Etched copies share the regular foil's Cardmarket product only when both finishes exist.
+        assertEquals(true, all.etchedPriceIsApprox(Finish.ETCHED))
+        assertEquals(false, etchedOnly.etchedPriceIsApprox(Finish.ETCHED))
     }
 }

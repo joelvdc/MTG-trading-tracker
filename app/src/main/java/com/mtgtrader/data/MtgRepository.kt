@@ -65,22 +65,22 @@ class MtgRepository(
         return if (guide?.best(PriceType.TREND) != null) guide else PriceSet(trend = card.fallback(foil))
     }
 
-    suspend fun add(target: CardTarget, card: CardRef, foil: Boolean, language: String = "EN"): AddResult? = when (target) {
-        is CardTarget.TradeSide -> addToTrade(target.tradeId, target.side, card, foil, language)
-        CardTarget.Collection -> addToCollection(card, foil, "NM", language, 1)
+    suspend fun add(target: CardTarget, card: CardRef, finish: Finish, language: String = "EN"): AddResult? = when (target) {
+        is CardTarget.TradeSide -> addToTrade(target.tradeId, target.side, card, finish, language)
+        CardTarget.Collection -> addToCollection(card, finish, "NM", language, 1)
         else -> null
     }
 
-    suspend fun addToTrade(tradeId: Long, side: String, card: CardRef, foil: Boolean, language: String = "EN", qty: Int = 1): AddResult {
-        val existing = trades.findSame(tradeId, side, card.scryfallId, foil, language)
+    suspend fun addToTrade(tradeId: Long, side: String, card: CardRef, finish: Finish, language: String = "EN", qty: Int = 1): AddResult {
+        val existing = trades.findSame(tradeId, side, card.scryfallId, finish.foil, finish.etched, language)
         if (existing != null) {
             trades.updateItem(existing.copy(quantity = existing.quantity + qty))
             return AddResult(existing.id, true)
         }
         val id = trades.insertItem(
             TradeItem(
-                tradeId = tradeId, side = side, card = card, foil = foil, language = language,
-                quantity = qty, prices = snapshot(card, foil),
+                tradeId = tradeId, side = side, card = card, foil = finish.foil, etched = finish.etched, language = language,
+                quantity = qty, prices = snapshot(card, finish.foil),
             )
         )
         return AddResult(id, true)
@@ -114,12 +114,13 @@ class MtgRepository(
         when (target) {
             is CardTarget.ReplaceTradeItem -> {
                 val item = trades.item(target.itemId) ?: return
-                val foil = card.resolveFoil(item.foil)
-                trades.updateItem(item.copy(card = card, foil = foil, prices = snapshot(card, foil)))
+                val f = card.resolveFinish(item.finish)
+                trades.updateItem(item.copy(card = card, foil = f.foil, etched = f.etched, prices = snapshot(card, f.foil)))
             }
             is CardTarget.ReplaceCollectionItem -> {
                 val item = coll.byId(target.itemId) ?: return
-                updateCollectionItem(item.copy(card = card, foil = card.resolveFoil(item.foil)))
+                val f = card.resolveFinish(item.finish)
+                updateCollectionItem(item.copy(card = card, foil = f.foil, etched = f.etched))
             }
             else -> {}
         }
@@ -135,10 +136,10 @@ class MtgRepository(
         var missing = 0
         for (item in t.items) {
             if (item.side == Side.GET) {
-                addToCollection(item.card, item.foil, item.condition, item.language, item.quantity)
+                addToCollection(item.card, item.finish, item.condition, item.language, item.quantity)
                 trades.updateItem(item.copy(appliedDelta = item.quantity))
             } else {
-                val removed = removeFromCollection(item.card.scryfallId, item.foil, item.condition, item.language, item.quantity)
+                val removed = removeFromCollection(item.card.scryfallId, item.finish, item.condition, item.language, item.quantity)
                 missing += item.quantity - removed
                 trades.updateItem(item.copy(appliedDelta = -removed))
             }
@@ -154,9 +155,9 @@ class MtgRepository(
         for (item in t.items) {
             when {
                 item.appliedDelta > 0 ->
-                    removeFromCollection(item.card.scryfallId, item.foil, item.condition, item.language, item.appliedDelta)
+                    removeFromCollection(item.card.scryfallId, item.finish, item.condition, item.language, item.appliedDelta)
                 item.appliedDelta < 0 ->
-                    addToCollection(item.card, item.foil, item.condition, item.language, -item.appliedDelta)
+                    addToCollection(item.card, item.finish, item.condition, item.language, -item.appliedDelta)
             }
             trades.updateItem(item.copy(appliedDelta = 0))
         }
@@ -165,21 +166,23 @@ class MtgRepository(
 
     // ---- collection ----------------------------------------------------------------------
 
-    suspend fun addToCollection(card: CardRef, foil: Boolean, condition: String, language: String, qty: Int): AddResult {
-        val existing = coll.find(card.scryfallId, foil, condition, language)
+    suspend fun addToCollection(card: CardRef, finish: Finish, condition: String, language: String, qty: Int): AddResult {
+        val existing = coll.find(card.scryfallId, finish.foil, finish.etched, condition, language)
         if (existing != null) {
             coll.update(existing.copy(quantity = existing.quantity + qty, card = card))
             return AddResult(existing.id, false)
         }
-        val id = coll.insert(CollectionItem(card = card, foil = foil, condition = condition, language = language, quantity = qty))
+        val id = coll.insert(
+            CollectionItem(card = card, foil = finish.foil, etched = finish.etched, condition = condition, language = language, quantity = qty)
+        )
         return AddResult(id, false)
     }
 
     /** Removes up to [qty] copies, preferring the exact condition/language. Returns copies removed. */
-    private suspend fun removeFromCollection(sid: String, foil: Boolean, condition: String, language: String, qty: Int): Int {
+    private suspend fun removeFromCollection(sid: String, finish: Finish, condition: String, language: String, qty: Int): Int {
         var remaining = qty
-        val exact = coll.find(sid, foil, condition, language)
-        val candidates = listOfNotNull(exact) + coll.findAny(sid, foil).filter { it.id != exact?.id }
+        val exact = coll.find(sid, finish.foil, finish.etched, condition, language)
+        val candidates = listOfNotNull(exact) + coll.findAny(sid, finish.foil, finish.etched).filter { it.id != exact?.id }
         for (c in candidates) {
             if (remaining == 0) break
             val take = minOf(remaining, c.quantity)
@@ -191,7 +194,7 @@ class MtgRepository(
 
     /** Saves an edited row, merging it into an existing row if it now has the same card/finish/condition/language. */
     suspend fun updateCollectionItem(updated: CollectionItem) = db.withTransaction {
-        val clash = coll.find(updated.card.scryfallId, updated.foil, updated.condition, updated.language)
+        val clash = coll.find(updated.card.scryfallId, updated.foil, updated.etched, updated.condition, updated.language)
         if (clash != null && clash.id != updated.id) {
             coll.update(clash.copy(quantity = clash.quantity + updated.quantity))
             coll.deleteById(updated.id)
@@ -201,6 +204,41 @@ class MtgRepository(
     }
 
     suspend fun deleteCollectionItem(id: Long) = coll.deleteById(id)
+
+    /**
+     * Fills in the special foil type and etched finish (added in app 1.2) for cards saved before,
+     * and moves foil copies of etched-only printings to the etched finish. Returns false if Scryfall
+     * couldn't be reached, so it can be retried later.
+     */
+    suspend fun backfillFinishDetails(): Boolean {
+        val collItems = coll.all()
+        val tradeItems = trades.allItems()
+        val ids = (collItems.map { it.card.scryfallId } + tradeItems.map { it.card.scryfallId }).distinct()
+        if (ids.isEmpty()) return true
+        val fresh = try {
+            scryfall.collection(ids.map { ScryfallApi.idIdentifier(it) }).associate { it.id to it.toRef() }
+        } catch (e: Exception) {
+            return false
+        }
+        fun upgrade(card: CardRef): CardRef? = fresh[card.scryfallId]?.let {
+            card.copy(hasNonFoil = it.hasNonFoil, hasFoil = it.hasFoil, foilType = it.foilType, hasEtched = it.hasEtched)
+        }
+        db.withTransaction {
+            for (item in tradeItems) {
+                val card = upgrade(item.card) ?: continue
+                val f = card.resolveFinish(item.finish)
+                trades.updateItem(item.copy(card = card, foil = f.foil, etched = f.etched))
+            }
+            // Re-read each row: an earlier merge may have removed or grown it.
+            for (id in collItems.map { it.id }) {
+                val item = coll.byId(id) ?: continue
+                val card = upgrade(item.card) ?: continue
+                val f = card.resolveFinish(item.finish)
+                updateCollectionItem(item.copy(card = card, foil = f.foil, etched = f.etched))
+            }
+        }
+        return true
+    }
 
     // ---- CSV -----------------------------------------------------------------------------
 
@@ -222,12 +260,17 @@ class MtgRepository(
         val iCond = col("condition")
         val iLang = col("language", "lang")
 
-        data class Line(val ident: JsonObject, val key: String, val qty: Int, val foil: Boolean, val cond: String, val lang: String)
+        data class Line(val ident: JsonObject, val key: String, val qty: Int, val finish: Finish, val cond: String, val lang: String)
 
         val lines = rows.drop(1).mapNotNull { r ->
             fun v(i: Int?) = i?.let { r.getOrNull(it)?.trim() }?.takeIf { it.isNotEmpty() }
             val qty = v(iQty)?.toIntOrNull() ?: 1
-            val foil = v(iFoil)?.lowercase() in setOf("foil", "etched", "true", "yes", "1")
+            val finishText = v(iFoil)?.lowercase()
+            val finish = when {
+                finishText == "etched" -> Finish.ETCHED
+                finishText in setOf("foil", "true", "yes", "1") -> Finish.FOIL
+                else -> Finish.NONFOIL
+            }
             val cond = parseCondition(v(iCond))
             val lang = parseLanguage(v(iLang))
             val id = v(iId)
@@ -235,10 +278,10 @@ class MtgRepository(
             val num = v(iNum)
             val name = v(iName)
             when {
-                id != null -> Line(ScryfallApi.idIdentifier(id), "id:$id", qty, foil, cond, lang)
+                id != null -> Line(ScryfallApi.idIdentifier(id), "id:$id", qty, finish, cond, lang)
                 set != null && num != null ->
-                    Line(ScryfallApi.setNumberIdentifier(set, num), "sn:${set.lowercase()}|${num.lowercase()}", qty, foil, cond, lang)
-                name != null -> Line(ScryfallApi.nameIdentifier(name), "n:${name.lowercase()}", qty, foil, cond, lang)
+                    Line(ScryfallApi.setNumberIdentifier(set, num), "sn:${set.lowercase()}|${num.lowercase()}", qty, finish, cond, lang)
+                name != null -> Line(ScryfallApi.nameIdentifier(name), "n:${name.lowercase()}", qty, finish, cond, lang)
                 else -> null
             }
         }
@@ -260,7 +303,7 @@ class MtgRepository(
                     continue
                 }
                 val ref = c.toRef()
-                addToCollection(ref, ref.resolveFoil(l.foil), l.cond, l.lang, l.qty)
+                addToCollection(ref, ref.resolveFinish(l.finish), l.cond, l.lang, l.qty)
                 imported += l.qty
             }
         }
@@ -278,7 +321,7 @@ class MtgRepository(
             sb.appendLine(
                 Csv.row(
                     i.card.name, i.card.setCode.uppercase(), i.card.setName, i.card.collectorNumber,
-                    if (i.foil) "foil" else "normal", i.card.rarity, i.quantity, i.card.scryfallId,
+                    manaBoxFinish(i.finish), i.card.rarity, i.quantity, i.card.scryfallId,
                     manaBoxCondition(i.condition), i.language.lowercase(), price,
                 )
             )
@@ -290,14 +333,14 @@ class MtgRepository(
         // Trades are identified by when they were started; this format sorts correctly in spreadsheets.
         val df = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
         val sb = StringBuilder()
-        sb.appendLine(Csv.row("Trade started", "Partner", "Applied to collection", "Side", "Name", "Set code", "Collector number", "Foil", "Condition", "Language", "Quantity", "Unit price EUR (${type.short})", "Custom price", "Line total EUR", "Scryfall ID"))
+        sb.appendLine(Csv.row("Trade started", "Partner", "Applied to collection", "Side", "Name", "Set code", "Collector number", "Finish", "Condition", "Language", "Quantity", "Unit price EUR (${type.short})", "Custom price", "Line total EUR", "Scryfall ID"))
         for (t in trades.all()) {
             for (i in t.items) {
                 sb.appendLine(
                     Csv.row(
                         df.format(Date(t.trade.createdAt)), t.trade.partner, if (t.trade.applied) "yes" else "no",
                         if (i.side == Side.GET) "received" else "given", i.card.name, i.card.setCode.uppercase(),
-                        i.card.collectorNumber, if (i.foil) "foil" else "normal", i.condition, i.language, i.quantity,
+                        i.card.collectorNumber, i.card.finishName(i.finish).lowercase(), i.condition, i.language, i.quantity,
                         i.unitPrice(type), i.customPrice, i.lineTotal(type), i.card.scryfallId,
                     )
                 )

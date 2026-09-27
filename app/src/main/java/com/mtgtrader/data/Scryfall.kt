@@ -51,10 +51,12 @@ data class ScryCard(
     @SerialName("card_faces") val cardFaces: List<ScryFace>? = null,
     val prices: ScryPrices = ScryPrices(),
     val finishes: List<String> = emptyList(),
+    @SerialName("promo_types") val promoTypes: List<String> = emptyList(),
     val digital: Boolean = false,
 ) {
     val image: String? get() = imageUris?.normal ?: cardFaces?.firstOrNull()?.imageUris?.normal
-    val hasFoil get() = "foil" in finishes || "etched" in finishes
+    val hasFoil get() = "foil" in finishes
+    val hasEtched get() = "etched" in finishes
     val hasNonFoil get() = "nonfoil" in finishes || finishes.isEmpty()
 
     fun toRef() = CardRef(
@@ -70,6 +72,8 @@ data class ScryCard(
         fallbackEurFoil = prices.eurFoil?.toDoubleOrNull(),
         hasNonFoil = hasNonFoil,
         hasFoil = hasFoil,
+        foilType = FoilTypes.pick(promoTypes),
+        hasEtched = hasEtched,
     )
 }
 
