@@ -92,8 +92,15 @@ fun TradesListScreen(nav: NavController) {
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
 
-    LaunchedEffect(Unit) { c.repo.deleteEmptyDrafts() }
+    LaunchedEffect(Unit) {
+        c.repo.deleteEmptyDrafts()
+        // A trade was just deleted on its own screen: offer to bring it back.
+        val deleted = c.deletedTrade ?: return@LaunchedEffect
+        c.deletedTrade = null
+        if (snackbar.showUndo("Trade deleted")) c.repo.restoreTrade(deleted)
+    }
 
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) scope.launch {
@@ -127,6 +134,7 @@ fun TradesListScreen(nav: NavController) {
                 text = { Text("New trade") },
             )
         },
+        snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         val list = trades
         when {
@@ -378,7 +386,13 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                     )
                 }
             },
-            onDelete = { editing = null; scope.launch { c.repo.deleteTradeItem(item.id) } },
+            onDelete = {
+                editing = null
+                scope.launch {
+                    c.repo.deleteTradeItem(item.id)
+                    if (snackbar.showUndo("${item.card.name} removed")) c.repo.restoreTradeItem(item)
+                }
+            },
             onChangePrinting = {
                 editing = null
                 nav.openSearch(CardTarget.ReplaceTradeItem(item.id), item.card.name)
@@ -428,6 +442,8 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                 TextButton(onClick = {
                     confirmDelete = false
                     scope.launch {
+                        // The trade list shows the Undo message, since this screen closes.
+                        c.deletedTrade = c.db.tradeDao().get(tradeId)
                         c.repo.deleteTrade(tradeId)
                         nav.popBackStack()
                     }
@@ -511,6 +527,7 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onC
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(Fmt.money(item.lineTotal(priceType)), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                TrendBadge(item.prices.trendChange)
                 if (item.quantity > 1) Text("${item.quantity} × ${Fmt.money(item.unitPrice(priceType))}", style = MaterialTheme.typography.bodySmall)
                 if (item.customPrice != null) Text("agreed price", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }

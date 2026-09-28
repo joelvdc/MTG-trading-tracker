@@ -240,3 +240,18 @@ class FinishTest {
         assertEquals("https://www.cardmarket.com/en/Magic/Products/Search?searchString=Jace%2C+the+Mind+Sculptor", noId.cardmarketUrl)
     }
 }
+
+class PriceTrendTest {
+    @Test
+    fun labelsHaveOneDecimalAndAMinimumOfPointOne() {
+        val l = java.util.Locale.UK
+        assertEquals("▲ 12.3%", com.mtgtrader.data.PriceTrend.of(11.23, 10.0)!!.label(l))
+        assertEquals("▼ 8.0%", com.mtgtrader.data.PriceTrend.of(9.2, 10.0)!!.label(l))
+        assertEquals("▲ 0.1%", com.mtgtrader.data.PriceTrend.of(10.001, 10.0)!!.label(l))
+        assertEquals("▼ 0.1%", com.mtgtrader.data.PriceTrend.of(9.999, 10.0)!!.label(l))
+        assertEquals("▬ 0.0%", com.mtgtrader.data.PriceTrend.of(2.5, 2.5)!!.label(l))
+        assertEquals("▲ 12,3%", com.mtgtrader.data.PriceTrend.of(11.23, 10.0)!!.label(java.util.Locale.GERMANY))
+        assertEquals(null, com.mtgtrader.data.PriceTrend.of(1.0, null))
+        assertEquals(null, com.mtgtrader.data.PriceSet(trend = 1.0).trendChange)
+    }
+}

@@ -104,6 +104,18 @@ class MtgRepository(
 
     suspend fun deleteTradeItem(id: Long) = trades.deleteItem(id)
 
+    /** Undo for [deleteTradeItem]: puts the item back exactly as it was (if its trade still exists). */
+    suspend fun restoreTradeItem(item: TradeItem) {
+        if (trades.get(item.tradeId) != null && trades.item(item.id) == null) trades.insertItem(item)
+    }
+
+    /** Undo for [deleteTrade]: puts the trade and all its cards back, including whether it was applied. */
+    suspend fun restoreTrade(t: TradeWithItems) = db.withTransaction {
+        if (trades.get(t.trade.id) != null) return@withTransaction
+        trades.insert(t.trade)
+        t.items.forEach { trades.insertItem(it) }
+    }
+
     suspend fun refreshTradePrices(tradeId: Long) {
         val t = trades.get(tradeId) ?: return
         for (item in t.items) trades.updateItem(item.copy(prices = snapshot(item.card, item.foil)))
@@ -204,6 +216,16 @@ class MtgRepository(
     }
 
     suspend fun deleteCollectionItem(id: Long) = coll.deleteById(id)
+
+    /** Undo for [deleteCollectionItem]; merges into a matching row if the same card was added again meanwhile. */
+    suspend fun restoreCollectionItem(item: CollectionItem) = db.withTransaction {
+        val clash = coll.find(item.card.scryfallId, item.foil, item.etched, item.condition, item.language)
+        when {
+            clash != null -> coll.update(clash.copy(quantity = clash.quantity + item.quantity))
+            coll.byId(item.id) == null -> coll.insert(item)
+            else -> coll.insert(item.copy(id = 0))
+        }
+    }
 
     /**
      * Fills in the special foil type and etched finish (added in app 1.2) for cards saved before,

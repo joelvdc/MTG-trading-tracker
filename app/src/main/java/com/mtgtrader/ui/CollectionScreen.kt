@@ -225,7 +225,13 @@ fun CollectionScreen(nav: NavController) {
                     )
                 }
             },
-            onDelete = { editing = null; scope.launch { c.repo.deleteCollectionItem(item.id) } },
+            onDelete = {
+                editing = null
+                scope.launch {
+                    c.repo.deleteCollectionItem(item.id)
+                    if (snackbar.showUndo("${item.card.name} removed")) c.repo.restoreCollectionItem(item)
+                }
+            },
             onChangePrinting = {
                 editing = null
                 nav.openSearch(CardTarget.ReplaceCollectionItem(item.id), item.card.name)
@@ -253,6 +259,7 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, onClick:
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                TrendBadge(row.trend)
                 if (item.quantity > 1) Text("${Fmt.money(unit)} each", style = MaterialTheme.typography.bodySmall)
             }
         }

@@ -13,6 +13,7 @@ import com.mtgtrader.data.PriceGuideRepository
 import com.mtgtrader.data.ScryfallApi
 import com.mtgtrader.data.SetIcons
 import com.mtgtrader.data.Settings
+import com.mtgtrader.data.TradeWithItems
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +56,10 @@ class AppContainer(context: Context) {
     val prices = PriceGuideRepository(context, http, db, settings)
     val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices)
+
+    /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */
+    @Volatile
+    var deletedTrade: TradeWithItems? = null
 }
 
 val Context.container: AppContainer get() = (applicationContext as MtgApp).container

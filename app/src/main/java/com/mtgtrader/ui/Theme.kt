@@ -43,6 +43,12 @@ object VerdictColors {
 
 val FoilColor = Color(0xFF9C6ADE)
 
+/** Price trend arrows; readable on both schemes. */
+object TrendColors {
+    val up = Color(0xFF2E9E5B)
+    val down = Color(0xFFD32F2F)
+}
+
 @Composable
 fun MtgTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, content = content)

@@ -39,6 +39,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +67,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -82,6 +86,7 @@ import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.PriceSet
+import com.mtgtrader.data.PriceTrend
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.Verdict
 import java.text.DateFormat
@@ -380,6 +385,28 @@ fun BalanceCard(balance: Balance, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Shows "[message]" with an Undo button for 10 seconds. Returns true if Undo was tapped.
+ * Replaces any message already showing, so repeated removals don't queue up.
+ */
+suspend fun SnackbarHostState.showUndo(message: String): Boolean {
+    currentSnackbarData?.dismiss()
+    return showSnackbar(message, actionLabel = "Undo", withDismissAction = true, duration = SnackbarDuration.Long) ==
+        SnackbarResult.ActionPerformed
+}
+
+/** Price going up (green ▲), down (red ▼) or unchanged (▬), with the percentage; nothing without data. */
+@Composable
+fun TrendBadge(trend: PriceTrend?, modifier: Modifier = Modifier, style: TextStyle = MaterialTheme.typography.labelMedium) {
+    if (trend == null) return
+    val color = when {
+        trend.flat -> MaterialTheme.colorScheme.onSurfaceVariant
+        trend.up -> TrendColors.up
+        else -> TrendColors.down
+    }
+    Text(trend.label(), color = color, style = style, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = modifier)
+}
+
 @Composable
 fun PriceTable(prices: PriceSet?, highlight: PriceType, title: String) {
     Column {
@@ -387,6 +414,12 @@ fun PriceTable(prices: PriceSet?, highlight: PriceType, title: String) {
         if (prices == null || PriceType.entries.all { prices.get(it) == null }) {
             Text("No price guide data for this printing.", style = MaterialTheme.typography.bodySmall)
             return
+        }
+        prices.trendChange?.let { t ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 1.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Trend vs 30-day average", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                TrendBadge(t, style = MaterialTheme.typography.bodyMedium)
+            }
         }
         PriceType.entries.forEach { t ->
             val hl = t == highlight

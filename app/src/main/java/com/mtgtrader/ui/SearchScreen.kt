@@ -254,12 +254,23 @@ private fun PrintRow(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ref.finishes.forEach { finish ->
                         val color = if (finish.foil) FoilColor else MaterialTheme.colorScheme.onSurface
+                        val trend = price?.toSet(finish.foil)?.trendChange
                         if (replaceMode) {
-                            Text(label(finish), style = MaterialTheme.typography.bodyMedium, color = color)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(label(finish), style = MaterialTheme.typography.bodyMedium, color = color)
+                                Spacer(Modifier.width(4.dp))
+                                TrendBadge(trend)
+                            }
                         } else {
                             AssistChip(
                                 onClick = { onAdd(finish) },
-                                label = { Text(label(finish)) },
+                                label = {
+                                    Text(label(finish))
+                                    if (trend != null) {
+                                        Spacer(Modifier.width(4.dp))
+                                        TrendBadge(trend)
+                                    }
+                                },
                                 leadingIcon = { Icon(Icons.Default.Add, null, Modifier.width(18.dp)) },
                                 colors = if (finish.foil) AssistChipDefaults.assistChipColors(labelColor = color, leadingIconContentColor = color)
                                 else AssistChipDefaults.assistChipColors(),
