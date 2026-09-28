@@ -255,3 +255,21 @@ class PriceTrendTest {
         assertEquals(null, com.mtgtrader.data.PriceSet(trend = 1.0).trendChange)
     }
 }
+
+class FlavorNameTest {
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
+
+    @Test
+    fun readsAndShowsTheNamePrintedOnTheCard() {
+        // Shape of api.scryfall.com/cards/ltc/358 (trimmed).
+        val card = json.decodeFromString<com.mtgtrader.data.ScryCard>(
+            """{"id":"x","name":"Bojuka Bog","set":"ltc","collector_number":"358","flavor_name":"Barrow-Downs","finishes":["nonfoil","foil"]}"""
+        )
+        assertEquals("Barrow-Downs", card.flavorName)
+        assertEquals("Barrow-Downs (Bojuka Bog)", card.displayName)
+        assertEquals("Barrow-Downs (Bojuka Bog)", card.toRef().displayName)
+        val plain = json.decodeFromString<com.mtgtrader.data.ScryCard>("""{"id":"y","name":"Bojuka Bog","set":"wwk"}""")
+        assertEquals(null, plain.flavorName)
+        assertEquals("Bojuka Bog", plain.toRef().displayName)
+    }
+}

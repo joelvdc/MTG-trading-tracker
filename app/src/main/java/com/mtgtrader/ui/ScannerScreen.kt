@@ -164,10 +164,10 @@ class ScanController(
                     lastAddedId = card.id
                     if (autoAdd) add(found, clues.language) else {
                         pending = found to clues.language
-                        status = "Found ${card.name} — tap Add"
+                        status = "Found ${card.displayName} — tap Add"
                     }
                 } else if (card.id == lastAddedId && autoAdd) {
-                    status = "${card.name} added — show the next card"
+                    status = "${card.displayName} added — show the next card"
                 }
             } finally {
                 busy = false
@@ -186,7 +186,7 @@ class ScanController(
         val price = repo.snapshot(ref, f.foil).best(PriceType.TREND)
         added.add(0, ScannedEntry(ref, f, lang, result, price, found.exactPrinting))
         pending = null
-        status = "Added ${card.name} (${card.set.uppercase()})"
+        status = "Added ${card.displayName} (${card.set.uppercase()})"
         onAdded()
     }
 
@@ -294,7 +294,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                         CardThumb(card.image, enlargeable = true)
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(card.name, style = MaterialTheme.typography.titleSmall)
+                            Text(card.displayName, style = MaterialTheme.typography.titleSmall)
                             SetLine(card.toRef())
                         }
                         Button(onClick = { scope.launch { controller.add(found, lang) } }) { Text("Add") }
@@ -319,7 +319,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                             CardThumb(e.card.imageUrl, width = 32)
                             Spacer(Modifier.width(8.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(e.card.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(e.card.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     SetLine(e.card)
                                     FinishTag(e.card, e.finish)

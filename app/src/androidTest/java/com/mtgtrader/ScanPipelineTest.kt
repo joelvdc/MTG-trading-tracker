@@ -86,6 +86,23 @@ class ScanPipelineTest {
         assertEquals("150", card?.collectorNumber)
     }
 
+    /** Universes Beyond cards printed under another name: "Barrow-Downs" is Bojuka Bog (LTC). */
+    @Test
+    fun flavorNamedCard() {
+        val (_, card) = scan("barrow_downs_358.png")
+        assertEquals("Bojuka Bog", card?.name)
+        assertEquals("ltc", card?.set)
+        assertEquals("358", card?.collectorNumber)
+    }
+
+    @Test
+    fun flavorNamedCardBorderless() {
+        val (_, card) = scan("barrow_downs_388.png")
+        assertEquals("Bojuka Bog", card?.name)
+        assertEquals("ltc", card?.set)
+        assertEquals("388", card?.collectorNumber)
+    }
+
     @Test
     fun cardHeldSmallerThanGuide() {
         val (_, card) = scan("old_frame.png", inset = 0.12f)

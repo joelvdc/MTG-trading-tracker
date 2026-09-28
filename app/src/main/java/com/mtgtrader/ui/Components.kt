@@ -460,7 +460,7 @@ fun EditCardDialog(
     var customText by remember { mutableStateOf(initial.customPrice?.let { "%.2f".format(it) } ?: "") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(card.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        title = { Text(card.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

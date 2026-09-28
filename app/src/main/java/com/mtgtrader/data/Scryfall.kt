@@ -53,8 +53,13 @@ data class ScryCard(
     val finishes: List<String> = emptyList(),
     @SerialName("promo_types") val promoTypes: List<String> = emptyList(),
     val digital: Boolean = false,
+    /** Name printed on this card instead of its real name, e.g. "Barrow-Downs" for Bojuka Bog (LTC). */
+    @SerialName("flavor_name") val flavorName: String? = null,
 ) {
     val image: String? get() = imageUris?.normal ?: cardFaces?.firstOrNull()?.imageUris?.normal
+
+    /** "Barrow-Downs (Bojuka Bog)" for cards printed under another name, else just the name. */
+    val displayName get() = flavorName?.let { "$it ($name)" } ?: name
     val hasFoil get() = "foil" in finishes
     val hasEtched get() = "etched" in finishes
     val hasNonFoil get() = "nonfoil" in finishes || finishes.isEmpty()
@@ -74,8 +79,12 @@ data class ScryCard(
         hasFoil = hasFoil,
         foilType = FoilTypes.pick(promoTypes),
         hasEtched = hasEtched,
+        flavorName = flavorName,
     )
 }
+
+/** A name suggestion: a card name, or a flavor name ("Barrow-Downs") printed on some copies of [realName]. */
+data class NameSuggestion(val label: String, val realName: String? = null)
 
 @Serializable
 private data class ScryList(
@@ -138,6 +147,19 @@ class ScryfallApi(private val http: OkHttpClient) {
     suspend fun autocomplete(query: String): List<String> {
         val body = call(url("cards/autocomplete", "q" to query)) ?: return emptyList()
         return json.decodeFromString<ScryCatalog>(body).data
+    }
+
+    /**
+     * Flavor names containing [query], with the real card name, e.g. "Barrow" → ("Barrow-Downs", "Bojuka Bog").
+     * Autocomplete only knows real names, but Scryfall's `name:` search also matches flavor names.
+     */
+    suspend fun flavorNames(query: String): List<NameSuggestion> {
+        val q = query.replace("\"", "").trim()
+        if (q.length < 3) return emptyList()
+        val body = call(url("cards/search", "q" to "name:\"$q\" game:paper", "unique" to "prints")) ?: return emptyList()
+        return json.decodeFromString<ScryList>(body).data
+            .mapNotNull { c -> c.flavorName?.takeIf { it.contains(q, ignoreCase = true) }?.let { NameSuggestion(it, c.name) } }
+            .distinctBy { it.label.lowercase() }
     }
 
     /** All paper printings of a card, newest first. */

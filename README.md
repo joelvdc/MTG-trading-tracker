@@ -3,9 +3,9 @@
 Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
 
 ## Install
-Copy `MTG-Trader-1.4.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.5.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.4-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.5-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.

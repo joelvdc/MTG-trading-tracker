@@ -161,7 +161,7 @@ fun CollectionScreen(nav: NavController) {
         val shown = remember(all, filter, sort, priceType) {
             val f = filter.trim()
             all.filter { r ->
-                f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.setCode.equals(f, true) ||
+                f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.flavorName?.contains(f, true) == true || r.item.card.setCode.equals(f, true) ||
                     r.item.card.setName.contains(f, true) ||
                     (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true))
             }.let { list ->
@@ -229,7 +229,7 @@ fun CollectionScreen(nav: NavController) {
                 editing = null
                 scope.launch {
                     c.repo.deleteCollectionItem(item.id)
-                    if (snackbar.showUndo("${item.card.name} removed")) c.repo.restoreCollectionItem(item)
+                    if (snackbar.showUndo("${item.card.displayName} removed")) c.repo.restoreCollectionItem(item)
                 }
             },
             onChangePrinting = {
@@ -249,7 +249,7 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, onClick:
             CardThumb(item.card.imageUrl, width = 40)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text("${item.quantity}× ${item.card.name}", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${item.quantity}× ${item.card.displayName}", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     SetLine(item.card)
                     FinishTag(item.card, item.finish)

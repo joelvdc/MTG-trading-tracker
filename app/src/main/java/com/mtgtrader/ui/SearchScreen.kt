@@ -39,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +62,7 @@ import androidx.navigation.NavController
 import com.mtgtrader.container
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.Finish
+import com.mtgtrader.data.NameSuggestion
 import com.mtgtrader.data.PriceEntity
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.ScryCard
@@ -83,7 +85,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
 
     var query by rememberSaveable { mutableStateOf(initialQuery ?: "") }
     var selectedName by rememberSaveable { mutableStateOf(initialQuery) }
-    var suggestions by remember { mutableStateOf(emptyList<String>()) }
+    var suggestions by remember { mutableStateOf(emptyList<NameSuggestion>()) }
     var prints by remember { mutableStateOf<List<ScryCard>?>(null) }
     var priceMap by remember { mutableStateOf(emptyMap<Int, PriceEntity>()) }
     var loading by remember { mutableStateOf(false) }
@@ -101,7 +103,11 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
         }
         delay(250)
         try {
-            suggestions = c.scryfall.autocomplete(q)
+            val names = c.scryfall.autocomplete(q).map { NameSuggestion(it) }
+            // Cards printed under another name ("Barrow-Downs" = Bojuka Bog) aren't in autocomplete.
+            val flavors = runCatching { c.scryfall.flavorNames(q) }.getOrDefault(emptyList())
+            val (flavorsFirst, flavorsLater) = flavors.partition { it.label.startsWith(q, ignoreCase = true) }
+            suggestions = (flavorsFirst + names + flavorsLater).distinctBy { it.label.lowercase() }
             error = null
         } catch (e: Exception) {
             error = "Can't reach Scryfall — check your connection."
@@ -132,7 +138,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
         val ref = card.toRef()
         c.repo.add(target, ref, finish)
         snackbar.currentSnackbarData?.dismiss()
-        snackbar.showSnackbar("Added ${card.name} (${card.set.uppercase()})${if (finish.foil) " " + ref.finishName(finish).lowercase() else ""}")
+        snackbar.showSnackbar("Added ${ref.displayName} (${card.set.uppercase()})${if (finish.foil) " " + ref.finishName(finish).lowercase() else ""}")
     }
 
     Scaffold(
@@ -168,7 +174,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { suggestions.firstOrNull()?.let { query = it; selectedName = it } }),
+                keyboardActions = KeyboardActions(onSearch = { suggestions.firstOrNull()?.let { query = it.label; selectedName = it.label } }),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).focusRequester(focus),
             )
             error?.let {
@@ -177,10 +183,11 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
             val p = prints
             when {
                 selectedName == null -> LazyColumn {
-                    items(suggestions) { name ->
+                    items(suggestions) { s ->
                         ListItem(
-                            headlineContent = { Text(name) },
-                            modifier = Modifier.clickable { query = name; selectedName = name },
+                            headlineContent = { Text(s.label) },
+                            supportingContent = s.realName?.let { real -> { Text("Printed name of $real") } },
+                            modifier = Modifier.clickable { query = s.label; selectedName = s.label },
                         )
                         HorizontalDivider()
                     }
@@ -197,6 +204,21 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    // Searched for a flavor name ("Barrow-Downs"): only those printings are listed.
+                    val realName = p.first().name
+                    if (!realName.equals(selectedName, ignoreCase = true)) {
+                        item {
+                            Column {
+                                Text(
+                                    "“$selectedName” is the name printed on some copies of $realName.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                TextButton(onClick = { query = realName; selectedName = realName }) {
+                                    Text("Show all $realName printings")
+                                }
+                            }
+                        }
                     }
                     items(p, key = { it.id }) { card ->
                         PrintRow(
@@ -250,6 +272,9 @@ private fun PrintRow(
             Column(Modifier.weight(1f)) {
                 Text(card.setName, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 SetLine(ref, " · ${card.rarity}${card.releasedAt?.let { " · ${it.take(4)}" } ?: ""}")
+                card.flavorName?.let {
+                    Text("Printed as “$it”", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
                 if (card.lang != "en") Text("Language: ${card.lang.uppercase()}", style = MaterialTheme.typography.bodySmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ref.finishes.forEach { finish ->

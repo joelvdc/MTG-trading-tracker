@@ -139,7 +139,7 @@ interface TradeDao {
 
 @Database(
     entities = [PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -150,8 +150,17 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
+
+        /** Version 3 (app 1.5): the flavor name printed on cards like "Barrow-Downs" (Bojuka Bog). */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                for (table in listOf("collection", "trade_items")) {
+                    db.execSQL("ALTER TABLE `$table` ADD COLUMN `flavorName` TEXT")
+                }
+            }
+        }
 
         /** Version 2 (app 1.2): special foil type, etched finish, and etched copies kept apart in the collection. */
         private val MIGRATION_1_2 = object : Migration(1, 2) {

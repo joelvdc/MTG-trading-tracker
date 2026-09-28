@@ -390,7 +390,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                 editing = null
                 scope.launch {
                     c.repo.deleteTradeItem(item.id)
-                    if (snackbar.showUndo("${item.card.name} removed")) c.repo.restoreTradeItem(item)
+                    if (snackbar.showUndo("${item.card.displayName} removed")) c.repo.restoreTradeItem(item)
                 }
             },
             onChangePrinting = {
@@ -510,7 +510,7 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onC
             CardThumb(item.card.imageUrl)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(item.card.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(item.card.displayName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     SetLine(item.card)
                     FinishTag(item.card, item.finish)
@@ -541,7 +541,7 @@ private fun tradeTitle(trade: Trade) = trade.partner.ifBlank { "Trade · ${Fmt.d
 private fun tradeSummary(t: TradeWithItems, type: PriceType, tolerance: Int): String {
     val b = t.balance(type, tolerance)
     fun lines(items: List<TradeItem>) = items.joinToString("\n") { i ->
-        "  ${i.quantity}× ${i.card.name} (${i.card.setLabel})${if (i.foil) " " + i.card.finishName(i.finish).lowercase() else ""} ${i.condition} — ${Fmt.money(i.lineTotal(type))}"
+        "  ${i.quantity}× ${i.card.displayName} (${i.card.setLabel})${if (i.foil) " " + i.card.finishName(i.finish).lowercase() else ""} ${i.condition} — ${Fmt.money(i.lineTotal(type))}"
     }
     return buildString {
         appendLine(if (t.trade.partner.isBlank()) "MTG trade — ${Fmt.date(t.trade.createdAt)}" else "MTG trade with ${t.trade.partner} — ${Fmt.date(t.trade.createdAt)}")

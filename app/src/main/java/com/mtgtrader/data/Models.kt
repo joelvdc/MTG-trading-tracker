@@ -162,7 +162,12 @@ data class CardRef(
     /** Scryfall promo type of the foil finish's special treatment, e.g. "surgefoil". */
     val foilType: String? = null,
     @ColumnInfo(defaultValue = "0") val hasEtched: Boolean = false,
+    /** Name printed on this card instead of [name], e.g. "Barrow-Downs" (Bojuka Bog, LTC). Since version 1.5. */
+    val flavorName: String? = null,
 ) {
+    /** "Barrow-Downs (Bojuka Bog)" for cards printed under another name, else just the name. */
+    val displayName get() = flavorName?.let { "$it ($name)" } ?: name
+
     fun fallback(foil: Boolean) = if (foil) fallbackEurFoil else fallbackEur
     val setLabel get() = "${setCode.uppercase()} #$collectorNumber"
 
