@@ -1,6 +1,7 @@
 package com.mtgtrader.ui
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mtgtrader.container
 import com.mtgtrader.data.CardTarget
+import com.mtgtrader.data.DeckLinks
 import com.mtgtrader.data.PriceUpdateState
 import kotlinx.coroutines.launch
 
@@ -43,8 +46,15 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 private val tabs = listOf(
     Tab("trades", "Trades", Icons.Default.SwapHoriz),
     Tab("collection", "Collection", Icons.Default.CollectionsBookmark),
+    Tab("decks", "Decks", Icons.Default.Style),
     Tab("settings", "Settings", Icons.Default.Settings),
 )
+
+private fun NavController.openTab(route: String) = navigate(route) {
+    popUpTo(graph.findStartDestination().id) { saveState = true }
+    launchSingleTop = true
+    restoreState = true
+}
 
 fun NavController.openSearch(target: CardTarget, query: String? = null) {
     val q = query?.let { "&query=${Uri.encode(it)}" } ?: ""
@@ -64,6 +74,18 @@ fun AppNav() {
             if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1
         }
     }
+    val shared by c.sharedText.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    LaunchedEffect(shared) {
+        val text = shared ?: return@LaunchedEffect
+        c.sharedText.value = null
+        when {
+            DeckLinks.archidektId(text) == null || "archidekt" !in text.lowercase() ->
+                Toast.makeText(context, "Only Archidekt deck links can be shared to MTG Trader", Toast.LENGTH_LONG).show()
+            c.decks.import(text) -> nav.openTab("decks")
+            else -> Toast.makeText(context, "Wait for the current import to finish", Toast.LENGTH_LONG).show()
+        }
+    }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val topLevel = tabs.any { it.route == route }
@@ -79,13 +101,7 @@ fun AppNav() {
                         tabs.forEach { tab ->
                             NavigationBarItem(
                                 selected = route == tab.route,
-                                onClick = {
-                                    nav.navigate(tab.route) {
-                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
+                                onClick = { nav.openTab(tab.route) },
                                 icon = { Icon(tab.icon, null) },
                                 label = { Text(tab.label) },
                             )
@@ -98,6 +114,10 @@ fun AppNav() {
         NavHost(nav, startDestination = "trades", modifier = Modifier.padding(pad)) {
             composable("trades") { TradesListScreen(nav) }
             composable("collection") { CollectionScreen(nav) }
+            composable("decks") { DecksScreen(nav) }
+            composable("deck/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                DeckScreen(nav, it.arguments?.getLong("id") ?: 0L)
+            }
             composable("settings") { SettingsScreen() }
             composable("trade/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 TradeEditorScreen(nav, it.arguments?.getLong("id") ?: 0L)

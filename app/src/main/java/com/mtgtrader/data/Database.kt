@@ -137,21 +137,74 @@ interface TradeDao {
     suspend fun allItems(): List<TradeItem>
 }
 
+@Dao
+interface DeckDao {
+    @Query("SELECT * FROM decks ORDER BY name COLLATE NOCASE")
+    fun observeAll(): Flow<List<Deck>>
+
+    @Query("SELECT * FROM decks WHERE archidektId = :id")
+    fun observe(id: Long): Flow<Deck?>
+
+    @Query("SELECT * FROM decks WHERE archidektId = :id")
+    suspend fun get(id: Long): Deck?
+
+    @Query(
+        """SELECT d.*, p.idProduct AS pr_idProduct, p.avg AS pr_avg, p.low AS pr_low, p.trend AS pr_trend,
+           p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
+           p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
+           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
+           FROM deck_cards d LEFT JOIN prices p ON p.idProduct = d.cardmarketId
+           WHERE d.deckId = :deckId"""
+    )
+    fun observeCards(deckId: Long): Flow<List<DeckCardRow>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(deck: Deck)
+
+    @Update
+    suspend fun update(deck: Deck)
+
+    @Insert
+    suspend fun insertCards(cards: List<DeckCard>)
+
+    @Query("DELETE FROM deck_cards WHERE deckId = :deckId")
+    suspend fun deleteCards(deckId: Long)
+
+    @Query("DELETE FROM decks WHERE archidektId = :id")
+    suspend fun delete(id: Long)
+
+    /** Saves a freshly imported deck, replacing its previous list. */
+    @Transaction
+    suspend fun replace(deck: Deck, cards: List<DeckCard>) {
+        upsert(deck)
+        deleteCards(deck.archidektId)
+        insertCards(cards)
+    }
+}
+
 @Database(
-    entities = [PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class],
-    version = 3,
+    entities = [PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class],
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun priceDao(): PriceDao
     abstract fun collectionDao(): CollectionDao
     abstract fun tradeDao(): TradeDao
+    abstract fun deckDao(): DeckDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
+
+        /** Version 4 (app 1.6): Commander decks imported from Archidekt. */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                DECK_TABLES_SQL.forEach(db::execSQL)
+            }
+        }
 
         /** Version 3 (app 1.5): the flavor name printed on cards like "Barrow-Downs" (Bojuka Bog). */
         private val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -179,3 +232,21 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+
+/** The deck tables exactly as Room creates them for a new install (copied from the generated AppDatabase_Impl). */
+private val DECK_TABLES_SQL = listOf(
+    "CREATE TABLE IF NOT EXISTS `decks` (`archidektId` INTEGER NOT NULL, `name` TEXT NOT NULL, `owner` TEXT NOT NULL, " +
+        "`commanders` TEXT NOT NULL, `commanderScryfallId` TEXT, `artUrl` TEXT, `colorIdentity` TEXT NOT NULL, " +
+        "`cardCount` INTEGER NOT NULL, `importedAt` INTEGER NOT NULL, `saltId` TEXT, `powerLevel` REAL, " +
+        "`bracketRealistic` INTEGER, `bracketBaseline` INTEGER, `saltPercent` REAL, `archetype` TEXT, `scoredAt` INTEGER, " +
+        "`scoreError` TEXT, PRIMARY KEY(`archidektId`))",
+    "CREATE TABLE IF NOT EXISTS `deck_cards` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deckId` INTEGER NOT NULL, " +
+        "`quantity` INTEGER NOT NULL, `category` TEXT NOT NULL, `types` TEXT NOT NULL, `cmc` REAL NOT NULL, " +
+        "`commander` INTEGER NOT NULL, `foil` INTEGER NOT NULL, `etched` INTEGER NOT NULL DEFAULT 0, " +
+        "`gameChanger` INTEGER NOT NULL, `scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, " +
+        "`setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, `rarity` TEXT NOT NULL, `imageUrl` TEXT, " +
+        "`cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, " +
+        "`hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, " +
+        "FOREIGN KEY(`deckId`) REFERENCES `decks`(`archidektId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+    "CREATE INDEX IF NOT EXISTS `index_deck_cards_deckId` ON `deck_cards` (`deckId`)",
+)

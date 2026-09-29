@@ -7,6 +7,9 @@ import coil.ImageLoaderFactory
 import coil.decode.SvgDecoder
 import coil.util.DebugLogger
 import com.mtgtrader.data.AppDatabase
+import com.mtgtrader.data.ArchidektApi
+import com.mtgtrader.data.CommanderSaltApi
+import com.mtgtrader.data.DeckRepository
 import com.mtgtrader.data.MtgRepository
 import com.mtgtrader.data.NetworkMonitor
 import com.mtgtrader.data.PriceGuideRepository
@@ -17,6 +20,7 @@ import com.mtgtrader.data.TradeWithItems
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -56,10 +60,14 @@ class AppContainer(context: Context) {
     val prices = PriceGuideRepository(context, http, db, settings)
     val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), appScope)
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */
     @Volatile
     var deletedTrade: TradeWithItems? = null
+
+    /** Text shared to the app (e.g. a deck link from Archidekt), waiting for the screens to handle it. */
+    val sharedText = MutableStateFlow<String?>(null)
 }
 
 val Context.container: AppContainer get() = (applicationContext as MtgApp).container
