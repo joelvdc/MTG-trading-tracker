@@ -78,7 +78,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class SortBy(val label: String) { NAME("Name"), VALUE("Value"), RECENT("Recently added"), SET("Set") }
+private enum class SortBy(val label: String) { NAME("Name"), VALUE("Value per card"), RECENT("Recently added"), SET("Set") }
 
 /** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders. */
 private typealias BinderSel = Long?
@@ -236,7 +236,8 @@ fun CollectionScreen(nav: NavController) {
             }.let { list ->
                 when (sort) {
                     SortBy.NAME -> list
-                    SortBy.VALUE -> list.sortedByDescending { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity }
+                    // By the price of one copy, so a stack of cheap cards doesn't outrank a single valuable one.
+                    SortBy.VALUE -> list.sortedByDescending { it.unitPrice(priceType) ?: 0.0 }
                     SortBy.RECENT -> list.sortedByDescending { it.item.addedAt }
                     SortBy.SET -> list.sortedWith(compareBy({ it.item.card.setName }, { it.item.card.collectorNumber.filter(Char::isDigit).toIntOrNull() ?: 0 }))
                 }
@@ -426,9 +427,9 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: 
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 TrendBadge(row.trend)
-                if (item.quantity > 1) Text("${Fmt.money(unit)} each", style = MaterialTheme.typography.bodySmall)
+                if (item.quantity > 1) Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
