@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
+import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.NameSuggestion
@@ -70,10 +71,17 @@ import com.mtgtrader.data.Side
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-fun targetLabel(t: CardTarget) = when (t) {
-    is CardTarget.TradeSide -> if (t.side == Side.GET) "Adding to: You get" else "Adding to: You give"
-    CardTarget.Collection -> "Adding to: Collection"
-    else -> "Choose the printing"
+/** "Adding to: …" for the search and scanner screens, naming the binder for collection targets. */
+@Composable
+fun rememberTargetLabel(t: CardTarget): String {
+    val binders = rememberBinders()
+    return when (t) {
+        is CardTarget.TradeSide -> if (t.side == Side.GET) "Adding to: You get" else "Adding to: You give"
+        is CardTarget.Collection ->
+            if (t.binderId == Binder.UNSORTED) "Adding to: Collection" else "Adding to: ${binderName(t.binderId, binders)}"
+        CardTarget.Scans -> "Adding to: Scanned cards"
+        else -> "Choose the printing"
+    }
 }
 
 @Composable
@@ -147,7 +155,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                 title = {
                     Column {
                         Text(if (target.isReplace) "Change printing" else "Add card")
-                        Text(targetLabel(target), style = MaterialTheme.typography.bodySmall)
+                        Text(rememberTargetLabel(target), style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },

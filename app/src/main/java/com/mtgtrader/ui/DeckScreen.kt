@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -60,6 +61,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -84,8 +86,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.mtgtrader.container
+import com.mtgtrader.data.BinderChoice
 import com.mtgtrader.data.Brackets
 import com.mtgtrader.data.Deck
+import com.mtgtrader.data.DeckCollectionCounts
 import com.mtgtrader.data.DeckCardRow
 import com.mtgtrader.data.DeckGroupBy
 import com.mtgtrader.data.DeckGrouping
@@ -112,11 +116,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
 
+    var addingToCollection by remember { mutableStateOf(false) }
+
     LaunchedEffect(result) {
         val r = result ?: return@LaunchedEffect
-        if (r.imported || r.deckId != deckId) return@LaunchedEffect
+        if (r.deckId != deckId) return@LaunchedEffect
         c.decks.consumeResult()
-        snackbar.showSnackbar(r.message)
+        // A fresh import lands here already; its page shows whether scoring failed.
+        if (r.openDeck == null) snackbar.showSnackbar(r.message)
     }
     fun refresh() {
         if (!c.decks.refresh(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
@@ -153,6 +160,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             }
                         }
                         DropdownMenuItem(
+                            text = { Text("Add to collection…") },
+                            leadingIcon = { Icon(Icons.Default.LibraryAdd, null) },
+                            onClick = { menu = false; addingToCollection = true },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Delete deck") },
                             leadingIcon = { Icon(Icons.Default.Delete, null) },
                             onClick = { menu = false; confirmDelete = true },
@@ -172,7 +184,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         val value = remember(rows, priceType) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 32.dp)) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
-            item(key = "header") { DeckHeader(d, value, priceType) }
+            item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
             item(key = "rulezero") {
                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
@@ -203,7 +215,31 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
 
     showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
-    selected?.let { row -> DeckCardDialog(row, priceType) { selected = null } }
+    selected?.let { row ->
+        DeckCardDialog(
+            row, priceType,
+            onRemove = if (row.item.addedInApp) {
+                {
+                    selected = null
+                    scope.launch { c.decks.removeAddedCard(row.item.id) }
+                }
+            } else null,
+        ) { selected = null }
+    }
+    if (addingToCollection) {
+        deck?.let { d ->
+            AddDeckToCollectionDialog(d, onDismiss = { addingToCollection = false }) { onlyMissing, skipBasics, choice ->
+                addingToCollection = false
+                scope.launch {
+                    val binderId = c.repo.resolve(choice)
+                    val (n, undo) = c.decks.addDeckToCollection(deckId, onlyMissing, skipBasics, binderId)
+                    val where = choice.newName ?: binderName(binderId, c.db.binderDao().all())
+                    if (n == 0) snackbar.showSnackbar("Nothing to add: you already own every card")
+                    else if (snackbar.showUndo("Added $n card(s) to $where")) undo()
+                }
+            }
+        }
+    }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -224,7 +260,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
 }
 
 @Composable
-private fun DeckHeader(deck: Deck, value: Double, priceType: PriceType) {
+private fun DeckHeader(deck: Deck, cardCount: Int, value: Double, priceType: PriceType) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         DeckArt(deck, Modifier.fillMaxWidth().height(150.dp))
         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -233,7 +269,7 @@ private fun DeckHeader(deck: Deck, value: Double, priceType: PriceType) {
             Text(deck.commanders, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Text(
-            "${deck.cardCount} cards · ${Fmt.money(value)} (${priceType.short})" + if (deck.owner.isNotBlank()) " · by ${deck.owner}" else "",
+            "${cardCount.takeIf { it > 0 } ?: deck.cardCount} cards · ${Fmt.money(value)} (${priceType.short})" + if (deck.owner.isNotBlank()) " · by ${deck.owner}" else "",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -313,6 +349,7 @@ private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, onClick: () 
                 SetLine(item.card)
                 FinishTag(item.card, item.finish)
                 if (item.gameChanger) Tag("GAME CHANGER")
+                if (item.addedInApp) Tag("ADDED IN APP")
             }
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -323,7 +360,42 @@ private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, onClick: () 
 }
 
 @Composable
-private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onDismiss: () -> Unit) {
+private fun AddDeckToCollectionDialog(deck: Deck, onDismiss: () -> Unit, onConfirm: (onlyMissing: Boolean, skipBasics: Boolean, BinderChoice) -> Unit) {
+    val c = LocalContext.current.container
+    val counts by produceState<DeckCollectionCounts?>(null, deck.archidektId) { value = c.decks.collectionCounts(deck.archidektId) }
+    var onlyMissing by remember { mutableStateOf(true) }
+    var skipBasics by remember { mutableStateOf(true) }
+    var choice by remember { mutableStateOf(BinderChoice(newName = deck.name)) }
+    // Adding the same deck again goes into its binder from last time.
+    LaunchedEffect(Unit) { c.db.binderDao().byName(deck.name)?.let { choice = BinderChoice(it.id) } }
+    val n = counts?.count(onlyMissing, skipBasics)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add ${deck.name} to the collection") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "Adds the exact printings and finishes from the decklist, as Near Mint English copies.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                RadioRow("Only cards I don't own yet (any printing counts)" + (counts?.let { " · ${it.count(true, skipBasics)}" } ?: ""), onlyMissing) { onlyMissing = true }
+                RadioRow("All cards" + (counts?.let { " · ${it.count(false, skipBasics)}" } ?: ""), !onlyMissing) { onlyMissing = false }
+                CheckRow("Skip basic lands", skipBasics) { skipBasics = it }
+                BinderPicker("Put them in", choice, { choice = it }, suggestedName = deck.name, modifier = Modifier.padding(top = 8.dp))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(onlyMissing, skipBasics, choice) }, enabled = n != null && choice.isValid) {
+                Text(if (n == null) "Add" else "Add $n card(s)")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onRemove: (() -> Unit)?, onDismiss: () -> Unit) {
     val c = LocalContext.current.container
     val uriHandler = LocalUriHandler.current
     val item = row.item
@@ -362,6 +434,9 @@ private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onDismiss: ()
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        dismissButton = onRemove?.let { remove ->
+            { TextButton(onClick = remove) { Text("Remove from deck", color = MaterialTheme.colorScheme.error) } }
+        },
     )
 }
 

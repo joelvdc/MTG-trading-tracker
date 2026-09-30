@@ -210,7 +210,7 @@ data class CardRef(
 @Entity(
     tableName = "collection",
     indices = [
-        Index(value = ["scryfallId", "foil", "etched", "condition", "language"], unique = true),
+        Index(value = ["scryfallId", "foil", "etched", "condition", "language", "binderId"], unique = true),
         Index("name"),
     ],
 )
@@ -224,8 +224,57 @@ data class CollectionItem(
     val addedAt: Long = System.currentTimeMillis(),
     /** Only ever true together with [foil]. */
     @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
+    /** The [Binder] this stack is in, or [Binder.UNSORTED]. Since version 1.7. */
+    @ColumnInfo(defaultValue = "0") val binderId: Long = Binder.UNSORTED,
 ) {
     val finish get() = Finish.of(foil, etched)
+}
+
+/** A named group of collection cards, like a binder in ManaBox. Since version 1.7. */
+@Entity(tableName = "binders")
+data class Binder(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        /** Cards that aren't in any binder. */
+        const val UNSORTED = 0L
+        const val UNSORTED_NAME = "Unsorted"
+    }
+}
+
+/** Where cards should go: an existing binder, Unsorted, or a binder still to be created with [newName]. */
+data class BinderChoice(val binderId: Long = Binder.UNSORTED, val newName: String? = null)
+
+data class NameCount(val name: String, val qty: Int)
+
+/** A scanned card waiting in the Scan tab until the user decides where it goes. Since version 1.7. */
+@Entity(tableName = "scans")
+data class ScannedCard(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @Embedded val card: CardRef,
+    val foil: Boolean,
+    val etched: Boolean = false,
+    val condition: String = "NM",
+    val language: String = "EN",
+    val quantity: Int = 1,
+    /** False when only the name was readable, so the printing is Scryfall's default guess. */
+    val exactPrinting: Boolean = true,
+    val scannedAt: Long = System.currentTimeMillis(),
+) {
+    val finish get() = Finish.of(foil, etched)
+}
+
+/** Scanned card joined with today's price guide entry. */
+data class ScanRow(
+    @Embedded val item: ScannedCard,
+    @Embedded(prefix = "pr_") val price: PriceEntity?,
+) {
+    fun unitPrice(type: PriceType): Double? =
+        price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
+
+    val trend: PriceTrend? get() = price?.toSet(item.foil)?.trendChange
 }
 
 /** Collection row joined with today's price guide entry. */
@@ -247,6 +296,8 @@ data class Trade(
     val notes: String = "",
     val applied: Boolean = false,
     val appliedAt: Long? = null,
+    /** The binder the received cards went into when the trade was applied. Since version 1.7. */
+    @ColumnInfo(defaultValue = "0") val binderId: Long = Binder.UNSORTED,
 )
 
 object Side {
@@ -280,6 +331,8 @@ data class TradeItem(
     val addedAt: Long = System.currentTimeMillis(),
     /** Only ever true together with [foil]. */
     @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
+    /** For given cards: the binder they were (mostly) taken from, so undoing puts them back there. Since version 1.7. */
+    @ColumnInfo(defaultValue = "0") val appliedBinderId: Long = Binder.UNSORTED,
 ) {
     val finish get() = Finish.of(foil, etched)
 

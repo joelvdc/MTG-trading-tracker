@@ -61,6 +61,8 @@ data class DeckCard(
     val foil: Boolean,
     @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
     val gameChanger: Boolean = false,
+    /** Added in this app (e.g. from the Scan tab) rather than on Archidekt; kept when the deck is refreshed. Since 1.7. */
+    @ColumnInfo(defaultValue = "0") val addedInApp: Boolean = false,
 ) {
     val finish get() = Finish.of(foil, etched)
     val primaryType get() = DeckGrouping.primaryType(types)
@@ -97,6 +99,16 @@ object Brackets {
 
 object DeckLinks {
     private val deckUrl = Regex("""archidekt\.com/(?:api/)?decks/(\d+)""", RegexOption.IGNORE_CASE)
+    private val userUrl = Regex("""archidekt\.com/(?:u|user|users)/([A-Za-z0-9_.\-]+)""", RegexOption.IGNORE_CASE)
+    private val username = Regex("""@?([A-Za-z0-9_.\-]{2,})""")
+
+    /** The Archidekt username in a profile link like "https://archidekt.com/u/joelvdc", or a bare username. */
+    fun archidektUser(text: String): String? {
+        val t = text.trim()
+        userUrl.find(t)?.let { m -> return m.groupValues[1].takeUnless { it.all(Char::isDigit) } }
+        if ('/' in t || ' ' in t) return null
+        return username.matchEntire(t)?.groupValues?.get(1)
+    }
 
     /**
      * The Archidekt deck id in a link such as "https://archidekt.com/decks/20263351/auntie_plague",
@@ -106,6 +118,48 @@ object DeckLinks {
         val t = text.trim()
         deckUrl.find(t)?.let { return it.groupValues[1].toLongOrNull() }
         return t.takeIf { it.isNotEmpty() && it.all(Char::isDigit) }?.toLongOrNull()
+    }
+}
+
+/** A public deck in an Archidekt user's deck list. */
+data class ArchidektDeckSummary(
+    val id: Long,
+    val name: String,
+    val size: Int,
+    val artUrl: String?,
+    /** Colours in WUBRG order, e.g. "BG". */
+    val colors: String,
+    val commanderFormat: Boolean,
+    val folder: String?,
+)
+
+object DeckToCollection {
+    const val ADDED_IN_APP = "Added in app"
+
+    private val BASICS = listOf("Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes").let { b ->
+        (b + b.map { "Snow-Covered $it" }).map { it.lowercase() }.toSet()
+    }
+
+    fun isBasic(name: String) = name.lowercase() in BASICS
+
+    /**
+     * How many copies of each deck line to add. With [onlyMissing], copies you already own in any
+     * printing ([ownedByName], keyed by lower-case name) are left out.
+     */
+    fun plan(cards: List<DeckCard>, ownedByName: Map<String, Int>, onlyMissing: Boolean, skipBasics: Boolean): List<Pair<DeckCard, Int>> {
+        val left = HashMap(ownedByName)
+        return cards.mapNotNull { c ->
+            if (skipBasics && isBasic(c.card.name)) return@mapNotNull null
+            var n = c.quantity
+            if (onlyMissing) {
+                val key = c.card.name.lowercase()
+                val have = left[key] ?: 0
+                val used = minOf(have, n)
+                left[key] = have - used
+                n -= used
+            }
+            if (n > 0) c to n else null
+        }
     }
 }
 

@@ -13,24 +13,33 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CallMerge
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +51,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
+import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.PriceSet
@@ -67,6 +78,9 @@ import kotlinx.coroutines.withContext
 
 private enum class SortBy(val label: String) { NAME("Name"), VALUE("Value"), RECENT("Recently added"), SET("Set") }
 
+/** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders. */
+private typealias BinderSel = Long?
+
 @Composable
 fun CollectionScreen(nav: NavController) {
     val context = LocalContext.current
@@ -74,13 +88,27 @@ fun CollectionScreen(nav: NavController) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val rows by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(null)
+    val binders = rememberBinders()
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableStateOf(SortBy.NAME) }
+    var selected by rememberSaveable { mutableStateOf<BinderSel>(null) }
     var sortMenu by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<CollectionRow?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var naming by remember { mutableStateOf<Binder?>(null) }
+    var creating by remember { mutableStateOf(false) }
+    var merging by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+
+    // A deleted binder (or one merged away) drops back to "All cards".
+    LaunchedEffect(binders, selected) {
+        val s = selected
+        if (s != null && s != Binder.UNSORTED && binders.isNotEmpty() && binders.none { it.id == s }) selected = null
+    }
+    val currentBinder = binders.firstOrNull { it.id == selected }
+    val addTarget = CardTarget.Collection(selected ?: Binder.UNSORTED)
 
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
@@ -89,7 +117,7 @@ fun CollectionScreen(nav: NavController) {
                 val text = withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
                 } ?: ""
-                val r = c.repo.importCollectionCsv(text)
+                val r = c.repo.importCollectionCsv(text, selected ?: Binder.UNSORTED)
                 snackbar.showSnackbar(
                     "Imported ${r.imported} card(s)" + if (r.notFound > 0) " · ${r.notFound} couldn't be matched" else ""
                 )
@@ -102,7 +130,7 @@ fun CollectionScreen(nav: NavController) {
     }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) scope.launch {
-            val csv = c.repo.exportCollectionCsv(priceType)
+            val csv = c.repo.exportCollectionCsv(priceType, selected)
             withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray()) } }
             Toast.makeText(context, "Collection exported", Toast.LENGTH_SHORT).show()
         }
@@ -126,14 +154,48 @@ fun CollectionScreen(nav: NavController) {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
+                            text = { Text("New binder") },
+                            leadingIcon = { Icon(Icons.Default.CreateNewFolder, null) },
+                            onClick = { menu = false; creating = true },
+                        )
+                        if (currentBinder != null) {
+                            DropdownMenuItem(
+                                text = { Text("Rename “${currentBinder.name}”") },
+                                leadingIcon = { Icon(Icons.Default.Edit, null) },
+                                onClick = { menu = false; naming = currentBinder },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Merge “${currentBinder.name}” into…") },
+                                leadingIcon = { Icon(Icons.Default.CallMerge, null) },
+                                onClick = { menu = false; merging = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete “${currentBinder.name}”") },
+                                leadingIcon = { Icon(Icons.Default.Delete, null) },
+                                onClick = { menu = false; deleting = true },
+                            )
+                        }
+                        if (selected == Binder.UNSORTED) {
+                            DropdownMenuItem(
+                                text = { Text("Move all Unsorted cards to…") },
+                                leadingIcon = { Icon(Icons.Default.CallMerge, null) },
+                                onClick = { menu = false; merging = true },
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
                             text = { Text("Import CSV (ManaBox…)") },
                             leadingIcon = { Icon(Icons.Default.FileUpload, null) },
                             onClick = { menu = false; importer.launch(arrayOf("*/*")) },
                         )
                         DropdownMenuItem(
-                            text = { Text("Export CSV") },
+                            text = { Text(if (selected == null) "Export CSV" else "Export this binder as CSV") },
                             leadingIcon = { Icon(Icons.Default.FileDownload, null) },
-                            onClick = { menu = false; exporter.launch("mtg-collection.csv") },
+                            onClick = {
+                                menu = false
+                                val name = if (selected == null) "mtg-collection" else "mtg-" + binderName(selected ?: 0, binders).replace(Regex("[^A-Za-z0-9]+"), "-").lowercase()
+                                exporter.launch("$name.csv")
+                            },
                         )
                     }
                 },
@@ -142,11 +204,11 @@ fun CollectionScreen(nav: NavController) {
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SmallFloatingActionButton(onClick = { nav.openScanner(CardTarget.Collection) }) {
+                SmallFloatingActionButton(onClick = { nav.openScanner(addTarget) }) {
                     Icon(Icons.Default.CameraAlt, "Scan cards")
                 }
                 ExtendedFloatingActionButton(
-                    onClick = { nav.openSearch(CardTarget.Collection) },
+                    onClick = { nav.openSearch(addTarget) },
                     icon = { Icon(Icons.Default.Add, null) },
                     text = { Text("Add card") },
                 )
@@ -158,12 +220,15 @@ fun CollectionScreen(nav: NavController) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
         }
-        val shown = remember(all, filter, sort, priceType) {
+        val counts = remember(all) { all.groupBy { it.item.binderId }.mapValues { (_, r) -> r.sumOf { it.item.quantity } } }
+        val shown = remember(all, filter, sort, priceType, selected) {
             val f = filter.trim()
             all.filter { r ->
-                f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.flavorName?.contains(f, true) == true || r.item.card.setCode.equals(f, true) ||
-                    r.item.card.setName.contains(f, true) ||
-                    (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true))
+                (selected == null || r.item.binderId == selected) && (
+                    f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.flavorName?.contains(f, true) == true ||
+                        r.item.card.setCode.equals(f, true) || r.item.card.setName.contains(f, true) ||
+                        (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true))
+                    )
             }.let { list ->
                 when (sort) {
                     SortBy.NAME -> list
@@ -177,6 +242,31 @@ fun CollectionScreen(nav: NavController) {
         val totalValue = shown.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity }
 
         Column(Modifier.padding(pad)) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                item(key = "all") {
+                    FilterChip(selected = selected == null, onClick = { selected = null }, label = { Text("All · ${counts.values.sum()}") })
+                }
+                item(key = "unsorted") {
+                    FilterChip(
+                        selected = selected == Binder.UNSORTED,
+                        onClick = { selected = Binder.UNSORTED },
+                        label = { Text("${Binder.UNSORTED_NAME} · ${counts[Binder.UNSORTED] ?: 0}") },
+                    )
+                }
+                items(binders, key = { it.id }) { b ->
+                    FilterChip(selected = selected == b.id, onClick = { selected = b.id }, label = { Text("${b.name} · ${counts[b.id] ?: 0}") })
+                }
+                item(key = "new") {
+                    AssistChip(
+                        onClick = { creating = true },
+                        label = { Text("New binder") },
+                        leadingIcon = { Icon(Icons.Default.Add, null, Modifier.size(18.dp)) },
+                    )
+                }
+            }
             Text(
                 "$totalCards card(s) · ${shown.size} unique · ${Fmt.money(totalValue)} (${priceType.short})",
                 style = MaterialTheme.typography.titleSmall,
@@ -191,17 +281,23 @@ fun CollectionScreen(nav: NavController) {
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             )
-            if (all.isEmpty()) {
-                EmptyState(
+            when {
+                all.isEmpty() -> EmptyState(
                     "Your collection is empty",
                     "Add cards with search or the scanner, import a ManaBox CSV from the ⋮ menu, or complete a trade to fill it automatically.",
                 )
-            } else {
-                LazyColumn(
+                shown.isEmpty() && filter.isBlank() -> EmptyState(
+                    if (selected == Binder.UNSORTED) "No unsorted cards" else "This binder is empty",
+                    "Add cards here with search or the scanner, send scanned cards here from the Scan tab, or move cards in from another binder.",
+                )
+                else -> LazyColumn(
                     contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    items(shown, key = { it.item.id }) { row -> CollectionRowView(row, priceType) { editing = row } }
+                    items(shown, key = { it.item.id }) { row ->
+                        val binder = if (selected == null && row.item.binderId != Binder.UNSORTED) binderName(row.item.binderId, binders) else null
+                        CollectionRowView(row, priceType, binder) { editing = row }
+                    }
                 }
             }
         }
@@ -211,17 +307,20 @@ fun CollectionScreen(nav: NavController) {
         val item = row.item
         EditCardDialog(
             card = item.card,
-            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null),
+            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, item.binderId, item.quantity),
             prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
             priceType = priceType,
             allowCustomPrice = false,
             enabled = true,
+            binders = binders,
             onDismiss = { editing = null },
             onSave = { v ->
                 editing = null
                 scope.launch {
-                    c.repo.updateCollectionItem(
-                        item.copy(quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language)
+                    c.repo.saveCollectionEdit(
+                        item.copy(quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language),
+                        v.binderId,
+                        v.move,
                     )
                 }
             },
@@ -238,10 +337,46 @@ fun CollectionScreen(nav: NavController) {
             },
         )
     }
+
+    if (creating) {
+        BinderNameDialog(null, onDismiss = { creating = false }) { name ->
+            creating = false
+            scope.launch { selected = c.repo.createBinder(name) }
+        }
+    }
+    naming?.let { b ->
+        BinderNameDialog(b, onDismiss = { naming = null }) { name ->
+            naming = null
+            scope.launch { c.repo.renameBinder(b.id, name) }
+        }
+    }
+    if (merging) {
+        val from = selected ?: Binder.UNSORTED
+        val fromName = binderName(from, binders)
+        MergeBinderDialog(from, rows?.filter { it.item.binderId == from }?.sumOf { it.item.quantity } ?: 0, onDismiss = { merging = false }) { into, deleteSource ->
+            merging = false
+            scope.launch {
+                c.repo.mergeBinder(from, into, deleteSource)
+                selected = into
+                snackbar.showSnackbar("Moved the cards of $fromName into ${binderName(into, binders)}")
+            }
+        }
+    }
+    if (deleting && currentBinder != null) {
+        val b = currentBinder
+        DeleteBinderDialog(b, rows?.filter { it.item.binderId == b.id }?.sumOf { it.item.quantity } ?: 0, onDismiss = { deleting = false }) { deleteCards ->
+            deleting = false
+            scope.launch {
+                c.repo.deleteBinder(b.id, deleteCards)
+                selected = null
+                snackbar.showSnackbar("Binder “${b.name}” deleted")
+            }
+        }
+    }
 }
 
 @Composable
-private fun CollectionRowView(row: CollectionRow, priceType: PriceType, onClick: () -> Unit) {
+private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
@@ -255,6 +390,9 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, onClick:
                     FinishTag(item.card, item.finish)
                     Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
+                }
+                binder?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             Column(horizontalAlignment = Alignment.End) {

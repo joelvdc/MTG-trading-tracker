@@ -69,6 +69,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
+import com.mtgtrader.data.Binder
+import com.mtgtrader.data.BinderChoice
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.PriceEntity
 import com.mtgtrader.data.PriceType
@@ -403,20 +405,32 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
     if (confirmApply && t != null) {
         val getN = t.get.sumOf { it.quantity }
         val giveN = t.give.sumOf { it.quantity }
+        var binder by remember { mutableStateOf(BinderChoice()) }
         AlertDialog(
             onDismissRequest = { confirmApply = false },
             title = { Text("Update collection?") },
             text = {
-                Text(
-                    "This adds the $getN card(s) you get to your collection and removes the $giveN card(s) you give.\n\n" +
-                        "You can undo this later from this screen."
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "This adds the $getN card(s) you get to your collection and removes the $giveN card(s) you give " +
+                            "(taken from ${Binder.UNSORTED_NAME} first).\n\nYou can undo this later from this screen."
+                    )
+                    if (getN > 0) {
+                        BinderPicker(
+                            label = "Put the cards you get in",
+                            choice = binder,
+                            onChange = { binder = it },
+                            suggestedName = if (t.trade.partner.isBlank()) "Trade ${Fmt.date(t.trade.createdAt)}" else "Trade with ${t.trade.partner}",
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(enabled = binder.isValid, onClick = {
                     confirmApply = false
                     scope.launch {
-                        val missing = c.repo.applyTrade(tradeId)
+                        val binderId = c.repo.resolve(binder)
+                        val missing = c.repo.applyTrade(tradeId, binderId)
                         snackbar.showSnackbar(
                             if (missing == 0) "Collection updated"
                             else "Collection updated — $missing given card(s) weren't in your collection"

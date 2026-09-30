@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.runtime.remember
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
@@ -46,6 +50,7 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 private val tabs = listOf(
     Tab("trades", "Trades", Icons.Default.SwapHoriz),
     Tab("collection", "Collection", Icons.Default.CollectionsBookmark),
+    Tab("scans", "Scan", Icons.Default.CameraAlt),
     Tab("decks", "Decks", Icons.Default.Style),
     Tab("settings", "Settings", Icons.Default.Settings),
 )
@@ -79,9 +84,15 @@ fun AppNav() {
     LaunchedEffect(shared) {
         val text = shared ?: return@LaunchedEffect
         c.sharedText.value = null
+        val archidekt = "archidekt" in text.lowercase()
+        val user = if (archidekt) Regex("""\S*archidekt\.com/\S+""", RegexOption.IGNORE_CASE).find(text)?.value?.let(DeckLinks::archidektUser) else null
         when {
-            DeckLinks.archidektId(text) == null || "archidekt" !in text.lowercase() ->
-                Toast.makeText(context, "Only Archidekt deck links can be shared to MTG Trader", Toast.LENGTH_LONG).show()
+            !archidekt || (DeckLinks.archidektId(text) == null && user == null) ->
+                Toast.makeText(context, "Only Archidekt deck or profile links can be shared to MTG Trader", Toast.LENGTH_LONG).show()
+            DeckLinks.archidektId(text) == null -> {
+                nav.openTab("decks")
+                nav.navigate("decks/user?name=${Uri.encode(user)}")
+            }
             c.decks.import(text) -> nav.openTab("decks")
             else -> Toast.makeText(context, "Wait for the current import to finish", Toast.LENGTH_LONG).show()
         }
@@ -90,6 +101,7 @@ fun AppNav() {
     val route = entry?.destination?.route
     val topLevel = tabs.any { it.route == route }
     val priceState by c.prices.state.collectAsStateWithLifecycle()
+    val scanCount by remember { c.db.scanDao().observeCount() }.collectAsStateWithLifecycle(0)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -102,8 +114,14 @@ fun AppNav() {
                             NavigationBarItem(
                                 selected = route == tab.route,
                                 onClick = { nav.openTab(tab.route) },
-                                icon = { Icon(tab.icon, null) },
-                                label = { Text(tab.label) },
+                                icon = {
+                                    if (tab.route == "scans" && scanCount > 0) {
+                                        BadgedBox(badge = { Badge { Text("$scanCount") } }) { Icon(tab.icon, null) }
+                                    } else {
+                                        Icon(tab.icon, null)
+                                    }
+                                },
+                                label = { Text(tab.label, maxLines = 1) },
                             )
                         }
                     }
@@ -114,7 +132,14 @@ fun AppNav() {
         NavHost(nav, startDestination = "trades", modifier = Modifier.padding(pad)) {
             composable("trades") { TradesListScreen(nav) }
             composable("collection") { CollectionScreen(nav) }
+            composable("scans") { ScansScreen(nav) }
             composable("decks") { DecksScreen(nav) }
+            composable(
+                "decks/user?name={name}",
+                arguments = listOf(navArgument("name") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) {
+                ImportUserScreen(nav, it.arguments?.getString("name"))
+            }
             composable("deck/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 DeckScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }

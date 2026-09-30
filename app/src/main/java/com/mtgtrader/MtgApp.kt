@@ -60,7 +60,7 @@ class AppContainer(context: Context) {
     val prices = PriceGuideRepository(context, http, db, settings)
     val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices)
-    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), appScope)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, appScope)
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */
     @Volatile

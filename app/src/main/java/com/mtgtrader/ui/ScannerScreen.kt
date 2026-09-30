@@ -182,7 +182,7 @@ class ScanController(
         // Foil-only printings (e.g. surge or etched foils) resolve to their foil finish by themselves.
         val f = ref.resolveFinish(if (foil) Finish.FOIL else Finish.NONFOIL)
         val lang = language ?: "EN"
-        val result = repo.add(target, ref, f, lang) ?: return
+        val result = repo.add(target, ref, f, lang, found.exactPrinting) ?: return
         val price = repo.snapshot(ref, f.foil).best(PriceType.TREND)
         added.add(0, ScannedEntry(ref, f, lang, result, price, found.exactPrinting))
         pending = null
@@ -191,7 +191,7 @@ class ScanController(
     }
 
     fun addAgain(e: ScannedEntry) = scope.launch {
-        val result = repo.add(target, e.card, e.finish, e.language) ?: return@launch
+        val result = repo.add(target, e.card, e.finish, e.language, e.exactPrinting) ?: return@launch
         added.add(0, e.copy(result = result))
         onAdded()
     }
@@ -236,7 +236,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                 title = {
                     Column {
                         Text("Scan cards")
-                        Text(targetLabel(target), style = MaterialTheme.typography.bodySmall)
+                        Text(rememberTargetLabel(target), style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
@@ -308,11 +308,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
             ) {
                 items(controller.added, key = { System.identityHashCode(it) }) { e ->
                     Card(
-                        onClick = {
-                            val replace = if (e.result.inTrade) CardTarget.ReplaceTradeItem(e.result.itemId)
-                            else CardTarget.ReplaceCollectionItem(e.result.itemId)
-                            nav.openSearch(replace, e.card.name)
-                        },
+                        onClick = { nav.openSearch(e.result.replaceTarget, e.card.name) },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                     ) {
                         Row(Modifier.fillMaxWidth().padding(6.dp), verticalAlignment = Alignment.CenterVertically) {

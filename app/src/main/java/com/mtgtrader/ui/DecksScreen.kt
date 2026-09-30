@@ -26,6 +26,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -84,7 +87,7 @@ fun DecksScreen(nav: NavController) {
         val r = result ?: return@LaunchedEffect
         c.decks.consumeResult()
         // A freshly imported deck opens straight away (its page says if scoring failed); anything else is reported here.
-        if (r.imported && r.deckId != null) nav.navigate("deck/${r.deckId}")
+        if (r.openDeck != null) nav.navigate("deck/${r.openDeck}")
         else snackbar.showSnackbar(r.message)
     }
 
@@ -111,7 +114,7 @@ fun DecksScreen(nav: NavController) {
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            job?.let { j -> item(key = "job") { JobCard(j) } }
+            job?.let { j -> item(key = "job") { JobCard(j, onStop = c.decks::stop) } }
             if (list.isEmpty() && job == null) {
                 item(key = "empty") {
                     EmptyState(
@@ -132,16 +135,23 @@ fun DecksScreen(nav: NavController) {
                 importing = false
                 if (!c.decks.import(link)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
             },
+            onFromUser = {
+                importing = false
+                nav.navigate("decks/user")
+            },
         )
     }
 }
 
 @Composable
-fun JobCard(job: DeckJob) {
+fun JobCard(job: DeckJob, onStop: (() -> Unit)? = null) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            Text(job.message, style = MaterialTheme.typography.bodyMedium)
-            LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp))
+        Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(job.message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                if (job.canStop && onStop != null) TextButton(onClick = onStop) { Text("Stop") }
+            }
+            LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp, end = 8.dp))
         }
     }
 }
@@ -211,7 +221,7 @@ object Scores {
 }
 
 @Composable
-private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
+private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit, onFromUser: () -> Unit) {
     val context = LocalContext.current
     // Most people copy the link first, so offer what's on the clipboard when it's a deck link.
     val clip = remember {
@@ -243,6 +253,13 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) 
                     keyboardActions = KeyboardActions(onGo = { if (valid) onImport(link) }),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                HorizontalDivider()
+                Text("Or pick several decks from someone's Archidekt profile.", style = MaterialTheme.typography.bodyMedium)
+                OutlinedButton(onClick = onFromUser, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Person, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Choose from a user's decks")
+                }
             }
         },
         confirmButton = { TextButton(onClick = { onImport(link) }, enabled = valid) { Text("Import", fontWeight = FontWeight.SemiBold) } },

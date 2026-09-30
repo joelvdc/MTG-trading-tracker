@@ -2,7 +2,9 @@ package com.mtgtrader
 
 import com.mtgtrader.data.ArchidektApi
 import com.mtgtrader.data.CardRef
+import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CommanderSaltApi
+import com.mtgtrader.data.DeckToCollection
 import com.mtgtrader.data.DeckCard
 import com.mtgtrader.data.DeckCardRow
 import com.mtgtrader.data.DeckGroupBy
@@ -31,6 +33,51 @@ class DeckLinksTest {
         assertNull(DeckLinks.archidektId("https://moxfield.com/decks/abc123"))
         assertNull(DeckLinks.archidektId("Auntie Plague"))
         assertNull(DeckLinks.archidektId(""))
+    }
+
+    @Test
+    fun findsUsernameInProfileLinks() {
+        assertEquals("joelvdc", DeckLinks.archidektUser("https://archidekt.com/u/joelvdc"))
+        assertEquals("joelvdc", DeckLinks.archidektUser("archidekt.com/u/joelvdc?tab=decks"))
+        assertEquals("joelvdc", DeckLinks.archidektUser(" joelvdc "))
+        assertEquals("some_user.1", DeckLinks.archidektUser("@some_user.1"))
+        // Numeric /user/ links carry an id, not a name.
+        assertNull(DeckLinks.archidektUser("https://archidekt.com/user/229624"))
+        assertNull(DeckLinks.archidektUser("https://archidekt.com/decks/20263351/auntie_plague"))
+        assertNull(DeckLinks.archidektUser("two words"))
+    }
+}
+
+class CardTargetTest {
+    @Test
+    fun encodesAndDecodesEveryTarget() {
+        val targets = listOf(
+            CardTarget.TradeSide(3, "GET"), CardTarget.Collection(), CardTarget.Collection(12), CardTarget.Scans,
+            CardTarget.ReplaceTradeItem(4), CardTarget.ReplaceCollectionItem(5), CardTarget.ReplaceScan(6),
+        )
+        targets.forEach { assertEquals(it, CardTarget.decode(it.encode())) }
+        // Links saved before binders existed.
+        assertEquals(CardTarget.Collection(), CardTarget.decode("collection"))
+    }
+}
+
+class DeckToCollectionTest {
+    private fun card(name: String, qty: Int) = DeckCard(
+        deckId = 1,
+        card = CardRef("id-$name", name, "tst", "Test", "1", "rare", null, null, null, null, true, false),
+        quantity = qty, category = "x", types = "", cmc = 0.0, commander = false, foil = false,
+    )
+
+    @Test
+    fun onlyMissingSubtractsOwnedCopiesByName() {
+        val deck = listOf(card("Sol Ring", 1), card("Swamp", 10), card("Forest", 8), card("Blight Mound", 1), card("Snow-Covered Swamp", 2))
+        val owned = mapOf("sol ring" to 3, "swamp" to 4)
+        fun plan(onlyMissing: Boolean, skipBasics: Boolean) =
+            DeckToCollection.plan(deck, owned, onlyMissing, skipBasics).associate { it.first.card.name to it.second }
+        assertEquals(mapOf("Swamp" to 6, "Forest" to 8, "Blight Mound" to 1, "Snow-Covered Swamp" to 2), plan(true, false))
+        assertEquals(mapOf("Blight Mound" to 1), plan(true, true))
+        assertEquals(mapOf("Sol Ring" to 1, "Blight Mound" to 1), plan(false, true))
+        assertEquals(22, plan(false, false).values.sum())
     }
 }
 
@@ -129,6 +176,31 @@ class ArchidektParseTest {
         assertEquals("Ramp", sol.category)
         assertEquals("Land", d.cards[2].category)
         assertEquals("https://cards.scryfall.io/normal/front/9/a/9a2e4252-9fbc-4d43-8935-db2cafaa7b5f.jpg", d.cards[0].imageUrl)
+    }
+}
+
+class ArchidektUserDecksTest {
+    @Test
+    fun readsDeckListPage() {
+        val body = """
+            {"count": 3, "next": "http://archidekt.com/api/decks/v3/?ownerUsername=joelvdc&page=2",
+             "results": [
+               {"id": 20558888, "name": "Baba", "size": 100, "deckFormat": 3, "featured": "https://x/art.jpg", "customFeatured": "",
+                "private": false, "colors": {"W": 0, "U": 0, "B": 23, "R": 0, "G": 36}, "parentFolderName": null},
+               {"id": 1, "name": "Pauper list", "size": 60, "deckFormat": 1, "featured": "", "customFeatured": "https://x/custom.jpg",
+                "private": false, "colors": {"W": 5}, "parentFolderName": "Old"},
+               {"id": 2, "name": "Secret", "size": 100, "deckFormat": 3, "private": true}
+             ]}
+        """.trimIndent()
+        val (decks, next) = ArchidektApi.parseDeckList(body)
+        assertEquals(listOf(20558888L, 1L), decks.map { it.id })
+        assertEquals("BG", decks[0].colors)
+        assertEquals("https://x/art.jpg", decks[0].artUrl)
+        assertTrue(decks[0].commanderFormat)
+        assertFalse(decks[1].commanderFormat)
+        assertEquals("https://x/custom.jpg", decks[1].artUrl)
+        assertEquals("Old", decks[1].folder)
+        assertEquals("http://archidekt.com/api/decks/v3/?ownerUsername=joelvdc&page=2", next)
     }
 }
 

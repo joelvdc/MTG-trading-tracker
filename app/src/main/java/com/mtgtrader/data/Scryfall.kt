@@ -55,6 +55,8 @@ data class ScryCard(
     val digital: Boolean = false,
     /** Name printed on this card instead of its real name, e.g. "Barrow-Downs" for Bojuka Bog (LTC). */
     @SerialName("flavor_name") val flavorName: String? = null,
+    @SerialName("type_line") val typeLine: String = "",
+    val cmc: Double = 0.0,
 ) {
     val image: String? get() = imageUris?.normal ?: cardFaces?.firstOrNull()?.imageUris?.normal
 

@@ -81,6 +81,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.mtgtrader.container
 import com.mtgtrader.data.Balance
+import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CONDITIONS
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Finish
@@ -437,9 +438,12 @@ data class EditValues(
     val condition: String,
     val language: String,
     val customPrice: Double?,
+    /** Collection rows only: the binder, and how many copies move there when it's changed. */
+    val binderId: Long = Binder.UNSORTED,
+    val move: Int = 0,
 )
 
-/** Shared editor for a trade item or collection row. */
+/** Shared editor for a trade item, collection row or scanned card. With [binders], the card can be moved between binders. */
 @Composable
 fun EditCardDialog(
     card: CardRef,
@@ -452,6 +456,7 @@ fun EditCardDialog(
     onSave: (EditValues) -> Unit,
     onDelete: () -> Unit,
     onChangePrinting: () -> Unit,
+    binders: List<Binder>? = null,
 ) {
     var v by remember { mutableStateOf(initial) }
     val uriHandler = LocalUriHandler.current
@@ -486,7 +491,24 @@ fun EditCardDialog(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Quantity", Modifier.weight(1f))
-                    if (enabled) QuantityStepper(v.quantity, { v = v.copy(quantity = it) }) else Text("${v.quantity}")
+                    if (enabled) QuantityStepper(v.quantity, { v = v.copy(quantity = it, move = minOf(v.move, it).coerceAtLeast(1)) }) else Text("${v.quantity}")
+                }
+                if (binders != null) {
+                    DropdownSelector(
+                        "Binder",
+                        v.binderId,
+                        listOf(Binder.UNSORTED) + binders.map { it.id },
+                        { binderName(it, binders) },
+                        { v = v.copy(binderId = it, move = v.quantity) },
+                        Modifier.fillMaxWidth(),
+                        enabled,
+                    )
+                    if (v.binderId != initial.binderId && v.quantity > 1) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Copies to move", Modifier.weight(1f))
+                            QuantityStepper(v.move.coerceIn(1, v.quantity), { v = v.copy(move = it.coerceAtMost(v.quantity)) })
+                        }
+                    }
                 }
                 if (finishOptions.size > 1) {
                     DropdownSelector("Finish", v.finish, finishOptions, card::finishName, { v = v.copy(finish = it) }, Modifier.fillMaxWidth(), enabled)

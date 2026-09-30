@@ -24,6 +24,11 @@ class Settings(context: Context) {
         get() = prefs.getInt("cardDetailsVersion", 0)
         set(v) = prefs.edit().putInt("cardDetailsVersion", v).apply()
 
+    /** The Archidekt username last used to import decks from. */
+    var archidektUser: String
+        get() = prefs.getString("archidektUser", "") ?: ""
+        set(v) = prefs.edit().putString("archidektUser", v).apply()
+
     fun setPriceType(t: PriceType) {
         _priceType.value = t
         prefs.edit().putString("priceType", t.key).apply()
