@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
@@ -70,8 +71,23 @@ import com.mtgtrader.container
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CollectionRow
+import com.mtgtrader.data.CollectionView
 import com.mtgtrader.data.CsvImportProgress
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewHeadline
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.sp
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import kotlinx.coroutines.Dispatchers
@@ -96,6 +112,8 @@ fun CollectionScreen(nav: NavController) {
     var sort by rememberSaveable { mutableStateOf(SortBy.NAME) }
     var selected by rememberSaveable { mutableStateOf<BinderSel>(null) }
     var sortMenu by remember { mutableStateOf(false) }
+    var viewMenu by remember { mutableStateOf(false) }
+    val view by c.settings.collectionView.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<CollectionRow?>(null) }
     var naming by remember { mutableStateOf<Binder?>(null) }
@@ -146,6 +164,16 @@ fun CollectionScreen(nav: NavController) {
             TopAppBar(
                 title = { Text("Collection") },
                 actions = {
+                    IconButton(onClick = { viewMenu = true }) { Icon(viewIcon(view), "View") }
+                    DropdownMenu(expanded = viewMenu, onDismissRequest = { viewMenu = false }) {
+                        CollectionView.entries.forEach { v ->
+                            DropdownMenuItem(
+                                text = { Text(v.label, fontWeight = if (v == view) FontWeight.Bold else null) },
+                                leadingIcon = { Icon(viewIcon(v), null) },
+                                onClick = { viewMenu = false; c.settings.setCollectionView(v) },
+                            )
+                        }
+                    }
                     IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
                     DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                         SortBy.entries.forEach { s ->
@@ -296,13 +324,28 @@ fun CollectionScreen(nav: NavController) {
                     if (selected == Binder.UNSORTED) "No unsorted cards" else "This binder is empty",
                     "Add cards here with search or the scanner, send scanned cards here from the Scan tab, or move cards in from another binder.",
                 )
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    items(shown, key = { it.item.id }) { row ->
-                        val binder = if (selected == null && row.item.binderId != Binder.UNSORTED) binderName(row.item.binderId, binders) else null
-                        CollectionRowView(row, priceType, binder) { editing = row }
+                else -> {
+                    fun binderOf(row: CollectionRow) =
+                        if (selected == null && row.item.binderId != Binder.UNSORTED) binderName(row.item.binderId, binders) else null
+                    when (view) {
+                        CollectionView.LIST -> LazyColumn(
+                            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            items(shown, key = { it.item.id }) { row -> CollectionRowView(row, priceType, binderOf(row)) { editing = row } }
+                        }
+                        CollectionView.COMPACT -> LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp)) {
+                            items(shown, key = { it.item.id }) { row ->
+                                CompactRow(row, priceType, binderOf(row)) { editing = row }
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            }
+                        }
+                        CollectionView.GRID -> LazyVerticalGrid(
+                            columns = GridCells.Adaptive(112.dp),
+                            contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 150.dp),
+                        ) {
+                            gridItems(shown, key = { it.item.id }) { row -> CardTile(row, priceType, binderOf(row)) { editing = row } }
+                        }
                     }
                 }
             }
@@ -403,6 +446,87 @@ private fun CsvImportCard(p: CsvImportProgress) {
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+    }
+}
+
+private fun viewIcon(v: CollectionView): ImageVector = when (v) {
+    CollectionView.LIST -> Icons.AutoMirrored.Filled.ViewList
+    CollectionView.COMPACT -> Icons.Default.ViewHeadline
+    CollectionView.GRID -> Icons.Default.GridView
+}
+
+/** One text line per stack: quantity, name, set and finish, price of one card (and the stack total). */
+@Composable
+private fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+    val item = row.item
+    val unit = row.unitPrice(priceType)
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "${item.quantity}×",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(34.dp),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(item.card.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val details = listOfNotNull(
+                item.card.setLabel,
+                if (item.foil) item.card.finishName(item.finish) else null,
+                item.condition.takeIf { it != "NM" },
+                item.language.takeIf { it != "EN" },
+                binder,
+            ).joinToString(" · ")
+            Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            if (item.quantity > 1) {
+                Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** A big card picture with its quantity and finish, price of one card, trend and name underneath. */
+@Composable
+private fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+    val item = row.item
+    val unit = row.unitPrice(priceType)
+    Column(Modifier.clickable(onClick = onClick).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier.fillMaxWidth().aspectRatio(63f / 88f).clip(RoundedCornerShape(6.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("🃏", fontSize = 32.sp)
+            item.card.imageUrl?.let { RetryingImage(it, Modifier.fillMaxSize(), contentDescription = item.card.displayName, contentScale = ContentScale.Crop) }
+            if (item.quantity > 1) {
+                Text(
+                    "×${item.quantity}",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).clip(RoundedCornerShape(10.dp))
+                        .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 7.dp, vertical = 2.dp),
+                )
+            }
+            if (item.foil) Box(Modifier.align(Alignment.BottomStart).padding(4.dp)) { FinishTag(item.card, item.finish) }
+        }
+        Text(Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
+        TrendBadge(row.trend)
+        if (item.quantity > 1) {
+            Text("×${item.quantity} · ${Fmt.money(unit?.let { it * item.quantity })}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        }
+        Text(item.card.displayName, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            listOfNotNull(item.card.setLabel, binder).joinToString(" · "),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

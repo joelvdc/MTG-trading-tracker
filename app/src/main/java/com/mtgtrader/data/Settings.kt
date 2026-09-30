@@ -4,6 +4,17 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/** Ways to show the collection: the regular list, one text line per card, or a grid of card pictures. */
+enum class CollectionView(val label: String) {
+    LIST("List"),
+    COMPACT("Compact (text only)"),
+    GRID("Cards (big pictures)");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: LIST
+    }
+}
+
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
@@ -37,6 +48,33 @@ class Settings(context: Context) {
     var deckSortReversed: Boolean
         get() = prefs.getBoolean("deckSortReversed", false)
         set(v) = prefs.edit().putBoolean("deckSortReversed", v).apply()
+
+    /** Update prices by themselves (on opening the app and in the background). Since 1.11. */
+    private val _autoUpdate = MutableStateFlow(prefs.getBoolean("autoUpdate", true))
+    val autoUpdate: StateFlow<Boolean> = _autoUpdate
+
+    /** Automatic updates only on Wi-Fi (or another unmetered connection). */
+    private val _wifiOnly = MutableStateFlow(prefs.getBoolean("wifiOnly", false))
+    val wifiOnly: StateFlow<Boolean> = _wifiOnly
+
+    /** How the Collection tab shows cards. */
+    private val _collectionView = MutableStateFlow(CollectionView.fromKey(prefs.getString("collectionView", null)))
+    val collectionView: StateFlow<CollectionView> = _collectionView
+
+    fun setAutoUpdate(on: Boolean) {
+        _autoUpdate.value = on
+        prefs.edit().putBoolean("autoUpdate", on).apply()
+    }
+
+    fun setWifiOnly(on: Boolean) {
+        _wifiOnly.value = on
+        prefs.edit().putBoolean("wifiOnly", on).apply()
+    }
+
+    fun setCollectionView(v: CollectionView) {
+        _collectionView.value = v
+        prefs.edit().putString("collectionView", v.name).apply()
+    }
 
     fun setPriceType(t: PriceType) {
         _priceType.value = t

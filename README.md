@@ -13,15 +13,16 @@ binders, and scan piles of cards before deciding where they go.
 | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's scores and decklist"> | <img src="docs/screenshots/rulezero.png" width="200" alt="Commander Salt power level rule-zero card, full screen"> |
 
 ## Install
-Copy `MTG-Trader-1.10.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.11.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.10-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.11-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
 - **Decks:** Archidekt (decklists) and Commander Salt (scores and rule-zero cards).
 - **Prices:** Cardmarket's public daily price guide (trend, average, low, 1/7/30-day averages, normal + foil), downloaded
-  automatically once a day (~26 MB).
+  automatically once a day (~26 MB) when the app opens and in the background. Settings can turn automatic updates off
+  or limit them to Wi-Fi; "Update prices now" always runs.
 
 ## Commander decks
 Import a public deck from **Archidekt**: paste its link in the Decks tab, share it to the app from the Archidekt app or
@@ -44,6 +45,10 @@ binder) and each binder with its card count. From the ⋮ menu you can create, r
 a temporary "new cards" binder into your main one; identical cards are combined). Tap a card to move it, or some of its
 copies, to another binder. Completing a trade asks which binder the received cards go into (or makes a new one); given
 cards are taken from Unsorted first. CSV import/export carries a "Binder Name" column.
+
+The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
+big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
+total underneath, and "Value per card" sorts by it.
 
 ## Scan tab
 Scan a pile of cards (or add them by name) into a waiting list, then select some or all of them and send them **to a
