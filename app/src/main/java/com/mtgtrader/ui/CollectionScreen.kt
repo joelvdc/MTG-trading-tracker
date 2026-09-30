@@ -70,6 +70,8 @@ import com.mtgtrader.container
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CollectionRow
+import com.mtgtrader.data.CsvImportProgress
+import androidx.compose.material3.LinearProgressIndicator
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import kotlinx.coroutines.Dispatchers
@@ -96,7 +98,6 @@ fun CollectionScreen(nav: NavController) {
     var sortMenu by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<CollectionRow?>(null) }
-    var busy by remember { mutableStateOf(false) }
     var naming by remember { mutableStateOf<Binder?>(null) }
     var creating by remember { mutableStateOf(false) }
     var merging by remember { mutableStateOf(false) }
@@ -110,22 +111,25 @@ fun CollectionScreen(nav: NavController) {
     val currentBinder = binders.firstOrNull { it.id == selected }
     val addTarget = CardTarget.Collection(selected ?: Binder.UNSORTED)
 
+    val csvImport by c.repo.csvImport.collectAsStateWithLifecycle()
+    val csvImportResult by c.repo.csvImportResult.collectAsStateWithLifecycle()
+    LaunchedEffect(csvImportResult) {
+        val msg = csvImportResult ?: return@LaunchedEffect
+        c.repo.consumeCsvImportResult()
+        snackbar.showSnackbar(msg)
+    }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            busy = true
-            try {
-                val text = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-                } ?: ""
-                val r = c.repo.importCollectionCsv(text, selected ?: Binder.UNSORTED)
-                snackbar.showSnackbar(
-                    "Imported ${r.imported} card(s)" + if (r.notFound > 0) " · ${r.notFound} couldn't be matched" else ""
-                )
-            } catch (e: Exception) {
-                snackbar.showSnackbar("Import failed: ${e.message}")
-            } finally {
-                busy = false
-            }
+        if (uri != null) {
+            val appContext = context.applicationContext
+            val started = c.repo.startCsvImport(
+                readText = {
+                    withContext(Dispatchers.IO) {
+                        appContext.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    } ?: ""
+                },
+                defaultBinder = selected ?: Binder.UNSORTED,
+            )
+            if (!started) scope.launch { snackbar.showSnackbar("An import is already running") }
         }
     }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
@@ -216,7 +220,7 @@ fun CollectionScreen(nav: NavController) {
         },
     ) { pad ->
         val all = rows
-        if (all == null || busy) {
+        if (all == null) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
         }
@@ -267,6 +271,7 @@ fun CollectionScreen(nav: NavController) {
                     )
                 }
             }
+            csvImport?.let { p -> CsvImportCard(p) }
             Text(
                 "$totalCards card(s) · ${shown.size} unique · ${Fmt.money(totalValue)} (${priceType.short})",
                 style = MaterialTheme.typography.titleSmall,
@@ -371,6 +376,31 @@ fun CollectionScreen(nav: NavController) {
                 selected = null
                 snackbar.showSnackbar("Binder “${b.name}” deleted")
             }
+        }
+    }
+}
+
+/** Progress of a running CSV import; lookups are paced to Scryfall's rate limit, so big files take a minute or two. */
+@Composable
+private fun CsvImportCard(p: CsvImportProgress) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(12.dp)) {
+            Text(
+                if (p.total == 0) "Importing CSV…"
+                else "Importing CSV: looking up cards on Scryfall, ${"%,d".format(p.done)} of ${"%,d".format(p.total)}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (p.total == 0) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp))
+            else LinearProgressIndicator(progress = { p.done.toFloat() / p.total }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            Text(
+                "You can keep using the app meanwhile.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

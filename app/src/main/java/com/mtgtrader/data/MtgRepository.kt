@@ -1,6 +1,11 @@
 package com.mtgtrader.data
 
 import androidx.room.withTransaction
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -60,10 +65,14 @@ typealias UndoAction = suspend () -> Unit
 
 data class ImportResult(val imported: Int, val notFound: Int)
 
+/** A running CSV import: cards looked up on Scryfall so far, of [total] (0 while the file is read). */
+data class CsvImportProgress(val done: Int, val total: Int)
+
 class MtgRepository(
     private val db: AppDatabase,
     val scryfall: ScryfallApi,
     val prices: PriceGuideRepository,
+    private val scope: CoroutineScope,
 ) {
     private val trades = db.tradeDao()
     private val coll = db.collectionDao()
@@ -447,7 +456,11 @@ class MtgRepository(
      * "Collector number", or "Name" column). Quantities are added to the existing collection.
      * Rows with a "Binder Name" go into that binder (created if needed); others into [defaultBinder].
      */
-    suspend fun importCollectionCsv(text: String, defaultBinder: Long = Binder.UNSORTED): ImportResult {
+    suspend fun importCollectionCsv(
+        text: String,
+        defaultBinder: Long = Binder.UNSORTED,
+        onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
+    ): ImportResult {
         val rows = Csv.parse(text.removePrefix("﻿")).filter { r -> r.any { it.isNotBlank() } }
         if (rows.size < 2) return ImportResult(0, 0)
         val header = rows[0].map { it.trim().lowercase() }
@@ -491,7 +504,8 @@ class MtgRepository(
                 else -> null
             }
         }
-        val cards = scryfall.collection(lines.map { it.ident })
+        // The same printing on several rows (other condition, language or binder) is looked up once.
+        val cards = scryfall.collection(lines.map { it.ident }.distinct(), onProgress)
         val byKey = HashMap<String, ScryCard>()
         for (c in cards) {
             byKey["id:${c.id}"] = c
@@ -518,6 +532,45 @@ class MtgRepository(
             }
         }
         return ImportResult(imported, notFound)
+    }
+
+    private val _csvImport = MutableStateFlow<CsvImportProgress?>(null)
+
+    /** The CSV import in progress, if any. */
+    val csvImport: StateFlow<CsvImportProgress?> = _csvImport
+
+    private val _csvImportResult = MutableStateFlow<String?>(null)
+
+    /** How the last CSV import ended, until the screen has shown it ([consumeCsvImportResult]). */
+    val csvImportResult: StateFlow<String?> = _csvImportResult
+
+    fun consumeCsvImportResult() {
+        _csvImportResult.value = null
+    }
+
+    /**
+     * Imports a CSV in the app scope, so it carries on if the user leaves the screen (a big
+     * collection takes a while: Scryfall allows two 75-card lookups per second). False if one is
+     * already running.
+     */
+    fun startCsvImport(readText: suspend () -> String, defaultBinder: Long): Boolean {
+        synchronized(this) {
+            if (_csvImport.value != null) return false
+            _csvImport.value = CsvImportProgress(0, 0)
+        }
+        scope.launch {
+            _csvImportResult.value = try {
+                val r = importCollectionCsv(readText(), defaultBinder) { done, total -> _csvImport.value = CsvImportProgress(done, total) }
+                "Imported ${r.imported} card(s)" + if (r.notFound > 0) " · ${r.notFound} couldn't be matched" else ""
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                "Import failed: ${e.message}"
+            } finally {
+                _csvImport.value = null
+            }
+        }
+        return true
     }
 
     /**

@@ -85,6 +85,23 @@ data class ScryCard(
     )
 }
 
+/** Scryfall's published rate limits (scryfall.com/docs/api/rate-limits). */
+object ScryfallLimits {
+    const val MAX_RETRIES = 2
+
+    /** Scryfall shuts an app out for 30 seconds after a 429. */
+    private const val DEFAULT_WAIT_MS = 30_000L
+
+    private val slowPaths = listOf("/cards/search", "/cards/named", "/cards/random", "/cards/collection")
+
+    /** Endpoints limited to 2 requests/second; the rest allow 10/second. */
+    fun isSlow(path: String) = slowPaths.any { path == it || path.startsWith("$it/") }
+
+    /** How long to wait after a 429: the server's Retry-After (seconds) when given, else 30 seconds. */
+    fun retryDelayMs(retryAfter: String?): Long =
+        retryAfter?.trim()?.toLongOrNull()?.takeIf { it in 1..300 }?.times(1000) ?: DEFAULT_WAIT_MS
+}
+
 /** A name suggestion: a card name, or a flavor name ("Barrow-Downs") printed on some copies of [realName]. */
 data class NameSuggestion(val label: String, val realName: String? = null)
 
@@ -107,34 +124,54 @@ data class ScrySet(
 @Serializable
 private data class ScrySetList(val data: List<ScrySet> = emptyList())
 
-/**
- * Minimal Scryfall REST client. Scryfall asks for ≤10 requests/second and a descriptive
- * User-Agent, so every call goes through a small throttle.
- */
-class ScryfallApi(private val http: OkHttpClient) {
-    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
-    private val throttle = Mutex()
+/** Keeps calls at least [gapMs] apart. */
+private class Throttle(private val gapMs: Long) {
+    private val lock = Mutex()
     private var lastCall = 0L
-    private val base = "https://api.scryfall.com/".toHttpUrl()
 
-    private suspend fun waitTurn() = throttle.withLock {
-        val wait = lastCall + 110 - SystemClock.elapsedRealtime()
+    suspend fun waitTurn() = lock.withLock {
+        val wait = lastCall + gapMs - SystemClock.elapsedRealtime()
         if (wait > 0) delay(wait)
         lastCall = SystemClock.elapsedRealtime()
     }
+}
+
+/**
+ * Minimal Scryfall REST client with a descriptive User-Agent, as Scryfall asks. Its rate limits
+ * are 2 requests/second for search, named, random and collection lookups and 10/second for
+ * everything else, so each group has its own throttle. A 429 (too many requests) is waited out
+ * and retried rather than failing straight away.
+ */
+class ScryfallApi(private val http: OkHttpClient) {
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
+    private val fast = Throttle(110)
+    private val slow = Throttle(550)
+    private val base = "https://api.scryfall.com/".toHttpUrl()
 
     /** Returns the body, or null on 404. Throws [IOException] on other failures. */
-    private suspend fun call(url: HttpUrl, postJson: String? = null): String? = withContext(Dispatchers.IO) {
-        waitTurn()
-        val builder = Request.Builder().url(url)
-            .header("User-Agent", "MTGTraderAndroid/1.0")
-            .header("Accept", "application/json")
-        if (postJson != null) builder.post(postJson.toRequestBody("application/json".toMediaType()))
-        http.newCall(builder.build()).execute().use { r ->
+    private suspend fun call(url: HttpUrl, postJson: String? = null): String? {
+        val throttle = if (ScryfallLimits.isSlow(url.encodedPath)) slow else fast
+        var retries = 0
+        while (true) {
+            throttle.waitTurn()
+            val builder = Request.Builder().url(url)
+                .header("User-Agent", "MTGTraderAndroid/1.0")
+                .header("Accept", "application/json")
+            if (postJson != null) builder.post(postJson.toRequestBody("application/json".toMediaType()))
+            val (code, body, retryAfter) = withContext(Dispatchers.IO) {
+                http.newCall(builder.build()).execute().use { r ->
+                    Triple(r.code, if (r.isSuccessful) r.body?.string() else null, r.header("Retry-After"))
+                }
+            }
             when {
-                r.isSuccessful -> r.body?.string()
-                r.code == 404 -> null
-                else -> throw IOException("Scryfall error ${r.code}")
+                code in 200..299 -> return body
+                code == 404 -> return null
+                code == 429 && retries < ScryfallLimits.MAX_RETRIES -> {
+                    retries++
+                    delay(ScryfallLimits.retryDelayMs(retryAfter))
+                }
+                code == 429 -> throw IOException("Scryfall is busy (too many requests); try again in a minute")
+                else -> throw IOException("Scryfall error $code")
             }
         }
     }
@@ -217,13 +254,16 @@ class ScryfallApi(private val http: OkHttpClient) {
     /**
      * Batch lookup (max 75 identifiers per call). Each identifier is one of
      * {"id"}, {"set","collector_number"} or {"name"} as Scryfall expects.
+     * [onProgress] gets (identifiers looked up so far, total) after each batch.
      */
-    suspend fun collection(identifiers: List<JsonObject>): List<ScryCard> {
+    suspend fun collection(identifiers: List<JsonObject>, onProgress: (Int, Int) -> Unit = { _, _ -> }): List<ScryCard> {
         val out = mutableListOf<ScryCard>()
+        var done = 0
         for (chunk in identifiers.chunked(75)) {
             val payload = buildJsonObject { put("identifiers", JsonArray(chunk)) }.toString()
-            val body = call(url("cards/collection"), payload) ?: continue
-            out += json.decodeFromString<ScryList>(body).data
+            call(url("cards/collection"), payload)?.let { out += json.decodeFromString<ScryList>(it).data }
+            done += chunk.size
+            onProgress(done, identifiers.size)
         }
         return out
     }
