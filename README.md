@@ -4,6 +4,14 @@ Track Magic: The Gathering trades, check they're fair using Cardmarket prices, a
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
 binders, and scan piles of cards before deciding where they go.
 
+| Trade | Search | Collection & binders | Scan tab |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/trade.png" width="200" alt="A trade with the value of both sides compared"> | <img src="docs/screenshots/search.png" width="200" alt="Search results listing every printing with Cardmarket prices"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection with binder filters"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> |
+
+| Commander decks | Deck page | Rule-zero card |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's scores and decklist"> | <img src="docs/screenshots/rulezero.png" width="200" alt="Commander Salt power level rule-zero card, full screen"> |
+
 ## Install
 Copy `MTG-Trader-1.8.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
@@ -53,3 +61,14 @@ APKs land in `%LOCALAPPDATA%\mtgtrader-build\app\outputs\apk\release\` (kept out
 if it is signed with the same key; losing it means uninstalling (and losing app data) to install a new version.
 
 Tests: `gradlew testDebugUnitTest` (logic) and `gradlew connectedDebugAndroidTest` (OCR scanner pipeline, needs a device/emulator).
+
+## License and disclaimer
+The code is released under the [MIT License](LICENSE). That covers this app's code only, not the card data, names or
+images it shows.
+
+MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions
+of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
+
+The app isn't affiliated with or endorsed by Scryfall, Cardmarket, Archidekt or Commander Salt; it uses their public
+data. Commander Salt has no official API: the app makes the same requests as its website, so that part may stop working
+if the site changes. Prices are for guidance only.
