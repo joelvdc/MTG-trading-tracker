@@ -4,6 +4,9 @@ import com.mtgtrader.data.ArchidektApi
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CommanderSaltApi
+import com.mtgtrader.data.Deck
+import com.mtgtrader.data.DeckSort
+import com.mtgtrader.data.DeckSorting
 import com.mtgtrader.data.DeckToCollection
 import com.mtgtrader.data.DeckCard
 import com.mtgtrader.data.DeckCardRow
@@ -176,6 +179,41 @@ class ArchidektParseTest {
         assertEquals("Ramp", sol.category)
         assertEquals("Land", d.cards[2].category)
         assertEquals("https://cards.scryfall.io/normal/front/9/a/9a2e4252-9fbc-4d43-8935-db2cafaa7b5f.jpg", d.cards[0].imageUrl)
+    }
+}
+
+class DeckSortingTest {
+    private fun deck(name: String, power: Double?, realistic: Int?, baseline: Int?, updated: Long?) =
+        Deck(archidektId = name.hashCode().toLong(), name = name, owner = "", commanders = "", commanderScryfallId = null,
+            artUrl = null, colorIdentity = "", cardCount = 100, powerLevel = power, bracketRealistic = realistic,
+            bracketBaseline = baseline, archidektUpdatedAt = updated)
+
+    private val decks = listOf(
+        deck("Baba", 6.4, 3, 3, 300),
+        deck("Auntie Plague", 4.4, 2, 3, 200),
+        deck("Taranika", 5.4, 3, 2, null),
+        deck("Unscored", null, null, null, 100),
+    )
+
+    private fun names(sort: DeckSort, reverse: Boolean = false) = DeckSorting.sort(decks, sort, reverse).map { it.name }
+
+    @Test
+    fun sortsStrongestAndNewestFirstWithUnknownsLast() {
+        assertEquals(listOf("Auntie Plague", "Baba", "Taranika", "Unscored"), names(DeckSort.NAME))
+        assertEquals(listOf("Unscored", "Taranika", "Baba", "Auntie Plague"), names(DeckSort.NAME, reverse = true))
+        assertEquals(listOf("Baba", "Taranika", "Auntie Plague", "Unscored"), names(DeckSort.POWER))
+        assertEquals(listOf("Auntie Plague", "Taranika", "Baba", "Unscored"), names(DeckSort.POWER, reverse = true))
+        // Same realistic bracket 3: the higher baseline bracket wins.
+        assertEquals(listOf("Baba", "Taranika", "Auntie Plague", "Unscored"), names(DeckSort.BRACKET))
+        assertEquals(listOf("Baba", "Auntie Plague", "Unscored", "Taranika"), names(DeckSort.MODIFIED))
+        assertEquals(listOf("Unscored", "Auntie Plague", "Baba", "Taranika"), names(DeckSort.MODIFIED, reverse = true))
+    }
+
+    @Test
+    fun parsesArchidektTimestamps() {
+        assertEquals(1781527803042L, DeckSorting.parseTime("2026-06-15T12:50:03.042057Z"))
+        assertNull(DeckSorting.parseTime("yesterday"))
+        assertNull(DeckSorting.parseTime(null))
     }
 }
 

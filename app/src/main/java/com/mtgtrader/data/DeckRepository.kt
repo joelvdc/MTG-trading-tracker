@@ -88,6 +88,19 @@ class DeckRepository(
     suspend fun importedIds(): Set<Long> = dao.ids().toSet()
 
     /**
+     * Fills in Archidekt's last-modified date for decks imported before version 1.8, using one deck-list
+     * call per owner instead of downloading every deck again. Quietly does nothing when offline.
+     */
+    suspend fun fillMissingUpdateDates() {
+        val missing = dao.withoutUpdateDate()
+        for ((owner, decks) in missing.groupBy { it.owner }) {
+            if (owner.isBlank()) continue
+            val dates = runCatching { archidekt.userDecks(owner) }.getOrNull()?.associate { it.id to it.updatedAt } ?: continue
+            decks.forEach { d -> dates[d.archidektId]?.let { dao.setUpdatedAt(d.archidektId, it) } }
+        }
+    }
+
+    /**
      * Imports several decks one after the other, with a short pause between them so Commander Salt
      * isn't flooded. Can be stopped between decks with [stop].
      */
@@ -198,6 +211,7 @@ class DeckRepository(
             colorIdentity = a.colorIdentity,
             cardCount = a.cardCount,
             importedAt = System.currentTimeMillis(),
+            archidektUpdatedAt = a.updatedAt ?: old?.archidektUpdatedAt,
         )
         dao.replace(deck, cards)
         return deck

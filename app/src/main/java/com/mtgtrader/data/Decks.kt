@@ -35,6 +35,8 @@ data class Deck(
     val scoredAt: Long? = null,
     /** Why the last scoring attempt failed; null after a successful one. */
     val scoreError: String? = null,
+    /** When the deck was last changed on Archidekt. Since version 1.8. */
+    val archidektUpdatedAt: Long? = null,
 ) {
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
@@ -131,7 +133,49 @@ data class ArchidektDeckSummary(
     val colors: String,
     val commanderFormat: Boolean,
     val folder: String?,
+    val updatedAt: Long? = null,
 )
+
+/** How the Decks tab is ordered; each has its natural direction (strongest / newest first). */
+enum class DeckSort(val label: String) {
+    NAME("Name"),
+    POWER("Power level"),
+    BRACKET("Bracket"),
+    MODIFIED("Last modified on Archidekt");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: NAME
+    }
+}
+
+object DeckSorting {
+    private val byName = compareBy<Deck, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
+
+    /**
+     * Sorts decks; with [reverse] the order flips (weakest / oldest / Z first). Decks without the
+     * value sorted on (not scored yet, date unknown) always come last, by name.
+     */
+    fun sort(decks: List<Deck>, sort: DeckSort, reverse: Boolean): List<Deck> {
+        fun <T : Comparable<T>> by(key: (Deck) -> T?, then: Comparator<Deck> = byName): List<Deck> {
+            val (known, unknown) = decks.partition { key(it) != null }
+            val sorted = known.sortedWith(compareByDescending<Deck> { key(it)!! }.then(then))
+            return (if (reverse) sorted.reversed() else sorted) + unknown.sortedWith(byName)
+        }
+        return when (sort) {
+            DeckSort.NAME -> decks.sortedWith(if (reverse) byName.reversed() else byName)
+            DeckSort.POWER -> by({ it.powerLevel })
+            // Realistic bracket first, then the baseline one, then power level to break ties.
+            DeckSort.BRACKET -> by(
+                { it.bracketRealistic },
+                compareByDescending<Deck> { it.bracketBaseline ?: 0 }.thenByDescending { it.powerLevel ?: 0.0 }.thenBy { it.name.lowercase() },
+            )
+            DeckSort.MODIFIED -> by({ it.archidektUpdatedAt })
+        }
+    }
+
+    /** Archidekt's timestamps, e.g. "2026-06-15T12:50:03.042057Z", as epoch milliseconds. */
+    fun parseTime(s: String?): Long? = s?.let { runCatching { java.time.Instant.parse(it).toEpochMilli() }.getOrNull() }
+}
 
 object DeckToCollection {
     const val ADDED_IN_APP = "Added in app"

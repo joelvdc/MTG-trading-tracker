@@ -25,7 +25,13 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import com.mtgtrader.data.DeckSort
+import com.mtgtrader.data.DeckSorting
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
@@ -82,6 +88,12 @@ fun DecksScreen(nav: NavController) {
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
     var importing by rememberSaveable { mutableStateOf(false) }
+    var sort by remember { mutableStateOf(c.settings.deckSort) }
+    var reversed by remember { mutableStateOf(c.settings.deckSortReversed) }
+    var sortMenu by remember { mutableStateOf(false) }
+
+    // Decks imported before 1.8 don't know when they last changed on Archidekt yet.
+    LaunchedEffect(Unit) { c.decks.fillMissingUpdateDates() }
 
     LaunchedEffect(result) {
         val r = result ?: return@LaunchedEffect
@@ -93,7 +105,37 @@ fun DecksScreen(nav: NavController) {
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Commander decks") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Commander decks") },
+                actions = {
+                    IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
+                    DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                        DeckSort.entries.forEach { s ->
+                            DropdownMenuItem(
+                                text = { Text(s.label, fontWeight = if (s == sort) FontWeight.Bold else null) },
+                                leadingIcon = { if (s == sort) Icon(Icons.Default.Check, null) },
+                                onClick = {
+                                    sortMenu = false
+                                    sort = s
+                                    c.settings.deckSort = s
+                                },
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text(reverseLabel(sort)) },
+                            leadingIcon = { if (reversed) Icon(Icons.Default.Check, null) },
+                            onClick = {
+                                sortMenu = false
+                                reversed = !reversed
+                                c.settings.deckSortReversed = reversed
+                            },
+                        )
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -104,7 +146,7 @@ fun DecksScreen(nav: NavController) {
             )
         },
     ) { pad ->
-        val list = decks
+        val list = decks?.let { remember(it, sort, reversed) { DeckSorting.sort(it, sort, reversed) } }
         if (list == null) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
@@ -124,7 +166,9 @@ fun DecksScreen(nav: NavController) {
                     )
                 }
             }
-            items(list, key = { it.archidektId }) { deck -> DeckRow(deck) { nav.navigate("deck/${deck.archidektId}") } }
+            items(list, key = { it.archidektId }) { deck ->
+                DeckRow(deck, showModified = sort == DeckSort.MODIFIED) { nav.navigate("deck/${deck.archidektId}") }
+            }
         }
     }
 
@@ -156,8 +200,15 @@ fun JobCard(job: DeckJob, onStop: (() -> Unit)? = null) {
     }
 }
 
+/** The "flip the order" menu entry, worded for the current sort. */
+private fun reverseLabel(sort: DeckSort) = when (sort) {
+    DeckSort.NAME -> "Z to A"
+    DeckSort.POWER, DeckSort.BRACKET -> "Lowest first"
+    DeckSort.MODIFIED -> "Oldest first"
+}
+
 @Composable
-private fun DeckRow(deck: Deck, onClick: () -> Unit) {
+private fun DeckRow(deck: Deck, showModified: Boolean, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             DeckArt(deck, Modifier.width(88.dp).height(64.dp))
@@ -183,6 +234,13 @@ private fun DeckRow(deck: Deck, onClick: () -> Unit) {
                     }
                 } else {
                     Text("Not scored yet", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (showModified) {
+                    Text(
+                        deck.archidektUpdatedAt?.let { "Changed on Archidekt ${Fmt.date(it)}" } ?: "Last change unknown (refresh the deck)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

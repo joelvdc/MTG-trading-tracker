@@ -54,6 +54,7 @@ private data class ArchDeck(
     @SerialName("private") val isPrivate: Boolean = false,
     val categories: List<ArchCategory> = emptyList(),
     val cards: List<ArchEntry> = emptyList(),
+    val updatedAt: String? = null,
 )
 
 @Serializable
@@ -67,6 +68,7 @@ private data class ArchDeckListItem(
     @SerialName("private") val isPrivate: Boolean = false,
     val colors: Map<String, Int> = emptyMap(),
     val parentFolderName: String? = null,
+    val updatedAt: String? = null,
 )
 
 @Serializable
@@ -100,6 +102,8 @@ data class ArchidektDeck(
     val artUrl: String?,
     /** Only the cards in the deck itself: the maybeboard and other excluded categories are left out. */
     val cards: List<ArchidektCard>,
+    /** When the deck was last changed on Archidekt. */
+    val updatedAt: Long? = null,
 ) {
     val commanders get() = cards.filter { it.commander }
     val cardCount get() = cards.sumOf { it.quantity }
@@ -162,6 +166,7 @@ class ArchidektApi(private val http: OkHttpClient) {
                     colors = "WUBRG".filter { (d.colors[it.toString()] ?: 0) > 0 },
                     commanderFormat = d.deckFormat == 3,
                     folder = d.parentFolderName?.takeIf { it.isNotBlank() },
+                    updatedAt = DeckSorting.parseTime(d.updatedAt),
                 )
             }
             return decks to list.next
@@ -199,6 +204,7 @@ class ArchidektApi(private val http: OkHttpClient) {
                 owner = d.owner.username,
                 artUrl = d.customFeatured?.takeIf { it.isNotBlank() } ?: d.featured?.takeIf { it.isNotBlank() },
                 cards = cards,
+                updatedAt = DeckSorting.parseTime(d.updatedAt),
             )
         }
     }

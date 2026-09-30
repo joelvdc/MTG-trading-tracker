@@ -5,9 +5,9 @@ Keep your Commander decks at hand too, with their power level, brackets and rule
 binders, and scan piles of cards before deciding where they go.
 
 ## Install
-Copy `MTG-Trader-1.7.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.8.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.7-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.8-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -26,7 +26,8 @@ has [Commander Salt](https://www.commandersalt.com/) score it:
 - The **bracket** and **power level rule-zero cards**, shown full screen (screen kept on at full brightness) to show
   your table, and shareable as images. They're saved on the phone, so they work without a connection.
 
-Tap the refresh button on a deck after changing it on Archidekt. Commander Salt has no official API: the app uses the
+The deck list can be sorted by name, power level, bracket (realistic, then baseline) or when the deck was last changed on
+Archidekt, highest/newest first or reversed. Tap the refresh button on a deck after changing it on Archidekt. Commander Salt has no official API: the app uses the
 same calls as its website, so this part may break if the site changes. Importing a deck adds it to commandersalt.com.
 
 ## Binders

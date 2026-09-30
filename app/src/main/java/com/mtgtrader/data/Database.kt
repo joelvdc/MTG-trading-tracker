@@ -273,6 +273,12 @@ interface DeckDao {
     @Query("SELECT archidektId FROM decks")
     suspend fun ids(): List<Long>
 
+    @Query("SELECT * FROM decks WHERE archidektUpdatedAt IS NULL")
+    suspend fun withoutUpdateDate(): List<Deck>
+
+    @Query("UPDATE decks SET archidektUpdatedAt = :at WHERE archidektId = :id")
+    suspend fun setUpdatedAt(id: Long, at: Long)
+
     @Query("DELETE FROM decks WHERE archidektId = :id")
     suspend fun delete(id: Long)
 
@@ -291,7 +297,7 @@ interface DeckDao {
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
         Binder::class, ScannedCard::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -305,8 +311,15 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
+
+        /** Version 6 (app 1.8): when each deck was last changed on Archidekt, for sorting. */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `archidektUpdatedAt` INTEGER")
+            }
+        }
 
         /** Version 5 (app 1.7): binders, the Scan tab's waiting list, and cards added to decks in the app. */
         private val MIGRATION_4_5 = object : Migration(4, 5) {

@@ -29,6 +29,15 @@ class Settings(context: Context) {
         get() = prefs.getString("archidektUser", "") ?: ""
         set(v) = prefs.edit().putString("archidektUser", v).apply()
 
+    /** Order of the Decks tab. */
+    var deckSort: DeckSort
+        get() = DeckSort.fromKey(prefs.getString("deckSort", null))
+        set(v) = prefs.edit().putString("deckSort", v.name).apply()
+
+    var deckSortReversed: Boolean
+        get() = prefs.getBoolean("deckSortReversed", false)
+        set(v) = prefs.edit().putBoolean("deckSortReversed", v).apply()
+
     fun setPriceType(t: PriceType) {
         _priceType.value = t
         prefs.edit().putString("priceType", t.key).apply()
