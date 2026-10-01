@@ -75,6 +75,7 @@ fun AppNav() {
     LaunchedEffect(Unit) {
         c.updater.schedule()
         c.appScope.launch { c.updater.autoUpdate() }
+        c.sync.onAppStart()
         c.appScope.launch { c.setIcons.load() }
         c.appScope.launch {
             if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1

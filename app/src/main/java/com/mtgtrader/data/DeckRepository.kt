@@ -132,6 +132,82 @@ class DeckRepository(
         }
     }
 
+    /**
+     * Checks every deck against Archidekt (one deck-list call per owner, plus the deck itself for
+     * decks not in a public list) and reloads and re-scores those changed there since they were
+     * imported. Decks that never got a score are scored again too. Can be stopped between decks.
+     */
+    fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
+        val decks = dao.all()
+        val listed = HashMap<Long, Long?>()
+        for (owner in decks.map { it.owner }.filter { it.isNotBlank() }.distinct()) {
+            if (stopRequested) break
+            runCatching { archidekt.userDecks(owner) }.getOrNull()?.forEach { listed[it.id] = it.updatedAt }
+        }
+        var updated = 0
+        var rescored = 0
+        val unscored = mutableListOf<String>()
+        val failed = mutableListOf<String>()
+        var busy = false
+        for ((i, d) in decks.withIndex()) {
+            if (stopRequested) break
+            val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
+            _job.value = DeckJob(d.archidektId, prefix + "checking…", !stopRequested)
+            try {
+                val fetched = if (listed[d.archidektId] == null) archidekt.deck(d.archidektId) else null
+                val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
+                val changed = remoteAt == null || remoteAt != d.archidektUpdatedAt
+                if (!changed && d.scored && d.scoreError == null) continue
+                // A pause between decks that hit Commander Salt, so it isn't flooded.
+                if (busy) delay(1_500)
+                busy = true
+                val error = if (changed) {
+                    importOne(d.archidektId, prefix, canStop = true, fetched = fetched).second.also { updated++ }
+                } else {
+                    _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
+                    score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }.scoreError.also { rescored++ }
+                }
+                if (error != null) unscored += d.name
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failed += d.name
+            }
+        }
+        val parts = buildList {
+            add(
+                when {
+                    updated == 0 && rescored == 0 -> "All ${decks.size} decks are up to date"
+                    else -> "Updated $updated changed deck" + (if (updated == 1) "" else "s") +
+                        (if (rescored > 0) ", scored $rescored more" else "")
+                }
+            )
+            if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
+            if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
+        }
+        DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
+    }
+
+    /** Has Commander Salt score every deck again (e.g. after it changed its scoring). Can be stopped between decks. */
+    fun rescoreAll(): Boolean = start(DeckJob(null, "Scoring your decks on Commander Salt…", canStop = true)) {
+        val decks = dao.all()
+        var scored = 0
+        val unscored = mutableListOf<String>()
+        for ((i, d) in decks.withIndex()) {
+            if (stopRequested) break
+            if (i > 0) delay(1_500)
+            val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
+            _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
+            val result = score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
+            if (result.scoreError == null) scored++ else unscored += d.name
+        }
+        val parts = buildList {
+            add("Scored $scored of ${decks.size} decks")
+            if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
+        }
+        DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
+    }
+
     private fun start(first: DeckJob, work: suspend () -> DeckJobResult): Boolean {
         synchronized(this) {
             if (_job.value != null) return false
@@ -153,20 +229,20 @@ class DeckRepository(
     }
 
     /** Loads, saves and scores one deck. Returns the deck and why scoring failed, if it did. */
-    private suspend fun importOne(id: Long, prefix: String, canStop: Boolean = false): Pair<Deck, String?> {
+    private suspend fun importOne(id: Long, prefix: String, canStop: Boolean = false, fetched: ArchidektDeck? = null): Pair<Deck, String?> {
         fun step(msg: String) {
             _job.value = DeckJob(id, prefix + msg, canStop && !stopRequested)
         }
         step("Loading the decklist from Archidekt…")
-        val deck = load(id, ::step)
+        val deck = load(id, ::step, fetched)
         step("Scoring on Commander Salt…")
         val scored = score(deck, ::step)
         return scored to scored.scoreError
     }
 
     /** Fetches the list and saves it, keeping any scores from before until new ones arrive. */
-    private suspend fun load(id: Long, step: (String) -> Unit): Deck {
-        val a = archidekt.deck(id)
+    private suspend fun load(id: Long, step: (String) -> Unit, fetched: ArchidektDeck? = null): Deck {
+        val a = fetched ?: archidekt.deck(id)
         if (a.cards.isEmpty()) throw IllegalStateException("${a.name.ifBlank { "This deck" }} has no cards")
         step("Looking up ${a.cards.size} cards…")
         val found = runCatching {

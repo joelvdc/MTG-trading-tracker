@@ -38,16 +38,16 @@ class Settings(context: Context) {
     /** The Archidekt username last used to import decks from. */
     var archidektUser: String
         get() = prefs.getString("archidektUser", "") ?: ""
-        set(v) = prefs.edit().putString("archidektUser", v).apply()
+        set(v) = prefs.edit().putString("archidektUser", v).stamp().apply()
 
     /** Order of the Decks tab. */
     var deckSort: DeckSort
         get() = DeckSort.fromKey(prefs.getString("deckSort", null))
-        set(v) = prefs.edit().putString("deckSort", v.name).apply()
+        set(v) = prefs.edit().putString("deckSort", v.name).stamp().apply()
 
     var deckSortReversed: Boolean
         get() = prefs.getBoolean("deckSortReversed", false)
-        set(v) = prefs.edit().putBoolean("deckSortReversed", v).apply()
+        set(v) = prefs.edit().putBoolean("deckSortReversed", v).stamp().apply()
 
     /** Update prices by themselves (on opening the app and in the background). Since 1.11. */
     private val _autoUpdate = MutableStateFlow(prefs.getBoolean("autoUpdate", true))
@@ -73,22 +73,54 @@ class Settings(context: Context) {
 
     fun setCollectionView(v: CollectionView) {
         _collectionView.value = v
-        prefs.edit().putString("collectionView", v.name).apply()
+        prefs.edit().putString("collectionView", v.name).stamp().apply()
     }
 
     fun setPriceType(t: PriceType) {
         _priceType.value = t
-        prefs.edit().putString("priceType", t.key).apply()
+        prefs.edit().putString("priceType", t.key).stamp().apply()
     }
 
     fun setTolerance(pct: Int) {
         _tolerance.value = pct
-        prefs.edit().putInt("tolerancePct", pct).apply()
+        prefs.edit().putInt("tolerancePct", pct).stamp().apply()
     }
+
+    /** Preferences that follow the user to their other phone through sync (with when they last changed). */
+    fun syncedPrefs() = SyncPrefs(
+        updatedAt = prefs.getLong(PREFS_UPDATED_AT, 0L),
+        values = buildMap {
+            put("priceType", priceType.value.key)
+            put("tolerancePct", tolerancePct.value.toString())
+            put("archidektUser", archidektUser)
+            put("deckSort", deckSort.name)
+            put("deckSortReversed", deckSortReversed.toString())
+            put("collectionView", collectionView.value.name)
+        },
+    )
+
+    /** Takes over preferences that came in through sync (without stamping them as changed here). */
+    fun applySyncedPrefs(p: SyncPrefs) {
+        val v = p.values
+        val e = prefs.edit()
+        v["priceType"]?.let { _priceType.value = PriceType.fromKey(it); e.putString("priceType", it) }
+        v["tolerancePct"]?.toIntOrNull()?.let { _tolerance.value = it; e.putInt("tolerancePct", it) }
+        v["archidektUser"]?.let { e.putString("archidektUser", it) }
+        v["deckSort"]?.let { e.putString("deckSort", it) }
+        v["deckSortReversed"]?.toBooleanStrictOrNull()?.let { e.putBoolean("deckSortReversed", it) }
+        v["collectionView"]?.let { _collectionView.value = CollectionView.fromKey(it); e.putString("collectionView", it) }
+        e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
+    }
+
+    private fun android.content.SharedPreferences.Editor.stamp() = putLong(PREFS_UPDATED_AT, System.currentTimeMillis())
 
     fun setPriceGuideFetched(createdAt: String?, at: Long) {
         _lastFetch.value = at
         _guideDate.value = createdAt
         prefs.edit().putLong("lastPriceFetch", at).putString("priceGuideDate", createdAt).apply()
+    }
+
+    private companion object {
+        const val PREFS_UPDATED_AT = "syncedPrefsUpdatedAt"
     }
 }

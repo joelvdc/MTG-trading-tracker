@@ -273,6 +273,9 @@ interface DeckDao {
     @Query("SELECT archidektId FROM decks")
     suspend fun ids(): List<Long>
 
+    @Query("SELECT * FROM decks ORDER BY name COLLATE NOCASE")
+    suspend fun all(): List<Deck>
+
     @Query("SELECT * FROM decks WHERE archidektUpdatedAt IS NULL")
     suspend fun withoutUpdateDate(): List<Deck>
 
@@ -295,9 +298,9 @@ interface DeckDao {
 @Database(
     entities = [
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
-        Binder::class, ScannedCard::class,
+        Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -307,12 +310,30 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
     abstract fun binderDao(): BinderDao
     abstract fun scanDao(): ScanDao
+    abstract fun syncDao(): SyncDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addCallback(object : Callback() {
+                    override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
+                })
                 .build()
+
+        /** Version 7 (app 1.12): sync ids, change times and deletions for syncing through Nextcloud. */
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                for (t in SyncSchema.UID_TABLES) {
+                    db.execSQL("ALTER TABLE `$t` ADD COLUMN `uid` TEXT")
+                    db.execSQL("ALTER TABLE `$t` ADD COLUMN `updatedAt` INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("UPDATE `$t` SET uid = lower(hex(randomblob(16))), updatedAt = ${SyncSchema.NOW}")
+                }
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `updatedAt` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE `decks` SET updatedAt = ${SyncSchema.NOW}")
+                V7_TABLES_SQL.forEach(db::execSQL)
+            }
+        }
 
         /** Version 6 (app 1.8): when each deck was last changed on Archidekt, for sorting. */
         private val MIGRATION_5_6 = object : Migration(5, 6) {
@@ -366,6 +387,13 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+
+/** New tables and index of version 7, exactly as Room creates them (copied from the generated AppDatabase_Impl). */
+private val V7_TABLES_SQL = listOf(
+    "CREATE INDEX IF NOT EXISTS `index_collection_uid` ON `collection` (`uid`)",
+    "CREATE TABLE IF NOT EXISTS `sync_deletions` (`uid` TEXT NOT NULL, `deletedAt` INTEGER NOT NULL, PRIMARY KEY(`uid`))",
+    "CREATE TABLE IF NOT EXISTS `sync_control` (`id` INTEGER NOT NULL, `applying` INTEGER NOT NULL, `changes` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+)
 
 /** New tables and index of version 5, exactly as Room creates them (copied from the generated AppDatabase_Impl). */
 private val V5_TABLES_SQL = listOf(

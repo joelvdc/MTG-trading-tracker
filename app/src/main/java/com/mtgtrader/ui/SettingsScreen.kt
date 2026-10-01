@@ -128,6 +128,9 @@ fun SettingsScreen() {
             )
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            SyncSection()
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("About", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Card data and images come from Scryfall; prices come from Cardmarket's public daily price guide (EUR). " +
@@ -141,7 +144,7 @@ fun SettingsScreen() {
 }
 
 @Composable
-private fun SwitchRow(title: String, body: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
+fun SwitchRow(title: String, body: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     Row(
         Modifier.fillMaxWidth().clickable(enabled = enabled) { onChange(!checked) }.padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

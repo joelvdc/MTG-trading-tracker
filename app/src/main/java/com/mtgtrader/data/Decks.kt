@@ -6,8 +6,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /** A Commander deck imported from Archidekt, with the scores Commander Salt gave it. Since version 1.6. */
+@Serializable
 @Entity(tableName = "decks")
 data class Deck(
     @PrimaryKey val archidektId: Long,
@@ -37,6 +39,8 @@ data class Deck(
     val scoreError: String? = null,
     /** When the deck was last changed on Archidekt. Since version 1.8. */
     val archidektUpdatedAt: Long? = null,
+    /** Last change in the app (also bumped when one of its cards changes); for sync. Since 1.12. */
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 ) {
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
@@ -44,6 +48,7 @@ data class Deck(
 }
 
 /** One line of a deck's list (a card can have several, e.g. one normal and one foil copy). */
+@Serializable
 @Entity(
     tableName = "deck_cards",
     foreignKeys = [ForeignKey(entity = Deck::class, parentColumns = ["archidektId"], childColumns = ["deckId"], onDelete = ForeignKey.CASCADE)],

@@ -123,7 +123,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         if (r.deckId != deckId) return@LaunchedEffect
         c.decks.consumeResult()
         // A fresh import lands here already; its page shows whether scoring failed.
-        if (r.openDeck == null) snackbar.showSnackbar(r.message)
+        // In the screen's scope: clearing the result restarts this effect, which would cancel the snackbar.
+        if (r.openDeck == null) scope.launch { snackbar.showSnackbar(r.message) }
     }
     fun refresh() {
         if (!c.decks.refresh(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }

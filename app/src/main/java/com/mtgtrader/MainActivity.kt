@@ -20,6 +20,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        // Changes not synced yet go out in the background.
+        if (!isChangingConfigurations) container.sync.onAppBackground()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleShare(intent)

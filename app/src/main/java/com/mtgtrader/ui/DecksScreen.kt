@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import com.mtgtrader.data.DeckSort
@@ -91,6 +92,10 @@ fun DecksScreen(nav: NavController) {
     var sort by remember { mutableStateOf(c.settings.deckSort) }
     var reversed by remember { mutableStateOf(c.settings.deckSortReversed) }
     var sortMenu by remember { mutableStateOf(false) }
+    var moreMenu by remember { mutableStateOf(false) }
+    fun busy(started: Boolean) {
+        if (!started) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
+    }
 
     // Decks imported before 1.8 don't know when they last changed on Archidekt yet.
     LaunchedEffect(Unit) { c.decks.fillMissingUpdateDates() }
@@ -100,7 +105,8 @@ fun DecksScreen(nav: NavController) {
         c.decks.consumeResult()
         // A freshly imported deck opens straight away (its page says if scoring failed); anything else is reported here.
         if (r.openDeck != null) nav.navigate("deck/${r.openDeck}")
-        else snackbar.showSnackbar(r.message)
+        // In the screen's scope: clearing the result restarts this effect, which would cancel the snackbar.
+        else scope.launch { snackbar.showSnackbar(r.message) }
     }
 
     Scaffold(
@@ -131,6 +137,20 @@ fun DecksScreen(nav: NavController) {
                                 reversed = !reversed
                                 c.settings.deckSortReversed = reversed
                             },
+                        )
+                    }
+                    IconButton(onClick = { moreMenu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                    DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }) {
+                        val any = !decks.isNullOrEmpty()
+                        DropdownMenuItem(
+                            text = { Text("Update all decks from Archidekt") },
+                            enabled = any,
+                            onClick = { moreMenu = false; busy(c.decks.updateAll()) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Re-score all decks on Commander Salt") },
+                            enabled = any,
+                            onClick = { moreMenu = false; busy(c.decks.rescoreAll()) },
                         )
                     }
                 },

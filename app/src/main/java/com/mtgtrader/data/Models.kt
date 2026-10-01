@@ -7,6 +7,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
+import kotlinx.serialization.Serializable
 import java.net.URLEncoder
 import kotlin.math.abs
 import kotlin.math.max
@@ -26,6 +27,7 @@ enum class PriceType(val key: String, val label: String, val short: String) {
 }
 
 /** One finish's (normal or foil) set of Cardmarket price-guide numbers, in EUR. */
+@Serializable
 data class PriceSet(
     val trend: Double? = null,
     val avg: Double? = null,
@@ -144,6 +146,7 @@ object FoilTypes {
 }
 
 /** The printing-specific card data we keep, copied from Scryfall. */
+@Serializable
 data class CardRef(
     val scryfallId: String,
     val name: String,
@@ -207,11 +210,13 @@ data class CardRef(
     fun etchedPriceIsApprox(finish: Finish) = finish == Finish.ETCHED && hasFoil
 }
 
+@Serializable
 @Entity(
     tableName = "collection",
     indices = [
         Index(value = ["scryfallId", "foil", "etched", "condition", "language", "binderId"], unique = true),
         Index("name"),
+        Index("uid"),
     ],
 )
 data class CollectionItem(
@@ -226,16 +231,22 @@ data class CollectionItem(
     @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
     /** The [Binder] this stack is in, or [Binder.UNSORTED]. Since version 1.7. */
     @ColumnInfo(defaultValue = "0") val binderId: Long = Binder.UNSORTED,
+    /** Sync identity and last change; filled in by database triggers (see [SyncSchema]). Since 1.12. */
+    val uid: String? = null,
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 ) {
     val finish get() = Finish.of(foil, etched)
 }
 
 /** A named group of collection cards, like a binder in ManaBox. Since version 1.7. */
+@Serializable
 @Entity(tableName = "binders")
 data class Binder(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val createdAt: Long = System.currentTimeMillis(),
+    val uid: String? = null,
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 ) {
     companion object {
         /** Cards that aren't in any binder. */
@@ -250,6 +261,7 @@ data class BinderChoice(val binderId: Long = Binder.UNSORTED, val newName: Strin
 data class NameCount(val name: String, val qty: Int)
 
 /** A scanned card waiting in the Scan tab until the user decides where it goes. Since version 1.7. */
+@Serializable
 @Entity(tableName = "scans")
 data class ScannedCard(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -262,6 +274,8 @@ data class ScannedCard(
     /** False when only the name was readable, so the printing is Scryfall's default guess. */
     val exactPrinting: Boolean = true,
     val scannedAt: Long = System.currentTimeMillis(),
+    val uid: String? = null,
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 ) {
     val finish get() = Finish.of(foil, etched)
 }
@@ -288,6 +302,7 @@ data class CollectionRow(
     val trend: PriceTrend? get() = price?.toSet(item.foil)?.trendChange
 }
 
+@Serializable
 @Entity(tableName = "trades")
 data class Trade(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -298,6 +313,9 @@ data class Trade(
     val appliedAt: Long? = null,
     /** The binder the received cards went into when the trade was applied. Since version 1.7. */
     @ColumnInfo(defaultValue = "0") val binderId: Long = Binder.UNSORTED,
+    /** Sync identity and last change (also bumped when one of its cards changes). Since 1.12. */
+    val uid: String? = null,
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 )
 
 object Side {
@@ -308,6 +326,7 @@ object Side {
     const val GIVE = "GIVE"
 }
 
+@Serializable
 @Entity(
     tableName = "trade_items",
     foreignKeys = [ForeignKey(entity = Trade::class, parentColumns = ["id"], childColumns = ["tradeId"], onDelete = ForeignKey.CASCADE)],

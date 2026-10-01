@@ -2,7 +2,7 @@
 
 Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
-binders, and scan piles of cards before deciding where they go.
+binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own Nextcloud.
 
 | Trade | Search | Collection & binders | Scan tab |
 |:---:|:---:|:---:|:---:|
@@ -13,9 +13,9 @@ binders, and scan piles of cards before deciding where they go.
 | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's scores and decklist"> | <img src="docs/screenshots/rulezero.png" width="200" alt="Commander Salt power level rule-zero card, full screen"> |
 
 ## Install
-Copy `MTG-Trader-1.11.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.12-beta1.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.11-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.12-beta1-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -36,7 +36,9 @@ has [Commander Salt](https://www.commandersalt.com/) score it:
   your table, and shareable as images. They're saved on the phone, so they work without a connection.
 
 The deck list can be sorted by name, power level, bracket (realistic, then baseline) or when the deck was last changed on
-Archidekt, highest/newest first or reversed. Tap the refresh button on a deck after changing it on Archidekt. Commander Salt has no official API: the app uses the
+Archidekt, highest/newest first or reversed. Tap the refresh button on a deck after changing it on Archidekt, or use
+**Update all decks from Archidekt** (Decks ⋮ menu): it checks every deck and reloads and re-scores only the ones that
+changed. **Re-score all decks on Commander Salt** scores every deck again. Commander Salt has no official API: the app uses the
 same calls as its website, so this part may break if the site changes. Importing a deck adds it to commandersalt.com.
 
 ## Binders
@@ -54,6 +56,22 @@ total underneath, and "Value per card" sorts by it.
 Scan a pile of cards (or add them by name) into a waiting list, then select some or all of them and send them **to a
 binder**, **to a trade**, **to a deck** (added in the app only, kept when the deck is refreshed) or **discard** them.
 
+## Sync between phones (beta)
+Settings → **Sync with Nextcloud** keeps the collection, binders, trades, decks, scans and preferences the same on all
+your phones, using a file (`MTG Trader/sync.json.gz`) on your own [Nextcloud](https://nextcloud.com/). Prices and
+pictures aren't synced; each phone downloads those itself.
+- **Connect:** enter your server address and log in in the browser; the app gets its own app password, which you can
+  revoke in Nextcloud (Settings → Security). An app password made by hand works too. Disconnecting removes the app's
+  app password and leaves your data where it is.
+- **First sync:** if both the phone and Nextcloud already hold data, you choose: merge both, use the Nextcloud copy, or
+  start from this phone.
+- **After that** changes are merged item by item: the most recent change to a card stack, binder, trade, deck or scan
+  wins, and deletions carry over. With **Sync automatically** on, it syncs when you open the app, about 30 seconds
+  after a change, when you leave the app and every hour; **Only on Wi-Fi** keeps automatic syncs off mobile data.
+  "Sync now" always works.
+
+The password is stored encrypted with a key kept in the phone's keystore.
+
 ## Rebuilding
 Requires JDK 17+ and the Android SDK (installed at `%USERPROFILE%\Android\sdk`, see `local.properties`).
 ```
@@ -65,7 +83,7 @@ APKs land in `%LOCALAPPDATA%\mtgtrader-build\app\outputs\apk\release\` (kept out
 **Keep `keystore/` and `keystore.properties` safe and private.** Android only installs an update over the existing app
 if it is signed with the same key; losing it means uninstalling (and losing app data) to install a new version.
 
-Tests: `gradlew testDebugUnitTest` (logic) and `gradlew connectedDebugAndroidTest` (OCR scanner pipeline, needs a device/emulator).
+Tests: `gradlew testDebugUnitTest` (logic, including the sync merge) and `gradlew connectedDebugAndroidTest` (OCR scanner pipeline, needs a device/emulator).
 
 ## License and disclaimer
 The code is released under the [MIT License](LICENSE). That covers this app's code only, not the card data, names or
