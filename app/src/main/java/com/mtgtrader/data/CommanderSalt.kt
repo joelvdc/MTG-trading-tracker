@@ -51,6 +51,8 @@ data class SaltScores(
     val bracketBaseline: Int?,
     val saltPercent: Double?,
     val archetype: String?,
+    /** What the app's rule-zero cards show; null if it couldn't be read. */
+    val card: SaltCard? = null,
 ) {
     val complete get() = powerLevel != null && bracketRealistic != null
 }
@@ -93,6 +95,9 @@ class CommanderSaltApi(private val http: OkHttpClient) {
         parse(call(Request.Builder().url(url).get().build())).takeIf { it.complete }
     }.getOrNull()
 
+    /** The rule-zero card details for a deck Commander Salt already scored (without scoring it again). */
+    suspend fun cardData(saltId: String): SaltCard? = existing(saltId)?.card
+
     /** The rule-zero card as a PNG (360×504), with every section shown. */
     suspend fun ruleZeroCard(saltId: String, card: RuleZeroCard): ByteArray = withContext(Dispatchers.IO) {
         val payload = buildJsonObject {
@@ -132,7 +137,8 @@ class CommanderSaltApi(private val http: OkHttpClient) {
 
         fun parse(body: String): SaltScores {
             if (body.isBlank() || body == "null") throw IOException("Commander Salt doesn't know this deck")
-            val d = json.decodeFromString<SaltDeck>(body)
+            val root = json.parseToJsonElement(body) as? JsonObject ?: throw IOException("Commander Salt sent something unexpected")
+            val d = json.decodeFromJsonElement(SaltDeck.serializer(), root)
             val b = d.details?.brackets
             return SaltScores(
                 saltId = d.id,
@@ -141,6 +147,7 @@ class CommanderSaltApi(private val http: OkHttpClient) {
                 bracketBaseline = b?.wotcBracket?.roundToInt(),
                 saltPercent = d.details?.salt?.profile?.headline?.saltPercentage,
                 archetype = d.archetypeLabel?.takeIf { it.isNotBlank() },
+                card = runCatching { SaltCardParser.parse(root) }.getOrNull(),
             )
         }
 

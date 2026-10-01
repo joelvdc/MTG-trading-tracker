@@ -13,9 +13,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's scores and decklist"> | <img src="docs/screenshots/rulezero.png" width="200" alt="Commander Salt power level rule-zero card, full screen"> |
 
 ## Install
-Copy `MTG-Trader-1.12-beta1.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.12-beta2.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.12-beta1-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.12-beta2-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -32,8 +32,17 @@ don't own yet and without basic lands. The app shows the decklist grouped by you
 has [Commander Salt](https://www.commandersalt.com/) score it:
 - **Power level** (out of 10), **realistic bracket** (how the deck actually plays) and **baseline bracket** (WotC's
   bracket rules to the letter), plus saltiness and archetype.
-- The **bracket** and **power level rule-zero cards**, shown full screen (screen kept on at full brightness) to show
-  your table, and shareable as images. They're saved on the phone, so they work without a connection.
+- The **bracket** and **power level rule-zero cards**, drawn by the app from Commander Salt's analysis: the brackets
+  and the criteria behind them (game changers, two-card combos by name, extra turns, land denial), how the deck plays,
+  saltiness, manabase, interaction counts and win conditions. They're shown full screen (screen kept on at full
+  brightness) to show your table, shareable as images, and work without a connection. Commander Salt's own card
+  images are still one tap away (⋮ → "Show Commander Salt's original").
+
+**Power level source** (Settings): Commander Salt, or [EDH Power Level](https://edhpowerlevel.com/). With EDH Power
+Level, the app has edhpowerlevel.com work out each deck's power level (a few seconds per deck; it has no API, so the app
+opens the site's calculator out of sight and reads the result). That power level is used everywhere, including the
+power card and sorting; brackets and everything else stay Commander Salt's. Each deck page links to the deck on both
+sites.
 
 The deck list can be sorted by name, power level, bracket (realistic, then baseline) or when the deck was last changed on
 Archidekt, highest/newest first or reversed. Tap the refresh button on a deck after changing it on Archidekt, or use
@@ -92,6 +101,6 @@ images it shows.
 MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions
 of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
 
-The app isn't affiliated with or endorsed by Scryfall, Cardmarket, Archidekt or Commander Salt; it uses their public
+The app isn't affiliated with or endorsed by Scryfall, Cardmarket, Archidekt, Commander Salt or EDH Power Level; it uses their public
 data. Commander Salt has no official API: the app makes the same requests as its website, so that part may stop working
 if the site changes. Prices are for guidance only.

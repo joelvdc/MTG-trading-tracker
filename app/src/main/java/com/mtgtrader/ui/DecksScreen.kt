@@ -33,6 +33,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import com.mtgtrader.data.DeckSort
 import com.mtgtrader.data.DeckSorting
+import com.mtgtrader.data.PowerSource
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
@@ -97,8 +98,18 @@ fun DecksScreen(nav: NavController) {
         if (!started) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
     }
 
-    // Decks imported before 1.8 don't know when they last changed on Archidekt yet.
-    LaunchedEffect(Unit) { c.decks.fillMissingUpdateDates() }
+    val source by c.settings.powerSource.collectAsStateWithLifecycle()
+
+    // Decks imported before 1.8 don't know when they last changed on Archidekt yet, and decks scored
+    // before 1.12 lack the rule-zero card details; both are filled in quietly.
+    LaunchedEffect(Unit) {
+        c.decks.fillMissingUpdateDates()
+        c.decks.fillMissingCardData()
+    }
+    // With edhpowerlevel.com as the source, decks without its power level get one (shown as a job).
+    LaunchedEffect(source, job == null) {
+        if (job == null && c.decks.edhMissing()) c.decks.rateMissingEdh()
+    }
 
     LaunchedEffect(result) {
         val r = result ?: return@LaunchedEffect
@@ -166,7 +177,7 @@ fun DecksScreen(nav: NavController) {
             )
         },
     ) { pad ->
-        val list = decks?.let { remember(it, sort, reversed) { DeckSorting.sort(it, sort, reversed) } }
+        val list = decks?.let { remember(it, sort, reversed, source) { DeckSorting.sort(it, sort, reversed, source) } }
         if (list == null) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
@@ -187,7 +198,7 @@ fun DecksScreen(nav: NavController) {
                 }
             }
             items(list, key = { it.archidektId }) { deck ->
-                DeckRow(deck, showModified = sort == DeckSort.MODIFIED) { nav.navigate("deck/${deck.archidektId}") }
+                DeckRow(deck, source, showModified = sort == DeckSort.MODIFIED) { nav.navigate("deck/${deck.archidektId}") }
             }
         }
     }
@@ -228,7 +239,7 @@ private fun reverseLabel(sort: DeckSort) = when (sort) {
 }
 
 @Composable
-private fun DeckRow(deck: Deck, showModified: Boolean, onClick: () -> Unit) {
+private fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             DeckArt(deck, Modifier.width(88.dp).height(64.dp))
@@ -248,7 +259,7 @@ private fun DeckRow(deck: Deck, showModified: Boolean, onClick: () -> Unit) {
                 }
                 if (deck.scored) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        deck.powerLevel?.let { Tag("Power ${Scores.power(it)}") }
+                        deck.power(source)?.let { Tag("Power ${Scores.power(it, source)}") }
                         deck.bracketRealistic?.let { Tag("Realistic B$it") }
                         deck.bracketBaseline?.let { Tag("Baseline B$it") }
                     }
@@ -294,8 +305,9 @@ fun ColorPips(identity: String, size: Int = 12) {
 }
 
 object Scores {
-    /** Power level with one decimal, e.g. "4.4". */
-    fun power(v: Double): String = String.format(Locale.getDefault(), "%.1f", v)
+    /** Power level as its source shows it: "4.4" (Commander Salt) or "6.70" (edhpowerlevel.com). */
+    fun power(v: Double, source: PowerSource = PowerSource.COMMANDER_SALT): String =
+        String.format(Locale.getDefault(), if (source == PowerSource.EDH_POWER_LEVEL) "%.2f" else "%.1f", v)
 }
 
 @Composable

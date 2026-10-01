@@ -96,8 +96,10 @@ import com.mtgtrader.data.DeckGrouping
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.RuleZeroCard
+import com.mtgtrader.data.PowerSource
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.roundToInt
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
@@ -110,6 +112,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
+    val source by c.settings.powerSource.collectAsStateWithLifecycle()
     var groupBy by rememberSaveable { mutableStateOf(DeckGroupBy.CATEGORY) }
     var menu by remember { mutableStateOf(false) }
     var showing by remember { mutableStateOf<RuleZeroCard?>(null) }
@@ -151,6 +154,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 text = { Text("Open on Archidekt") },
                                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
                                 onClick = { menu = false; runCatching { uriHandler.openUri(d.archidektUrl) } },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Open on edhpowerlevel.com") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
+                                onClick = {
+                                    menu = false
+                                    scope.launch { c.decks.edhUrl(d.archidektId)?.let { runCatching { uriHandler.openUri(it) } } }
+                                },
                             )
                             d.saltUrl?.let { url ->
                                 DropdownMenuItem(
@@ -200,7 +211,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                 }
             }
-            item(key = "scores") { ScoresCard(d, busy = job != null, onRetry = ::refresh) }
+            item(key = "scores") { ScoresCard(d, source, busy = job != null, onRetry = ::refresh) }
             sections.forEach { section ->
                 item(key = "h_${section.title}") {
                     Text(
@@ -278,7 +289,7 @@ private fun DeckHeader(deck: Deck, cardCount: Int, value: Double, priceType: Pri
 }
 
 @Composable
-private fun ScoresCard(deck: Deck, busy: Boolean, onRetry: () -> Unit) {
+private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             if (!deck.scored) {
@@ -293,18 +304,30 @@ private fun ScoresCard(deck: Deck, busy: Boolean, onRetry: () -> Unit) {
                 return@Column
             }
             Row(Modifier.fillMaxWidth()) {
-                ScoreColumn("Power level", deck.powerLevel?.let(Scores::power), "out of 10", Modifier.weight(1f))
+                ScoreColumn("Power level", deck.power(source)?.let { Scores.power(it, source) }, "out of 10", Modifier.weight(1f))
                 ScoreColumn("Realistic bracket", deck.bracketRealistic?.toString(), Brackets.name(deck.bracketRealistic), Modifier.weight(1f))
                 ScoreColumn("Baseline bracket", deck.bracketBaseline?.toString(), Brackets.name(deck.bracketBaseline), Modifier.weight(1f))
             }
             HorizontalDivider(Modifier.padding(vertical = 10.dp))
-            val extras = listOfNotNull(deck.saltPercent?.let { "Salt ${it.toInt()}%" }, deck.archetype)
+            val extras = listOfNotNull(deck.saltPercent?.let { "Salt ${it.roundToInt()}%" }, deck.archetype)
             if (extras.isNotEmpty()) Text(extras.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
             Text(
                 "Realistic: how the deck actually plays. Baseline: WotC's bracket rules to the letter.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (source == PowerSource.EDH_POWER_LEVEL) {
+                val other = deck.powerLevel?.let { " (Commander Salt: ${Scores.power(it)})" } ?: ""
+                Text(
+                    when {
+                        deck.edhPowerLevel != null -> "Power level from edhpowerlevel.com" + (deck.edhPowerAt?.let { ", ${Fmt.dateTime(it)}" } ?: "") + other
+                        deck.edhPowerError != null -> "edhpowerlevel.com couldn't rate this deck (${deck.edhPowerError}); refresh the deck to try again." + other
+                        else -> "Waiting for edhpowerlevel.com's power level…$other"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (deck.edhPowerLevel == null && deck.edhPowerError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             deck.scoredAt?.let {
                 Text("Scored by Commander Salt, ${Fmt.dateTime(it)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -439,91 +462,4 @@ private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onRemove: (()
             { TextButton(onClick = remove) { Text("Remove from deck", color = MaterialTheme.colorScheme.error) } }
         },
     )
-}
-
-/**
- * The rule-zero cards full screen, for showing the table: swipe between bracket and power level.
- * The screen stays on at full brightness while it's open.
- */
-@Composable
-private fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        val view = LocalView.current
-        DisposableEffect(Unit) {
-            view.keepScreenOn = true
-            (view.parent as? DialogWindowProvider)?.window?.let { w -> w.attributes = w.attributes.apply { screenBrightness = 1f } }
-            onDispose { view.keepScreenOn = false }
-        }
-        val context = LocalContext.current
-        val pager = rememberPagerState(initialPage = start.ordinal) { RuleZeroCard.entries.size }
-        val scope = rememberCoroutineScope()
-        Column(Modifier.fillMaxSize().background(Color.Black)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TabRow(
-                    selectedTabIndex = pager.currentPage,
-                    containerColor = Color.Black,
-                    contentColor = Color.White,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    RuleZeroCard.entries.forEachIndexed { i, card ->
-                        Tab(selected = pager.currentPage == i, onClick = { scope.launch { pager.animateScrollToPage(i) } }, text = { Text(card.label) })
-                    }
-                }
-                IconButton(onClick = {
-                    val current = RuleZeroCard.entries[pager.currentPage]
-                    val file = context.container.decks.cardFile(deck.archidektId, current)
-                    if (file.exists()) shareCard(context, file, deck, current)
-                }) { Icon(Icons.Default.Share, "Share", tint = Color.White) }
-                IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
-            }
-            HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth()) { page ->
-                RuleZeroPage(deck, RuleZeroCard.entries[page])
-            }
-        }
-    }
-}
-
-@Composable
-private fun RuleZeroPage(deck: Deck, card: RuleZeroCard) {
-    val repo = LocalContext.current.container.decks
-    val file = remember(deck.archidektId, card) { repo.cardFile(deck.archidektId, card) }
-    // Bumped after each download so the image reloads; the card is fetched again only when it's missing.
-    var loadedAt by remember(card) { mutableLongStateOf(if (file.exists()) file.lastModified() else 0L) }
-    var error by remember(card) { mutableStateOf<String?>(null) }
-    var attempt by remember(card) { mutableIntStateOf(0) }
-    LaunchedEffect(card, attempt) {
-        if (loadedAt != 0L) return@LaunchedEffect
-        error = null
-        try {
-            loadedAt = repo.downloadCard(deck, card).lastModified()
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            error = e.message ?: "download failed"
-        }
-    }
-    Box(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
-        when {
-            loadedAt != 0L -> AsyncImage(
-                model = file,
-                contentDescription = "${card.label} rule-zero card for ${deck.name}",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxWidth().aspectRatio(360f / 504f).clip(RoundedCornerShape(12.dp)),
-            )
-            error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Couldn't get the ${card.label.lowercase()} card: $error", color = Color.White, textAlign = TextAlign.Center)
-                TextButton(onClick = { attempt++ }) { Text("Try again") }
-            }
-            else -> CircularProgressIndicator(color = Color.White)
-        }
-    }
-}
-
-private fun shareCard(context: Context, file: File, deck: Deck, card: RuleZeroCard) {
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
-    val send = Intent(Intent.ACTION_SEND)
-        .setType("image/png")
-        .putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_TEXT, "${deck.name}: ${card.label.lowercase()} rule-zero card (commandersalt.com)")
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(send, "Share rule-zero card"))
 }

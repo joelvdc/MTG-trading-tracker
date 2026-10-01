@@ -71,6 +71,15 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("wifiOnly", on).apply()
     }
 
+    /** Where deck power levels come from. Since 1.12. */
+    private val _powerSource = MutableStateFlow(PowerSource.fromKey(prefs.getString("powerSource", null)))
+    val powerSource: StateFlow<PowerSource> = _powerSource
+
+    fun setPowerSource(v: PowerSource) {
+        _powerSource.value = v
+        prefs.edit().putString("powerSource", v.name).stamp().apply()
+    }
+
     fun setCollectionView(v: CollectionView) {
         _collectionView.value = v
         prefs.edit().putString("collectionView", v.name).stamp().apply()
@@ -96,6 +105,7 @@ class Settings(context: Context) {
             put("deckSort", deckSort.name)
             put("deckSortReversed", deckSortReversed.toString())
             put("collectionView", collectionView.value.name)
+            put("powerSource", powerSource.value.name)
         },
     )
 
@@ -109,6 +119,7 @@ class Settings(context: Context) {
         v["deckSort"]?.let { e.putString("deckSort", it) }
         v["deckSortReversed"]?.toBooleanStrictOrNull()?.let { e.putBoolean("deckSortReversed", it) }
         v["collectionView"]?.let { _collectionView.value = CollectionView.fromKey(it); e.putString("collectionView", it) }
+        v["powerSource"]?.let { _powerSource.value = PowerSource.fromKey(it); e.putString("powerSource", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

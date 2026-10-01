@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.BuildConfig
 import com.mtgtrader.container
+import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.PriceUpdateState
 import kotlinx.coroutines.launch
@@ -56,6 +57,7 @@ fun SettingsScreen() {
     val state by c.prices.state.collectAsStateWithLifecycle()
     val autoUpdate by c.settings.autoUpdate.collectAsStateWithLifecycle()
     val wifiOnly by c.settings.wifiOnly.collectAsStateWithLifecycle()
+    val powerSource by c.settings.powerSource.collectAsStateWithLifecycle()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -128,12 +130,47 @@ fun SettingsScreen() {
             )
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text("Commander deck power level", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Where the power level on the Decks tab, the deck pages and the power card comes from (also used for sorting). " +
+                    "Brackets and everything else on the rule-zero cards come from Commander Salt.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            PowerSource.entries.forEach { src ->
+                val pick = {
+                    if (src != powerSource) {
+                        c.settings.setPowerSource(src)
+                        if (src == PowerSource.EDH_POWER_LEVEL) c.decks.rateMissingEdh()
+                    }
+                }
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = pick).padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = src == powerSource, onClick = pick)
+                    Column {
+                        Text(src.label)
+                        Text(
+                            when (src) {
+                                PowerSource.COMMANDER_SALT -> "commandersalt.com scores the deck when it's imported."
+                                PowerSource.EDH_POWER_LEVEL -> "The app has edhpowerlevel.com work out each deck's power level (a few seconds per deck)."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
             SyncSection()
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("About", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Card data and images come from Scryfall; prices come from Cardmarket's public daily price guide (EUR). " +
+                    "Deck scores come from Commander Salt and, if chosen, edhpowerlevel.com. " +
                     "Both are looked up live, so new expansions show up automatically without updating the app.\n\n" +
                     "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall or Cardmarket.\n\nVersion ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,

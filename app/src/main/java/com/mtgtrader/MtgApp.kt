@@ -11,6 +11,7 @@ import com.mtgtrader.data.ArchidektApi
 import com.mtgtrader.data.CommanderSaltApi
 import com.mtgtrader.data.DataUpdater
 import com.mtgtrader.data.DeckRepository
+import com.mtgtrader.data.EdhPowerLevelApi
 import com.mtgtrader.data.MtgRepository
 import com.mtgtrader.data.NetworkMonitor
 import com.mtgtrader.data.PriceGuideRepository
@@ -65,7 +66,7 @@ class AppContainer(context: Context) {
     val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices, appScope)
     val updater = DataUpdater(context, settings, prices, network)
-    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, appScope)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(context), appScope)
     val sync = SyncManager(context, db, SyncStore(db, settings), NextcloudClient(http), network, appScope)
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */

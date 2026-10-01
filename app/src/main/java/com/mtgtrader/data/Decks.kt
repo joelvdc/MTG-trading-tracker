@@ -41,10 +41,33 @@ data class Deck(
     val archidektUpdatedAt: Long? = null,
     /** Last change in the app (also bumped when one of its cards changes); for sync. Since 1.12. */
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
+    /** Power level from edhpowerlevel.com, when that's the chosen source (see [PowerSource]). Since 1.12. */
+    val edhPowerLevel: Double? = null,
+    val edhPowerAt: Long? = null,
+    /** Why edhpowerlevel.com couldn't rate the deck last time; null after a success. */
+    val edhPowerError: String? = null,
+    /** What the rule-zero cards show from Commander Salt, as [SaltCard] JSON. Since 1.12. */
+    val saltCard: String? = null,
 ) {
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
     val scored get() = powerLevel != null || bracketRealistic != null
+
+    /** The power level from the chosen source. */
+    fun power(source: PowerSource): Double? = when (source) {
+        PowerSource.COMMANDER_SALT -> powerLevel
+        PowerSource.EDH_POWER_LEVEL -> edhPowerLevel
+    }
+}
+
+/** Where the power level comes from; everything else (brackets, salt, the cards' details) is Commander Salt's. */
+enum class PowerSource(val label: String, val site: String) {
+    COMMANDER_SALT("Commander Salt", "commandersalt.com"),
+    EDH_POWER_LEVEL("EDH Power Level", "edhpowerlevel.com");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT
+    }
 }
 
 /** One line of a deck's list (a card can have several, e.g. one normal and one foil copy). */
@@ -160,7 +183,7 @@ object DeckSorting {
      * Sorts decks; with [reverse] the order flips (weakest / oldest / Z first). Decks without the
      * value sorted on (not scored yet, date unknown) always come last, by name.
      */
-    fun sort(decks: List<Deck>, sort: DeckSort, reverse: Boolean): List<Deck> {
+    fun sort(decks: List<Deck>, sort: DeckSort, reverse: Boolean, source: PowerSource = PowerSource.COMMANDER_SALT): List<Deck> {
         fun <T : Comparable<T>> by(key: (Deck) -> T?, then: Comparator<Deck> = byName): List<Deck> {
             val (known, unknown) = decks.partition { key(it) != null }
             val sorted = known.sortedWith(compareByDescending<Deck> { key(it)!! }.then(then))
@@ -168,11 +191,11 @@ object DeckSorting {
         }
         return when (sort) {
             DeckSort.NAME -> decks.sortedWith(if (reverse) byName.reversed() else byName)
-            DeckSort.POWER -> by({ it.powerLevel })
+            DeckSort.POWER -> by({ it.power(source) })
             // Realistic bracket first, then the baseline one, then power level to break ties.
             DeckSort.BRACKET -> by(
                 { it.bracketRealistic },
-                compareByDescending<Deck> { it.bracketBaseline ?: 0 }.thenByDescending { it.powerLevel ?: 0.0 }.thenBy { it.name.lowercase() },
+                compareByDescending<Deck> { it.bracketBaseline ?: 0 }.thenByDescending { it.power(source) ?: 0.0 }.thenBy { it.name.lowercase() },
             )
             DeckSort.MODIFIED -> by({ it.archidektUpdatedAt })
         }
