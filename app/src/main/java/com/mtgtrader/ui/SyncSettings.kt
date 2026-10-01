@@ -58,7 +58,7 @@ fun SyncSection() {
     var confirmDisconnect by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Text("Sync with Nextcloud (beta)", style = MaterialTheme.typography.titleMedium)
+    Text("Sync with Nextcloud", style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(4.dp))
     if (!s.connected) {
         Text(

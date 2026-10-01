@@ -45,6 +45,7 @@ class DeckRepository(
     private val repo: MtgRepository,
     private val settings: Settings,
     private val edh: EdhPowerLevelApi,
+    private val scrollVault: ScrollVaultApi,
     private val scope: CoroutineScope,
 ) {
     private val dao = db.deckDao()
@@ -60,7 +61,7 @@ class DeckRepository(
     private var stopRequested = false
 
     @Volatile
-    private var edhStopped = false
+    private var powerStopped = false
 
     fun consumeResult() {
         _result.value = null
@@ -79,6 +80,21 @@ class DeckRepository(
             val (deck, error) = importOne(id, "")
             DeckJobResult(id, error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: "Imported ${deck.name}", openDeck = id)
         }
+    }
+
+    /**
+     * Has Commander Salt score the deck again (brackets and its power level) and, when another site
+     * is the power level source, that site too, without reloading the list from Archidekt.
+     */
+    fun rescore(deckId: Long): Boolean = start(DeckJob(deckId, "Scoring on Commander Salt…")) {
+        val deck = dao.get(deckId) ?: throw IllegalStateException("The deck is gone")
+        val source = settings.powerSource.value
+        val done = score(deck) { _job.value = DeckJob(deckId, it) }
+        val problems = listOfNotNull(
+            done.scoreError?.let { "Commander Salt couldn't score it: $it" },
+            done.powerError(source)?.takeIf { source.external }?.let { "${source.site} couldn't rate it: $it" },
+        )
+        DeckJobResult(deckId, if (problems.isEmpty()) "Bracket and power level updated" else problems.joinToString(" · "))
     }
 
     /** Re-reads the deck from Archidekt and has it scored again. */
@@ -144,7 +160,7 @@ class DeckRepository(
      */
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
         val decks = dao.all()
-        val edhChosen = settings.powerSource.value == PowerSource.EDH_POWER_LEVEL
+        val source = settings.powerSource.value
         val listed = HashMap<Long, Long?>()
         for (owner in decks.map { it.owner }.filter { it.isNotBlank() }.distinct()) {
             if (stopRequested) break
@@ -163,15 +179,15 @@ class DeckRepository(
                 val fetched = if (listed[d.archidektId] == null) archidekt.deck(d.archidektId) else null
                 val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
                 val changed = remoteAt == null || remoteAt != d.archidektUpdatedAt
-                val needsEdh = edhChosen && d.edhPowerLevel == null
-                if (!changed && d.scored && d.scoreError == null && !needsEdh) continue
+                val needsPower = source.external && d.power(source) == null
+                if (!changed && d.scored && d.scoreError == null && !needsPower) continue
                 // A pause between decks that hit Commander Salt, so it isn't flooded.
                 if (busy) delay(1_500)
                 busy = true
                 val error = if (changed) {
                     importOne(d.archidektId, prefix, canStop = true, fetched = fetched).second.also { updated++ }
                 } else if (d.scored && d.scoreError == null) {
-                    rateEdh(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }.edhPowerError.also { rescored++ }
+                    ratePower(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }.powerError(source).also { rescored++ }
                 } else {
                     _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
                     score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }.scoreError.also { rescored++ }
@@ -298,8 +314,12 @@ class DeckRepository(
             importedAt = System.currentTimeMillis(),
             archidektUpdatedAt = a.updatedAt ?: old?.archidektUpdatedAt,
         ).let {
-            // The list may have changed: an EDH Power Level rating is redone right after (when that's the source) or dropped.
-            if (settings.powerSource.value == PowerSource.EDH_POWER_LEVEL) it else it.copy(edhPowerLevel = null, edhPowerAt = null, edhPowerError = null)
+            // The list may have changed: the chosen site's power level is redone right after; the other site's is dropped.
+            val source = settings.powerSource.value
+            var d = it
+            if (source != PowerSource.EDH_POWER_LEVEL) d = d.copy(edhPowerLevel = null, edhPowerAt = null, edhPowerError = null)
+            if (source != PowerSource.SCROLLVAULT) d = d.copy(svPowerLevel = null, scrollVault = null, svAt = null, svError = null)
+            d
         }
         dao.replace(deck, cards)
         return deck
@@ -327,7 +347,7 @@ class DeckRepository(
         dao.update(scored)
         // The rule-zero cards are drawn in the app now; Commander Salt's own images are fetched only when asked for.
         RuleZeroCard.entries.forEach { cardFile(scored.archidektId, it).delete() }
-        return if (settings.powerSource.value == PowerSource.EDH_POWER_LEVEL) rateEdh(scored, step) else scored
+        return ratePower(scored, step)
     }
 
     /** The deck's link on edhpowerlevel.com (its list as on Archidekt, without cards added in the app). */
@@ -339,7 +359,27 @@ class DeckRepository(
         return EdhPowerLevelLink.url(commanders, main)
     }
 
-    /** Has edhpowerlevel.com rate the deck; failures are kept on the deck rather than thrown. */
+    /** Has the chosen site (if not Commander Salt) rate the deck's power level; failures are kept on the deck rather than thrown. */
+    private suspend fun ratePower(deck: Deck, step: (String) -> Unit): Deck = when (settings.powerSource.value) {
+        PowerSource.COMMANDER_SALT -> deck
+        PowerSource.EDH_POWER_LEVEL -> rateEdh(deck, step)
+        PowerSource.SCROLLVAULT -> rateScrollVault(deck, step)
+    }
+
+    private suspend fun rateScrollVault(deck: Deck, step: (String) -> Unit): Deck {
+        val rated = try {
+            step("Getting the power level from ScrollVault…")
+            val r = scrollVault.rate(deck.archidektUrl)
+            deck.copy(svPowerLevel = r.power, scrollVault = r.encode(), svAt = System.currentTimeMillis(), svError = null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            deck.copy(svError = e.message ?: "unknown error")
+        }
+        dao.update(rated)
+        return rated
+    }
+
     private suspend fun rateEdh(deck: Deck, step: (String) -> Unit): Deck {
         val rated = try {
             val url = edhUrl(deck.archidektId) ?: throw IllegalStateException("the deck has no commander")
@@ -357,32 +397,38 @@ class DeckRepository(
     }
 
     /**
-     * Gets edhpowerlevel.com's power level for the decks that don't have one yet (after choosing it
+     * Gets the chosen site's power level for the decks that don't have one yet (after choosing it
      * as the source). Decks it failed on before are left for "Re-score all" or the deck's refresh.
      */
-    fun rateMissingEdh(): Boolean = start(DeckJob(null, "Getting power levels from edhpowerlevel.com…", canStop = true)) {
-        edhStopped = false
-        val decks = dao.all().filter { it.edhPowerLevel == null && it.edhPowerError == null }
-        var rated = 0
-        val failed = mutableListOf<String>()
-        for ((i, d) in decks.withIndex()) {
-            if (stopRequested) break
-            val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-            val r = rateEdh(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
-            if (r.edhPowerError == null) rated++ else failed += d.name
+    fun rateMissingPower(): Boolean {
+        val source = settings.powerSource.value
+        if (!source.external) return false
+        return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
+            powerStopped = false
+            val decks = dao.all().filter { it.power(source) == null && it.powerError(source) == null }
+            var rated = 0
+            val failed = mutableListOf<String>()
+            for ((i, d) in decks.withIndex()) {
+                if (stopRequested) break
+                val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
+                val r = ratePower(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
+                if (r.powerError(source) == null) rated++ else failed += d.name
+            }
+            // Stopped: don't start again by itself until asked (Settings) or the app restarts.
+            if (stopRequested) powerStopped = true
+            val parts = buildList {
+                add("Got $rated power level" + (if (rated == 1) "" else "s") + " from ${source.site}")
+                if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
+            }
+            DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
         }
-        // Stopped: don't start again by itself until asked (Settings) or the app restarts.
-        if (stopRequested) edhStopped = true
-        val parts = buildList {
-            add("Got $rated power level" + (if (rated == 1) "" else "s") + " from edhpowerlevel.com")
-            if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
-        }
-        DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }
 
-    /** Whether some decks still need edhpowerlevel.com's power level (and it's the chosen source). */
-    suspend fun edhMissing(): Boolean = !edhStopped &&
-        settings.powerSource.value == PowerSource.EDH_POWER_LEVEL && dao.all().any { it.edhPowerLevel == null && it.edhPowerError == null }
+    /** Whether some decks still need the chosen site's power level. */
+    suspend fun powerMissing(): Boolean {
+        val source = settings.powerSource.value
+        return !powerStopped && source.external && dao.all().any { it.power(source) == null && it.powerError(source) == null }
+    }
 
     /** Fetches the rule-zero card details for decks scored before 1.12 (without scoring them again). Quietly does nothing when offline. */
     suspend fun fillMissingCardData() {

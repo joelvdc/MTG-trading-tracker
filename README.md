@@ -13,13 +13,14 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's scores and decklist"> | <img src="docs/screenshots/rulezero.png" width="200" alt="Commander Salt power level rule-zero card, full screen"> |
 
 ## Install
-Copy `MTG-Trader-1.12-beta2.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.12.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.12-beta2-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.12-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
-- **Decks:** Archidekt (decklists) and Commander Salt (scores and rule-zero cards).
+- **Decks:** Archidekt (decklists), Commander Salt (brackets, scores and rule-zero cards) and, if chosen, edhpowerlevel.com
+  or ScrollVault (power level).
 - **Prices:** Cardmarket's public daily price guide (trend, average, low, 1/7/30-day averages, normal + foil), downloaded
   automatically once a day (~26 MB) when the app opens and in the background. Settings can turn automatic updates off
   or limit them to Wi-Fi; "Update prices now" always runs.
@@ -38,14 +39,17 @@ has [Commander Salt](https://www.commandersalt.com/) score it:
   brightness) to show your table, shareable as images, and work without a connection. Commander Salt's own card
   images are still one tap away (⋮ → "Show Commander Salt's original").
 
-**Power level source** (Settings): Commander Salt, or [EDH Power Level](https://edhpowerlevel.com/). With EDH Power
-Level, the app has edhpowerlevel.com work out each deck's power level (a few seconds per deck; it has no API, so the app
-opens the site's calculator out of sight and reads the result). That power level is used everywhere, including the
-power card and sorting; brackets and everything else stay Commander Salt's. Each deck page links to the deck on both
-sites.
+**Power level source** (Settings): Commander Salt, [EDH Power Level](https://edhpowerlevel.com/) or
+[ScrollVault](https://scrollvault.net/tools/commander-bracket/). The other two sites have no API, so the app opens their
+calculator out of sight and reads the result (a few seconds per deck; on ScrollVault's page the ads and trackers aren't
+loaded). The chosen power level is used everywhere, including the power card and sorting; brackets and everything else
+stay Commander Salt's. With ScrollVault, the power level comes with its margin (e.g. 6.2 ±0.5), and the power card and
+deck page add what it found "at the table": the typical and earliest winning turn from its goldfish simulation, its own
+bracket call (and whether it's borderline) and its "tell your pod" line.
 
 The deck list can be sorted by name, power level, bracket (realistic, then baseline) or when the deck was last changed on
-Archidekt, highest/newest first or reversed. Tap the refresh button on a deck after changing it on Archidekt, or use
+Archidekt, highest/newest first or reversed. On a deck page, **Refresh bracket and power level** scores the deck again on
+Commander Salt and the chosen power level site; the refresh button at the top also reloads the list from Archidekt. Or use
 **Update all decks from Archidekt** (Decks ⋮ menu): it checks every deck and reloads and re-scores only the ones that
 changed. **Re-score all decks on Commander Salt** scores every deck again. Commander Salt has no official API: the app uses the
 same calls as its website, so this part may break if the site changes. Importing a deck adds it to commandersalt.com.
@@ -65,7 +69,7 @@ total underneath, and "Value per card" sorts by it.
 Scan a pile of cards (or add them by name) into a waiting list, then select some or all of them and send them **to a
 binder**, **to a trade**, **to a deck** (added in the app only, kept when the deck is refreshed) or **discard** them.
 
-## Sync between phones (beta)
+## Sync between phones
 Settings → **Sync with Nextcloud** keeps the collection, binders, trades, decks, scans and preferences the same on all
 your phones, using a file (`MTG Trader/sync.json.gz`) on your own [Nextcloud](https://nextcloud.com/). Prices and
 pictures aren't synced; each phone downloads those itself.
@@ -101,6 +105,6 @@ images it shows.
 MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions
 of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
 
-The app isn't affiliated with or endorsed by Scryfall, Cardmarket, Archidekt, Commander Salt or EDH Power Level; it uses their public
+The app isn't affiliated with or endorsed by Scryfall, Cardmarket, Archidekt, Commander Salt, EDH Power Level or ScrollVault; it uses their public
 data. Commander Salt has no official API: the app makes the same requests as its website, so that part may stop working
 if the site changes. Prices are for guidance only.

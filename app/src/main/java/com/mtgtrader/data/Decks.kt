@@ -48,6 +48,11 @@ data class Deck(
     val edhPowerError: String? = null,
     /** What the rule-zero cards show from Commander Salt, as [SaltCard] JSON. Since 1.12. */
     val saltCard: String? = null,
+    /** Power level from ScrollVault, with its other findings as [ScrollVaultReading] JSON. Since 1.12. */
+    val svPowerLevel: Double? = null,
+    val scrollVault: String? = null,
+    val svAt: Long? = null,
+    val svError: String? = null,
 ) {
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
@@ -57,13 +62,34 @@ data class Deck(
     fun power(source: PowerSource): Double? = when (source) {
         PowerSource.COMMANDER_SALT -> powerLevel
         PowerSource.EDH_POWER_LEVEL -> edhPowerLevel
+        PowerSource.SCROLLVAULT -> svPowerLevel
     }
+
+    /** When the chosen source last rated the deck, and why it failed (if it did). */
+    fun powerAt(source: PowerSource): Long? = when (source) {
+        PowerSource.COMMANDER_SALT -> scoredAt
+        PowerSource.EDH_POWER_LEVEL -> edhPowerAt
+        PowerSource.SCROLLVAULT -> svAt
+    }
+
+    fun powerError(source: PowerSource): String? = when (source) {
+        PowerSource.COMMANDER_SALT -> scoreError
+        PowerSource.EDH_POWER_LEVEL -> edhPowerError
+        PowerSource.SCROLLVAULT -> svError
+    }
+
+    /** ScrollVault's extra findings (win turns, its bracket verdict, the line for your pod). */
+    val scrollVaultReading get() = ScrollVaultReading.decode(scrollVault)
 }
 
 /** Where the power level comes from; everything else (brackets, salt, the cards' details) is Commander Salt's. */
 enum class PowerSource(val label: String, val site: String) {
     COMMANDER_SALT("Commander Salt", "commandersalt.com"),
-    EDH_POWER_LEVEL("EDH Power Level", "edhpowerlevel.com");
+    EDH_POWER_LEVEL("EDH Power Level", "edhpowerlevel.com"),
+    SCROLLVAULT("ScrollVault", "scrollvault.net");
+
+    /** Rated by another site after Commander Salt has scored the deck. */
+    val external get() = this != COMMANDER_SALT
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT

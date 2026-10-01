@@ -141,7 +141,7 @@ fun SettingsScreen() {
                 val pick = {
                     if (src != powerSource) {
                         c.settings.setPowerSource(src)
-                        if (src == PowerSource.EDH_POWER_LEVEL) c.decks.rateMissingEdh()
+                        if (src.external) c.decks.rateMissingPower()
                     }
                 }
                 Row(
@@ -155,6 +155,8 @@ fun SettingsScreen() {
                             when (src) {
                                 PowerSource.COMMANDER_SALT -> "commandersalt.com scores the deck when it's imported."
                                 PowerSource.EDH_POWER_LEVEL -> "The app has edhpowerlevel.com work out each deck's power level (a few seconds per deck)."
+                                PowerSource.SCROLLVAULT -> "The app has ScrollVault's bracket calculator analyse each deck (about 10 seconds per deck). " +
+                                    "Its power level comes with a margin, a typical winning turn and a line to tell your pod."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -170,7 +172,7 @@ fun SettingsScreen() {
             Text("About", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Card data and images come from Scryfall; prices come from Cardmarket's public daily price guide (EUR). " +
-                    "Deck scores come from Commander Salt and, if chosen, edhpowerlevel.com. " +
+                    "Deck scores come from Commander Salt and, if chosen, edhpowerlevel.com or ScrollVault. " +
                     "Both are looked up live, so new expansions show up automatically without updating the app.\n\n" +
                     "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall or Cardmarket.\n\nVersion ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,

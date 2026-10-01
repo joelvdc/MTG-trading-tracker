@@ -300,7 +300,7 @@ interface DeckDao {
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -315,11 +315,21 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /** Version 9 (app 1.12): power level from ScrollVault. */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `svPowerLevel` REAL")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `scrollVault` TEXT")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `svAt` INTEGER")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `svError` TEXT")
+            }
+        }
 
         /** Version 8 (app 1.12 beta 2): power level from edhpowerlevel.com and the rule-zero card details. */
         private val MIGRATION_7_8 = object : Migration(7, 8) {

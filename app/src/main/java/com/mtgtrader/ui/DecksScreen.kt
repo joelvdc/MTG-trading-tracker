@@ -106,9 +106,9 @@ fun DecksScreen(nav: NavController) {
         c.decks.fillMissingUpdateDates()
         c.decks.fillMissingCardData()
     }
-    // With edhpowerlevel.com as the source, decks without its power level get one (shown as a job).
+    // With another site as the power level source, decks without its power level get one (shown as a job).
     LaunchedEffect(source, job == null) {
-        if (job == null && c.decks.edhMissing()) c.decks.rateMissingEdh()
+        if (job == null && c.decks.powerMissing()) c.decks.rateMissingPower()
     }
 
     LaunchedEffect(result) {
@@ -305,7 +305,7 @@ fun ColorPips(identity: String, size: Int = 12) {
 }
 
 object Scores {
-    /** Power level as its source shows it: "4.4" (Commander Salt) or "6.70" (edhpowerlevel.com). */
+    /** Power level as its source shows it: "4.4" (Commander Salt, ScrollVault) or "6.70" (edhpowerlevel.com). */
     fun power(v: Double, source: PowerSource = PowerSource.COMMANDER_SALT): String =
         String.format(Locale.getDefault(), if (source == PowerSource.EDH_POWER_LEVEL) "%.2f" else "%.1f", v)
 }

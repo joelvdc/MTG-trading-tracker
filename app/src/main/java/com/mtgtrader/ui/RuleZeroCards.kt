@@ -84,6 +84,7 @@ import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltEffect
+import com.mtgtrader.data.ScrollVaultReading
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -255,6 +256,7 @@ fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier) {
 fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Modifier = Modifier) {
     CardFrame(deck, "Power level", modifier) {
         val power = deck.power(source)
+        val sv = deck.scrollVaultReading.takeIf { source == PowerSource.SCROLLVAULT && power != null }
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(power?.let { Scores.power(it, source) } ?: "—", fontSize = 44.sp, fontWeight = FontWeight.SemiBold, lineHeight = 46.sp)
@@ -263,20 +265,25 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
                 deck.archetype?.let { Box(Modifier.padding(bottom = 8.dp)) { Pill(it) } }
             }
             Text(
-                if (source == PowerSource.COMMANDER_SALT) listOfNotNull(data.playStyle?.lowercase(), source.site).joinToString(" · ") else "by ${source.site}",
+                when {
+                    source == PowerSource.COMMANDER_SALT -> listOfNotNull(data.playStyle?.lowercase(), source.site).joinToString(" · ")
+                    sv?.margin != null -> "by ${source.site} · ±${Scores.power(sv.margin, source)}"
+                    else -> "by ${source.site}"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Meter(power ?: 0.0, Modifier.padding(top = 8.dp))
-            if (power == null && source == PowerSource.EDH_POWER_LEVEL) {
+            if (power == null && source.external) {
                 Text(
-                    deck.edhPowerError?.let { "edhpowerlevel.com couldn't rate this deck: $it" } ?: "Not rated by edhpowerlevel.com yet.",
+                    deck.powerError(source)?.let { "${source.site} couldn't rate this deck: $it" } ?: "Not rated by ${source.site} yet.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
         }
+        sv?.let { r -> AtTheTable(r) }
         Section(null) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
@@ -326,9 +333,37 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
             }
         }
         Footer(
-            if (source == PowerSource.COMMANDER_SALT) "Data: Commander Salt" else "Power level: edhpowerlevel.com · data: Commander Salt",
+            if (source == PowerSource.COMMANDER_SALT) "Data: Commander Salt" else "Power level: ${source.site} · data: Commander Salt",
             deck,
         )
+    }
+}
+
+/** ScrollVault's goldfish clock, its own bracket call and its line for the pod. */
+@Composable
+private fun AtTheTable(r: ScrollVaultReading) {
+    Section("At the table (ScrollVault)") {
+        r.typicalWin?.let { t ->
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("Typical win turn $t", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                r.earliestWin?.let { Text("  ·  earliest turn $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+        }
+        r.bracket?.let { b ->
+            Text(
+                "Its bracket: $b (${Brackets.name(b)?.lowercase()})" + (r.borderline?.let { ", borderline $it" } ?: ""),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        r.podLine?.let { line ->
+            Text(
+                "“$line”",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF3C3489),
+                modifier = Modifier.padding(top = 6.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFFEEEDFE)).padding(horizontal = 10.dp, vertical = 6.dp),
+            )
+        }
     }
 }
 
@@ -521,7 +556,7 @@ private fun shareCard(context: Context, file: File, deck: Deck, card: RuleZeroCa
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
     val credit = when {
         original -> "commandersalt.com"
-        card == RuleZeroCard.POWER && source == PowerSource.EDH_POWER_LEVEL -> "edhpowerlevel.com, commandersalt.com"
+        card == RuleZeroCard.POWER && source.external -> "${source.site}, commandersalt.com"
         else -> "commandersalt.com"
     }
     val send = Intent(Intent.ACTION_SEND)

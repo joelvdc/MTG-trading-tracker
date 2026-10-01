@@ -211,7 +211,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                 }
             }
-            item(key = "scores") { ScoresCard(d, source, busy = job != null, onRetry = ::refresh) }
+            item(key = "scores") {
+                ScoresCard(d, source, busy = job != null, onRetry = ::refresh) {
+                    if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
+                }
+            }
             sections.forEach { section ->
                 item(key = "h_${section.title}") {
                     Text(
@@ -289,7 +293,7 @@ private fun DeckHeader(deck: Deck, cardCount: Int, value: Double, priceType: Pri
 }
 
 @Composable
-private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: () -> Unit) {
+private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: () -> Unit, onRescore: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             if (!deck.scored) {
@@ -316,17 +320,28 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (source == PowerSource.EDH_POWER_LEVEL) {
+            if (source.external) {
+                val power = deck.power(source)
+                val error = deck.powerError(source)
+                val sv = deck.scrollVaultReading.takeIf { source == PowerSource.SCROLLVAULT && power != null }
                 val other = deck.powerLevel?.let { " (Commander Salt: ${Scores.power(it)})" } ?: ""
                 Text(
                     when {
-                        deck.edhPowerLevel != null -> "Power level from edhpowerlevel.com" + (deck.edhPowerAt?.let { ", ${Fmt.dateTime(it)}" } ?: "") + other
-                        deck.edhPowerError != null -> "edhpowerlevel.com couldn't rate this deck (${deck.edhPowerError}); refresh the deck to try again." + other
-                        else -> "Waiting for edhpowerlevel.com's power level…$other"
+                        power != null -> "Power level from ${source.site}" + (sv?.margin?.let { " (±${Scores.power(it)})" } ?: "") +
+                            (deck.powerAt(source)?.let { ", ${Fmt.dateTime(it)}" } ?: "") + other
+                        error != null -> "${source.site} couldn't rate this deck ($error); refresh the bracket and power level to try again." + other
+                        else -> "Waiting for ${source.site}'s power level…$other"
                     },
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (deck.edhPowerLevel == null && deck.edhPowerError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (power == null && error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                sv?.let { r ->
+                    val facts = listOfNotNull(
+                        r.typicalWin?.let { "typical win turn $it" + (r.earliestWin?.let { e -> " (earliest $e)" } ?: "") },
+                        r.bracket?.let { "its bracket $it" + (r.borderline?.let { b -> ", borderline $b" } ?: "") },
+                    )
+                    if (facts.isNotEmpty()) Text("ScrollVault: " + facts.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             deck.scoredAt?.let {
                 Text("Scored by Commander Salt, ${Fmt.dateTime(it)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -338,6 +353,13 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+            }
+            if (!busy) {
+                TextButton(onClick = onRescore, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Icon(Icons.Default.Refresh, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Refresh bracket and power level")
+                }
             }
         }
     }
