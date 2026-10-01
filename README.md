@@ -4,13 +4,17 @@ Track Magic: The Gathering trades, check they're fair using Cardmarket prices, a
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
 binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own Nextcloud.
 
-| Trade | Search | Collection & binders | Scan tab |
+| Trade | Search | Collection | Compact view |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/trade.png" width="200" alt="A trade with the value of both sides compared"> | <img src="docs/screenshots/search.png" width="200" alt="Search results listing every printing with Cardmarket prices"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection with binder filters"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> |
+| <img src="docs/screenshots/trade.png" width="200" alt="A trade with the value of both sides compared"> | <img src="docs/screenshots/search.png" width="200" alt="Search results listing every printing with Cardmarket prices"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection as a list with binder filters"> | <img src="docs/screenshots/compact.png" width="200" alt="The collection as one text line per card"> |
 
-| Commander decks | Deck page | Rule-zero card |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's scores and decklist"> | <img src="docs/screenshots/rulezero.png" width="200" alt="Commander Salt power level rule-zero card, full screen"> |
+| Scan tab | Commander decks | Deck page | Settings |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's power level, brackets and the Refresh bracket and power level button"> | <img src="docs/screenshots/settings.png" width="200" alt="Choosing the power level source and connecting to Nextcloud"> |
+
+| Bracket card | Power card |
+|:---:|:---:|
+| <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
 Copy `MTG-Trader-1.12.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
