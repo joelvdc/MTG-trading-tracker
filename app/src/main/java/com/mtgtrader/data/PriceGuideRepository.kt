@@ -46,11 +46,15 @@ class PriceGuideRepository(
 
     val isStale get() = System.currentTimeMillis() - settings.lastPriceFetch.value > MAX_AGE_MS
 
-    suspend fun refreshIfStale() {
-        if (isStale) refresh()
-    }
+    /**
+     * Updates prices if they're out of date. Several triggers can ask at once (opening the app, the
+     * phone reporting its network, the background job), so the age is checked again once the
+     * previous update has finished: then the ones that waited find fresh prices and skip.
+     */
+    suspend fun refreshIfStale(): Boolean = refresh(onlyIfStale = true)
 
-    suspend fun refresh(): Boolean = lock.withLock {
+    suspend fun refresh(onlyIfStale: Boolean = false): Boolean = lock.withLock {
+        if (onlyIfStale && !isStale) return@withLock true
         withContext(Dispatchers.IO) {
             val tmp = File(context.cacheDir, "price_guide.json")
             try {

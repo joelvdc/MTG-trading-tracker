@@ -27,7 +27,7 @@ class DataUpdater(
 
     /** Updates prices if they're out of date and automatic updates are allowed right now. */
     suspend fun autoUpdate() {
-        if (allowedNow() && prices.isStale) prices.refresh()
+        if (allowedNow()) prices.refreshIfStale()
     }
 
     /** Sets up (or cancels) the background update to match the settings. */
