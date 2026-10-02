@@ -5,6 +5,7 @@ import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CollectionItem
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
+import com.mtgtrader.data.DeckMerge
 import com.mtgtrader.data.FirstSync
 import com.mtgtrader.data.ScannedCard
 import com.mtgtrader.data.SyncData
@@ -34,6 +35,58 @@ class SyncMergeTest {
         SyncDeck(Deck(id, name, "me", "Cmdr", null, null, "G", 100, importedAt = 1, updatedAt = at), List(cards) { DeckCard(deckId = id, card = card("c$it"), quantity = 1, category = "Ramp", types = "Creature", cmc = 1.0, commander = false, foil = false) })
 
     private fun merge(local: SyncData, remote: SyncData?, first: FirstSync? = null) = SyncMerge.merge(local.sorted(), remote?.sorted(), now, first)
+
+    /** A copy of the Vohar deck as one phone has it. */
+    private fun vohar(
+        archidektAt: Long, importedAt: Long, updatedAt: Long, land: String,
+        scoredAt: Long? = null, power: Double? = null, svAt: Long? = null, sv: Double? = null,
+    ) = SyncDeck(
+        Deck(
+            10710772, "Vohar Danse", "joelvdc", "Vohar", null, null, "UB", 100, importedAt = importedAt,
+            archidektUpdatedAt = archidektAt, updatedAt = updatedAt, scoredAt = scoredAt, powerLevel = power, svAt = svAt, svPowerLevel = sv,
+        ),
+        listOf(DeckCard(deckId = 10710772, card = card(land), quantity = 1, category = "Land", types = "Land", cmc = 0.0, commander = false, foil = false)),
+    )
+
+    @Test
+    fun newerArchidektListWinsOverLaterScoresOnTheOldList() {
+        // Phone A reloaded the deck after River of Tears went to the maybeboard and Polluted Delta came in.
+        val phoneA = vohar(archidektAt = 2_000, importedAt = 10_000, updatedAt = 10_005, land = "Polluted Delta", scoredAt = 10_004, power = 4.4)
+        // Phone B still had the old list, but rated it on ScrollVault later.
+        val phoneB = vohar(archidektAt = 1_000, importedAt = 5_000, updatedAt = 20_000, land = "River of Tears", scoredAt = 5_001, power = 4.3, svAt = 20_000, sv = 6.2)
+        for ((a, b) in listOf(phoneA to phoneB, phoneB to phoneA)) {
+            val m = DeckMerge.merge(a, b)
+            assertEquals(listOf("Polluted Delta"), m.cards.map { it.card.name })
+            assertEquals(2_000L, m.deck.archidektUpdatedAt)
+            // Commander Salt's score from before phone A's reload belongs to the old list: phone A's stays.
+            assertEquals(4.4, m.deck.powerLevel!!, 1e-9)
+            // ScrollVault rated it after phone A's reload (it reads Archidekt itself): kept.
+            assertEquals(6.2, m.deck.svPowerLevel!!, 1e-9)
+            assertEquals(20_000L, m.deck.updatedAt)
+        }
+    }
+
+    @Test
+    fun deckMergeSettles() {
+        val a = vohar(archidektAt = 2_000, importedAt = 10_000, updatedAt = 10_005, land = "Polluted Delta", scoredAt = 10_004, power = 4.4)
+        val b = vohar(archidektAt = 1_000, importedAt = 5_000, updatedAt = 20_000, land = "River of Tears", svAt = 20_000, sv = 6.2)
+        val once = DeckMerge.merge(a, b)
+        assertEquals(once, DeckMerge.merge(once, once))
+        assertEquals(once, DeckMerge.merge(b, once))
+        assertEquals(once, DeckMerge.merge(once, a))
+        // Through the whole sync too: the other phone ends up with the new list.
+        val synced = merge(SyncData(decks = listOf(b)), SyncData(decks = listOf(a)))
+        assertEquals(listOf("Polluted Delta"), synced.decks.single().cards.map { it.card.name })
+    }
+
+    @Test
+    fun sameArchidektVersionTakesTheLaterChange() {
+        // Both phones have the same Archidekt list; one added a scanned card to the deck afterwards.
+        val plain = vohar(archidektAt = 2_000, importedAt = 10_000, updatedAt = 10_000, land = "Polluted Delta")
+        val added = plain.copy(deck = plain.deck.copy(updatedAt = 12_000), cards = plain.cards + plain.cards[0].copy(card = card("Island"), addedInApp = true))
+        assertEquals(2, DeckMerge.merge(plain, added).cards.size)
+        assertEquals(2, DeckMerge.merge(added, plain).cards.size)
+    }
 
     @Test
     fun newerEditWinsPerItem() {

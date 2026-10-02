@@ -87,6 +87,55 @@ data class SyncFile(
 
 class SyncException(message: String) : Exception(message)
 
+/**
+ * Two phones' copies of a deck. The decklist (and the rest read from Archidekt with it) comes from
+ * the copy loaded from the newer Archidekt version, so an old list can't come back just because the
+ * other phone changed something on its copy later, like a score or a power level rating. Each score
+ * (Commander Salt, edhpowerlevel.com, ScrollVault) comes from whichever copy got it last, as long
+ * as it was made after that list was loaded; older ones belong to an older list.
+ */
+object DeckMerge {
+    private val newerList = compareBy<SyncDeck>(
+        { it.deck.archidektUpdatedAt ?: Long.MIN_VALUE },
+        { it.deck.importedAt },
+        // Same Archidekt version: the later change, e.g. cards added in the app.
+        { it.deck.updatedAt },
+    )
+
+    /** [b] wins a complete tie. */
+    fun merge(a: SyncDeck, b: SyncDeck): SyncDeck {
+        val (list, other) = if (newerList.compare(b, a) >= 0) b to a else a to b
+        val d = list.deck
+        val o = other.deck
+        val since = d.importedAt
+        fun pick(ownAt: Long?, theirAt: Long?): Deck =
+            if (theirAt != null && theirAt >= since && theirAt > (ownAt ?: Long.MIN_VALUE)) o else d
+        val salt = pick(d.scoredAt, o.scoredAt)
+        val edh = pick(d.edhPowerAt, o.edhPowerAt)
+        val sv = pick(d.svAt, o.svAt)
+        val merged = d.copy(
+            saltId = salt.saltId,
+            powerLevel = salt.powerLevel,
+            bracketRealistic = salt.bracketRealistic,
+            bracketBaseline = salt.bracketBaseline,
+            saltPercent = salt.saltPercent,
+            archetype = salt.archetype,
+            scoredAt = salt.scoredAt,
+            scoreError = salt.scoreError,
+            saltCard = salt.saltCard,
+            edhPowerLevel = edh.edhPowerLevel,
+            edhPowerAt = edh.edhPowerAt,
+            edhPowerError = edh.edhPowerError,
+            svPowerLevel = sv.svPowerLevel,
+            scrollVault = sv.scrollVault,
+            svAt = sv.svAt,
+            svError = sv.svError,
+            updatedAt = maxOf(d.updatedAt, o.updatedAt),
+        )
+        return SyncDeck(merged, list.cards)
+    }
+}
+
 /** What to do the first time this phone syncs and both it and Nextcloud already hold data. */
 enum class FirstSync(val label: String, val explanation: String) {
     MERGE("Merge both", "Keep everything from this phone and from Nextcloud. The same card in the same binder is kept once."),
@@ -144,7 +193,10 @@ object SyncMerge {
             binders = newest(local.binders, remote.binders, { it.uid }, { it.updatedAt }),
             collection = newest(local.collection, remote.collection, { it.item.uid }, { it.item.updatedAt }),
             trades = newest(local.trades, remote.trades, { it.trade.uid }, { it.trade.updatedAt }),
-            decks = newest(local.decks, remote.decks, { deckKey(it.deck.archidektId) }, { it.deck.updatedAt }),
+            decks = (local.decks + remote.decks).groupBy { it.deck.archidektId }.map { (_, copies) ->
+                // Nextcloud's copy second, so it wins a complete tie like everywhere else.
+                if (copies.size == 1) copies[0] else DeckMerge.merge(copies[0], copies[1])
+            },
             scans = newest(local.scans, remote.scans, { it.uid }, { it.updatedAt }),
             deletions = deletions,
             prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs else local.prefs,

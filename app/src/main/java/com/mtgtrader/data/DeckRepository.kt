@@ -84,23 +84,42 @@ class DeckRepository(
 
     /**
      * Has Commander Salt score the deck again (brackets and its power level) and, when another site
-     * is the power level source, that site too, without reloading the list from Archidekt.
+     * is the power level source, that site too. If the deck changed on Archidekt since it was
+     * loaded, its list is reloaded first, so the scores and the list shown always belong together.
      */
-    fun rescore(deckId: Long): Boolean = start(DeckJob(deckId, "Scoring on Commander Salt…")) {
+    fun rescore(deckId: Long): Boolean = start(DeckJob(deckId, "Checking the decklist on Archidekt…")) {
         val deck = dao.get(deckId) ?: throw IllegalStateException("The deck is gone")
         val source = settings.powerSource.value
-        val done = score(deck) { _job.value = DeckJob(deckId, it) }
+        // When Archidekt can't be reached, the deck is scored as it is.
+        val fetched = runCatching { archidekt.deck(deckId) }.getOrNull()
+        val changed = fetched != null && listChanged(deck, fetched.updatedAt)
+        val done = if (changed) importOne(deckId, "", fetched = fetched).first
+        else score(deck) { _job.value = DeckJob(deckId, it) }
         val problems = listOfNotNull(
             done.scoreError?.let { "Commander Salt couldn't score it: $it" },
             done.powerError(source)?.takeIf { source.external }?.let { "${source.site} couldn't rate it: $it" },
         )
-        DeckJobResult(deckId, if (problems.isEmpty()) "Bracket and power level updated" else problems.joinToString(" · "))
+        val what = if (changed) "Decklist reloaded (it changed on Archidekt)" else null
+        DeckJobResult(deckId, listOfNotNull(what, if (problems.isEmpty()) "Bracket and power level updated" else null).plus(problems).joinToString(" · "))
     }
 
-    /** Re-reads the deck from Archidekt and has it scored again. */
+    /** True when Archidekt's version of the deck ([remoteAt]) isn't the one the app loaded. */
+    private fun listChanged(deck: Deck, remoteAt: Long?) = remoteAt == null || remoteAt != deck.archidektUpdatedAt
+
+    /** When each deck last changed on Archidekt: one deck-list call per owner (public decks only). */
+    private suspend fun archidektDates(decks: List<Deck>): Map<Long, Long?> {
+        val listed = HashMap<Long, Long?>()
+        for (owner in decks.map { it.owner }.filter { it.isNotBlank() }.distinct()) {
+            if (stopRequested) break
+            runCatching { archidekt.userDecks(owner) }.getOrNull()?.forEach { listed[it.id] = it.updatedAt }
+        }
+        return listed
+    }
+
+    /** Re-reads the deck from Archidekt (whether it changed or not) and has it scored again. */
     fun refresh(deckId: Long): Boolean = start(DeckJob(deckId, "Loading the decklist from Archidekt…")) {
         val (deck, error) = importOne(deckId, "")
-        DeckJobResult(deckId, error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: "${deck.name} is up to date")
+        DeckJobResult(deckId, error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: "Reloaded ${deck.name} from Archidekt and scored it again")
     }
 
     /** The public decks of an Archidekt user, for choosing which to import. */
@@ -161,11 +180,7 @@ class DeckRepository(
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
         val decks = dao.all()
         val source = settings.powerSource.value
-        val listed = HashMap<Long, Long?>()
-        for (owner in decks.map { it.owner }.filter { it.isNotBlank() }.distinct()) {
-            if (stopRequested) break
-            runCatching { archidekt.userDecks(owner) }.getOrNull()?.forEach { listed[it.id] = it.updatedAt }
-        }
+        val listed = archidektDates(decks)
         var updated = 0
         var rescored = 0
         val unscored = mutableListOf<String>()
@@ -178,7 +193,7 @@ class DeckRepository(
             try {
                 val fetched = if (listed[d.archidektId] == null) archidekt.deck(d.archidektId) else null
                 val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
-                val changed = remoteAt == null || remoteAt != d.archidektUpdatedAt
+                val changed = listChanged(d, remoteAt)
                 val needsPower = source.external && d.power(source) == null
                 if (!changed && d.scored && d.scoreError == null && !needsPower) continue
                 // A pause between decks that hit Commander Salt, so it isn't flooded.
@@ -213,22 +228,46 @@ class DeckRepository(
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }
 
-    /** Has Commander Salt score every deck again (e.g. after it changed its scoring). Can be stopped between decks. */
-    fun rescoreAll(): Boolean = start(DeckJob(null, "Scoring your decks on Commander Salt…", canStop = true)) {
+    /**
+     * Has Commander Salt (and the chosen power level site) score every deck again, e.g. after it
+     * changed its scoring. Decks that changed on Archidekt are reloaded first, so the scores and
+     * the lists shown belong together. Can be stopped between decks.
+     */
+    fun rescoreAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
         val decks = dao.all()
+        val listed = archidektDates(decks)
         var scored = 0
+        var reloaded = 0
         val unscored = mutableListOf<String>()
+        val failed = mutableListOf<String>()
         for ((i, d) in decks.withIndex()) {
             if (stopRequested) break
             if (i > 0) delay(1_500)
             val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-            _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
-            val result = score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
-            if (result.scoreError == null) scored++ else unscored += d.name
+            _job.value = DeckJob(d.archidektId, prefix + "checking…", !stopRequested)
+            try {
+                val fetched = if (listed[d.archidektId] == null) runCatching { archidekt.deck(d.archidektId) }.getOrNull() else null
+                val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
+                // Unreachable on Archidekt (e.g. made private): score what the app has.
+                val changed = (listed.containsKey(d.archidektId) || fetched != null) && listChanged(d, remoteAt)
+                val result = if (changed) {
+                    reloaded++
+                    importOne(d.archidektId, prefix, canStop = true, fetched = fetched).first
+                } else {
+                    _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
+                    score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
+                }
+                if (result.scoreError == null) scored++ else unscored += d.name
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failed += d.name
+            }
         }
         val parts = buildList {
-            add("Scored $scored of ${decks.size} decks")
+            add("Scored $scored of ${decks.size} decks" + if (reloaded > 0) " ($reloaded changed on Archidekt and " + (if (reloaded == 1) "was" else "were") + " reloaded first)" else "")
             if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
+            if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
         }
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }

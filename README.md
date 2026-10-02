@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.12.1.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.13.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.12.1-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.13-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -53,9 +53,12 @@ bracket call (and whether it's borderline) and its "tell your pod" line.
 
 The deck list can be sorted by name, power level, bracket (realistic, then baseline) or when the deck was last changed on
 Archidekt, highest/newest first or reversed. On a deck page, **Refresh bracket and power level** scores the deck again on
-Commander Salt and the chosen power level site; the refresh button at the top also reloads the list from Archidekt. Or use
-**Update all decks from Archidekt** (Decks ⋮ menu): it checks every deck and reloads and re-scores only the ones that
-changed. **Re-score all decks on Commander Salt** scores every deck again. Commander Salt has no official API: the app uses the
+Commander Salt and the chosen power level site; if the deck changed on Archidekt since it was loaded, its list is
+reloaded first, so the list and the scores always belong together. **Reload decklist from Archidekt** (the ⟳ icon, or
+the deck's ⋮ menu) always reloads the list and scores it again. On the Decks tab (⋮ menu), **Update all decks from
+Archidekt** checks every deck and reloads and re-scores only the ones that changed, and **Re-score all decks on
+Commander Salt** scores every deck again, reloading the ones that changed on Archidekt first. Cards moved to the
+Maybeboard on Archidekt leave the deck. Commander Salt has no official API: the app uses the
 same calls as its website, so this part may break if the site changes. Importing a deck adds it to commandersalt.com.
 
 ## Binders
@@ -83,7 +86,8 @@ pictures aren't synced; each phone downloads those itself.
 - **First sync:** if both the phone and Nextcloud already hold data, you choose: merge both, use the Nextcloud copy, or
   start from this phone.
 - **After that** changes are merged item by item: the most recent change to a card stack, binder, trade, deck or scan
-  wins, and deletions carry over. With **Sync automatically** on, it syncs when you open the app, about 30 seconds
+  wins, and deletions carry over. For a deck, the list always comes from the phone that loaded the newer version from
+  Archidekt, so an old list can't come back because the other phone scored or rated its copy later. With **Sync automatically** on, it syncs when you open the app, about 30 seconds
   after a change, when you leave the app and every hour; **Only on Wi-Fi** keeps automatic syncs off mobile data.
   "Sync now" always works.
 

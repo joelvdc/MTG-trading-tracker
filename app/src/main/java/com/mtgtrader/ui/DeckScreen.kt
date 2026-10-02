@@ -140,9 +140,16 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 title = { Text(deck?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
-                    IconButton(onClick = ::refresh, enabled = job == null) { Icon(Icons.Default.Refresh, "Update from Archidekt") }
+                    IconButton(onClick = ::refresh, enabled = job == null) { Icon(Icons.Default.Refresh, "Reload decklist from Archidekt") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Reload decklist from Archidekt") },
+                            leadingIcon = { Icon(Icons.Default.Refresh, null) },
+                            enabled = job == null,
+                            onClick = { menu = false; refresh() },
+                        )
+                        HorizontalDivider()
                         val other = if (groupBy == DeckGroupBy.CATEGORY) DeckGroupBy.TYPE else DeckGroupBy.CATEGORY
                         DropdownMenuItem(
                             text = { Text("Group by ${other.label.lowercase()}") },
