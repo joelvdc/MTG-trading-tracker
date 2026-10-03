@@ -1,5 +1,8 @@
 package com.mtgtrader.scan
 
+import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.os.SystemClock
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -67,6 +70,13 @@ class CardTextAnalyzer(private val onClues: (ScanClues) -> Unit) : ImageAnalysis
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     val paused = AtomicBoolean(false)
 
+    /** Set when a card's printing was only guessed from its name: the next frame's set symbol is cut out into [symbol]. */
+    val symbolWanted = AtomicBoolean(false)
+
+    /** The last set symbol cut out of a frame, with when (elapsed realtime). */
+    @Volatile
+    var symbol: Pair<Long, List<Silhouette>>? = null
+
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(proxy: ImageProxy) {
         val media = proxy.image
@@ -77,6 +87,7 @@ class CardTextAnalyzer(private val onClues: (ScanClues) -> Unit) : ImageAnalysis
         val rotation = proxy.imageInfo.rotationDegrees
         val w = if (rotation % 180 == 0) proxy.width else proxy.height
         val h = if (rotation % 180 == 0) proxy.height else proxy.width
+        val frame = if (symbolWanted.get()) runCatching { upright(proxy.toBitmap(), rotation) }.getOrNull() else null
         recognizer.process(InputImage.fromMediaImage(media, rotation))
             .addOnSuccessListener { text ->
                 val lines = text.textBlocks.flatMap { b ->
@@ -84,10 +95,26 @@ class CardTextAnalyzer(private val onClues: (ScanClues) -> Unit) : ImageAnalysis
                         l.boundingBox?.let { r -> OcrLine(l.text, r.left, r.top, r.right, r.bottom) }
                     }
                 }
-                onClues(CardTextParser.parse(lines, ScanGuide.boxFor(w.toFloat(), h.toFloat())))
+                val guide = ScanGuide.boxFor(w.toFloat(), h.toFloat())
+                if (frame != null) {
+                    runCatching { SetSymbolMatcher.fromFrame(frame, lines, guide) }.getOrNull()?.takeIf { it.isNotEmpty() }?.let {
+                        symbol = SystemClock.elapsedRealtime() to it
+                        symbolWanted.set(false)
+                    }
+                    frame.recycle()
+                }
+                onClues(CardTextParser.parse(lines, guide))
             }
+            .addOnFailureListener { frame?.recycle() }
             .addOnCompleteListener { proxy.close() }
     }
 
     fun close() = recognizer.close()
+
+    private fun upright(b: Bitmap, rotation: Int): Bitmap {
+        if (rotation == 0) return b
+        val r = Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply { postRotate(rotation.toFloat()) }, true)
+        if (r !== b) b.recycle()
+        return r
+    }
 }

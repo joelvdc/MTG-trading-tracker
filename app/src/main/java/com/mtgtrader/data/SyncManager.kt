@@ -81,7 +81,7 @@ class SyncManager(
     val status: StateFlow<SyncStatus> = _status
 
     init {
-        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("collection", "binders", "trades", "trade_items", "decks", "deck_cards", "scans", "sync_deletions")) {
+        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("collection", "binders", "trades", "trade_items", "decks", "deck_cards", "scans", "wishlist", "sync_deletions")) {
             override fun onInvalidated(tables: Set<String>) = onDataChanged()
         })
     }

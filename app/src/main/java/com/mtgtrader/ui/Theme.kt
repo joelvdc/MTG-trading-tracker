@@ -4,7 +4,16 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mtgtrader.container
+import com.mtgtrader.data.ThemeMode
 import androidx.compose.ui.graphics.Color
 
 private val Gold = Color(0xFFE0A526)
@@ -51,5 +60,23 @@ object TrendColors {
 
 @Composable
 fun MtgTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, content = content)
+    val mode by LocalContext.current.container.settings.themeMode.collectAsStateWithLifecycle()
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    // Status and navigation bar icons readable on the chosen background.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            (view.context as? Activity)?.window?.let { w ->
+                WindowCompat.getInsetsController(w, view).apply {
+                    isAppearanceLightStatusBars = !dark
+                    isAppearanceLightNavigationBars = !dark
+                }
+            }
+        }
+    }
+    MaterialTheme(colorScheme = if (dark) Dark else Light, content = content)
 }

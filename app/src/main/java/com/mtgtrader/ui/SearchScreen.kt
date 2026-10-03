@@ -80,6 +80,7 @@ fun rememberTargetLabel(t: CardTarget): String {
         is CardTarget.Collection ->
             if (t.binderId == Binder.UNSORTED) "Adding to: Collection" else "Adding to: ${binderName(t.binderId, binders)}"
         CardTarget.Scans -> "Adding to: Scanned cards"
+        CardTarget.Wishlist -> "Adding to: Wishlist"
         else -> "Choose the printing"
     }
 }

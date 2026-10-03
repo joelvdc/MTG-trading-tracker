@@ -261,6 +261,15 @@ object DeckToCollection {
     }
 }
 
+/** A card (by name) in one deck. */
+data class DeckUse(val name: String, val deckId: Long, val deckName: String, val quantity: Int, val imageUrl: String?)
+
+/** The decks each card is in, keyed by lower-case name; basic lands left out. */
+object DeckUsage {
+    fun byName(uses: List<DeckUse>): Map<String, List<DeckUse>> =
+        uses.filterNot { DeckToCollection.isBasic(it.name) }.groupBy { it.name.lowercase() }
+}
+
 enum class DeckGroupBy(val label: String) { CATEGORY("Category"), TYPE("Card type") }
 
 data class DeckSection(val title: String, val rows: List<DeckCardRow>) {

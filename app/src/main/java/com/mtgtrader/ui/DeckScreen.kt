@@ -87,7 +87,13 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.mtgtrader.container
 import com.mtgtrader.data.BinderChoice
+import com.mtgtrader.data.BracketTag
 import com.mtgtrader.data.Brackets
+import com.mtgtrader.data.SaltCard
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material.icons.filled.RemoveShoppingCart
+import androidx.compose.material3.FilterChip
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCollectionCounts
 import com.mtgtrader.data.DeckCardRow
@@ -120,6 +126,16 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var confirmDelete by remember { mutableStateOf(false) }
 
     var addingToCollection by remember { mutableStateOf(false) }
+    var onlyBracket by rememberSaveable { mutableStateOf(false) }
+    // Bracket-relevant cards come from Commander Salt's analysis (fetched again when saved by an older version).
+    val saltCard by produceState(SaltCard.decode(deck?.saltCard), deck?.saltCard) {
+        val d = deck ?: return@produceState
+        if (value?.current != true) c.decks.loadCardData(d)?.let { value = it }
+    }
+    fun tagsOf(row: DeckCardRow): Set<BracketTag> {
+        val t = saltCard?.tags(row.item.card.name).orEmpty()
+        return if (row.item.gameChanger) t + BracketTag.GAME_CHANGER else t
+    }
 
     LaunchedEffect(result) {
         val r = result ?: return@LaunchedEffect
@@ -179,6 +195,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             }
                         }
                         DropdownMenuItem(
+                            text = { Text("Cards I'm missing") },
+                            leadingIcon = { Icon(Icons.Default.RemoveShoppingCart, null) },
+                            onClick = { menu = false; nav.navigate("deck/$deckId/missing") },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Add to collection…") },
                             leadingIcon = { Icon(Icons.Default.LibraryAdd, null) },
                             onClick = { menu = false; addingToCollection = true },
@@ -199,7 +220,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
         }
-        val sections = remember(rows, groupBy) { DeckGrouping.sections(rows, groupBy) }
+        val tagged = remember(rows, saltCard) { rows.associate { it.item.id to tagsOf(it) }.filterValues { it.isNotEmpty() } }
+        val sections = remember(rows, groupBy, onlyBracket, tagged) {
+            DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy)
+        }
         val value = remember(rows, priceType) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 32.dp)) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
@@ -223,6 +247,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
                 }
             }
+            if (tagged.isNotEmpty()) {
+                item(key = "bracketcards") { BracketSummary(tagged.values, onlyBracket) { onlyBracket = it } }
+            }
             sections.forEach { section ->
                 item(key = "h_${section.title}") {
                     Text(
@@ -232,7 +259,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                 }
-                items(section.rows, key = { "c_${it.item.id}" }) { row -> DeckCardRowView(row, priceType) { selected = row } }
+                items(section.rows, key = { "c_${it.item.id}" }) { row -> DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty()) { selected = row } }
             }
         }
     }
@@ -240,7 +267,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
     selected?.let { row ->
         DeckCardDialog(
-            row, priceType,
+            row, priceType, tagsOf(row), saltCard?.combosWith(row.item.card.name).orEmpty(),
             onRemove = if (row.item.addedInApp) {
                 {
                     selected = null
@@ -382,7 +409,7 @@ private fun ScoreColumn(label: String, value: String?, caption: String?, modifie
 }
 
 @Composable
-private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, onClick: () -> Unit) {
+private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
@@ -401,9 +428,9 @@ private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, onClick: () 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 SetLine(item.card)
                 FinishTag(item.card, item.finish)
-                if (item.gameChanger) Tag("GAME CHANGER")
                 if (item.addedInApp) Tag("ADDED IN APP")
             }
+            if (tags.isNotEmpty()) BracketTags(tags)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.bodyMedium)
@@ -448,7 +475,14 @@ private fun AddDeckToCollectionDialog(deck: Deck, onDismiss: () -> Unit, onConfi
 }
 
 @Composable
-private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onRemove: (() -> Unit)?, onDismiss: () -> Unit) {
+private fun DeckCardDialog(
+    row: DeckCardRow,
+    priceType: PriceType,
+    tags: Set<BracketTag>,
+    combos: List<List<String>>,
+    onRemove: (() -> Unit)?,
+    onDismiss: () -> Unit,
+) {
     val c = LocalContext.current.container
     val uriHandler = LocalUriHandler.current
     val item = row.item
@@ -478,6 +512,13 @@ private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onRemove: (()
                         }
                     }
                 }
+                if (tags.isNotEmpty()) {
+                    BracketTags(tags)
+                    combos.forEach { other ->
+                        Text("Combo with " + other.joinToString(" + "), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                DeckUsageLine(item.card.name, exceptDeck = item.deckId, prefix = "Also in")
                 HorizontalDivider()
                 PriceTable(
                     row.price?.toSet(item.foil) ?: PriceSet(trend = item.card.fallback(item.foil)),
@@ -491,4 +532,39 @@ private fun DeckCardDialog(row: DeckCardRow, priceType: PriceType, onRemove: (()
             { TextButton(onClick = remove) { Text("Remove from deck", color = MaterialTheme.colorScheme.error) } }
         },
     )
+}
+
+/** The deck's bracket-relevant cards in a line, with a switch to list only them. */
+@Composable
+private fun BracketSummary(tags: Collection<Set<BracketTag>>, only: Boolean, onOnly: (Boolean) -> Unit) {
+    val counts = BracketTag.entries.mapNotNull { t -> tags.count { t in it }.takeIf { it > 0 }?.let { t to it } }
+    Column(Modifier.padding(top = 12.dp)) {
+        Text(
+            "Bracket-relevant: " + counts.joinToString(" · ") { (t, n) -> "$n ${t.plural(n)}" },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FilterChip(selected = only, onClick = { onOnly(!only) }, label = { Text("Only these cards") })
+    }
+}
+
+private fun BracketTag.plural(n: Int) = when (this) {
+    BracketTag.GAME_CHANGER -> if (n == 1) "game changer" else "game changers"
+    BracketTag.COMBO -> if (n == 1) "combo piece" else "combo pieces"
+    BracketTag.EXTRA_TURN -> if (n == 1) "extra turn" else "extra turns"
+    BracketTag.LAND_DENIAL -> "land denial"
+    BracketTag.TUTOR -> if (n == 1) "tutor" else "tutors"
+    BracketTag.FAST_MANA -> "fast mana"
+}
+
+/** A card's bracket tags: WotC's bracket rules in red, tutors and fast mana in grey. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun BracketTags(tags: Set<BracketTag>) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        tags.forEach { t ->
+            if (t.strict) Tag(t.label, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
+            else Tag(t.label, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }

@@ -40,14 +40,56 @@ data class SaltCard(
     val effects: Map<String, Int> = emptyMap(),
     /** Win conditions besides combos (Commander Salt's "non-combo wincons"). */
     val wincons: List<String> = emptyList(),
+    /** The tutors and fast mana Commander Salt counted, by name. Since 1.16. */
+    val tutors: List<String> = emptyList(),
+    val fastMana: List<String> = emptyList(),
+    /** Which of these fields the data was read with; older data is fetched again (see [CURRENT]). */
+    val version: Int = 0,
 ) {
     fun encode(): String = json.encodeToString(serializer(), this)
 
+    val current get() = version >= CURRENT
+
+    /** The bracket-relevant tags of each card, keyed by [key]. */
+    val tagsByCard: Map<String, Set<BracketTag>> by lazy {
+        val m = HashMap<String, MutableSet<BracketTag>>()
+        fun tag(names: List<String>, t: BracketTag) = names.forEach { m.getOrPut(key(it)) { sortedSetOf() } += t }
+        tag(gameChangers, BracketTag.GAME_CHANGER)
+        tag((twoCardCombos + earlyCombos).flatten(), BracketTag.COMBO)
+        tag(extraTurns, BracketTag.EXTRA_TURN)
+        tag(massLandDenial, BracketTag.LAND_DENIAL)
+        tag(tutors, BracketTag.TUTOR)
+        tag(fastMana, BracketTag.FAST_MANA)
+        m
+    }
+
+    fun tags(cardName: String): Set<BracketTag> = tagsByCard[key(cardName)].orEmpty()
+
+    /** The combos (each as its other cards) this card is part of. */
+    fun combosWith(cardName: String): List<List<String>> =
+        (twoCardCombos + earlyCombos).distinct().filter { combo -> combo.any { key(it) == key(cardName) } }
+            .map { combo -> combo.filter { key(it) != key(cardName) } }
+
     companion object {
+        /** 2: tutors and fast mana by name (1.16). */
+        const val CURRENT = 2
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
+
+        /** Cards are matched by their front face, case-insensitively ("Fable of the Mirror-Breaker // Reflection…"). */
+        fun key(name: String) = name.substringBefore(" // ").trim().lowercase()
 
         fun decode(text: String?): SaltCard? = text?.let { runCatching { json.decodeFromString(serializer(), it) }.getOrNull() }
     }
+}
+
+/** What makes a card matter for the deck's bracket, shown next to it in the decklist. [strict]: one of WotC's bracket rules. */
+enum class BracketTag(val label: String, val strict: Boolean) {
+    GAME_CHANGER("GAME CHANGER", true),
+    COMBO("COMBO", true),
+    EXTRA_TURN("EXTRA TURN", true),
+    LAND_DENIAL("LAND DENIAL", true),
+    TUTOR("TUTOR", false),
+    FAST_MANA("FAST MANA", false),
 }
 
 @Serializable
@@ -119,6 +161,7 @@ object SaltCardParser {
         val wincons = listOf("wincon_stompy", "wincon_burn")
             .flatMap { scoring?.obj(it)?.obj("list")?.keys.orEmpty() }
             .map(::name).distinct().sortedBy { it.lowercase() }
+        fun scored(key: String) = scoring?.obj(key)?.obj("list")?.keys.orEmpty().map(::name).distinct().sortedBy { it.lowercase() }
 
         return SaltCard(
             gameChangers = cardList("gameChangers"),
@@ -136,6 +179,9 @@ object SaltCardParser {
             manaQuality = mana?.num("quality")?.roundToInt(),
             effects = SaltEffect.entries.mapNotNull { e -> scoring?.obj(e.key)?.let { e.key to (it.obj("list")?.size ?: 0) } }.toMap(),
             wincons = wincons,
+            tutors = scored(SaltEffect.TUTORS.key),
+            fastMana = scored(SaltEffect.FAST_MANA.key),
+            version = SaltCard.CURRENT,
         )
     }
 

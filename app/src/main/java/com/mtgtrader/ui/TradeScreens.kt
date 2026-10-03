@@ -211,6 +211,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
     val data by remember(tradeId) { c.db.tradeDao().observe(tradeId) }.collectAsStateWithLifecycle(null)
     val owned by remember { c.db.collectionDao().observeOwned() }.collectAsStateWithLifecycle(emptyList())
     val ownedMap = remember(owned) { owned.associate { it.scryfallId to it.qty } }
+    val wishRows by remember { c.db.wishlistDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -318,6 +319,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
             return@Scaffold
         }
         val balance = t.balance(priceType, tolerance)
+        val wanted = remember(wishRows) { wishRows.groupBy { it.item.card.name.lowercase() }.mapValues { (_, v) -> v.sumOf { it.item.quantity } } }
         LazyColumn(
             Modifier.padding(pad),
             contentPadding = PaddingValues(12.dp),
@@ -335,7 +337,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                 )
             }
             tradeSide(
-                title = "You get", side = Side.GET, items = t.get, priceType = priceType, ownedMap = null, locked = applied,
+                title = "You get", side = Side.GET, items = t.get, priceType = priceType, ownedMap = null, locked = applied, wanted = wanted,
                 onSearch = { nav.openSearch(CardTarget.TradeSide(tradeId, Side.GET)) },
                 onScan = { nav.openScanner(CardTarget.TradeSide(tradeId, Side.GET)) },
                 onEdit = { editing = it },
@@ -367,7 +369,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
 
     editing?.let { item ->
         val entity by produceState<PriceEntity?>(null, item.card.cardmarketId) {
-            value = item.card.cardmarketId?.let { id -> c.prices.pricesFor(listOf(id))[id] }
+            value = item.card.productFor(item.foil)?.let { id -> c.prices.pricesFor(listOf(id))[id] }
         }
         EditCardDialog(
             card = item.card,
@@ -478,6 +480,7 @@ private fun LazyListScope.tradeSide(
     onSearch: () -> Unit,
     onScan: () -> Unit,
     onEdit: (TradeItem) -> Unit,
+    wanted: Map<String, Int> = emptyMap(),
 ) {
     item(key = "header-$side") {
         Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -513,12 +516,12 @@ private fun LazyListScope.tradeSide(
         }
     }
     items(items, key = { it.id }) { item ->
-        TradeItemRow(item, priceType, ownedMap?.let { it[item.card.scryfallId] ?: 0 }) { onEdit(item) }
+        TradeItemRow(item, priceType, ownedMap?.let { it[item.card.scryfallId] ?: 0 }, wanted[item.card.name.lowercase()]) { onEdit(item) }
     }
 }
 
 @Composable
-private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onClick: () -> Unit) {
+private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, wanted: Int?, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             CardThumb(item.card.imageUrl)
@@ -530,6 +533,9 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, onC
                     FinishTag(item.card, item.finish)
                     Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
+                }
+                if (wanted != null) {
+                    Text("★ On your wishlist" + if (wanted > 1) " ($wanted wanted)" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
                 if (owned != null) {
                     Text(

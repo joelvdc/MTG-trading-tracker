@@ -31,6 +31,9 @@ interface PriceDao {
 
     @Query("SELECT COUNT(*) FROM prices")
     fun count(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM prices")
+    suspend fun countNow(): Int
 }
 
 @Dao
@@ -40,10 +43,22 @@ interface CollectionDao {
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
-           FROM collection c LEFT JOIN prices p ON p.idProduct = c.cardmarketId
+           FROM collection c LEFT JOIN prices p ON p.idProduct =
+             CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
            ORDER BY c.name COLLATE NOCASE"""
     )
     fun observeAll(): Flow<List<CollectionRow>>
+
+    @Query(
+        """SELECT c.*, p.idProduct AS pr_idProduct, p.avg AS pr_avg, p.low AS pr_low, p.trend AS pr_trend,
+           p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
+           p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
+           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
+           FROM collection c LEFT JOIN prices p ON p.idProduct =
+             CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
+           ORDER BY c.name COLLATE NOCASE"""
+    )
+    suspend fun allWithPrices(): List<CollectionRow>
 
     @Query("SELECT scryfallId, SUM(quantity) AS qty FROM collection GROUP BY scryfallId")
     fun observeOwned(): Flow<List<OwnedCount>>
@@ -51,6 +66,9 @@ interface CollectionDao {
     /** Copies owned per card name, over every printing, finish and binder. */
     @Query("SELECT name, SUM(quantity) AS qty FROM collection GROUP BY name")
     suspend fun ownedByName(): List<NameCount>
+
+    @Query("SELECT name, SUM(quantity) AS qty FROM collection GROUP BY name")
+    fun observeOwnedByName(): Flow<List<NameCount>>
 
     @Query(
         """SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil AND etched = :etched
@@ -183,7 +201,8 @@ interface ScanDao {
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
-           FROM scans s LEFT JOIN prices p ON p.idProduct = s.cardmarketId
+           FROM scans s LEFT JOIN prices p ON p.idProduct =
+             CASE WHEN s.foil = 1 AND s.cardmarketFoilId IS NOT NULL THEN s.cardmarketFoilId ELSE s.cardmarketId END
            ORDER BY s.scannedAt DESC"""
     )
     fun observeAll(): Flow<List<ScanRow>>
@@ -235,7 +254,8 @@ interface DeckDao {
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
-           FROM deck_cards d LEFT JOIN prices p ON p.idProduct = d.cardmarketId
+           FROM deck_cards d LEFT JOIN prices p ON p.idProduct =
+             CASE WHEN d.foil = 1 AND d.cardmarketFoilId IS NOT NULL THEN d.cardmarketFoilId ELSE d.cardmarketId END
            WHERE d.deckId = :deckId"""
     )
     fun observeCards(deckId: Long): Flow<List<DeckCardRow>>
@@ -273,6 +293,14 @@ interface DeckDao {
     @Query("SELECT archidektId FROM decks")
     suspend fun ids(): List<Long>
 
+    /** Every card name with the decks it's in (and how many copies each), for "used in several decks". */
+    @Query(
+        """SELECT c.name AS name, c.deckId AS deckId, d.name AS deckName, SUM(c.quantity) AS quantity, MAX(c.imageUrl) AS imageUrl
+           FROM deck_cards c JOIN decks d ON d.archidektId = c.deckId
+           GROUP BY c.name COLLATE NOCASE, c.deckId ORDER BY d.name COLLATE NOCASE"""
+    )
+    fun observeUsage(): Flow<List<DeckUse>>
+
     @Query("SELECT * FROM decks ORDER BY name COLLATE NOCASE")
     suspend fun all(): List<Deck>
 
@@ -299,9 +327,10 @@ interface DeckDao {
     entities = [
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
+        WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
     ],
-    version = 9,
-    exportSchema = false,
+    version = 10,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun priceDao(): PriceDao
@@ -311,18 +340,33 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun binderDao(): BinderDao
     abstract fun scanDao(): ScanDao
     abstract fun syncDao(): SyncDao
+    abstract fun wishlistDao(): WishlistDao
+    abstract fun valueHistoryDao(): ValueHistoryDao
+    abstract fun catalogDao(): CatalogDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
 
+        /** Version 10 (app 1.16): wishlist, value history, notes and purchase price, Cardmarket's product list. */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                for (t in listOf("collection", "trade_items", "scans", "deck_cards")) {
+                    db.execSQL("ALTER TABLE `$t` ADD COLUMN `cardmarketFoilId` INTEGER")
+                }
+                db.execSQL("ALTER TABLE `collection` ADD COLUMN `notes` TEXT")
+                db.execSQL("ALTER TABLE `collection` ADD COLUMN `purchasePrice` REAL")
+                V10_TABLES_SQL.forEach(db::execSQL)
+            }
+        }
+
         /** Version 9 (app 1.12): power level from ScrollVault. */
-        private val MIGRATION_8_9 = object : Migration(8, 9) {
+        val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `decks` ADD COLUMN `svPowerLevel` REAL")
                 db.execSQL("ALTER TABLE `decks` ADD COLUMN `scrollVault` TEXT")
@@ -332,7 +376,7 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Version 8 (app 1.12 beta 2): power level from edhpowerlevel.com and the rule-zero card details. */
-        private val MIGRATION_7_8 = object : Migration(7, 8) {
+        val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `decks` ADD COLUMN `edhPowerLevel` REAL")
                 db.execSQL("ALTER TABLE `decks` ADD COLUMN `edhPowerAt` INTEGER")
@@ -342,7 +386,7 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Version 7 (app 1.12): sync ids, change times and deletions for syncing through Nextcloud. */
-        private val MIGRATION_6_7 = object : Migration(6, 7) {
+        val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 for (t in SyncSchema.UID_TABLES) {
                     db.execSQL("ALTER TABLE `$t` ADD COLUMN `uid` TEXT")
@@ -356,14 +400,14 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Version 6 (app 1.8): when each deck was last changed on Archidekt, for sorting. */
-        private val MIGRATION_5_6 = object : Migration(5, 6) {
+        val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `decks` ADD COLUMN `archidektUpdatedAt` INTEGER")
             }
         }
 
         /** Version 5 (app 1.7): binders, the Scan tab's waiting list, and cards added to decks in the app. */
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
+        val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `collection` ADD COLUMN `binderId` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("DROP INDEX IF EXISTS `index_collection_scryfallId_foil_etched_condition_language`")
@@ -375,14 +419,14 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Version 4 (app 1.6): Commander decks imported from Archidekt. */
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
+        val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 DECK_TABLES_SQL.forEach(db::execSQL)
             }
         }
 
         /** Version 3 (app 1.5): the flavor name printed on cards like "Barrow-Downs" (Bojuka Bog). */
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 for (table in listOf("collection", "trade_items")) {
                     db.execSQL("ALTER TABLE `$table` ADD COLUMN `flavorName` TEXT")
@@ -391,7 +435,7 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Version 2 (app 1.2): special foil type, etched finish, and etched copies kept apart in the collection. */
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 for (table in listOf("collection", "trade_items")) {
                     db.execSQL("ALTER TABLE `$table` ADD COLUMN `foilType` TEXT")
@@ -407,6 +451,22 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+
+/** New tables of version 10, exactly as Room creates them (from the exported schema, schemas/…/10.json). */
+private val V10_TABLES_SQL = listOf(
+    "CREATE TABLE IF NOT EXISTS `wishlist` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `foil` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, " +
+        "`anyPrinting` INTEGER NOT NULL, `notes` TEXT, `addedAt` INTEGER NOT NULL, `ownedAtAdd` INTEGER NOT NULL DEFAULT 0, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0, " +
+        "`scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, `setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, " +
+        "`rarity` TEXT NOT NULL, `imageUrl` TEXT, `cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, " +
+        "`hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, `cardmarketFoilId` INTEGER)",
+    "CREATE INDEX IF NOT EXISTS `index_wishlist_name` ON `wishlist` (`name`)",
+    "CREATE INDEX IF NOT EXISTS `index_wishlist_uid` ON `wishlist` (`uid`)",
+    "CREATE TABLE IF NOT EXISTS `value_history` (`day` TEXT NOT NULL, `cards` INTEGER NOT NULL, `values` TEXT NOT NULL, PRIMARY KEY(`day`))",
+    "CREATE TABLE IF NOT EXISTS `cm_products` (`idProduct` INTEGER NOT NULL, `name` TEXT NOT NULL, `idExpansion` INTEGER NOT NULL, PRIMARY KEY(`idProduct`))",
+    "CREATE INDEX IF NOT EXISTS `index_cm_products_idExpansion` ON `cm_products` (`idExpansion`)",
+    "CREATE INDEX IF NOT EXISTS `index_cm_products_name` ON `cm_products` (`name`)",
+    "CREATE TABLE IF NOT EXISTS `cm_set_expansions` (`setCode` TEXT NOT NULL, `idExpansions` TEXT NOT NULL, PRIMARY KEY(`setCode`))",
+)
 
 /** New tables and index of version 7, exactly as Room creates them (copied from the generated AppDatabase_Impl). */
 private val V7_TABLES_SQL = listOf(

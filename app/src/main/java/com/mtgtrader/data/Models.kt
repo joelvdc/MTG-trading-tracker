@@ -48,6 +48,8 @@ data class PriceSet(
     /** The requested figure, falling back to the most stable one available. */
     fun best(type: PriceType): Double? = get(type) ?: trend ?: avg ?: avg30 ?: avg7 ?: avg1 ?: low
 
+    val isEmpty get() = trend == null && avg == null && low == null && avg1 == null && avg7 == null && avg30 == null
+
     /** How the price is moving: Cardmarket's trend price vs its 30-day average, or null without both. */
     val trendChange: PriceTrend? get() = PriceTrend.of(trend, avg30)
 }
@@ -167,7 +169,15 @@ data class CardRef(
     @ColumnInfo(defaultValue = "0") val hasEtched: Boolean = false,
     /** Name printed on this card instead of [name], e.g. "Barrow-Downs" (Bojuka Bog, LTC). Since version 1.5. */
     val flavorName: String? = null,
+    /**
+     * Cardmarket's separate product for the foil version, when it has one (e.g. Lord of the Rings'
+     * silver-foil scrolls) and [cardmarketId] only prices the non-foil card. Since 1.16.
+     */
+    val cardmarketFoilId: Int? = null,
 ) {
+    /** The Cardmarket product that prices this printing in the given finish. */
+    fun productFor(foil: Boolean): Int? = if (foil) cardmarketFoilId ?: cardmarketId else cardmarketId
+
     /** "Barrow-Downs (Bojuka Bog)" for cards printed under another name, else just the name. */
     val displayName get() = flavorName?.let { "$it ($name)" } ?: name
 
@@ -234,6 +244,10 @@ data class CollectionItem(
     /** Sync identity and last change; filled in by database triggers (see [SyncSchema]). Since 1.12. */
     val uid: String? = null,
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
+    /** Free text about the copies, e.g. "slightly bent corner". Since 1.16. */
+    val notes: String? = null,
+    /** What one copy cost, in EUR, when known. Since 1.16. */
+    val purchasePrice: Double? = null,
 ) {
     val finish get() = Finish.of(foil, etched)
 }

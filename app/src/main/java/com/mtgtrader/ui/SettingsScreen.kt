@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.BuildConfig
 import com.mtgtrader.container
 import com.mtgtrader.data.PowerSource
+import com.mtgtrader.data.ThemeMode
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.PriceUpdateState
 import kotlinx.coroutines.launch
@@ -58,6 +59,7 @@ fun SettingsScreen() {
     val autoUpdate by c.settings.autoUpdate.collectAsStateWithLifecycle()
     val wifiOnly by c.settings.wifiOnly.collectAsStateWithLifecycle()
     val powerSource by c.settings.powerSource.collectAsStateWithLifecycle()
+    val themeMode by c.settings.themeMode.collectAsStateWithLifecycle()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -105,7 +107,7 @@ fun SettingsScreen() {
             }
             Spacer(Modifier.height(8.dp))
             Button(
-                onClick = { c.appScope.launch { c.prices.refresh() } },
+                onClick = { c.appScope.launch { if (c.prices.refresh()) c.updater.afterUpdate() } },
                 enabled = state !is PriceUpdateState.Running,
             ) { Text("Update prices now") }
             Spacer(Modifier.height(12.dp))
@@ -128,6 +130,18 @@ fun SettingsScreen() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text("Appearance", style = MaterialTheme.typography.titleMedium)
+            ThemeMode.entries.forEach { m ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { c.settings.setThemeMode(m) }.padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = m == themeMode, onClick = { c.settings.setThemeMode(m) })
+                    Text(m.label)
+                }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("Commander deck power level", style = MaterialTheme.typography.titleMedium)
@@ -171,10 +185,11 @@ fun SettingsScreen() {
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("About", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Card data and images come from Scryfall; prices come from Cardmarket's public daily price guide (EUR). " +
-                    "Deck scores come from Commander Salt and, if chosen, edhpowerlevel.com or ScrollVault. " +
-                    "Both are looked up live, so new expansions show up automatically without updating the app.\n\n" +
-                    "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall or Cardmarket.\n\nVersion ${BuildConfig.VERSION_NAME}",
+                "Card data and pictures: Scryfall. Prices: Cardmarket's public daily price guide (EUR). " +
+                    "Decklists: Archidekt. Brackets and deck scores: Commander Salt; power level from the source chosen above.\n\n" +
+                    "All of it is looked up live, so new sets show up without an app update.\n\n" +
+                    "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall, Cardmarket, Archidekt, Commander Salt, " +
+                    "EDH Power Level or ScrollVault.\n\nVersion ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

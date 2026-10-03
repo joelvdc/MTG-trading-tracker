@@ -9,7 +9,9 @@ import coil.util.DebugLogger
 import com.mtgtrader.data.AppDatabase
 import com.mtgtrader.data.ArchidektApi
 import com.mtgtrader.data.CommanderSaltApi
+import com.mtgtrader.data.CardmarketCatalog
 import com.mtgtrader.data.DataUpdater
+import com.mtgtrader.data.ValueHistory
 import com.mtgtrader.data.DeckRepository
 import com.mtgtrader.data.EdhPowerLevelApi
 import com.mtgtrader.data.HiddenBrowser
@@ -24,6 +26,7 @@ import com.mtgtrader.data.NextcloudClient
 import com.mtgtrader.data.SyncManager
 import com.mtgtrader.data.SyncStore
 import com.mtgtrader.data.TradeWithItems
+import com.mtgtrader.scan.SetSymbolMatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -67,7 +70,10 @@ class AppContainer(context: Context) {
     val prices = PriceGuideRepository(context, http, db, settings)
     val setIcons = SetIcons(context, scryfall, appScope)
     val repo = MtgRepository(db, scryfall, prices, appScope)
-    val updater = DataUpdater(context, settings, prices, network)
+    val catalog = CardmarketCatalog(context, http, db, settings, scryfall)
+    val history = ValueHistory(db)
+    val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)
+    val updater = DataUpdater(context, settings, prices, network, catalog, history)
     private val browser = HiddenBrowser(context)
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
     val sync = SyncManager(context, db, SyncStore(db, settings), NextcloudClient(http), network, appScope)

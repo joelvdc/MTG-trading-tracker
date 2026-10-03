@@ -106,6 +106,13 @@ import com.mtgtrader.scan.CardTextAnalyzer
 import com.mtgtrader.scan.Identified
 import com.mtgtrader.scan.ScanClues
 import com.mtgtrader.scan.ScanGuide
+import com.mtgtrader.scan.SetSymbolMatcher
+import com.mtgtrader.data.LANGUAGES
+import com.mtgtrader.data.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.text.font.FontWeight as FW
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -119,6 +126,8 @@ data class ScannedEntry(
     val prices: PriceSet,
     /** False when only the name was readable, so the printing is Scryfall's default guess. */
     val exactPrinting: Boolean,
+    /** The printing was told apart by its set symbol (see [SetSymbolMatcher]). Since 1.16. */
+    val bySymbol: Boolean = false,
 ) {
     fun unitPrice(type: PriceType): Double? = prices.best(type) ?: card.fallback(finish.foil)
 }
@@ -132,8 +141,20 @@ class ScanController(
     private val recognizer: CardRecognizer,
     private val target: CardTarget,
     private val scope: CoroutineScope,
+    private val symbols: SetSymbolMatcher? = null,
+    private val settings: Settings? = null,
 ) {
     var status by mutableStateOf("Hold a card inside the frame")
+
+    /** The language every scanned card gets ("" = as printed on the card, else English); kept between scans. */
+    var language by mutableStateOf(settings?.scanLanguage ?: "")
+        private set
+
+    fun chooseLanguage(code: String) {
+        language = code
+        settings?.scanLanguage = code
+    }
+    private var symbolFor: String? = null
     var foil by mutableStateOf(false)
     var autoAdd by mutableStateOf(true)
     var pending by mutableStateOf<Pair<Identified, String?>?>(null)
@@ -166,13 +187,20 @@ class ScanController(
         analyzer.paused.set(true)
         scope.launch {
             try {
-                val found = recognizer.identifyPrinting(clues)
+                // A chosen language also lets set code + number alone identify a non-English card.
+                val found = recognizer.identifyPrinting(if (clues.language == null && language.isNotEmpty()) clues.copy(language = language) else clues)
                 if (found == null) {
                     status = "Reading… ${clues.names.firstOrNull() ?: clues.setCode ?: ""}"
                     return@launch
                 }
                 val card = found.card
                 lastSeen = SystemClock.elapsedRealtime()
+                // Only the name was read: cut the set symbol out of a coming frame to tell the printings apart.
+                if (!found.exactPrinting && symbols != null && card.id != symbolFor) {
+                    symbolFor = card.id
+                    analyzer.symbol = null
+                    analyzer.symbolWanted.set(true)
+                }
                 if (card.id == candidateId) hits++ else {
                     candidateId = card.id
                     hits = 1
@@ -198,12 +226,35 @@ class ScanController(
         val ref = card.toRef()
         // Foil-only printings (e.g. surge or etched foils) resolve to their foil finish by themselves.
         val f = ref.resolveFinish(if (foil) Finish.FOIL else Finish.NONFOIL)
-        val lang = language ?: "EN"
+        val lang = this.language.ifEmpty { null } ?: language ?: "EN"
         val result = repo.add(target, ref, f, lang, found.exactPrinting) ?: return
-        added.add(0, ScannedEntry(ref, f, lang, result, repo.snapshot(ref, f.foil), found.exactPrinting))
+        val entry = ScannedEntry(ref, f, lang, result, repo.snapshot(ref, f.foil), found.exactPrinting)
+        added.add(0, entry)
         pending = null
         status = "Added ${card.displayName} (${card.set.uppercase()})"
         onAdded()
+        if (!found.exactPrinting) matchSymbol(entry)
+    }
+
+    /** Swaps a guessed printing for the one whose set symbol was photographed, when that's clear. */
+    private fun matchSymbol(e: ScannedEntry) {
+        val matcher = symbols ?: return
+        scope.launch {
+            var waited = 0
+            while (analyzer.symbol == null && waited < 2500) {
+                delay(100)
+                waited += 100
+            }
+            val photo = analyzer.symbol?.second ?: return@launch
+            val match = runCatching { matcher.match(e.card.name, photo, e.card.scryfallId) }.getOrNull() ?: return@launch
+            val i = added.indexOf(e)
+            if (i < 0) return@launch // undone or changed by hand meanwhile
+            if (match.card.id == e.card.scryfallId) added[i] = e.copy(bySymbol = true)
+            else {
+                changePrinting(e, match.card.toRef(), e.finish, bySymbol = true)
+                status = "${match.card.displayName}: ${match.card.setName} (recognised by its set symbol)"
+            }
+        }
     }
 
     fun addAgain(e: ScannedEntry) = scope.launch {
@@ -213,10 +264,10 @@ class ScanController(
     }
 
     /** Another printing or finish picked for a scanned card: the copy is swapped and stays in the list, in place. */
-    fun changePrinting(e: ScannedEntry, card: CardRef, finish: Finish) = scope.launch {
+    fun changePrinting(e: ScannedEntry, card: CardRef, finish: Finish, bySymbol: Boolean = false) = scope.launch {
         val result = repo.changeAddedPrinting(e.result, target, card, finish, e.language) ?: return@launch
         val f = card.resolveFinish(finish)
-        val updated = e.copy(card = card, finish = f, result = result, prices = repo.snapshot(card, f.foil), exactPrinting = true)
+        val updated = e.copy(card = card, finish = f, result = result, prices = repo.snapshot(card, f.foil), exactPrinting = true, bySymbol = bySymbol)
         val i = added.indexOf(e)
         if (i >= 0) added[i] = updated else added.add(0, updated)
     }
@@ -242,7 +293,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
     val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { hasPermission = it }
     LaunchedEffect(Unit) { if (!hasPermission) permLauncher.launch(Manifest.permission.CAMERA) }
 
-    val controller = remember { ScanController(c.repo, CardRecognizer(c.scryfall), target, scope) }
+    val controller = remember { ScanController(c.repo, CardRecognizer(c.scryfall), target, scope, c.symbols, c.settings) }
     controller.onAdded = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
     DisposableEffect(Unit) { onDispose { controller.analyzer.close() } }
 
@@ -315,15 +366,31 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
             ) {
                 FilterChip(selected = controller.foil, onClick = { controller.foil = !controller.foil }, label = { Text("Foil") })
                 FilterChip(selected = controller.autoAdd, onClick = { controller.autoAdd = !controller.autoAdd }, label = { Text("Auto-add") })
-                Text(
-                    controller.status,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.End,
-                )
+                Box {
+                    var langMenu by remember { mutableStateOf(false) }
+                    FilterChip(
+                        selected = controller.language.isNotEmpty(),
+                        onClick = { langMenu = true },
+                        label = { Text(if (controller.language.isEmpty()) "Language: auto" else "Language: ${controller.language}") },
+                    )
+                    DropdownMenu(expanded = langMenu, onDismissRequest = { langMenu = false }) {
+                        (listOf("" to "As printed on the card") + LANGUAGES).forEach { (code, name) ->
+                            DropdownMenuItem(
+                                text = { Text(name, fontWeight = if (code == controller.language) FW.Bold else null) },
+                                onClick = { langMenu = false; controller.chooseLanguage(code) },
+                            )
+                        }
+                    }
+                }
             }
+            Text(
+                controller.status,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                textAlign = TextAlign.End,
+            )
             controller.pending?.let { (found, lang) ->
                 val card = found.card
                 Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -358,7 +425,13 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                                     FinishTag(e.card, e.finish)
                                     if (e.language != "EN") Tag(e.language)
                                 }
-                                if (!e.exactPrinting) {
+                                if (e.bySymbol) {
+                                    Text(
+                                        "Set recognised by its symbol · tap if wrong",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                } else if (!e.exactPrinting) {
                                     Text(
                                         "Choose printing",
                                         style = MaterialTheme.typography.labelSmall,
@@ -521,10 +594,6 @@ private fun CameraPreview(analyzer: ImageAnalysis.Analyzer, torch: Boolean) {
                 CornerRadius(12f, 12f),
                 style = Stroke(width = 3.dp.toPx()),
             )
-            // Hint bands: the name is read at the top, set code + number at the bottom-left.
-            val band = Color(0x55E0A526)
-            drawRect(band, Offset(g.left, g.top), GSize(g.width, g.height * 0.12f))
-            drawRect(band, Offset(g.left, g.top + g.height * 0.90f), GSize(g.width * 0.55f, g.height * 0.10f))
         }
     }
 }

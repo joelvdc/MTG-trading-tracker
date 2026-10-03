@@ -15,6 +15,17 @@ enum class CollectionView(val label: String) {
     }
 }
 
+/** Light or dark look: as the phone is set, or always one of them. Since 1.16. */
+enum class ThemeMode(val label: String) {
+    SYSTEM("Same as the phone"),
+    LIGHT("Light"),
+    DARK("Dark");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: SYSTEM
+    }
+}
+
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
@@ -29,6 +40,24 @@ class Settings(context: Context) {
 
     private val _guideDate = MutableStateFlow(prefs.getString("priceGuideDate", null))
     val priceGuideDate: StateFlow<String?> = _guideDate
+
+    private val _themeMode = MutableStateFlow(ThemeMode.fromKey(prefs.getString("themeMode", null)))
+    val themeMode: StateFlow<ThemeMode> = _themeMode
+
+    fun setThemeMode(v: ThemeMode) {
+        _themeMode.value = v
+        prefs.edit().putString("themeMode", v.name).apply()
+    }
+
+    /** The language the scanner adds cards in ("" = as read from the card, else e.g. "DE"). Since 1.16. */
+    var scanLanguage: String
+        get() = prefs.getString("scanLanguage", "") ?: ""
+        set(v) = prefs.edit().putString("scanLanguage", v).apply()
+
+    /** When Cardmarket's product list was last downloaded; see [CardmarketCatalog]. Since 1.16. */
+    var catalogFetchedAt: Long
+        get() = prefs.getLong("catalogFetchedAt", 0L)
+        set(v) = prefs.edit().putLong("catalogFetchedAt", v).apply()
 
     /** How far saved cards have been upgraded; see [MtgRepository.backfillFinishDetails]. */
     var cardDetailsVersion: Int

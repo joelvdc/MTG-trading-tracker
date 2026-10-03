@@ -471,14 +471,15 @@ class DeckRepository(
 
     /** Fetches the rule-zero card details for decks scored before 1.12 (without scoring them again). Quietly does nothing when offline. */
     suspend fun fillMissingCardData() {
-        for (d in dao.all().filter { it.saltId != null && it.saltCard == null }) loadCardData(d)
+        for (d in dao.all().filter { it.saltId != null && SaltCard.decode(it.saltCard)?.current != true }) loadCardData(d)
     }
 
     /** The deck's rule-zero card details, fetching them from Commander Salt when they aren't saved yet. */
     suspend fun loadCardData(deck: Deck): SaltCard? {
-        SaltCard.decode(deck.saltCard)?.let { return it }
-        val saltId = deck.saltId ?: return null
-        val card = runCatching { salt.cardData(saltId) }.getOrNull() ?: return null
+        val saved = SaltCard.decode(deck.saltCard)
+        if (saved?.current == true) return saved
+        val saltId = deck.saltId ?: return saved
+        val card = runCatching { salt.cardData(saltId) }.getOrNull() ?: return saved
         dao.get(deck.archidektId)?.let { dao.update(it.copy(saltCard = card.encode())) }
         return card
     }
@@ -510,7 +511,7 @@ class DeckRepository(
 
     // ---- deck ↔ collection -----------------------------------------------------------------
 
-    private suspend fun ownedByName() = db.collectionDao().ownedByName().associate { it.name.lowercase() to it.qty }
+    suspend fun ownedByName() = db.collectionDao().ownedByName().associate { it.name.lowercase() to it.qty }
 
     suspend fun collectionCounts(deckId: Long): DeckCollectionCounts {
         val cards = dao.cards(deckId)

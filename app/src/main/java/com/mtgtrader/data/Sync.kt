@@ -20,6 +20,8 @@ data class SyncData(
     val trades: List<SyncTrade> = emptyList(),
     val decks: List<SyncDeck> = emptyList(),
     val scans: List<ScannedCard> = emptyList(),
+    /** Since 1.16; older versions leave it out (and don't delete anything from it). */
+    val wishlist: List<WishlistItem> = emptyList(),
     val deletions: List<SyncDeletion> = emptyList(),
     val prefs: SyncPrefs = SyncPrefs(),
 ) {
@@ -32,6 +34,7 @@ data class SyncData(
         trades = trades.map { it.sorted() }.sortedBy { it.trade.uid },
         decks = decks.map { it.sorted() }.sortedBy { it.deck.archidektId },
         scans = scans.sortedBy { it.uid },
+        wishlist = wishlist.sortedBy { it.uid },
         deletions = deletions.sortedBy { it.uid },
     )
 }
@@ -173,6 +176,7 @@ object SyncMerge {
         d.collection.forEach { s -> s.item.uid?.let(::add) }
         d.trades.forEach { t -> t.trade.uid?.let(::add) }
         d.scans.forEach { s -> s.uid?.let(::add) }
+        d.wishlist.forEach { w -> w.uid?.let(::add) }
         d.decks.forEach { add(deckKey(it.deck.archidektId)) }
     }
 
@@ -198,6 +202,7 @@ object SyncMerge {
                 if (copies.size == 1) copies[0] else DeckMerge.merge(copies[0], copies[1])
             },
             scans = newest(local.scans, remote.scans, { it.uid }, { it.updatedAt }),
+            wishlist = newest(local.wishlist, remote.wishlist, { it.uid }, { it.updatedAt }),
             deletions = deletions,
             prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs else local.prefs,
         )
@@ -247,9 +252,10 @@ object SyncMerge {
             .map { t -> t.copy(binder = binder(t.binder), items = t.items.map { it.copy(appliedBinder = binder(it.appliedBinder)) }) }
         val decks = d.decks.filter { alive(deckKey(it.deck.archidektId), it.deck.updatedAt) }
         val scans = d.scans.filter { alive(it.uid, it.updatedAt) }
+        val wishlist = d.wishlist.filter { alive(it.uid, it.updatedAt) }
 
         val cutoff = now - KEEP_DELETIONS_MS
         val deletions = deleted.filter { (uid, at) -> uid !in revived && at >= cutoff }.map { (uid, at) -> SyncDeletion(uid, at) }
-        return SyncData(binders, collection, trades, decks, scans, deletions, d.prefs).sorted()
+        return SyncData(binders, collection, trades, decks, scans, wishlist, deletions, d.prefs).sorted()
     }
 }

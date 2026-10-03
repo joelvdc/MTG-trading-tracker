@@ -90,14 +90,30 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.sp
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
+import com.mtgtrader.data.WishlistRow
+import android.content.Intent
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TaskAlt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class SortBy(val label: String) { NAME("Name"), VALUE("Value per card"), RECENT("Recently added"), SET("Set") }
+/** Each order with its natural direction first ([forward]) and the reverse ([backward]). */
+private enum class SortBy(val label: String, val forward: String, val backward: String) {
+    NAME("Name", "A to Z", "Z to A"),
+    VALUE("Value per card", "Highest first", "Lowest first"),
+    RECENT("Recently added", "Newest first", "Oldest first"),
+    SET("Set", "A to Z", "Z to A"),
+}
 
-/** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders. */
+/** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders, [WISHLIST] the wishlist. */
 private typealias BinderSel = Long?
+
+/** The wishlist's place in the binder bar (binder ids are positive). */
+private const val WISHLIST = -2L
 
 @Composable
 fun CollectionScreen(nav: NavController) {
@@ -110,6 +126,9 @@ fun CollectionScreen(nav: NavController) {
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf("") }
     var sort by rememberSaveable { mutableStateOf(SortBy.NAME) }
+    var reversed by rememberSaveable { mutableStateOf(false) }
+    val wishRows by remember { c.db.wishlistDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    var editingWish by remember { mutableStateOf<WishlistRow?>(null) }
     var selected by rememberSaveable { mutableStateOf<BinderSel>(null) }
     var sortMenu by remember { mutableStateOf(false) }
     var viewMenu by remember { mutableStateOf(false) }
@@ -124,10 +143,12 @@ fun CollectionScreen(nav: NavController) {
     // A deleted binder (or one merged away) drops back to "All cards".
     LaunchedEffect(binders, selected) {
         val s = selected
-        if (s != null && s != Binder.UNSORTED && binders.isNotEmpty() && binders.none { it.id == s }) selected = null
+        if (s != null && s != Binder.UNSORTED && s != WISHLIST && binders.isNotEmpty() && binders.none { it.id == s }) selected = null
     }
     val currentBinder = binders.firstOrNull { it.id == selected }
-    val addTarget = CardTarget.Collection(selected ?: Binder.UNSORTED)
+    val wish = selected == WISHLIST
+    val addTarget = if (wish) CardTarget.Wishlist else CardTarget.Collection(selected ?: Binder.UNSORTED)
+    val wishOwned = remember(wishRows, rows) { c.repo.wishlistOwned(wishRows.map { it.item }, rows.orEmpty().map { it.item }) }
 
     val csvImport by c.repo.csvImport.collectAsStateWithLifecycle()
     val csvImportResult by c.repo.csvImportResult.collectAsStateWithLifecycle()
@@ -179,12 +200,48 @@ fun CollectionScreen(nav: NavController) {
                         SortBy.entries.forEach { s ->
                             DropdownMenuItem(
                                 text = { Text(s.label, fontWeight = if (s == sort) FontWeight.Bold else null) },
-                                onClick = { sort = s; sortMenu = false },
+                                leadingIcon = { if (s == sort) Icon(Icons.Default.Check, null) },
+                                onClick = { if (s != sort) reversed = false; sort = s; sortMenu = false },
+                            )
+                        }
+                        HorizontalDivider()
+                        listOf(false to sort.forward, true to sort.backward).forEach { (r, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label, fontWeight = if (r == reversed) FontWeight.Bold else null) },
+                                leadingIcon = { if (r == reversed) Icon(Icons.Default.Check, null) },
+                                onClick = { reversed = r; sortMenu = false },
                             )
                         }
                     }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        if (wish) {
+                            DropdownMenuItem(
+                                text = { Text("Remove the cards I got since adding them") },
+                                leadingIcon = { Icon(Icons.Default.TaskAlt, null) },
+                                enabled = wishOwned.values.any { it.gotSince > 0 },
+                                onClick = {
+                                    menu = false
+                                    scope.launch {
+                                        val (n, undo) = c.repo.removeOwnedFromWishlist()
+                                        if (snackbar.showUndo("Took $n card(s) off the wishlist")) undo()
+                                    }
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share the wishlist") },
+                                leadingIcon = { Icon(Icons.Default.Share, null) },
+                                enabled = wishRows.isNotEmpty(),
+                                onClick = {
+                                    menu = false
+                                    val text = wishRows.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
+                                    val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                                        .putExtra(Intent.EXTRA_SUBJECT, "MTG wishlist").putExtra(Intent.EXTRA_TEXT, text)
+                                    context.startActivity(Intent.createChooser(send, "Share the wishlist"))
+                                },
+                            )
+                            HorizontalDivider()
+                        }
                         DropdownMenuItem(
                             text = { Text("New binder") },
                             leadingIcon = { Icon(Icons.Default.CreateNewFolder, null) },
@@ -214,13 +271,18 @@ fun CollectionScreen(nav: NavController) {
                                 onClick = { menu = false; merging = true },
                             )
                         }
-                        HorizontalDivider()
-                        DropdownMenuItem(
+                        if (!wish) HorizontalDivider()
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Collection value over time") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.ShowChart, null) },
+                            onClick = { menu = false; nav.navigate("value") },
+                        )
+                        if (!wish) DropdownMenuItem(
                             text = { Text("Import CSV (ManaBox…)") },
                             leadingIcon = { Icon(Icons.Default.FileUpload, null) },
                             onClick = { menu = false; importer.launch(arrayOf("*/*")) },
                         )
-                        DropdownMenuItem(
+                        if (!wish) DropdownMenuItem(
                             text = { Text(if (selected == null) "Export CSV" else "Export this binder as CSV") },
                             leadingIcon = { Icon(Icons.Default.FileDownload, null) },
                             onClick = {
@@ -253,10 +315,12 @@ fun CollectionScreen(nav: NavController) {
             return@Scaffold
         }
         val counts = remember(all) { all.groupBy { it.item.binderId }.mapValues { (_, r) -> r.sumOf { it.item.quantity } } }
-        val shown = remember(all, filter, sort, priceType, selected) {
+        val wishById = remember(wishRows) { wishRows.associateBy { it.item.id } }
+        val shown = remember(all, wishRows, filter, sort, reversed, priceType, selected) {
             val f = filter.trim()
-            all.filter { r ->
-                (selected == null || r.item.binderId == selected) && (
+            val source = if (wish) wishRows.map { it.asCollectionRow() } else all
+            source.filter { r ->
+                (wish || selected == null || r.item.binderId == selected) && (
                     f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.flavorName?.contains(f, true) == true ||
                         r.item.card.setCode.equals(f, true) || r.item.card.setName.contains(f, true) ||
                         (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true))
@@ -268,7 +332,7 @@ fun CollectionScreen(nav: NavController) {
                     SortBy.VALUE -> list.sortedByDescending { it.unitPrice(priceType) ?: 0.0 }
                     SortBy.RECENT -> list.sortedByDescending { it.item.addedAt }
                     SortBy.SET -> list.sortedWith(compareBy({ it.item.card.setName }, { it.item.card.collectorNumber.filter(Char::isDigit).toIntOrNull() ?: 0 }))
-                }
+                }.let { if (reversed) it.asReversed() else it }
             }
         }
         val totalCards = shown.sumOf { it.item.quantity }
@@ -289,6 +353,14 @@ fun CollectionScreen(nav: NavController) {
                         label = { Text("${Binder.UNSORTED_NAME} · ${counts[Binder.UNSORTED] ?: 0}") },
                     )
                 }
+                item(key = "wishlist") {
+                    FilterChip(
+                        selected = wish,
+                        onClick = { selected = WISHLIST },
+                        label = { Text("Wishlist · ${wishRows.sumOf { it.item.quantity }}") },
+                        leadingIcon = { Icon(Icons.Default.Star, null, Modifier.size(18.dp)) },
+                    )
+                }
                 items(binders, key = { it.id }) { b ->
                     FilterChip(selected = selected == b.id, onClick = { selected = b.id }, label = { Text("${b.name} · ${counts[b.id] ?: 0}") })
                 }
@@ -301,11 +373,25 @@ fun CollectionScreen(nav: NavController) {
                 }
             }
             csvImport?.let { p -> CsvImportCard(p) }
-            Text(
-                "$totalCards card(s) · ${shown.size} unique · ${Fmt.money(totalValue)} (${priceType.short})",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
+            if (wish) {
+                Text(
+                    "$totalCards card(s) wanted · ${Fmt.money(totalValue)} to buy them (${priceType.short})",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().clickable { nav.navigate("value") }.padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "$totalCards card(s) · ${shown.size} unique · ${Fmt.money(totalValue)} (${priceType.short})",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(Icons.AutoMirrored.Filled.ShowChart, "Value over time", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             OutlinedTextField(
                 value = filter,
                 onValueChange = { filter = it },
@@ -316,7 +402,12 @@ fun CollectionScreen(nav: NavController) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             )
             when {
-                all.isEmpty() -> EmptyState(
+                wish && wishRows.isEmpty() -> EmptyState(
+                    "Your wishlist is empty",
+                    "Add cards you want with “Add card” or the scanner, or from a deck's “Cards I'm missing”. " +
+                        "Cards on your wishlist get a ★ when someone offers them in a trade.",
+                )
+                all.isEmpty() && !wish -> EmptyState(
                     "Your collection is empty",
                     "Add cards with search or the scanner, import a ManaBox CSV from the ⋮ menu, or complete a trade to fill it automatically.",
                 )
@@ -325,18 +416,24 @@ fun CollectionScreen(nav: NavController) {
                     "Add cards here with search or the scanner, send scanned cards here from the Scan tab, or move cards in from another binder.",
                 )
                 else -> {
-                    fun binderOf(row: CollectionRow) =
-                        if (selected == null && row.item.binderId != Binder.UNSORTED) binderName(row.item.binderId, binders) else null
+                    fun binderOf(row: CollectionRow) = when {
+                        wish -> wishById[row.item.id]?.let { wishLabel(it.item, wishOwned[row.item.id]) }
+                        selected == null && row.item.binderId != Binder.UNSORTED -> binderName(row.item.binderId, binders)
+                        else -> null
+                    }
+                    fun open(row: CollectionRow) {
+                        if (wish) editingWish = wishById[row.item.id] else editing = row
+                    }
                     when (view) {
                         CollectionView.LIST -> LazyColumn(
                             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            items(shown, key = { it.item.id }) { row -> CollectionRowView(row, priceType, binderOf(row)) { editing = row } }
+                            items(shown, key = { it.item.id }) { row -> CollectionRowView(row, priceType, binderOf(row)) { open(row) } }
                         }
                         CollectionView.COMPACT -> LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp)) {
                             items(shown, key = { it.item.id }) { row ->
-                                CompactRow(row, priceType, binderOf(row)) { editing = row }
+                                CompactRow(row, priceType, binderOf(row)) { open(row) }
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
                         }
@@ -344,7 +441,7 @@ fun CollectionScreen(nav: NavController) {
                             columns = GridCells.Adaptive(112.dp),
                             contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 150.dp),
                         ) {
-                            gridItems(shown, key = { it.item.id }) { row -> CardTile(row, priceType, binderOf(row)) { editing = row } }
+                            gridItems(shown, key = { it.item.id }) { row -> CardTile(row, priceType, binderOf(row)) { open(row) } }
                         }
                     }
                 }
@@ -356,18 +453,23 @@ fun CollectionScreen(nav: NavController) {
         val item = row.item
         EditCardDialog(
             card = item.card,
-            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, item.binderId, item.quantity),
+            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, item.binderId, item.quantity, item.notes, item.purchasePrice),
             prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
             priceType = priceType,
             allowCustomPrice = false,
             enabled = true,
             binders = binders,
+            showNotes = true,
+            extra = { DeckUsageLine(item.card.name) },
             onDismiss = { editing = null },
             onSave = { v ->
                 editing = null
                 scope.launch {
                     c.repo.saveCollectionEdit(
-                        item.copy(quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language),
+                        item.copy(
+                            quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language,
+                            notes = v.notes?.trim()?.ifEmpty { null }, purchasePrice = v.purchasePrice,
+                        ),
                         v.binderId,
                         v.move,
                     )
@@ -383,6 +485,24 @@ fun CollectionScreen(nav: NavController) {
             onChangePrinting = {
                 editing = null
                 nav.openSearch(CardTarget.ReplaceCollectionItem(item.id), item.card.name)
+            },
+        )
+    }
+
+    editingWish?.let { row ->
+        WishlistDialog(
+            row, wishOwned[row.item.id], priceType,
+            onDismiss = { editingWish = null },
+            onSave = { updated ->
+                editingWish = null
+                scope.launch { c.repo.updateWishlistItem(updated.copy(notes = updated.notes?.trim()?.ifEmpty { null })) }
+            },
+            onDelete = {
+                editingWish = null
+                scope.launch {
+                    c.repo.deleteWishlistItem(row.item.id)
+                    if (snackbar.showUndo("${row.item.card.displayName} taken off the wishlist")) c.repo.restoreWishlistItem(row.item)
+                }
             },
         )
     }
@@ -475,7 +595,7 @@ private fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?
             val details = listOfNotNull(
                 item.card.setLabel,
                 if (item.foil) item.card.finishName(item.finish) else null,
-                item.condition.takeIf { it != "NM" },
+                item.condition.takeIf { it != "NM" && it.isNotEmpty() },
                 item.language.takeIf { it != "EN" },
                 binder,
             ).joinToString(" · ")
@@ -543,7 +663,7 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     SetLine(item.card)
                     FinishTag(item.card, item.finish)
-                    Tag(item.condition)
+                    if (item.condition.isNotEmpty()) Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
                 }
                 binder?.let {

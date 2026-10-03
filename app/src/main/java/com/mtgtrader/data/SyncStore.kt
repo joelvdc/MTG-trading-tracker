@@ -24,6 +24,7 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             },
             decks = dao.decks().map { d -> SyncDeck(d, cards[d.archidektId].orEmpty().map { it.copy(id = 0) }) },
             scans = dao.scans().map { it.copy(id = 0) },
+            wishlist = dao.wishlist().map { it.copy(id = 0) },
             deletions = dao.deletions(),
             prefs = settings.syncedPrefs(),
         ).sorted() to (dao.lastChange() ?: 0L)
@@ -104,6 +105,21 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
                 val mine = localByUid[uid]
                 if (mine == null) db.scanDao().insert(want.copy(id = 0))
                 else if (want.copy(id = mine.id) != mine) db.scanDao().insert(want.copy(id = mine.id))
+            }
+        }
+
+        if (current.wishlist != merged.wishlist) {
+            val local = dao.wishlist()
+            val localByUid = local.filter { it.uid != null }.associateBy { it.uid!! }
+            val wanted = merged.wishlist.associateBy { it.uid!! }
+            for (row in local) {
+                val want = wanted[row.uid]
+                if (want == null || want.copy(id = row.id) != row) exec("DELETE FROM wishlist WHERE id = ?", row.id)
+            }
+            for ((uid, want) in wanted) {
+                val mine = localByUid[uid]
+                if (mine == null) db.wishlistDao().insert(want.copy(id = 0))
+                else if (want.copy(id = mine.id) != mine) db.wishlistDao().insert(want.copy(id = mine.id))
             }
         }
 

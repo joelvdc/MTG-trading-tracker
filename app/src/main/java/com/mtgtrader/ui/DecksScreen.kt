@@ -163,6 +163,12 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; busy(c.decks.rescoreAll()) },
                         )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Cards in several decks") },
+                            enabled = any,
+                            onClick = { moreMenu = false; nav.navigate("decks/shared") },
+                        )
                     }
                 },
             )

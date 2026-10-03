@@ -441,6 +441,9 @@ data class EditValues(
     /** Collection rows only: the binder, and how many copies move there when it's changed. */
     val binderId: Long = Binder.UNSORTED,
     val move: Int = 0,
+    /** Collection rows only: your notes on the stack and what you paid per copy. Since 1.16. */
+    val notes: String? = null,
+    val purchasePrice: Double? = null,
 )
 
 /** Shared editor for a trade item, collection row or scanned card. With [binders], the card can be moved between binders. */
@@ -457,8 +460,11 @@ fun EditCardDialog(
     onDelete: () -> Unit,
     onChangePrinting: () -> Unit,
     binders: List<Binder>? = null,
+    showNotes: Boolean = false,
+    extra: @Composable () -> Unit = {},
 ) {
     var v by remember { mutableStateOf(initial) }
+    var paidText by remember { mutableStateOf(initial.purchasePrice?.let { "%.2f".format(it) } ?: "") }
     val uriHandler = LocalUriHandler.current
     // Cards saved before version 1.2 may not list the finish they were saved with.
     val finishOptions = remember(card) { (card.finishes + initial.finish).distinct() }
@@ -545,6 +551,41 @@ fun EditCardDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+                if (showNotes) {
+                    OutlinedTextField(
+                        value = paidText,
+                        onValueChange = {
+                            paidText = it
+                            v = v.copy(purchasePrice = Fmt.parseMoney(it))
+                        },
+                        label = { Text("Purchase price per copy (optional)") },
+                        singleLine = true,
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    val paid = v.purchasePrice
+                    val now = prices(v.finish.foil)?.get(priceType)
+                    if (paid != null && paid > 0 && now != null) {
+                        val diff = (now - paid) * v.quantity
+                        Text(
+                            "Paid ${Fmt.money(paid * v.quantity)} · now ${Fmt.money(now * v.quantity)} · " +
+                                (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paid) / paid * 100),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (diff >= 0) TrendColors.up else TrendColors.down,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = v.notes ?: "",
+                        onValueChange = { v = v.copy(notes = it.ifBlank { null }) },
+                        label = { Text("Notes (condition details, where it came from…)") },
+                        enabled = enabled,
+                        minLines = 2,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                extra()
                 HorizontalDivider()
                 PriceTable(
                     prices(v.finish.foil),

@@ -21,13 +21,29 @@ class DataUpdater(
     private val settings: Settings,
     private val prices: PriceGuideRepository,
     private val network: NetworkMonitor,
+    private val catalog: CardmarketCatalog,
+    private val history: ValueHistory,
 ) {
     /** Whether automatic updates may run right now. */
     fun allowedNow(): Boolean = settings.autoUpdate.value && (!settings.wifiOnly.value || network.onUnmeteredNetwork())
 
-    /** Updates prices if they're out of date and automatic updates are allowed right now. */
+    /**
+     * Updates prices (daily) and Cardmarket's product list (weekly) if they're out of date and
+     * automatic updates are allowed right now; then fills in missing Cardmarket links and saves
+     * today's collection value.
+     */
     suspend fun autoUpdate() {
-        if (allowedNow()) prices.refreshIfStale()
+        if (allowedNow()) {
+            prices.refreshIfStale()
+            if (catalog.isStale) catalog.refresh()
+        }
+        afterUpdate()
+    }
+
+    /** After prices changed (or on opening the app): missing links, today's value. */
+    suspend fun afterUpdate() {
+        runCatching { catalog.repair() }
+        runCatching { history.record() }
     }
 
     /** Sets up (or cancels) the background update to match the settings. */

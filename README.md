@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.15.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.16.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.15-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.16-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -28,6 +28,9 @@ It's built for 64-bit ARM phones (practically every phone from the last ~6 years
 - **Prices:** Cardmarket's public daily price guide (trend, average, low, 1/7/30-day averages, normal + foil), downloaded
   automatically once a day (~26 MB) when the app opens and in the background. Settings can turn automatic updates off
   or limit them to Wi-Fi; "Update prices now" always runs.
+- **Cardmarket's product list** (~20 MB, once a week): Scryfall links almost every printing to its Cardmarket product,
+  but not all. With this list the app finds the missing ones itself (The List reprints such as Urza's Saga, some surge
+  foils, older promos) and the separate foil products of special foils such as The Lord of the Rings' silver-foil scrolls.
 
 ## Commander decks
 Import a public deck from **Archidekt**: paste its link in the Decks tab, share it to the app from the Archidekt app or
@@ -51,6 +54,15 @@ stay Commander Salt's. With ScrollVault, the power level comes with its margin (
 deck page add what it found "at the table": the typical and earliest winning turn from its goldfish simulation, its own
 bracket call (and whether it's borderline) and its "tell your pod" line.
 
+**Bracket-relevant cards** are tagged right in the decklist: game changers, combo pieces, extra turns and land denial
+(WotC's bracket rules, in red) and tutors and fast mana (in grey), with a count above the list and **Only these cards**
+to list just them. Tapping a card names its combo partners and the other decks it's in.
+
+**Cards I'm missing** (deck ⋮ menu) lists the deck's cards you don't own in any printing, with what buying them costs;
+add them all to the wishlist, or share/copy them as a plain list ("1 Card name" per line) for a Cardmarket wants list.
+**Cards in several decks** (Decks tab ⋮ menu) shows which cards your decks share and whether you own enough copies for
+all of them.
+
 The deck list can be sorted by name, power level, bracket (realistic, then baseline) or when the deck was last changed on
 Archidekt, highest/newest first or reversed. On a deck page, **Refresh bracket and power level** scores the deck again on
 Commander Salt and the chosen power level site; if the deck changed on Archidekt since it was loaded, its list is
@@ -70,7 +82,26 @@ cards are taken from Unsorted first. CSV import/export carries a "Binder Name" c
 
 The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
 big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
-total underneath, and "Value per card" sorts by it.
+total underneath, and "Value per card" sorts by it. Every sort can be reversed (A to Z / Z to A, highest / lowest
+first, newest / oldest first).
+
+Tap a card to add **notes** (condition details, where it came from) and the **purchase price** per copy; the card then
+shows what you paid against what it's worth now. Both go into the CSV export and are read back on import. The card
+also lists the decks it's in.
+
+**Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
+collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
+cards whose price is rising or falling most lately, over all the copies you own.
+
+## Wishlist
+The **★ Wishlist** in the binder bar holds the cards you want. Add them with "Add card" or the scanner while it's
+selected, or from a deck's "Cards I'm missing". By default any printing will do; it can be limited to one printing and
+finish. Each card shows whether you own it, and "Remove the cards I got since adding them" (⋮ menu) clears what you've
+acquired since (copies you already owned when you added it don't count). Cards on the wishlist get a ★ when they're on
+the "You get" side of a trade. The wishlist isn't part of the collection's value, can be shared as a list and is synced.
+
+## Appearance
+Settings → **Appearance**: same as the phone, light or dark.
 
 ## Scan tab
 Scan a pile of cards (or add them by name) into a waiting list, then select some or all of them and send them **to a
@@ -82,8 +113,17 @@ to pick the right set from all its printings, with pictures and prices, without 
 Etched at the top of that list sets the finish (also without changing the printing); printings that only exist in
 another finish say so, e.g. "Surge foil only".
 
+Cards from before 2015 have no set code printed, so for those the scanner also looks at the **set symbol** at the end of
+the type line and compares it with the symbols of every set the card was printed in. When one clearly matches, it picks
+that printing ("Set recognised by its symbol · tap if wrong"); when it isn't sure (some symbols are nearly identical,
+like M11 and M12) it leaves the choice to you as before.
+
+**Language:** the chip under the camera reads "auto" (the language printed on the card, else English) or a language you
+choose for all scanned cards; the choice is kept for the next scans. A chosen language also lets a foreign card be
+identified by its set code and number alone.
+
 ## Sync between phones
-Settings → **Sync with Nextcloud** keeps the collection, binders, trades, decks, scans and preferences the same on all
+Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans and preferences the same on all
 your phones, using a file (`MTG Trader/sync.json.gz`) on your own [Nextcloud](https://nextcloud.com/). Prices and
 pictures aren't synced; each phone downloads those itself.
 - **Connect:** enter your server address and log in in the browser; the app gets its own app password, which you can

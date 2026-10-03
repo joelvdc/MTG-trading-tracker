@@ -57,6 +57,9 @@ interface SyncDao {
     @Query("SELECT * FROM trades")
     suspend fun trades(): List<Trade>
 
+    @Query("SELECT * FROM wishlist")
+    suspend fun wishlist(): List<WishlistItem>
+
     /** Edits made in the app so far (see [SyncControl.changes]). */
     @Query("SELECT changes FROM sync_control WHERE id = 1")
     suspend fun lastChange(): Long?
@@ -78,7 +81,7 @@ object SyncSchema {
     private const val COUNT = "UPDATE sync_control SET changes = changes + 1 WHERE id = 1;"
 
     /** Tables whose rows sync on their own, identified by their uid column. */
-    val UID_TABLES = listOf("collection", "binders", "trades", "scans")
+    val UID_TABLES = listOf("collection", "binders", "trades", "scans", "wishlist")
 
     fun triggers(): List<String> = buildList {
         for (t in UID_TABLES) {
