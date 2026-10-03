@@ -28,9 +28,9 @@ class ScanPrintingTest {
     private lateinit var db: AppDatabase
     private lateinit var repo: MtgRepository
 
-    private fun printing(id: String, set: String, foil: Boolean = true) = CardRef(
+    private fun printing(id: String, set: String, foil: Boolean = true, nonFoil: Boolean = true) = CardRef(
         scryfallId = id, name = "Sol Ring", setCode = set, setName = set.uppercase(), collectorNumber = "1", rarity = "uncommon",
-        imageUrl = null, cardmarketId = null, fallbackEur = 1.0, fallbackEurFoil = 2.0, hasNonFoil = true, hasFoil = foil,
+        imageUrl = null, cardmarketId = null, fallbackEur = 1.0, fallbackEurFoil = 2.0, hasNonFoil = nonFoil, hasFoil = foil,
     )
 
     @Before
@@ -71,5 +71,20 @@ class ScanPrintingTest {
         // A printing without foil gets its normal finish.
         val r2 = repo.changeAddedPrinting(r, target, printing("c", "lea", foil = false), Finish.FOIL, "EN")!!
         assertEquals(false, db.scanDao().byId(r2.itemId)!!.foil)
+    }
+
+    @Test
+    fun foilOnlyPrintingByMistakeCanBeUndoneWithNormal() = runBlocking {
+        val target = CardTarget.Scans
+        val scanned = repo.add(target, printing("a", "c21"), Finish.NONFOIL, "EN", exactPrinting = false)!!
+        // A surge-foil-only promo picked by mistake: it can only be foil.
+        val wrong = repo.changeAddedPrinting(scanned, target, printing("p", "plst", nonFoil = false), Finish.NONFOIL, "EN")!!
+        assertEquals(true, db.scanDao().byId(wrong.itemId)!!.foil)
+        // Then the right printing, with "Normal" chosen in the picker: back to non-foil.
+        val right = repo.changeAddedPrinting(wrong, target, printing("b", "cmm"), Finish.NONFOIL, "EN")!!
+        val scan = db.scanDao().byId(right.itemId)!!
+        assertEquals("cmm", scan.card.setCode)
+        assertEquals(false, scan.foil)
+        assertEquals(1, scan.quantity)
     }
 }

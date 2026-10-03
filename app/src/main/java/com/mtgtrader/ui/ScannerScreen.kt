@@ -212,10 +212,10 @@ class ScanController(
         onAdded()
     }
 
-    /** Another printing picked for a scanned card: the copy is swapped and stays in the list, in place. */
-    fun changePrinting(e: ScannedEntry, card: CardRef) = scope.launch {
-        val result = repo.changeAddedPrinting(e.result, target, card, e.finish, e.language) ?: return@launch
-        val f = card.resolveFinish(e.finish)
+    /** Another printing or finish picked for a scanned card: the copy is swapped and stays in the list, in place. */
+    fun changePrinting(e: ScannedEntry, card: CardRef, finish: Finish) = scope.launch {
+        val result = repo.changeAddedPrinting(e.result, target, card, finish, e.language) ?: return@launch
+        val f = card.resolveFinish(finish)
         val updated = e.copy(card = card, finish = f, result = result, prices = repo.snapshot(card, f.foil), exactPrinting = true)
         val i = added.indexOf(e)
         if (i >= 0) added[i] = updated else added.add(0, updated)
@@ -259,7 +259,10 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
     choosing?.let { e ->
         PrintingPicker(
             e, priceType,
-            onPick = { card -> choosing = null; if (card.scryfallId != e.card.scryfallId) controller.changePrinting(e, card) },
+            onPick = { card, finish ->
+                choosing = null
+                if (card.scryfallId != e.card.scryfallId || card.resolveFinish(finish) != e.finish) controller.changePrinting(e, card, finish)
+            },
             onDismiss = { choosing = null },
         )
     }
@@ -374,41 +377,69 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
     }
 }
 
-/** Every printing of a scanned card, with pictures and prices, to pick the right one without leaving the scanner. */
+/**
+ * Every printing of a scanned card, with pictures and prices, to pick the right one (and whether
+ * it's foil) without leaving the scanner. Printings that don't exist in the chosen finish say which
+ * one they'd get, e.g. a surge-foil-only promo.
+ */
 @Composable
-private fun PrintingPicker(entry: ScannedEntry, priceType: PriceType, onPick: (CardRef) -> Unit, onDismiss: () -> Unit) {
+private fun PrintingPicker(entry: ScannedEntry, priceType: PriceType, onPick: (CardRef, Finish) -> Unit, onDismiss: () -> Unit) {
     val c = LocalContext.current.container
-    val options by produceState<List<Pair<CardRef, Double?>>?>(null, entry.card.name) {
-        val prints = runCatching { c.scryfall.prints(entry.card.name) }.getOrDefault(emptyList())
-        value = prints.map { p ->
-            val ref = p.toRef()
-            val f = ref.resolveFinish(entry.finish)
-            ref to (c.repo.snapshot(ref, f.foil).best(priceType) ?: ref.fallback(f.foil))
+    var finish by remember { mutableStateOf(entry.finish) }
+    val prints by produceState<List<CardRef>?>(null, entry.card.name) {
+        value = runCatching { c.scryfall.prints(entry.card.name).map { it.toRef() } }.getOrDefault(emptyList())
+    }
+    val prices by produceState<Map<String, Double?>>(emptyMap(), prints, finish) {
+        value = prints.orEmpty().associate { ref ->
+            val f = ref.resolveFinish(finish)
+            ref.scryfallId to (c.repo.snapshot(ref, f.foil).best(priceType) ?: ref.fallback(f.foil))
         }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Which ${entry.card.name}?") },
         text = {
-            val list = options
-            when {
-                list == null -> Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                list.isEmpty() -> Text("Couldn't load the printings. Check the connection and try again.")
-                else -> LazyVerticalGrid(columns = GridCells.Adaptive(100.dp), modifier = Modifier.heightIn(max = 520.dp)) {
-                    items(list, key = { it.first.scryfallId }) { (ref, price) ->
-                        val isCurrent = ref.scryfallId == entry.card.scryfallId
-                        Column(
-                            Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isCurrent) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-                                .clickable { onPick(ref) }
-                                .padding(4.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            CardThumb(ref.imageUrl, width = 92)
-                            Text(ref.setName, style = MaterialTheme.typography.labelSmall, maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
-                            Text(ref.setLabel, style = MaterialTheme.typography.labelSmall)
-                            Text(Fmt.money(price), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            Column {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(Finish.NONFOIL to "Normal", Finish.FOIL to "Foil", Finish.ETCHED to "Etched").forEach { (f, label) ->
+                        FilterChip(selected = finish == f, onClick = { finish = f }, label = { Text(label) })
+                    }
+                }
+                Text(
+                    "Tap the printing you have" + if (entry.finish != finish) " (or the highlighted one to only change the finish)." else ".",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                )
+                val list = prints
+                when {
+                    list == null -> Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    list.isEmpty() -> Text("Couldn't load the printings. Check the connection and try again.")
+                    else -> LazyVerticalGrid(columns = GridCells.Adaptive(100.dp), modifier = Modifier.heightIn(max = 480.dp)) {
+                        items(list, key = { it.scryfallId }) { ref ->
+                            val isCurrent = ref.scryfallId == entry.card.scryfallId
+                            val f = ref.resolveFinish(finish)
+                            Column(
+                                Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isCurrent) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                                    .clickable { onPick(ref, finish) }
+                                    .padding(4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                CardThumb(ref.imageUrl, width = 92)
+                                Text(ref.setName, style = MaterialTheme.typography.labelSmall, maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
+                                Text(ref.setLabel, style = MaterialTheme.typography.labelSmall)
+                                if (f != finish || f.foil) {
+                                    Text(
+                                        ref.finishName(f) + if (f != finish) " only" else "",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (f != finish) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                                Text(Fmt.money(prices[ref.scryfallId]), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                 }
@@ -418,7 +449,6 @@ private fun PrintingPicker(entry: ScannedEntry, priceType: PriceType, onPick: (C
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
-
 @Composable
 private fun CameraPreview(analyzer: ImageAnalysis.Analyzer, torch: Boolean) {
     val context = LocalContext.current
