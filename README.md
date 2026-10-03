@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.13.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.14.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.13-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.14-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -75,6 +75,10 @@ total underneath, and "Value per card" sorts by it.
 ## Scan tab
 Scan a pile of cards (or add them by name) into a waiting list, then select some or all of them and send them **to a
 binder**, **to a trade**, **to a deck** (added in the app only, kept when the deck is refreshed) or **discard** them.
+
+While scanning, the cards added show up in a list under the camera with their price (the price type chosen in
+Settings). When only the name was readable, the app guesses the printing and says **Choose printing**: tap the card
+to pick the right set from all its printings, with pictures and prices, without leaving the scanner.
 
 ## Sync between phones
 Settings → **Sync with Nextcloud** keeps the collection, binders, trades, decks, scans and preferences the same on all

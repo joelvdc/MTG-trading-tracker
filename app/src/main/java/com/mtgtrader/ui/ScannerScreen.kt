@@ -1,5 +1,19 @@
 package com.mtgtrader.ui
 
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.produceState
+import com.mtgtrader.data.PriceSet
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.SystemClock
@@ -101,10 +115,13 @@ data class ScannedEntry(
     val finish: Finish,
     val language: String,
     val result: AddResult,
-    val unitPrice: Double?,
+    /** Its Cardmarket prices; the list shows the one chosen in Settings. */
+    val prices: PriceSet,
     /** False when only the name was readable, so the printing is Scryfall's default guess. */
     val exactPrinting: Boolean,
-)
+) {
+    fun unitPrice(type: PriceType): Double? = prices.best(type) ?: card.fallback(finish.foil)
+}
 
 /**
  * Drives recognition: a card is added once it has been identified on two consecutive reads,
@@ -183,8 +200,7 @@ class ScanController(
         val f = ref.resolveFinish(if (foil) Finish.FOIL else Finish.NONFOIL)
         val lang = language ?: "EN"
         val result = repo.add(target, ref, f, lang, found.exactPrinting) ?: return
-        val price = repo.snapshot(ref, f.foil).best(PriceType.TREND)
-        added.add(0, ScannedEntry(ref, f, lang, result, price, found.exactPrinting))
+        added.add(0, ScannedEntry(ref, f, lang, result, repo.snapshot(ref, f.foil), found.exactPrinting))
         pending = null
         status = "Added ${card.displayName} (${card.set.uppercase()})"
         onAdded()
@@ -194,6 +210,15 @@ class ScanController(
         val result = repo.add(target, e.card, e.finish, e.language, e.exactPrinting) ?: return@launch
         added.add(0, e.copy(result = result))
         onAdded()
+    }
+
+    /** Another printing picked for a scanned card: the copy is swapped and stays in the list, in place. */
+    fun changePrinting(e: ScannedEntry, card: CardRef) = scope.launch {
+        val result = repo.changeAddedPrinting(e.result, target, card, e.finish, e.language) ?: return@launch
+        val f = card.resolveFinish(e.finish)
+        val updated = e.copy(card = card, finish = f, result = result, prices = repo.snapshot(card, f.foil), exactPrinting = true)
+        val i = added.indexOf(e)
+        if (i >= 0) added[i] = updated else added.add(0, updated)
     }
 
     fun undo(e: ScannedEntry) = scope.launch {
@@ -229,6 +254,15 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
     }
 
     var torch by remember { mutableStateOf(false) }
+    var choosing by remember { mutableStateOf<ScannedEntry?>(null) }
+
+    choosing?.let { e ->
+        PrintingPicker(
+            e, priceType,
+            onPick = { card -> choosing = null; if (card.scryfallId != e.card.scryfallId) controller.changePrinting(e, card) },
+            onDismiss = { choosing = null },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -308,7 +342,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
             ) {
                 items(controller.added, key = { System.identityHashCode(it) }) { e ->
                     Card(
-                        onClick = { nav.openSearch(e.result.replaceTarget, e.card.name) },
+                        onClick = { choosing = e },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                     ) {
                         Row(Modifier.fillMaxWidth().padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -323,13 +357,13 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                                 }
                                 if (!e.exactPrinting) {
                                     Text(
-                                        "Printing guessed — tap to choose the set",
+                                        "Choose printing",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
-                            Text(Fmt.money(e.unitPrice), style = MaterialTheme.typography.bodyMedium)
+                            Text(Fmt.money(e.unitPrice(priceType)), style = MaterialTheme.typography.bodyMedium)
                             IconButton(onClick = { controller.addAgain(e) }) { Icon(Icons.Default.Add, "Add another copy") }
                             IconButton(onClick = { controller.undo(e) }) { Icon(Icons.AutoMirrored.Filled.Undo, "Undo") }
                         }
@@ -338,6 +372,51 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
             }
         }
     }
+}
+
+/** Every printing of a scanned card, with pictures and prices, to pick the right one without leaving the scanner. */
+@Composable
+private fun PrintingPicker(entry: ScannedEntry, priceType: PriceType, onPick: (CardRef) -> Unit, onDismiss: () -> Unit) {
+    val c = LocalContext.current.container
+    val options by produceState<List<Pair<CardRef, Double?>>?>(null, entry.card.name) {
+        val prints = runCatching { c.scryfall.prints(entry.card.name) }.getOrDefault(emptyList())
+        value = prints.map { p ->
+            val ref = p.toRef()
+            val f = ref.resolveFinish(entry.finish)
+            ref to (c.repo.snapshot(ref, f.foil).best(priceType) ?: ref.fallback(f.foil))
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Which ${entry.card.name}?") },
+        text = {
+            val list = options
+            when {
+                list == null -> Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                list.isEmpty() -> Text("Couldn't load the printings. Check the connection and try again.")
+                else -> LazyVerticalGrid(columns = GridCells.Adaptive(100.dp), modifier = Modifier.heightIn(max = 520.dp)) {
+                    items(list, key = { it.first.scryfallId }) { (ref, price) ->
+                        val isCurrent = ref.scryfallId == entry.card.scryfallId
+                        Column(
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isCurrent) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                                .clickable { onPick(ref) }
+                                .padding(4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CardThumb(ref.imageUrl, width = 92)
+                            Text(ref.setName, style = MaterialTheme.typography.labelSmall, maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
+                            Text(ref.setLabel, style = MaterialTheme.typography.labelSmall)
+                            Text(Fmt.money(price), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

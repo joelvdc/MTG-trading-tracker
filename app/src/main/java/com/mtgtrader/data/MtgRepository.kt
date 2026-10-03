@@ -163,6 +163,17 @@ class MtgRepository(
         for (item in t.items) trades.updateItem(item.copy(prices = snapshot(item.card, item.foil)))
     }
 
+    /**
+     * Changes the printing of a copy the scanner just added: that copy is taken back and the
+     * chosen printing added instead (in the same finish when it has it), so other copies of the
+     * old printing are left alone. Returns what was added now.
+     */
+    suspend fun changeAddedPrinting(r: AddResult, target: CardTarget, card: CardRef, finish: Finish, language: String): AddResult? =
+        db.withTransaction {
+            undoAdd(r)
+            add(target, card, card.resolveFinish(finish), language, exactPrinting = true)
+        }
+
     /** Swaps an item's printing (e.g. after choosing the right set in search). */
     suspend fun replacePrinting(target: CardTarget, card: CardRef) {
         when (target) {
