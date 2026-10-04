@@ -98,7 +98,7 @@ fun ImportUserScreen(nav: NavController, initialUser: String?) {
         topBar = {
             TopAppBar(
                 title = { Text("Import from a user") },
-                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },

@@ -42,6 +42,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.container
 import com.mtgtrader.data.FirstChoice
 import com.mtgtrader.data.FirstSync
+import com.mtgtrader.data.FolderListing
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.text.style.TextOverflow
 import com.mtgtrader.data.NextcloudAccount
 import com.mtgtrader.data.NextcloudClient
 import kotlinx.coroutines.async
@@ -71,6 +82,10 @@ fun SyncSection() {
         Button(onClick = { connecting = true }) { Text("Connect to Nextcloud") }
     } else {
         Text("Connected as ${s.user} on ${Uri.parse(s.server).host ?: s.server}")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Folder: /${s.folder}", Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            TextButton(onClick = c.sync::changeFolder, enabled = !s.running) { Text("Change") }
+        }
         when {
             s.running -> Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -109,6 +124,7 @@ fun SyncSection() {
     }
 
     if (connecting) ConnectDialog(onDone = { connecting = false })
+    if (s.choosingFolder && !connecting) FolderPickerDialog(start = if (s.ready) s.folder else "", firstTime = !s.ready)
     s.firstChoice?.let { choice ->
         FirstSyncDialog(choice, onChoose = c.sync::chooseFirst, onLater = c.sync::cancelFirstChoice)
     }
@@ -259,6 +275,120 @@ private fun ConnectDialog(onDone: () -> Unit) {
             }) { Text("Cancel") }
         },
     )
+}
+
+/**
+ * Picks the Nextcloud folder for the sync file: browse into folders, make a new one, then "Use this
+ * folder". All phones must use the same one. Since 1.17.
+ */
+@Composable
+private fun FolderPickerDialog(start: String, firstTime: Boolean) {
+    val c = LocalContext.current.container
+    val scope = rememberCoroutineScope()
+    var path by rememberSaveable { mutableStateOf(start) }
+    var listing by remember { mutableStateOf<FolderListing?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var naming by remember { mutableStateOf(false) }
+    var reload by remember { mutableIntStateOf(0) }
+    fun child(name: String) = if (path.isEmpty()) name else "$path/$name"
+    LaunchedEffect(path, reload) {
+        listing = null
+        error = null
+        runCatching { c.sync.listFolder(path) }.onSuccess { listing = it }.onFailure { error = message(it) }
+    }
+    AlertDialog(
+        onDismissRequest = c.sync::cancelFolderChoice,
+        title = { Text("Folder for the sync file") },
+        text = {
+            Column {
+                Text(
+                    "Pick the same folder on all your phones." + if (firstTime) " Without a choice, the app uses “${NextcloudClient.FOLDER}”." else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text("/$path", style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(4.dp))
+                if (path.isNotEmpty()) {
+                    Row(
+                        Modifier.fillMaxWidth().clickable { path = path.substringBeforeLast('/', "") }.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Default.ArrowUpward, null)
+                        Spacer(Modifier.width(12.dp))
+                        Text("Up")
+                    }
+                }
+                val l = listing
+                when {
+                    error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error)
+                    l == null -> Row(Modifier.padding(vertical = 12.dp)) { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
+                    else -> {
+                        LazyColumn(Modifier.heightIn(max = 280.dp)) {
+                            items(l.folders) { name ->
+                                Row(
+                                    Modifier.fillMaxWidth().clickable { path = child(name) }.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                        if (l.folders.isEmpty()) Text("No folders in here.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (l.hasSyncFile) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "This folder already holds MTG Trader data (from another phone?). Choosing it syncs with that data.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+                TextButton(onClick = { naming = true }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp)) {
+                    Icon(Icons.Default.CreateNewFolder, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("New folder here")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { c.appScope.launch { c.sync.useFolder(path) } }, enabled = listing != null) { Text("Use this folder") }
+        },
+        dismissButton = {
+            TextButton(onClick = c.sync::cancelFolderChoice) { Text(if (firstTime) "Use “${NextcloudClient.FOLDER}”" else "Cancel") }
+        },
+    )
+    if (naming) {
+        var name by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { naming = false },
+            title = { Text("New folder") },
+            text = {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.replace("/", "") },
+                    label = { Text("Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(enabled = name.isNotBlank(), onClick = {
+                    naming = false
+                    val target = child(name.trim())
+                    scope.launch {
+                        runCatching { c.sync.createFolder(target) }
+                            .onSuccess { path = target; reload++ }
+                            .onFailure { error = message(it) }
+                    }
+                }) { Text("Create") }
+            },
+            dismissButton = { TextButton(onClick = { naming = false }) { Text("Cancel") } },
+        )
+    }
 }
 
 private fun message(e: Throwable): String = when (e) {

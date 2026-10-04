@@ -37,6 +37,10 @@ data class SyncStatus(
     val firstChoice: FirstChoice? = null,
     val autoSync: Boolean = true,
     val wifiOnly: Boolean = false,
+    /** The Nextcloud folder holding the sync file. Since 1.17. */
+    val folder: String = NextcloudClient.FOLDER,
+    /** The user is picking the folder (right after connecting, or to change it). */
+    val choosingFolder: Boolean = false,
 ) {
     val connected get() = server != null
 }
@@ -76,6 +80,7 @@ class SyncManager(
     private val prefs = context.getSharedPreferences("sync", Context.MODE_PRIVATE)
     private val mutex = Mutex()
     private var debounce: Job? = null
+    private var changingFolder = false
 
     private val _status = MutableStateFlow(readStatus())
     val status: StateFlow<SyncStatus> = _status
@@ -95,13 +100,16 @@ class SyncManager(
         ready = prefs.getBoolean(K_FIRST_DONE, false),
         autoSync = prefs.getBoolean(K_AUTO, true),
         wifiOnly = prefs.getBoolean(K_WIFI, false),
+        folder = prefs.getString(K_FOLDER, null) ?: NextcloudClient.FOLDER,
+        // Connected but the folder was never chosen (and never synced): ask. Accounts from before 1.17 keep "MTG Trader".
+        choosingFolder = account() != null && (changingFolder || (!prefs.getBoolean(K_FIRST_DONE, false) && !prefs.contains(K_FOLDER))),
     )
 
     private fun account(): NextcloudAccount? {
         val server = prefs.getString(K_SERVER, null) ?: return null
         val login = prefs.getString(K_USER, null) ?: return null
         val pw = prefs.getString(K_PASSWORD, null)?.let(SecretStore::decrypt) ?: return null
-        return NextcloudAccount(server, login, pw, prefs.getString(K_USER_ID, null) ?: login)
+        return NextcloudAccount(server, login, pw, prefs.getString(K_USER_ID, null) ?: login, prefs.getString(K_FOLDER, null) ?: NextcloudClient.FOLDER)
     }
 
     private val firstDone get() = prefs.getBoolean(K_FIRST_DONE, false)
@@ -117,10 +125,7 @@ class SyncManager(
     suspend fun startLogin(server: String) = client.startLogin(server)
     suspend fun pollLogin(start: NextcloudClient.LoginStart) = client.pollLogin(start)
 
-    /**
-     * Saves the account (after checking it works) and does the first sync, unless both sides
-     * hold data: then [SyncStatus.firstChoice] asks the user what to do.
-     */
+    /** Saves the account (after checking it works); then the user picks the folder ([useFolder]) and the first sync follows. */
     suspend fun connect(account: NextcloudAccount, fromLoginFlow: Boolean) {
         val checked = client.verify(account)
         prefs.edit()
@@ -130,11 +135,49 @@ class SyncManager(
             .putString(K_PASSWORD, SecretStore.encrypt(checked.password))
             .putBoolean(K_REVOKE, fromLoginFlow)
             .putBoolean(K_FIRST_DONE, false)
-            .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR).remove(K_LAST_SYNC)
+            .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR).remove(K_LAST_SYNC).remove(K_FOLDER)
             .apply()
         _status.value = readStatus()
         schedule()
+    }
+
+    // ---- The folder ------------------------------------------------------------------------
+
+    suspend fun listFolder(path: String): FolderListing = client.list(account() ?: throw SyncException("Not connected"), path)
+
+    suspend fun createFolder(path: String) = client.makeFolder(account() ?: throw SyncException("Not connected"), path)
+
+    /** Opens the folder picker to move syncing to another folder. */
+    fun changeFolder() {
+        changingFolder = true
+        _status.value = readStatus()
+    }
+
+    /**
+     * Syncs through [path] from now on. Like connecting anew: when both this phone and the
+     * folder hold data, [SyncStatus.firstChoice] asks what to do; the old folder's file stays.
+     */
+    suspend fun useFolder(path: String) {
+        val clean = path.split('/').filter { it.isNotBlank() }.joinToString("/")
+        mutex.withLock {
+            changingFolder = false
+            prefs.edit()
+                .putString(K_FOLDER, clean)
+                .putBoolean(K_FIRST_DONE, false)
+                .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR)
+                .apply()
+            _status.value = readStatus()
+        }
         prepareFirst()
+    }
+
+    /** The picker was closed: right after connecting that means the usual "MTG Trader" folder. */
+    fun cancelFolderChoice() {
+        if (!prefs.contains(K_FOLDER)) scope.launch { useFolder(NextcloudClient.FOLDER) }
+        else {
+            changingFolder = false
+            _status.value = readStatus()
+        }
     }
 
     /** Looks at both sides before the first sync; runs it right away unless the user has to choose. */
@@ -322,6 +365,7 @@ class SyncManager(
         const val K_ERROR = "lastError"
         const val K_AUTO = "auto"
         const val K_WIFI = "wifiOnly"
+        const val K_FOLDER = "folder"
         const val WORK_PERIODIC = "nextcloud-sync"
         const val WORK_ONCE = "nextcloud-sync-once"
         const val DEBOUNCE_MS = 30_000L

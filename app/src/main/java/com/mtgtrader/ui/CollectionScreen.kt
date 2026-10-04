@@ -97,6 +97,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TaskAlt
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -449,45 +450,7 @@ fun CollectionScreen(nav: NavController) {
         }
     }
 
-    editing?.let { row ->
-        val item = row.item
-        EditCardDialog(
-            card = item.card,
-            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, item.binderId, item.quantity, item.notes, item.purchasePrice),
-            prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
-            priceType = priceType,
-            allowCustomPrice = false,
-            enabled = true,
-            binders = binders,
-            showNotes = true,
-            extra = { DeckUsageLine(item.card.name) },
-            onDismiss = { editing = null },
-            onSave = { v ->
-                editing = null
-                scope.launch {
-                    c.repo.saveCollectionEdit(
-                        item.copy(
-                            quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language,
-                            notes = v.notes?.trim()?.ifEmpty { null }, purchasePrice = v.purchasePrice,
-                        ),
-                        v.binderId,
-                        v.move,
-                    )
-                }
-            },
-            onDelete = {
-                editing = null
-                scope.launch {
-                    c.repo.deleteCollectionItem(item.id)
-                    if (snackbar.showUndo("${item.card.displayName} removed")) c.repo.restoreCollectionItem(item)
-                }
-            },
-            onChangePrinting = {
-                editing = null
-                nav.openSearch(CardTarget.ReplaceCollectionItem(item.id), item.card.name)
-            },
-        )
-    }
+    editing?.let { row -> CollectionCardDialog(row, nav, snackbar, scope) { editing = null } }
 
     editingWish?.let { row ->
         WishlistDialog(
@@ -677,4 +640,53 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: 
             }
         }
     }
+}
+
+/**
+ * A collection stack's card window: quantity, finish, condition, language, binder, notes and
+ * purchase price, prices, and the decks it's in. Also opened from the value screen. [scope] must
+ * outlive the dialog (the screen's), so saving isn't cancelled when it closes.
+ */
+@Composable
+fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: SnackbarHostState, scope: CoroutineScope, onDismiss: () -> Unit) {
+    val c = LocalContext.current.container
+    val priceType by c.settings.priceType.collectAsStateWithLifecycle()
+    val binders = rememberBinders()
+    val item = row.item
+    EditCardDialog(
+        card = item.card,
+        initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, item.binderId, item.quantity, item.notes, item.purchasePrice),
+        prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
+        priceType = priceType,
+        allowCustomPrice = false,
+        enabled = true,
+        binders = binders,
+        showNotes = true,
+        extra = { DeckUsageLine(item.card.name) },
+        onDismiss = onDismiss,
+        onSave = { v ->
+            onDismiss()
+            scope.launch {
+                c.repo.saveCollectionEdit(
+                    item.copy(
+                        quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language,
+                        notes = v.notes?.trim()?.ifEmpty { null }, purchasePrice = v.purchasePrice,
+                    ),
+                    v.binderId,
+                    v.move,
+                )
+            }
+        },
+        onDelete = {
+            onDismiss()
+            scope.launch {
+                c.repo.deleteCollectionItem(item.id)
+                if (snackbar.showUndo("${item.card.displayName} removed")) c.repo.restoreCollectionItem(item)
+            }
+        },
+        onChangePrinting = {
+            onDismiss()
+            nav.openSearch(CardTarget.ReplaceCollectionItem(item.id), item.card.name)
+        },
+    )
 }

@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.16.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.17.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.16-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.17-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -91,7 +91,7 @@ also lists the decks it's in.
 
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
-cards whose price is rising or falling most lately, over all the copies you own.
+cards whose price is rising or falling most lately, over all the copies you own; tap one to open it.
 
 ## Wishlist
 The **★ Wishlist** in the binder bar holds the cards you want. Add them with "Add card" or the scanner while it's
@@ -124,11 +124,14 @@ identified by its set code and number alone.
 
 ## Sync between phones
 Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans and preferences the same on all
-your phones, using a file (`MTG Trader/sync.json.gz`) on your own [Nextcloud](https://nextcloud.com/). Prices and
+your phones, using a file (`sync.json.gz`) in a folder of your own [Nextcloud](https://nextcloud.com/). Prices and
 pictures aren't synced; each phone downloads those itself.
 - **Connect:** enter your server address and log in in the browser; the app gets its own app password, which you can
   revoke in Nextcloud (Settings → Security). An app password made by hand works too. Disconnecting removes the app's
   app password and leaves your data where it is.
+- **Folder:** after logging in you pick the folder for the sync file: browse your Nextcloud folders, make a new one,
+  or keep the usual "MTG Trader". Pick the same folder on every phone; the picker says when a folder already holds MTG
+  Trader data. Settings → Folder → **Change** moves syncing to another folder (the old file stays where it was).
 - **First sync:** if both the phone and Nextcloud already hold data, you choose: merge both, use the Nextcloud copy, or
   start from this phone.
 - **After that** changes are merged item by item: the most recent change to a card stack, binder, trade, deck or scan

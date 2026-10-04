@@ -19,9 +19,19 @@ import java.io.IOException
 
 /**
  * A Nextcloud account: [login] and [password] (an app password) to log in with, and [userId], the
- * id in WebDAV paths (it differs from the login when logging in with an e-mail address).
+ * id in WebDAV paths (it differs from the login when logging in with an e-mail address). The sync
+ * file lives in [folder] ("Games/MTG Trader"; empty for the top level). Since 1.17 it can be chosen.
  */
-data class NextcloudAccount(val server: String, val login: String, val password: String, val userId: String = login)
+data class NextcloudAccount(
+    val server: String,
+    val login: String,
+    val password: String,
+    val userId: String = login,
+    val folder: String = NextcloudClient.FOLDER,
+)
+
+/** What a Nextcloud folder holds: its subfolders, and whether there's an MTG Trader sync file in it already. */
+data class FolderListing(val folders: List<String>, val hasSyncFile: Boolean)
 
 /** Talks to Nextcloud: logging in (Login Flow v2) and reading/writing the sync file over WebDAV. */
 class NextcloudClient(http: OkHttpClient) {
@@ -85,6 +95,25 @@ class NextcloudClient(http: OkHttpClient) {
         http.newCall(ocs(account, url).delete().build()).execute().close()
     }
 
+    /** The subfolders of [path] (relative to the user's files, "" for the top level). */
+    suspend fun list(account: NextcloudAccount, path: String): FolderListing = call {
+        val url = dir(account, path)
+        val body = """<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>"""
+        val req = auth(account, url).method("PROPFIND", body.toRequestBody("application/xml".toMediaType())).header("Depth", "1").build()
+        http.newCall(req).execute().use { r ->
+            if (r.code == 404) throw SyncException("That folder isn't there any more.")
+            if (!r.isSuccessful) throw failure(r)
+            parseListing(r.body!!.string(), url.encodedPath)
+        }
+    }
+
+    /** Creates folder [path]; fine if it exists already. */
+    suspend fun makeFolder(account: NextcloudAccount, path: String) = call {
+        http.newCall(auth(account, dir(account, path)).method("MKCOL", null).build()).execute().use { r ->
+            if (!r.isSuccessful && r.code != 405) throw if (r.code == 409) SyncException("The folder above it isn't there.") else failure(r)
+        }
+    }
+
     suspend fun get(account: NextcloudAccount, etag: String?): Remote = call {
         val req = auth(account, file(account)).get().apply { if (etag != null) header("If-None-Match", etag) }.build()
         http.newCall(req).execute().use { r ->
@@ -140,8 +169,13 @@ class NextcloudClient(http: OkHttpClient) {
 
     private fun ocs(a: NextcloudAccount, url: HttpUrl) = auth(a, url).header("OCS-APIRequest", "true")
 
-    private fun folder(a: NextcloudAccount) =
-        base(a.server).newBuilder().addPathSegments("remote.php/dav/files").addPathSegment(a.userId).addPathSegment(FOLDER).build()
+    /** A folder of the user's files over WebDAV: "" is the top level, "A/B" a subfolder. */
+    private fun dir(a: NextcloudAccount, path: String) =
+        base(a.server).newBuilder().addPathSegments("remote.php/dav/files").addPathSegment(a.userId)
+            .apply { path.split('/').filter { it.isNotBlank() }.forEach { addPathSegment(it) } }
+            .build()
+
+    private fun folder(a: NextcloudAccount) = dir(a, a.folder)
 
     private fun file(a: NextcloudAccount) = folder(a).newBuilder().addPathSegment(FILE).build()
 
@@ -164,6 +198,30 @@ class NextcloudClient(http: OkHttpClient) {
             }
             s = s.trimEnd('/')
             return s.takeIf { it.toHttpUrlOrNull() != null }
+        }
+
+        private val response = Regex("""<(?:[\w-]+:)?response[\s>](.*?)</(?:[\w-]+:)?response>""", RegexOption.DOT_MATCHES_ALL)
+        private val href = Regex("""<(?:[\w-]+:)?href>(.*?)</(?:[\w-]+:)?href>""", RegexOption.DOT_MATCHES_ALL)
+        private val collection = Regex("""<(?:[\w-]+:)?collection\s*/?>""")
+
+        /** Reads a WebDAV PROPFIND answer for the folder at [selfPath] (URL-encoded, as requested). */
+        fun parseListing(xml: String, selfPath: String): FolderListing {
+            // Some servers answer with full URLs, most with paths; "+" is a plus sign in paths, not a space.
+            fun clean(p: String): String {
+                val path = if ("://" in p) "/" + p.substringAfter("://").substringAfter('/') else p
+                return java.net.URLDecoder.decode(path.replace("+", "%2B"), "UTF-8").trimEnd('/')
+            }
+            val self = clean(selfPath)
+            val folders = mutableListOf<String>()
+            var hasFile = false
+            for (m in response.findAll(xml)) {
+                val block = m.groupValues[1]
+                val path = href.find(block)?.groupValues?.get(1)?.trim()?.let(::clean) ?: continue
+                if (path == self) continue
+                val name = path.substringAfterLast('/')
+                if (collection.containsMatchIn(block)) folders += name else if (name == FILE) hasFile = true
+            }
+            return FolderListing(folders.sortedWith(String.CASE_INSENSITIVE_ORDER), hasFile)
         }
 
         private fun base(server: String): HttpUrl = server.toHttpUrlOrNull() ?: throw SyncException("That doesn't look like a server address.")

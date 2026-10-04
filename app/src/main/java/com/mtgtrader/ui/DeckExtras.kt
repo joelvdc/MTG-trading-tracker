@@ -80,7 +80,7 @@ fun MissingCardsScreen(nav: NavController, deckId: Long) {
         topBar = {
             TopAppBar(
                 title = { Text("Cards I'm missing", maxLines = 1) },
-                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -186,7 +186,7 @@ fun SharedCardsScreen(nav: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text("Cards in several decks") },
-                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
         },
     ) { pad ->

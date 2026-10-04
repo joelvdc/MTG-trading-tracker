@@ -159,7 +159,7 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                         Text(rememberTargetLabel(target), style = MaterialTheme.typography.bodySmall)
                     }
                 },
-                navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     if (!target.isReplace) {
                         IconButton(onClick = {

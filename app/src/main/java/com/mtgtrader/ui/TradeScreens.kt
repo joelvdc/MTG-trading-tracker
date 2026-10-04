@@ -93,6 +93,7 @@ fun TradesListScreen(nav: NavController) {
     val trades by remember { c.db.tradeDao().observeAll() }.collectAsStateWithLifecycle(null)
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
+    var creatingTrade by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
 
@@ -131,7 +132,19 @@ fun TradesListScreen(nav: NavController) {
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { scope.launch { nav.navigate("trade/${c.repo.newTrade()}") } },
+                onClick = {
+                    // One trade per tap, even when the phone is slow to react right after starting.
+                    if (!creatingTrade) {
+                        creatingTrade = true
+                        scope.launch {
+                            try {
+                                nav.navigate("trade/${c.repo.newTrade()}") { launchSingleTop = true }
+                            } finally {
+                                creatingTrade = false
+                            }
+                        }
+                    }
+                },
                 icon = { Icon(Icons.Default.Add, null) },
                 text = { Text("New trade") },
             )
@@ -242,7 +255,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
                 actions = {
                     IconButton(onClick = {
