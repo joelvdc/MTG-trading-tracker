@@ -163,6 +163,13 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; busy(c.decks.rescoreAll()) },
                         )
+                        if (source.external) {
+                            DropdownMenuItem(
+                                text = { Text("Re-score power levels on ${source.site}") },
+                                enabled = any,
+                                onClick = { moreMenu = false; busy(c.decks.rescorePowerAll()) },
+                            )
+                        }
                         HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text("Recommendations for all decks") },

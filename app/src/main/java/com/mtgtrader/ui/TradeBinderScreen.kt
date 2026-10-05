@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -61,6 +63,12 @@ import androidx.navigation.NavController
 import com.mtgtrader.container
 import com.mtgtrader.data.TradeBinderRules
 import com.mtgtrader.data.TradeChange
+import com.mtgtrader.data.CardKind
+import com.mtgtrader.data.CollectionRow
+import com.mtgtrader.data.TradeBinderPlanner
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
 import kotlinx.coroutines.launch
 
 /**
@@ -82,6 +90,14 @@ fun TradeBinderScreen(nav: NavController) {
     var applying by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     val details by c.cardDetails.progress.collectAsStateWithLifecycle()
+    val rows by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val byName = remember(rows) { rows.groupBy { TradeBinderPlanner.nameKey(it.item.card.name) } }
+    var opened by remember { mutableStateOf<CollectionRow?>(null) }
+    var swapping by remember { mutableStateOf<TradeChange?>(null) }
+    val binders = rememberBinders()
+    fun rowOf(ch: TradeChange) = byName[TradeBinderPlanner.nameKey(ch.card.name)]?.firstOrNull { CardKind.of(it.item) == ch.kind }
+    fun others(ch: TradeChange) = byName[TradeBinderPlanner.nameKey(ch.card.name)].orEmpty()
+        .filter { CardKind.of(it.item) != ch.kind }.distinctBy { CardKind.of(it.item) }
 
     LaunchedEffect(reload) {
         changes = null
@@ -165,6 +181,14 @@ fun TradeBinderScreen(nav: NavController) {
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
+                            when {
+                                rules.keepBestAlways -> "The best copy of every card stays home; the cheaper ones are offered."
+                                rules.keepBestForDecks -> "Cards your decks use keep their best copy home; for other cards the most valuable spare is offered."
+                                else -> "The most valuable spare copy of each card is offered."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
                             "Only spare copies: what your decks use stays home, and wishlist cards and basic lands are left out. " +
                                 "Ranked by value and how much Commander players want them (EDHREC), with a nudge for rising prices.",
                             style = MaterialTheme.typography.bodySmall,
@@ -182,9 +206,17 @@ fun TradeBinderScreen(nav: NavController) {
                 }
             }
             if (adds.isNotEmpty()) item(key = "h_add") { SectionHeader("Put in (${adds.sumOf { it.copies }})") }
-            items(adds, key = { it.skipKey }) { ch -> ChangeRow(ch, ch.skipKey !in unticked) { on -> if (on) unticked.remove(ch.skipKey) else unticked.add(ch.skipKey) } }
+            items(adds, key = { it.skipKey }) { ch ->
+                ChangeRow(
+                    ch, ch.skipKey !in unticked,
+                    onOpen = { opened = rowOf(ch) },
+                    onSwap = if (others(ch).isNotEmpty()) ({ swapping = ch }) else null,
+                ) { on -> if (on) unticked.remove(ch.skipKey) else unticked.add(ch.skipKey) }
+            }
             if (removes.isNotEmpty()) item(key = "h_rem") { SectionHeader("Take out (${removes.sumOf { it.copies }})") }
-            items(removes, key = { it.skipKey }) { ch -> ChangeRow(ch, ch.skipKey !in unticked) { on -> if (on) unticked.remove(ch.skipKey) else unticked.add(ch.skipKey) } }
+            items(removes, key = { it.skipKey }) { ch ->
+                ChangeRow(ch, ch.skipKey !in unticked, onOpen = { opened = rowOf(ch) }, onSwap = null) { on -> if (on) unticked.remove(ch.skipKey) else unticked.add(ch.skipKey) }
+            }
             if (list.isNotEmpty()) {
                 item(key = "note") {
                     Text(
@@ -194,6 +226,17 @@ fun TradeBinderScreen(nav: NavController) {
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
+            }
+        }
+    }
+
+    opened?.let { row -> CollectionCardDialog(row, nav, snackbar, scope) { opened = null } }
+    swapping?.let { ch ->
+        SwapDialog(ch, others(ch), c.settings.priceType.value, binders, onDismiss = { swapping = null }) { kind ->
+            swapping = null
+            scope.launch {
+                c.tradeBinder.prefer(ch.card.name, kind, ch.kind)
+                reload++
             }
         }
     }
@@ -213,10 +256,12 @@ private fun SectionHeader(text: String) {
     Text(text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
 }
 
+/** A suggestion: the box ticks it, the rest opens the card; "Swap" offers another copy of the card instead. */
 @Composable
-private fun ChangeRow(ch: TradeChange, checked: Boolean, onCheck: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable { onCheck(!checked) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun ChangeRow(ch: TradeChange, checked: Boolean, onOpen: () -> Unit, onSwap: (() -> Unit)?, onCheck: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Checkbox(checked = checked, onCheckedChange = onCheck)
+        Row(Modifier.weight(1f).clickable(onClick = onOpen), verticalAlignment = Alignment.CenterVertically) {
         CardThumb(ch.card.imageUrl, width = 34)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
@@ -229,22 +274,76 @@ private fun ChangeRow(ch: TradeChange, checked: Boolean, onCheck: (Boolean) -> U
             }
             Text(ch.reason, style = MaterialTheme.typography.labelSmall, color = if (ch.add) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text(Fmt.money(ch.unitPrice?.let { it * ch.copies }), style = MaterialTheme.typography.bodyMedium)
+        Column(horizontalAlignment = Alignment.End) {
+            Text(Fmt.money(ch.unitPrice?.let { it * ch.copies }), style = MaterialTheme.typography.bodyMedium)
+            if (onSwap != null) {
+                TextButton(onClick = onSwap, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("Swap") }
+            }
+        }
+        }
     }
 }
 
+/** Your other copies of a card (printing, finish, condition, language), to put in the binder instead. */
+@Composable
+private fun SwapDialog(
+    ch: TradeChange, others: List<CollectionRow>, priceType: com.mtgtrader.data.PriceType, binders: List<com.mtgtrader.data.Binder>,
+    onDismiss: () -> Unit, onPick: (CardKind) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Trade another copy of ${ch.card.name}") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    "Pick the copy to offer instead; the app remembers it. The one suggested now stays in your collection.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                others.forEach { r ->
+                    val kind = CardKind.of(r.item)
+                    Row(Modifier.fillMaxWidth().clickable { onPick(kind) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        CardThumb(r.item.card.imageUrl, width = 34)
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                SetLine(r.item.card)
+                                FinishTag(r.item.card, r.item.finish)
+                                if (r.item.condition != "NM") Tag(r.item.condition)
+                                if (r.item.language != "EN") Tag(r.item.language)
+                            }
+                            Text(
+                                r.item.card.setName + " · in " + binderName(r.item.binderId, binders),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(Fmt.money(r.unitPrice(priceType)), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TradeRulesDialog(initial: TradeBinderRules, onDismiss: () -> Unit, onSave: (TradeBinderRules) -> Unit) {
     var max by remember { mutableStateOf(initial.maxCards.toString()) }
     var min by remember { mutableStateOf("%.2f".format(initial.minValue)) }
     var keepOne by remember { mutableStateOf(initial.keepOne) }
+    var bestDecks by remember { mutableStateOf(initial.keepBestForDecks) }
+    var bestAll by remember { mutableStateOf(initial.keepBestAlways) }
     val maxN = max.toIntOrNull()
     val minV = Fmt.parseMoney(min)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Trade binder rules") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = max, onValueChange = { max = it.filter(Char::isDigit).take(4) }, label = { Text("Most cards in the binder") },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(),
@@ -253,6 +352,11 @@ private fun TradeRulesDialog(initial: TradeBinderRules, onDismiss: () -> Unit, o
                     value = min, onValueChange = { min = it }, label = { Text("Only cards worth at least (€)") },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(0.0, 0.5, 1.0, 2.0, 5.0, 10.0).forEach { v ->
+                        FilterChip(selected = Fmt.parseMoney(min) == v, onClick = { min = "%.2f".format(v) }, label = { Text(if (v == 0.0) "Any value" else "€%.2f".format(v)) })
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Keep at least 1 copy")
@@ -264,10 +368,32 @@ private fun TradeRulesDialog(initial: TradeBinderRules, onDismiss: () -> Unit, o
                     }
                     Switch(checked = keepOne, onCheckedChange = { keepOne = it })
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Keep the best copy for my decks")
+                        Text(
+                            "For cards a deck uses, the cheaper spare copies are offered and the most valuable or fanciest one stays with the deck.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = bestDecks || bestAll, enabled = !bestAll, onCheckedChange = { bestDecks = it })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Keep the best copy of every card")
+                        Text(
+                            "The same for all cards, also those in no deck. Off: those offer their most valuable spare copy.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = bestAll, onCheckedChange = { bestAll = it })
+                }
             }
         },
         confirmButton = {
-            TextButton(enabled = maxN != null && maxN > 0 && minV != null, onClick = { onSave(TradeBinderRules(maxN!!, keepOne, minV!!)) }) { Text("Save") }
+            TextButton(enabled = maxN != null && maxN > 0 && minV != null, onClick = { onSave(TradeBinderRules(maxN!!, keepOne, minV!!, bestDecks, bestAll)) }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

@@ -229,34 +229,23 @@ class DeckRepository(
     }
 
     /**
-     * Has Commander Salt (and the chosen power level site) score every deck again, e.g. after it
-     * changed its scoring. Decks that changed on Archidekt are reloaded first, so the scores and
-     * the lists shown belong together. Can be stopped between decks.
+     * Has Commander Salt score every deck again (brackets, its power level, salt, the rule-zero
+     * card data), e.g. after it changed its scoring. Only Commander Salt: the decklists stay as
+     * they are ("Update all decks from Archidekt" reloads those) and the power level site isn't
+     * asked ([rescorePowerAll]). Can be stopped between decks.
      */
-    fun rescoreAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
+    fun rescoreAll(): Boolean = start(DeckJob(null, "Scoring your decks on Commander Salt…", canStop = true)) {
         val decks = dao.all()
-        val listed = archidektDates(decks)
         var scored = 0
-        var reloaded = 0
         val unscored = mutableListOf<String>()
         val failed = mutableListOf<String>()
         for ((i, d) in decks.withIndex()) {
             if (stopRequested) break
             if (i > 0) delay(1_500)
             val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-            _job.value = DeckJob(d.archidektId, prefix + "checking…", !stopRequested)
+            _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
             try {
-                val fetched = if (listed[d.archidektId] == null) runCatching { archidekt.deck(d.archidektId) }.getOrNull() else null
-                val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
-                // Unreachable on Archidekt (e.g. made private): score what the app has.
-                val changed = (listed.containsKey(d.archidektId) || fetched != null) && listChanged(d, remoteAt)
-                val result = if (changed) {
-                    reloaded++
-                    importOne(d.archidektId, prefix, canStop = true, fetched = fetched).first
-                } else {
-                    _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
-                    score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
-                }
+                val result = scoreSalt(d)
                 if (result.scoreError == null) scored++ else unscored += d.name
             } catch (e: CancellationException) {
                 throw e
@@ -265,11 +254,40 @@ class DeckRepository(
             }
         }
         val parts = buildList {
-            add("Scored $scored of ${decks.size} decks" + if (reloaded > 0) " ($reloaded changed on Archidekt and " + (if (reloaded == 1) "was" else "were") + " reloaded first)" else "")
+            add("Commander Salt scored $scored of ${decks.size} decks")
             if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
             if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
         }
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
+    }
+
+    /** Has the chosen power level site (EDH Power Level or ScrollVault) rate every deck again. Can be stopped between decks. */
+    fun rescorePowerAll(): Boolean {
+        val source = settings.powerSource.value
+        if (!source.external) return false
+        return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
+            val decks = dao.all()
+            var rated = 0
+            val retry = mutableListOf<Deck>()
+            for ((i, d) in decks.withIndex()) {
+                if (stopRequested) break
+                val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
+                val r = ratePower(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
+                if (r.powerError(source) == null) rated++ else retry += r
+            }
+            // The sites are sometimes slow to answer: decks that failed get one more go.
+            val failed = mutableListOf<String>()
+            for (d in retry) {
+                if (stopRequested) break
+                val r = ratePower(d) { _job.value = DeckJob(d.archidektId, "Trying ${d.name} again: $it", !stopRequested) }
+                if (r.powerError(source) == null) rated++ else failed += d.name
+            }
+            val parts = buildList {
+                add("${source.site} rated $rated of ${decks.size} decks")
+                if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
+            }
+            DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
+        }
     }
 
     private fun start(first: DeckJob, work: suspend () -> DeckJobResult): Boolean {
@@ -364,7 +382,10 @@ class DeckRepository(
         return deck
     }
 
-    private suspend fun score(deck: Deck, step: (String) -> Unit): Deck {
+    private suspend fun score(deck: Deck, step: (String) -> Unit): Deck = ratePower(scoreSalt(deck), step)
+
+    /** Commander Salt's scores only; failures are kept on the deck rather than thrown. */
+    private suspend fun scoreSalt(deck: Deck): Deck {
         val scored = try {
             val s = salt.score(deck.archidektId)
             deck.copy(
@@ -386,7 +407,7 @@ class DeckRepository(
         dao.update(scored)
         // The rule-zero cards are drawn in the app now; Commander Salt's own images are fetched only when asked for.
         RuleZeroCard.entries.forEach { cardFile(scored.archidektId, it).delete() }
-        return ratePower(scored, step)
+        return scored
     }
 
     /** The deck's link on edhpowerlevel.com (its list as on Archidekt, without cards added in the app). */

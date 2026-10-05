@@ -77,8 +77,10 @@ class Settings(context: Context) {
     var tradeRules: TradeBinderRules
         get() = TradeBinderRules(
             prefs.getInt("tradeMax", 100), prefs.getBoolean("tradeKeepOne", true), prefs.getFloat("tradeMinValue", 1f).toDouble(),
+            prefs.getBoolean("tradeKeepBestDecks", true), prefs.getBoolean("tradeKeepBestAll", false),
         )
-        set(v) = prefs.edit().putInt("tradeMax", v.maxCards).putBoolean("tradeKeepOne", v.keepOne).putFloat("tradeMinValue", v.minValue.toFloat()).stamp().apply()
+        set(v) = prefs.edit().putInt("tradeMax", v.maxCards).putBoolean("tradeKeepOne", v.keepOne).putFloat("tradeMinValue", v.minValue.toFloat())
+            .putBoolean("tradeKeepBestDecks", v.keepBestForDecks).putBoolean("tradeKeepBestAll", v.keepBestAlways).stamp().apply()
 
     /** Where deck recommendations come from. Since 1.18. */
     private val _recSource = MutableStateFlow(RecSource.fromKey(prefs.getString("recSource", null)))

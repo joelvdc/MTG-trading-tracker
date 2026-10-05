@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.18.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.19.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.18-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.19-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -72,6 +72,8 @@ so the app sorts the cards into those categories from their rules text and type)
 out. Filter by card type, by **I own / I don't own** and by **New cards**; tap a card for its prices and to add it to the
 deck (kept when the deck reloads) or to the wishlist. **Recommendations for all decks** (Decks tab ⋮ menu) asks for every
 deck at once and shows the cards you already own that fit your decks, or the cards recommended for several decks.
+Tap a card's picture to see it large and swipe left or right through the list, with its type, the source's numbers,
+price and how many you own under each.
 Recommendations are saved, so they show straight away and offline; ⟳ asks again.
 
 **Cards I'm missing** (deck ⋮ menu) lists the deck's cards you don't own in any printing, with what buying them costs;
@@ -84,8 +86,9 @@ Archidekt, highest/newest first or reversed. On a deck page, **Refresh bracket a
 Commander Salt and the chosen power level site; if the deck changed on Archidekt since it was loaded, its list is
 reloaded first, so the list and the scores always belong together. **Reload decklist from Archidekt** (the ⟳ icon, or
 the deck's ⋮ menu) always reloads the list and scores it again. On the Decks tab (⋮ menu), **Update all decks from
-Archidekt** checks every deck and reloads and re-scores only the ones that changed, and **Re-score all decks on
-Commander Salt** scores every deck again, reloading the ones that changed on Archidekt first. Cards moved to the
+Archidekt** checks every deck and reloads and re-scores only the ones that changed, **Re-score all decks on Commander
+Salt** has Commander Salt score every deck again (nothing else), and, when the power level comes from EDH Power Level
+or ScrollVault, **Re-score power levels** asks that site again for every deck. Cards moved to the
 Maybeboard on Archidekt leave the deck. Commander Salt has no official API: the app uses the
 same calls as its website, so this part may break if the site changes. Importing a deck adds it to commandersalt.com.
 
@@ -120,8 +123,12 @@ cards whose price is rising or falling most lately, over all the copies you own;
 ## Trade binder
 ⋮ → **Make a trade binder** suggests what to put in a "Trade binder": only spare copies (what your decks use stays home,
 and wishlist cards and basic lands are left out), ranked by value and by how much Commander players want them (EDHREC's
-popularity rank), with a nudge for rising prices. Set the most cards it may hold, the minimum value and whether to keep
-at least one copy of each card. Later, **Update trade binder** (⋮ menu, or the button in the binder) shows what to put in
+popularity rank), with a nudge for rising prices. Set the most cards it may hold, the minimum value (any value, €0.50,
+€1, … or your own) and whether to keep at least one copy of each card. **Keep the best copy for my decks** (on by
+default) offers the cheaper spare copies of cards your decks use, so the most valuable or fanciest one stays with the
+deck; **…of every card** does the same for all cards. **Swap** on a suggestion lists your other copies of the card
+(printing, finish, condition, language, and where they are) to put in the binder instead; the app remembers your pick.
+Tap a suggestion to open the card. Later, **Update trade binder** (⋮ menu, or the button in the binder) shows what to put in
 and what to take out (a deck uses the card now, it dropped below the minimum value, better cards pushed it out…) with
 the reason for each; untick what you don't want, then apply. Unticked suggestions aren't made again (⋮ to undo that).
 Copies are taken from Unsorted and other binders before binders named after a deck, and cards taken out go back to the

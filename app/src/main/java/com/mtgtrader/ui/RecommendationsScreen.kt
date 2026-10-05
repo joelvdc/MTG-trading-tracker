@@ -70,6 +70,16 @@ import com.mtgtrader.data.RecResult
 import com.mtgtrader.data.RecSection
 import com.mtgtrader.data.RecSource
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import java.io.IOException
 import kotlin.math.roundToInt
 
@@ -117,6 +127,7 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
     var force by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(RecFilter()) }
     var opened by remember { mutableStateOf<RecCard?>(null) }
+    var gallery by remember { mutableStateOf<Pair<List<RecCard>, Int>?>(null) }
     val prices = rememberPrices(result)
 
     LaunchedEffect(deck?.archidektId, source, refresh) {
@@ -174,13 +185,18 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
                             )
                         }
                         if (sections.isEmpty()) item(key = "none") { EmptyState("Nothing left", "No recommendation matches these filters.") }
-                        sections.forEach { s -> recSection(s, owned, prices, priceType) { opened = it } }
+                        // Swiping through enlarged pictures goes through the cards in the order shown.
+                        val flat = sections.flatMap { it.cards }.distinctBy { it.name }
+                        sections.forEach { s ->
+                            recSection(s, owned, prices, priceType, onImage = { card -> gallery = flat to flat.indexOfFirst { it.name == card.name }.coerceAtLeast(0) }) { opened = it }
+                        }
                     }
                 }
             }
         }
     }
 
+    gallery?.let { (cards, start) -> RecGallery(cards, start, source, owned, prices, priceType) { gallery = null } }
     opened?.let { card ->
         RecCardDialog(
             card, source, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType,
@@ -220,6 +236,7 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
     var filter by remember { mutableStateOf(RecFilter(owned = Owned.MINE)) }
     var view by rememberSaveable { mutableIntStateOf(0) }
     var opened by remember { mutableStateOf<Pair<RecCard, List<Deck>>?>(null) }
+    var gallery by remember { mutableStateOf<Pair<List<RecCard>, Int>?>(null) }
 
     LaunchedEffect(source, job == null) { if (job == null) results = c.recommendations.allCached(source) }
     val all = results
@@ -295,7 +312,10 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
                     )
                 }
                 items(shown, key = { nameKey(it.first.name) }) { (card, forDecks) ->
-                    RecRow(card, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, "For " + forDecks.joinToString { it.name }) {
+                    RecRow(
+                        card, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, "For " + forDecks.joinToString { it.name },
+                        onImage = { gallery = shown.map { it.first } to shown.indexOfFirst { it.first.name == card.name }.coerceAtLeast(0) },
+                    ) {
                         opened = card to forDecks
                     }
                 }
@@ -303,6 +323,7 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
         }
     }
 
+    gallery?.let { (cards, start) -> RecGallery(cards, start, source, owned, prices, priceType) { gallery = null } }
     opened?.let { (card, forDecks) ->
         RecCardDialog(
             card, source, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, forDecks,
@@ -363,7 +384,7 @@ private fun Loading(text: String) {
 
 /** A source section: header and its cards, the first 12 with the rest a tap away. */
 private fun androidx.compose.foundation.lazy.LazyListScope.recSection(
-    s: RecSection, owned: Map<String, Int>, prices: Map<Int, PriceEntity>, priceType: PriceType, onOpen: (RecCard) -> Unit,
+    s: RecSection, owned: Map<String, Int>, prices: Map<Int, PriceEntity>, priceType: PriceType, onImage: (RecCard) -> Unit, onOpen: (RecCard) -> Unit,
 ) {
     item(key = "h_${s.key}") {
         Text("${s.title} (${s.cards.size})", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 14.dp, bottom = 4.dp))
@@ -372,7 +393,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.recSection(
         var all by remember { mutableStateOf(false) }
         Column {
             (if (all) s.cards else s.cards.take(12)).forEach { card ->
-                RecRow(card, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, null) { onOpen(card) }
+                RecRow(card, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, null, onImage = { onImage(card) }) { onOpen(card) }
             }
             if (s.cards.size > 12) TextButton(onClick = { all = !all }) { Text(if (all) "Show fewer" else "Show all ${s.cards.size}") }
         }
@@ -387,10 +408,11 @@ private fun RecCard.stats(): String = listOfNotNull(
 ).joinToString(" · ")
 
 @Composable
-private fun RecRow(card: RecCard, owned: Int, price: PriceEntity?, priceType: PriceType, extra: String?, onClick: () -> Unit) {
+private fun RecRow(card: RecCard, owned: Int, price: PriceEntity?, priceType: PriceType, extra: String?, onImage: () -> Unit, onClick: () -> Unit) {
     val unit = price?.toSet(false)?.best(priceType) ?: card.card?.fallbackEur
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        CardThumb(card.card?.imageUrl, width = 34)
+        // The picture opens the swipeable gallery; the rest of the row the card's window.
+        CardThumb(card.card?.imageUrl, Modifier.clickable(onClick = onImage), width = 34)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(card.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
@@ -469,4 +491,50 @@ private fun RecCardDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+/**
+ * Enlarged card pictures to swipe through, left and right, with the basics under each: type, the
+ * source's numbers, price and how many you own.
+ */
+@Composable
+private fun RecGallery(
+    cards: List<RecCard>, start: Int, source: RecSource, owned: Map<String, Int>, prices: Map<Int, PriceEntity>, priceType: PriceType,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val pager = rememberPagerState(initialPage = start.coerceIn(0, (cards.size - 1).coerceAtLeast(0))) { cards.size }
+        Column(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.98f))) {
+            Row(Modifier.fillMaxWidth().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
+                Text("${pager.currentPage + 1} of ${cards.size} · ${source.label}", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+            }
+            HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth()) { page ->
+                val card = cards[page]
+                val unit = prices[card.card?.cardmarketId]?.toSet(false)?.best(priceType) ?: card.card?.fallbackEur
+                val have = owned[nameKey(card.name)] ?: 0
+                Column(
+                    Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    AsyncImage(
+                        model = card.card?.imageUrl?.replace("/normal/", "/large/"),
+                        contentDescription = card.name,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(63f / 88f),
+                    )
+                    Spacer(Modifier.padding(6.dp))
+                    Text(card.name, color = Color.White, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                    Text(card.typeLine, color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                    Text(card.stats(), color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                    Text(
+                        Fmt.money(unit) + " (${priceType.short})" + if (have > 0) " · you own $have" else "",
+                        color = if (have > 0) TrendColors.up else Color.White,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
+    }
 }

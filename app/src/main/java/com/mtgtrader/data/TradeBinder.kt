@@ -21,12 +21,26 @@ interface TradeSkipDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putAll(rows: List<TradeSkip>)
 
-    @Query("DELETE FROM trade_skips")
+    /** Forgets turned-down suggestions (not the copies picked with Swap). */
+    @Query("DELETE FROM trade_skips WHERE `key` NOT LIKE 'prefer|%'")
     suspend fun clear()
+
+    @Query("DELETE FROM trade_skips WHERE `key` LIKE :prefix || '%'")
+    suspend fun deletePrefix(prefix: String)
 }
 
-/** What the trade binder may hold. */
-data class TradeBinderRules(val maxCards: Int = 100, val keepOne: Boolean = true, val minValue: Double = 1.0)
+/**
+ * What the trade binder may hold. With [keepBestForDecks], cards a deck uses offer their cheapest
+ * spare copies and the best (most valuable, fanciest) stay home; [keepBestAlways] does so for every
+ * card. Otherwise the most valuable spare copy is offered.
+ */
+data class TradeBinderRules(
+    val maxCards: Int = 100,
+    val keepOne: Boolean = true,
+    val minValue: Double = 1.0,
+    val keepBestForDecks: Boolean = true,
+    val keepBestAlways: Boolean = false,
+)
 
 /** One copy-kind of a card: the same printing, finish, condition and language. */
 data class CardKind(val scryfallId: String, val foil: Boolean, val etched: Boolean, val condition: String, val language: String) {
@@ -76,7 +90,10 @@ object TradeBinderPlanner {
         trendPct?.takeIf { it >= 5 }?.let { "▲ ${it.roundToInt()}%" },
     ).joinToString(" · ")
 
-    private fun nameKey(name: String) = name.substringBefore(" // ").trim().lowercase()
+    fun nameKey(name: String) = name.substringBefore(" // ").trim().lowercase()
+
+    /** The skip-table key remembering that, for this card, the user wants [kind] in the binder (Swap). */
+    fun preferKey(name: String, kind: CardKind) = "prefer|${nameKey(name)}|${kind.key}"
 
     fun plan(
         rows: List<CollectionRow>,
@@ -87,6 +104,11 @@ object TradeBinderPlanner {
         priceType: PriceType,
         skipped: Set<String>,
     ): List<TradeChange> {
+        // Swap picks: card name → the copy-kind to offer first.
+        val preferred = skipped.filter { it.startsWith("prefer|") }.associate { k ->
+            val rest = k.removePrefix("prefer|")
+            rest.substringBefore('|') to rest.substringAfter('|')
+        }
         data class Kind(val kind: CardKind, val card: CardRef, val total: Int, val inBinder: Int, val price: Double?, val rank: Int?, val trend: Double?, val land: Boolean, val type: String)
         val kinds = rows.groupBy { CardKind.of(it.item) }.map { (k, list) ->
             val r = list.first()
@@ -110,11 +132,21 @@ object TradeBinderPlanner {
                 "Token" in group.first().type || "Emblem" in group.first().type -> "token"
                 else -> null
             }
-            // Copies already in the binder first (so the binder doesn't churn), then the most valuable.
-            for (k in group.sortedWith(compareByDescending<Kind> { it.inBinder > 0 }.thenByDescending { it.price ?: 0.0 })) {
+            // Which copies go first: the one picked with Swap; then, keeping the best at home, the cheapest;
+            // otherwise the copies already in the binder (so it doesn't churn), then the most valuable.
+            val keepBest = rules.keepBestAlways || (rules.keepBestForDecks && needed > 0)
+            val pick = preferred[name]
+            val order = compareByDescending<Kind> { it.kind.key == pick }.then(
+                if (keepBest) compareBy { it.price ?: Double.MAX_VALUE }
+                else compareByDescending<Kind> { it.inBinder > 0 }.thenByDescending { it.price ?: 0.0 }
+            )
+            var offeredOther = false
+            for (k in group.sortedWith(order)) {
                 val price = k.price
                 val why = when {
                     blocked != null -> blocked
+                    spare <= 0 && offeredOther && pick != null && k.kind.key != pick -> "you picked another copy to trade"
+                    spare <= 0 && offeredOther && keepBest -> "a cheaper copy goes in instead; the best stays home"
                     spare <= 0 -> if (needed > 0) "your decks use ${if (needed == 1) "it" else "$needed"}" else "the copy you keep"
                     price == null || price < rules.minValue -> "under €%.2f now".format(rules.minValue)
                     else -> null
@@ -125,6 +157,7 @@ object TradeBinderPlanner {
                 }
                 val n = minOf(spare, k.total)
                 spare -= n
+                offeredOther = true
                 candidates += Triple(k, n, score(price!!, k.rank, k.trend))
             }
         }
@@ -172,6 +205,12 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
         val needs = db.deckDao().cardCounts().groupBy { it.name.substringBefore(" // ").trim().lowercase() }.mapValues { (_, v) -> v.sumOf { it.qty } }
         val wish = db.wishlistDao().all().map { it.card.name.substringBefore(" // ").trim().lowercase() }.toSet()
         return TradeBinderPlanner.plan(rows, needs, wish, binder()?.id, settings.tradeRules, settings.priceType.value, db.tradeSkipDao().keys().toSet())
+    }
+
+    /** Swap: offer [kind] of this card instead of the suggested copy ([insteadOf]), from now on. */
+    suspend fun prefer(name: String, kind: CardKind, insteadOf: CardKind) {
+        db.tradeSkipDao().deletePrefix("prefer|${TradeBinderPlanner.nameKey(name)}|")
+        db.tradeSkipDao().putAll(listOf(TradeSkip(TradeBinderPlanner.preferKey(name, kind)), TradeSkip("add|${insteadOf.key}")))
     }
 
     /**
