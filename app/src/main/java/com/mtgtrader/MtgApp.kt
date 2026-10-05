@@ -79,7 +79,22 @@ class AppContainer(context: Context) {
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
     val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
-    val sync = SyncManager(context, db, SyncStore(db, settings), NextcloudClient(http), network, appScope)
+    private val store = SyncStore(db, settings)
+    private val nextcloud = NextcloudClient(http)
+    val sync = SyncManager(context, db, store, nextcloud, network, appScope)
+    val backups = com.mtgtrader.data.Backups(context, store, sync, nextcloud)
+    val archidekt = com.mtgtrader.data.ArchidektSync(
+        context, db, repo, settings, sync, nextcloud,
+        com.mtgtrader.data.ArchidektCollectionClient(http) {
+            context.getSharedPreferences("archidekt", Context.MODE_PRIVATE).getString("server", null) ?: com.mtgtrader.data.ArchidektCollectionClient.DEFAULT_BASE
+        },
+        backups, network, appScope,
+    )
+
+    init {
+        sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
+        repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
+    }
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */
     @Volatile

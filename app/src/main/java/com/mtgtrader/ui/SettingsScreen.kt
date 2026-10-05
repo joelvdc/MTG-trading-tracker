@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import com.mtgtrader.BuildConfig
 import com.mtgtrader.container
 import com.mtgtrader.data.PowerSource
@@ -48,8 +50,9 @@ private val typeHelp = mapOf(
 )
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(nav: NavController) {
     val c = LocalContext.current.container
+    val archidekt by c.archidekt.status.collectAsStateWithLifecycle()
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
     val lastFetch by c.settings.lastPriceFetch.collectAsStateWithLifecycle()
@@ -181,6 +184,32 @@ fun SettingsScreen() {
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             SyncSection()
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text("Archidekt collection", style = MaterialTheme.typography.titleMedium)
+            Text(
+                when {
+                    !archidekt.connected -> "Keep your Archidekt collection the same as the app's, both ways."
+                    archidekt.review != null || archidekt.conflicts.isNotEmpty() -> "Logged in as ${archidekt.username} · waiting for you"
+                    archidekt.lastSyncAt == 0L -> "Logged in as ${archidekt.username} · not synced yet"
+                    else -> "Logged in as ${archidekt.username} · last synced ${Fmt.dateTime(archidekt.lastSyncAt)}"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (archidekt.review != null || archidekt.conflicts.isNotEmpty() || archidekt.lastError != null) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = { nav.navigate("archidekt") }) { Text(if (archidekt.connected) "Archidekt sync…" else "Set up Archidekt sync…") }
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text("Backups", style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (c.backups.lastBackupAt == 0L) "Restore points of all your data, on Nextcloud or on this phone." else "Last backup: ${Fmt.dateTime(c.backups.lastBackupAt)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = { nav.navigate("backups") }) { Text("Backups and restore…") }
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("About", style = MaterialTheme.typography.titleMedium)

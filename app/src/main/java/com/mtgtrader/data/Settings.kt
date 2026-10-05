@@ -49,6 +49,15 @@ class Settings(context: Context) {
         prefs.edit().putString("themeMode", v.name).apply()
     }
 
+    private val _tradeColumns = MutableStateFlow(prefs.getBoolean("tradeColumns", false))
+    /** Show a trade's two sides next to each other (give left, get right) instead of one above the other. Since 1.21. */
+    val tradeColumns: StateFlow<Boolean> = _tradeColumns
+
+    fun setTradeColumns(v: Boolean) {
+        _tradeColumns.value = v
+        prefs.edit().putBoolean("tradeColumns", v).apply()
+    }
+
     /** The language the scanner adds cards in ("" = as read from the card, else e.g. "DE"). Since 1.16. */
     var scanLanguage: String
         get() = prefs.getString("scanLanguage", "") ?: ""

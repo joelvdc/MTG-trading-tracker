@@ -114,6 +114,12 @@ class SyncManager(
 
     private val firstDone get() = prefs.getBoolean(K_FIRST_DONE, false)
 
+    /** The account, once this phone has synced with it (so its folder holds this app's data). Since 1.21. */
+    fun readyAccount(): NextcloudAccount? = if (firstDone) account() else null
+
+    /** Runs before the first sync with a folder changes anything on this phone (a backup). Since 1.21. */
+    var beforeFirstSync: (suspend () -> Unit)? = null
+
     /** Whether an automatic sync may run now. */
     private fun autoAllowed(): Boolean {
         val s = _status.value
@@ -193,6 +199,7 @@ class SyncManager(
             return
         }
         val (local, _) = store.snapshot()
+        if (!local.isEmpty) beforeFirstSync?.invoke()
         // Only ask when this phone holds something Nextcloud doesn't (e.g. not when reconnecting the same phone).
         val now = System.currentTimeMillis()
         val phoneAddsSomething = remote != null && SyncMerge.merge(local, remote, now, FirstSync.MERGE) != SyncMerge.merge(remote, null, now)
@@ -291,6 +298,15 @@ class SyncManager(
     // ---- Syncing ---------------------------------------------------------------------------
 
     fun syncNow() {
+        scope.launch { sync() }
+    }
+
+    /**
+     * Syncs everything now, even if nothing seems to have changed: after writes made with change
+     * tracking paused (restoring a backup), which the usual "anything new?" check can't see. Since 1.21.
+     */
+    fun syncAllNow() {
+        prefs.edit().remove(K_STAMP).remove(K_ETAG).remove(K_PREFS_AT).apply()
         scope.launch { sync() }
     }
 

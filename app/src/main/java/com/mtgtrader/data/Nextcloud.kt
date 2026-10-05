@@ -33,6 +33,9 @@ data class NextcloudAccount(
 /** What a Nextcloud folder holds: its subfolders, and whether there's an MTG Trader sync file in it already. */
 data class FolderListing(val folders: List<String>, val hasSyncFile: Boolean)
 
+/** A file on Nextcloud: its name, size in bytes and when it was last changed. */
+data class RemoteFile(val name: String, val size: Long, val modified: Long)
+
 /** Talks to Nextcloud: logging in (Login Flow v2) and reading/writing the sync file over WebDAV. */
 class NextcloudClient(http: OkHttpClient) {
     // Nextcloud names the app password after the User-Agent ("MTG Trader (Android)" in the user's security settings).
@@ -114,8 +117,16 @@ class NextcloudClient(http: OkHttpClient) {
         }
     }
 
-    suspend fun get(account: NextcloudAccount, etag: String?): Remote = call {
-        val req = auth(account, file(account)).get().apply { if (etag != null) header("If-None-Match", etag) }.build()
+    suspend fun get(account: NextcloudAccount, etag: String?): Remote = getIn(account, FILE, etag)
+
+    /** Writes the file if it's still the version with [ifMatch] (or still absent when null). */
+    suspend fun put(account: NextcloudAccount, bytes: ByteArray, ifMatch: String?): PutResult = putIn(account, FILE, bytes, ifMatch)
+
+    // ---- Other files in the sync folder (backups, the Archidekt sync state, its lock). Since 1.21. ----
+
+    /** A file in the sync folder; [name] may hold a subfolder ("Backups/x.json.gz"). */
+    suspend fun getIn(account: NextcloudAccount, name: String, etag: String? = null): Remote = call {
+        val req = auth(account, inFolder(account, name)).get().apply { if (etag != null) header("If-None-Match", etag) }.build()
         http.newCall(req).execute().use { r ->
             when {
                 r.code == 304 -> Remote.NotModified
@@ -126,35 +137,64 @@ class NextcloudClient(http: OkHttpClient) {
         }
     }
 
-    /** Writes the file if it's still the version with [ifMatch] (or still absent when null). */
-    suspend fun put(account: NextcloudAccount, bytes: ByteArray, ifMatch: String?): PutResult = call {
+    /**
+     * Writes [name] in the sync folder (making the folders it needs). With [ifMatch] it only
+     * replaces that version; with [onlyNew] only writes if the file isn't there yet; otherwise it
+     * overwrites whatever is there.
+     */
+    suspend fun putIn(account: NextcloudAccount, name: String, bytes: ByteArray, ifMatch: String?, onlyNew: Boolean = ifMatch == null && name == FILE): PutResult = call {
+        val url = inFolder(account, name)
         fun attempt(): Response {
-            val req = auth(account, file(account))
+            val req = auth(account, url)
                 .put(bytes.toRequestBody("application/gzip".toMediaType()))
-                .apply { if (ifMatch != null) header("If-Match", ifMatch) else header("If-None-Match", "*") }
+                .apply {
+                    if (ifMatch != null) header("If-Match", ifMatch) else if (onlyNew) header("If-None-Match", "*")
+                }
                 .build()
             return http.newCall(req).execute()
         }
-        fun makeFolder() = http.newCall(auth(account, folder(account)).method("MKCOL", null).build()).execute().close()
-        // A new file may need its folder first (Nextcloud answers 405 if it exists already).
-        if (ifMatch == null) makeFolder()
+        // The sync folder and any subfolder on the way (Nextcloud answers 405 for ones that exist already).
+        fun makeFolders() {
+            val parts = (account.folder.split('/') + name.split('/').dropLast(1)).filter { it.isNotBlank() }
+            for (i in parts.indices) http.newCall(auth(account, dir(account, parts.take(i + 1).joinToString("/"))).method("MKCOL", null).build()).execute().close()
+        }
+        if (ifMatch == null) makeFolders()
         var r = attempt()
         if (r.code == 404 || r.code == 409) {
             r.close()
-            makeFolder()
+            makeFolders()
             r = attempt()
         }
         r.use {
             when {
                 it.code == 412 -> PutResult.Conflict
-                it.isSuccessful -> PutResult.Ok(it.etag() ?: head(account))
+                it.isSuccessful -> PutResult.Ok(it.etag() ?: head(account, url))
                 else -> throw failure(it)
             }
         }
     }
 
-    private fun head(account: NextcloudAccount): String? =
-        http.newCall(auth(account, file(account)).head().build()).execute().use { it.etag() }
+    /** Deletes [name] in the sync folder; fine if it's gone already. */
+    suspend fun deleteIn(account: NextcloudAccount, name: String) = call {
+        http.newCall(auth(account, inFolder(account, name)).delete().build()).execute().use { r ->
+            if (!r.isSuccessful && r.code != 404) throw failure(r)
+        }
+    }
+
+    /** The files (not folders) in [sub], a folder inside the sync folder; empty if it isn't there. */
+    suspend fun filesIn(account: NextcloudAccount, sub: String): List<RemoteFile> = call {
+        val url = inFolder(account, sub)
+        val body = """<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>"""
+        val req = auth(account, url).method("PROPFIND", body.toRequestBody("application/xml".toMediaType())).header("Depth", "1").build()
+        http.newCall(req).execute().use { r ->
+            if (r.code == 404) return@call emptyList()
+            if (!r.isSuccessful) throw failure(r)
+            parseFiles(r.body!!.string(), url.encodedPath)
+        }
+    }
+
+    private fun head(account: NextcloudAccount, url: HttpUrl): String? =
+        http.newCall(auth(account, url).head().build()).execute().use { it.etag() }
 
     private fun Response.etag() = header("OC-ETag") ?: header("ETag")
 
@@ -177,7 +217,8 @@ class NextcloudClient(http: OkHttpClient) {
 
     private fun folder(a: NextcloudAccount) = dir(a, a.folder)
 
-    private fun file(a: NextcloudAccount) = folder(a).newBuilder().addPathSegment(FILE).build()
+    private fun inFolder(a: NextcloudAccount, name: String) =
+        folder(a).newBuilder().apply { name.split('/').filter { it.isNotBlank() }.forEach { addPathSegment(it) } }.build()
 
     private suspend fun <T> call(block: () -> T): T = withContext(Dispatchers.IO) { block() }
 
@@ -222,6 +263,27 @@ class NextcloudClient(http: OkHttpClient) {
                 if (collection.containsMatchIn(block)) folders += name else if (name == FILE) hasFile = true
             }
             return FolderListing(folders.sortedWith(String.CASE_INSENSITIVE_ORDER), hasFile)
+        }
+
+        private val length = Regex("""<(?:[\w-]+:)?getcontentlength>(\d+)</""")
+        private val modified = Regex("""<(?:[\w-]+:)?getlastmodified>(.*?)</""", RegexOption.DOT_MATCHES_ALL)
+
+        /** The files in a WebDAV PROPFIND answer for the folder at [selfPath], with their size and date. */
+        fun parseFiles(xml: String, selfPath: String): List<RemoteFile> {
+            fun clean(p: String): String {
+                val path = if ("://" in p) "/" + p.substringAfter("://").substringAfter('/') else p
+                return java.net.URLDecoder.decode(path.replace("+", "%2B"), "UTF-8").trimEnd('/')
+            }
+            val self = clean(selfPath)
+            return response.findAll(xml).mapNotNull { m ->
+                val block = m.groupValues[1]
+                val path = href.find(block)?.groupValues?.get(1)?.trim()?.let(::clean) ?: return@mapNotNull null
+                if (path == self || collection.containsMatchIn(block)) return@mapNotNull null
+                val date = modified.find(block)?.groupValues?.get(1)?.trim()?.let {
+                    runCatching { java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", java.util.Locale.US).parse(it)?.time }.getOrNull()
+                } ?: 0L
+                RemoteFile(path.substringAfterLast('/'), length.find(block)?.groupValues?.get(1)?.toLongOrNull() ?: 0L, date)
+            }.toList()
         }
 
         private fun base(server: String): HttpUrl = server.toHttpUrlOrNull() ?: throw SyncException("That doesn't look like a server address.")

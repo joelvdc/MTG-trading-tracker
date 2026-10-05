@@ -3,6 +3,7 @@
 Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
 binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own Nextcloud.
+Your collection can also be kept the same as your Archidekt collection, both ways (beta), with restore points to go back to.
 
 | Trade | Search | Collection | Compact view |
 |:---:|:---:|:---:|:---:|
@@ -20,6 +21,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 Copy `MTG-Trader-1.20.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
 `MTG-Trader-1.20-universal.apk` instead (bigger, runs on any device).
+
+**Beta:** 1.21-beta.1 (Archidekt collection sync, backups, side-by-side trades) is on the
+[Releases](https://github.com/joelvdc/MTG-trading-tracker/releases) page as a pre-release, with the same two files.
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -148,6 +152,10 @@ the "You get" side of a trade. The wishlist isn't part of the collection's value
 ## Appearance
 Settings → **Appearance**: same as the phone, light or dark.
 
+In a trade, the button next to Share at the top switches between the two sides **one above the other** and **side by
+side** (what you give on the left, what you get on the right, each with its own Add and Scan buttons). The app keeps
+the choice for all trades.
+
 ## Scan tab
 Scan a pile of cards (or add them by name) into a waiting list, then select some or all of them and send them **to a
 binder**, **to a trade**, **to a deck** (added in the app only, kept when the deck is refreshed) or **discard** them.
@@ -186,6 +194,55 @@ pictures aren't synced; each phone downloads those itself.
   "Sync now" always works.
 
 The password is stored encrypted with a key kept in the phone's keystore.
+
+## Archidekt collection sync (beta)
+Settings → **Archidekt collection** keeps your [Archidekt](https://archidekt.com/) collection the same as the app's,
+both ways: cards added, removed or changed on either side go to the other when you sync. Archidekt holds the whole
+collection (it has no binders or wishlist).
+- **Log in** with your Archidekt user name (or e-mail) and password. The password is only used to log in; the app keeps
+  Archidekt's login token, encrypted on the phone. If you log in to Archidekt with Google or similar, set a password in
+  your Archidekt account first.
+- **First sync:** if one side is empty it gets the other's cards; if both hold the same cards nothing changes. If they
+  differ, nothing happens until you choose: **the app replaces Archidekt**, **Archidekt replaces the app**, or **decide
+  card by card** (cards you leave open are asked again later).
+- **After that** the app compares both sides with what they agreed on at the last sync, so it knows which side changed:
+  - a card added, removed or with a new count on one side gets the same change on the other side;
+  - a card edited on Archidekt (condition, language, finish) keeps its binders in the app, and a card edited in the
+    app changes the same Archidekt entry;
+  - cards that come from Archidekt go to **Unsorted** or a **"From Archidekt"** binder (your choice);
+  - cards removed on Archidekt leave the app from the trade binder first, then Unsorted, other binders, and deck
+    binders last;
+  - purchase prices are synced too.
+- **Careful by design:** a card changed differently on both sides waits for you (keep the app's, Archidekt's, or both
+  changes). A sync that would remove more than 20 copies from either side shows what it would do and waits for
+  "Go ahead". A backup is made before every sync that changes the app. Each sync has a report, and the last 20 are
+  kept under **History**.
+- **Binders as labels:** none, the trade binder only, or every binder becomes an Archidekt label on the cards in it
+  (labels only go from the app to Archidekt; your other labels are left alone).
+- **Conditions:** the app uses Cardmarket's grades, Archidekt TCGplayer's: Mint and Near Mint → NM, Excellent → LP,
+  Good and Light Played → MP, Played → HP, Poor → Damaged (and back: NM → Near Mint, LP → Excellent, MP → Good, HP →
+  Played, Damaged → Poor).
+- **Several phones:** with Nextcloud sync on, every phone can sync with Archidekt. Each Archidekt sync runs a Nextcloud
+  sync before and after, keeps what both sides agreed on next to the sync file, and holds a lock so only one phone
+  syncs with Archidekt at a time. Without Nextcloud, use Archidekt sync on one phone only.
+- **Automatic sync** (optional): when you open the app (at most once an hour) and after you leave it if the collection
+  changed; it waits for you whenever it would need a decision.
+
+This uses the same connection as Archidekt's website, which isn't an official interface: if Archidekt changes it,
+syncing may stop working until the app is updated. Sending all your cards the first time takes a few minutes.
+
+## Backups and restore points
+Settings → **Backups** keeps restore points of everything the app syncs (collection, binders, trades, decks, scans,
+wishlist and settings).
+- They're made **every day** when something changed, and before big changes: the first Nextcloud sync, Archidekt
+  syncs that change the app, CSV imports and restoring a backup. **Back up now** makes one you keep until you delete it.
+- With Nextcloud sync they go to a **Backups** folder next to the sync file, where all your phones can use them;
+  otherwise they're kept on the phone, in the app's storage or (better, as they survive uninstalling) a folder you
+  choose. **Save to a file…** and **Restore from a file…** work with any file you keep elsewhere.
+- Kept: the latest 10 automatic backups and one per week for 8 weeks.
+- **Restoring** shows what differs from now (cards, binders, decks, trades), makes a backup of the current state first
+  and then replaces the app's data. Your other phones get the restored data through Nextcloud, and the next Archidekt
+  sync takes it to Archidekt (asking first if that removes more than 20 copies).
 
 ## Rebuilding
 Requires JDK 17+ and the Android SDK (installed at `%USERPROFILE%\Android\sdk`, see `local.properties`).

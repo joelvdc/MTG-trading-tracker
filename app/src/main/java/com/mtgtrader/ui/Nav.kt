@@ -84,6 +84,8 @@ fun AppNav() {
         c.updater.schedule()
         c.appScope.launch { c.updater.autoUpdate() }
         c.sync.onAppStart()
+        c.archidekt.onAppStart()
+        c.appScope.launch { c.backups.dailyIfDue() }
         c.appScope.launch { c.setIcons.load() }
         c.appScope.launch {
             if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1
@@ -170,7 +172,9 @@ fun AppNav() {
             }
             composable("tradebinder") { TradeBinderScreen(nav) }
             composable("value") { ValueScreen(nav) }
-            composable("settings") { SettingsScreen() }
+            composable("settings") { SettingsScreen(nav) }
+            composable("backups") { BackupsScreen(nav) }
+            composable("archidekt") { ArchidektSyncScreen(nav) }
             composable("trade/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 TradeEditorScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }

@@ -649,6 +649,9 @@ class MtgRepository(
         return ImportResult(imported, notFound)
     }
 
+    /** Runs before a CSV import adds anything (a backup). Since 1.21. */
+    var beforeCsvImport: (suspend () -> Unit)? = null
+
     private val _csvImport = MutableStateFlow<CsvImportProgress?>(null)
 
     /** The CSV import in progress, if any. */
@@ -675,6 +678,7 @@ class MtgRepository(
         }
         scope.launch {
             _csvImportResult.value = try {
+                beforeCsvImport?.invoke()
                 val r = importCollectionCsv(readText(), defaultBinder) { done, total -> _csvImport.value = CsvImportProgress(done, total) }
                 "Imported ${r.imported} card(s)" + if (r.notFound > 0) " · ${r.notFound} couldn't be matched" else ""
             } catch (e: CancellationException) {

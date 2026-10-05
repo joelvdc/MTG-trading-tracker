@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.mtgtrader.ui.AppNav
 import com.mtgtrader.ui.MtgTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,7 +24,11 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // Changes not synced yet go out in the background.
-        if (!isChangingConfigurations) container.sync.onAppBackground()
+        if (!isChangingConfigurations) {
+            container.sync.onAppBackground()
+            container.archidekt.onAppBackground()
+            container.appScope.launch { container.backups.dailyIfDue() }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
