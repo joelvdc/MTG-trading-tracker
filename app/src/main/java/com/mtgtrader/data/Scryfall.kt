@@ -28,6 +28,9 @@ data class ScryImageUris(val small: String? = null, val normal: String? = null)
 data class ScryFace(
     val name: String = "",
     @SerialName("image_uris") val imageUris: ScryImageUris? = null,
+    @SerialName("type_line") val typeLine: String = "",
+    @SerialName("oracle_text") val oracleText: String? = null,
+    val colors: List<String>? = null,
 )
 
 @Serializable
@@ -57,7 +60,18 @@ data class ScryCard(
     @SerialName("flavor_name") val flavorName: String? = null,
     @SerialName("type_line") val typeLine: String = "",
     val cmc: Double = 0.0,
+    @SerialName("oracle_id") val oracleId: String? = null,
+    val colors: List<String>? = null,
+    @SerialName("color_identity") val colorIdentity: List<String> = emptyList(),
+    /** EDHREC's popularity rank (1 = most played in Commander). */
+    @SerialName("edhrec_rank") val edhrecRank: Int? = null,
+    /** This printing isn't the card's first. */
+    val reprint: Boolean = false,
+    @SerialName("oracle_text") val oracleText: String? = null,
 ) {
+    /** Rules text of every face. */
+    val fullText: String get() = oracleText ?: cardFaces?.joinToString("\n") { it.oracleText.orEmpty() }.orEmpty()
+
     val image: String? get() = imageUris?.normal ?: cardFaces?.firstOrNull()?.imageUris?.normal
 
     /** "Barrow-Downs (Bojuka Bog)" for cards printed under another name, else just the name. */
@@ -235,6 +249,21 @@ class ScryfallApi(private val http: OkHttpClient) {
         return json.decodeFromString<ScryList>(body).data
     }
 
+    /** Every card (one printing each) matching a search, over up to [maxPages] pages of 175. */
+    suspend fun searchAll(query: String, maxPages: Int = 6): List<ScryCard> {
+        val out = mutableListOf<ScryCard>()
+        var next: HttpUrl? = url("cards/search", "q" to "$query game:paper", "unique" to "cards")
+        var pages = 0
+        while (next != null && pages < maxPages) {
+            val body = call(next) ?: break
+            val list = json.decodeFromString<ScryList>(body)
+            out += list.data
+            next = if (list.hasMore) list.nextPage?.toHttpUrl() else null
+            pages++
+        }
+        return out
+    }
+
     /** Every set Scryfall knows, including promo and token sets. */
     suspend fun sets(): List<ScrySet> {
         val body = call(url("sets")) ?: return emptyList()
@@ -274,5 +303,6 @@ class ScryfallApi(private val http: OkHttpClient) {
             put("set", set.lowercase()); put("collector_number", number)
         }
         fun nameIdentifier(name: String) = buildJsonObject { put("name", name) }
+        fun oracleIdentifier(oracleId: String) = buildJsonObject { put("oracle_id", oracleId) }
     }
 }

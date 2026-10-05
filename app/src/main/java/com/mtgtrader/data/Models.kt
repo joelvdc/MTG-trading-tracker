@@ -309,6 +309,8 @@ data class ScanRow(
 data class CollectionRow(
     @Embedded val item: CollectionItem,
     @Embedded(prefix = "pr_") val price: PriceEntity?,
+    /** Colours, type, mana value and popularity, once fetched (see [CardDetails]). Since 1.18. */
+    @Embedded(prefix = "ci_") val info: CardInfo? = null,
 ) {
     fun unitPrice(type: PriceType): Double? =
         price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)

@@ -41,4 +41,27 @@ class MigrationTest {
         }
         db.query("SELECT COUNT(*) FROM wishlist").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
     }
+
+    @Test
+    fun from10to11KeepsTheCollection() {
+        helper.createDatabase(dbName, 10).apply {
+            execSQL(
+                "INSERT INTO collection (id, foil, condition, language, quantity, addedAt, etched, binderId, uid, updatedAt, scryfallId, name, setCode, " +
+                    "setName, collectorNumber, rarity, imageUrl, cardmarketId, fallbackEur, fallbackEurFoil, hasNonFoil, hasFoil, foilType, hasEtched, " +
+                    "flavorName, notes, purchasePrice, cardmarketFoilId) VALUES (1, 0, 'NM', 'EN', 2, 1, 0, 0, 'u1', 5, 'sid', 'Sol Ring', 'c21', " +
+                    "'Commander 2021', '263', 'uncommon', NULL, 559000, 1.0, 2.0, 1, 1, NULL, 0, NULL, 'from a precon', 0.5, NULL)"
+            )
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(dbName, 11, true, AppDatabase.MIGRATION_10_11)
+        db.query("SELECT name, quantity, notes, purchasePrice FROM collection").use { c ->
+            c.moveToFirst()
+            assertEquals("Sol Ring", c.getString(0))
+            assertEquals(2, c.getInt(1))
+            assertEquals("from a precon", c.getString(2))
+        }
+        for (t in listOf("card_info", "recommendations", "trade_skips")) {
+            db.query("SELECT COUNT(*) FROM $t").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
+        }
+    }
 }

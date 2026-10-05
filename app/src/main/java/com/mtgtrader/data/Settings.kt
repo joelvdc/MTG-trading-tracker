@@ -69,6 +69,35 @@ class Settings(context: Context) {
         get() = prefs.getString("archidektUser", "") ?: ""
         set(v) = prefs.edit().putString("archidektUser", v).stamp().apply()
 
+    /** The trade binder (see [TradeBinder]); 0 until it's made. Since 1.18. */
+    var tradeBinderId: Long
+        get() = prefs.getLong("tradeBinderId", 0)
+        set(v) = prefs.edit().putLong("tradeBinderId", v).apply()
+
+    var tradeRules: TradeBinderRules
+        get() = TradeBinderRules(
+            prefs.getInt("tradeMax", 100), prefs.getBoolean("tradeKeepOne", true), prefs.getFloat("tradeMinValue", 1f).toDouble(),
+        )
+        set(v) = prefs.edit().putInt("tradeMax", v.maxCards).putBoolean("tradeKeepOne", v.keepOne).putFloat("tradeMinValue", v.minValue.toFloat()).stamp().apply()
+
+    /** Where deck recommendations come from. Since 1.18. */
+    private val _recSource = MutableStateFlow(RecSource.fromKey(prefs.getString("recSource", null)))
+    val recSource: StateFlow<RecSource> = _recSource
+
+    fun setRecSource(v: RecSource) {
+        _recSource.value = v
+        prefs.edit().putString("recSource", v.key).stamp().apply()
+    }
+
+    /** The collection's sort levels. Since 1.18. */
+    private val _collectionSort = MutableStateFlow(SortSpec.decode(prefs.getString("collectionSort", null)))
+    val collectionSort: StateFlow<SortSpec> = _collectionSort
+
+    fun setCollectionSort(v: SortSpec) {
+        _collectionSort.value = v
+        prefs.edit().putString("collectionSort", v.encode()).stamp().apply()
+    }
+
     /** Order of the Decks tab. */
     var deckSort: DeckSort
         get() = DeckSort.fromKey(prefs.getString("deckSort", null))

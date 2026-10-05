@@ -72,10 +72,13 @@ class AppContainer(context: Context) {
     val repo = MtgRepository(db, scryfall, prices, appScope)
     val catalog = CardmarketCatalog(context, http, db, settings, scryfall)
     val history = ValueHistory(db)
+    val cardDetails = com.mtgtrader.data.CardDetails(db, scryfall)
     val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)
-    val updater = DataUpdater(context, settings, prices, network, catalog, history)
+    val updater = DataUpdater(context, settings, prices, network, catalog, history, cardDetails)
     private val browser = HiddenBrowser(context)
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
+    val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
+    val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
     val sync = SyncManager(context, db, SyncStore(db, settings), NextcloudClient(http), network, appScope)
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */

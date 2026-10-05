@@ -42,9 +42,11 @@ interface CollectionDao {
         """SELECT c.*, p.idProduct AS pr_idProduct, p.avg AS pr_avg, p.low AS pr_low, p.trend AS pr_trend,
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
-           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
+           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil,
+           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt
            FROM collection c LEFT JOIN prices p ON p.idProduct =
              CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
+           LEFT JOIN card_info ci ON ci.scryfallId = c.scryfallId
            ORDER BY c.name COLLATE NOCASE"""
     )
     fun observeAll(): Flow<List<CollectionRow>>
@@ -53,9 +55,11 @@ interface CollectionDao {
         """SELECT c.*, p.idProduct AS pr_idProduct, p.avg AS pr_avg, p.low AS pr_low, p.trend AS pr_trend,
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
-           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
+           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil,
+           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt
            FROM collection c LEFT JOIN prices p ON p.idProduct =
              CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
+           LEFT JOIN card_info ci ON ci.scryfallId = c.scryfallId
            ORDER BY c.name COLLATE NOCASE"""
     )
     suspend fun allWithPrices(): List<CollectionRow>
@@ -293,6 +297,13 @@ interface DeckDao {
     @Query("SELECT archidektId FROM decks")
     suspend fun ids(): List<Long>
 
+    /** Copies per card name over all decks (for what the collection must keep). */
+    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards GROUP BY name")
+    suspend fun cardCounts(): List<NameCount>
+
+    @Query("SELECT DISTINCT name FROM deck_cards")
+    fun observeCardNames(): Flow<List<String>>
+
     /** Every card name with the decks it's in (and how many copies each), for "used in several decks". */
     @Query(
         """SELECT c.name AS name, c.deckId AS deckId, d.name AS deckName, SUM(c.quantity) AS quantity, MAX(c.imageUrl) AS imageUrl
@@ -328,8 +339,9 @@ interface DeckDao {
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
+        CardInfo::class, RecCache::class, TradeSkip::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -341,19 +353,29 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun scanDao(): ScanDao
     abstract fun syncDao(): SyncDao
     abstract fun wishlistDao(): WishlistDao
+    abstract fun cardInfoDao(): CardInfoDao
+    abstract fun recDao(): RecDao
+    abstract fun tradeSkipDao(): TradeSkipDao
     abstract fun valueHistoryDao(): ValueHistoryDao
     abstract fun catalogDao(): CatalogDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
 
         /** Version 10 (app 1.16): wishlist, value history, notes and purchase price, Cardmarket's product list. */
+        /** Version 11 (app 1.18): card details (colours, types, popularity), cached recommendations, skipped trade binder suggestions. */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                V11_TABLES_SQL.forEach(db::execSQL)
+            }
+        }
+
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 for (t in listOf("collection", "trade_items", "scans", "deck_cards")) {
@@ -451,6 +473,16 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+
+/** New tables of version 11, exactly as Room creates them (from the exported schema, schemas/…/11.json). */
+private val V11_TABLES_SQL = listOf(
+    "CREATE TABLE IF NOT EXISTS `card_info` (`scryfallId` TEXT NOT NULL, `oracleId` TEXT, `colors` TEXT NOT NULL, " +
+        "`colorIdentity` TEXT NOT NULL, `typeLine` TEXT NOT NULL, `cmc` REAL NOT NULL, `edhrecRank` INTEGER, " +
+        "`fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`scryfallId`))",
+    "CREATE TABLE IF NOT EXISTS `recommendations` (`deckId` INTEGER NOT NULL, `source` TEXT NOT NULL, " +
+        "`fetchedAt` INTEGER NOT NULL, `json` TEXT NOT NULL, PRIMARY KEY(`deckId`, `source`))",
+    "CREATE TABLE IF NOT EXISTS `trade_skips` (`key` TEXT NOT NULL, `at` INTEGER NOT NULL, PRIMARY KEY(`key`))",
+)
 
 /** New tables of version 10, exactly as Room creates them (from the exported schema, schemas/…/10.json). */
 private val V10_TABLES_SQL = listOf(

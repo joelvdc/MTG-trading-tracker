@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -93,6 +94,7 @@ import com.mtgtrader.data.SaltCard
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material.icons.filled.RemoveShoppingCart
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.FilterChip
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCollectionCounts
@@ -195,6 +197,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             }
                         }
                         DropdownMenuItem(
+                            text = { Text("Recommendations (EDHREC, recommander.cards)") },
+                            leadingIcon = { Icon(Icons.Default.AutoAwesome, null) },
+                            onClick = { menu = false; nav.navigate("deck/$deckId/recs") },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Cards I'm missing") },
                             leadingIcon = { Icon(Icons.Default.RemoveShoppingCart, null) },
                             onClick = { menu = false; nav.navigate("deck/$deckId/missing") },
@@ -240,6 +247,13 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         Spacer(Modifier.width(6.dp))
                         Text("Power card")
                     }
+                }
+            }
+            item(key = "recs") {
+                OutlinedButton(onClick = { nav.navigate("deck/$deckId/recs") }, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Card recommendations")
                 }
             }
             item(key = "scores") {

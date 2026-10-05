@@ -23,6 +23,7 @@ class DataUpdater(
     private val network: NetworkMonitor,
     private val catalog: CardmarketCatalog,
     private val history: ValueHistory,
+    private val cardDetails: CardDetails,
 ) {
     /** Whether automatic updates may run right now. */
     fun allowedNow(): Boolean = settings.autoUpdate.value && (!settings.wifiOnly.value || network.onUnmeteredNetwork())
@@ -44,6 +45,8 @@ class DataUpdater(
     suspend fun afterUpdate() {
         runCatching { catalog.repair() }
         runCatching { history.record() }
+        // Colours, types and popularity for sorting, filters and the trade binder (once per card).
+        runCatching { cardDetails.fillMissing() }
     }
 
     /** Sets up (or cancels) the background update to match the settings. */

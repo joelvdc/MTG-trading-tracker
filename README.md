@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.17.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.18.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.17-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.18-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -31,6 +31,10 @@ It's built for 64-bit ARM phones (practically every phone from the last ~6 years
 - **Cardmarket's product list** (~20 MB, once a week): Scryfall links almost every printing to its Cardmarket product,
   but not all. With this list the app finds the missing ones itself (The List reprints such as Urza's Saga, some surge
   foils, older promos) and the separate foil products of special foils such as The Lord of the Rings' silver-foil scrolls.
+- **Card details** for sorting, filters and the trade binder (colours, type, mana value and EDHREC's popularity rank):
+  from Scryfall, fetched once per card (about a minute for 5,000 cards, the first time).
+- **Recommendations:** [EDHREC](https://edhrec.com/) (its public card lists per commander) and
+  [recommander.cards](https://recommander.cards/) (its public API, which ranks cards for a decklist).
 
 ## Commander decks
 Import a public deck from **Archidekt**: paste its link in the Decks tab, share it to the app from the Archidekt app or
@@ -58,6 +62,18 @@ bracket call (and whether it's borderline) and its "tell your pod" line.
 (WotC's bracket rules, in red) and tutors and fast mana (in grey), with a count above the list and **Only these cards**
 to list just them. Tapping a card names its combo partners and the other decks it's in.
 
+**Recommendations** (deck page, or the deck's ⋮ menu): cards for the deck from **EDHREC** or **recommander.cards**
+(switch at the top; the choice is remembered). EDHREC's are in its own sections (New Cards, High Synergy, Top Cards, Game
+Changers, Creatures, Instants…), each card with how many of the commander's decks play it and its synergy; its New Cards
+section lists every recommended card first printed in the last year, not just five. recommander.cards ranks cards for
+the actual decklist and shows them in its categories: Top Recommendations, New Cards, Ramp, Spot Removal, Mass Removal,
+Card Advantage, Tutors, General Staples, the card types, Utility Lands and Lands (its API gives only names and scores,
+so the app sorts the cards into those categories from their rules text and type). Cards already in the deck are left
+out. Filter by card type, by **I own / I don't own** and by **New cards**; tap a card for its prices and to add it to the
+deck (kept when the deck reloads) or to the wishlist. **Recommendations for all decks** (Decks tab ⋮ menu) asks for every
+deck at once and shows the cards you already own that fit your decks, or the cards recommended for several decks.
+Recommendations are saved, so they show straight away and offline; ⟳ asks again.
+
 **Cards I'm missing** (deck ⋮ menu) lists the deck's cards you don't own in any printing, with what buying them costs;
 add them all to the wishlist, or share/copy them as a plain list ("1 Card name" per line) for a Cardmarket wants list.
 **Cards in several decks** (Decks tab ⋮ menu) shows which cards your decks share and whether you own enough copies for
@@ -82,8 +98,16 @@ cards are taken from Unsorted first. CSV import/export carries a "Binder Name" c
 
 The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
 big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
-total underneath, and "Value per card" sorts by it. Every sort can be reversed (A to Z / Z to A, highest / lowest
-first, newest / oldest first).
+total underneath, and "Value per card" sorts by it.
+
+**Sort** in layers: e.g. color, then name; or type, then mana value, then name; up to three levels, each with its own
+direction (A to Z / Z to A, highest / lowest first…), with shortcuts for the usual ones. Sort by name, color (W, U, B, R,
+G, multicolor, colorless, lands), type, mana value, rarity, set, collector number, value per card, date added or copies.
+
+**Filter** (the button next to Sort) for what's awkward to type: colors (has any of them, exactly these, or fits in a
+color identity), type, rarity, sets (pick from the sets you own), finish, condition, language, value range and whether
+the card is in one of your decks. The active filters show as chips under the search field (tap ✕ to drop one); the
+search field still finds cards by name, set or foil type.
 
 Tap a card to add **notes** (condition details, where it came from) and the **purchase price** per copy; the card then
 shows what you paid against what it's worth now. Both go into the CSV export and are read back on import. The card
@@ -92,6 +116,16 @@ also lists the decks it's in.
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
 cards whose price is rising or falling most lately, over all the copies you own; tap one to open it.
+
+## Trade binder
+⋮ → **Make a trade binder** suggests what to put in a "Trade binder": only spare copies (what your decks use stays home,
+and wishlist cards and basic lands are left out), ranked by value and by how much Commander players want them (EDHREC's
+popularity rank), with a nudge for rising prices. Set the most cards it may hold, the minimum value and whether to keep
+at least one copy of each card. Later, **Update trade binder** (⋮ menu, or the button in the binder) shows what to put in
+and what to take out (a deck uses the card now, it dropped below the minimum value, better cards pushed it out…) with
+the reason for each; untick what you don't want, then apply. Unticked suggestions aren't made again (⋮ to undo that).
+Copies are taken from Unsorted and other binders before binders named after a deck, and cards taken out go back to the
+binder holding their other copies. Nothing changes until you apply.
 
 ## Wishlist
 The **★ Wishlist** in the binder bar holds the cards you want. Add them with "Add card" or the scanner while it's

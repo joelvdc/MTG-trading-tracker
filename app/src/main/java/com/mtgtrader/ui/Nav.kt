@@ -164,6 +164,11 @@ fun AppNav() {
                 MissingCardsScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }
             composable("decks/shared") { SharedCardsScreen(nav) }
+            composable("decks/recs") { AllDeckRecommendationsScreen(nav) }
+            composable("deck/{id}/recs", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                RecommendationsScreen(nav, it.arguments?.getLong("id") ?: 0L)
+            }
+            composable("tradebinder") { TradeBinderScreen(nav) }
             composable("value") { ValueScreen(nav) }
             composable("settings") { SettingsScreen() }
             composable("trade/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
