@@ -518,11 +518,15 @@ private fun RecGallery(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
+                    val hasBack = rememberHasBack(card.card?.imageUrl)
+                    var showBack by remember(page) { mutableStateOf(false) }
+                    val front = card.card?.imageUrl?.let(::largeImageUrl)
                     AsyncImage(
-                        model = card.card?.imageUrl?.replace("/normal/", "/large/"),
+                        model = if (showBack) backImageUrl(front) ?: front else front,
                         contentDescription = card.name,
                         modifier = Modifier.fillMaxWidth().aspectRatio(63f / 88f),
                     )
+                    if (hasBack) FlipButton(showBack, onFlip = { showBack = !showBack }, Modifier.padding(top = 8.dp))
                     Spacer(Modifier.padding(6.dp))
                     Text(card.name, color = Color.White, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     Text(card.typeLine, color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)

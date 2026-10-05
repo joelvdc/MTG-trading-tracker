@@ -79,6 +79,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.runtime.produceState
+import androidx.compose.material.icons.filled.Autorenew
 import com.mtgtrader.container
 import com.mtgtrader.data.Balance
 import com.mtgtrader.data.Binder
@@ -184,10 +190,41 @@ fun RetryingImage(
 /** Scryfall serves every card image in several sizes under the same path; "large" is 672×936. */
 fun largeImageUrl(url: String): String = url.replace("/normal/", "/large/")
 
-/** Full-screen card image. Pinch or double-tap to zoom, drag to pan, tap to close. */
+/** Scryfall keeps the back of a double-faced card (MDFC, transform…) at the front's address with "back" for "front". */
+fun backImageUrl(url: String?): String? = url?.takeIf { "/front/" in it }?.replace("/front/", "/back/")
+
+/**
+ * Whether the card has a back face to show: its back picture exists. Split and adventure cards
+ * (and single-faced ones) have none, so this stays false for them.
+ */
 @Composable
-fun CardImageDialog(url: String, onDismiss: () -> Unit) {
+fun rememberHasBack(url: String?): Boolean {
+    val context = LocalContext.current
+    val back = backImageUrl(url)
+    val has by produceState(false, back) {
+        if (back == null) return@produceState
+        value = runCatching { context.imageLoader.execute(ImageRequest.Builder(context).data(back).build()) is SuccessResult }.getOrDefault(false)
+    }
+    return has
+}
+
+/** "Flip" under an enlarged double-faced card. */
+@Composable
+fun FlipButton(back: Boolean, onFlip: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalButton(onClick = onFlip, modifier = modifier) {
+        Icon(Icons.Default.Autorenew, null, Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(if (back) "Show the front" else "Flip: show the back")
+    }
+}
+
+/** Full-screen card image. Pinch or double-tap to zoom, drag to pan, tap to close; double-faced cards can be flipped. */
+@Composable
+fun CardImageDialog(frontUrl: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val hasBack = rememberHasBack(frontUrl)
+        var showBack by remember { mutableStateOf(false) }
+        val url = if (showBack) backImageUrl(frontUrl) ?: frontUrl else frontUrl
         var scale by remember { mutableFloatStateOf(1f) }
         var offset by remember { mutableStateOf(Offset.Zero) }
         var imageSize by remember { mutableStateOf(IntSize.Zero) }
@@ -217,22 +254,32 @@ fun CardImageDialog(url: String, onDismiss: () -> Unit) {
                 },
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                Modifier
-                    .padding(16.dp)
-                    .aspectRatio(63f / 88f)
-                    .onSizeChanged { imageSize = it }
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        translationX = offset.x
-                        translationY = offset.y
-                    }
-                    .clip(RoundedCornerShape(16.dp)),
-            ) {
-                // The small image is usually cached already, so it shows at once while the sharper one loads.
-                AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
-                RetryingImage(largeImageUrl(url), Modifier.fillMaxSize(), contentDescription = "Card image")
+            // The Flip button goes right under the picture, clear of the phone's navigation bar.
+            Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .weight(1f, fill = false)
+                        .aspectRatio(63f / 88f)
+                        .onSizeChanged { imageSize = it }
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offset.x
+                            translationY = offset.y
+                        }
+                        .clip(RoundedCornerShape(16.dp)),
+                ) {
+                    // The small image is usually cached already, so it shows at once while the sharper one loads.
+                    AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                    RetryingImage(largeImageUrl(url), Modifier.fillMaxSize(), contentDescription = "Card image")
+                }
+                if (hasBack) {
+                    FlipButton(showBack, onFlip = {
+                        showBack = !showBack
+                        scale = 1f
+                        offset = Offset.Zero
+                    }, modifier = Modifier.padding(top = 12.dp))
+                }
             }
             IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                 Icon(Icons.Default.Close, "Close", tint = Color.White)

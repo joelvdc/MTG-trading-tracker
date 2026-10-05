@@ -17,9 +17,9 @@ binders, scan piles of cards before deciding where they go, and sync it all betw
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
 
 ## Install
-Copy `MTG-Trader-1.19.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.20.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.19-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.20-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -73,7 +73,7 @@ out. Filter by card type, by **I own / I don't own** and by **New cards**; tap a
 deck (kept when the deck reloads) or to the wishlist. **Recommendations for all decks** (Decks tab ⋮ menu) asks for every
 deck at once and shows the cards you already own that fit your decks, or the cards recommended for several decks.
 Tap a card's picture to see it large and swipe left or right through the list, with its type, the source's numbers,
-price and how many you own under each.
+price and how many you own under each (double-faced cards can be flipped there too).
 Recommendations are saved, so they show straight away and offline; ⟳ asks again.
 
 **Cards I'm missing** (deck ⋮ menu) lists the deck's cards you don't own in any printing, with what buying them costs;
@@ -115,6 +115,10 @@ search field still finds cards by name, set or foil type.
 Tap a card to add **notes** (condition details, where it came from) and the **purchase price** per copy; the card then
 shows what you paid against what it's worth now. Both go into the CSV export and are read back on import. The card
 also lists the decks it's in.
+
+Tap a card's picture (in its card window, search, decks, the scanner…) to see it full screen; pinch or double-tap to
+zoom. Double-faced cards (modal double-faced cards like Bala Ged Recovery, transform cards) get a **Flip** button to see
+the back.
 
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
