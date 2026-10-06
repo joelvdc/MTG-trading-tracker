@@ -18,9 +18,17 @@ Your collection can also be kept the same as your Archidekt collection, both way
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> | <img src="docs/screenshots/card.png" width="200" alt="A card's page: price, quantity, finish, binder, condition, language, paid price and notes, and the other copies you own"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: totals, value and the color pie"> |
 
 ## Install
-Copy `MTG-Trader-1.23.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
-It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.23-universal.apk` instead (bigger, runs on any device).
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/joelvdc/MTG-trading-tracker)
+
+**With [Obtainium](https://github.com/ImranR98/Obtainium)** (recommended): tap the button above on your phone, or add
+`https://github.com/joelvdc/MTG-trading-tracker` as an app in Obtainium. It installs the app from this page's releases
+and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
+(or the `-universal` one if that doesn't install).
+
+**By hand:** download `MTG-Trader-1.24.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.24-universal.apk`
+instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -248,7 +256,9 @@ collection (it has no binders or wishlist).
 - **Several phones:** with Nextcloud sync on, every phone can sync with Archidekt. Each Archidekt sync runs a Nextcloud
   sync before and after, keeps what both sides agreed on next to the sync file, and holds a lock so only one phone
   syncs with Archidekt at a time. Without Nextcloud, use Archidekt sync on one phone only.
-- **Automatic sync** (optional): when you open the app (at most once an hour) and after you leave it if the collection
+- **Pending changes:** the Archidekt screen (and Settings) shows how many cards changed since this phone's last sync with
+  Archidekt, so you can see what "Sync now" will send.
+- **Automatic sync** (optional, off until you switch it on): when you open the app (at most once an hour) and after you leave it if the collection
   changed; it waits for you whenever it would need a decision.
 
 This uses the same connection as Archidekt's website, which isn't an official interface: if Archidekt changes it,

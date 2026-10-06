@@ -53,6 +53,7 @@ private val typeHelp = mapOf(
 fun SettingsScreen(nav: NavController) {
     val c = LocalContext.current.container
     val archidekt by c.archidekt.status.collectAsStateWithLifecycle()
+    val unsynced by androidx.compose.runtime.produceState<Int?>(null, archidekt.lastSyncAt, archidekt.running) { value = c.archidekt.unsyncedCopies() }
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
     val lastFetch by c.settings.lastPriceFetch.collectAsStateWithLifecycle()
@@ -192,6 +193,7 @@ fun SettingsScreen(nav: NavController) {
                     !archidekt.connected -> "Keep your Archidekt collection the same as the app's, both ways."
                     archidekt.review != null || archidekt.conflicts.isNotEmpty() -> "Logged in as ${archidekt.username} · waiting for you"
                     archidekt.lastSyncAt == 0L -> "Logged in as ${archidekt.username} · not synced yet"
+                    (unsynced ?: 0) > 0 -> "Logged in as ${archidekt.username} · $unsynced card(s) changed since the last sync"
                     else -> "Logged in as ${archidekt.username} · last synced ${Fmt.dateTime(archidekt.lastSyncAt)}"
                 },
                 style = MaterialTheme.typography.bodySmall,

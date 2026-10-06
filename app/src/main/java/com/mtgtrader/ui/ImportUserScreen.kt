@@ -130,17 +130,14 @@ fun ImportUserScreen(nav: NavController, initialUser: String?) {
         },
     ) { pad ->
         Column(Modifier.padding(pad)) {
-            OutlinedTextField(
-                value = user,
-                onValueChange = { user = it },
-                label = { Text("Archidekt username or profile link") },
-                placeholder = { Text("archidekt.com/u/…") },
-                singleLine = true,
+            SearchField(
+                user, { user = it }, "Archidekt username or profile link",
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                onSearch = { find() },
                 isError = user.isNotBlank() && username == null,
-                trailingIcon = { IconButton(onClick = ::find, enabled = username != null && !loading) { Icon(Icons.Default.Search, "Find decks") } },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { find() }),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                trailing = {
+                    TextButton(onClick = ::find, enabled = username != null && !loading) { Text("Find") }
+                },
             )
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp)) }
             val list = decks

@@ -170,10 +170,7 @@ fun FilterDialog(
                         }
                     }
                 }
-                OutlinedTextField(
-                    value = setQuery, onValueChange = { setQuery = it }, placeholder = { Text("Find a set (name or code)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
+                SearchField(setQuery, { setQuery = it }, "Find a set (name or code)", Modifier.fillMaxWidth())
                 val q = setQuery.trim()
                 if (q.isNotEmpty()) {
                     sets.filter { (it.name.contains(q, true) || it.code.equals(q, true)) && it.code !in f.sets }.take(8).forEach { s ->

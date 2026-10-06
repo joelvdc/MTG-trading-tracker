@@ -1,6 +1,7 @@
 package com.mtgtrader.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -157,14 +158,31 @@ fun FittingText(variants: List<String>, style: TextStyle, modifier: Modifier = M
     )
 }
 
-/** A slim, rounded search field (lighter than a full outlined text field). Since 1.23. */
+/**
+ * A slim, rounded search field (lighter than a full outlined text field), used for every search and
+ * filter box. [onSearch] runs on the keyboard's search key; [isError] outlines it in red; [trailing]
+ * adds a button after the clear button. Since 1.23.
+ */
 @Composable
-fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+fun SearchField(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    onSearch: (() -> Unit)? = null,
+    isError: Boolean = false,
+    keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+    trailing: (@Composable () -> Unit)? = null,
+    /** For the text itself, e.g. a focus requester. */
+    fieldModifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(22.dp)
     Row(
         modifier
             .height(44.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .then(if (isError) Modifier.border(1.5.dp, MaterialTheme.colorScheme.error, shape) else Modifier)
             .padding(start = 14.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -178,12 +196,18 @@ fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, 
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = keyboardType,
+                    imeAction = if (onSearch != null) androidx.compose.ui.text.input.ImeAction.Search else androidx.compose.ui.text.input.ImeAction.Default,
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { onSearch?.invoke() }),
+                modifier = fieldModifier.fillMaxWidth(),
             )
         }
         if (value.isNotEmpty()) {
             IconButton(onClick = { onChange("") }, modifier = Modifier.size(36.dp)) { Icon(Icons.Default.Clear, "Clear", Modifier.size(20.dp)) }
         }
+        trailing?.invoke()
     }
 }
 

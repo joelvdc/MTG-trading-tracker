@@ -125,6 +125,15 @@ fun ArchidektSyncScreen(nav: NavController) {
                     if (s.lastSyncAt == 0L) "Not synced yet." else "Last synced: ${Fmt.dateTime(s.lastSyncAt)}",
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                val unsynced by androidx.compose.runtime.produceState<Int?>(null, s.lastSyncAt, s.running) { value = c.archidekt.unsyncedCopies() }
+                unsynced?.takeIf { it > 0 && !s.running }?.let { n ->
+                    Text(
+                        "$n card(s) changed since this phone's last sync with Archidekt." +
+                            if (s.auto) " They go to Archidekt when you leave the app, or now with Sync now." else " Tap Sync now to send them (automatic sync is off).",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
                 if (s.running) {
                     Text(s.progress ?: "Syncing…", color = MaterialTheme.colorScheme.primary)
                     LinearProgressIndicator(Modifier.fillMaxWidth())

@@ -173,18 +173,11 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.padding(pad).imePadding()) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it; selectedName = null },
-                placeholder = { Text("Card name") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                trailingIcon = {
-                    if (query.isNotEmpty()) IconButton(onClick = { query = ""; selectedName = null }) { Icon(Icons.Default.Clear, "Clear") }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { suggestions.firstOrNull()?.let { query = it.label; selectedName = it.label } }),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).focusRequester(focus),
+            SearchField(
+                query, { query = it; selectedName = null }, "Card name",
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                onSearch = { suggestions.firstOrNull()?.let { query = it.label; selectedName = it.label } },
+                fieldModifier = Modifier.focusRequester(focus),
             )
             error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))

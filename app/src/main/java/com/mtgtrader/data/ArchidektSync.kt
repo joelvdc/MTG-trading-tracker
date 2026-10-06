@@ -161,6 +161,19 @@ class ArchidektSync(
         _status.value = _status.value.copy(review = null)
     }
 
+    /**
+     * Copies that differ between the collection and this phone's last agreement with Archidekt: what
+     * the next sync will send (or bring back). Null when not set up. Since 1.24.
+     */
+    suspend fun unsyncedCopies(): Int? {
+        val l = login() ?: return null
+        if (!prefs.getBoolean(K_READY, false)) return null
+        val state = readLocal()?.takeIf { it.userId == l.userId } ?: return null
+        val agreed = state.entries.associate { it.key to it.quantity }
+        val now = appSides(db.syncDao().collection()).mapValues { it.value.quantity }
+        return (agreed.keys + now.keys).sumOf { k -> kotlin.math.abs((now[k] ?: 0) - (agreed[k] ?: 0)) }
+    }
+
     /** Whether this phone shares the agreement with other phones through Nextcloud. */
     val sharedThroughNextcloud get() = nextcloud.readyAccount() != null
 
