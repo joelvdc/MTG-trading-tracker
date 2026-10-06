@@ -108,6 +108,7 @@ import androidx.compose.material3.BadgedBox
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.layout.height
 
 /** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders, [WISHLIST] the wishlist. */
 private typealias BinderSel = Long?
@@ -408,13 +409,6 @@ fun CollectionScreen(nav: NavController) {
                     LinearProgressIndicator(progress = { if (t == 0) 0f else d.toFloat() / t }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
                 }
             }
-            if (selected != null && selected == tradeBinderId && !wish) {
-                TextButton(onClick = { nav.navigate("tradebinder") }, modifier = Modifier.padding(horizontal = 4.dp)) {
-                    Icon(Icons.Default.SwapHoriz, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Update trade binder")
-                }
-            }
             if (wish) {
                 Text(
                     "$totalCards card(s) wanted · ${Fmt.money(totalValue)} to buy them (${priceType.short})",
@@ -423,29 +417,39 @@ fun CollectionScreen(nav: NavController) {
                 )
             } else {
                 Row(
-                    Modifier.fillMaxWidth().clickable { nav.navigate("value") }.padding(horizontal = 16.dp, vertical = 4.dp),
+                    Modifier.fillMaxWidth().clickable { nav.navigate("value") }.padding(start = 16.dp, end = 8.dp, top = 2.dp, bottom = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        "$totalCards card(s) · ${shown.size} unique · ${Fmt.money(totalValue)} (${priceType.short})",
+                    // One line whatever the numbers: the longest wording that fits.
+                    val cards = "%,d".format(totalCards)
+                    val unique = "%,d".format(shown.size)
+                    FittingText(
+                        listOf(
+                            "$cards card(s) · $unique unique · ${Fmt.money(totalValue)} (${priceType.short})",
+                            "$cards cards · $unique unique · ${Fmt.money(totalValue)}",
+                            "$cards cards · $unique unique · ${Fmt.wholeMoney(totalValue)}",
+                            "$cards cards · ${Fmt.wholeMoney(totalValue)}",
+                            "$cards cards · ${Fmt.shortMoney(totalValue)}",
+                            "$cards · ${Fmt.shortMoney(totalValue)}",
+                        ),
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
                     )
-                    Icon(Icons.AutoMirrored.Filled.ShowChart, "Value over time", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.width(4.dp))
+                    if (selected != null && selected == tradeBinderId) {
+                        Spacer(Modifier.width(6.dp))
+                        SmallAction("Update", Icons.Default.SwapHoriz) { nav.navigate("tradebinder") }
+                    }
+                    IconButton(onClick = { nav.navigate("value") }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.ShowChart, "Value over time", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
                     IconButton(onClick = { nav.navigate("stats") }, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.PieChart, "Collection stats", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
-            OutlinedTextField(
-                value = filter,
-                onValueChange = { filter = it },
-                placeholder = { Text("Filter by name, set or foil type") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                trailingIcon = { if (filter.isNotEmpty()) IconButton(onClick = { filter = "" }) { Icon(Icons.Default.Clear, "Clear") } },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            SearchField(
+                filter, { filter = it }, "Filter by name, set or foil type",
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             )
             ActiveFilterChips(cardFilter, ownedSets, onChange = { filterText = if (it.isEmpty) "" else it.encode() }, onEdit = { filtering = true })
             when {

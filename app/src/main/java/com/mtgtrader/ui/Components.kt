@@ -102,6 +102,8 @@ import java.util.Currency
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
 
 object Fmt {
     private val eur = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
@@ -117,6 +119,72 @@ object Fmt {
 
     /** Parses "3,50" or "3.50"; null for blank/invalid. */
     fun parseMoney(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
+
+    private val eurWhole = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+        currency = Currency.getInstance("EUR")
+        maximumFractionDigits = 0
+    }
+
+    /** "€10,005": no cents. Since 1.23. */
+    fun wholeMoney(v: Double): String = eurWhole.format(v)
+
+    /** "€10k", "€1.2M": for tight spaces; small amounts keep their cents. Since 1.23. */
+    fun shortMoney(v: Double): String {
+        if (abs(v) < 1000) return eur.format(v)
+        val (n, unit) = if (abs(v) >= 1_000_000) v / 1_000_000 to "M" else v / 1000 to "k"
+        val number = java.text.DecimalFormat("0.#", java.text.DecimalFormatSymbols.getInstance(Locale.getDefault())).format(n) + unit
+        val symbolFirst = !eur.format(1.0).first().isDigit()
+        return if (symbolFirst) "€$number" else "$number €"
+    }
+}
+
+/**
+ * Shows the first of [variants] (longest to shortest) that fits on one line; the last one is cut
+ * with "…" if even that doesn't fit. Since 1.23.
+ */
+@Composable
+fun FittingText(variants: List<String>, style: TextStyle, modifier: Modifier = Modifier, fontWeight: FontWeight? = null) {
+    var index by remember(variants) { mutableIntStateOf(0) }
+    Text(
+        variants[index],
+        style = style,
+        fontWeight = fontWeight,
+        maxLines = 1,
+        softWrap = false,
+        overflow = if (index == variants.lastIndex) TextOverflow.Ellipsis else TextOverflow.Clip,
+        onTextLayout = { r -> if (r.hasVisualOverflow && index < variants.lastIndex) index++ },
+        modifier = modifier,
+    )
+}
+
+/** A slim, rounded search field (lighter than a full outlined text field). Since 1.23. */
+@Composable
+fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(start = 14.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Default.Search, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f)) {
+            if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            androidx.compose.foundation.text.BasicTextField(
+                value = value,
+                onValueChange = onChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (value.isNotEmpty()) {
+            IconButton(onClick = { onChange("") }, modifier = Modifier.size(36.dp)) { Icon(Icons.Default.Clear, "Clear", Modifier.size(20.dp)) }
+        }
+    }
 }
 
 /** Card image; with [enlargeable], tapping it opens the full-screen [CardImageDialog]. */
