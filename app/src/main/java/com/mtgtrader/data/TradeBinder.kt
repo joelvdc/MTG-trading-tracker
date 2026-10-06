@@ -215,8 +215,8 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
 
     /**
      * Applies the [accepted] changes (creating the binder if needed) and remembers the [declined]
-     * ones so they aren't suggested again. Copies taken out go back to the binder holding most
-     * other copies of the card, else to Unsorted.
+     * ones so they aren't suggested again. Copies taken out go to Unsorted, to be sorted from there
+     * (since 1.22; before, to the binder holding most other copies, which could be a deck's binder).
      */
     suspend fun apply(accepted: List<TradeChange>, declined: List<TradeChange>) = db.withTransaction {
         val binderId = binder()?.id ?: repo.createBinder(NAME)
@@ -240,18 +240,31 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
                     left -= n
                 }
             } else {
-                val home = db.collectionDao().all().filter { it.card.name == c.card.name && it.binderId != binderId }
-                    .groupBy { it.binderId }.maxByOrNull { (_, v) -> v.sumOf { it.quantity } }?.key ?: Binder.UNSORTED
                 for (s in stacks.filter { it.binderId == binderId }) {
                     if (left <= 0) break
                     val n = minOf(left, s.quantity)
-                    repo.saveCollectionEdit(s, home, n)
+                    repo.saveCollectionEdit(s, Binder.UNSORTED, n)
                     left -= n
                 }
             }
         }
         if (declined.isNotEmpty()) db.tradeSkipDao().putAll(declined.map { TradeSkip(it.skipKey) })
         binderId
+    }
+
+    /**
+     * Puts [copies] of [incoming] (another copy of the same card, outside the trade binder) into the
+     * trade binder in place of [outgoing], which goes to Unsorted; the next update keeps this pick.
+     * Since 1.22.
+     */
+    suspend fun swapIn(outgoing: CollectionItem, incoming: CollectionItem, copies: Int) = db.withTransaction {
+        val binderId = binder()?.id ?: return@withTransaction
+        val coll = db.collectionDao()
+        val inNow = coll.byId(incoming.id) ?: return@withTransaction
+        val n = copies.coerceIn(1, inNow.quantity)
+        repo.saveCollectionEdit(inNow, binderId, n)
+        coll.byId(outgoing.id)?.let { outNow -> repo.saveCollectionEdit(outNow, Binder.UNSORTED, minOf(n, outNow.quantity)) }
+        prefer(incoming.card.name, CardKind.of(incoming), CardKind.of(outgoing))
     }
 
     /** Suggests the turned-down cards again. */

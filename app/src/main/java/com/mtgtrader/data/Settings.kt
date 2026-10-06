@@ -49,6 +49,27 @@ class Settings(context: Context) {
         prefs.edit().putString("themeMode", v.name).apply()
     }
 
+    private val _deckPrintingsOff = MutableStateFlow(decodeIds(prefs.getString("deckPrintingsOff", null)))
+    /** Decks shown in Archidekt's printings rather than the ones you own (on by default). Since 1.22. */
+    val deckPrintingsOff: StateFlow<Set<Long>> = _deckPrintingsOff
+
+    fun setDeckShowsMyPrintings(deckId: Long, on: Boolean) {
+        val v = if (on) _deckPrintingsOff.value - deckId else _deckPrintingsOff.value + deckId
+        _deckPrintingsOff.value = v
+        prefs.edit().putString("deckPrintingsOff", v.joinToString(",")).stamp().apply()
+    }
+
+    private val _deckPicks = MutableStateFlow(decodePicks(prefs.getString("deckPicks", null)))
+    /** Deck id → card name (see [DeckPrintings.nameKey]) → the copy you picked to show ([DeckPrintings.pickValue] or [DeckPrintings.ARCHIDEKT]). Since 1.22. */
+    val deckPicks: StateFlow<Map<Long, Map<String, String>>> = _deckPicks
+
+    fun setDeckPick(deckId: Long, nameKey: String, value: String?) {
+        val forDeck = _deckPicks.value[deckId].orEmpty().let { if (value == null) it - nameKey else it + (nameKey to value) }
+        val v = if (forDeck.isEmpty()) _deckPicks.value - deckId else _deckPicks.value + (deckId to forDeck)
+        _deckPicks.value = v
+        prefs.edit().putString("deckPicks", encodePicks(v)).stamp().apply()
+    }
+
     private val _cardOthersOpen = MutableStateFlow(prefs.getBoolean("cardOthersOpen", false))
     /** The card page lists all your other copies of the card, not just the first few. Since 1.21. */
     val cardOthersOpen: StateFlow<Boolean> = _cardOthersOpen
@@ -184,6 +205,8 @@ class Settings(context: Context) {
             put("deckSortReversed", deckSortReversed.toString())
             put("collectionView", collectionView.value.name)
             put("powerSource", powerSource.value.name)
+            put("deckPrintingsOff", _deckPrintingsOff.value.joinToString(","))
+            put("deckPicks", encodePicks(_deckPicks.value))
         },
     )
 
@@ -198,6 +221,8 @@ class Settings(context: Context) {
         v["deckSortReversed"]?.toBooleanStrictOrNull()?.let { e.putBoolean("deckSortReversed", it) }
         v["collectionView"]?.let { _collectionView.value = CollectionView.fromKey(it); e.putString("collectionView", it) }
         v["powerSource"]?.let { _powerSource.value = PowerSource.fromKey(it); e.putString("powerSource", it) }
+        v["deckPrintingsOff"]?.let { _deckPrintingsOff.value = decodeIds(it); e.putString("deckPrintingsOff", it) }
+        v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 
@@ -211,5 +236,18 @@ class Settings(context: Context) {
 
     private companion object {
         const val PREFS_UPDATED_AT = "syncedPrefsUpdatedAt"
+        private val picksSerializer = kotlinx.serialization.builtins.MapSerializer(
+            kotlinx.serialization.serializer<String>(),
+            kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.serializer<String>(), kotlinx.serialization.serializer<String>()),
+        )
+
+        fun decodeIds(s: String?): Set<Long> = s.orEmpty().split(',').mapNotNull { it.trim().toLongOrNull() }.toSet()
+
+        fun encodePicks(p: Map<Long, Map<String, String>>): String =
+            kotlinx.serialization.json.Json.encodeToString(picksSerializer, p.mapKeys { it.key.toString() })
+
+        fun decodePicks(s: String?): Map<Long, Map<String, String>> = runCatching {
+            kotlinx.serialization.json.Json.decodeFromString(picksSerializer, s!!).mapNotNull { (k, v) -> k.toLongOrNull()?.let { it to v } }.toMap()
+        }.getOrDefault(emptyMap())
     }
 }

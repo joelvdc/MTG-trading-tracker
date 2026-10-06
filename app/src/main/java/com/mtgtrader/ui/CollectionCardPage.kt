@@ -100,6 +100,11 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
             .thenBy { it.item.card.setCode },
     )
     val othersOpen by c.settings.cardOthersOpen.collectAsStateWithLifecycle()
+    // In the trade binder, another copy can take this one's place (since 1.22).
+    var tradeId by remember { mutableStateOf<Long?>(null) }
+    androidx.compose.runtime.LaunchedEffect(binders) { tradeId = c.tradeBinder.binder()?.id }
+    val inTrade = tradeId != null && item.binderId == tradeId
+    var swapping by remember { mutableStateOf<CollectionRow?>(null) }
     val dirty = v != initialFor(current)
 
     fun save(after: () -> Unit = {}) {
@@ -233,7 +238,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                                 Text(
                                     listOfNotNull(
                                         printings.takeIf { it > 0 }?.let { if (it == 1) "1 other printing" else "$it other printings" },
-                                        "tap a card to open it",
+                                        if (inTrade) "Swap in puts it in the trade binder instead" else "tap a card to open it",
                                     ).joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -243,7 +248,12 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                         }
                         val shown = if (othersOpen) others else others.take(OTHERS_FOLDED)
                         Column {
-                            shown.forEach { o -> OtherCopyRow(o, priceType, binderName(o.item.binderId, binders), sameCard = o.item.card.scryfallId == card.scryfallId) { open(o) } }
+                            shown.forEach { o ->
+                                OtherCopyRow(
+                                    o, priceType, binderName(o.item.binderId, binders), sameCard = o.item.card.scryfallId == card.scryfallId,
+                                    onSwap = if (inTrade && o.item.binderId != tradeId) ({ swapping = o }) else null,
+                                ) { open(o) }
+                            }
                         }
                         if (others.size > OTHERS_FOLDED) {
                             TextButton(onClick = { c.settings.setCardOthersOpen(!othersOpen) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
@@ -287,6 +297,43 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
         }
     }
 
+    swapping?.let { other ->
+        val max = minOf(item.quantity, other.item.quantity)
+        var n by remember(other.item.id) { mutableStateOf(max) }
+        AlertDialog(
+            onDismissRequest = { swapping = null },
+            title = { Text("Swap the copy in the trade binder?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "${other.item.card.setLabel} (${binderName(other.item.binderId, binders)}) goes into the trade binder; " +
+                            "${card.setLabel} goes to Unsorted. The next trade binder update keeps this choice.",
+                    )
+                    if (max > 1) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Copies", Modifier.weight(1f))
+                            StepButton(Icons.Default.Remove, "Less", n > 1) { n-- }
+                            Text("$n", Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            StepButton(Icons.Default.Add, "More", n < max) { n++ }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    swapping = null
+                    onDismiss()
+                    val outgoing = item
+                    scope.launch {
+                        c.tradeBinder.swapIn(outgoing, other.item, n)
+                        snackbar.showSnackbar("${other.item.card.setLabel} is in the trade binder now; ${outgoing.card.setLabel} went to Unsorted")
+                    }
+                }) { Text("Swap") }
+            },
+            dismissButton = { TextButton(onClick = { swapping = null }) { Text("Cancel") } },
+        )
+    }
+
     switchTo?.let { other ->
         AlertDialog(
             onDismissRequest = { switchTo = null },
@@ -313,7 +360,7 @@ private const val OTHERS_FOLDED = 3
 
 /** One other copy of the card: printing, finish, condition, language, binder, how many and their value. */
 @Composable
-private fun OtherCopyRow(row: CollectionRow, priceType: PriceType, binder: String, sameCard: Boolean, onClick: () -> Unit) {
+private fun OtherCopyRow(row: CollectionRow, priceType: PriceType, binder: String, sameCard: Boolean, onSwap: (() -> Unit)? = null, onClick: () -> Unit) {
     val item = row.item
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
         CardThumb(item.card.imageUrl, width = 30)
@@ -333,6 +380,10 @@ private fun OtherCopyRow(row: CollectionRow, priceType: PriceType, binder: Strin
         Column(horizontalAlignment = Alignment.End) {
             Text("${item.quantity}×", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             Text(Fmt.money(row.unitPrice(priceType)), style = MaterialTheme.typography.bodySmall)
+        }
+        if (onSwap != null) {
+            Spacer(Modifier.width(6.dp))
+            SmallAction("Swap in", Icons.Default.SwapHoriz, onSwap)
         }
     }
 }

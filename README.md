@@ -3,7 +3,7 @@
 Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
 binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own Nextcloud.
-Your collection can also be kept the same as your Archidekt collection, both ways (beta), with restore points to go back to.
+Your collection can also be kept the same as your Archidekt collection, both ways, with restore points to go back to.
 
 | Trade | Search | Collection | Compact view |
 |:---:|:---:|:---:|:---:|
@@ -18,9 +18,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> | <img src="docs/screenshots/card.png" width="200" alt="A card's page: price, quantity, finish, binder, condition, language, paid price and notes, and the other copies you own"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: totals, value and the color pie"> |
 
 ## Install
-Copy `MTG-Trader-1.21.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.22.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.21-universal.apk` instead (bigger, runs on any device).
+`MTG-Trader-1.22-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -42,7 +42,16 @@ Import a public deck from **Archidekt**: paste its link in the Decks tab, share 
 a browser, or pick several decks from someone's Archidekt profile (Select all / Select none); they're scored one by one in
 the background. **Add to collection** (deck ⋮ menu) adds the deck's printings to a binder, optionally only the cards you
 don't own yet and without basic lands. The app shows the decklist grouped by your Archidekt categories (or by card type) with Cardmarket prices, and
-has [Commander Salt](https://www.commandersalt.com/) score it:
+has [Commander Salt](https://www.commandersalt.com/) score it (more below).
+
+**Your printings:** the decklist shows each card in a printing you own rather than the one on Archidekt (the deck on
+Archidekt isn't changed). The app takes a copy in the binder named after the deck if there is one, else Archidekt's
+printing if you own it, else the printing you own most copies of (outside the trade binder if possible); cards you don't
+own and basic lands keep Archidekt's printing. The deck's value follows. Tap a card to pick which of your copies to show,
+use Archidekt's printing for that card, or let the app choose again; picks survive reloading the deck and sync to your
+other phones. "Show Archidekt's" above the list (or ⋮) switches a deck back to Archidekt's printings.
+
+Commander Salt gives:
 - **Power level** (out of 10), **realistic bracket** (how the deck actually plays) and **baseline bracket** (WotC's
   bracket rules to the letter), plus saltiness and archetype.
 - The **bracket** and **power level rule-zero cards**, drawn by the app from Commander Salt's analysis: the brackets
@@ -152,8 +161,9 @@ deck; **…of every card** does the same for all cards. **Swap** on a suggestion
 Tap a suggestion to open the card. Later, **Update trade binder** (⋮ menu, or the button in the binder) shows what to put in
 and what to take out (a deck uses the card now, it dropped below the minimum value, better cards pushed it out…) with
 the reason for each; untick what you don't want, then apply. Unticked suggestions aren't made again (⋮ to undo that).
-Copies are taken from Unsorted and other binders before binders named after a deck, and cards taken out go back to the
-binder holding their other copies. Nothing changes until you apply.
+Copies are taken from Unsorted and other binders before binders named after a deck, and cards taken out go to Unsorted,
+for you to sort them from there. On the card page of a card in the trade binder, **Swap in** next to another copy you
+own puts that copy in the trade binder instead (the one taken out goes to Unsorted), and later updates keep it. Nothing changes until you apply.
 
 ## Wishlist
 The **★ Wishlist** in the binder bar holds the cards you want. Add them with "Add card" or the scanner while it's

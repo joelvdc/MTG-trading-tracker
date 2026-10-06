@@ -220,7 +220,7 @@ fun TradeBinderScreen(nav: NavController) {
             if (list.isNotEmpty()) {
                 item(key = "note") {
                     Text(
-                        "Unticked suggestions aren't made again (⋮ to undo that). Cards taken out go back to the binder with their other copies.",
+                        "Unticked suggestions aren't made again (⋮ to undo that). Cards taken out go to Unsorted, for you to sort them from there.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 12.dp),

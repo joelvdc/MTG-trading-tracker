@@ -108,6 +108,17 @@ import com.mtgtrader.data.PowerSource
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
+import androidx.compose.material.icons.filled.Style
+import com.mtgtrader.data.DeckPrintings
+import com.mtgtrader.data.DeckToCollection
+import com.mtgtrader.data.CardRef
+import com.mtgtrader.data.DeckCard
+import com.mtgtrader.data.CollectionRow
+import com.mtgtrader.data.Binder
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
@@ -116,7 +127,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val deck by remember { c.db.deckDao().observe(deckId) }.collectAsStateWithLifecycle(null)
-    val rows by remember { c.db.deckDao().observeCards(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val archidektRows by remember { c.db.deckDao().observeCards(deckId) }.collectAsStateWithLifecycle(emptyList())
+    // Shown in the printings you own (since 1.22), unless switched off for this deck.
+    val owned by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val binders = rememberBinders()
+    val printingsOff by c.settings.deckPrintingsOff.collectAsStateWithLifecycle()
+    val allPicks by c.settings.deckPicks.collectAsStateWithLifecycle()
+    val myPrintings = deckId !in printingsOff
+    val picks = allPicks[deckId].orEmpty()
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
@@ -126,6 +144,16 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var showing by remember { mutableStateOf<RuleZeroCard?>(null) }
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+
+    val matched = remember(archidektRows, owned, binders, picks, myPrintings, deck?.name) {
+        if (!myPrintings) DeckPrintings.Result(archidektRows, emptyMap())
+        else {
+            val deckBinder = binders.firstOrNull { b -> deck?.name?.let { it.trim().equals(b.name.trim(), true) } == true }?.id
+            val trade = c.settings.tradeBinderId.takeIf { id -> binders.any { it.id == id } } ?: binders.firstOrNull { it.name.equals("Trade binder", true) }?.id
+            DeckPrintings.match(archidektRows, owned, deckBinder, trade, picks)
+        }
+    }
+    val rows = matched.rows
 
     var addingToCollection by remember { mutableStateOf(false) }
     var onlyBracket by rememberSaveable { mutableStateOf(false) }
@@ -166,6 +194,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             leadingIcon = { Icon(Icons.Default.Refresh, null) },
                             enabled = job == null,
                             onClick = { menu = false; refresh() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (myPrintings) "Show Archidekt's printings" else "Show the printings I own") },
+                            leadingIcon = { Icon(Icons.Default.Style, null) },
+                            onClick = { menu = false; c.settings.setDeckShowsMyPrintings(deckId, !myPrintings) },
                         )
                         HorizontalDivider()
                         val other = if (groupBy == DeckGroupBy.CATEGORY) DeckGroupBy.TYPE else DeckGroupBy.CATEGORY
@@ -235,6 +268,24 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 32.dp)) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
             item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
+            item(key = "printings") {
+                val differ = matched.original.size
+                Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        when {
+                            !myPrintings -> "Showing Archidekt's printings."
+                            differ == 0 -> "Showing your printings: they match Archidekt's."
+                            else -> "Showing the printings you own: $differ card(s) differ from Archidekt."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { c.settings.setDeckShowsMyPrintings(deckId, !myPrintings) }) {
+                        Text(if (myPrintings) "Show Archidekt's" else "Show mine")
+                    }
+                }
+            }
             item(key = "rulezero") {
                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
@@ -280,8 +331,18 @@ fun DeckScreen(nav: NavController, deckId: Long) {
 
     showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
     selected?.let { row ->
+        val key = DeckPrintings.nameKey(row.item.card.name)
         DeckCardDialog(
             row, priceType, tagsOf(row), saltCard?.combosWith(row.item.card.name).orEmpty(),
+            original = matched.original[row.item.id],
+            archidektCard = archidektRows.firstOrNull { it.item.id == row.item.id }?.item,
+            copies = if (myPrintings && !DeckToCollection.isBasic(key)) owned.filter { DeckPrintings.nameKey(it.item.card.name) == key } else emptyList(),
+            binders = binders,
+            picked = picks[key],
+            onPick = { value ->
+                c.settings.setDeckPick(deckId, key, value)
+                selected = null
+            },
             onRemove = if (row.item.addedInApp) {
                 {
                     selected = null
@@ -494,6 +555,14 @@ private fun DeckCardDialog(
     priceType: PriceType,
     tags: Set<BracketTag>,
     combos: List<List<String>>,
+    /** Archidekt's printing, when another one is shown. */
+    original: CardRef?,
+    archidektCard: DeckCard?,
+    /** Your copies of the card, to choose which one the deck shows (empty when the deck shows Archidekt's printings). */
+    copies: List<CollectionRow>,
+    binders: List<Binder>,
+    picked: String?,
+    onPick: (String?) -> Unit,
     onRemove: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
@@ -533,6 +602,48 @@ private fun DeckCardDialog(
                     }
                 }
                 DeckUsageLine(item.card.name, exceptDeck = item.deckId, prefix = "Also in")
+                if (original != null) {
+                    Text(
+                        "Your printing. On Archidekt: ${original.setLabel}" + (archidektCard?.takeIf { it.foil }?.let { " · " + it.card.finishName(it.finish).lowercase() } ?: ""),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                // Which of your copies the deck shows.
+                val options = copies.groupBy { it.item.card.scryfallId to it.item.finish }.values.toList()
+                if (options.size > 1 || (options.size == 1 && original == null && options[0][0].item.card.scryfallId != item.card.scryfallId) || picked != null) {
+                    HorizontalDivider()
+                    Text("Show in this deck", style = MaterialTheme.typography.titleSmall)
+                    Column(Modifier.heightIn(max = 260.dp).verticalScroll(rememberScrollState())) {
+                        options.forEach { group ->
+                            val first = group.first().item
+                            val isShown = first.card.scryfallId == item.card.scryfallId && first.finish == item.finish
+                            Row(
+                                Modifier.fillMaxWidth().clickable { onPick(DeckPrintings.pickValue(first.card.scryfallId, first.finish)) }.padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(selected = isShown, onClick = { onPick(DeckPrintings.pickValue(first.card.scryfallId, first.finish)) })
+                                CardThumb(first.card.imageUrl, width = 28)
+                                Spacer(Modifier.width(8.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        SetLine(first.card)
+                                        FinishTag(first.card, first.finish)
+                                    }
+                                    Text(
+                                        "${group.sumOf { it.item.quantity }}× · " + group.map { binderName(it.item.binderId, binders) }.distinct().joinToString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        if (picked != DeckPrintings.ARCHIDEKT) TextButton(onClick = { onPick(DeckPrintings.ARCHIDEKT) }) { Text("Use Archidekt's printing") }
+                        if (picked != null) TextButton(onClick = { onPick(null) }) { Text("Let the app choose") }
+                    }
+                }
                 HorizontalDivider()
                 PriceTable(
                     row.price?.toSet(item.foil) ?: PriceSet(trend = item.card.fallback(item.foil)),
