@@ -85,6 +85,7 @@ fun AppNav() {
         c.appScope.launch { c.updater.autoUpdate() }
         c.sync.onAppStart()
         c.archidekt.onAppStart()
+        c.appScope.launch { c.gameChangers.load() }
         c.appScope.launch { c.backups.dailyIfDue() }
         c.appScope.launch { c.setIcons.load() }
         c.appScope.launch {
@@ -172,6 +173,7 @@ fun AppNav() {
             }
             composable("tradebinder") { TradeBinderScreen(nav) }
             composable("value") { ValueScreen(nav) }
+            composable("stats") { StatsScreen(nav) }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
             composable("archidekt") { ArchidektSyncScreen(nav) }

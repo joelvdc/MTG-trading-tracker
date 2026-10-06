@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -137,6 +138,15 @@ fun CollectionScreen(nav: NavController) {
     val wishRows by remember { c.db.wishlistDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     var editingWish by remember { mutableStateOf<WishlistRow?>(null) }
     var selected by rememberSaveable { mutableStateOf<BinderSel>(null) }
+    // Opened from the stats screen with a filter.
+    val jump by c.collectionJump.collectAsStateWithLifecycle()
+    LaunchedEffect(jump) {
+        val j = jump ?: return@LaunchedEffect
+        c.collectionJump.value = null
+        filterText = j.filter.encode()
+        filter = ""
+        selected = j.binderId
+    }
     var viewMenu by remember { mutableStateOf(false) }
     val view by c.settings.collectionView.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf(false) }
@@ -422,6 +432,10 @@ fun CollectionScreen(nav: NavController) {
                         modifier = Modifier.weight(1f),
                     )
                     Icon(Icons.AutoMirrored.Filled.ShowChart, "Value over time", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(onClick = { nav.navigate("stats") }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.PieChart, "Collection stats", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
             OutlinedTextField(
@@ -677,53 +691,4 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: 
             }
         }
     }
-}
-
-/**
- * A collection stack's card window: quantity, finish, condition, language, binder, notes and
- * purchase price, prices, and the decks it's in. Also opened from the value screen. [scope] must
- * outlive the dialog (the screen's), so saving isn't cancelled when it closes.
- */
-@Composable
-fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: SnackbarHostState, scope: CoroutineScope, onDismiss: () -> Unit) {
-    val c = LocalContext.current.container
-    val priceType by c.settings.priceType.collectAsStateWithLifecycle()
-    val binders = rememberBinders()
-    val item = row.item
-    EditCardDialog(
-        card = item.card,
-        initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, item.binderId, item.quantity, item.notes, item.purchasePrice),
-        prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
-        priceType = priceType,
-        allowCustomPrice = false,
-        enabled = true,
-        binders = binders,
-        showNotes = true,
-        extra = { DeckUsageLine(item.card.name) },
-        onDismiss = onDismiss,
-        onSave = { v ->
-            onDismiss()
-            scope.launch {
-                c.repo.saveCollectionEdit(
-                    item.copy(
-                        quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language,
-                        notes = v.notes?.trim()?.ifEmpty { null }, purchasePrice = v.purchasePrice,
-                    ),
-                    v.binderId,
-                    v.move,
-                )
-            }
-        },
-        onDelete = {
-            onDismiss()
-            scope.launch {
-                c.repo.deleteCollectionItem(item.id)
-                if (snackbar.showUndo("${item.card.displayName} removed")) c.repo.restoreCollectionItem(item)
-            }
-        },
-        onChangePrinting = {
-            onDismiss()
-            nav.openSearch(CardTarget.ReplaceCollectionItem(item.id), item.card.name)
-        },
-    )
 }

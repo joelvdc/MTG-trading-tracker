@@ -64,6 +64,21 @@ interface CollectionDao {
     )
     suspend fun allWithPrices(): List<CollectionRow>
 
+    /** Every stack of a card (all printings, finishes and binders), for the card page. Since 1.21. */
+    @Query(
+        """SELECT c.*, p.idProduct AS pr_idProduct, p.avg AS pr_avg, p.low AS pr_low, p.trend AS pr_trend,
+           p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
+           p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
+           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil,
+           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt
+           FROM collection c LEFT JOIN prices p ON p.idProduct =
+             CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
+           LEFT JOIN card_info ci ON ci.scryfallId = c.scryfallId
+           WHERE c.name = :name COLLATE NOCASE
+           ORDER BY c.setName, c.collectorNumber"""
+    )
+    fun observeByName(name: String): Flow<List<CollectionRow>>
+
     @Query("SELECT scryfallId, SUM(quantity) AS qty FROM collection GROUP BY scryfallId")
     fun observeOwned(): Flow<List<OwnedCount>>
 

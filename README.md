@@ -13,17 +13,14 @@ Your collection can also be kept the same as your Archidekt collection, both way
 |:---:|:---:|:---:|:---:|
 | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's power level, brackets and the Refresh bracket and power level button"> | <img src="docs/screenshots/settings.png" width="200" alt="Choosing the power level source and connecting to Nextcloud"> |
 
-| Bracket card | Power card |
-|:---:|:---:|
-| <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> |
+| Bracket card | Power card | Card page | Collection stats |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> | <img src="docs/screenshots/card.png" width="200" alt="A card's page: price, quantity, finish, binder, condition, language, paid price and notes, and the other copies you own"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: totals, value and the color pie"> |
 
 ## Install
-Copy `MTG-Trader-1.20.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
+Copy `MTG-Trader-1.21.apk` to your phone and open it (allow "install unknown apps" for your file manager/browser when asked).
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
-`MTG-Trader-1.20-universal.apk` instead (bigger, runs on any device).
-
-**Beta:** 1.21-beta.3 (Archidekt collection sync, backups, side-by-side trades) is on the
-[Releases](https://github.com/joelvdc/MTG-trading-tracker/releases) page as a pre-release, with the same two files.
+`MTG-Trader-1.21-universal.apk` instead (bigger, runs on any device).
 
 ## Where the data comes from (no app updates needed for new sets)
 - **Cards & images:** Scryfall API, looked up live.
@@ -116,9 +113,13 @@ color identity), type, rarity, sets (pick from the sets you own), finish, condit
 the card is in one of your decks. The active filters show as chips under the search field (tap ✕ to drop one); the
 search field still finds cards by name, set or foil type.
 
-Tap a card to add **notes** (condition details, where it came from) and the **purchase price** per copy; the card then
-shows what you paid against what it's worth now. Both go into the CSV export and are read back on import. The card
-also lists the decks it's in.
+Tap a card to open its **card page**: picture, price and trend, then compact fields for quantity, finish, binder,
+condition, language, the **purchase price** per copy and **notes** (condition details, where it came from). With a
+purchase price the page shows what you paid against what it's worth now; both go into the CSV export and are read back
+on import. The page also lists the decks the card is in and **the other copies you own**: other printings, finishes,
+conditions and binders, the same printing first and then by value. The first three show; tap the header or "Show all"
+for the rest (the app remembers), and tap one to open its page. Cardmarket's prices are folded into one line; tap it
+for the full table.
 
 Tap a card's picture (in its card window, search, decks, the scanner…) to see it full screen; pinch or double-tap to
 zoom. Double-faced cards (modal double-faced cards like Bala Ged Recovery, transform cards) get a **Flip** button to see
@@ -127,6 +128,18 @@ the back.
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
 cards whose price is rising or falling most lately, over all the copies you own; tap one to open it.
+
+**Collection stats:** the pie-chart button next to the total. For the whole collection or one binder (chips at the
+top), with the charts counting either cards or value:
+- totals: cards, unique cards, printings, value, value per card, share of foils;
+- the **color pie** (white, blue, black, red, green, multicolor, colorless, lands) and **color identity** groups for
+  Commander (mono-colored, guilds, shards and wedges, four- and five-color);
+- **rarity**, **card types**, the **mana value** curve of non-land cards, the **top sets** and cards per **release
+  year** (with your oldest card);
+- how many of your cards are **in a deck**, plus **finish**, **condition**, **language** and value per **binder**;
+- your **most valuable** cards, your cards that are **most played on EDHREC**, and the **Game Changers** you own.
+
+Tap a slice or bar (Golgari, Mythic, Instants, a set…) to see exactly those cards in the collection.
 
 ## Trade binder
 ⋮ → **Make a trade binder** suggests what to put in a "Trade binder": only spare copies (what your decks use stays home,

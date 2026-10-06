@@ -133,6 +133,9 @@ private data class ScryCatalog(val data: List<String> = emptyList())
 data class ScrySet(
     val code: String,
     @SerialName("icon_svg_uri") val iconSvgUri: String? = null,
+    val name: String = "",
+    /** "2013-11-01". Since 1.21, for the collection stats. */
+    @SerialName("released_at") val releasedAt: String? = null,
 )
 
 @Serializable

@@ -49,6 +49,15 @@ class Settings(context: Context) {
         prefs.edit().putString("themeMode", v.name).apply()
     }
 
+    private val _cardOthersOpen = MutableStateFlow(prefs.getBoolean("cardOthersOpen", false))
+    /** The card page lists all your other copies of the card, not just the first few. Since 1.21. */
+    val cardOthersOpen: StateFlow<Boolean> = _cardOthersOpen
+
+    fun setCardOthersOpen(v: Boolean) {
+        _cardOthersOpen.value = v
+        prefs.edit().putBoolean("cardOthersOpen", v).apply()
+    }
+
     private val _tradeColumns = MutableStateFlow(prefs.getBoolean("tradeColumns", false))
     /** Show a trade's two sides next to each other (give left, get right) instead of one above the other. Since 1.21. */
     val tradeColumns: StateFlow<Boolean> = _tradeColumns

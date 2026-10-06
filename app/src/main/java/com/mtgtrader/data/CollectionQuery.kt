@@ -73,6 +73,8 @@ enum class ColorMatch(val label: String) {
     ANY("Has any of them"),
     EXACT("Exactly these"),
     WITHIN("Fits in this color identity"),
+    /** Since 1.21, for the stats screen's colour identity groups. */
+    IDENTITY("Exactly this color identity"),
 }
 
 enum class DeckFilter(val label: String) { ANY("All cards"), IN_DECKS("Only cards in my decks"), NOT_IN_DECKS("Only cards in no deck") }
@@ -138,6 +140,7 @@ data class CollectionFilter(
                     ('C' in colors && info.colors.isEmpty()) || ('M' in colors && info.colors.length > 1)
             ColorMatch.EXACT -> if ('C' in colors && wanted.isEmpty()) info.colors.isEmpty() else info.colors.toSet() == wanted
             ColorMatch.WITHIN -> info.colorIdentity.all { it in wanted }
+            ColorMatch.IDENTITY -> info.colorIdentity.toSet() == wanted
         }
     }
 

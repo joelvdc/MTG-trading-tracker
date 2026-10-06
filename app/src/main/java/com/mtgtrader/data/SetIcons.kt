@@ -18,16 +18,23 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class SetIcons(context: Context, private val scryfall: ScryfallApi, private val scope: CoroutineScope) {
     private val file = File(context.filesDir, "set_icons.tsv")
+    private val datesFile = File(context.filesDir, "set_dates.tsv")
     private val lock = Mutex()
     private val refreshedForMissing = AtomicBoolean(false)
     private val _icons = MutableStateFlow<Map<String, String>>(emptyMap())
     val icons: StateFlow<Map<String, String>> = _icons
 
+    private val _dates = MutableStateFlow<Map<String, String>>(emptyMap())
+    /** Set code → release date ("2013-11-01"), for the collection stats. Since 1.21. */
+    val dates: StateFlow<Map<String, String>> = _dates
+
     /** Reads the cached list, then refreshes it from Scryfall if it is missing or older than a week. */
     suspend fun load() {
         val cached = withContext(Dispatchers.IO) { if (file.exists()) decode(file.readText()) else emptyMap() }
         if (cached.isNotEmpty()) _icons.value = cached
-        if (cached.isEmpty() || System.currentTimeMillis() - file.lastModified() > MAX_AGE_MS) refresh()
+        val dates = withContext(Dispatchers.IO) { if (datesFile.exists()) decode(datesFile.readText()) else emptyMap() }
+        if (dates.isNotEmpty()) _dates.value = dates
+        if (cached.isEmpty() || dates.isEmpty() || System.currentTimeMillis() - file.lastModified() > MAX_AGE_MS) refresh()
     }
 
     /** A card's set isn't in the cached list (e.g. a set released since): refetch, at most once per app run. */
@@ -38,10 +45,16 @@ class SetIcons(context: Context, private val scryfall: ScryfallApi, private val 
 
     private suspend fun refresh() = lock.withLock {
         try {
-            val map = scryfall.sets().mapNotNull { s -> s.iconSvgUri?.let { s.code.lowercase() to it } }.toMap()
+            val sets = scryfall.sets()
+            val map = sets.mapNotNull { s -> s.iconSvgUri?.let { s.code.lowercase() to it } }.toMap()
             if (map.isEmpty()) return@withLock
+            val dates = sets.mapNotNull { s -> s.releasedAt?.let { s.code.lowercase() to it } }.toMap()
             _icons.value = map
-            withContext(Dispatchers.IO) { file.writeText(encode(map)) }
+            _dates.value = dates
+            withContext(Dispatchers.IO) {
+                file.writeText(encode(map))
+                datesFile.writeText(encode(dates))
+            }
         } catch (e: Exception) {
             // Offline: keep whatever is cached; symbols are only a visual aid.
         }

@@ -100,8 +100,16 @@ class AppContainer(context: Context) {
     @Volatile
     var deletedTrade: TradeWithItems? = null
 
+    val gameChangers = com.mtgtrader.data.GameChangers(context, scryfall)
+
+    /** A filtered view of the collection the stats screen asked for, until the collection screen shows it. Since 1.21. */
+    val collectionJump = MutableStateFlow<CollectionJump?>(null)
+
     /** Text shared to the app (e.g. a deck link from Archidekt), waiting for the screens to handle it. */
     val sharedText = MutableStateFlow<String?>(null)
 }
 
 val Context.container: AppContainer get() = (applicationContext as MtgApp).container
+
+/** Show the collection with this [filter] (and binder: null = all cards). */
+data class CollectionJump(val filter: com.mtgtrader.data.CollectionFilter, val binderId: Long? = null)
