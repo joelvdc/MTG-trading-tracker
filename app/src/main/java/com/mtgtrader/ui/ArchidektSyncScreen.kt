@@ -236,7 +236,7 @@ fun ArchidektSyncScreen(nav: NavController) {
                 Text("${ArchidektCodes.conditionNames[arch]} ($arch) → ${CONDITIONS.firstOrNull { it.first == app }?.second} ($app)", style = MaterialTheme.typography.bodySmall)
             }
             Text(
-                "Two app grades can share one Archidekt grade, so for example changing a card from Good to Light Played in the app doesn't change it on Archidekt. " +
+                "Two app grades can share one Archidekt grade, so for example changing a card from Excellent to Light Played in the app doesn't change it on Archidekt. " +
                     "Purchase prices are copied as plain numbers: Archidekt shows them in the currency set in your Archidekt account.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

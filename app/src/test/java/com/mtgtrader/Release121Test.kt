@@ -137,6 +137,17 @@ class ArchidektPlannerTest {
     }
 
     @Test
+    fun conditionChangesDontCountAsRemovals() {
+        // 30 cards changed from NM to LP in the app: Archidekt's NM copies go, LP ones come, nothing is really removed.
+        val keys = (1..30).map { key("m$it") }
+        val s = keys.associateWith { SnapEntry(it, 1) }
+        val appNow = keys.associate { key(it.scryfallId, "LP") to AppSide(1, null, CardLabel()) }
+        val p = ArchidektPlanner.plan(appNow, keys.map { entry(it, 1) }.groupBy { CardKey.of(it) }, s)
+        assertEquals(30, p.archRemoved)
+        assertFalse(p.needsReview)
+    }
+
+    @Test
     fun anEntryEditedOnArchidektIsRecognised() {
         val lp = key("a", "LP")
         val s = mapOf(a to SnapEntry(a, 2, entryIds = listOf(77)))
@@ -177,7 +188,9 @@ class ArchidektCodesTest {
     fun conditionsMapBothWays() {
         assertEquals("NM", ArchidektCodes.archCondition("MT"))
         assertEquals("LP", ArchidektCodes.archCondition("EX"))
-        assertEquals("MP", ArchidektCodes.archCondition("LP"))
+        assertEquals("LP", ArchidektCodes.archCondition("LP"))
+        assertEquals("MP", ArchidektCodes.archCondition("GD"))
+        assertEquals("LP", ArchidektCodes.appCondition("LP"))
         assertEquals("D", ArchidektCodes.archCondition("PO"))
         for ((arch, app) in ArchidektCodes.toAppCondition) assertEquals(arch, ArchidektCodes.archCondition(app))
     }

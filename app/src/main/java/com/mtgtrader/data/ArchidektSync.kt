@@ -296,13 +296,26 @@ class ArchidektSync(
     private fun summary(plan: Plan, failedKeys: Set<CardKey>): String {
         val failed = failedKeys.size
         val ok = plan.all.filter { it.key !in failedKeys }
-        val archAdded = ok.sumOf { maxOf(0, it.archDelta) }
-        val archRemoved = ok.sumOf { maxOf(0, -it.archDelta) }
+        // Per printing: copies removed from one condition/language/finish and added to another were changed, not added or removed.
+        fun counts(delta: (KeyChange) -> Int): Triple<Int, Int, Int> {
+            var added = 0; var removed = 0; var changed = 0
+            for (g in ok.groupBy { it.key.scryfallId }.values) {
+                val plus = g.sumOf { maxOf(0, delta(it)) }
+                val minus = g.sumOf { maxOf(0, -delta(it)) }
+                val both = minOf(plus, minus)
+                added += plus - both; removed += minus - both; changed += both
+            }
+            return Triple(added, removed, changed)
+        }
+        val (appAdded, appRemoved, appChanged) = counts { it.appDelta }
+        val (archAdded, archRemoved, archChanged) = counts { it.archDelta }
         val parts = listOfNotNull(
-            plan.appAdded.takeIf { it > 0 }?.let { "+$it in the app" },
-            plan.appRemoved.takeIf { it > 0 }?.let { "−$it in the app" },
+            appAdded.takeIf { it > 0 }?.let { "+$it in the app" },
+            appRemoved.takeIf { it > 0 }?.let { "−$it in the app" },
+            appChanged.takeIf { it > 0 }?.let { "$it changed in the app" },
             archAdded.takeIf { it > 0 }?.let { "+$it on Archidekt" },
             archRemoved.takeIf { it > 0 }?.let { "−$it on Archidekt" },
+            archChanged.takeIf { it > 0 }?.let { "$it changed on Archidekt" },
             plan.conflicts.size.takeIf { it > 0 }?.let { "$it waiting for you" },
             failed.takeIf { it > 0 }?.let { "$it cards failed (tried again next time)" },
         )

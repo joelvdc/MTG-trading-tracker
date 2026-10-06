@@ -22,7 +22,7 @@ Copy `MTG-Trader-1.20.apk` to your phone and open it (allow "install unknown app
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
 `MTG-Trader-1.20-universal.apk` instead (bigger, runs on any device).
 
-**Beta:** 1.21-beta.2 (Archidekt collection sync, backups, side-by-side trades) is on the
+**Beta:** 1.21-beta.3 (Archidekt collection sync, backups, side-by-side trades) is on the
 [Releases](https://github.com/joelvdc/MTG-trading-tracker/releases) page as a pre-release, with the same two files.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -219,9 +219,9 @@ collection (it has no binders or wishlist).
   kept under **History**.
 - **Binders as labels:** none, the trade binder only, or every binder becomes an Archidekt label on the cards in it
   (labels only go from the app to Archidekt; your other labels are left alone).
-- **Conditions:** the app uses Cardmarket's grades, Archidekt TCGplayer's: Mint and Near Mint → NM, Excellent → LP,
-  Good and Light Played → MP, Played → HP, Poor → Damaged (and back: NM → Near Mint, LP → Excellent, MP → Good, HP →
-  Played, Damaged → Poor).
+- **Conditions:** the app uses Cardmarket's grades, Archidekt TCGplayer's. Grades with the same letters match:
+  Mint and Near Mint → NM, Excellent and Light Played → LP, Good → MP, Played → HP, Poor → Damaged (and back: NM →
+  Near Mint, LP → Light Played, MP → Good, HP → Played, Damaged → Poor).
 - **Several phones:** with Nextcloud sync on, every phone can sync with Archidekt. Each Archidekt sync runs a Nextcloud
   sync before and after, keeps what both sides agreed on next to the sync file, and holds a lock so only one phone
   syncs with Archidekt at a time. Without Nextcloud, use Archidekt sync on one phone only.

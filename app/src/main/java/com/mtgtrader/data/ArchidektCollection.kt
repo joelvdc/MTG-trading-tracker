@@ -33,14 +33,15 @@ import java.io.IOException
 /**
  * How the app's card details translate to Archidekt's. Archidekt grades condition on the
  * TCGplayer scale (NM, LP, MP, HP, Damaged) where the app uses Cardmarket's seven grades, so two
- * app grades can share one Archidekt grade. Since 1.21.
+ * app grades can share one Archidekt grade. Grades with the same letters (NM, LP) match each other.
+ * Since 1.21; LP was mapped to MP in 1.21-beta.1 and -beta.2.
  */
 object ArchidektCodes {
     /** App grade → Archidekt grade. */
-    val toArchidektCondition = linkedMapOf("MT" to "NM", "NM" to "NM", "EX" to "LP", "GD" to "MP", "LP" to "MP", "PL" to "HP", "PO" to "D")
+    val toArchidektCondition = linkedMapOf("MT" to "NM", "NM" to "NM", "EX" to "LP", "LP" to "LP", "GD" to "MP", "PL" to "HP", "PO" to "D")
 
     /** Archidekt grade → the app grade a card from Archidekt gets. */
-    val toAppCondition = linkedMapOf("NM" to "NM", "LP" to "EX", "MP" to "GD", "HP" to "PL", "D" to "PO")
+    val toAppCondition = linkedMapOf("NM" to "NM", "LP" to "LP", "MP" to "GD", "HP" to "PL", "D" to "PO")
 
     val conditionNames = mapOf("NM" to "Near Mint", "LP" to "Lightly Played", "MP" to "Moderately Played", "HP" to "Heavily Played", "D" to "Damaged")
 
@@ -308,6 +309,9 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
             val answer = try {
                 http.newCall(req).execute().use { r -> Triple(r.code, r.body?.string().orEmpty(), r.header("Retry-After")?.toLongOrNull()) }
             } catch (e: IOException) {
+                // Archidekt answers deletions with "204 No Content" plus a short body, which OkHttp rejects
+                // after the request went through: the deletion was done.
+                if (e is java.net.ProtocolException && e.message?.startsWith("HTTP 204 had non-zero Content-Length") == true) return@io "" to auth
                 // A timeout or dropped connection: ask again, unless it was a new entry (it may have been made already;
                 // the next sync then finds it on Archidekt and counts it as agreed).
                 if (req.method == "POST" || waits >= 3) throw e

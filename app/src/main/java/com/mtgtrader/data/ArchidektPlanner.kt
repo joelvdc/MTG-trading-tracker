@@ -195,7 +195,9 @@ object ArchidektPlanner {
 
         val appRemoved = withMoves.sumOf { maxOf(0, -it.appDelta) }
         val archRemoved = withMoves.sumOf { maxOf(0, -it.archDelta) }
-        val tooMany = appRemoved > REMOVAL_LIMIT || archRemoved > REMOVAL_LIMIT
+        // Copies that only change condition, language or finish (same printing) aren't really removed.
+        fun reallyRemoved(delta: (KeyChange) -> Int) = withMoves.groupBy { it.key.scryfallId }.values.sumOf { g -> maxOf(0, -g.sumOf(delta)) }
+        val tooMany = reallyRemoved { it.appDelta } > REMOVAL_LIMIT || reallyRemoved { it.archDelta } > REMOVAL_LIMIT
         val approved = approvedRemovals != null && appRemoved <= approvedRemovals.first && archRemoved <= approvedRemovals.second
         // The first sync with one empty side is a copy the user asked for; otherwise big removals wait.
         val oneSided = first && (appEmpty || archEmpty)
