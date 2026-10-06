@@ -281,7 +281,7 @@ class ArchidektSync(
         } catch (e: SyncException) {
             e.message
         } catch (e: IOException) {
-            "Couldn't reach Archidekt or Nextcloud: ${e.message ?: e.javaClass.simpleName}"
+            e.message?.takeIf { "Archidekt" in it } ?: "Couldn't reach Nextcloud: ${e.message ?: e.javaClass.simpleName}"
         } catch (e: kotlinx.serialization.SerializationException) {
             "Archidekt answered something the app doesn't understand."
         }

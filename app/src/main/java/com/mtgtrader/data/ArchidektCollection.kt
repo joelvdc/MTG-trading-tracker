@@ -165,27 +165,42 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
         }
     }
 
-    /** The whole collection (all pages). */
+    /**
+     * The whole collection, page by page. Archidekt's "next" link on the first page leaves out the
+     * page number (it points at page 1 again), so the pages are asked for by number, up to the
+     * "totalPages" Archidekt reports.
+     */
     suspend fun collection(login: ArchidektLogin, onPage: (Int, Int) -> Unit = { _, _ -> }): Pair<ArchidektCollectionData, ArchidektLogin> {
         var auth = login
-        val entries = mutableListOf<ArchidektEntry>()
+        val entries = LinkedHashMap<Long, ArchidektEntry>()
+        val seen = HashSet<Long>()
         val tags = LinkedHashMap<Long, ArchidektTag>()
-        var next: String? = url("/api/collection/${login.userId}/v2/?game=1&pageSize=$PAGE")
-        var pages = 0
+        var page = 1
+        var totalPages = 1
         var total = 0
-        while (next != null && pages < MAX_PAGES) {
-            val (text, a) = send(auth) { it.url(next!!).get() }
+        while (page <= totalPages) {
+            if (page > MAX_PAGES) throw IOException("The Archidekt collection is too big to read")
+            val (text, a) = send(auth) { it.url(url("/api/collection/${login.userId}/v2/?game=1&pageSize=$PAGE&page=$page")).get() }
             auth = a
             val o = json.parseToJsonElement(text).jsonObject
             total = o["count"]?.jsonPrimitive?.intOrNull ?: total
-            o["results"]?.jsonArray?.forEach { e -> parseEntry(e.jsonObject)?.let(entries::add) }
+            val results = o["results"]?.jsonArray.orEmpty()
+            for (e in results) {
+                (e as? JsonObject)?.get("id")?.jsonPrimitive?.longOrNull?.let(seen::add)
+                // Entries without a Scryfall printing (custom cards) are left out, and so never touched.
+                parseEntry(e.jsonObject)?.let { entries[it.id] = it }
+            }
             (o["tags"] as? JsonArray)?.forEach { t -> parseTag(t.jsonObject)?.let { tags[it.id] = it } }
-            next = (o["next"] as? JsonPrimitive)?.contentOrNull?.let(::sameScheme)
-            pages++
-            onPage(entries.size, total)
+            totalPages = o["totalPages"]?.jsonPrimitive?.intOrNull
+                ?: if (results.isNotEmpty() && (o["next"] as? JsonPrimitive)?.contentOrNull != null) page + 1 else page
+            onPage(seen.size, total)
+            if (results.isEmpty()) break
+            page++
         }
-        if (next != null) throw IOException("The Archidekt collection is too big to read")
-        return ArchidektCollectionData(entries, tags.values.toList()) to auth
+        if (total > 0 && seen.size != total) {
+            throw IOException("Archidekt said the collection has $total entries, but ${seen.size} came back. Nothing was changed; try again.")
+        }
+        return ArchidektCollectionData(entries.values.toList(), tags.values.toList()) to auth
     }
 
     /** Archidekt's card ids for Scryfall printings, 60 at a time. Printings Archidekt doesn't know are left out. */
@@ -290,7 +305,17 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
         var waits = 0
         while (true) {
             val req = build(Request.Builder()).header("Accept", "application/json").header("Authorization", "JWT ${auth.token}").build()
-            val (code, text, retryAfter) = http.newCall(req).execute().use { r -> Triple(r.code, r.body?.string().orEmpty(), r.header("Retry-After")?.toLongOrNull()) }
+            val answer = try {
+                http.newCall(req).execute().use { r -> Triple(r.code, r.body?.string().orEmpty(), r.header("Retry-After")?.toLongOrNull()) }
+            } catch (e: IOException) {
+                // A timeout or dropped connection: ask again, unless it was a new entry (it may have been made already;
+                // the next sync then finds it on Archidekt and counts it as agreed).
+                if (req.method == "POST" || waits >= 3) throw e
+                waits++
+                delay(2000L * waits)
+                continue
+            }
+            val (code, text, retryAfter) = answer
             when {
                 code in 200..299 -> return@io text to auth
                 code == 401 && !refreshed -> { auth = refreshShared(auth); refreshed = true }
@@ -339,7 +364,17 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
         return if (u.host == base.host) u.newBuilder().scheme(base.scheme).port(base.port).build().toString() else link
     }
 
-    private suspend fun <T> io(block: suspend () -> T): T = withContext(Dispatchers.IO) { block() }
+    /** Runs a request off the main thread; network errors say they came from Archidekt. */
+    private suspend fun <T> io(block: suspend () -> T): T = withContext(Dispatchers.IO) {
+        try {
+            block()
+        } catch (e: java.net.SocketTimeoutException) {
+            throw IOException("Archidekt didn't answer in time; try again in a moment", e)
+        } catch (e: IOException) {
+            if (e.message?.contains("Archidekt") == true) throw e
+            throw IOException("Couldn't reach Archidekt (${e.message ?: e.javaClass.simpleName})", e)
+        }
+    }
 
     companion object {
         const val DEFAULT_BASE = "https://archidekt.com"

@@ -22,7 +22,7 @@ Copy `MTG-Trader-1.20.apk` to your phone and open it (allow "install unknown app
 It's built for 64-bit ARM phones (practically every phone from the last ~6 years). If it refuses to install, use
 `MTG-Trader-1.20-universal.apk` instead (bigger, runs on any device).
 
-**Beta:** 1.21-beta.1 (Archidekt collection sync, backups, side-by-side trades) is on the
+**Beta:** 1.21-beta.2 (Archidekt collection sync, backups, side-by-side trades) is on the
 [Releases](https://github.com/joelvdc/MTG-trading-tracker/releases) page as a pre-release, with the same two files.
 
 ## Where the data comes from (no app updates needed for new sets)
