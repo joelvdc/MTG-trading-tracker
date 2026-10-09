@@ -59,6 +59,8 @@ data class ScryCard(
     /** Name printed on this card instead of its real name, e.g. "Barrow-Downs" for Bojuka Bog (LTC). */
     @SerialName("flavor_name") val flavorName: String? = null,
     @SerialName("type_line") val typeLine: String = "",
+    /** "normal", "token", "double_faced_token", "transform"…; the CardTrader import uses it to spot tokens. Since 1.26. */
+    val layout: String = "",
     val cmc: Double = 0.0,
     @SerialName("oracle_id") val oracleId: String? = null,
     val colors: List<String>? = null,

@@ -174,6 +174,9 @@ fun AppNav() {
             composable("tradebinder") { TradeBinderScreen(nav) }
             composable("value") { ValueScreen(nav) }
             composable("stats") { StatsScreen(nav) }
+            composable("orderimport?uri={uri}", arguments = listOf(navArgument("uri") { type = NavType.StringType })) {
+                OrderImportScreen(nav, Uri.parse(it.arguments?.getString("uri").orEmpty()))
+            }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
             composable("archidekt") { ArchidektSyncScreen(nav) }

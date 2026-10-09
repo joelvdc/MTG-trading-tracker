@@ -94,6 +94,7 @@ class AppContainer(context: Context) {
     init {
         sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
         repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
+        repo.beforeOrderImport = { backups.before(com.mtgtrader.data.BackupReason.ORDER_IMPORT) }
     }
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */
