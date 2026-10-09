@@ -290,6 +290,12 @@ if it is signed with the same key; losing it means uninstalling (and losing app 
 
 Tests: `gradlew testDebugUnitTest` (logic, including the sync merge) and `gradlew connectedDebugAndroidTest` (OCR scanner pipeline, needs a device/emulator).
 
+**Releases on GitHub:** `.github/workflows/release.yml` builds, signs and publishes a release with the keystore kept in
+the repository's Actions secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`). Start it with
+Actions → Release → Run workflow (it releases the `versionName` in `app/build.gradle.kts`, with
+`release-notes/<version>.md` as the notes; a first line `# 1.25: …` is the title), or create a release with a new tag
+`v<version>` on the website and the signed APKs are added to it. Every pull request runs the unit tests (`tests.yml`).
+
 ## License and disclaimer
 The code is released under the [MIT License](LICENSE). That covers this app's code only, not the card data, names or
 images it shows.
