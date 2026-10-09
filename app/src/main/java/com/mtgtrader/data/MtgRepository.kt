@@ -652,6 +652,32 @@ class MtgRepository(
     /** Runs before a CSV import adds anything (a backup). Since 1.21. */
     var beforeCsvImport: (suspend () -> Unit)? = null
 
+    /** Runs before a CardTrader order import adds anything (a backup). Since 1.26. */
+    var beforeOrderImport: (suspend () -> Unit)? = null
+
+    /**
+     * Adds the chosen lines of a CardTrader order to the collection, in [binder], with each copy's
+     * price as its purchase price (kept when a card already has one). Signed and altered copies go in
+     * as normal cards. Returns how many copies were added. Since 1.26.
+     */
+    suspend fun importOrder(lines: List<Pair<CardRef, OrderLine>>, binder: BinderChoice): Int {
+        if (lines.isEmpty()) return 0
+        beforeOrderImport?.invoke()
+        val target = resolve(binder)
+        var added = 0
+        db.withTransaction {
+            for ((card, l) in lines) {
+                val finish = card.resolveFinish(if (l.foil) Finish.FOIL else Finish.NONFOIL)
+                val r = addToCollection(card, finish, l.condition, l.language, l.quantity, target)
+                if (l.price != null) {
+                    coll.byId(r.itemId)?.let { item -> if (item.purchasePrice == null) coll.update(item.copy(purchasePrice = l.price)) }
+                }
+                added += l.quantity
+            }
+        }
+        return added
+    }
+
     private val _csvImport = MutableStateFlow<CsvImportProgress?>(null)
 
     /** The CSV import in progress, if any. */
@@ -664,6 +690,11 @@ class MtgRepository(
 
     fun consumeCsvImportResult() {
         _csvImportResult.value = null
+    }
+
+    /** Shows [message] on the collection screen like a CSV import's result (e.g. after a CardTrader import). Since 1.26. */
+    fun reportImport(message: String) {
+        _csvImportResult.value = message
     }
 
     /**

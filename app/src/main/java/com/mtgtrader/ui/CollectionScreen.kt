@@ -174,6 +174,10 @@ fun CollectionScreen(nav: NavController) {
         c.repo.consumeCsvImportResult()
         snackbar.showSnackbar(msg)
     }
+    // A CardTrader order (Excel export) opens the import screen to choose what to add. Since 1.26.
+    val orderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) nav.navigate("orderimport?uri=${android.net.Uri.encode(uri.toString())}")
+    }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             val appContext = context.applicationContext
@@ -284,6 +288,11 @@ fun CollectionScreen(nav: NavController) {
                             text = { Text("Collection value over time") },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.ShowChart, null) },
                             onClick = { menu = false; nav.navigate("value") },
+                        )
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Import CardTrader order (Excel)") },
+                            leadingIcon = { Icon(Icons.Default.FileUpload, null) },
+                            onClick = { menu = false; orderPicker.launch(arrayOf("*/*")) },
                         )
                         if (!wish) DropdownMenuItem(
                             text = { Text("Import CSV (ManaBox…)") },

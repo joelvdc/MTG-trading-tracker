@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.25.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.26.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.25-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.26-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -116,6 +116,14 @@ binder) and each binder with its card count. From the ⋮ menu you can create, r
 a temporary "new cards" binder into your main one; identical cards are combined). Tap a card to move it, or some of its
 copies, to another binder. Completing a trade asks which binder the received cards go into (or makes a new one); given
 cards are taken from Unsorted first. CSV import/export carries a "Binder Name" column.
+
+**Import a CardTrader order:** ⋮ → **Import CardTrader order (Excel)** and pick the order file CardTrader lets you
+download (`.xls` or `.xlsx`). The app finds every card on Scryfall (tokens, The List and collector's sub-sets
+included) and shows the order first: untick what you don't want, and leave out tokens and basic lands with the two
+switches (both on by default). Cards it could only find by name say **Check the printing**, and the ones it couldn't
+find at all say **Find the card**; tap either to pick the printing yourself. Choose a binder (or make a new one, named
+after the order date) and tap **Add**: the cards keep CardTrader's finish, condition, language and the price you paid
+per copy. Signed or altered cards are added as normal copies, and the summary afterwards says how many there were.
 
 The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
 big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
@@ -269,7 +277,7 @@ syncing may stop working until the app is updated. Sending all your cards the fi
 Settings → **Backups** keeps restore points of everything the app syncs (collection, binders, trades, decks, scans,
 wishlist and settings).
 - They're made **every day** when something changed, and before big changes: the first Nextcloud sync, Archidekt
-  syncs that change the app, CSV imports and restoring a backup. **Back up now** makes one you keep until you delete it.
+  syncs that change the app, CSV imports, CardTrader order imports and restoring a backup. **Back up now** makes one you keep until you delete it.
 - With Nextcloud sync they go to a **Backups** folder next to the sync file, where all your phones can use them;
   otherwise they're kept on the phone, in the app's storage or (better, as they survive uninstalling) a folder you
   choose. **Save to a file…** and **Restore from a file…** work with any file you keep elsewhere.

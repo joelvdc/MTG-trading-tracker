@@ -73,6 +73,7 @@ enum class BackupReason(val label: String) {
     ARCHIDEKT("Before an Archidekt sync"),
     ARCHIDEKT_FIRST("Before the first Archidekt sync"),
     CSV_IMPORT("Before a CSV import"),
+    ORDER_IMPORT("Before a CardTrader import"),
     RESTORE("Before restoring a backup"),
 }
 
