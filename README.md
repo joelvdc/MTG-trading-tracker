@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.24.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.25.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.24-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.25-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -144,7 +144,8 @@ the back.
 
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
-cards whose price is rising or falling most lately, over all the copies you own; tap one to open it.
+cards whose price is rising or falling most lately, over all the copies you own; tap one to open it. The chips at the
+top switch between all cards, Unsorted and each binder (binder values are saved from version 1.25 on).
 
 **Collection stats:** the pie-chart button next to the total. For the whole collection or one binder (chips at the
 top), with the charts counting either cards or value:
@@ -289,6 +290,11 @@ APKs land in `%LOCALAPPDATA%\mtgtrader-build\app\outputs\apk\release\` (kept out
 if it is signed with the same key; losing it means uninstalling (and losing app data) to install a new version.
 
 Tests: `gradlew testDebugUnitTest` (logic, including the sync merge) and `gradlew connectedDebugAndroidTest` (OCR scanner pipeline, needs a device/emulator).
+
+**Screenshot tests:** `app/src/test/java/com/mtgtrader/ScreenshotTest.kt` draws parts of screens with sample data on
+the computer (Robolectric and Roborazzi, no phone needed) and compares them with the pictures in
+`app/src/test/screenshots`; every pull request runs the comparison. `gradlew verifyRoborazziDebug` compares,
+`gradlew recordRoborazziDebug` redraws the pictures after an intended change.
 
 **Releases on GitHub:** `.github/workflows/release.yml` builds, signs and publishes a release with the keystore kept in
 the repository's Actions secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`). Start it with

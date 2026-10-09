@@ -232,14 +232,14 @@ private fun amountText(e: StatEntry, mode: StatMode) = if (mode == StatMode.CARD
 
 /** A donut chart with a legend; tapping a legend line shows those cards. */
 @Composable
-private fun PieChart(entries: List<StatEntry>, mode: StatMode, onPick: (CollectionFilter?) -> Unit) {
+internal fun PieChart(entries: List<StatEntry>, mode: StatMode, onPick: (CollectionFilter?) -> Unit) {
     val total = entries.sumOf { it.amount(mode) }
     if (total <= 0) {
         Text("Nothing to show yet.", style = MaterialTheme.typography.bodySmall)
         return
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Canvas(Modifier.size(140.dp)) {
+        Canvas(Modifier.size(120.dp)) {
             val stroke = size.minDimension * 0.22f
             val inset = stroke / 2
             var start = -90f
@@ -255,19 +255,27 @@ private fun PieChart(entries: List<StatEntry>, mode: StatMode, onPick: (Collecti
                 start += sweep
             }
         }
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(12.dp))
+        // Label, amount and share in their own columns, with equal-width digits, so the numbers line up.
+        val numbers = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
         Column(Modifier.weight(1f)) {
             entries.forEach { e ->
                 Row(
                     Modifier.fillMaxWidth().clickable { onPick(e.filter) }.padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(Modifier.size(12.dp).background(PieColors[e.key] ?: Color.Gray, CircleShape))
-                    Spacer(Modifier.width(8.dp))
-                    Text(e.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Box(Modifier.size(10.dp).background(PieColors[e.key] ?: Color.Gray, CircleShape))
+                    Spacer(Modifier.width(6.dp))
+                    Text(e.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        amountText(e, mode) + "  " + "%.0f%%".format(e.amount(mode) / total * 100),
-                        style = MaterialTheme.typography.bodySmall,
+                        // No cents here: the legend is narrow, and the bars below show the exact amounts.
+                        if (mode == StatMode.CARDS) "%,d".format(e.copies) else Fmt.wholeMoney(e.value),
+                        style = numbers, maxLines = 1, softWrap = false, textAlign = TextAlign.End,
+                    )
+                    Text(
+                        "%.0f%%".format(e.amount(mode) / total * 100),
+                        Modifier.width(38.dp),
+                        style = numbers, maxLines = 1, softWrap = false, textAlign = TextAlign.End,
                     )
                 }
             }
