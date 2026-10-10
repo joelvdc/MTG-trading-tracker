@@ -202,7 +202,7 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
     }
 }
 
-/** "Added 31 cards to The Box · 4 tokens left out · 1 signed card added as a normal card". */
+/** "Added 31 cards to The Box · 4 tokens left out · 1 marked signed/altered". */
 internal fun importSummary(added: Int, where: String, all: List<OrderCandidate>, checked: Set<Int>): String {
     val left = all.filter { it.index !in checked || it.card == null }
     val tokens = left.filter { it.token }.sumOf { it.line.quantity }
@@ -214,7 +214,7 @@ internal fun importSummary(added: Int, where: String, all: List<OrderCandidate>,
         tokens.takeIf { it > 0 }?.let { "$it token${if (it == 1) "" else "s"} left out" },
         basics.takeIf { it > 0 }?.let { "$it basic land${if (it == 1) "" else "s"} left out" },
         unmatched.takeIf { it > 0 }?.let { "$it not found" },
-        special.takeIf { it > 0 }?.let { "$it signed/altered card${if (it == 1) "" else "s"} added as normal" },
+        special.takeIf { it > 0 }?.let { "$it marked signed/altered" },
     ).joinToString(" · ")
 }
 

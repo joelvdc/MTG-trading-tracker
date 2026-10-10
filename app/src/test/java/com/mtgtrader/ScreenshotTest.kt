@@ -17,6 +17,19 @@ import com.mtgtrader.data.StatMode
 import com.mtgtrader.ui.MtgColors
 import com.mtgtrader.ui.OrderReview
 import com.mtgtrader.ui.PieChart
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import com.mtgtrader.data.CollectionItem
+import com.mtgtrader.data.CollectionRow
+import com.mtgtrader.data.Marks
+import com.mtgtrader.data.PriceType
+import com.mtgtrader.ui.CardTile
+import com.mtgtrader.ui.CollectionRowView
+import com.mtgtrader.ui.CompactRow
+import com.mtgtrader.ui.MarksEditor
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -92,5 +105,32 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/order_review.png")
+    }
+
+    /** 1.27: signed and altered copies in the list, the compact list and the grid, and the card page's checkboxes during a split. */
+    @Test fun signedAndAltered() {
+        fun row(name: String, set: String, number: String, qty: Int, foil: Boolean = false, signed: Boolean = false, altered: Boolean = false, lang: String = "EN", cond: String = "NM") =
+            CollectionRow(
+                CollectionItem(card = ref(name, set, number, "rare").copy(fallbackEur = 3.5, fallbackEurFoil = 9.0), foil = foil, quantity = qty, signed = signed, altered = altered, language = lang, condition = cond),
+                null,
+            )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CollectionRowView(row("Brainstorm", "ice", "61", 3), PriceType.TREND, "Blue binder") {}
+                        CollectionRowView(row("Brainstorm", "ice", "61", 1, signed = true), PriceType.TREND, "Blue binder") {}
+                        CollectionRowView(row("Sol Ring", "c21", "263", 1, foil = true, signed = true, altered = true, lang = "DE", cond = "EX"), PriceType.TREND, null) {}
+                        CompactRow(row("Counterspell", "mh2", "267", 2, altered = true), PriceType.TREND, "Trade binder") {}
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(Modifier.width(110.dp)) { CardTile(row("Lightning Bolt", "m10", "146", 1, signed = true), PriceType.TREND, null) {} }
+                            Box(Modifier.width(110.dp)) { CardTile(row("Sol Ring", "c21", "263", 1, foil = true, altered = true), PriceType.TREND, null) {} }
+                        }
+                        MarksEditor(Marks(signed = true), Marks.NONE, quantity = 4, keepMarks = 3, onToggle = {}, onChangeSplit = {})
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/signed_altered.png")
     }
 }

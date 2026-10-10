@@ -77,6 +77,9 @@ enum class ColorMatch(val label: String) {
     IDENTITY("Exactly this color identity"),
 }
 
+/** Signed, altered, or neither (plain copies). Since 1.27. */
+enum class MarkFilter(val label: String) { SIGNED("Signed"), ALTERED("Altered"), PLAIN("Neither") }
+
 enum class DeckFilter(val label: String) { ANY("All cards"), IN_DECKS("Only cards in my decks"), NOT_IN_DECKS("Only cards in no deck") }
 
 /**
@@ -97,12 +100,14 @@ data class CollectionFilter(
     val minPrice: Double? = null,
     val maxPrice: Double? = null,
     val decks: DeckFilter = DeckFilter.ANY,
+    /** Since 1.27. */
+    val marks: Set<MarkFilter> = emptySet(),
 ) {
     val isEmpty get() = this == CollectionFilter()
 
     val count: Int
         get() = listOf(colors.isNotEmpty(), types.isNotEmpty(), rarities.isNotEmpty(), sets.isNotEmpty(), finishes.isNotEmpty(),
-            conditions.isNotEmpty(), languages.isNotEmpty(), minPrice != null || maxPrice != null, decks != DeckFilter.ANY).count { it }
+            conditions.isNotEmpty(), languages.isNotEmpty(), minPrice != null || maxPrice != null, decks != DeckFilter.ANY, marks.isNotEmpty()).count { it }
 
     fun encode(): String = json.encodeToString(serializer(), this)
 
@@ -118,6 +123,11 @@ data class CollectionFilter(
         if (finishes.isNotEmpty() && i.finish !in finishes) return false
         if (conditions.isNotEmpty() && i.condition !in conditions) return false
         if (languages.isNotEmpty() && i.language !in languages) return false
+        if (marks.isNotEmpty() && !(
+                (MarkFilter.SIGNED in marks && i.signed) || (MarkFilter.ALTERED in marks && i.altered) ||
+                    (MarkFilter.PLAIN in marks && !i.signed && !i.altered)
+                )
+        ) return false
         if (minPrice != null || maxPrice != null) {
             val p = row.unitPrice(priceType) ?: return false
             if (minPrice != null && p < minPrice) return false

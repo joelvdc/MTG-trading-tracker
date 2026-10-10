@@ -423,6 +423,13 @@ fun Tag(text: String, color: Color = MaterialTheme.colorScheme.secondaryContaine
     )
 }
 
+/** "SIGNED" and/or "ALTERED"; nothing for plain copies. Since 1.27. */
+@Composable
+fun MarksTags(signed: Boolean, altered: Boolean) {
+    if (signed) Tag("SIGNED", MarkColor, Color.White)
+    if (altered) Tag("ALTERED", MarkColor, Color.White)
+}
+
 /** "FOIL", "ETCHED FOIL", "SURGE FOIL"…; nothing for non-foil copies. */
 @Composable
 fun FinishTag(card: CardRef, finish: Finish) {
@@ -583,6 +590,13 @@ data class EditValues(
     /** Collection rows only: your notes on the stack and what you paid per copy. Since 1.16. */
     val notes: String? = null,
     val purchasePrice: Double? = null,
+    /**
+     * Collection rows only: whether the copies are signed or altered, and how many keep the stack's
+     * earlier marks when only some of them changed (they become two stacks). Since 1.27.
+     */
+    val signed: Boolean = false,
+    val altered: Boolean = false,
+    val keepMarks: Int = 0,
 )
 
 /** Shared editor for a trade item, collection row or scanned card. With [binders], the card can be moved between binders. */

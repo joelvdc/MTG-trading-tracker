@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -63,6 +64,7 @@ import com.mtgtrader.data.CONDITIONS
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.LANGUAGES
+import com.mtgtrader.data.Marks
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import kotlinx.coroutines.CoroutineScope
@@ -84,7 +86,9 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
     var currentId by remember { mutableLongStateOf(row.item.id) }
     val current = rows.firstOrNull { it.item.id == currentId } ?: row.takeIf { it.item.id == currentId } ?: rows.firstOrNull() ?: row
     val item = current.item
-    fun initialFor(r: CollectionRow) = r.item.let { EditValues(it.quantity, it.finish, it.condition, it.language, null, it.binderId, it.quantity, it.notes, it.purchasePrice) }
+    fun initialFor(r: CollectionRow) = r.item.let {
+        EditValues(it.quantity, it.finish, it.condition, it.language, null, it.binderId, it.quantity, it.notes, it.purchasePrice, it.signed, it.altered)
+    }
     var v by remember(item.id) { mutableStateOf(initialFor(current)) }
     var paidText by remember(item.id) { mutableStateOf(item.purchasePrice?.let { "%.2f".format(it) } ?: "") }
     var pricesOpen by remember { mutableStateOf(false) }
@@ -105,7 +109,16 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
     androidx.compose.runtime.LaunchedEffect(binders) { tradeId = c.tradeBinder.binder()?.id }
     val inTrade = tradeId != null && item.binderId == tradeId
     var swapping by remember { mutableStateOf<CollectionRow?>(null) }
+    // Signed/altered ticked on a stack of several copies: how many (since 1.27).
+    var askingMarks by remember(item.id) { mutableStateOf<Marks?>(null) }
     val dirty = v != initialFor(current)
+
+    fun setMarks(m: Marks) {
+        when {
+            m == item.marks || v.quantity == 1 -> v = v.copy(signed = m.signed, altered = m.altered, keepMarks = 0)
+            else -> askingMarks = m
+        }
+    }
 
     fun save(after: () -> Unit = {}) {
         val values = v
@@ -114,9 +127,12 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                 item.copy(
                     quantity = values.quantity, foil = values.finish.foil, etched = values.finish.etched, condition = values.condition,
                     language = values.language, notes = values.notes?.trim()?.ifEmpty { null }, purchasePrice = values.purchasePrice,
+                    signed = values.signed, altered = values.altered,
                 ),
                 values.binderId,
                 values.move,
+                keepMarks = values.keepMarks,
+                previous = item.marks,
             )
             after()
         }
@@ -167,9 +183,14 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         CompactBox("Quantity", Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                StepButton(Icons.Default.Remove, "Less", v.quantity > 1) { v = v.copy(quantity = v.quantity - 1, move = minOf(v.move, v.quantity - 1).coerceAtLeast(1)) }
+                                StepButton(Icons.Default.Remove, "Less", v.quantity > 1) {
+                                    v = v.copy(quantity = v.quantity - 1, move = minOf(v.move, v.quantity - 1).coerceAtLeast(1), keepMarks = minOf(v.keepMarks, v.quantity - 2).coerceAtLeast(0))
+                                }
                                 Text("${v.quantity}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(36.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                StepButton(Icons.Default.Add, "More", true) { v = v.copy(quantity = v.quantity + 1) }
+                                StepButton(Icons.Default.Add, "More", true) {
+                                    // A pending split keeps its count of newly marked copies; the added copy joins the rest.
+                                    v = v.copy(quantity = v.quantity + 1, keepMarks = if (v.keepMarks > 0) v.keepMarks + 1 else 0)
+                                }
                             }
                         }
                         if (finishOptions.size > 1) {
@@ -184,7 +205,8 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                         "Binder", v.binderId, listOf(Binder.UNSORTED) + binders.map { it.id }, { binderName(it, binders) },
                         { v = v.copy(binderId = it, move = v.quantity) }, Modifier.fillMaxWidth(),
                     )
-                    if (v.binderId != item.binderId && v.quantity > 1) {
+                    // While only some copies get new marks the whole stack moves (both parts).
+                    if (v.binderId != item.binderId && v.quantity > 1 && v.keepMarks == 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Copies to move", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                             StepButton(Icons.Default.Remove, "Less", v.move > 1) { v = v.copy(move = v.move - 1) }
@@ -202,6 +224,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                             { v = v.copy(language = it) }, Modifier.weight(1f),
                         )
                     }
+                    MarksEditor(Marks(v.signed, v.altered), item.marks, v.quantity, v.keepMarks, ::setMarks) { askingMarks = Marks(v.signed, v.altered) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CompactTextField(
                             "Paid per copy", paidText, {
@@ -334,6 +357,33 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
         )
     }
 
+    askingMarks?.let { m ->
+        val total = v.quantity
+        var n by remember(m) { mutableStateOf(if (v.keepMarks > 0) total - v.keepMarks else 1) }
+        AlertDialog(
+            onDismissRequest = { askingMarks = null },
+            title = { Text("How many are ${marksText(m)}?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("This stack has $total copies. The ones you count here become a stack of their own; the others stay ${marksText(item.marks)}.")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Copies", Modifier.weight(1f))
+                        StepButton(Icons.Default.Remove, "Less", n > 1) { n-- }
+                        Text("$n", Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        StepButton(Icons.Default.Add, "More", n < total) { n++ }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    askingMarks = null
+                    v = v.copy(signed = m.signed, altered = m.altered, keepMarks = total - n, move = if (n < total) total else v.move)
+                }) { Text(if (n == total) "All $total" else "OK") }
+            },
+            dismissButton = { TextButton(onClick = { askingMarks = null }) { Text("Cancel") } },
+        )
+    }
+
     switchTo?.let { other ->
         AlertDialog(
             onDismissRequest = { switchTo = null },
@@ -355,6 +405,46 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
     }
 }
 
+/** "signed", "signed and altered", or "not signed or altered". */
+internal fun marksText(m: Marks) = if (m.any) m.label else "not signed or altered"
+
+/** "1 of 4 copies will be a separate signed stack; 3 stay not signed or altered." */
+internal fun splitNote(marked: Int, total: Int, now: Marks, before: Marks) =
+    "$marked of $total copies will be a separate ${if (now.any) now.label else "plain"} stack; " +
+        "${total - marked} ${if (total - marked == 1) "stays" else "stay"} ${marksText(before)}."
+
+/**
+ * The Signed and Altered checkboxes, and while only some copies change, how the stack will split
+ * (with [onChangeSplit] to pick another count). Since 1.27.
+ */
+@Composable
+internal fun MarksEditor(marks: Marks, before: Marks, quantity: Int, keepMarks: Int, onToggle: (Marks) -> Unit, onChangeSplit: () -> Unit) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MarkCheckbox("Signed", marks.signed) { onToggle(marks.copy(signed = it)) }
+            Spacer(Modifier.width(16.dp))
+            MarkCheckbox("Altered", marks.altered) { onToggle(marks.copy(altered = it)) }
+        }
+        if (keepMarks > 0) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    splitNote(quantity - keepMarks, quantity, marks, before),
+                    Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onChangeSplit) { Text("Change") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MarkCheckbox(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.clickable { onChange(!checked) }.padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = onChange)
+        Text(label, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
 /** Other copies shown before "Show all". */
 private const val OTHERS_FOLDED = 3
 
@@ -369,6 +459,7 @@ private fun OtherCopyRow(row: CollectionRow, priceType: PriceType, binder: Strin
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 SetLine(item.card)
                 FinishTag(item.card, item.finish)
+                MarksTags(item.signed, item.altered)
                 Tag(item.condition)
                 if (item.language != "EN") Tag(item.language)
             }

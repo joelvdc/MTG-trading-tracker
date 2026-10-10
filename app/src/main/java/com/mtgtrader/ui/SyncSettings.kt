@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -96,6 +97,11 @@ fun SyncSection() {
             !s.ready -> Text("Not synced yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         s.lastError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        s.olderPhone?.let { older ->
+            Spacer(Modifier.height(4.dp))
+            Text(olderPhoneNote(older.name), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = c.sync::forgetOlderPhone, contentPadding = PaddingValues(0.dp)) { Text("I don't use that phone any more") }
+        }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (s.ready) {
@@ -422,5 +428,32 @@ private fun FirstSyncDialog(choice: FirstChoice, onChoose: (FirstSync) -> Unit, 
         },
         confirmButton = { TextButton(onClick = { onChoose(pick) }) { Text("Start syncing") } },
         dismissButton = { TextButton(onClick = onLater) { Text("Later") } },
+    )
+}
+
+/** The note in Settings while [name] still runs a version from before 1.27. */
+internal fun olderPhoneNote(name: String) =
+    "“$name” has an older version of MTG Trader: it can't sync until you update the app there. Its changes stay on that phone and sync after the update."
+
+/**
+ * Shown once, anywhere in the app, when Nextcloud sync finds another phone still on a version from
+ * before 1.27 (signed and altered cards). Since 1.27.
+ */
+@Composable
+fun OlderPhoneDialog() {
+    val c = LocalContext.current.container
+    val s by c.sync.status.collectAsStateWithLifecycle()
+    val older = s.olderPhone?.takeUnless { it.acknowledged } ?: return
+    AlertDialog(
+        onDismissRequest = c.sync::acknowledgeOlderPhone,
+        title = { Text("Update MTG Trader on your other phone") },
+        text = {
+            Text(
+                "“${older.name}” last synced with an older version of MTG Trader. This version keeps signed and altered cards apart, " +
+                    "which older versions can't read, so that phone stops syncing and asks to be updated.\n\n" +
+                    "Nothing is lost: what changed on it syncs as soon as it has the new version.",
+            )
+        },
+        confirmButton = { TextButton(onClick = c.sync::acknowledgeOlderPhone) { Text("OK") } },
     )
 }

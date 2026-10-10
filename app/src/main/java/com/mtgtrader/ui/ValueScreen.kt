@@ -184,6 +184,7 @@ private fun MoveRow(m: PriceMove, onClick: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 SetLine(item.card)
                 FinishTag(item.card, item.finish)
+                MarksTags(item.signed, item.altered)
             }
         }
         Column(horizontalAlignment = Alignment.End) {

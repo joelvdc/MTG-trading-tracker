@@ -6,19 +6,56 @@ import kotlin.math.abs
 /**
  * What Archidekt and the app compare on: a printing in a finish, condition and language, with
  * condition and language in Archidekt's terms (the app's grades map onto Archidekt's coarser ones,
- * see [ArchidektCodes]). Binders don't count: Archidekt holds the whole collection. Since 1.21.
+ * see [ArchidektCodes]), and whether the copies are signed or altered (since 1.27; on Archidekt the
+ * "Signed" and "Altered" labels, see [MarkTags]). Binders don't count: Archidekt holds the whole
+ * collection. Since 1.21.
  */
 @Serializable
-data class CardKey(val scryfallId: String, val finish: Finish, val condition: String, val language: String) {
-    override fun toString() = "$scryfallId|${finish.name}|$condition|$language"
+data class CardKey(
+    val scryfallId: String,
+    val finish: Finish,
+    val condition: String,
+    val language: String,
+    val signed: Boolean = false,
+    val altered: Boolean = false,
+) {
+    val marks get() = Marks(signed, altered)
+
+    override fun toString() = "$scryfallId|${finish.name}|$condition|$language" + (if (signed) "|signed" else "") + (if (altered) "|altered" else "")
 
     companion object {
         fun of(item: CollectionItem) = CardKey(
             item.card.scryfallId, item.finish,
             ArchidektCodes.archCondition(item.condition), ArchidektCodes.archLanguage(item.language),
+            item.signed, item.altered,
         )
 
-        fun of(e: ArchidektEntry) = CardKey(e.scryfallId, e.finish, e.condition, e.language)
+        fun of(e: ArchidektEntry, markTags: MarkTags = MarkTags()) =
+            CardKey(e.scryfallId, e.finish, e.condition, e.language, markTags.signed(e), markTags.altered(e))
+    }
+}
+
+/**
+ * Archidekt has no signed or altered field: entries of such copies carry a "Signed" or "Altered"
+ * label, which the app reads and sets (whatever the binder label setting). Since 1.27.
+ */
+data class MarkTags(val signedIds: Set<Long> = emptySet(), val alteredIds: Set<Long> = emptySet()) {
+    fun signed(e: ArchidektEntry) = e.tags.any { it in signedIds }
+    fun altered(e: ArchidektEntry) = e.tags.any { it in alteredIds }
+
+    /** The label ids an entry of [key] carries for its marks. */
+    fun idsFor(key: CardKey): List<Long> =
+        (if (key.signed) signedIds.take(1) else emptyList()) + (if (key.altered) alteredIds.take(1) else emptyList())
+
+    companion object {
+        const val SIGNED = "Signed"
+        const val ALTERED = "Altered"
+        val NAMES = setOf(SIGNED.lowercase(), ALTERED.lowercase())
+
+        fun of(tags: List<ArchidektTag>) = MarkTags(
+            tags.filter { it.name.trim().equals(SIGNED, true) }.map { it.id }.toSortedSet(),
+            tags.filter { it.name.trim().equals(ALTERED, true) }.map { it.id }.toSortedSet(),
+        )
     }
 }
 
@@ -128,7 +165,7 @@ object ArchidektPlanner {
         val first = snap == null
         val appEmpty = app.values.sumOf { it.quantity } == 0
         val archEmpty = arch.values.sumOf { e -> e.sumOf { it.quantity } } == 0
-        val keys = (app.keys + arch.keys + snap.orEmpty().keys).toSortedSet(compareBy({ it.scryfallId }, { it.finish }, { it.condition }, { it.language }))
+        val keys = (app.keys + arch.keys + snap.orEmpty().keys).toSortedSet(compareBy({ it.scryfallId }, { it.finish }, { it.condition }, { it.language }, { it.signed }, { it.altered }))
 
         val out = keys.map { key ->
             val appSide = app[key]

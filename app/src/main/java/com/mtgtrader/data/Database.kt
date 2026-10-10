@@ -91,9 +91,15 @@ interface CollectionDao {
 
     @Query(
         """SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil AND etched = :etched
-           AND condition = :cond AND language = :lang AND binderId = :binderId LIMIT 1"""
+           AND condition = :cond AND language = :lang AND binderId = :binderId AND signed = :signed AND altered = :altered LIMIT 1"""
     )
-    suspend fun find(sid: String, foil: Boolean, etched: Boolean, cond: String, lang: String, binderId: Long): CollectionItem?
+    suspend fun find(
+        sid: String, foil: Boolean, etched: Boolean, cond: String, lang: String, binderId: Long, signed: Boolean, altered: Boolean,
+    ): CollectionItem?
+
+    /** The stack [item] would merge into: same card, finish, condition, language, binder and marks. */
+    suspend fun sameStack(item: CollectionItem): CollectionItem? =
+        find(item.card.scryfallId, item.foil, item.etched, item.condition, item.language, item.binderId, item.signed, item.altered)
 
     /** Every stack of this printing and finish, in any binder. */
     @Query("SELECT * FROM collection WHERE scryfallId = :sid AND foil = :foil AND etched = :etched ORDER BY quantity DESC")
@@ -356,7 +362,7 @@ interface DeckDao {
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
         CardInfo::class, RecCache::class, TradeSkip::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -377,11 +383,27 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 12 (app 1.27): signed and altered copies, each kept as a stack of their own. Existing
+         * cards are neither; adding the columns doesn't touch the rows, so it doesn't count as a change to sync.
+         */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `collection` ADD COLUMN `signed` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `collection` ADD COLUMN `altered` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("DROP INDEX IF EXISTS `index_collection_scryfallId_foil_etched_condition_language_binderId`")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_collection_scryfallId_foil_etched_condition_language_binderId_signed_altered` " +
+                        "ON `collection` (`scryfallId`, `foil`, `etched`, `condition`, `language`, `binderId`, `signed`, `altered`)"
+                )
+            }
+        }
 
         /** Version 10 (app 1.16): wishlist, value history, notes and purchase price, Cardmarket's product list. */
         /** Version 11 (app 1.18): card details (colours, types, popularity), cached recommendations, skipped trade binder suggestions. */

@@ -224,7 +224,7 @@ data class CardRef(
 @Entity(
     tableName = "collection",
     indices = [
-        Index(value = ["scryfallId", "foil", "etched", "condition", "language", "binderId"], unique = true),
+        Index(value = ["scryfallId", "foil", "etched", "condition", "language", "binderId", "signed", "altered"], unique = true),
         Index("name"),
         Index("uid"),
     ],
@@ -248,8 +248,25 @@ data class CollectionItem(
     val notes: String? = null,
     /** What one copy cost, in EUR, when known. Since 1.16. */
     val purchasePrice: Double? = null,
+    /** Signed copies are a stack of their own, like etched ones. Since 1.27. */
+    @ColumnInfo(defaultValue = "0") val signed: Boolean = false,
+    /** Altered (painted, extended art…) copies are a stack of their own. Since 1.27. */
+    @ColumnInfo(defaultValue = "0") val altered: Boolean = false,
 ) {
     val finish get() = Finish.of(foil, etched)
+    val marks get() = Marks(signed, altered)
+}
+
+/** Whether copies are signed and/or altered. Since 1.27. */
+data class Marks(val signed: Boolean = false, val altered: Boolean = false) {
+    val any get() = signed || altered
+
+    /** "signed", "altered", "signed and altered", or "" for plain copies. */
+    val label get() = listOfNotNull("signed".takeIf { signed }, "altered".takeIf { altered }).joinToString(" and ")
+
+    companion object {
+        val NONE = Marks()
+    }
 }
 
 /** A named group of collection cards, like a binder in ManaBox. Since version 1.7. */
