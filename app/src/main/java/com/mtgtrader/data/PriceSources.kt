@@ -152,6 +152,11 @@ object Pricing {
  * Card Kingdom's public price list (every card, ~10 MB a day) and TCGplayer's market prices,
  * which come with Scryfall's card data (for the cards you have, plus every card Scryfall sends
  * the app anyway, e.g. in a search). Since 1.29.
+ *
+ * Since 1.30 each source has its own daily schedule, and a failed download waits [RETRY_MS] before
+ * the next automatic try (before, a source that kept failing made both download on every app start).
+ * Card Kingdom refuses some visitors (HTTP 403, e.g. phones in Denmark): then the copy a daily GitHub
+ * job keeps in this app's repository ([CARD_KINGDOM_COPY_URL]) is used instead.
  */
 class PriceSourceStore(context: Context, private val http: OkHttpClient, private val db: AppDatabase, private val scryfall: ScryfallApi) {
     private val dao = db.sourcePriceDao()
@@ -160,11 +165,36 @@ class PriceSourceStore(context: Context, private val http: OkHttpClient, private
     private val _status = MutableStateFlow(readStatus())
     val status: StateFlow<SourceStatus> = _status
 
-    data class SourceStatus(val tcgplayerAt: Long = 0, val cardKingdomAt: Long = 0, val running: Boolean = false, val error: String? = null)
+    /** What Settings and the download bar show. [progress] is 0..1 when known. */
+    data class SourceStatus(
+        val tcgplayerAt: Long = 0,
+        val cardKingdomAt: Long = 0,
+        /** "Card Kingdom" or "GitHub copy": where Card Kingdom's prices last came from. */
+        val cardKingdomVia: String? = null,
+        /** The date Card Kingdom made the list ("2026-10-10 03:05:18"). */
+        val cardKingdomListDate: String? = null,
+        val running: Boolean = false,
+        val message: String? = null,
+        val progress: Float? = null,
+        val tcgplayerError: String? = null,
+        val cardKingdomError: String? = null,
+    ) {
+        val error: String? get() = listOfNotNull(tcgplayerError?.let { "TCGplayer: $it" }, cardKingdomError?.let { "Card Kingdom: $it" }).joinToString("; ").ifEmpty { null }
+    }
 
-    private fun readStatus() = SourceStatus(prefs.getLong(K_TCG_AT, 0), prefs.getLong(K_CK_AT, 0))
+    private fun readStatus() = SourceStatus(
+        tcgplayerAt = prefs.getLong(K_TCG_AT, 0),
+        cardKingdomAt = prefs.getLong(K_CK_AT, 0),
+        cardKingdomVia = prefs.getString(K_CK_VIA, null),
+        cardKingdomListDate = prefs.getString(K_CK_LIST, null),
+        tcgplayerError = prefs.getString(K_TCG_ERR, null),
+        cardKingdomError = prefs.getString(K_CK_ERR, null),
+    )
 
-    val isStale get() = System.currentTimeMillis() - minOf(prefs.getLong(K_TCG_AT, 0), prefs.getLong(K_CK_AT, 0)) > MAX_AGE_MS
+    /** Due when over a day old, and not tried and failed in the last [RETRY_MS]. */
+    private fun due(at: String, failedAt: String, now: Long) = isDue(prefs.getLong(at, 0), prefs.getLong(failedAt, 0), now)
+
+    val isStale get() = System.currentTimeMillis().let { due(K_TCG_AT, K_TCG_FAIL, it) || due(K_CK_AT, K_CK_FAIL, it) }
 
     /** Loads the saved prices of the cards you have (collection, wishlist, trades, scans) into [Pricing]. */
     suspend fun loadOwned() {
@@ -194,66 +224,146 @@ class PriceSourceStore(context: Context, private val http: OkHttpClient, private
         load(cards.map { it.id })
     }
 
-    /** Fetches both sources if they're over a day old. */
+    /** Fetches each source that is due (see [due]); the automatic daily update. */
     suspend fun refreshIfStale() {
-        if (isStale) refresh()
+        val now = System.currentTimeMillis()
+        refresh(tcgplayer = due(K_TCG_AT, K_TCG_FAIL, now), cardKingdom = due(K_CK_AT, K_CK_FAIL, now))
     }
 
-    /** Fetches TCGplayer's prices for the cards you have, and Card Kingdom's whole list. */
-    suspend fun refresh(): Boolean = lock.withLock {
-        _status.value = _status.value.copy(running = true, error = null)
-        val errors = mutableListOf<String>()
-        try {
+    /** Fetches TCGplayer's prices for the cards you have, and Card Kingdom's whole list ("Update prices now": both). */
+    suspend fun refresh(tcgplayer: Boolean = true, cardKingdom: Boolean = true): Boolean = lock.withLock {
+        if (!tcgplayer && !cardKingdom) return@withLock true
+        var ok = true
+        if (tcgplayer) ok = refreshTcgplayer() && ok
+        if (cardKingdom) ok = refreshCardKingdom() && ok
+        set { it.copy(message = "Showing the new prices…", progress = null) }
+        loadOwned()
+        _status.value = readStatus()
+        ok
+    }
+
+    private inline fun set(f: (SourceStatus) -> SourceStatus) {
+        _status.value = f(_status.value).copy(running = true)
+    }
+
+    private suspend fun refreshTcgplayer(): Boolean {
+        val start = System.currentTimeMillis()
+        return try {
             val ids = ownedIds()
-            val cards = scryfall.collection(ids.map { ScryfallApi.idIdentifier(it) })
-            val start = System.currentTimeMillis()
-            dao.putAll(cards.flatMap(::tcgplayerRows))
-            prefs.edit().putLong(K_TCG_AT, start).apply()
+            set { it.copy(message = "Getting TCGplayer's prices…", progress = 0f) }
+            // Scryfall's answers pass through fromScryfall (see AppContainer), which saves the prices.
+            scryfall.collection(ids.map { ScryfallApi.idIdentifier(it) }) { done, total ->
+                set { it.copy(message = "Getting TCGplayer's prices… ${"%,d".format(done)} of ${"%,d".format(total)} cards", progress = done.toFloat() / total.coerceAtLeast(1)) }
+            }
+            prefs.edit().putLong(K_TCG_AT, start).remove(K_TCG_ERR).remove(K_TCG_FAIL).apply()
+            true
         } catch (e: Exception) {
-            errors += "TCGplayer: ${e.message ?: e.javaClass.simpleName}"
+            prefs.edit().putString(K_TCG_ERR, e.message ?: e.javaClass.simpleName).putLong(K_TCG_FAIL, start).apply()
+            false
         }
-        try {
-            val start = System.currentTimeMillis()
-            withContext(Dispatchers.IO) {
-                val request = Request.Builder().url(CARD_KINGDOM_URL).header("Accept-Encoding", "gzip").build()
-                http.newCall(request).execute().use { r ->
-                    if (!r.isSuccessful) throw java.io.IOException("HTTP ${r.code}")
-                    val body = r.body ?: throw java.io.IOException("empty answer")
-                    // OkHttp unzips by itself unless the header was set by hand, as here: unzip if it's zipped.
-                    val raw = body.byteStream().buffered()
-                    raw.mark(2)
-                    val zipped = raw.read() == 0x1f && raw.read() == 0x8b
-                    raw.reset()
-                    val stream = if (zipped) GZIPInputStream(raw) else raw
-                    val batch = ArrayList<SourcePrice>(2000)
-                    db.withTransaction {
-                        readCardKingdom(stream, start) { row ->
-                            batch += row
-                            if (batch.size >= 2000) {
-                                dao.putAll(batch.toList())
-                                batch.clear()
+    }
+
+    private suspend fun refreshCardKingdom(): Boolean {
+        val start = System.currentTimeMillis()
+        val direct = runCatching { downloadCardKingdom(CARD_KINGDOM_URL, "Card Kingdom", start, ::readCardKingdom) }
+        val result = direct.recoverCatching { first ->
+            // Refused (HTTP 403) or unreachable from here: the copy GitHub keeps.
+            runCatching { downloadCardKingdom(CARD_KINGDOM_COPY_URL, "GitHub copy", start, ::readCardKingdomCopy) }
+                .getOrElse { second -> throw java.io.IOException("${first.message ?: first.javaClass.simpleName}; GitHub copy: ${second.message ?: second.javaClass.simpleName}") }
+        }
+        return result.fold(
+            onSuccess = { (via, listDate) ->
+                prefs.edit().putLong(K_CK_AT, start).putString(K_CK_VIA, via).putString(K_CK_LIST, listDate)
+                    .remove(K_CK_ERR).remove(K_CK_FAIL).apply()
+                true
+            },
+            onFailure = { e ->
+                prefs.edit().putString(K_CK_ERR, e.message ?: e.javaClass.simpleName).putLong(K_CK_FAIL, start).apply()
+                false
+            },
+        )
+    }
+
+    /** Downloads and saves one Card Kingdom list; returns where it came from and the list's date. */
+    private suspend fun downloadCardKingdom(
+        url: String,
+        via: String,
+        start: Long,
+        parse: suspend (InputStream, Long, (String) -> Unit, suspend (SourcePrice) -> Unit) -> Unit,
+    ): Pair<String, String?> = withContext(Dispatchers.IO) {
+        set { it.copy(message = "Downloading Card Kingdom's prices…", progress = null) }
+        val request = Request.Builder().url(url).header("Accept-Encoding", "gzip").build()
+        http.newCall(request).execute().use { r ->
+            if (!r.isSuccessful) throw java.io.IOException("HTTP ${r.code}")
+            val body = r.body ?: throw java.io.IOException("empty answer")
+            val length = body.contentLength().takeIf { it > 0 }
+            var bytes = 0L
+            var shown = 0L
+            val counting = object : java.io.FilterInputStream(body.byteStream()) {
+                private fun count(n: Int): Int {
+                    if (n > 0) {
+                        bytes += n
+                        if (bytes - shown > 256 * 1024) {
+                            shown = bytes
+                            set {
+                                it.copy(
+                                    message = "Downloading Card Kingdom's prices… %.1f MB".format(bytes / 1_048_576.0) +
+                                        (length?.let { l -> " of %.1f MB".format(l / 1_048_576.0) } ?: "") + if (via != "Card Kingdom") " (from GitHub)" else "",
+                                    progress = length?.let { l -> (bytes.toFloat() / l).coerceIn(0f, 1f) },
+                                )
                             }
                         }
-                        if (batch.isNotEmpty()) dao.putAll(batch)
-                        // Cards Card Kingdom no longer lists.
-                        dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
+                    }
+                    return n
+                }
+                override fun read(): Int = super.read().also { if (it >= 0) count(1) }
+                override fun read(b: ByteArray, off: Int, len: Int): Int = count(super.read(b, off, len))
+            }
+            // OkHttp unzips by itself unless the header was set by hand, as here, or the file is a .gz: unzip if it's zipped.
+            val raw = counting.buffered()
+            raw.mark(2)
+            val zipped = raw.read() == 0x1f && raw.read() == 0x8b
+            raw.reset()
+            val stream = if (zipped) GZIPInputStream(raw) else raw
+            var listDate: String? = null
+            var rows = 0
+            val batch = ArrayList<SourcePrice>(2000)
+            db.withTransaction {
+                parse(stream, start, { listDate = it }) { row ->
+                    batch += row
+                    rows++
+                    if (batch.size >= 2000) {
+                        dao.putAll(batch.toList())
+                        batch.clear()
                     }
                 }
+                if (batch.isNotEmpty()) dao.putAll(batch)
+                if (rows < 1000) throw java.io.IOException("only $rows prices in the list")
+                // Cards Card Kingdom no longer lists.
+                dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
             }
-            prefs.edit().putLong(K_CK_AT, start).apply()
-        } catch (e: Exception) {
-            errors += "Card Kingdom: ${e.message ?: e.javaClass.simpleName}"
+            via to listDate
         }
-        loadOwned()
-        _status.value = readStatus().copy(error = errors.joinToString("; ").ifEmpty { null })
-        errors.isEmpty()
     }
 
-    private companion object {
+    companion object {
         const val CARD_KINGDOM_URL = "https://api.cardkingdom.com/api/v2/pricelist"
-        const val K_TCG_AT = "tcgplayerAt"
-        const val K_CK_AT = "cardKingdomAt"
-        const val MAX_AGE_MS = 20L * 60 * 60 * 1000
+        /** Kept up to date by .github/workflows/card-kingdom.yml (scripts/card_kingdom_prices.py). */
+        const val CARD_KINGDOM_COPY_URL = "https://raw.githubusercontent.com/joelvdc/MTG-trading-tracker/card-kingdom-prices/cardkingdom.tsv.gz"
+        private const val K_TCG_AT = "tcgplayerAt"
+        private const val K_CK_AT = "cardKingdomAt"
+        private const val K_TCG_FAIL = "tcgplayerFailedAt"
+        private const val K_CK_FAIL = "cardKingdomFailedAt"
+        private const val K_TCG_ERR = "tcgplayerError"
+        private const val K_CK_ERR = "cardKingdomError"
+        private const val K_CK_VIA = "cardKingdomVia"
+        private const val K_CK_LIST = "cardKingdomListDate"
+        private const val MAX_AGE_MS = 20L * 60 * 60 * 1000
+        /** After a failed automatic download, wait this long before trying again. */
+        const val RETRY_MS = 6L * 60 * 60 * 1000
+
+        /** A source is due when its last download is over [MAX_AGE_MS] old and its last failed try over [RETRY_MS]. */
+        fun isDue(lastOk: Long, lastFailed: Long, now: Long) = now - lastOk > MAX_AGE_MS && now - lastFailed > RETRY_MS
     }
 }
 
@@ -274,13 +384,20 @@ fun tcgplayerRows(c: ScryCard): List<SourcePrice> {
  * Card Kingdom lists a printing twice (a The List copy carries the original's Scryfall id), the
  * entry without a variation wins. Etched foils have no entry of their own, so they get none.
  */
-suspend fun readCardKingdom(input: InputStream, now: Long, emit: suspend (SourcePrice) -> Unit) {
+suspend fun readCardKingdom(input: InputStream, now: Long, onDate: (String) -> Unit = {}, emit: suspend (SourcePrice) -> Unit) {
     val seen = HashMap<String, Boolean>() // id|finish → was a plain (no variation) entry
     val pending = LinkedHashMap<String, SourcePrice>()
     JsonReader(InputStreamReader(input, Charsets.UTF_8)).use { r ->
         r.beginObject()
         while (r.hasNext()) {
-            if (r.nextName() != "data") {
+            val top = r.nextName()
+            if (top == "meta" && r.peek() == JsonToken.BEGIN_OBJECT) {
+                r.beginObject()
+                while (r.hasNext()) if (r.nextName() == "created_at") r.stringOrNull()?.let(onDate) else r.skipValue()
+                r.endObject()
+                continue
+            }
+            if (top != "data") {
                 r.skipValue()
                 continue
             }
@@ -346,4 +463,29 @@ private fun JsonReader.stringOrNull(): String? = when (peek()) {
     JsonToken.STRING, JsonToken.NUMBER -> nextString()
     JsonToken.BOOLEAN -> nextBoolean().toString()
     else -> { skipValue(); null }
+}
+
+/**
+ * Reads the slimmed-down copy of Card Kingdom's list that the daily GitHub job makes
+ * (scripts/card_kingdom_prices.py): "#card-kingdom<TAB><date>", then per line scryfall_id, F or N,
+ * retail, buy, nm, ex, vg, g, url path. Since 1.30.
+ */
+suspend fun readCardKingdomCopy(input: InputStream, now: Long, onDate: (String) -> Unit = {}, emit: suspend (SourcePrice) -> Unit) {
+    val reader = input.bufferedReader(Charsets.UTF_8)
+    val first = reader.readLine() ?: throw java.io.IOException("empty copy")
+    if (!first.startsWith("#card-kingdom")) throw java.io.IOException("not a Card Kingdom copy")
+    first.split('\t').getOrNull(1)?.takeIf { it.isNotBlank() }?.let(onDate)
+    while (true) {
+        val line = reader.readLine() ?: break
+        val f = line.split('\t')
+        if (f.size < 9 || f[0].isBlank()) continue
+        fun p(i: Int) = f[i].toDoubleOrNull()?.takeIf { it > 0 }
+        emit(
+            SourcePrice(
+                f[0], PriceSource.CARD_KINGDOM.key, if (f[1] == "F") Finish.FOIL.name else Finish.NONFOIL.name, p(2),
+                nm = p(4), ex = p(5), vg = p(6), g = p(7), buy = p(3),
+                url = f[8].takeIf { it.isNotBlank() }?.let { "https://www.cardkingdom.com/$it" }, updatedAt = now,
+            ),
+        )
+    }
 }

@@ -47,6 +47,7 @@ import com.mtgtrader.ui.PriceSourceSection
 import com.mtgtrader.ui.SourceComparison
 import com.mtgtrader.ui.priceGaps
 import com.mtgtrader.ui.sourceTotals
+import com.mtgtrader.ui.SourceStatusStrip
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -199,7 +200,6 @@ class ScreenshotTest {
                             SourceComparison(sourceTotals(rows, PriceType.TREND), PriceSource.CARDMARKET, ratesKnown = true, selected = PriceSource.TCGPLAYER) {}
                             PriceGapList(priceGaps(rows, PriceType.TREND, count = 3))
                             OtherPrices("ltr246", Finish.NONFOIL, "EX") {}
-                            PriceSourceSection(PriceSource.CARD_KINGDOM, PriceSourceStore.SourceStatus(1_760_000_000_000, 1_760_000_000_000)) {}
                         }
                     }
                 }
@@ -209,5 +209,36 @@ class ScreenshotTest {
             Pricing.usdPerEuro = null
             Pricing.others = emptyMap()
         }
+    }
+
+    /** 1.30: Settings → Price source, with each source's last download (Card Kingdom's from the GitHub copy). */
+    @Test fun priceSourceSettings() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        PriceSourceSection(
+                            PriceSource.CARD_KINGDOM,
+                            PriceSourceStore.SourceStatus(1_760_000_000_000, 1_760_000_000_000, cardKingdomVia = "GitHub copy", cardKingdomListDate = "2026-10-10 03:05:18"),
+                        ) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/price_source_settings.png")
+    }
+
+    /** 1.30: the price source download bar above the tabs (running, then failed). */
+    @Test fun sourceDownloadBar() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SourceStatusStrip(PriceSourceStore.SourceStatus(running = true, message = "Getting TCGplayer's prices… 1,050 of 2,400 cards", progress = 0.44f))
+                    SourceStatusStrip(PriceSourceStore.SourceStatus(running = true, message = "Downloading Card Kingdom's prices… 2.1 of 4.7 MB (from GitHub)", progress = 0.45f))
+                    SourceStatusStrip(PriceSourceStore.SourceStatus(cardKingdomError = "HTTP 403; GitHub copy: timeout"))
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/source_download_bar.png")
     }
 }

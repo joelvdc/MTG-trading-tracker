@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.29.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.30.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.29-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.30-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -39,7 +39,11 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   or limit them to Wi-Fi; "Update prices now" always runs.
 - **Other price sources** (since 1.29): **TCGplayer**'s market prices (in US dollars, they come with Scryfall's card
   data: refreshed daily for the cards you have, and whenever Scryfall sends a card, e.g. in a search) and
-  **Card Kingdom**'s public price list (~10 MB a day: its selling price per condition and its buylist). Settings →
+  **Card Kingdom**'s public price list (~10 MB a day: its selling price per condition and its buylist). Each source
+  downloads once a day (a failed try waits a few hours before the next), with a progress bar above the tabs. Card
+  Kingdom refuses some phones (HTTP 403, e.g. in Denmark); then the app uses a copy that a daily GitHub job
+  (`.github/workflows/card-kingdom.yml`, `scripts/card_kingdom_prices.py`) keeps on this repository's
+  `card-kingdom-prices` branch (~5 MB). Settings →
   **Price source** picks which one values your cards (collection total, sorting, filters, trades, the trade binder);
   Card Kingdom's follows each copy's condition. A card the source has no price for gets Cardmarket's, shown with "≈".
   Cardmarket's price types and the trend arrows apply to Cardmarket only. The value screen (with a chart per source
