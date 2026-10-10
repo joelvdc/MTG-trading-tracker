@@ -89,7 +89,7 @@ object TradeBinderPlanner {
         price * (1 + popularity(rank)) * (1 + ((trendPct ?: 0.0) / 100).coerceIn(-0.2, 0.25))
 
     fun why(price: Double?, rank: Int?, trendPct: Double?): String = listOfNotNull(
-        price?.let { "€%.2f".format(it) },
+        price?.let { Money.format(it) },
         rank?.takeIf { it <= 8_000 }?.let { r -> "top ${listOf(100, 500, 1_000, 2_000, 5_000, 8_000).first { r <= it }} on EDHREC" },
         trendPct?.takeIf { it >= 5 }?.let { "▲ ${it.roundToInt()}%" },
     ).joinToString(" · ")
@@ -154,7 +154,7 @@ object TradeBinderPlanner {
                     spare <= 0 && offeredOther && pick != null && k.kind.key != pick -> "you picked another copy to trade"
                     spare <= 0 && offeredOther && keepBest -> "a cheaper copy goes in instead; the best stays home"
                     spare <= 0 -> if (needed > 0) "your decks use ${if (needed == 1) "it" else "$needed"}" else "the copy you keep"
-                    price == null || price < rules.minValue -> "under €%.2f now".format(rules.minValue)
+                    price == null || price < rules.minValue -> "under ${Money.format(rules.minValue)} now"
                     else -> null
                 }
                 if (why != null) {

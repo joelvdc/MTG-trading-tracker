@@ -30,6 +30,7 @@ import com.mtgtrader.scan.SetSymbolMatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -65,6 +66,7 @@ class AppContainer(context: Context) {
         .build()
     val db = AppDatabase.build(context)
     val settings = Settings(context)
+    val exchangeRates = com.mtgtrader.data.ExchangeRateStore(context, http)
     val scryfall = ScryfallApi(http)
     val network = NetworkMonitor(context)
     val prices = PriceGuideRepository(context, http, db, settings)
@@ -92,6 +94,11 @@ class AppContainer(context: Context) {
     )
 
     init {
+        // Prices show in the chosen currency at the latest rate (since 1.28).
+        appScope.launch {
+            kotlinx.coroutines.flow.combine(settings.currency, exchangeRates.rates) { cur, rates -> com.mtgtrader.data.DisplayCurrency.of(cur, rates) }
+                .collect { com.mtgtrader.data.Money.display = it }
+        }
         sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
         repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
         repo.beforeOrderImport = { backups.before(com.mtgtrader.data.BackupReason.ORDER_IMPORT) }

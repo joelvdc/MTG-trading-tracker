@@ -93,6 +93,7 @@ import com.mtgtrader.data.CONDITIONS
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.LANGUAGES
+import com.mtgtrader.data.Money
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceTrend
 import com.mtgtrader.data.PriceType
@@ -107,36 +108,23 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Clear
 
 object Fmt {
-    private val eur = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-        currency = Currency.getInstance("EUR")
-        minimumFractionDigits = 2
-        maximumFractionDigits = 2
-    }
-
-    fun money(v: Double?): String = if (v == null) "—" else eur.format(v)
-    fun signedMoney(v: Double): String = (if (v > 0.004) "+" else if (v < -0.004) "−" else "") + eur.format(abs(v))
+    /** Amounts are in euros; they're shown in the chosen currency (see [Money], since 1.28). */
+    fun money(v: Double?): String = if (v == null) "—" else Money.format(v)
+    fun signedMoney(v: Double): String = (if (v > 0.004) "+" else if (v < -0.004) "−" else "") + Money.format(abs(v))
     fun date(ms: Long): String = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(ms))
     fun dateTime(ms: Long): String = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(ms))
 
     /** Parses "3,50" or "3.50"; null for blank/invalid. */
     fun parseMoney(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
 
-    private val eurWhole = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
-        currency = Currency.getInstance("EUR")
-        maximumFractionDigits = 0
-    }
+    /** An amount typed in the display currency ("3,50"), in euros; null for blank/invalid. Since 1.28. */
+    fun parseMoneyEur(s: String): Double? = parseMoney(s)?.let(Money::toEur)
 
     /** "€10,005": no cents. Since 1.23. */
-    fun wholeMoney(v: Double): String = eurWhole.format(v)
+    fun wholeMoney(v: Double): String = Money.format(v, decimals = 0)
 
     /** "€10k", "€1.2M": for tight spaces; small amounts keep their cents. Since 1.23. */
-    fun shortMoney(v: Double): String {
-        if (abs(v) < 1000) return eur.format(v)
-        val (n, unit) = if (abs(v) >= 1_000_000) v / 1_000_000 to "M" else v / 1000 to "k"
-        val number = java.text.DecimalFormat("0.#", java.text.DecimalFormatSymbols.getInstance(Locale.getDefault())).format(n) + unit
-        val symbolFirst = !eur.format(1.0).first().isDigit()
-        return if (symbolFirst) "€$number" else "$number €"
-    }
+    fun shortMoney(v: Double): String = Money.short(v)
 }
 
 /**
@@ -617,11 +605,11 @@ fun EditCardDialog(
     extra: @Composable () -> Unit = {},
 ) {
     var v by remember { mutableStateOf(initial) }
-    var paidText by remember { mutableStateOf(initial.purchasePrice?.let { "%.2f".format(it) } ?: "") }
+    var paidText by remember { mutableStateOf(Money.input(initial.purchasePrice)) }
     val uriHandler = LocalUriHandler.current
     // Cards saved before version 1.2 may not list the finish they were saved with.
     val finishOptions = remember(card) { (card.finishes + initial.finish).distinct() }
-    var customText by remember { mutableStateOf(initial.customPrice?.let { "%.2f".format(it) } ?: "") }
+    var customText by remember { mutableStateOf(Money.input(initial.customPrice)) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
@@ -694,9 +682,9 @@ fun EditCardDialog(
                         value = customText,
                         onValueChange = {
                             customText = it
-                            v = v.copy(customPrice = Fmt.parseMoney(it))
+                            v = v.copy(customPrice = Fmt.parseMoneyEur(it))
                         },
-                        label = { Text("Agreed price per copy (optional)") },
+                        label = { Text("Agreed price per copy, ${Money.symbol} (optional)") },
                         placeholder = { Text("Uses Cardmarket price if empty") },
                         singleLine = true,
                         enabled = enabled,
@@ -709,9 +697,9 @@ fun EditCardDialog(
                         value = paidText,
                         onValueChange = {
                             paidText = it
-                            v = v.copy(purchasePrice = Fmt.parseMoney(it))
+                            v = v.copy(purchasePrice = Fmt.parseMoneyEur(it))
                         },
-                        label = { Text("Purchase price per copy (optional)") },
+                        label = { Text("Purchase price per copy, ${Money.symbol} (optional)") },
                         singleLine = true,
                         enabled = enabled,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),

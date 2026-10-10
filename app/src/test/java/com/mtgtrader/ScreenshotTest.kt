@@ -30,6 +30,11 @@ import com.mtgtrader.ui.CardTile
 import com.mtgtrader.ui.CollectionRowView
 import com.mtgtrader.ui.CompactRow
 import com.mtgtrader.ui.MarksEditor
+import com.mtgtrader.data.AppCurrency
+import com.mtgtrader.data.DisplayCurrency
+import com.mtgtrader.data.ExchangeRates
+import com.mtgtrader.data.Money
+import com.mtgtrader.ui.CurrencySection
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,6 +77,14 @@ class ScreenshotTest {
     @Test fun pieByCards() = shoot(colors(), StatMode.CARDS, "pie_cards")
 
     @Test fun pieByValue() = shoot(colors(), StatMode.VALUE, "pie_value")
+
+    // 1.28: the same chart in kroner (about 7.5 times the amounts in euros).
+    @Test fun pieByValueInKroner() = inCurrency(DisplayCurrency(AppCurrency.DKK, 7.4612)) { shoot(colors(scale = 10.0), StatMode.VALUE, "pie_value_dkk") }
+
+    private fun inCurrency(d: DisplayCurrency, block: () -> Unit) {
+        Money.display = d
+        try { block() } finally { Money.display = DisplayCurrency() }
+    }
 
     @Test fun pieByValueLarge() = shoot(colors(scale = 10.0), StatMode.VALUE, "pie_value_large")
 
@@ -132,5 +145,24 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/signed_altered.png")
+    }
+
+    /** 1.28: collection rows in dollars, and the currency choice in Settings. */
+    @Test fun currencies() = inCurrency(DisplayCurrency(AppCurrency.USD, 1.1206)) {
+        fun row(name: String, set: String, number: String, qty: Int, eur: Double) =
+            CollectionRow(CollectionItem(card = ref(name, set, number, "rare").copy(fallbackEur = eur), foil = false, quantity = qty), null)
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CollectionRowView(row("Brainstorm", "ice", "61", 3, 3.5), PriceType.TREND, "Blue binder") {}
+                        CollectionRowView(row("The One Ring", "ltr", "246", 1, 64.9), PriceType.TREND, null) {}
+                        CompactRow(row("Counterspell", "mh2", "267", 2, 1.2), PriceType.TREND, "Trade binder") {}
+                        CurrencySection(AppCurrency.USD, ExchangeRates("2026-10-09", mapOf("USD" to 1.1206, "DKK" to 7.4751))) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/currencies.png")
     }
 }

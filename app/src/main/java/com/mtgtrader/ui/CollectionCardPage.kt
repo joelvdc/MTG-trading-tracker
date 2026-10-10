@@ -65,6 +65,7 @@ import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.Marks
+import com.mtgtrader.data.Money
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import kotlinx.coroutines.CoroutineScope
@@ -90,7 +91,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
         EditValues(it.quantity, it.finish, it.condition, it.language, null, it.binderId, it.quantity, it.notes, it.purchasePrice, it.signed, it.altered)
     }
     var v by remember(item.id) { mutableStateOf(initialFor(current)) }
-    var paidText by remember(item.id) { mutableStateOf(item.purchasePrice?.let { "%.2f".format(it) } ?: "") }
+    var paidText by remember(item.id) { mutableStateOf(Money.input(item.purchasePrice)) }
     var pricesOpen by remember { mutableStateOf(false) }
     var switchTo by remember { mutableStateOf<CollectionRow?>(null) }
     val uriHandler = LocalUriHandler.current
@@ -229,9 +230,9 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                         CompactTextField(
                             "Paid per copy", paidText, {
                                 paidText = it
-                                v = v.copy(purchasePrice = Fmt.parseMoney(it))
+                                v = v.copy(purchasePrice = Fmt.parseMoneyEur(it))
                             },
-                            Modifier.weight(0.38f), placeholder = "€", keyboardType = KeyboardType.Decimal,
+                            Modifier.weight(0.38f), placeholder = Money.symbol, keyboardType = KeyboardType.Decimal,
                         )
                         CompactTextField("Notes", v.notes ?: "", { v = v.copy(notes = it.ifBlank { null }) }, Modifier.weight(0.62f), placeholder = "Where from, condition…", singleLine = false)
                     }

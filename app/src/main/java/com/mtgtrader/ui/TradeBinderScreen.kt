@@ -63,7 +63,9 @@ import androidx.navigation.NavController
 import com.mtgtrader.container
 import com.mtgtrader.data.TradeBinderRules
 import com.mtgtrader.data.TradeChange
+import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.CardKind
+import com.mtgtrader.data.Money
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.TradeBinderPlanner
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -177,7 +179,7 @@ fun TradeBinderScreen(nav: NavController) {
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Text(
-                            "Up to ${rules.maxCards} cards worth €%.2f or more".format(rules.minValue) + if (rules.keepOne) ", keeping 1 copy of each" else "",
+                            "Up to ${rules.maxCards} cards worth ${Fmt.money(rules.minValue)} or more" + if (rules.keepOne) ", keeping 1 copy of each" else "",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
@@ -334,12 +336,12 @@ private fun SwapDialog(
 @Composable
 private fun TradeRulesDialog(initial: TradeBinderRules, onDismiss: () -> Unit, onSave: (TradeBinderRules) -> Unit) {
     var max by remember { mutableStateOf(initial.maxCards.toString()) }
-    var min by remember { mutableStateOf("%.2f".format(initial.minValue)) }
+    var min by remember { mutableStateOf(Money.input(initial.minValue)) }
     var keepOne by remember { mutableStateOf(initial.keepOne) }
     var bestDecks by remember { mutableStateOf(initial.keepBestForDecks) }
     var bestAll by remember { mutableStateOf(initial.keepBestAlways) }
     val maxN = max.toIntOrNull()
-    val minV = Fmt.parseMoney(min)
+    val minV = Fmt.parseMoneyEur(min)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Trade binder rules") },
@@ -350,12 +352,17 @@ private fun TradeRulesDialog(initial: TradeBinderRules, onDismiss: () -> Unit, o
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    value = min, onValueChange = { min = it }, label = { Text("Only cards worth at least (€)") },
+                    value = min, onValueChange = { min = it }, label = { Text("Only cards worth at least (${Money.symbol})") },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(0.0, 0.5, 1.0, 2.0, 5.0, 10.0).forEach { v ->
-                        FilterChip(selected = Fmt.parseMoney(min) == v, onClick = { min = "%.2f".format(v) }, label = { Text(if (v == 0.0) "Any value" else "€%.2f".format(v)) })
+                    // Round amounts in the display currency (kroner are worth about a seventh of a euro).
+                    val steps = if (Money.display.currency == AppCurrency.DKK) listOf(0.0, 5.0, 10.0, 20.0, 50.0, 100.0) else listOf(0.0, 0.5, 1.0, 2.0, 5.0, 10.0)
+                    steps.forEach { v ->
+                        FilterChip(
+                            selected = Fmt.parseMoney(min) == v, onClick = { min = "%.2f".format(v) },
+                            label = { Text(if (v == 0.0) "Any value" else Fmt.money(Money.toEur(v))) },
+                        )
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
