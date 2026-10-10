@@ -340,7 +340,8 @@ fun CollectionScreen(nav: NavController) {
                 (wish || selected == null || r.item.binderId == selected) && (
                     f.isEmpty() || r.item.card.name.contains(f, true) || r.item.card.flavorName?.contains(f, true) == true ||
                         r.item.card.setCode.equals(f, true) || r.item.card.setName.contains(f, true) ||
-                        (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true))
+                        (r.item.foil && r.item.card.finishName(r.item.finish).contains(f, true)) ||
+                        (r.item.signed && f.equals("signed", true)) || (r.item.altered && f.equals("altered", true))
                     )
             }
         }
@@ -604,7 +605,7 @@ private fun viewIcon(v: CollectionView): ImageVector = when (v) {
 
 /** One text line per stack: quantity, name, set and finish, price of one card (and the stack total). */
 @Composable
-private fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+internal fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
@@ -622,6 +623,8 @@ private fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?
             val details = listOfNotNull(
                 item.card.setLabel,
                 if (item.foil) item.card.finishName(item.finish) else null,
+                "signed".takeIf { item.signed },
+                "altered".takeIf { item.altered },
                 item.condition.takeIf { it != "NM" && it.isNotEmpty() },
                 item.language.takeIf { it != "EN" },
                 binder,
@@ -639,7 +642,7 @@ private fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?
 
 /** A big card picture with its quantity and finish, price of one card, trend and name underneath. */
 @Composable
-private fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+internal fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Column(Modifier.clickable(onClick = onClick).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -659,7 +662,12 @@ private fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?, 
                         .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 7.dp, vertical = 2.dp),
                 )
             }
-            if (item.foil) Box(Modifier.align(Alignment.BottomStart).padding(4.dp)) { FinishTag(item.card, item.finish) }
+            if (item.foil || item.marks.any) {
+                Column(Modifier.align(Alignment.BottomStart).padding(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    FinishTag(item.card, item.finish)
+                    MarksTags(item.signed, item.altered)
+                }
+            }
         }
         Text(Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
         TrendBadge(row.trend)
@@ -678,7 +686,7 @@ private fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?, 
 }
 
 @Composable
-private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+internal fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
@@ -690,6 +698,7 @@ private fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     SetLine(item.card)
                     FinishTag(item.card, item.finish)
+                    MarksTags(item.signed, item.altered)
                     if (item.condition.isNotEmpty()) Tag(item.condition)
                     if (item.language != "EN") Tag(item.language)
                 }

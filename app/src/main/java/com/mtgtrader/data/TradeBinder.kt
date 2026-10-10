@@ -42,12 +42,16 @@ data class TradeBinderRules(
     val keepBestAlways: Boolean = false,
 )
 
-/** One copy-kind of a card: the same printing, finish, condition and language. */
-data class CardKind(val scryfallId: String, val foil: Boolean, val etched: Boolean, val condition: String, val language: String) {
-    val key get() = "$scryfallId|$foil|$etched|$condition|$language"
+/** One copy-kind of a card: the same printing, finish, condition, language and marks (signed, altered; since 1.27). */
+data class CardKind(
+    val scryfallId: String, val foil: Boolean, val etched: Boolean, val condition: String, val language: String,
+    val signed: Boolean = false, val altered: Boolean = false,
+) {
+    /** Plain copies keep the key they had before 1.27, so skipped suggestions stay skipped. */
+    val key get() = "$scryfallId|$foil|$etched|$condition|$language" + (if (signed) "|signed" else "") + (if (altered) "|altered" else "")
 
     companion object {
-        fun of(i: CollectionItem) = CardKind(i.card.scryfallId, i.foil, i.etched, i.condition, i.language)
+        fun of(i: CollectionItem) = CardKind(i.card.scryfallId, i.foil, i.etched, i.condition, i.language, i.signed, i.altered)
     }
 }
 
@@ -145,6 +149,8 @@ object TradeBinderPlanner {
                 val price = k.price
                 val why = when {
                     blocked != null -> blocked
+                    // Signed and altered copies are one of a kind: never suggested (nor taken out), but they count as copies you own.
+                    k.kind.signed || k.kind.altered -> Marks(k.kind.signed, k.kind.altered).label
                     spare <= 0 && offeredOther && pick != null && k.kind.key != pick -> "you picked another copy to trade"
                     spare <= 0 && offeredOther && keepBest -> "a cheaper copy goes in instead; the best stays home"
                     spare <= 0 -> if (needed > 0) "your decks use ${if (needed == 1) "it" else "$needed"}" else "the copy you keep"
@@ -163,7 +169,8 @@ object TradeBinderPlanner {
         }
         // Turned-down removals stay in; turned-down additions stay out.
         val pinned = kinds.filter { it.inBinder > 0 && "remove|${it.kind.key}" in skipped }
-        var room = rules.maxCards - pinned.sumOf { it.inBinder }
+        val markedIn = kinds.filter { (it.kind.signed || it.kind.altered) && it.inBinder > 0 }.sumOf { it.inBinder }
+        var room = rules.maxCards - pinned.sumOf { it.inBinder } - markedIn
         pinned.forEach { desired[it.kind] = it.inBinder }
         for ((k, n, _) in candidates.filter { "add|${it.first.kind.key}" !in skipped || it.first.inBinder > 0 }.sortedByDescending { it.third }) {
             if (k.kind in desired) continue
@@ -178,6 +185,8 @@ object TradeBinderPlanner {
         }
         val changes = mutableListOf<TradeChange>()
         for (k in kinds) {
+            // Signed and altered copies only go in or out by hand.
+            if (k.kind.signed || k.kind.altered) continue
             val want = desired[k.kind] ?: 0
             val diff = want - k.inBinder
             if (diff == 0) continue

@@ -335,8 +335,9 @@ class MtgRepository(
 
     suspend fun addToCollection(
         card: CardRef, finish: Finish, condition: String, language: String, qty: Int, binderId: Long = Binder.UNSORTED,
+        marks: Marks = Marks.NONE,
     ): AddResult {
-        val existing = coll.find(card.scryfallId, finish.foil, finish.etched, condition, language, binderId)
+        val existing = coll.find(card.scryfallId, finish.foil, finish.etched, condition, language, binderId, marks.signed, marks.altered)
         if (existing != null) {
             coll.update(existing.copy(quantity = existing.quantity + qty, card = card))
             return AddResult(existing.id, AddedTo.COLLECTION)
@@ -344,17 +345,25 @@ class MtgRepository(
         val id = coll.insert(
             CollectionItem(
                 card = card, foil = finish.foil, etched = finish.etched, condition = condition, language = language,
-                quantity = qty, binderId = binderId,
+                quantity = qty, binderId = binderId, signed = marks.signed, altered = marks.altered,
             )
         )
         return AddResult(id, AddedTo.COLLECTION)
+    }
+
+    /** Adds [item] as a new stack (notes and purchase price included), or to the identical stack if there is one. */
+    private suspend fun addStack(item: CollectionItem) {
+        val clash = coll.sameStack(item)
+        if (clash != null) coll.update(clash.copy(quantity = clash.quantity + item.quantity))
+        else coll.insert(item.copy(id = 0, uid = null, updatedAt = 0))
     }
 
     private data class Removal(val removed: Int, val fromBinder: Long)
 
     /**
      * Removes up to [qty] copies of a printing, taking stacks with the exact condition and language
-     * first, and within those the [prefer] binder first.
+     * first, and within those the [prefer] binder first. Signed and altered copies go last: a trade
+     * line doesn't say whether the copy given was one.
      */
     private suspend fun removeFromCollection(
         sid: String, finish: Finish, condition: String, language: String, qty: Int, prefer: Long = Binder.UNSORTED,
@@ -362,7 +371,7 @@ class MtgRepository(
         var remaining = qty
         var from: Long? = null
         val candidates = coll.findAny(sid, finish.foil, finish.etched).sortedWith(
-            compareBy({ if (it.condition == condition && it.language == language) 0 else 1 }, { if (it.binderId == prefer) 0 else 1 })
+            compareBy({ if (it.marks.any) 1 else 0 }, { if (it.condition == condition && it.language == language) 0 else 1 }, { if (it.binderId == prefer) 0 else 1 })
         )
         for (c in candidates) {
             if (remaining == 0) break
@@ -378,9 +387,9 @@ class MtgRepository(
     private suspend fun existingBinder(id: Long): Long =
         if (id == Binder.UNSORTED || binders.get(id) != null) id else Binder.UNSORTED
 
-    /** Saves an edited row, merging it into an existing row if it now has the same card/finish/condition/language/binder. */
+    /** Saves an edited row, merging it into an existing row if it now has the same card/finish/condition/language/binder/marks. */
     suspend fun updateCollectionItem(updated: CollectionItem) = db.withTransaction {
-        val clash = coll.find(updated.card.scryfallId, updated.foil, updated.etched, updated.condition, updated.language, updated.binderId)
+        val clash = coll.sameStack(updated)
         if (clash != null && clash.id != updated.id) {
             coll.update(clash.copy(quantity = clash.quantity + updated.quantity))
             coll.deleteById(updated.id)
@@ -392,15 +401,29 @@ class MtgRepository(
     /**
      * Saves the card editor: the edited stack, of which [move] copies go to [binderId] when that
      * differs from the stack's binder (all of them if [move] is the whole stack).
+     *
+     * With [keepMarks] > 0, only part of the stack got [updated]'s signed/altered marks: that many
+     * copies keep [previous] marks and stay a stack of their own (with the other changes, and in
+     * [binderId] too, as the whole stack moves then). Since 1.27.
      */
-    suspend fun saveCollectionEdit(updated: CollectionItem, binderId: Long, move: Int) = db.withTransaction {
+    suspend fun saveCollectionEdit(
+        updated: CollectionItem, binderId: Long, move: Int, keepMarks: Int = 0, previous: Marks = Marks.NONE,
+    ) = db.withTransaction {
+        val keep = keepMarks.coerceIn(0, updated.quantity - 1)
+        if (keep > 0 && previous != updated.marks) {
+            val moved = updated.copy(binderId = binderId)
+            // The existing stack keeps its marks (and sync id); the marked copies become a new stack.
+            updateCollectionItem(moved.copy(quantity = keep, signed = previous.signed, altered = previous.altered))
+            addStack(moved.copy(quantity = updated.quantity - keep))
+            return@withTransaction
+        }
         val n = move.coerceIn(0, updated.quantity)
         when {
             binderId == updated.binderId || n == 0 -> updateCollectionItem(updated)
             n >= updated.quantity -> updateCollectionItem(updated.copy(binderId = binderId))
             else -> {
                 updateCollectionItem(updated.copy(quantity = updated.quantity - n))
-                addToCollection(updated.card, updated.finish, updated.condition, updated.language, n, binderId)
+                addToCollection(updated.card, updated.finish, updated.condition, updated.language, n, binderId, updated.marks)
             }
         }
     }
@@ -409,7 +432,7 @@ class MtgRepository(
 
     /** Undo for [deleteCollectionItem]; merges into a matching row if the same card was added again meanwhile. */
     suspend fun restoreCollectionItem(item: CollectionItem) = db.withTransaction {
-        val clash = coll.find(item.card.scryfallId, item.foil, item.etched, item.condition, item.language, item.binderId)
+        val clash = coll.sameStack(item)
         when {
             clash != null -> coll.update(clash.copy(quantity = clash.quantity + item.quantity))
             coll.byId(item.id) == null -> coll.insert(item)
@@ -582,10 +605,12 @@ class MtgRepository(
         val iBinder = col("binder name", "binder")
         val iPaid = col("purchase price", "purchase_price", "price paid")
         val iNotes = col("notes", "note")
+        val iSigned = col("signed")
+        val iAltered = col("altered")
 
         data class Line(
             val ident: JsonObject, val key: String, val qty: Int, val finish: Finish, val cond: String, val lang: String,
-            val binder: String? = null, val paid: Double? = null, val notes: String? = null,
+            val binder: String? = null, val paid: Double? = null, val notes: String? = null, val marks: Marks = Marks.NONE,
         )
 
         val lines = rows.drop(1).mapNotNull { r ->
@@ -606,11 +631,12 @@ class MtgRepository(
             val binder = v(iBinder)
             val paid = v(iPaid)?.replace(",", ".")?.toDoubleOrNull()?.takeIf { it > 0 }
             val notes = v(iNotes)
+            val marks = Marks(signed = csvFlag(v(iSigned)), altered = csvFlag(v(iAltered)))
             when {
-                id != null -> Line(ScryfallApi.idIdentifier(id), "id:$id", qty, finish, cond, lang, binder, paid, notes)
+                id != null -> Line(ScryfallApi.idIdentifier(id), "id:$id", qty, finish, cond, lang, binder, paid, notes, marks)
                 set != null && num != null ->
-                    Line(ScryfallApi.setNumberIdentifier(set, num), "sn:${set.lowercase()}|${num.lowercase()}", qty, finish, cond, lang, binder, paid, notes)
-                name != null -> Line(ScryfallApi.nameIdentifier(name), "n:${name.lowercase()}", qty, finish, cond, lang, binder, paid, notes)
+                    Line(ScryfallApi.setNumberIdentifier(set, num), "sn:${set.lowercase()}|${num.lowercase()}", qty, finish, cond, lang, binder, paid, notes, marks)
+                name != null -> Line(ScryfallApi.nameIdentifier(name), "n:${name.lowercase()}", qty, finish, cond, lang, binder, paid, notes, marks)
                 else -> null
             }
         }
@@ -637,7 +663,7 @@ class MtgRepository(
                     ?.let { name -> binderIds.getOrPut(name.lowercase()) { createBinder(name) } }
                     ?: if (l.binder != null) Binder.UNSORTED else defaultBinder
                 val ref = c.toRef()
-                val r = addToCollection(ref, ref.resolveFinish(l.finish), l.cond, l.lang, l.qty, binder)
+                val r = addToCollection(ref, ref.resolveFinish(l.finish), l.cond, l.lang, l.qty, binder, l.marks)
                 if (l.paid != null || l.notes != null) {
                     coll.byId(r.itemId)?.let { item ->
                         coll.update(item.copy(purchasePrice = item.purchasePrice ?: l.paid, notes = item.notes ?: l.notes))
@@ -657,8 +683,8 @@ class MtgRepository(
 
     /**
      * Adds the chosen lines of a CardTrader order to the collection, in [binder], with each copy's
-     * price as its purchase price (kept when a card already has one). Signed and altered copies go in
-     * as normal cards. Returns how many copies were added. Since 1.26.
+     * price as its purchase price (kept when a card already has one). Signed and altered copies are
+     * marked so (since 1.27). Returns how many copies were added. Since 1.26.
      */
     suspend fun importOrder(lines: List<Pair<CardRef, OrderLine>>, binder: BinderChoice): Int {
         if (lines.isEmpty()) return 0
@@ -668,7 +694,7 @@ class MtgRepository(
         db.withTransaction {
             for ((card, l) in lines) {
                 val finish = card.resolveFinish(if (l.foil) Finish.FOIL else Finish.NONFOIL)
-                val r = addToCollection(card, finish, l.condition, l.language, l.quantity, target)
+                val r = addToCollection(card, finish, l.condition, l.language, l.quantity, target, Marks(l.signed, l.altered))
                 if (l.price != null) {
                     coll.byId(r.itemId)?.let { item -> if (item.purchasePrice == null) coll.update(item.copy(purchasePrice = l.price)) }
                 }
@@ -732,7 +758,7 @@ class MtgRepository(
         val binderNames = binders.all().associate { it.id to it.name }
         val priceMap = prices.pricesFor(items.mapNotNull { it.card.productFor(it.foil) })
         val sb = StringBuilder()
-        sb.appendLine(Csv.row("Binder Name", "Binder Type", "Name", "Set code", "Set name", "Collector number", "Foil", "Rarity", "Quantity", "Scryfall ID", "Condition", "Language", "Price EUR (${type.short})", "Purchase price", "Purchase price currency", "Notes"))
+        sb.appendLine(Csv.row("Binder Name", "Binder Type", "Name", "Set code", "Set name", "Collector number", "Foil", "Rarity", "Quantity", "Scryfall ID", "Condition", "Language", "Price EUR (${type.short})", "Purchase price", "Purchase price currency", "Notes", "Signed", "Altered"))
         for (i in items) {
             val price = priceMap[i.card.productFor(i.foil)]?.toSet(i.foil)?.best(type) ?: i.card.fallback(i.foil)
             val binder = binderNames[i.binderId]
@@ -743,6 +769,7 @@ class MtgRepository(
                     manaBoxFinish(i.finish), i.card.rarity, i.quantity, i.card.scryfallId,
                     manaBoxCondition(i.condition), i.language.lowercase(), price,
                     i.purchasePrice ?: "", if (i.purchasePrice != null) "EUR" else "", i.notes ?: "",
+                    i.signed, i.altered,
                 )
             )
         }

@@ -78,6 +78,9 @@ fun manaBoxFinish(finish: Finish) = when (finish) {
     Finish.ETCHED -> "etched"
 }
 
+/** A yes/no column such as ManaBox's "Altered" ("true", "yes", "1"…). Since 1.27. */
+fun csvFlag(raw: String?): Boolean = raw?.trim()?.lowercase() in setOf("true", "yes", "y", "1", "x", "signed", "altered")
+
 fun parseLanguage(raw: String?): String {
     val s = raw?.trim()?.lowercase() ?: return "EN"
     LANGUAGES.firstOrNull { (code, name) -> s == code.lowercase() || s == name.lowercase() }?.let { return it.first }

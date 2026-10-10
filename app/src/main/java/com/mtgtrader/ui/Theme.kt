@@ -52,6 +52,9 @@ object VerdictColors {
 
 val FoilColor = Color(0xFF9C6ADE)
 
+/** The SIGNED and ALTERED tags. Since 1.27. */
+val MarkColor = Color(0xFF00897B)
+
 /** Price trend arrows; readable on both schemes. */
 object TrendColors {
     val up = Color(0xFF2E9E5B)

@@ -115,7 +115,7 @@ class CardTraderImportTest {
         }
         val checked = cands.filter { !it.token && !it.basicLand && it.card != null }.map { it.index }.toSet()
         assertEquals("Added 6 cards to The Box · 1 token left out · 4 basic lands left out · 2 not found", importSummary(6, "The Box", cands, checked))
-        assertEquals("Added 1 card to Unsorted · 1 token left out · 2 not found · 4 signed/altered cards added as normal",
+        assertEquals("Added 1 card to Unsorted · 1 token left out · 2 not found · 4 marked signed/altered",
             importSummary(1, "Unsorted", cands, checked + cands.single { it.line.name == "Island" }.index))
         assertTrue(suggestedBinderName("cardtrader_order_20260623hxrahx.xls").startsWith("CardTrader 23 Jun"))
         assertTrue(suggestedBinderName(null).startsWith("CardTrader "))

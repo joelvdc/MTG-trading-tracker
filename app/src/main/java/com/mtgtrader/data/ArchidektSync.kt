@@ -237,7 +237,8 @@ class ArchidektSync(
                 auth = a1
                 val items = db.syncDao().collection()
                 val appSide = appSides(items)
-                val arch = archData.entries.groupBy { CardKey.of(it) }
+                val markTags = MarkTags.of(archData.tags)
+                val arch = archData.entries.groupBy { CardKey.of(it, markTags) }
                 val snap = state?.entries?.associateBy { it.key }
                 val plan = ArchidektPlanner.plan(appSide, arch, snap, decisions, approved)
                 if (plan.waitsForUser) {
@@ -421,7 +422,7 @@ class ArchidektSync(
                     for ((stack, n) in leftFrom[from].orEmpty().toList()) {
                         if (need == 0) break
                         val take = minOf(need, n)
-                        val r = repo.addToCollection(card, c.key.finish, condFor(stack.binderId, stack.condition), lang, take, stack.binderId)
+                        val r = repo.addToCollection(card, c.key.finish, condFor(stack.binderId, stack.condition), lang, take, stack.binderId, c.key.marks)
                         coll.byId(r.itemId)?.let { added ->
                             if (added.notes == null && stack.notes != null || added.purchasePrice == null && stack.purchasePrice != null) {
                                 coll.update(added.copy(notes = added.notes ?: stack.notes, purchasePrice = added.purchasePrice ?: stack.purchasePrice))
@@ -432,14 +433,11 @@ class ArchidektSync(
                         placed += "$take in ${binderName(stack.binderId)}"
                         need -= take
                     }
-                    lines += ReportLine(
-                        ReportLine.Kind.ARCH_CHANGED,
-                        "Changed on Archidekt: ${describe(c.label, from)} → ${ArchidektCodes.modifier(c.key.finish)}, ${c.key.condition}, ${c.key.language}",
-                    )
+                    lines += ReportLine(ReportLine.Kind.ARCH_CHANGED, "Changed on Archidekt: ${describe(c.label, from)} → ${details(c.key)}")
                 }
                 if (need > 0) {
                     val b = destination()
-                    repo.addToCollection(card, c.key.finish, condFor(b, null), lang, need, b)
+                    repo.addToCollection(card, c.key.finish, condFor(b, null), lang, need, b, c.key.marks)
                     placed += "$need in " + (binderNames[b] ?: if (b == Binder.UNSORTED) Binder.UNSORTED_NAME else FROM_ARCHIDEKT)
                 }
                 val now = db.syncDao().collection()
@@ -480,23 +478,31 @@ class ArchidektSync(
         val tagMode = _status.value.tagMode
         val tagged = if (tagMode == TagMode.NONE) emptyMap() else binderTags(tagMode)
         val tags = tagsBefore.toMutableList()
-        val ourTagNames = if (tagMode == TagMode.NONE) emptySet() else db.binderDao().all().map { it.name.lowercase() }.toSet() + TRADE_TAG.lowercase()
+        val binderTagNames = if (tagMode == TagMode.NONE) emptySet() else db.binderDao().all().map { it.name.lowercase() }.toSet() + TRADE_TAG.lowercase()
+        // The "Signed" and "Altered" labels are the app's in every mode: they're part of what a card is (since 1.27).
+        val ourTagNames = binderTagNames + MarkTags.NAMES
 
         // Labels Archidekt doesn't have yet are made first, one by one (the rest runs several requests at once).
-        for (name in tagged.values.flatten().toSortedSet(String.CASE_INSENSITIVE_ORDER)) {
-            if (tags.none { it.name.equals(name, true) }) {
-                val (t, a) = client.createTag(auth, name, TAG_COLOR)
+        val markNames = listOfNotNull(
+            MarkTags.SIGNED.takeIf { changes.any { it.key.signed && it.archDelta > 0 } },
+            MarkTags.ALTERED.takeIf { changes.any { it.key.altered && it.archDelta > 0 } },
+        )
+        for (name in (tagged.values.flatten() + markNames).toSortedSet(String.CASE_INSENSITIVE_ORDER)) {
+            if (tags.none { it.name.trim().equals(name, true) }) {
+                val (t, a) = client.createTag(auth, name, if (name in markNames) MARK_COLOR else TAG_COLOR)
                 auth = a
                 tags += t
             }
         }
-        fun tagIds(key: CardKey): List<Long>? {
-            if (tagMode == TagMode.NONE) return null
-            return tagged[key].orEmpty().mapNotNull { name -> tags.firstOrNull { it.name.equals(name, true) }?.id }.sorted()
+        val markTags = MarkTags.of(tags)
+        /** The labels the app looks after on an entry of [key]: its marks, and with binder labels on, its binders. */
+        fun tagIds(key: CardKey): List<Long> {
+            val binderIds = if (tagMode == TagMode.NONE) emptyList()
+            else tagged[key].orEmpty().mapNotNull { name -> tags.firstOrNull { it.name.equals(name, true) }?.id }
+            return (binderIds + markTags.idsFor(key)).distinct().sorted()
         }
-        fun withTags(e: ArchidektEntry, ours: List<Long>?): ArchidektEntry {
-            if (ours == null) return e
-            val keep = e.tags.filter { id -> tags.firstOrNull { it.id == id }?.name?.lowercase() !in ourTagNames }
+        fun withTags(e: ArchidektEntry, ours: List<Long>): ArchidektEntry {
+            val keep = e.tags.filter { id -> tags.firstOrNull { it.id == id }?.name?.trim()?.lowercase() !in ourTagNames }
             return e.copy(tags = (keep + ours).distinct())
         }
 
@@ -525,7 +531,7 @@ class ArchidektSync(
                 after[down.key] = mutableListOf()
                 after[up.key] = mutableListOf(moved)
                 handled += down.key; handled += up.key
-                lines += ReportLine(ReportLine.Kind.ARCH_CHANGED, "On Archidekt: ${describe(down.label, down.key)} → ${ArchidektCodes.modifier(up.key.finish)}, ${up.key.condition}, ${up.key.language}")
+                lines += ReportLine(ReportLine.Kind.ARCH_CHANGED, "On Archidekt: ${describe(down.label, down.key)} → ${details(up.key)}")
             } catch (e: IOException) {
                 failed += down.key; failed += up.key
                 lines += ReportLine(ReportLine.Kind.FAILED, "${describe(down.label, down.key)}: ${e.message}")
@@ -558,7 +564,7 @@ class ArchidektSync(
                         id = 0, cardId = cardId, scryfallId = c.key.scryfallId, name = c.label.name, setCode = c.label.setCode, number = c.label.number,
                         finish = c.key.finish, condition = c.key.condition, language = c.key.language, quantity = d,
                         purchasePrice = c.price.takeIf { c.setArchPrice },
-                        tags = tagIds(c.key).orEmpty(),
+                        tags = tagIds(c.key),
                     )
                     planned += c.key to ReportLine(ReportLine.Kind.ARCH_ADDED, "+$d ${describe(c.label, c.key)}")
                 }
@@ -592,7 +598,7 @@ class ArchidektSync(
         if (tagMode != TagMode.NONE) {
             val touched = updates.map { it.second.id }.toSet() + deletes.map { it.second }.toSet()
             for ((key, list) in after) {
-                val ours = tagIds(key) ?: continue
+                val ours = tagIds(key)
                 for (e in list) {
                     if (e.id in touched) continue
                     val want = withTags(e, ours)
@@ -772,6 +778,7 @@ class ArchidektSync(
         const val FROM_ARCHIDEKT = "From Archidekt"
         const val TRADE_TAG = "Trade binder"
         private const val TAG_COLOR = "#2e7d32"
+        private const val MARK_COLOR = "#7b1fa2"
         private const val K_LOGIN = "login"
         private const val K_SERVER = "server"
         private const val K_LAST = "lastSync"
@@ -797,8 +804,13 @@ class ArchidektSync(
             val finish = when (key.finish) { Finish.FOIL -> " foil"; Finish.ETCHED -> " etched"; Finish.NONFOIL -> "" }
             val name = label.name.ifEmpty { key.scryfallId.take(8) }
             val set = label.setCode.takeIf { it.isNotEmpty() }?.let { " (${it.uppercase()} ${label.number})" }.orEmpty()
-            return "$name$set$finish, ${key.condition}, ${key.language}"
+            val marks = key.marks.label.takeIf { it.isNotEmpty() }?.let { ", $it" }.orEmpty()
+            return "$name$set$finish, ${key.condition}, ${key.language}$marks"
         }
+
+        /** "Foil, NM, EN" or "Normal, LP, DE, signed": what an entry was changed to. */
+        fun details(key: CardKey): String =
+            "${ArchidektCodes.modifier(key.finish)}, ${key.condition}, ${key.language}" + key.marks.label.takeIf { it.isNotEmpty() }?.let { ", $it" }.orEmpty()
     }
 }
 

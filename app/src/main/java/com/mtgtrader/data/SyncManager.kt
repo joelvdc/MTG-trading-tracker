@@ -41,11 +41,19 @@ data class SyncStatus(
     val folder: String = NextcloudClient.FOLDER,
     /** The user is picking the folder (right after connecting, or to change it). */
     val choosingFolder: Boolean = false,
+    /** Another phone that last synced with a version too old to read this one's file. Since 1.27. */
+    val olderPhone: OlderPhone? = null,
 ) {
     val connected get() = server != null
 }
 
 data class FirstChoice(val phone: SyncSummary, val nextcloud: SyncSummary)
+
+/**
+ * A phone ([name]) seen syncing with a version from before signed and altered cards: it can't sync
+ * until it's updated. [acknowledged] once the user has seen the warning. Since 1.27.
+ */
+data class OlderPhone(val name: String, val seenAt: Long, val acknowledged: Boolean = false)
 
 /** What a copy of the data holds, to help pick a [FirstSync]. */
 data class SyncSummary(val cards: Int, val binders: Int, val decks: Int, val trades: Int, val scans: Int) {
@@ -103,6 +111,7 @@ class SyncManager(
         folder = prefs.getString(K_FOLDER, null) ?: NextcloudClient.FOLDER,
         // Connected but the folder was never chosen (and never synced): ask. Accounts from before 1.17 keep "MTG Trader".
         choosingFolder = account() != null && (changingFolder || (!prefs.getBoolean(K_FIRST_DONE, false) && !prefs.contains(K_FOLDER))),
+        olderPhone = prefs.getString(K_OLDER, null)?.let { OlderPhone(it, prefs.getLong(K_OLDER_AT, 0), prefs.getBoolean(K_OLDER_SEEN, false)) },
     )
 
     private fun account(): NextcloudAccount? {
@@ -295,6 +304,33 @@ class SyncManager(
         if (autoAllowed()) sync()
     }
 
+    /** The user has read the warning about [SyncStatus.olderPhone]; Settings keeps a note until it's updated. */
+    fun acknowledgeOlderPhone() {
+        prefs.edit().putBoolean(K_OLDER_SEEN, true).apply()
+        _status.value = _status.value.copy(olderPhone = _status.value.olderPhone?.copy(acknowledged = true))
+    }
+
+    /** Forgets [SyncStatus.olderPhone] (e.g. that phone isn't used any more). */
+    fun forgetOlderPhone() {
+        prefs.edit().remove(K_OLDER).remove(K_OLDER_AT).remove(K_OLDER_SEEN).apply()
+        _status.value = _status.value.copy(olderPhone = null)
+    }
+
+    /** Notes a phone still on an older version in [file], or that the one noted before has been updated. */
+    private fun checkWriter(file: SyncFile, etag: String?) {
+        val older = SyncFile.olderWriter(file, etag, prefs.getString(K_ETAG, null), device())
+        val noted = prefs.getString(K_OLDER, null)
+        when {
+            older != null && older != noted -> {
+                prefs.edit().putString(K_OLDER, older).putLong(K_OLDER_AT, file.writtenAt).putBoolean(K_OLDER_SEEN, false).apply()
+                _status.value = _status.value.copy(olderPhone = OlderPhone(older, file.writtenAt))
+            }
+            older == null && noted != null && file.format >= SyncFile.FORMAT && file.writtenBy == noted -> forgetOlderPhone()
+        }
+    }
+
+    private fun device() = "${Build.MANUFACTURER} ${Build.MODEL}"
+
     // ---- Syncing ---------------------------------------------------------------------------
 
     fun syncNow() {
@@ -343,14 +379,16 @@ class SyncManager(
             val remote = client.get(account, if (unchanged) prefs.getString(K_ETAG, null) else null)
             if (remote is NextcloudClient.Remote.NotModified) return
             val found = remote as? NextcloudClient.Remote.Found
-            val remoteData = found?.let { SyncFile.decode(it.bytes).data }
+            val remoteFile = found?.let { f -> SyncFile.decode(f.bytes).also { checkWriter(it, f.etag) } }
+            val remoteData = remoteFile?.data
             val now = System.currentTimeMillis()
             val merged = SyncMerge.merge(local, remoteData, now, first)
 
             if (merged != local && !store.apply(local, merged, stamp)) return@repeat // edited meanwhile: start over
             var etag = found?.etag
-            if (merged != remoteData) {
-                val file = SyncFile(writtenAt = now, writtenBy = "${Build.MANUFACTURER} ${Build.MODEL}", data = merged)
+            // A file from an older version is rewritten in this one's format even if nothing changed, so phones still on it stop and ask to be updated.
+            if (merged != remoteData || (remoteFile != null && remoteFile.format < SyncFile.FORMAT)) {
+                val file = SyncFile(writtenAt = now, writtenBy = device(), data = merged)
                 when (val put = client.put(account, SyncFile.encode(file), found?.etag)) {
                     NextcloudClient.PutResult.Conflict -> return@repeat // another phone wrote meanwhile: start over
                     is NextcloudClient.PutResult.Ok -> etag = put.etag
@@ -382,6 +420,9 @@ class SyncManager(
         const val K_AUTO = "auto"
         const val K_WIFI = "wifiOnly"
         const val K_FOLDER = "folder"
+        const val K_OLDER = "olderPhone"
+        const val K_OLDER_AT = "olderPhoneAt"
+        const val K_OLDER_SEEN = "olderPhoneSeen"
         const val WORK_PERIODIC = "nextcloud-sync"
         const val WORK_ONCE = "nextcloud-sync-once"
         const val DEBOUNCE_MS = 30_000L

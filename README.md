@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.26.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.27.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.26-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.27-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -123,7 +123,7 @@ included) and shows the order first: untick what you don't want, and leave out t
 switches (both on by default). Cards it could only find by name say **Check the printing**, and the ones it couldn't
 find at all say **Find the card**; tap either to pick the printing yourself. Choose a binder (or make a new one, named
 after the order date) and tap **Add**: the cards keep CardTrader's finish, condition, language and the price you paid
-per copy. Signed or altered cards are added as normal copies, and the summary afterwards says how many there were.
+per copy. Signed and altered cards are marked so (see below).
 
 The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
 big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
@@ -134,9 +134,9 @@ direction (A to Z / Z to A, highest / lowest first…), with shortcuts for the u
 G, multicolor, colorless, lands), type, mana value, rarity, set, collector number, value per card, date added or copies.
 
 **Filter** (the button next to Sort) for what's awkward to type: colors (has any of them, exactly these, or fits in a
-color identity), type, rarity, sets (pick from the sets you own), finish, condition, language, value range and whether
-the card is in one of your decks. The active filters show as chips under the search field (tap ✕ to drop one); the
-search field still finds cards by name, set or foil type.
+color identity), type, rarity, sets (pick from the sets you own), finish, signed or altered, condition, language, value
+range and whether the card is in one of your decks. The active filters show as chips under the search field (tap ✕ to
+drop one); the search field still finds cards by name, set or foil type (and "signed" or "altered").
 
 Tap a card to open its **card page**: picture, price and trend, then compact fields for quantity, finish, binder,
 condition, language, the **purchase price** per copy and **notes** (condition details, where it came from). With a
@@ -145,6 +145,12 @@ on import. The page also lists the decks the card is in and **the other copies y
 conditions and binders, the same printing first and then by value. The first three show; tap the header or "Show all"
 for the rest (the app remembers), and tap one to open its page. Cardmarket's prices are folded into one line; tap it
 for the full table.
+
+**Signed and altered cards:** tick **Signed** or **Altered** on the card page. Like etched foils, they're a stack of
+their own, with a SIGNED or ALTERED tag in the list. Ticking one on a stack of several copies asks how many: with 4
+Brainstorms of which 1 is signed you get a stack of 3 and a signed one. Both carry over in CSV export and import
+("Signed" and "Altered" columns; ManaBox's "Altered" column is read too), Nextcloud sync, backups and Archidekt sync. The
+trade binder never suggests a signed or altered copy (one you put there yourself stays).
 
 Tap a card's picture (in its card window, search, decks, the scanner…) to see it full screen; pinch or double-tap to
 zoom. Double-faced cards (modal double-faced cards like Bala Ged Recovery, transform cards) get a **Flip** button to see
@@ -232,6 +238,10 @@ pictures aren't synced; each phone downloads those itself.
   Archidekt, so an old list can't come back because the other phone scored or rated its copy later. With **Sync automatically** on, it syncs when you open the app, about 30 seconds
   after a change, when you leave the app and every hour; **Only on Wi-Fi** keeps automatic syncs off mobile data.
   "Sync now" always works.
+- **Update every phone:** from version 1.27 (signed and altered cards) the sync file has a new format. Older versions
+  stop syncing and ask to be updated, so they can't lose the Signed and Altered marks; their changes wait on the phone
+  and sync after the update. An updated phone that sees another one still on an older version says so (and Settings
+  keeps a note until it's updated).
 
 The password is stored encrypted with a key kept in the phone's keystore.
 
@@ -259,6 +269,9 @@ collection (it has no binders or wishlist).
   kept under **History**.
 - **Binders as labels:** none, the trade binder only, or every binder becomes an Archidekt label on the cards in it
   (labels only go from the app to Archidekt; your other labels are left alone).
+- **Signed and altered:** Archidekt has no such fields, so these copies are separate entries with a **"Signed"** or
+  **"Altered"** label. These two labels sync both ways: add one to an entry on Archidekt and the app marks those
+  copies (they stay in their binders).
 - **Conditions:** the app uses Cardmarket's grades, Archidekt TCGplayer's. Grades with the same letters match:
   Mint and Near Mint → NM, Excellent and Light Played → LP, Good → MP, Played → HP, Poor → Damaged (and back: NM →
   Near Mint, LP → Light Played, MP → Good, HP → Played, Damaged → Poor).

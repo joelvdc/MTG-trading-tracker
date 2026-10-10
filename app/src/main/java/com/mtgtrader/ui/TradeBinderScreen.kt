@@ -309,6 +309,7 @@ private fun SwapDialog(
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 SetLine(r.item.card)
                                 FinishTag(r.item.card, r.item.finish)
+                                MarksTags(r.item.signed, r.item.altered)
                                 if (r.item.condition != "NM") Tag(r.item.condition)
                                 if (r.item.language != "EN") Tag(r.item.language)
                             }

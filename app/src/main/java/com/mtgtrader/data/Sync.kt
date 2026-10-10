@@ -70,8 +70,20 @@ data class SyncFile(
     val data: SyncData = SyncData(),
 ) {
     companion object {
-        const val FORMAT = 1
+        /**
+         * 2 since 1.27: signed and altered copies are stacks of their own, which older versions would
+         * merge with the plain ones (losing the marks), so they refuse the file and ask to be updated.
+         */
+        const val FORMAT = 2
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+        /**
+         * The phone that wrote [file], if it still runs a version from before [FORMAT] and isn't this
+         * phone: the file isn't the one this phone wrote or read last ([lastEtag]), and it names another
+         * device than [me]. Since 1.27.
+         */
+        fun olderWriter(file: SyncFile, etag: String?, lastEtag: String?, me: String): String? =
+            if (file.format < FORMAT && etag != lastEtag && file.writtenBy != me) file.writtenBy.ifBlank { "Another phone" } else null
 
         fun encode(file: SyncFile): ByteArray {
             val out = ByteArrayOutputStream()

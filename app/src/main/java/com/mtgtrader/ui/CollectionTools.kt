@@ -44,6 +44,7 @@ import com.mtgtrader.data.CollectionFilter
 import com.mtgtrader.data.ColorMatch
 import com.mtgtrader.data.DeckFilter
 import com.mtgtrader.data.Finish
+import com.mtgtrader.data.MarkFilter
 import com.mtgtrader.data.SortField
 import com.mtgtrader.data.SortLevel
 import com.mtgtrader.data.SortSpec
@@ -187,6 +188,10 @@ fun FilterDialog(
                         FilterChip(selected = fin in f.finishes, onClick = { f = f.copy(finishes = f.finishes.toggle(fin)) }, label = { Text(label) })
                     }
                 }
+                Part("Signed or altered")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MarkFilter.entries.forEach { m -> FilterChip(selected = m in f.marks, onClick = { f = f.copy(marks = f.marks.toggle(m)) }, label = { Text(m.label) }) }
+                }
                 Part("Condition")
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CONDITIONS.forEach { (k, _) -> FilterChip(selected = k in f.conditions, onClick = { f = f.copy(conditions = f.conditions.toggle(k)) }, label = { Text(k) }) }
@@ -246,6 +251,7 @@ fun ActiveFilterChips(f: CollectionFilter, sets: List<OwnedSet>, onChange: (Coll
         if (f.rarities.isNotEmpty()) add(CollectionFilter.RARITIES.filter { it.first in f.rarities }.joinToString(", ") { it.second } to f.copy(rarities = emptySet()))
         if (f.sets.isNotEmpty()) add(f.sets.joinToString(", ") { code -> sets.firstOrNull { it.code == code }?.code?.uppercase() ?: code.uppercase() } to f.copy(sets = emptySet()))
         if (f.finishes.isNotEmpty()) add(f.finishes.joinToString(", ") { it.name.lowercase().replaceFirstChar(Char::uppercase).replace("Nonfoil", "Normal") } to f.copy(finishes = emptySet()))
+        if (f.marks.isNotEmpty()) add(MarkFilter.entries.filter { it in f.marks }.joinToString(", ") { if (it == MarkFilter.PLAIN) "Not signed or altered" else it.label } to f.copy(marks = emptySet()))
         if (f.conditions.isNotEmpty()) add(f.conditions.joinToString(", ") to f.copy(conditions = emptySet()))
         if (f.languages.isNotEmpty()) add(f.languages.joinToString(", ") to f.copy(languages = emptySet()))
         if (f.minPrice != null || f.maxPrice != null) {

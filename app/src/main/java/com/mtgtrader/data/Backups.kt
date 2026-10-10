@@ -37,7 +37,8 @@ data class BackupFile(
     val data: SyncData = SyncData(),
 ) {
     companion object {
-        const val FORMAT = 1
+        /** 2 since 1.27 (signed and altered copies), like [SyncFile.FORMAT]: older versions can't restore it without losing them. */
+        const val FORMAT = 2
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {

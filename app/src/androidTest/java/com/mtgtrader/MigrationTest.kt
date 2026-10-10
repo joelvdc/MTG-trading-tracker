@@ -64,4 +64,33 @@ class MigrationTest {
             db.query("SELECT COUNT(*) FROM $t").use { c -> c.moveToFirst(); assertEquals(0, c.getInt(0)) }
         }
     }
+
+    @Test
+    fun from11to12KeepsTheCollectionAndAllowsSignedStacks() {
+        helper.createDatabase(dbName, 11).apply {
+            execSQL(
+                "INSERT INTO collection (id, foil, condition, language, quantity, addedAt, etched, binderId, uid, updatedAt, scryfallId, name, setCode, " +
+                    "setName, collectorNumber, rarity, imageUrl, cardmarketId, fallbackEur, fallbackEurFoil, hasNonFoil, hasFoil, foilType, hasEtched, " +
+                    "flavorName, notes, purchasePrice, cardmarketFoilId) VALUES (1, 0, 'NM', 'EN', 4, 1, 0, 0, 'u1', 5, 'sid', 'Brainstorm', 'ice', " +
+                    "'Ice Age', '61', 'common', NULL, 1, 1.0, NULL, 1, 0, NULL, 0, NULL, 'from a friend', 0.5, NULL)"
+            )
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(dbName, 12, true, AppDatabase.MIGRATION_11_12)
+        db.query("SELECT quantity, uid, updatedAt, signed, altered FROM collection").use { c ->
+            c.moveToFirst()
+            assertEquals(4, c.getInt(0))
+            assertEquals("u1", c.getString(1))
+            assertEquals(5, c.getInt(2))
+            assertEquals(0, c.getInt(3))
+            assertEquals(0, c.getInt(4))
+        }
+        // A signed copy of the same card in the same binder is its own stack.
+        db.execSQL(
+            "INSERT INTO collection (foil, condition, language, quantity, addedAt, etched, binderId, uid, updatedAt, scryfallId, name, setCode, " +
+                "setName, collectorNumber, rarity, hasNonFoil, hasFoil, hasEtched, signed, altered) VALUES (0, 'NM', 'EN', 1, 2, 0, 0, 'u2', 6, 'sid', " +
+                "'Brainstorm', 'ice', 'Ice Age', '61', 'common', 1, 0, 0, 1, 0)"
+        )
+        db.query("SELECT COUNT(*) FROM collection").use { c -> c.moveToFirst(); assertEquals(2, c.getInt(0)) }
+    }
 }

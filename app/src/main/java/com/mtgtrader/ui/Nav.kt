@@ -110,6 +110,7 @@ fun AppNav() {
             else -> Toast.makeText(context, "Wait for the current import to finish", Toast.LENGTH_LONG).show()
         }
     }
+    OlderPhoneDialog()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val topLevel = tabs.any { it.route == route }

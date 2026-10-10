@@ -205,7 +205,9 @@ fun ArchidektSyncScreen(nav: NavController) {
                     }
                 }
                 Text(
-                    "Labels only go from the app to Archidekt. Your other Archidekt labels are left alone.",
+                    "Binder labels only go from the app to Archidekt. Your other Archidekt labels are left alone. " +
+                        "The “Signed” and “Altered” labels always sync, both ways: they're how Archidekt keeps signed and altered copies apart " +
+                        "(add one to an entry on Archidekt and the app marks those copies too).",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
