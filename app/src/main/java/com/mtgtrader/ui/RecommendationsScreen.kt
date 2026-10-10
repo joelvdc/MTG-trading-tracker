@@ -409,7 +409,7 @@ private fun RecCard.stats(): String = listOfNotNull(
 
 @Composable
 private fun RecRow(card: RecCard, owned: Int, price: PriceEntity?, priceType: PriceType, extra: String?, onImage: () -> Unit, onClick: () -> Unit) {
-    val unit = price?.toSet(false)?.best(priceType) ?: card.card?.fallbackEur
+    val unit = (price?.toSet(false)?.best(priceType) ?: card.card?.fallbackEur).let { cm -> card.card?.let { com.mtgtrader.data.Pricing.unit(it.scryfallId, com.mtgtrader.data.Finish.NONFOIL, "NM", cm) } ?: cm }
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         // The picture opens the swipeable gallery; the rest of the row the card's window.
         CardThumb(card.card?.imageUrl, Modifier.clickable(onClick = onImage), width = 34)
@@ -511,7 +511,8 @@ private fun RecGallery(
             }
             HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth()) { page ->
                 val card = cards[page]
-                val unit = prices[card.card?.cardmarketId]?.toSet(false)?.best(priceType) ?: card.card?.fallbackEur
+                val unit = (prices[card.card?.cardmarketId]?.toSet(false)?.best(priceType) ?: card.card?.fallbackEur)
+                    .let { cm -> card.card?.let { com.mtgtrader.data.Pricing.unit(it.scryfallId, com.mtgtrader.data.Finish.NONFOIL, "NM", cm) } ?: cm }
                 val have = owned[nameKey(card.name)] ?: 0
                 Column(
                     Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 8.dp),

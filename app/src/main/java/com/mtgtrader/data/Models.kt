@@ -316,10 +316,13 @@ data class ScanRow(
     @Embedded val item: ScannedCard,
     @Embedded(prefix = "pr_") val price: PriceEntity?,
 ) {
-    fun unitPrice(type: PriceType): Double? =
-        price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
+    fun cardmarketPrice(type: PriceType): Double? = price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
 
-    val trend: PriceTrend? get() = price?.toSet(item.foil)?.trendChange
+    /** From the price source chosen in Settings (since 1.29). */
+    fun unitPrice(type: PriceType): Double? = Pricing.unit(item.card.scryfallId, item.finish, item.condition, cardmarketPrice(type))
+
+    /** Cardmarket's trend arrow; none while another price source is chosen (since 1.29). */
+    val trend: PriceTrend? get() = if (Pricing.source == PriceSource.CARDMARKET) price?.toSet(item.foil)?.trendChange else null
 }
 
 /** Collection row joined with today's price guide entry. */
@@ -329,10 +332,20 @@ data class CollectionRow(
     /** Colours, type, mana value and popularity, once fetched (see [CardDetails]). Since 1.18. */
     @Embedded(prefix = "ci_") val info: CardInfo? = null,
 ) {
-    fun unitPrice(type: PriceType): Double? =
-        price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
+    /** Cardmarket's price of one copy in [type]. */
+    fun cardmarketPrice(type: PriceType): Double? = price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
 
-    val trend: PriceTrend? get() = price?.toSet(item.foil)?.trendChange
+    /** One copy's price from the source chosen in Settings (Card Kingdom's for its condition), else Cardmarket's. Since 1.29. */
+    fun unitPrice(type: PriceType): Double? = Pricing.unit(item.card.scryfallId, item.finish, item.condition, cardmarketPrice(type))
+
+    /** One copy's price at [source]; null when it has none. Since 1.29. */
+    fun priceAt(source: PriceSource, type: PriceType): Double? = Pricing.at(source, item.card.scryfallId, item.finish, item.condition, cardmarketPrice(type))
+
+    /** [unitPrice] is Cardmarket's, standing in for the chosen source. */
+    val isApprox: Boolean get() = Pricing.isApprox(item.card.scryfallId, item.finish, item.condition)
+
+    /** Cardmarket's trend arrow; none while another price source is chosen (since 1.29). */
+    val trend: PriceTrend? get() = if (Pricing.source == PriceSource.CARDMARKET) price?.toSet(item.foil)?.trendChange else null
 }
 
 @Serializable
@@ -388,7 +401,7 @@ data class TradeItem(
 ) {
     val finish get() = Finish.of(foil, etched)
 
-    fun unitPrice(type: PriceType): Double? = customPrice ?: prices.best(type) ?: card.fallback(foil)
+    fun unitPrice(type: PriceType): Double? = customPrice ?: Pricing.unit(card.scryfallId, finish, condition, prices.best(type) ?: card.fallback(foil))
     fun lineTotal(type: PriceType): Double = (unitPrice(type) ?: 0.0) * quantity
 }
 

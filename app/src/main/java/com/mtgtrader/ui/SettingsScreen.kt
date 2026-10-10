@@ -35,6 +35,7 @@ import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.ThemeMode
 import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.ExchangeRates
+import com.mtgtrader.data.PriceSource
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.PriceUpdateState
 import kotlinx.coroutines.launch
@@ -58,6 +59,8 @@ fun SettingsScreen(nav: NavController) {
     val unsynced by androidx.compose.runtime.produceState<Int?>(null, archidekt.lastSyncAt, archidekt.running) { value = c.archidekt.unsyncedCopies() }
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val currency by c.settings.currency.collectAsStateWithLifecycle()
+    val priceSource by c.settings.priceSource.collectAsStateWithLifecycle()
+    val sourceStatus by c.priceSources.status.collectAsStateWithLifecycle()
     val rates by c.exchangeRates.rates.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
     val lastFetch by c.settings.lastPriceFetch.collectAsStateWithLifecycle()
@@ -74,7 +77,17 @@ fun SettingsScreen(nav: NavController) {
         topBar = { TopAppBar(title = { Text("Settings") }) },
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(16.dp)) {
-            Text("Price used for valuing cards", style = MaterialTheme.typography.titleMedium)
+            PriceSourceSection(priceSource, sourceStatus, c.settings::setPriceSource)
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            Text(if (priceSource == PriceSource.CARDMARKET) "Price used for valuing cards" else "Cardmarket price", style = MaterialTheme.typography.titleMedium)
+            if (priceSource != PriceSource.CARDMARKET) {
+                Text(
+                    "Used for cards ${priceSource.label} has no price for (shown with ≈), and in the comparisons.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             PriceType.entries.forEach { t ->
                 Row(
                     Modifier.fillMaxWidth().clickable { c.settings.setPriceType(t) }.padding(vertical = 4.dp),
@@ -118,7 +131,13 @@ fun SettingsScreen(nav: NavController) {
             }
             Spacer(Modifier.height(8.dp))
             Button(
-                onClick = { c.appScope.launch { if (c.prices.refresh()) c.updater.afterUpdate() } },
+                onClick = {
+                    c.appScope.launch {
+                        val ok = c.prices.refresh()
+                        runCatching { c.priceSources.refresh() }
+                        if (ok) c.updater.afterUpdate()
+                    }
+                },
                 enabled = state !is PriceUpdateState.Running,
             ) { Text("Update prices now") }
             Spacer(Modifier.height(12.dp))
@@ -297,4 +316,44 @@ internal fun rateLine(currency: AppCurrency, rates: ExchangeRates?): String {
         currency == AppCurrency.DKK -> "1 € ≈ 7.46 DKK (the krone's fixed rate) until the first download of the daily rates."
         else -> "Waiting for the daily exchange rates: prices show in euros until then."
     }
+}
+
+/** Settings → Price source: where a card's price comes from. Since 1.29. */
+@Composable
+internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.PriceSourceStore.SourceStatus, onPick: (PriceSource) -> Unit) {
+    Text("Price source", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Where card prices come from: the collection total, sorting, filters, trades and the trade binder use it. " +
+            "The value screen, the stats and each card's page compare all three. TCGplayer's and Card Kingdom's dollar prices are converted with the daily exchange rates.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    val help = mapOf(
+        PriceSource.CARDMARKET to "Europe's market, in euros. Has price types and trend arrows.",
+        PriceSource.TCGPLAYER to "America's largest market: its market price (one price per card, any condition).",
+        PriceSource.CARD_KINGDOM to "An American shop: its selling price for each copy's condition.",
+    )
+    PriceSource.entries.forEach { s ->
+        Row(Modifier.fillMaxWidth().clickable { onPick(s) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = s == source, onClick = { onPick(s) })
+            Column {
+                Text(s.label)
+                Text(help[s].orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+    val last = listOfNotNull(
+        status.tcgplayerAt.takeIf { it > 0 }?.let { "TCGplayer ${Fmt.dateTime(it)}" },
+        status.cardKingdomAt.takeIf { it > 0 }?.let { "Card Kingdom ${Fmt.dateTime(it)}" },
+    )
+    Text(
+        when {
+            status.running -> "Downloading TCGplayer's and Card Kingdom's prices…"
+            last.isEmpty() -> "TCGplayer's and Card Kingdom's prices download with the next price update."
+            else -> "Last downloaded: " + last.joinToString(" · ")
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = if (status.running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    status.error?.let { Text("Last update failed: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
 }

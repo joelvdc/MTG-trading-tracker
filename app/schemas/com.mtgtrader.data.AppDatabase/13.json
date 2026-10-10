@@ -1,0 +1,1812 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 13,
+    "identityHash": "93f5e729872186016faa1dedf58125aa",
+    "entities": [
+      {
+        "tableName": "prices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idProduct` INTEGER NOT NULL, `avg` REAL, `low` REAL, `trend` REAL, `avg1` REAL, `avg7` REAL, `avg30` REAL, `avgFoil` REAL, `lowFoil` REAL, `trendFoil` REAL, `avg1Foil` REAL, `avg7Foil` REAL, `avg30Foil` REAL, PRIMARY KEY(`idProduct`))",
+        "fields": [
+          {
+            "fieldPath": "idProduct",
+            "columnName": "idProduct",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avg",
+            "columnName": "avg",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "low",
+            "columnName": "low",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trend",
+            "columnName": "trend",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avg1",
+            "columnName": "avg1",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avg7",
+            "columnName": "avg7",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avg30",
+            "columnName": "avg30",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avgFoil",
+            "columnName": "avgFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lowFoil",
+            "columnName": "lowFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trendFoil",
+            "columnName": "trendFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avg1Foil",
+            "columnName": "avg1Foil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avg7Foil",
+            "columnName": "avg7Foil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "avg30Foil",
+            "columnName": "avg30Foil",
+            "affinity": "REAL",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idProduct"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "collection",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `foil` INTEGER NOT NULL, `condition` TEXT NOT NULL, `language` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `addedAt` INTEGER NOT NULL, `etched` INTEGER NOT NULL DEFAULT 0, `binderId` INTEGER NOT NULL DEFAULT 0, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0, `notes` TEXT, `purchasePrice` REAL, `signed` INTEGER NOT NULL DEFAULT 0, `altered` INTEGER NOT NULL DEFAULT 0, `scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, `setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, `rarity` TEXT NOT NULL, `imageUrl` TEXT, `cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, `hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, `cardmarketFoilId` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foil",
+            "columnName": "foil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "condition",
+            "columnName": "condition",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "etched",
+            "columnName": "etched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "binderId",
+            "columnName": "binderId",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "purchasePrice",
+            "columnName": "purchasePrice",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "signed",
+            "columnName": "signed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "altered",
+            "columnName": "altered",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setCode",
+            "columnName": "setCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setName",
+            "columnName": "setName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.collectorNumber",
+            "columnName": "collectorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketId",
+            "columnName": "cardmarketId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEur",
+            "columnName": "fallbackEur",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEurFoil",
+            "columnName": "fallbackEurFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasNonFoil",
+            "columnName": "hasNonFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.hasFoil",
+            "columnName": "hasFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.foilType",
+            "columnName": "foilType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasEtched",
+            "columnName": "hasEtched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.flavorName",
+            "columnName": "flavorName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketFoilId",
+            "columnName": "cardmarketFoilId",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_collection_scryfallId_foil_etched_condition_language_binderId_signed_altered",
+            "unique": true,
+            "columnNames": [
+              "scryfallId",
+              "foil",
+              "etched",
+              "condition",
+              "language",
+              "binderId",
+              "signed",
+              "altered"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_collection_scryfallId_foil_etched_condition_language_binderId_signed_altered` ON `${TABLE_NAME}` (`scryfallId`, `foil`, `etched`, `condition`, `language`, `binderId`, `signed`, `altered`)"
+          },
+          {
+            "name": "index_collection_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_collection_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "index_collection_uid",
+            "unique": false,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_collection_uid` ON `${TABLE_NAME}` (`uid`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "trades",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `createdAt` INTEGER NOT NULL, `partner` TEXT NOT NULL, `notes` TEXT NOT NULL, `applied` INTEGER NOT NULL, `appliedAt` INTEGER, `binderId` INTEGER NOT NULL DEFAULT 0, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partner",
+            "columnName": "partner",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "applied",
+            "columnName": "applied",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appliedAt",
+            "columnName": "appliedAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "binderId",
+            "columnName": "binderId",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "trade_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tradeId` INTEGER NOT NULL, `side` TEXT NOT NULL, `foil` INTEGER NOT NULL, `condition` TEXT NOT NULL, `language` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `customPrice` REAL, `appliedDelta` INTEGER NOT NULL, `addedAt` INTEGER NOT NULL, `etched` INTEGER NOT NULL DEFAULT 0, `appliedBinderId` INTEGER NOT NULL DEFAULT 0, `scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, `setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, `rarity` TEXT NOT NULL, `imageUrl` TEXT, `cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, `hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, `cardmarketFoilId` INTEGER, `p_trend` REAL, `p_avg` REAL, `p_low` REAL, `p_avg1` REAL, `p_avg7` REAL, `p_avg30` REAL, FOREIGN KEY(`tradeId`) REFERENCES `trades`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tradeId",
+            "columnName": "tradeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "side",
+            "columnName": "side",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foil",
+            "columnName": "foil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "condition",
+            "columnName": "condition",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customPrice",
+            "columnName": "customPrice",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "appliedDelta",
+            "columnName": "appliedDelta",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "etched",
+            "columnName": "etched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "appliedBinderId",
+            "columnName": "appliedBinderId",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setCode",
+            "columnName": "setCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setName",
+            "columnName": "setName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.collectorNumber",
+            "columnName": "collectorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketId",
+            "columnName": "cardmarketId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEur",
+            "columnName": "fallbackEur",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEurFoil",
+            "columnName": "fallbackEurFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasNonFoil",
+            "columnName": "hasNonFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.hasFoil",
+            "columnName": "hasFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.foilType",
+            "columnName": "foilType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasEtched",
+            "columnName": "hasEtched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.flavorName",
+            "columnName": "flavorName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketFoilId",
+            "columnName": "cardmarketFoilId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "prices.trend",
+            "columnName": "p_trend",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "prices.avg",
+            "columnName": "p_avg",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "prices.low",
+            "columnName": "p_low",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "prices.avg1",
+            "columnName": "p_avg1",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "prices.avg7",
+            "columnName": "p_avg7",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "prices.avg30",
+            "columnName": "p_avg30",
+            "affinity": "REAL",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_trade_items_tradeId",
+            "unique": false,
+            "columnNames": [
+              "tradeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_trade_items_tradeId` ON `${TABLE_NAME}` (`tradeId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "trades",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "tradeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "decks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`archidektId` INTEGER NOT NULL, `name` TEXT NOT NULL, `owner` TEXT NOT NULL, `commanders` TEXT NOT NULL, `commanderScryfallId` TEXT, `artUrl` TEXT, `colorIdentity` TEXT NOT NULL, `cardCount` INTEGER NOT NULL, `importedAt` INTEGER NOT NULL, `saltId` TEXT, `powerLevel` REAL, `bracketRealistic` INTEGER, `bracketBaseline` INTEGER, `saltPercent` REAL, `archetype` TEXT, `scoredAt` INTEGER, `scoreError` TEXT, `archidektUpdatedAt` INTEGER, `updatedAt` INTEGER NOT NULL DEFAULT 0, `edhPowerLevel` REAL, `edhPowerAt` INTEGER, `edhPowerError` TEXT, `saltCard` TEXT, `svPowerLevel` REAL, `scrollVault` TEXT, `svAt` INTEGER, `svError` TEXT, PRIMARY KEY(`archidektId`))",
+        "fields": [
+          {
+            "fieldPath": "archidektId",
+            "columnName": "archidektId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "owner",
+            "columnName": "owner",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commanders",
+            "columnName": "commanders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commanderScryfallId",
+            "columnName": "commanderScryfallId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "artUrl",
+            "columnName": "artUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "colorIdentity",
+            "columnName": "colorIdentity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardCount",
+            "columnName": "cardCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importedAt",
+            "columnName": "importedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saltId",
+            "columnName": "saltId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "powerLevel",
+            "columnName": "powerLevel",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "bracketRealistic",
+            "columnName": "bracketRealistic",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "bracketBaseline",
+            "columnName": "bracketBaseline",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "saltPercent",
+            "columnName": "saltPercent",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "archetype",
+            "columnName": "archetype",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "scoredAt",
+            "columnName": "scoredAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "scoreError",
+            "columnName": "scoreError",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "archidektUpdatedAt",
+            "columnName": "archidektUpdatedAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "edhPowerLevel",
+            "columnName": "edhPowerLevel",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "edhPowerAt",
+            "columnName": "edhPowerAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "edhPowerError",
+            "columnName": "edhPowerError",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "saltCard",
+            "columnName": "saltCard",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "svPowerLevel",
+            "columnName": "svPowerLevel",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "scrollVault",
+            "columnName": "scrollVault",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "svAt",
+            "columnName": "svAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "svError",
+            "columnName": "svError",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "archidektId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "deck_cards",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deckId` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, `category` TEXT NOT NULL, `types` TEXT NOT NULL, `cmc` REAL NOT NULL, `commander` INTEGER NOT NULL, `foil` INTEGER NOT NULL, `etched` INTEGER NOT NULL DEFAULT 0, `gameChanger` INTEGER NOT NULL, `addedInApp` INTEGER NOT NULL DEFAULT 0, `scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, `setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, `rarity` TEXT NOT NULL, `imageUrl` TEXT, `cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, `hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, `cardmarketFoilId` INTEGER, FOREIGN KEY(`deckId`) REFERENCES `decks`(`archidektId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deckId",
+            "columnName": "deckId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "types",
+            "columnName": "types",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cmc",
+            "columnName": "cmc",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commander",
+            "columnName": "commander",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foil",
+            "columnName": "foil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "etched",
+            "columnName": "etched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "gameChanger",
+            "columnName": "gameChanger",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedInApp",
+            "columnName": "addedInApp",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setCode",
+            "columnName": "setCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setName",
+            "columnName": "setName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.collectorNumber",
+            "columnName": "collectorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketId",
+            "columnName": "cardmarketId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEur",
+            "columnName": "fallbackEur",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEurFoil",
+            "columnName": "fallbackEurFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasNonFoil",
+            "columnName": "hasNonFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.hasFoil",
+            "columnName": "hasFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.foilType",
+            "columnName": "foilType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasEtched",
+            "columnName": "hasEtched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.flavorName",
+            "columnName": "flavorName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketFoilId",
+            "columnName": "cardmarketFoilId",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_deck_cards_deckId",
+            "unique": false,
+            "columnNames": [
+              "deckId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_deck_cards_deckId` ON `${TABLE_NAME}` (`deckId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "decks",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "deckId"
+            ],
+            "referencedColumns": [
+              "archidektId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "binders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "scans",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `foil` INTEGER NOT NULL, `etched` INTEGER NOT NULL, `condition` TEXT NOT NULL, `language` TEXT NOT NULL, `quantity` INTEGER NOT NULL, `exactPrinting` INTEGER NOT NULL, `scannedAt` INTEGER NOT NULL, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0, `scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, `setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, `rarity` TEXT NOT NULL, `imageUrl` TEXT, `cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, `hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, `cardmarketFoilId` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foil",
+            "columnName": "foil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "etched",
+            "columnName": "etched",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "condition",
+            "columnName": "condition",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exactPrinting",
+            "columnName": "exactPrinting",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scannedAt",
+            "columnName": "scannedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setCode",
+            "columnName": "setCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setName",
+            "columnName": "setName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.collectorNumber",
+            "columnName": "collectorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketId",
+            "columnName": "cardmarketId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEur",
+            "columnName": "fallbackEur",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEurFoil",
+            "columnName": "fallbackEurFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasNonFoil",
+            "columnName": "hasNonFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.hasFoil",
+            "columnName": "hasFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.foilType",
+            "columnName": "foilType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasEtched",
+            "columnName": "hasEtched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.flavorName",
+            "columnName": "flavorName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketFoilId",
+            "columnName": "cardmarketFoilId",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "sync_deletions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `deletedAt` INTEGER NOT NULL, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "sync_control",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `applying` INTEGER NOT NULL, `changes` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "applying",
+            "columnName": "applying",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "changes",
+            "columnName": "changes",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "wishlist",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `foil` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, `anyPrinting` INTEGER NOT NULL, `notes` TEXT, `addedAt` INTEGER NOT NULL, `ownedAtAdd` INTEGER NOT NULL DEFAULT 0, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0, `scryfallId` TEXT NOT NULL, `name` TEXT NOT NULL, `setCode` TEXT NOT NULL, `setName` TEXT NOT NULL, `collectorNumber` TEXT NOT NULL, `rarity` TEXT NOT NULL, `imageUrl` TEXT, `cardmarketId` INTEGER, `fallbackEur` REAL, `fallbackEurFoil` REAL, `hasNonFoil` INTEGER NOT NULL, `hasFoil` INTEGER NOT NULL, `foilType` TEXT, `hasEtched` INTEGER NOT NULL DEFAULT 0, `flavorName` TEXT, `cardmarketFoilId` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foil",
+            "columnName": "foil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anyPrinting",
+            "columnName": "anyPrinting",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownedAtAdd",
+            "columnName": "ownedAtAdd",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setCode",
+            "columnName": "setCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.setName",
+            "columnName": "setName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.collectorNumber",
+            "columnName": "collectorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketId",
+            "columnName": "cardmarketId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEur",
+            "columnName": "fallbackEur",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.fallbackEurFoil",
+            "columnName": "fallbackEurFoil",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasNonFoil",
+            "columnName": "hasNonFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.hasFoil",
+            "columnName": "hasFoil",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "card.foilType",
+            "columnName": "foilType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.hasEtched",
+            "columnName": "hasEtched",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "card.flavorName",
+            "columnName": "flavorName",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "card.cardmarketFoilId",
+            "columnName": "cardmarketFoilId",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_wishlist_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_wishlist_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "index_wishlist_uid",
+            "unique": false,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_wishlist_uid` ON `${TABLE_NAME}` (`uid`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "value_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`day` TEXT NOT NULL, `cards` INTEGER NOT NULL, `values` TEXT NOT NULL, PRIMARY KEY(`day`))",
+        "fields": [
+          {
+            "fieldPath": "day",
+            "columnName": "day",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cards",
+            "columnName": "cards",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "values",
+            "columnName": "values",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "day"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "cm_products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idProduct` INTEGER NOT NULL, `name` TEXT NOT NULL, `idExpansion` INTEGER NOT NULL, PRIMARY KEY(`idProduct`))",
+        "fields": [
+          {
+            "fieldPath": "idProduct",
+            "columnName": "idProduct",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idExpansion",
+            "columnName": "idExpansion",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idProduct"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cm_products_idExpansion",
+            "unique": false,
+            "columnNames": [
+              "idExpansion"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cm_products_idExpansion` ON `${TABLE_NAME}` (`idExpansion`)"
+          },
+          {
+            "name": "index_cm_products_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cm_products_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "cm_set_expansions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`setCode` TEXT NOT NULL, `idExpansions` TEXT NOT NULL, PRIMARY KEY(`setCode`))",
+        "fields": [
+          {
+            "fieldPath": "setCode",
+            "columnName": "setCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idExpansions",
+            "columnName": "idExpansions",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "setCode"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "card_info",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`scryfallId` TEXT NOT NULL, `oracleId` TEXT, `colors` TEXT NOT NULL, `colorIdentity` TEXT NOT NULL, `typeLine` TEXT NOT NULL, `cmc` REAL NOT NULL, `edhrecRank` INTEGER, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`scryfallId`))",
+        "fields": [
+          {
+            "fieldPath": "scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "oracleId",
+            "columnName": "oracleId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "colors",
+            "columnName": "colors",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorIdentity",
+            "columnName": "colorIdentity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typeLine",
+            "columnName": "typeLine",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cmc",
+            "columnName": "cmc",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "edhrecRank",
+            "columnName": "edhrecRank",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "scryfallId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "recommendations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`deckId` INTEGER NOT NULL, `source` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, `json` TEXT NOT NULL, PRIMARY KEY(`deckId`, `source`))",
+        "fields": [
+          {
+            "fieldPath": "deckId",
+            "columnName": "deckId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "deckId",
+            "source"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "trade_skips",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `at` INTEGER NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "at",
+            "columnName": "at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "source_prices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`scryfallId` TEXT NOT NULL, `source` TEXT NOT NULL, `finish` TEXT NOT NULL, `price` REAL, `nm` REAL, `ex` REAL, `vg` REAL, `g` REAL, `buy` REAL, `url` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`scryfallId`, `source`, `finish`))",
+        "fields": [
+          {
+            "fieldPath": "scryfallId",
+            "columnName": "scryfallId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finish",
+            "columnName": "finish",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "nm",
+            "columnName": "nm",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "ex",
+            "columnName": "ex",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "vg",
+            "columnName": "vg",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "g",
+            "columnName": "g",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "buy",
+            "columnName": "buy",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "scryfallId",
+            "source",
+            "finish"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '93f5e729872186016faa1dedf58125aa')"
+    ]
+  }
+}

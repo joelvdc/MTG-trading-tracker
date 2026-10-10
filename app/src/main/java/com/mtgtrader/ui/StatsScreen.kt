@@ -64,6 +64,7 @@ import com.mtgtrader.data.CollectionFilter
 import com.mtgtrader.data.CollectionStats
 import com.mtgtrader.data.CollectionStatsResult
 import com.mtgtrader.data.PriceType
+import com.mtgtrader.data.Pricing
 import com.mtgtrader.data.StatCard
 import com.mtgtrader.data.StatEntry
 import com.mtgtrader.data.StatMode
@@ -89,7 +90,9 @@ fun StatsScreen(nav: NavController) {
     var binder by rememberSaveable { mutableStateOf<Long?>(null) }
     var mode by rememberSaveable { mutableStateOf(StatMode.CARDS) }
 
-    val stats by produceState<CollectionStatsResult?>(null, rows, binder, priceType, binders, deckNames, gameChangers, setDates) {
+    // The chosen price source and its prices (since 1.29) change the values too.
+    val pricing = listOf(Pricing.source, Pricing.others, Pricing.usdPerEuro)
+    val stats by produceState<CollectionStatsResult?>(null, rows, binder, priceType, binders, deckNames, gameChangers, setDates, pricing) {
         val all = rows ?: return@produceState
         value = withContext(Dispatchers.Default) {
             CollectionStats.compute(
@@ -131,6 +134,19 @@ fun StatsScreen(nav: NavController) {
                 }
             }
             item(key = "overview") { Overview(s, priceType) }
+            val scoped = rows.orEmpty().let { all -> if (binder == null) all else all.filter { it.item.binderId == binder } }
+            item(key = "sources") {
+                val totals = remember(scoped, priceType, pricing) { sourceTotals(scoped, priceType) }
+                Section("Value by price source", "Cardmarket is Europe's market; TCGplayer and Card Kingdom are American. Card Kingdom's follow each copy's condition.") {
+                    SourceComparison(totals, Pricing.source, Pricing.usdPerEuro != null)
+                }
+            }
+            item(key = "gaps") {
+                val gaps = remember(scoped, priceType, pricing) { priceGaps(scoped, priceType) }
+                Section("Europe or the US?", "The cards whose price differs most between Cardmarket and TCGplayer, over the copies you own.") {
+                    PriceGapList(gaps)
+                }
+            }
             item(key = "mode") {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     StatMode.entries.forEachIndexed { i, m ->
@@ -194,7 +210,7 @@ private fun Overview(s: CollectionStatsResult, priceType: PriceType) {
                 Figure("Printings", "%,d".format(s.printings), Modifier.weight(1f))
             }
             Row {
-                Figure("Value (${priceType.short})", Fmt.money(s.value), Modifier.weight(1f))
+                Figure("Value (${if (Pricing.source == com.mtgtrader.data.PriceSource.CARDMARKET) priceType.short else Pricing.source.label})", Fmt.money(s.value), Modifier.weight(1f))
                 Figure("Per card", Fmt.money(s.averageValue), Modifier.weight(1f))
                 Figure("Foil", if (s.copies > 0) "%.0f%%".format(s.foilCopies * 100.0 / s.copies) else "–", Modifier.weight(1f))
             }

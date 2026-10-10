@@ -39,7 +39,7 @@ import java.io.File
 
 /** 1.27 against a real database: the update from version 11, and signed/altered stacks. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], application = android.app.Application::class)
 class Release127DbTest {
     private val context get() = RuntimeEnvironment.getApplication()
     private lateinit var db: AppDatabase
@@ -90,7 +90,7 @@ class Release127DbTest {
         createVersion11(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-test.db")
-            .addMigrations(AppDatabase.MIGRATION_11_12)
+            .addMigrations(AppDatabase.MIGRATION_11_12, AppDatabase.MIGRATION_12_13)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

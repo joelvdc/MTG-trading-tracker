@@ -37,7 +37,15 @@ data class ScryFace(
 data class ScryPrices(
     val eur: String? = null,
     @SerialName("eur_foil") val eurFoil: String? = null,
+    /** TCGplayer's market prices in US dollars. Since 1.29. */
+    val usd: String? = null,
+    @SerialName("usd_foil") val usdFoil: String? = null,
+    @SerialName("usd_etched") val usdEtched: String? = null,
 )
+
+/** Where to buy the card; the app uses TCGplayer's link. Since 1.29. */
+@Serializable
+data class ScryPurchaseUris(val tcgplayer: String? = null)
 
 @Serializable
 data class ScryCard(
@@ -53,6 +61,7 @@ data class ScryCard(
     @SerialName("image_uris") val imageUris: ScryImageUris? = null,
     @SerialName("card_faces") val cardFaces: List<ScryFace>? = null,
     val prices: ScryPrices = ScryPrices(),
+    @SerialName("purchase_uris") val purchaseUris: ScryPurchaseUris? = null,
     val finishes: List<String> = emptyList(),
     @SerialName("promo_types") val promoTypes: List<String> = emptyList(),
     val digital: Boolean = false,
@@ -220,6 +229,19 @@ class ScryfallApi(private val http: OkHttpClient) {
             .distinctBy { it.label.lowercase() }
     }
 
+    /** Gets every card Scryfall sends (with their TCGplayer prices), see [PriceSourceStore.fromScryfall]. Since 1.29. */
+    var onCards: (suspend (List<ScryCard>) -> Unit)? = null
+
+    private suspend fun <T> seen(result: T): T {
+        val cards = when (result) {
+            is ScryCard -> listOf(result)
+            is List<*> -> result.filterIsInstance<ScryCard>()
+            else -> emptyList()
+        }
+        if (cards.isNotEmpty()) runCatching { onCards?.invoke(cards) }
+        return result
+    }
+
     /** All paper printings of a card, newest first. */
     suspend fun prints(name: String): List<ScryCard> {
         val all = printsExact(name)
@@ -245,13 +267,13 @@ class ScryfallApi(private val http: OkHttpClient) {
             next = if (list.hasMore) list.nextPage?.toHttpUrl() else null
             pages++
         }
-        return out
+        return seen(out)
     }
 
     /** Free-form Scryfall search (e.g. `set:mkm`), first page only. */
     suspend fun search(query: String): List<ScryCard> {
         val body = call(url("cards/search", "q" to "$query game:paper", "order" to "name")) ?: return emptyList()
-        return json.decodeFromString<ScryList>(body).data
+        return seen(json.decodeFromString<ScryList>(body).data)
     }
 
     /** Every card (one printing each) matching a search, over up to [maxPages] pages of 175. */
@@ -266,7 +288,7 @@ class ScryfallApi(private val http: OkHttpClient) {
             next = if (list.hasMore) list.nextPage?.toHttpUrl() else null
             pages++
         }
-        return out
+        return seen(out)
     }
 
     /** Every set Scryfall knows, including promo and token sets. */
@@ -277,12 +299,12 @@ class ScryfallApi(private val http: OkHttpClient) {
 
     suspend fun fuzzy(name: String, set: String? = null): ScryCard? {
         val body = call(url("cards/named", "fuzzy" to name, "set" to set)) ?: return null
-        return json.decodeFromString<ScryCard>(body)
+        return seen(json.decodeFromString<ScryCard>(body))
     }
 
     suspend fun bySetNumber(set: String, number: String): ScryCard? {
         val body = call(url("cards/${set.lowercase()}/$number")) ?: return null
-        return json.decodeFromString<ScryCard>(body)
+        return seen(json.decodeFromString<ScryCard>(body))
     }
 
     /**
@@ -299,7 +321,7 @@ class ScryfallApi(private val http: OkHttpClient) {
             done += chunk.size
             onProgress(done, identifiers.size)
         }
-        return out
+        return seen(out)
     }
 
     companion object {

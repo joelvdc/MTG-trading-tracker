@@ -32,6 +32,15 @@ class Settings(context: Context) {
     private val _priceType = MutableStateFlow(PriceType.fromKey(prefs.getString("priceType", null)))
     val priceType: StateFlow<PriceType> = _priceType
 
+    private val _priceSource = MutableStateFlow(PriceSource.fromKey(prefs.getString("priceSource", null)))
+    /** Where the price of a card comes from (synced). Since 1.29. */
+    val priceSource: StateFlow<PriceSource> = _priceSource
+
+    fun setPriceSource(s: PriceSource) {
+        _priceSource.value = s
+        prefs.edit().putString("priceSource", s.key).stamp().apply()
+    }
+
     private val _currency = MutableStateFlow(AppCurrency.fromKey(prefs.getString("currency", null)))
     /** The currency prices are shown in (synced). Since 1.28. */
     val currency: StateFlow<AppCurrency> = _currency
@@ -209,6 +218,7 @@ class Settings(context: Context) {
         values = buildMap {
             put("priceType", priceType.value.key)
             put("currency", currency.value.name)
+            put("priceSource", priceSource.value.key)
             put("tolerancePct", tolerancePct.value.toString())
             put("archidektUser", archidektUser)
             put("deckSort", deckSort.name)
@@ -225,6 +235,7 @@ class Settings(context: Context) {
         val v = p.values
         val e = prefs.edit()
         v["priceType"]?.let { _priceType.value = PriceType.fromKey(it); e.putString("priceType", it) }
+        v["priceSource"]?.let { _priceSource.value = PriceSource.fromKey(it); e.putString("priceSource", it) }
         v["currency"]?.let { _currency.value = AppCurrency.fromKey(it); e.putString("currency", it) }
         v["tolerancePct"]?.toIntOrNull()?.let { _tolerance.value = it; e.putInt("tolerancePct", it) }
         v["archidektUser"]?.let { e.putString("archidektUser", it) }

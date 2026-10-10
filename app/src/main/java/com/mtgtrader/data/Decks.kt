@@ -130,9 +130,10 @@ data class DeckCardRow(
     @Embedded(prefix = "pr_") val price: PriceEntity?,
 ) {
     fun unitPrice(type: PriceType): Double? =
-        price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
+        Pricing.unit(item.card.scryfallId, Finish.of(item.foil, item.etched), "NM", price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil))
 
-    val trend: PriceTrend? get() = price?.toSet(item.foil)?.trendChange
+    /** Cardmarket's trend arrow; none while another price source is chosen (since 1.29). */
+    val trend: PriceTrend? get() = if (Pricing.source == PriceSource.CARDMARKET) price?.toSet(item.foil)?.trendChange else null
 }
 
 /** The two rule-zero cards Commander Salt draws for a deck. */

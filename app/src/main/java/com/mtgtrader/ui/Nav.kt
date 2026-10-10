@@ -88,7 +88,12 @@ fun AppNav() {
         c.appScope.launch { c.gameChangers.load() }
         c.appScope.launch { c.backups.dailyIfDue() }
         c.appScope.launch { c.setIcons.load() }
-        c.appScope.launch { c.exchangeRates.load() }
+        c.appScope.launch {
+            c.exchangeRates.load()
+            c.exchangeRates.rates.value?.perEuro?.get("USD")?.let { com.mtgtrader.data.Pricing.usdPerEuro = it }
+            // With the dollar rate known, today's value includes TCGplayer's and Card Kingdom's (since 1.29).
+            runCatching { c.priceSources.loadOwned(); c.history.record() }
+        }
         c.appScope.launch {
             if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1
         }

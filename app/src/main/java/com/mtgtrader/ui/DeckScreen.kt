@@ -264,7 +264,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         val sections = remember(rows, groupBy, onlyBracket, tagged) {
             DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy)
         }
-        val value = remember(rows, priceType) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
+        val value = remember(rows, priceType, com.mtgtrader.data.Pricing.source, com.mtgtrader.data.Pricing.others, com.mtgtrader.data.Pricing.usdPerEuro) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 32.dp)) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
             item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
