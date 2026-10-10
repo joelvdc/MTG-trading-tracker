@@ -533,6 +533,8 @@ suspend fun SnackbarHostState.showUndo(message: String): Boolean {
 /** Price going up (green ▲), down (red ▼) or unchanged (▬), with the percentage; nothing without data. */
 @Composable
 fun TrendBadge(trend: PriceTrend?, modifier: Modifier = Modifier, style: TextStyle = MaterialTheme.typography.labelMedium) {
+    // Cardmarket's arrows only make sense next to Cardmarket's prices (since 1.29).
+    if (com.mtgtrader.data.Pricing.source != com.mtgtrader.data.PriceSource.CARDMARKET) return
     if (trend == null) return
     val color = when {
         trend.flat -> MaterialTheme.colorScheme.onSurfaceVariant
