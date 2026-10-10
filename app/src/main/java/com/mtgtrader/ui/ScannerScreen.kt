@@ -129,7 +129,7 @@ data class ScannedEntry(
     /** The printing was told apart by its set symbol (see [SetSymbolMatcher]). Since 1.16. */
     val bySymbol: Boolean = false,
 ) {
-    fun unitPrice(type: PriceType): Double? = prices.best(type) ?: card.fallback(finish.foil)
+    fun unitPrice(type: PriceType): Double? = com.mtgtrader.data.Pricing.unit(card.scryfallId, finish, "NM", prices.best(type) ?: card.fallback(finish.foil))
 }
 
 /**

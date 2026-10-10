@@ -67,6 +67,8 @@ import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.Marks
 import com.mtgtrader.data.Money
 import com.mtgtrader.data.PriceSet
+import com.mtgtrader.data.PriceSource
+import com.mtgtrader.data.Pricing
 import com.mtgtrader.data.PriceType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -162,12 +164,14 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                             SetLine(card, " · ${card.rarity}")
                             Text(card.setName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(Fmt.money(prices(v.finish.foil)?.best(priceType)), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                val main = Pricing.unit(card.scryfallId, v.finish, v.condition, prices(v.finish.foil)?.best(priceType))
+                                val approx = Pricing.isApprox(card.scryfallId, v.finish, v.condition)
+                                Text((if (approx) "≈" else "") + Fmt.money(main), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                 Spacer(Modifier.width(6.dp))
                                 TrendBadge(prices(v.finish.foil)?.trendChange)
                                 if (v.quantity > 1) {
                                     Spacer(Modifier.width(6.dp))
-                                    Text("· ${Fmt.money(prices(v.finish.foil)?.best(priceType)?.times(v.quantity))} for ${v.quantity}", style = MaterialTheme.typography.bodySmall)
+                                    Text("· ${Fmt.money(main?.times(v.quantity))} for ${v.quantity}", style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
@@ -285,6 +289,10 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                             }
                         }
                     }
+
+                    // TCGplayer and Card Kingdom (since 1.29).
+                    HorizontalDivider()
+                    OtherPrices(card.scryfallId, v.finish, v.condition) { url -> runCatching { uriHandler.openUri(url) } }
 
                     // Cardmarket's numbers, folded away.
                     HorizontalDivider()
@@ -443,6 +451,43 @@ private fun MarkCheckbox(label: String, checked: Boolean, onChange: (Boolean) ->
     Row(Modifier.clickable { onChange(!checked) }.padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Checkbox(checked = checked, onCheckedChange = onChange)
         Text(label, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/** TCGplayer's and Card Kingdom's price for this copy (Card Kingdom's for its condition), what Card Kingdom pays, and links. */
+@Composable
+internal fun OtherPrices(scryfallId: String, finish: com.mtgtrader.data.Finish, condition: String, onLink: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text("Prices elsewhere", style = MaterialTheme.typography.titleSmall)
+        if (Pricing.usdPerEuro == null) {
+            Text("Waiting for the exchange rates.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@Column
+        }
+        for (s in listOf(PriceSource.TCGPLAYER, PriceSource.CARD_KINGDOM)) {
+            val price = Pricing.at(s, scryfallId, finish, condition, null)
+            val url = Pricing.url(s, scryfallId, finish)
+            Row(
+                Modifier.fillMaxWidth().then(if (url != null) Modifier.clickable { onLink(url) } else Modifier).padding(vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        s.label + if (s == PriceSource.CARD_KINGDOM) " (${Pricing.ckCondition(condition).uppercase()})" else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (s == PriceSource.CARD_KINGDOM) {
+                        Pricing.cardKingdomPays(scryfallId, finish)?.let {
+                            Text("Pays ${Fmt.money(it)} (buylist, near mint)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                Text(price?.let(Fmt::money) ?: "no price", style = MaterialTheme.typography.bodyMedium, fontWeight = if (price != null) FontWeight.SemiBold else null)
+                if (url != null) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, "Open on ${s.label}", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
     }
 }
 

@@ -254,10 +254,11 @@ private fun PrintRow(
     onAdd: (Finish) -> Unit,
 ) {
     val ref = card.toRef()
-    fun priceOf(foil: Boolean) = price?.toSet(foil)?.best(priceType) ?: ref.fallback(foil)
+    fun priceOf(finish: Finish) =
+        com.mtgtrader.data.Pricing.unit(ref.scryfallId, finish, "NM", price?.toSet(finish.foil)?.best(priceType) ?: ref.fallback(finish.foil))
     /** e.g. "€1.20", "Surge foil €8.50"; "~" marks etched copies priced as regular foil. */
     fun label(finish: Finish): String {
-        val money = (if (ref.etchedPriceIsApprox(finish)) "~" else "") + Fmt.money(priceOf(finish.foil))
+        val money = (if (ref.etchedPriceIsApprox(finish)) "~" else "") + Fmt.money(priceOf(finish))
         return when {
             finish.foil -> "${ref.finishName(finish)} $money"
             replaceMode -> "Normal $money"

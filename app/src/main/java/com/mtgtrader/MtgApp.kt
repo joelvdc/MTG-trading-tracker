@@ -30,6 +30,8 @@ import com.mtgtrader.scan.SetSymbolMatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
@@ -68,6 +70,7 @@ class AppContainer(context: Context) {
     val settings = Settings(context)
     val exchangeRates = com.mtgtrader.data.ExchangeRateStore(context, http)
     val scryfall = ScryfallApi(http)
+    val priceSources = com.mtgtrader.data.PriceSourceStore(context, http, db, scryfall)
     val network = NetworkMonitor(context)
     val prices = PriceGuideRepository(context, http, db, settings)
     val setIcons = SetIcons(context, scryfall, appScope)
@@ -76,7 +79,7 @@ class AppContainer(context: Context) {
     val history = ValueHistory(db)
     val cardDetails = com.mtgtrader.data.CardDetails(db, scryfall)
     val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)
-    val updater = DataUpdater(context, settings, prices, network, catalog, history, cardDetails)
+    val updater = DataUpdater(context, settings, prices, network, catalog, history, cardDetails, priceSources)
     private val browser = HiddenBrowser(context)
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
@@ -94,11 +97,24 @@ class AppContainer(context: Context) {
     )
 
     init {
-        // Prices show in the chosen currency at the latest rate (since 1.28).
+        // Prices show in the chosen currency at the latest rate (since 1.28), from the chosen source (since 1.29).
+        // Set right away, so the first screen is right; afterwards the watchers below only pass on changes.
+        val display = { cur: com.mtgtrader.data.AppCurrency, rates: com.mtgtrader.data.ExchangeRates? -> com.mtgtrader.data.DisplayCurrency.of(cur, rates) }
+        val display0 = display(settings.currency.value, exchangeRates.rates.value)
+        com.mtgtrader.data.Money.display = display0
         appScope.launch {
-            kotlinx.coroutines.flow.combine(settings.currency, exchangeRates.rates) { cur, rates -> com.mtgtrader.data.DisplayCurrency.of(cur, rates) }
+            kotlinx.coroutines.flow.combine(settings.currency, exchangeRates.rates, display)
+                .dropWhile { it == display0 }
                 .collect { com.mtgtrader.data.Money.display = it }
         }
+        val source0 = settings.priceSource.value
+        com.mtgtrader.data.Pricing.source = source0
+        appScope.launch { settings.priceSource.dropWhile { it == source0 }.collect { com.mtgtrader.data.Pricing.source = it } }
+        val usd = { r: com.mtgtrader.data.ExchangeRates? -> r?.perEuro?.get("USD") }
+        val usd0 = usd(exchangeRates.rates.value)
+        com.mtgtrader.data.Pricing.usdPerEuro = usd0
+        appScope.launch { exchangeRates.rates.map(usd).dropWhile { it == usd0 }.collect { com.mtgtrader.data.Pricing.usdPerEuro = it } }
+        scryfall.onCards = { cards -> priceSources.fromScryfall(cards) }
         sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
         repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
         repo.beforeOrderImport = { backups.before(com.mtgtrader.data.BackupReason.ORDER_IMPORT) }

@@ -35,6 +35,18 @@ import com.mtgtrader.data.DisplayCurrency
 import com.mtgtrader.data.ExchangeRates
 import com.mtgtrader.data.Money
 import com.mtgtrader.ui.CurrencySection
+import com.mtgtrader.data.Finish
+import com.mtgtrader.data.OtherPrices
+import com.mtgtrader.data.PriceSource
+import com.mtgtrader.data.PriceSourceStore
+import com.mtgtrader.data.Pricing
+import com.mtgtrader.data.SourcePrice
+import com.mtgtrader.ui.OtherPrices
+import com.mtgtrader.ui.PriceGapList
+import com.mtgtrader.ui.PriceSourceSection
+import com.mtgtrader.ui.SourceComparison
+import com.mtgtrader.ui.priceGaps
+import com.mtgtrader.ui.sourceTotals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -164,5 +176,38 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/currencies.png")
+    }
+
+    /** 1.29: the price sources compared, the biggest gaps, a card's other prices and the Settings choice. */
+    @Test fun priceSources() {
+        Pricing.usdPerEuro = 1.12
+        fun prices(id: String, tcg: Double, ck: Double) = id to OtherPrices.of(
+            listOf(
+                SourcePrice(id, "tcgplayer", "NONFOIL", tcg, url = "https://tcgplayer.com"),
+                SourcePrice(id, "cardkingdom", "NONFOIL", ck, nm = ck, ex = ck * 0.8, vg = ck * 0.7, g = ck * 0.5, buy = ck * 0.4, url = "https://cardkingdom.com"),
+            ),
+        )
+        Pricing.others = mapOf(prices("ice61", 2.54, 2.99), prices("ltr246", 95.0, 119.99), prices("mh2267", 1.1, 1.49))
+        fun row(name: String, set: String, number: String, qty: Int, eur: Double, cond: String = "NM") =
+            CollectionRow(CollectionItem(card = ref(name, set, number, "rare").copy(fallbackEur = eur), foil = false, quantity = qty, condition = cond), null)
+        val rows = listOf(row("Brainstorm", "ice", "61", 4, 1.62), row("The One Ring", "ltr", "246", 1, 64.9, "EX"), row("Counterspell", "mh2", "267", 2, 1.2), row("Island", "blb", "268", 8, 0.05))
+        try {
+            compose.setContent {
+                MtgColors(dark = false) {
+                    Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            SourceComparison(sourceTotals(rows, PriceType.TREND), PriceSource.CARDMARKET, ratesKnown = true, selected = PriceSource.TCGPLAYER) {}
+                            PriceGapList(priceGaps(rows, PriceType.TREND, count = 3))
+                            OtherPrices("ltr246", Finish.NONFOIL, "EX") {}
+                            PriceSourceSection(PriceSource.CARD_KINGDOM, PriceSourceStore.SourceStatus(1_760_000_000_000, 1_760_000_000_000)) {}
+                        }
+                    }
+                }
+            }
+            compose.onRoot().captureRoboImage("src/test/screenshots/price_sources.png")
+        } finally {
+            Pricing.usdPerEuro = null
+            Pricing.others = emptyMap()
+        }
     }
 }

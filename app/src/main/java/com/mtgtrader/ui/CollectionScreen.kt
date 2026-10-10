@@ -345,7 +345,9 @@ fun CollectionScreen(nav: NavController) {
                     )
             }
         }
-        val shown = remember(inView, cardFilter, sortSpec, priceType, deckNames) {
+        // Sorting and filtering by value follow the price source and its prices (since 1.29).
+        val pricing = listOf(com.mtgtrader.data.Pricing.source, com.mtgtrader.data.Pricing.others, com.mtgtrader.data.Pricing.usdPerEuro)
+        val shown = remember(inView, cardFilter, sortSpec, priceType, deckNames, pricing) {
             val filtered = if (cardFilter.isEmpty) inView else inView.filter { cardFilter.matches(it, priceType, deckNames) }
             filtered.sortedWith(sortSpec.comparator(priceType))
         }
@@ -632,7 +634,7 @@ internal fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String
             Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             if (item.quantity > 1) {
                 Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -669,7 +671,7 @@ internal fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?,
                 }
             }
         }
-        Text(Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
+        Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
         TrendBadge(row.trend)
         if (item.quantity > 1) {
             Text("×${item.quantity} · ${Fmt.money(unit?.let { it * item.quantity })}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -707,10 +709,13 @@ internal fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder:
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 TrendBadge(row.trend)
                 if (item.quantity > 1) Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
+
+/** "≈" when the chosen price source has no price for the card, so Cardmarket's stands in. Since 1.29. */
+internal fun approx(row: CollectionRow) = if (row.isApprox) "≈" else ""

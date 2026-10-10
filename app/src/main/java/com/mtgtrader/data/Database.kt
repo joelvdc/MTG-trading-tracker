@@ -360,9 +360,9 @@ interface DeckDao {
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
-        CardInfo::class, RecCache::class, TradeSkip::class,
+        CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -379,15 +379,27 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tradeSkipDao(): TradeSkipDao
     abstract fun valueHistoryDao(): ValueHistoryDao
     abstract fun catalogDao(): CatalogDao
+    abstract fun sourcePriceDao(): SourcePriceDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /** Version 13 (app 1.29): TCGplayer's and Card Kingdom's prices, kept on the phone (not synced). */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `source_prices` (`scryfallId` TEXT NOT NULL, `source` TEXT NOT NULL, `finish` TEXT NOT NULL, " +
+                        "`price` REAL, `nm` REAL, `ex` REAL, `vg` REAL, `g` REAL, `buy` REAL, `url` TEXT, `updatedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`scryfallId`, `source`, `finish`))"
+                )
+            }
+        }
 
         /**
          * Version 12 (app 1.27): signed and altered copies, each kept as a stack of their own. Existing

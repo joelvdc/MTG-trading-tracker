@@ -24,6 +24,7 @@ class DataUpdater(
     private val catalog: CardmarketCatalog,
     private val history: ValueHistory,
     private val cardDetails: CardDetails,
+    private val priceSources: PriceSourceStore,
 ) {
     /** Whether automatic updates may run right now. */
     fun allowedNow(): Boolean = settings.autoUpdate.value && (!settings.wifiOnly.value || network.onUnmeteredNetwork())
@@ -37,6 +38,8 @@ class DataUpdater(
         if (allowedNow()) {
             prices.refreshIfStale()
             if (catalog.isStale) catalog.refresh()
+            // TCGplayer and Card Kingdom (since 1.29).
+            runCatching { priceSources.refreshIfStale() }
         }
         afterUpdate()
     }
@@ -44,6 +47,7 @@ class DataUpdater(
     /** After prices changed (or on opening the app): missing links, today's value. */
     suspend fun afterUpdate() {
         runCatching { catalog.repair() }
+        runCatching { priceSources.loadOwned() }
         runCatching { history.record() }
         // Colours, types and popularity for sorting, filters and the trade binder (once per card).
         runCatching { cardDetails.fillMissing() }

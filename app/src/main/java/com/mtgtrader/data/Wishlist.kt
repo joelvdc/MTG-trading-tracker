@@ -40,7 +40,8 @@ data class WishlistRow(
     @Embedded val item: WishlistItem,
     @Embedded(prefix = "pr_") val price: PriceEntity?,
 ) {
-    fun unitPrice(type: PriceType): Double? = price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil)
+    fun unitPrice(type: PriceType): Double? =
+        Pricing.unit(item.card.scryfallId, if (item.foil) Finish.FOIL else Finish.NONFOIL, "NM", price?.toSet(item.foil)?.best(type) ?: item.card.fallback(item.foil))
 }
 
 /** A wishlist entry's standing against the collection: copies owned now, and copies got since it was added. */
