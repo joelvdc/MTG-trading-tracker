@@ -33,6 +33,8 @@ import com.mtgtrader.BuildConfig
 import com.mtgtrader.container
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.ThemeMode
+import com.mtgtrader.data.AppCurrency
+import com.mtgtrader.data.ExchangeRates
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.PriceUpdateState
 import kotlinx.coroutines.launch
@@ -55,6 +57,8 @@ fun SettingsScreen(nav: NavController) {
     val archidekt by c.archidekt.status.collectAsStateWithLifecycle()
     val unsynced by androidx.compose.runtime.produceState<Int?>(null, archidekt.lastSyncAt, archidekt.running) { value = c.archidekt.unsyncedCopies() }
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
+    val currency by c.settings.currency.collectAsStateWithLifecycle()
+    val rates by c.exchangeRates.rates.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
     val lastFetch by c.settings.lastPriceFetch.collectAsStateWithLifecycle()
     val guideDate by c.settings.priceGuideDate.collectAsStateWithLifecycle()
@@ -83,6 +87,9 @@ fun SettingsScreen(nav: NavController) {
                     }
                 }
             }
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            CurrencySection(currency, rates, c.settings::setCurrency)
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("Fair trade margin: ±$tolerance%", style = MaterialTheme.typography.titleMedium)
@@ -249,5 +256,45 @@ private fun formatGuideDate(raw: String?): String {
         if (d != null) Fmt.dateTime(d.time) else raw
     } catch (e: Exception) {
         raw
+    }
+}
+
+/** Settings → Currency: what prices are shown in, and the rates used. Since 1.28. */
+@Composable
+internal fun CurrencySection(currency: AppCurrency, rates: ExchangeRates?, onPick: (AppCurrency) -> Unit) {
+    Text("Currency", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Prices come from Cardmarket in euros and are converted with the European Central Bank's daily rates. " +
+            "Purchase prices you type are in this currency too. CSV files and Archidekt keep euros.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    AppCurrency.entries.forEach { cur ->
+        Row(Modifier.fillMaxWidth().clickable { onPick(cur) }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = cur == currency, onClick = { onPick(cur) })
+            Text(cur.label)
+        }
+    }
+    if (currency != AppCurrency.EUR) {
+        Text(
+            rateLine(currency, rates),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** "1 € = 7.4603 DKK · rates of 9 Oct 2026 (ECB)". */
+internal fun rateLine(currency: AppCurrency, rates: ExchangeRates?): String {
+    val rate = rates?.rate(currency)
+    return when {
+        rate != null -> {
+            val day = runCatching {
+                java.time.LocalDate.parse(rates.date).format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM))
+            }.getOrDefault(rates.date)
+            "1 € = %.4f %s · rates of %s (European Central Bank)".format(rate, currency.name, day)
+        }
+        currency == AppCurrency.DKK -> "1 € ≈ 7.46 DKK (the krone's fixed rate) until the first download of the daily rates."
+        else -> "Waiting for the daily exchange rates: prices show in euros until then."
     }
 }

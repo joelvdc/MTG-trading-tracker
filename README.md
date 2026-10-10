@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.27.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.28.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.27-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.28-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -37,6 +37,11 @@ instead (bigger, runs on any device). Either way, a new version installs over th
 - **Prices:** Cardmarket's public daily price guide (trend, average, low, 1/7/30-day averages, normal + foil), downloaded
   automatically once a day (~26 MB) when the app opens and in the background. Settings can turn automatic updates off
   or limit them to Wi-Fi; "Update prices now" always runs.
+- **Currency:** Cardmarket's prices are in euros. Settings → **Currency** shows them in Danish kroner or US dollars
+  instead, converted with the [European Central Bank's daily rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html)
+  (downloaded twice a day at most, kept for offline use; the choice syncs between phones). Purchase and agreed prices
+  you type are in that currency too; the app keeps them in euros, which is also what CSV files and Archidekt get. The
+  value-over-time chart is converted at today's rate.
 - **Cardmarket's product list** (~20 MB, once a week): Scryfall links almost every printing to its Cardmarket product,
   but not all. With this list the app finds the missing ones itself (The List reprints such as Urza's Saga, some surge
   foils, older promos) and the separate foil products of special foils such as The Lord of the Rings' silver-foil scrolls.

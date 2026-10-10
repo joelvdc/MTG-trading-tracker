@@ -45,6 +45,7 @@ import com.mtgtrader.data.ColorMatch
 import com.mtgtrader.data.DeckFilter
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.MarkFilter
+import com.mtgtrader.data.Money
 import com.mtgtrader.data.SortField
 import com.mtgtrader.data.SortLevel
 import com.mtgtrader.data.SortSpec
@@ -131,8 +132,8 @@ fun FilterDialog(
 ) {
     var f by remember { mutableStateOf(initial) }
     var setQuery by remember { mutableStateOf("") }
-    var minText by remember { mutableStateOf(initial.minPrice?.let { "%.2f".format(it) } ?: "") }
-    var maxText by remember { mutableStateOf(initial.maxPrice?.let { "%.2f".format(it) } ?: "") }
+    var minText by remember { mutableStateOf(Money.input(initial.minPrice)) }
+    var maxText by remember { mutableStateOf(Money.input(initial.maxPrice)) }
     fun <T> Set<T>.toggle(v: T) = if (v in this) this - v else this + v
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -202,14 +203,14 @@ fun FilterDialog(
                         languages.forEach { l -> FilterChip(selected = l in f.languages, onClick = { f = f.copy(languages = f.languages.toggle(l)) }, label = { Text(l) }) }
                     }
                 }
-                Part("Value per card (€)")
+                Part("Value per card (${Money.symbol})")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = minText, onValueChange = { minText = it; f = f.copy(minPrice = Fmt.parseMoney(it)) }, label = { Text("From") },
+                        value = minText, onValueChange = { minText = it; f = f.copy(minPrice = Fmt.parseMoneyEur(it)) }, label = { Text("From") },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
-                        value = maxText, onValueChange = { maxText = it; f = f.copy(maxPrice = Fmt.parseMoney(it)) }, label = { Text("To") },
+                        value = maxText, onValueChange = { maxText = it; f = f.copy(maxPrice = Fmt.parseMoneyEur(it)) }, label = { Text("To") },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
                     )
                 }
@@ -257,9 +258,9 @@ fun ActiveFilterChips(f: CollectionFilter, sets: List<OwnedSet>, onChange: (Coll
         if (f.minPrice != null || f.maxPrice != null) {
             add(
                 when {
-                    f.maxPrice == null -> "€%.2f and up".format(f.minPrice)
-                    f.minPrice == null -> "Up to €%.2f".format(f.maxPrice)
-                    else -> "€%.2f–€%.2f".format(f.minPrice, f.maxPrice)
+                    f.maxPrice == null -> "${Fmt.money(f.minPrice)} and up"
+                    f.minPrice == null -> "Up to ${Fmt.money(f.maxPrice)}"
+                    else -> "${Fmt.money(f.minPrice)}–${Fmt.money(f.maxPrice)}"
                 } to f.copy(minPrice = null, maxPrice = null)
             )
         }

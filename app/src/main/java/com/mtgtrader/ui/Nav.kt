@@ -88,6 +88,7 @@ fun AppNav() {
         c.appScope.launch { c.gameChangers.load() }
         c.appScope.launch { c.backups.dailyIfDue() }
         c.appScope.launch { c.setIcons.load() }
+        c.appScope.launch { c.exchangeRates.load() }
         c.appScope.launch {
             if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1
         }

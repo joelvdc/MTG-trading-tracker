@@ -324,7 +324,7 @@ private fun Columns(entries: List<StatEntry>, mode: StatMode, labelEvery: Int = 
             Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                 if (entries.size <= 12) {
                     Text(
-                        if (mode == StatMode.CARDS) "${e.copies}" else "€%.0f".format(e.value),
+                        if (mode == StatMode.CARDS) "${e.copies}" else Fmt.wholeMoney(e.value),
                         style = MaterialTheme.typography.labelSmall, maxLines = 1,
                     )
                 }
