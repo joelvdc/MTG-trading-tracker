@@ -132,6 +132,8 @@ fun AppNav() {
             if (topLevel) {
                 Column {
                     PriceStatusStrip(priceState)
+                    val sourceState by c.priceSources.status.collectAsStateWithLifecycle()
+                    SourceStatusStrip(sourceState)
                     NavigationBar {
                         tabs.forEach { tab ->
                             NavigationBarItem(
@@ -209,6 +211,29 @@ fun AppNav() {
             ) {
                 ScannerScreen(nav, CardTarget.decode(it.arguments?.getString("target") ?: "collection"))
             }
+        }
+    }
+}
+
+/** TCGplayer's and Card Kingdom's download, like [PriceStatusStrip]: progress while it runs, a note when it failed. Since 1.30. */
+@Composable
+internal fun SourceStatusStrip(state: com.mtgtrader.data.PriceSourceStore.SourceStatus) {
+    when {
+        state.running -> Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+                Text(state.message ?: "Downloading TCGplayer's and Card Kingdom's prices…", style = MaterialTheme.typography.labelMedium)
+                val p = state.progress
+                if (p != null) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                else LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 4.dp))
+            }
+        }
+        state.error != null -> Surface(color = MaterialTheme.colorScheme.errorContainer) {
+            Text(
+                "Price download failed (${state.error}). It tries again in a few hours, or retry in Settings.",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            )
         }
     }
 }

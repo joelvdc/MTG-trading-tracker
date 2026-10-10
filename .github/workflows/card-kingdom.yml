@@ -1,0 +1,43 @@
+# Card Kingdom refuses some visitors (HTTP 403, e.g. phones in Denmark), so once a day GitHub's servers
+# download its public price list, slim it down (scripts/card_kingdom_prices.py) and keep it on the
+# "card-kingdom-prices" branch, which only ever holds the latest copy. The app reads it from there when
+# Card Kingdom refuses it. Since 1.30. Uses no secrets; it only writes that one branch.
+name: Card Kingdom prices
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: card-kingdom-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Card Kingdom's price list
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 30 --max-time 300 \
+            -H "User-Agent: MTGTraderAndroid/1.0 (+https://github.com/${{ github.repository }})" \
+            -H "Accept-Encoding: gzip" \
+            -o pricelist.json.gz https://api.cardkingdom.com/api/v2/pricelist
+      - name: Slim it down
+        run: python3 scripts/card_kingdom_prices.py pricelist.json.gz cardkingdom.tsv.gz
+      - name: Save it on the card-kingdom-prices branch (latest copy only)
+        run: |
+          mkdir out && cd out
+          git init -q -b card-kingdom-prices
+          cp ../cardkingdom.tsv.gz .
+          printf '%s\n' "Card Kingdom's public price list (api.cardkingdom.com/api/v2/pricelist), slimmed down for MTG Trader." \
+            "Updated daily by .github/workflows/card-kingdom.yml on the main branch; this branch only keeps the latest copy." > README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Card Kingdom prices $(date -u +%Y-%m-%d)"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" card-kingdom-prices

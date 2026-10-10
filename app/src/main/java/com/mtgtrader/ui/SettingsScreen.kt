@@ -138,7 +138,7 @@ fun SettingsScreen(nav: NavController) {
                         if (ok) c.updater.afterUpdate()
                     }
                 },
-                enabled = state !is PriceUpdateState.Running,
+                enabled = state !is PriceUpdateState.Running && !sourceStatus.running,
             ) { Text("Update prices now") }
             Spacer(Modifier.height(12.dp))
             SwitchRow(
@@ -342,18 +342,26 @@ internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.
             }
         }
     }
-    val last = listOfNotNull(
-        status.tcgplayerAt.takeIf { it > 0 }?.let { "TCGplayer ${Fmt.dateTime(it)}" },
-        status.cardKingdomAt.takeIf { it > 0 }?.let { "Card Kingdom ${Fmt.dateTime(it)}" },
-    )
+    val small = MaterialTheme.typography.bodySmall
+    if (status.running) {
+        Text(status.message ?: "Downloading TCGplayer's and Card Kingdom's prices…", style = small, color = MaterialTheme.colorScheme.primary)
+    }
+    // Each source on its own line: when it last downloaded, and why the last try failed (since 1.30).
     Text(
-        when {
-            status.running -> "Downloading TCGplayer's and Card Kingdom's prices…"
-            last.isEmpty() -> "TCGplayer's and Card Kingdom's prices download with the next price update."
-            else -> "Last downloaded: " + last.joinToString(" · ")
-        },
-        style = MaterialTheme.typography.bodySmall,
-        color = if (status.running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        "TCGplayer: " + (if (status.tcgplayerAt > 0) "downloaded ${Fmt.dateTime(status.tcgplayerAt)}" else "not downloaded yet"),
+        style = small, color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    status.error?.let { Text("Last update failed: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+    status.tcgplayerError?.let { Text("Last try failed: $it", style = small, color = MaterialTheme.colorScheme.error) }
+    val listDay = status.cardKingdomListDate?.let { d -> runCatching { Fmt.date(java.time.LocalDate.parse(d.substringBefore(' ')).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()) }.getOrNull() }
+    Text(
+        "Card Kingdom: " + (
+            if (status.cardKingdomAt > 0) "downloaded ${Fmt.dateTime(status.cardKingdomAt)}" +
+                (listDay?.let { ", its list of $it" } ?: "") +
+                (if (status.cardKingdomVia == "GitHub copy") " (GitHub's copy, as Card Kingdom refused this phone)" else "")
+            else "not downloaded yet"
+            ),
+        style = small, color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text("Both download once a day, with Cardmarket's prices.", style = small, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    status.cardKingdomError?.let { Text("Last try failed: $it", style = small, color = MaterialTheme.colorScheme.error) }
 }
