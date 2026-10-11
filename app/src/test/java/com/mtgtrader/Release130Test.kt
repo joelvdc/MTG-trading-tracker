@@ -4,6 +4,7 @@ import com.mtgtrader.data.PriceSourceStore
 import com.mtgtrader.data.SourcePrice
 import com.mtgtrader.data.readCardKingdom
 import com.mtgtrader.data.readCardKingdomCopy
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,5 +56,63 @@ class Release130Test {
         // Failed an hour ago: no new try on every app start, only after a few hours.
         assertFalse(PriceSourceStore.isDue(lastOk = 0, lastFailed = now - hour, now = now))
         assertTrue(PriceSourceStore.isDue(lastOk = 0, lastFailed = now - 7 * hour, now = now))
+    }
+
+    /** A tiny local web server that counts requests and answers each with [body] after [delayMs]. */
+    private class FakeServer(private val body: ByteArray, private val delayMs: Long = 300) {
+        val requests = java.util.concurrent.atomic.AtomicInteger()
+        private val server = java.net.ServerSocket(0)
+        val url get() = "http://127.0.0.1:${server.localPort}/list"
+
+        init {
+            Thread {
+                while (!server.isClosed) {
+                    val s = try { server.accept() } catch (e: java.io.IOException) { break }
+                    Thread {
+                        s.use {
+                            val reader = it.getInputStream().bufferedReader()
+                            while (true) if ((reader.readLine() ?: break).isEmpty()) break
+                            requests.incrementAndGet()
+                            Thread.sleep(delayMs)
+                            val out = it.getOutputStream()
+                            out.write("HTTP/1.1 200 OK\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n".toByteArray())
+                            out.write(body)
+                            out.flush()
+                        }
+                    }.start()
+                }
+            }.start()
+        }
+
+        fun close() = server.close()
+    }
+
+    @Test
+    fun twoUpdatesStartedTogetherDownloadOnlyOnce() = runBlocking {
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        val db = androidx.room.Room.inMemoryDatabaseBuilder(context, com.mtgtrader.data.AppDatabase::class.java).build()
+        context.getSharedPreferences("price_sources", 0).edit().clear().commit()
+        val copy = javaClass.getResourceAsStream("/cardkingdom/pricelist-copy.tsv.gz")!!.readBytes()
+        val server = FakeServer(copy)
+        try {
+            val http = okhttp3.OkHttpClient()
+            val store = PriceSourceStore(context, http, db, com.mtgtrader.data.ScryfallApi(http), cardKingdomUrl = "http://127.0.0.1:1/refused", cardKingdomCopyUrl = server.url)
+            // The app start, the "back online" check and the background worker, all at once.
+            kotlinx.coroutines.coroutineScope {
+                repeat(3) { launch(kotlinx.coroutines.Dispatchers.Default) { store.refreshIfStale() } }
+            }
+            assertEquals("Card Kingdom's list is downloaded once", 1, server.requests.get())
+            assertEquals(1203, db.sourcePriceDao().count("cardkingdom"))
+            assertEquals("GitHub copy", store.status.value.cardKingdomVia)
+            // Later the same day: nothing is due.
+            store.refreshIfStale()
+            assertEquals(1, server.requests.get())
+            // "Update prices now" always downloads.
+            store.refresh()
+            assertEquals(2, server.requests.get())
+        } finally {
+            server.close()
+            db.close()
+        }
     }
 }
