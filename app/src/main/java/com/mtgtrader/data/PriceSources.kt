@@ -158,7 +158,15 @@ object Pricing {
  * Card Kingdom refuses some visitors (HTTP 403, e.g. phones in Denmark): then the copy a daily GitHub
  * job keeps in this app's repository ([CARD_KINGDOM_COPY_URL]) is used instead.
  */
-class PriceSourceStore(context: Context, private val http: OkHttpClient, private val db: AppDatabase, private val scryfall: ScryfallApi) {
+class PriceSourceStore(
+    context: Context,
+    private val http: OkHttpClient,
+    private val db: AppDatabase,
+    private val scryfall: ScryfallApi,
+    /** Where Card Kingdom's list and its GitHub copy are fetched; only tests change them. */
+    private val cardKingdomUrl: String = CARD_KINGDOM_URL,
+    private val cardKingdomCopyUrl: String = CARD_KINGDOM_COPY_URL,
+) {
     private val dao = db.sourcePriceDao()
     private val prefs = context.getSharedPreferences("price_sources", Context.MODE_PRIVATE)
     private val lock = Mutex()
@@ -224,14 +232,23 @@ class PriceSourceStore(context: Context, private val http: OkHttpClient, private
         load(cards.map { it.id })
     }
 
-    /** Fetches each source that is due (see [due]); the automatic daily update. */
-    suspend fun refreshIfStale() {
-        val now = System.currentTimeMillis()
-        refresh(tcgplayer = due(K_TCG_AT, K_TCG_FAIL, now), cardKingdom = due(K_CK_AT, K_CK_FAIL, now))
-    }
+    /**
+     * Fetches each source that is due (see [due]); the automatic daily update. Whether a source is due
+     * is decided once the lock is free, so an update that was waiting behind another one (the app
+     * start, the "back online" check and the background worker can all start at once) sees the fresh
+     * prices and does nothing, like Cardmarket's. Since 1.31 (in 1.29 and 1.30 it asked first, and
+     * downloaded everything twice).
+     */
+    suspend fun refreshIfStale(): Boolean = refresh(onlyIfDue = true)
 
-    /** Fetches TCGplayer's prices for the cards you have, and Card Kingdom's whole list ("Update prices now": both). */
-    suspend fun refresh(tcgplayer: Boolean = true, cardKingdom: Boolean = true): Boolean = lock.withLock {
+    /**
+     * Fetches TCGplayer's prices for the cards you have, and Card Kingdom's whole list ("Update prices
+     * now": both). With [onlyIfDue], only the sources whose daily download is due.
+     */
+    suspend fun refresh(onlyIfDue: Boolean = false): Boolean = lock.withLock {
+        val now = System.currentTimeMillis()
+        val tcgplayer = !onlyIfDue || due(K_TCG_AT, K_TCG_FAIL, now)
+        val cardKingdom = !onlyIfDue || due(K_CK_AT, K_CK_FAIL, now)
         if (!tcgplayer && !cardKingdom) return@withLock true
         var ok = true
         if (tcgplayer) ok = refreshTcgplayer() && ok
@@ -265,10 +282,10 @@ class PriceSourceStore(context: Context, private val http: OkHttpClient, private
 
     private suspend fun refreshCardKingdom(): Boolean {
         val start = System.currentTimeMillis()
-        val direct = runCatching { downloadCardKingdom(CARD_KINGDOM_URL, "Card Kingdom", start, ::readCardKingdom) }
+        val direct = runCatching { downloadCardKingdom(cardKingdomUrl, "Card Kingdom", start, ::readCardKingdom) }
         val result = direct.recoverCatching { first ->
             // Refused (HTTP 403) or unreachable from here: the copy GitHub keeps.
-            runCatching { downloadCardKingdom(CARD_KINGDOM_COPY_URL, "GitHub copy", start, ::readCardKingdomCopy) }
+            runCatching { downloadCardKingdom(cardKingdomCopyUrl, "GitHub copy", start, ::readCardKingdomCopy) }
                 .getOrElse { second -> throw java.io.IOException("${first.message ?: first.javaClass.simpleName}; GitHub copy: ${second.message ?: second.javaClass.simpleName}") }
         }
         return result.fold(
