@@ -162,12 +162,22 @@ Decided with the owner (2026-10-12):
 - **More copies in the collection than the orders cover:** all copies get the price (the owner: "average if the
   cards already have a price").
 
-Open questions:
-- The last two decisions meet in one case: a stack that already has a price and has more copies than the orders
-  cover. Keep the existing price (decision 2), or average it with the order's price (decision 3)? To settle with the
-  owner before building.
-- Getting the files out of Cardmarket (about 300 orders): see the notes below. CardTrader (about 15 orders) by hand
-  is fine.
+- **A stack that already has a price and has more copies than the orders cover:** average them, weighted by copies
+  (4 copies at €2 with an order for 1 copy at €4 → €2.50). So "keep the existing price" only applies when the orders
+  cover no more copies than the price already stands for; "overwrite" replaces instead of averaging.
+
+Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-12):
+- The account has 300 arrived shipments. Per shipment there is the "ArticlesFromShipment" CSV of item 3.
+- **Better: Account → Statistics → "Purchased Articles"** exports every article bought in one month as CSV or Excel
+  (choose month, year, and purchase or payment date). One file per month instead of one per shipment. Cardmarket's
+  note on it (2022) says its 4th and 5th columns are the product ID and the product name.
+- Not yet known: that file's full column list (is the shipment number, date, price, condition, language and foil in
+  it?). Needs one exported month from the owner to build the reader against. If it has the shipment number and date,
+  it also feeds the order history (item 4) with real dates.
+- CardTrader (about 15 orders) by hand is fine.
+
+Open question:
+- The owner exports one month of "Purchased Articles" and shares it, so the reader can be built for that format too.
 
 ## Done
 
