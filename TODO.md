@@ -182,9 +182,13 @@ Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-1
   those in the preview for the owner to choose.
 - So: three readers in the end. CardTrader's Excel and Cardmarket's per-shipment CSV for importing and checking new
   orders (items 2 and 3); Cardmarket's monthly file for past purchase prices and order history.
-- Collecting the monthly files: the owner finds doing it by hand for every month painful. Offered 2026-10-12: Claude
-  reads the purchases list to find the months with purchases, then exports those months in the owner's Chrome with
-  the owner's OK. Not part of building the app.
+- Collecting the monthly files (done partly on 2026-10-12/13, in the owner's Chrome, with the owner's OK): the
+  export is not a direct download. "Export" asks Cardmarket to prepare a report (and emails the owner when a month
+  has purchases; empty months produce no report and no email); the report then appears under Account → Downloads,
+  where each file is one click. Chrome blocks more than one scripted download per page, so the owner clicks the
+  files. Requested so far: 2018 (purchases in March to October), January to June 2019 (none), 2023 to October 2026
+  (26 months with purchases). Not yet requested: July 2019 to December 2022. The files are in the owner's Downloads
+  folder, not in the repository.
 - CardTrader (about 15 orders) by hand is fine.
 
 ## Done
