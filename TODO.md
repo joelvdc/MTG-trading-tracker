@@ -156,14 +156,18 @@ collection and sets what was paid.
   traded since); cards that already have a price.
 - A restore point (backup) is made first, as before other bulk changes.
 
+Decided with the owner (2026-10-12):
+- **Bought several times at different prices:** the stack gets the average paid (weighted by copies).
+- **Cards that already have a purchase price:** kept, unless the owner chooses "overwrite".
+- **More copies in the collection than the orders cover:** all copies get the price (the owner: "average if the
+  cards already have a price").
+
 Open questions:
-- A card bought several times at different prices sits in one stack with one purchase price: use the average paid
-  (weighted by copies)? Or split the stack by price?
-- Cards that already have a purchase price: keep it, or let the order overwrite it? (Suggested: keep, with a switch.)
-- More copies in the collection than the orders cover: leave the rest without a price, or give all the same price?
-- Getting the files out of Cardmarket (about 300 orders): no bulk export is confirmed yet. To find out first: is
-  there an export of all purchased articles in the Cardmarket account, or does a personal-data request include it?
-  CardTrader (about 15 orders) by hand is fine.
+- The last two decisions meet in one case: a stack that already has a price and has more copies than the orders
+  cover. Keep the existing price (decision 2), or average it with the order's price (decision 3)? To settle with the
+  owner before building.
+- Getting the files out of Cardmarket (about 300 orders): see the notes below. CardTrader (about 15 orders) by hand
+  is fine.
 
 ## Done
 
