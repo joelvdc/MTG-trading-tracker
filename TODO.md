@@ -61,12 +61,9 @@ Decided with the owner (2026-10-12):
   ticking.
 - **Adding to the collection is included**, and works like a regular scan: the checked cards go from the scan list
   to a binder the usual way.
+- **Matched cards take the order's details** where the camera can't know them: price paid, condition, foil,
+  signed/altered. Cards that matched no order line stay as scanned.
 - **Not ahead of the list:** wait for the owner's green light for the whole to-do list.
-
-Open question:
-- When the cards are added, should they take the order's details where the camera can't know them (price paid,
-  condition, foil, signed/altered), or stay exactly as scanned? Suggested: take the order's details for cards that
-  matched an order line.
 
 ## Done
 
