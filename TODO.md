@@ -66,7 +66,7 @@ Decided with the owner (2026-10-12):
 - **Not ahead of the list:** wait for the owner's green light for the whole to-do list.
 
 ### 3. Cardmarket orders: import to the collection, and check against scanned cards
-*Added 2026-10-12. MTG Trader (Poké Trader: see the open questions).*
+*Added 2026-10-12. MTG Trader only.*
 
 Owner's wording: "In the same way that we have these functionalities for a cardtrader order, could you make the same
 for cardmarket orders (sample csv file attached)? Both for the existing import to collection and planned comparison
@@ -93,13 +93,15 @@ Proposed (2026-10-12):
 - `isPlayset` = four copies per group. `isFoil`, `isSigned`, `isAltered` as in the CardTrader import.
 - Tests use a made-up file in the same format; the owner's own order file is not committed (public repository).
 
-Open questions:
-- The numbers' meaning, to confirm with a known order: condition assumed 1 Mint, 2 Near Mint, 3 Excellent, 4 Good,
-  5 Light Played, 6 Played, 7 Poor; idLanguage assumed 1 English, 2 French, 3 German, 4 Spanish, 5 Italian,
-  6 Simplified Chinese, 7 Japanese, 8 Portuguese, 9 Russian, 10 Korean, 11 Traditional Chinese.
-- Is `price` per card or per line? (Every line in the sample has groupCount 1.) Assumed per card.
-- Poké Trader has no order import at all. Cardmarket's Pokémon orders use the same file (isReverseHolo, isFirstEd):
-  add an order import and check to Poké Trader's list too?
+Decided with the owner (2026-10-12):
+- **Conditions confirmed** on the sample order: 2 = Near Mint (Obsessive Pursuit), 3 = Excellent (Journey to
+  Eternity). So Cardmarket's scale: 1 Mint, 2 Near Mint, 3 Excellent, 4 Good, 5 Light Played, 6 Played, 7 Poor.
+- **`price` is per card.**
+- **MTG Trader only:** no order import or check for Poké Trader for now.
+
+Still an assumption (only English, idLanguage 1, was in the sample): 2 French, 3 German, 4 Spanish, 5 Italian,
+6 Simplified Chinese, 7 Japanese, 8 Portuguese, 9 Russian, 10 Korean, 11 Traditional Chinese. When building, show an
+unknown number as "language ?" rather than guessing, and check the list against Cardmarket's documentation.
 
 ## Done
 
