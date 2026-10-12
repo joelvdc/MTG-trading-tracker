@@ -45,7 +45,7 @@ What exists today: the order import (`data/CardTraderImport.kt`: `CardTraderOrde
 `ui/OrderImportScreen.kt`) reads the Excel file and finds each line's printing; the Scan tab's list
 (`ScannedCard`, `ui/ScansScreen.kt`) holds scanned cards with printing, language, quantity and `exactPrinting`.
 
-Proposed (2026-10-12, not yet approved):
+Proposed (2026-10-12):
 - On the Scan tab: "Check against an order" → pick the Excel file → compare the order's lines with the scan list.
 - Per order line: received; wrong language (same printing); wrong printing (same name, other set/number); missing
   (not scanned, or fewer copies); plus extra cards (scanned, not ordered). A summary line on top.
@@ -56,11 +56,17 @@ Proposed (2026-10-12, not yet approved):
 - What the camera can't check: foil, condition, signed, altered → list those lines as "check by hand". Older cards
   print no language code → "language not checked". Scans with `exactPrinting = false` → "printing unsure", not wrong.
 
-Open questions:
-- Check after scanning only, or also live while scanning (attach the file first; each scan ticks off a line)?
-  Suggested: after-scan check first, live ticking as a second step.
-- Should "add the received cards to the collection" be part of the check, or should it only report?
-- Build this ahead of the rest of the list, so it is ready for the package expected around 2026-10-23?
+Decided with the owner (2026-10-12):
+- **After-scan check only**, started from the scanned cards list (the Scan tab's list), not while scanning. No live
+  ticking.
+- **Adding to the collection is included**, and works like a regular scan: the checked cards go from the scan list
+  to a binder the usual way.
+- **Not ahead of the list:** wait for the owner's green light for the whole to-do list.
+
+Open question:
+- When the cards are added, should they take the order's details where the camera can't know them (price paid,
+  condition, foil, signed/altered), or stay exactly as scanned? Suggested: take the order's details for cards that
+  matched an order line.
 
 ## Done
 
