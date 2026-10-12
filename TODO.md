@@ -103,6 +103,68 @@ Still an assumption (only English, idLanguage 1, was in the sample): 2 French, 3
 6 Simplified Chinese, 7 Japanese, 8 Portuguese, 9 Russian, 10 Korean, 11 Traditional Chinese. When building, show an
 unknown number as "language ?" rather than guessing, and check the list against Cardmarket's documentation.
 
+### 4. Order history
+*Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
+
+Once the app reads CardTrader and Cardmarket orders (items 2 and 3), remember each order: date, shop, what was paid
+in total, and what those cards are worth now. Today the price paid is stored per card (`purchasePrice`) and the order
+itself is forgotten after import.
+
+Open questions:
+- Where it lives (a screen under the collection's menu, or in the stats)?
+- Neither file carries the order's date or number inside it (Cardmarket's file name has the shipment number): ask for
+  the date at import, defaulting to today?
+- Should the history sync between phones and be part of backups? (Suggested: yes; this adds to the database, which
+  needs the owner's OK under `CLAUDE.md`.)
+
+### 5. Profit and loss
+*Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
+
+The app stores what was paid per card and shows it on the card page. Total it: paid versus current value for the
+whole collection and per binder, and the best and worst buys. Only cards with a purchase price count; say how many
+cards have none.
+
+Open questions:
+- A new section in the stats screen, or part of the value screen?
+- Per order too, once item 4 exists?
+
+### 6. Condition-adjusted values
+*Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
+
+Cardmarket's guide has one price per card whatever its condition, so a Played card counts as much as a Near Mint one
+in the collection total. An optional percentage per condition would make totals more realistic (Card Kingdom already
+has a price per condition, `PriceSources.ckCondition`).
+
+Open questions:
+- The percentages (a default set, e.g. NM 100%, EX 85%, GD 70%, LP 60%, PL 45%, PO 30%, adjustable in Settings?).
+- Where it applies: collection totals and stats only, or also trades and the trade binder?
+- On by default, or off until switched on? How is an adjusted price marked on screen?
+
+### 7. Fill in purchase prices from past orders
+*Added 2026-10-12. MTG Trader only.*
+
+Owner's wording: "I would also be interested in having a way to read a cardtrader excel or cardmarket csv, have the
+app find the cards in my collection and update the purchase price accordingly. [...] I have about 300 orders on
+cardmarket where the csv would have to be downloaded manually for each order, cardtrader would be less painful with
+only 15 orders."
+
+Proposed (2026-10-12): the same order reader as items 2 and 3, but instead of adding cards it finds them in the
+collection and sets what was paid.
+- Pick one file or many at once (300 files one by one is not workable).
+- Match an order line to collection cards by printing, finish and language; condition as a tie-breaker.
+- Show a preview before changing anything: would update N cards; lines with no card in the collection (sold or
+  traded since); cards that already have a price.
+- A restore point (backup) is made first, as before other bulk changes.
+
+Open questions:
+- A card bought several times at different prices sits in one stack with one purchase price: use the average paid
+  (weighted by copies)? Or split the stack by price?
+- Cards that already have a purchase price: keep it, or let the order overwrite it? (Suggested: keep, with a switch.)
+- More copies in the collection than the orders cover: leave the rest without a price, or give all the same price?
+- Getting the files out of Cardmarket (about 300 orders): no bulk export is confirmed yet. To find out first: is
+  there an export of all purchased articles in the Cardmarket account, or does a personal-data request include it?
+  CardTrader (about 15 orders) by hand is fine.
+
 ## Done
 
 *(nothing yet)*
