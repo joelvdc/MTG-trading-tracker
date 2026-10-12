@@ -65,6 +65,42 @@ Decided with the owner (2026-10-12):
   signed/altered. Cards that matched no order line stay as scanned.
 - **Not ahead of the list:** wait for the owner's green light for the whole to-do list.
 
+### 3. Cardmarket orders: import to the collection, and check against scanned cards
+*Added 2026-10-12. MTG Trader (Poké Trader: see the open questions).*
+
+Owner's wording: "In the same way that we have these functionalities for a cardtrader order, could you make the same
+for cardmarket orders (sample csv file attached)? Both for the existing import to collection and planned comparison
+between scanned cards and an order."
+
+The file (Cardmarket: a shipment's "ArticlesFromShipment<number>.csv"): semicolon-separated, one line per article,
+with the columns
+`idProduct;groupCount;price;idLanguage;condition;isFoil;isSigned;isAltered;isPlayset;isReverseHolo;isFirstEd;isFullArt;isUberRare;isWithDie`
+(flags are "1" or empty). It has no card names or sets, only Cardmarket's product number. Example lines:
+`315288;1;6.98;1;3;;;;;;;;;` and `788181;1;2.98;1;3;1;;;;;;;;` (a foil).
+
+Checked on 2026-10-12:
+- Scryfall finds the exact printing from the product number: `api.scryfall.com/cards/cardmarket/<idProduct>`
+  (315288 → Journey to Eternity, RIX 160; 788181 → Marvin, Murderous Mimic, DSK 253). One request per product, so an
+  order of 200 lines takes about half a minute at Scryfall's pace: show progress.
+- The app's own Cardmarket product list (`cm_products`, from products_singles_1.json) has the name and expansion of
+  every product in the sample: the fallback for products Scryfall doesn't know (show the name, let the owner pick the
+  printing, as the CardTrader import does for guessed lines).
+
+Proposed (2026-10-12):
+- One "order file" reader for both shops: recognise the file (CardTrader's Excel or Cardmarket's CSV) and turn either
+  into the same order lines, so the existing import (`ui/OrderImportScreen.kt`, `MtgRepository.importOrder`) and the
+  planned check against scanned cards (item 2) work for both. Show which shop the order is from.
+- `isPlayset` = four copies per group. `isFoil`, `isSigned`, `isAltered` as in the CardTrader import.
+- Tests use a made-up file in the same format; the owner's own order file is not committed (public repository).
+
+Open questions:
+- The numbers' meaning, to confirm with a known order: condition assumed 1 Mint, 2 Near Mint, 3 Excellent, 4 Good,
+  5 Light Played, 6 Played, 7 Poor; idLanguage assumed 1 English, 2 French, 3 German, 4 Spanish, 5 Italian,
+  6 Simplified Chinese, 7 Japanese, 8 Portuguese, 9 Russian, 10 Korean, 11 Traditional Chinese.
+- Is `price` per card or per line? (Every line in the sample has groupCount 1.) Assumed per card.
+- Poké Trader has no order import at all. Cardmarket's Pokémon orders use the same file (isReverseHolo, isFirstEd):
+  add an order import and check to Poké Trader's list too?
+
 ## Done
 
 *(nothing yet)*
