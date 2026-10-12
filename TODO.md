@@ -171,13 +171,21 @@ Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-1
 - **Better: Account → Statistics → "Purchased Articles"** exports every article bought in one month as CSV or Excel
   (choose month, year, and purchase or payment date). One file per month instead of one per shipment. Cardmarket's
   note on it (2022) says its 4th and 5th columns are the product ID and the product name.
-- Not yet known: that file's full column list (is the shipment number, date, price, condition, language and foil in
-  it?). Needs one exported month from the owner to build the reader against. If it has the shipment number and date,
-  it also feeds the order history (item 4) with real dates.
+- The monthly file (sample shared by the owner 2026-10-12, "Purchased Articles-byPurchaseDate-2024-12-01_2024-12-31.csv"),
+  semicolon-separated, one line per article:
+  `Shipment nr.;Date of purchase;Article;Product ID;Localized Product Name;Expansion;Category;Amount;Article Value;Total;Currency;Comments`
+  e.g. `1185249514;2024-12-02 16:38:27;Essence Flux;289154;Essence Flux;Shadows over Innistrad;Magic Single;1;2.38;2.38;EUR;289154`.
+  "Article Value" is the price per card, "Amount" the copies, "Comments" the seller's free text (ignore).
+- It has **no condition, language, foil, signed or altered**. Enough for purchase prices (product ID → printing) and
+  it gives the order history (item 4) real dates and shipment numbers. When the owner has the same printing in
+  several versions (foil and non-foil, two languages), the file can't say which one the price belongs to: list
+  those in the preview for the owner to choose.
+- So: three readers in the end. CardTrader's Excel and Cardmarket's per-shipment CSV for importing and checking new
+  orders (items 2 and 3); Cardmarket's monthly file for past purchase prices and order history.
+- Collecting the monthly files: the owner finds doing it by hand for every month painful. Offered 2026-10-12: Claude
+  reads the purchases list to find the months with purchases, then exports those months in the owner's Chrome with
+  the owner's OK. Not part of building the app.
 - CardTrader (about 15 orders) by hand is fine.
-
-Open question:
-- The owner exports one month of "Purchased Articles" and shares it, so the reader can be built for that format too.
 
 ## Done
 
