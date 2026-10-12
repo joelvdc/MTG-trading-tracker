@@ -84,7 +84,7 @@ class ScreenshotTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$file.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/$file.png", roborazziOptions = screenshotOptions)
     }
 
     @Test fun pieByCards() = shoot(colors(), StatMode.CARDS, "pie_cards")
@@ -130,7 +130,7 @@ class ScreenshotTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/order_review.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/order_review.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.27: signed and altered copies in the list, the compact list and the grid, and the card page's checkboxes during a split. */
@@ -157,7 +157,7 @@ class ScreenshotTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/signed_altered.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/signed_altered.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.28: collection rows in dollars, and the currency choice in Settings. */
@@ -176,7 +176,7 @@ class ScreenshotTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/currencies.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/currencies.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.29: the price sources compared, the biggest gaps, a card's other prices and the Settings choice. */
@@ -204,7 +204,7 @@ class ScreenshotTest {
                     }
                 }
             }
-            compose.onRoot().captureRoboImage("src/test/screenshots/price_sources.png")
+            compose.onRoot().captureRoboImage("src/test/screenshots/price_sources.png", roborazziOptions = screenshotOptions)
         } finally {
             Pricing.usdPerEuro = null
             Pricing.others = emptyMap()
@@ -225,7 +225,7 @@ class ScreenshotTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/price_source_settings.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/price_source_settings.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.30: the price source download bar above the tabs (running, then failed). */
@@ -239,6 +239,6 @@ class ScreenshotTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/source_download_bar.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/source_download_bar.png", roborazziOptions = screenshotOptions)
     }
 }
