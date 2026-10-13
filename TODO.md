@@ -110,12 +110,16 @@ Once the app reads CardTrader and Cardmarket orders (items 2 and 3), remember ea
 in total, and what those cards are worth now. Today the price paid is stored per card (`purchasePrice`) and the order
 itself is forgotten after import.
 
-Open questions:
-- Where it lives (a screen under the collection's menu, or in the stats)?
-- Neither file carries the order's date or number inside it (Cardmarket's file name has the shipment number): ask for
-  the date at import, defaulting to today?
-- Should the history sync between phones and be part of backups? (Suggested: yes; this adds to the database, which
-  needs the owner's OK under `CLAUDE.md`.)
+Settled with the owner on 2026-10-13 (no open questions left):
+- Its own screen, opened from the three-dot menu of the collection.
+- The order's date is read from the file where it has one (CardTrader's file name, each line of Cardmarket's monthly
+  file); otherwise the app asks at import, with today filled in.
+- The history syncs between phones and is part of backups. The owner said yes to the database change this needs
+  (a new table; both phones must run the new version before they sync, so raise the sync file's format).
+- Past orders are loaded too: a one-time import the owner starts in the app by picking the files kept on their PC
+  (43 Cardmarket monthly files, 15 CardTrader orders).
+- Claude's suggestion, not yet confirmed by the owner: each of the 17 preconstructed decks priced on 2026-10-13
+  becomes an order in the history (deck name, date, price paid), so profit and loss per deck works; ask when planning.
 
 ### 5. Profit and loss
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
@@ -124,9 +128,9 @@ The app stores what was paid per card and shows it on the card page. Total it: p
 whole collection and per binder, and the best and worst buys. Only cards with a purchase price count; say how many
 cards have none.
 
-Open questions:
-- A new section in the stats screen, or part of the value screen?
-- Per order too, once item 4 exists?
+Settled with the owner on 2026-10-13 (no open questions left):
+- Part of the value screen, next to "Rising lately" and "Falling lately".
+- Per order as well, in the order history: what was paid and what those cards are worth now.
 
 ### 6. Condition-adjusted values
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
@@ -135,10 +139,10 @@ Cardmarket's guide has one price per card whatever its condition, so a Played ca
 in the collection total. An optional percentage per condition would make totals more realistic (Card Kingdom already
 has a price per condition, `PriceSources.ckCondition`).
 
-Open questions:
-- The percentages (a default set, e.g. NM 100%, EX 85%, GD 70%, LP 60%, PL 45%, PO 30%, adjustable in Settings?).
-- Where it applies: collection totals and stats only, or also trades and the trade binder?
-- On by default, or off until switched on? How is an adjusted price marked on screen?
+Settled with the owner on 2026-10-13 (no open questions left):
+- Default percentages NM 100%, EX 85%, GD 70%, LP 60%, PL 45%, PO 30%, adjustable in Settings.
+- It applies everywhere a value is shown, trades and the trade binder included.
+- Off until switched on; an adjusted price carries a small condition tag so it can be told apart.
 
 ### 7. Update purchase prices of cards already in the collection, from an order file
 *Added 2026-10-12, confirmed as an app feature 2026-10-13. MTG Trader only.*
