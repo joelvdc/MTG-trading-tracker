@@ -148,13 +148,28 @@ app find the cards in my collection and update the purchase price accordingly. [
 cardmarket where the csv would have to be downloaded manually for each order, cardtrader would be less painful with
 only 15 orders."
 
-Proposed (2026-10-12): the same order reader as items 2 and 3, but instead of adding cards it finds them in the
-collection and sets what was paid.
-- Pick one file or many at once (300 files one by one is not workable).
-- Match an order line to collection cards by printing, finish and language; condition as a tie-breaker.
-- Show a preview before changing anything: would update N cards; lines with no card in the collection (sold or
-  traded since); cards that already have a price.
-- A restore point (backup) is made first, as before other bulk changes.
+**Plan changed on 2026-10-13: done once, outside the app.** The owner proposed it: they put all the order files
+(Cardmarket's 43 monthly files, CardTrader's Excel files) and a fresh `sync.json.gz` in one folder, and Claude fills
+in the purchase prices in that sync file with a script on the owner's PC. The phones take the prices in at their next
+sync (per stack, the newer `updatedAt` wins). **Nothing is built into the app for this**: future purchases get their
+price through the order import (items 2 and 3). This one-off job does not wait for the list's green light.
+
+Steps:
+1. The owner prepares the folder (order files plus a `sync.json.gz` taken right after syncing the phone).
+2. Dry run, changing nothing: a report of how many stacks would get a price, order lines with no card in the
+   collection (sold or traded since), and ambiguous cases.
+3. The owner reviews the report and settles the ambiguous cases.
+4. Claude writes the new sync file, keeping a copy of the original; the owner syncs the phone and checks a few cards.
+
+Checked on 2026-10-13: every collection entry in the sync file has `cardmarketId` (and `cardmarketFoilId`), set
+code, collector number, foil, language and `purchasePrice`, so Cardmarket's product IDs match directly, without
+lookups. None of the 5,210 stacks has a purchase price today. To check before step 4: whether the Archidekt sync
+sends purchase prices (then the first sync afterwards pushes thousands of changes to Archidekt).
+
+Matching rules:
+- Cardmarket's monthly file: by product ID. It has no foil or language, so a printing owned as both foil and
+  non-foil (or in two languages) is ambiguous: list it for the owner.
+- CardTrader's Excel: by set code and collector number, with foil and language from the file.
 
 Decided with the owner (2026-10-12):
 - **Bought several times at different prices:** the stack gets the average paid (weighted by copies).
