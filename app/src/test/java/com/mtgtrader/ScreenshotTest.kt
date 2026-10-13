@@ -23,6 +23,15 @@ import com.mtgtrader.data.PackageCheck
 import com.mtgtrader.data.PurchasePrices
 import com.mtgtrader.data.ScannedCard
 import com.mtgtrader.ui.PackageCheckList
+import com.mtgtrader.data.OrderWorth
+import com.mtgtrader.data.Precons
+import com.mtgtrader.data.ProfitLoss
+import com.mtgtrader.data.PurchaseOrder
+import com.mtgtrader.data.Settings
+import com.mtgtrader.ui.ConditionSection
+import com.mtgtrader.ui.OrderList
+import com.mtgtrader.ui.PreconList
+import com.mtgtrader.ui.ProfitCard
 import com.mtgtrader.ui.PurchasePricePlan
 import com.mtgtrader.ui.PieChart
 import androidx.compose.foundation.layout.Arrangement
@@ -226,6 +235,57 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/purchase_prices.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.33: the order history, with a precon and an order whose cards have no price today. */
+    @Test fun orderHistory() {
+        fun order(id: Long, shop: String, title: String, date: String, paid: Double, cards: Int) =
+            PurchaseOrder(id = id, shop = shop, number = title, title = title, date = date, paid = paid, cards = cards, lines = "[]")
+        val orders = listOf(
+            order(1, "CardTrader", "CardTrader order 20260623hxrahx", "2026-06-23", 54.20, 35),
+            order(2, "Precon", "Deep Clue Sea", "2024-02-09", 46.92, 86),
+            order(3, "Cardmarket", "Cardmarket shipment 1095364978", "2022-11-20", 48.00, 4),
+            order(4, "Cardmarket", "Cardmarket shipment 6625697", "2014-08-09", 6.24, 12),
+        )
+        val worth = mapOf(1L to OrderWorth(61.75, 35, 0, 54.20), 2L to OrderWorth(82.93, 86, 0, 46.92), 3L to OrderWorth(2.40, 4, 0, 48.00), 4L to OrderWorth(0.0, 0, 12, 0.0))
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) { OrderList(orders, worth, onOpen = {}) }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/order_history.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.33: paid against worth on the value screen, the condition setting, an adjusted price in the list, and the precon list. */
+    @Test fun profitConditionsAndPrecons() {
+        fun row(name: String, cond: String) = CollectionRow(
+            CollectionItem(card = ref(name, "usg", "311", "rare").copy(fallbackEur = 10.0), foil = false, quantity = 2, condition = cond), null,
+        )
+        Pricing.conditionPct = Settings.DEFAULT_CONDITION_PCTS
+        try {
+            compose.setContent {
+                MtgColors(dark = false) {
+                    Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ProfitCard(ProfitLoss(paid = 7580.48, worth = 9471.06, counted = 4876, copies = 5819, best = emptyList(), worst = emptyList()))
+                            ConditionSection(on = true, pcts = Settings.DEFAULT_CONDITION_PCTS, source = PriceSource.CARDMARKET, onSwitch = {}, onPct = { _, _ -> })
+                            CollectionRowView(row("Thran Turbine", "EX"), PriceType.TREND, "The Box") {}
+                            CollectionRowView(row("Grim Monolith", "NM"), PriceType.TREND, "The Box") {}
+                            PreconList(
+                                listOf(
+                                    Precons.Info("FRC", "MultiverseReforged_FRC", "Multiverse Reforged", "2026-10-02", Precons.TYPE),
+                                    Precons.Info("MKC", "DeepClueSea_MKC", "Deep Clue Sea", "2024-02-09", Precons.TYPE),
+                                ),
+                                onPick = {},
+                            )
+                        }
+                    }
+                }
+            }
+            compose.onRoot().captureRoboImage("src/test/screenshots/profit_conditions_precons.png", roborazziOptions = screenshotOptions)
+        } finally {
+            Pricing.conditionPct = null
+        }
     }
 
     /** 1.27: signed and altered copies in the list, the compact list and the grid, and the card page's checkboxes during a split. */

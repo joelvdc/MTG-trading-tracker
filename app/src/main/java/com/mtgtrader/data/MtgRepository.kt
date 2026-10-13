@@ -734,6 +734,51 @@ class MtgRepository(
         return additions.sumOf { it.quantity }
     }
 
+    /**
+     * Remembers [orders] in the order history. An order read before (same shop and order number) is
+     * replaced by the new reading, keeping its place and sync identity. Returns how many were new. Since 1.33.
+     */
+    suspend fun recordOrders(orders: List<PurchaseOrder>): Int {
+        if (orders.isEmpty()) return 0
+        var added = 0
+        db.withTransaction {
+            val dao = db.orderDao()
+            val known = dao.all().toMutableList()
+            for (o in orders) {
+                if (o.cards <= 0) continue
+                val old = known.firstOrNull { Orders.same(it, o) }
+                if (old == null) {
+                    known += o.copy(id = dao.insert(o.copy(id = 0, uid = null, updatedAt = 0)))
+                    added++
+                } else if (old.copy(addedAt = 0, updatedAt = 0) != o.copy(id = old.id, uid = old.uid, addedAt = 0, updatedAt = 0)) {
+                    dao.update(o.copy(id = old.id, uid = old.uid, addedAt = old.addedAt, updatedAt = old.updatedAt))
+                }
+            }
+        }
+        return added
+    }
+
+    suspend fun deleteOrder(id: Long) = db.orderDao().delete(id)
+
+    suspend fun setOrderDate(id: Long, date: String) {
+        db.orderDao().byId(id)?.let { db.orderDao().update(it.copy(date = date)) }
+    }
+
+    /**
+     * Adds a preconstructed deck's cards to [binder], each with its share of what the deck cost, and
+     * remembers the deck as an order. Returns how many copies were added. Since 1.33.
+     */
+    suspend fun addPrecon(deck: String, date: String, cards: List<Precons.PricedCard>, binder: BinderChoice): Int {
+        if (cards.isEmpty()) return 0
+        beforeOrderImport?.invoke()
+        val target = resolve(binder)
+        db.withTransaction {
+            for (c in cards) addBought(c.card, c.finish, "NM", "EN", c.quantity, target, Marks.NONE, c.price)
+        }
+        recordOrders(listOf(Orders.precon(deck, date, cards.map { it.ordered })))
+        return cards.sumOf { it.quantity }
+    }
+
     /** Sets what was paid per copy on the stacks in [prices] (stack id to EUR). Returns how many changed. Since 1.32. */
     suspend fun setPurchasePrices(prices: Map<Long, Double>): Int {
         if (prices.isEmpty()) return 0

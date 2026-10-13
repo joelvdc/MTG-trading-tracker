@@ -81,7 +81,7 @@ class ValueHistory(private val db: AppDatabase) {
 
         /** The value at [source], with Cardmarket's [type] price for cards it has none for. Since 1.29. */
         fun sourceTotal(rows: List<CollectionRow>, source: PriceSource, type: PriceType) =
-            rows.sumOf { r -> (r.priceAt(source, type) ?: r.cardmarketPrice(type) ?: 0.0) * r.item.quantity }
+            rows.sumOf { r -> (r.priceAt(source, type) ?: Pricing.fallback(r.item.condition, r.cardmarketPrice(type)) ?: 0.0) * r.item.quantity }
 
         /** Copies [source] has a price for. */
         fun covered(rows: List<CollectionRow>, source: PriceSource) = rows.filter { it.priceAt(source, PriceType.TREND) != null }.sumOf { it.item.quantity }

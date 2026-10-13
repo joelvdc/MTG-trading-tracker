@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Search
@@ -296,6 +298,16 @@ fun CollectionScreen(nav: NavController) {
                             text = { Text("Collection value over time") },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.ShowChart, null) },
                             onClick = { menu = false; nav.navigate("value") },
+                        )
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Orders") },
+                            leadingIcon = { Icon(Icons.Default.ReceiptLong, null) },
+                            onClick = { menu = false; nav.navigate("orders") },
+                        )
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Add a preconstructed deck…") },
+                            leadingIcon = { Icon(Icons.Default.Style, null) },
+                            onClick = { menu = false; nav.navigate("precon") },
                         )
                         if (!wish) DropdownMenuItem(
                             text = { Text("Import an order (CardTrader, Cardmarket)") },
@@ -648,6 +660,7 @@ internal fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            ConditionNote(row)
             if (item.quantity > 1) {
                 Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -685,6 +698,7 @@ internal fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?,
             }
         }
         Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
+        ConditionNote(row)
         TrendBadge(row.trend)
         if (item.quantity > 1) {
             Text("×${item.quantity} · ${Fmt.money(unit?.let { it * item.quantity })}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
@@ -723,11 +737,18 @@ internal fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder:
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                ConditionNote(row)
                 TrendBadge(row.trend)
                 if (item.quantity > 1) Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
+}
+
+/** "EX 85%" under a price that was lowered for the copy's condition, so an adjusted price can always be told apart. Since 1.33. */
+@Composable
+internal fun ConditionNote(row: CollectionRow) {
+    row.conditionNote?.let { Tag(it) }
 }
 
 /** "≈" when the chosen price source has no price for the card, so Cardmarket's stands in. Since 1.29. */

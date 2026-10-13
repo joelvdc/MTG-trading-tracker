@@ -37,8 +37,11 @@ data class BackupFile(
     val data: SyncData = SyncData(),
 ) {
     companion object {
-        /** 2 since 1.27 (signed and altered copies), like [SyncFile.FORMAT]: older versions can't restore it without losing them. */
-        const val FORMAT = 2
+        /**
+         * 2 since 1.27 (signed and altered copies), 3 since 1.33 (remembered orders), like [SyncFile.FORMAT]:
+         * older versions can't restore it without losing them.
+         */
+        const val FORMAT = 3
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {
@@ -162,13 +165,16 @@ object BackupRestore {
         val decks = pick(current.decks, backup.decks, { SyncMerge.deckKey(it.deck.archidektId) }) { it.copy(deck = it.deck.copy(updatedAt = now)) }
         val scans = pick(current.scans, backup.scans, { it.uid }) { it.copy(updatedAt = now) }
         val wishlist = pick(current.wishlist, backup.wishlist, { it.uid }) { it.copy(updatedAt = now) }
+        // A backup from before 1.33 knows no orders: the order history is then left as it is, not emptied.
+        val orders = if (backup.orders.isEmpty()) current.orders else pick(current.orders, backup.orders, { it.uid }) { it.copy(updatedAt = now) }
         val alive = buildSet {
             binders.forEach { add(it.uid) }; collection.forEach { add(it.item.uid) }; trades.forEach { add(it.trade.uid) }
             decks.forEach { add(SyncMerge.deckKey(it.deck.archidektId)) }; scans.forEach { add(it.uid) }; wishlist.forEach { add(it.uid) }
+            orders.forEach { add(it.uid) }
         }
         val deletions = (current.deletions.filter { it.uid !in alive } + gone).groupBy { it.uid }.map { (_, d) -> d.maxBy { it.deletedAt } }
         val prefs = if (backup.prefs.values == current.prefs.values) current.prefs else backup.prefs.copy(updatedAt = now)
-        return SyncData(binders, collection, trades, decks, scans, wishlist, deletions, prefs).sorted()
+        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, deletions, prefs).sorted()
     }
 }
 

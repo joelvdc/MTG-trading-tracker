@@ -11,17 +11,20 @@ How to use this file:
 ## Collecting
 
 ### Release plan
-*Agreed with the owner on 2026-10-13, when the green light for the whole list was given. One release at a time: after
-each, stop so the owner can try it, and start the next when they say so.*
+*Agreed with the owner on 2026-10-13, when the green light for the whole list was given.*
 
 1. ~~MTG Trader 1.32: sort by value change, Cardmarket orders, package check, purchase prices from orders.~~ Released.
-2. **MTG Trader 1.33:** order history (4), profit and loss (5), add a precon (8) and condition-adjusted values (6).
-   The owner asked on 2026-10-13 to fold the planned 1.34 into 1.33. Changes the database (owner's OK given) and
-   raises the sync file's format: both phones must be updated before they sync again.
-3. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's).
-   The owner said on 2026-10-13 to wait with this one: don't start it until they say so.
+2. ~~MTG Trader 1.33: order history, profit and loss, add a precon, condition-adjusted values.~~ Released.
+3. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's
+   1.32). The owner said on 2026-10-13 to wait with this one: don't start it until they say so.
 
-### 4. Order history
+Nothing else is waiting on this list.
+
+## Done
+
+### Order history
+*Released in MTG Trader 1.33 (2026-10-13). Built as settled: ⋮ → Orders in the collection, in `data/Orders.kt` and `ui/OrdersScreen.kt`. An order is one row with its cards as JSON (database version 14, sync and backup file format 3). "+" adds past order files without touching the collection; a Cardmarket month becomes one order per shipment. The owner's 17 precons of 13 October are in `precon-orders.json` in their order-files folder, in the app's own orders format, to add with "+". Restoring a backup from before 1.33 leaves the orders as they are.*
+
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
 
 Once the app reads CardTrader and Cardmarket orders (items 2 and 3), remember each order: date, shop, what was paid
@@ -40,7 +43,9 @@ Settled with the owner on 2026-10-13 (no open questions left):
   history (deck name, date, price paid), so profit and loss per deck works. The decks, prices and per-card shares
   are in the owner's folder (`dry-run/7-precon-prices-per-deck.csv` and `-per-card.csv`).
 
-### 5. Profit and loss
+### Profit and loss
+*Released in MTG Trader 1.33 (2026-10-13). Built as settled: "Paid and worth" with best and worst buys on the value screen (`data/ProfitLoss.kt`), and paid against worth per order in the order history. An order's cards without a price today are left out of both sides of its gain or loss.*
+
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
 
 The app stores what was paid per card and shows it on the card page. Total it: paid versus current value for the
@@ -51,7 +56,9 @@ Settled with the owner on 2026-10-13 (no open questions left):
 - Part of the value screen, next to "Rising lately" and "Falling lately".
 - Per order as well, in the order history: what was paid and what those cards are worth now.
 
-### 6. Condition-adjusted values
+### Condition-adjusted values
+*Released in MTG Trader 1.33 (2026-10-13). Built as settled, in `Pricing.conditionPct` (`data/PriceSources.kt`): off by default, the six percentages in Settings (synced), applied wherever a copy's value is worked out, marked "EX 85%". Card Kingdom's own per-condition prices are left alone. The price change the collection sorts by (item 1) is not scaled.*
+
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
 
 Cardmarket's guide has one price per card whatever its condition, so a Played card counts as much as a Near Mint one
@@ -63,7 +70,9 @@ Settled with the owner on 2026-10-13 (no open questions left):
 - It applies everywhere a value is shown, trades and the trade binder included.
 - Off until switched on; an adjusted price carries a small condition tag so it can be told apart.
 
-### 8. Add a preconstructed deck to the collection, with the price paid
+### Add a preconstructed deck to the collection, with the price paid
+*Released in MTG Trader 1.33 (2026-10-13). Built as settled, in `data/Precons.kt` and `ui/PreconScreen.kt`: Commander decks from MTGJSON, binder only, the price split by today's Scryfall euro prices with a 0.05 floor per copy, the shares adding up to the price exactly. The weekly health check watches MTGJSON since 2026-10-13. Still open for later: "also add it to the Decks tab".*
+
 *Added 2026-10-13. MTG Trader only.*
 
 Owner's wording: "if in the future you can create a function in the app to import a precon into a binder (or even
@@ -87,8 +96,6 @@ Settled with the owner on 2026-10-13 (no open questions left):
 - Binder only at first; "also add it to the Decks tab" is a later step.
 - The price is split by today's card prices.
 - Commander decks only to start with.
-
-## Done
 
 ### Sort the collection by value change
 *Released in MTG Trader 1.32 (2026-10-13). Poké Trader still has this item open (planned as Poké Trader 1.20).*

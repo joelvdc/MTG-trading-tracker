@@ -77,6 +77,7 @@ class AppContainer(context: Context) {
     val repo = MtgRepository(db, scryfall, prices, appScope)
     val catalog = CardmarketCatalog(context, http, db, settings, scryfall)
     val history = ValueHistory(db)
+    val precons = com.mtgtrader.data.PreconStore(http)
     val cardDetails = com.mtgtrader.data.CardDetails(db, scryfall)
     val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)
     val updater = DataUpdater(context, settings, prices, network, catalog, history, cardDetails, priceSources)
@@ -110,6 +111,15 @@ class AppContainer(context: Context) {
         val source0 = settings.priceSource.value
         com.mtgtrader.data.Pricing.source = source0
         appScope.launch { settings.priceSource.dropWhile { it == source0 }.collect { com.mtgtrader.data.Pricing.source = it } }
+        // Condition-adjusted values (since 1.33): the percentages while the setting is on, else nothing.
+        val pcts = { on: Boolean, p: Map<String, Int> -> p.takeIf { on } }
+        val pcts0 = pcts(settings.conditionAdjust.value, settings.conditionPcts.value)
+        com.mtgtrader.data.Pricing.conditionPct = pcts0
+        appScope.launch {
+            kotlinx.coroutines.flow.combine(settings.conditionAdjust, settings.conditionPcts, pcts)
+                .dropWhile { it == pcts0 }
+                .collect { com.mtgtrader.data.Pricing.conditionPct = it }
+        }
         val usd = { r: com.mtgtrader.data.ExchangeRates? -> r?.perEuro?.get("USD") }
         val usd0 = usd(exchangeRates.rates.value)
         com.mtgtrader.data.Pricing.usdPerEuro = usd0

@@ -360,9 +360,9 @@ interface DeckDao {
         PriceEntity::class, CollectionItem::class, Trade::class, TradeItem::class, Deck::class, DeckCard::class,
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
-        CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class,
+        CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -380,15 +380,28 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun valueHistoryDao(): ValueHistoryDao
     abstract fun catalogDao(): CatalogDao
     abstract fun sourcePriceDao(): SourcePriceDao
+    abstract fun orderDao(): OrderDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /** Version 14 (app 1.33): remembered orders (synced; the sync file's format went to 3 with it). */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `orders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `shop` TEXT NOT NULL, `number` TEXT, " +
+                        "`title` TEXT NOT NULL, `date` TEXT NOT NULL, `paid` REAL NOT NULL, `cards` INTEGER NOT NULL, `lines` TEXT NOT NULL, " +
+                        "`addedAt` INTEGER NOT NULL, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_orders_uid` ON `orders` (`uid`)")
+            }
+        }
 
         /** Version 13 (app 1.29): TCGplayer's and Card Kingdom's prices, kept on the phone (not synced). */
         val MIGRATION_12_13 = object : Migration(12, 13) {

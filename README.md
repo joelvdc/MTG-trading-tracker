@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.32.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.33.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.32-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.33-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -49,6 +49,12 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   Cardmarket's price types and the trend arrows apply to Cardmarket only. The value screen (with a chart per source
   from 1.29 on), the stats ("Value by price source", "Europe or the US?") and each card's page compare all three. These
   prices are kept on the phone only (not synced).
+- **Condition-adjusted values** (since 1.33): the price guides have one price per card, whatever its condition.
+  Settings → **Count a card's condition in its value** (off until you switch it on) makes a copy count for a
+  percentage of the card's price: Near Mint 100%, Excellent 85%, Good 70%, Light Played 60%, Played 45%, Poor 30%, each
+  adjustable. It applies everywhere a value is shown (collection, stats, value over time, trades, the trade binder,
+  orders), and an adjusted price is marked, e.g. "EX 85%". Card Kingdom's own prices per condition are used as they
+  are. The setting and the percentages sync between phones.
 - **Currency:** Cardmarket's prices are in euros. Settings → **Currency** shows them in Danish kroner or US dollars
   instead, converted with the [European Central Bank's daily rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html)
   (downloaded twice a day at most, kept for offline use; the choice syncs between phones). Purchase and agreed prices
@@ -162,6 +168,20 @@ finds the cards in your collection (nothing is looked up online) and shows what 
 
 Untick any card to leave it as it is. A restore point is made before the prices are set.
 
+**Orders:** ⋮ → **Orders** is the history of what you bought: every order you import, every package you check and
+every precon you add is remembered with its date, what you paid and what its cards are worth now (whether you still
+have them or not). Tap an order for its cards, to change its date or to remove it from the list (your collection
+stays as it is). **+** adds the files of orders from before, several at once (CardTrader's Excel, Cardmarket's
+shipment or monthly CSV; a month becomes one order per shipment): they only go into the list, the collection isn't
+changed. A shipment file has no date in it, so the import asks for one. Orders sync between phones and are part of
+backups.
+
+**Add a preconstructed deck:** ⋮ → **Add a preconstructed deck…**, pick the Commander deck (search by name or set
+code; the lists come from [MTGJSON](https://mtgjson.com/)), then the binder, what you paid and the day. The deck's
+cards go into the binder in their own printing and finish, without basic lands. What you paid is split over them in
+proportion to what each card is worth today, so the cards add up to what the deck cost; a card you already had in
+that binder gets the average. The deck is remembered as an order.
+
 The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
 big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
 total underneath, and "Value per card" sorts by it.
@@ -199,7 +219,8 @@ the back.
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
 cards whose price is rising or falling most lately, per card (one copy, the same change the collection can be
-sorted by); tap one to open it. The chips at the
+sorted by); tap one to open it. **Paid and worth** compares what you paid for the cards that have a purchase price
+with what they are worth now, for all cards or the chosen binder, with your best and worst buys per card. The chips at the
 top switch between all cards, Unsorted and each binder (binder values are saved from version 1.25 on).
 
 **Collection stats:** the pie-chart button next to the total. For the whole collection or one binder (chips at the

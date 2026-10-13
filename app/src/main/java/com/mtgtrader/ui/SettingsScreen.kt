@@ -18,6 +18,15 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.mtgtrader.data.CONDITIONS
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -63,6 +72,8 @@ fun SettingsScreen(nav: NavController) {
     val sourceStatus by c.priceSources.status.collectAsStateWithLifecycle()
     val rates by c.exchangeRates.rates.collectAsStateWithLifecycle()
     val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
+    val conditionAdjust by c.settings.conditionAdjust.collectAsStateWithLifecycle()
+    val conditionPcts by c.settings.conditionPcts.collectAsStateWithLifecycle()
     val lastFetch by c.settings.lastPriceFetch.collectAsStateWithLifecycle()
     val guideDate by c.settings.priceGuideDate.collectAsStateWithLifecycle()
     val count by c.prices.count.collectAsStateWithLifecycle(0)
@@ -100,6 +111,9 @@ fun SettingsScreen(nav: NavController) {
                     }
                 }
             }
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            ConditionSection(conditionAdjust, conditionPcts, priceSource, c.settings::setConditionAdjust, c.settings::setConditionPct)
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             CurrencySection(currency, rates, c.settings::setCurrency)
@@ -279,6 +293,34 @@ private fun formatGuideDate(raw: String?): String {
 }
 
 /** Settings → Currency: what prices are shown in, and the rates used. Since 1.28. */
+/**
+ * Condition-adjusted values: a switch, and what a copy in each condition counts for. Since 1.33.
+ */
+@Composable
+internal fun ConditionSection(on: Boolean, pcts: Map<String, Int>, source: PriceSource, onSwitch: (Boolean) -> Unit, onPct: (String, Int) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onSwitch(!on) }, verticalAlignment = Alignment.CenterVertically) {
+        Text("Count a card's condition in its value", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+        Switch(checked = on, onCheckedChange = onSwitch)
+    }
+    Text(
+        "The price guides have one price per card, whatever its condition. With this on, a copy counts for the percentage " +
+            "below everywhere a value is shown (collection, stats, trades, the trade binder), and the price is marked, e.g. “EX 85%”." +
+            if (source == PriceSource.CARD_KINGDOM) " Card Kingdom's own prices per condition are used as they are." else "",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (!on) return
+    for ((code, label) in CONDITIONS) {
+        val pct = pcts[code] ?: 100
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("$label ($code)", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            IconButton(onClick = { onPct(code, pct - 5) }, enabled = pct > 0) { Icon(Icons.Default.Remove, "Less for $label") }
+            Text("$pct%", Modifier.width(52.dp), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            IconButton(onClick = { onPct(code, pct + 5) }, enabled = pct < 100) { Icon(Icons.Default.Add, "More for $label") }
+        }
+    }
+}
+
 @Composable
 internal fun CurrencySection(currency: AppCurrency, rates: ExchangeRates?, onPick: (AppCurrency) -> Unit) {
     Text("Currency", style = MaterialTheme.typography.titleMedium)

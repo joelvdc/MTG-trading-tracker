@@ -344,6 +344,9 @@ data class CollectionRow(
     /** [unitPrice] is Cardmarket's, standing in for the chosen source. */
     val isApprox: Boolean get() = Pricing.isApprox(item.card.scryfallId, item.finish, item.condition)
 
+    /** "EX 85%" when [unitPrice] was lowered for the copy's condition (see [Pricing.conditionPct]); else null. Since 1.33. */
+    val conditionNote: String? get() = Pricing.adjustedPct(item.card.scryfallId, item.finish, item.condition)?.let { "${item.condition} $it%" }
+
     /** Cardmarket's trend arrow; none while another price source is chosen (since 1.29). */
     val trend: PriceTrend? get() = if (Pricing.source == PriceSource.CARDMARKET) price?.toSet(item.foil)?.trendChange else null
 

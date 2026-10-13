@@ -167,6 +167,10 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                                 val main = Pricing.unit(card.scryfallId, v.finish, v.condition, prices(v.finish.foil)?.best(priceType))
                                 val approx = Pricing.isApprox(card.scryfallId, v.finish, v.condition)
                                 Text((if (approx) "≈" else "") + Fmt.money(main), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                Pricing.adjustedPct(card.scryfallId, v.finish, v.condition)?.let { pct ->
+                                    Spacer(Modifier.width(6.dp))
+                                    Tag("${v.condition} $pct%")
+                                }
                                 Spacer(Modifier.width(6.dp))
                                 TrendBadge(prices(v.finish.foil)?.trendChange)
                                 if (v.quantity > 1) {

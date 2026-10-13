@@ -197,6 +197,24 @@ class Settings(context: Context) {
         prefs.edit().putString("powerSource", v.name).stamp().apply()
     }
 
+    private val _conditionAdjust = MutableStateFlow(prefs.getBoolean("conditionAdjust", false))
+    /** Whether values count a copy's condition (synced). Off unless switched on. Since 1.33. */
+    val conditionAdjust: StateFlow<Boolean> = _conditionAdjust
+
+    private val _conditionPcts = MutableStateFlow(decodePcts(prefs.getString("conditionPcts", null)))
+    /** Percent of the price per condition (synced). Since 1.33. */
+    val conditionPcts: StateFlow<Map<String, Int>> = _conditionPcts
+
+    fun setConditionAdjust(on: Boolean) {
+        _conditionAdjust.value = on
+        prefs.edit().putBoolean("conditionAdjust", on).stamp().apply()
+    }
+
+    fun setConditionPct(condition: String, pct: Int) {
+        _conditionPcts.value = _conditionPcts.value + (condition to pct.coerceIn(0, 100))
+        prefs.edit().putString("conditionPcts", encodePcts(_conditionPcts.value)).stamp().apply()
+    }
+
     fun setCollectionView(v: CollectionView) {
         _collectionView.value = v
         prefs.edit().putString("collectionView", v.name).stamp().apply()
@@ -227,6 +245,8 @@ class Settings(context: Context) {
             put("powerSource", powerSource.value.name)
             put("deckPrintingsOff", _deckPrintingsOff.value.joinToString(","))
             put("deckPicks", encodePicks(_deckPicks.value))
+            put("conditionAdjust", conditionAdjust.value.toString())
+            put("conditionPcts", encodePcts(conditionPcts.value))
         },
     )
 
@@ -245,6 +265,8 @@ class Settings(context: Context) {
         v["powerSource"]?.let { _powerSource.value = PowerSource.fromKey(it); e.putString("powerSource", it) }
         v["deckPrintingsOff"]?.let { _deckPrintingsOff.value = decodeIds(it); e.putString("deckPrintingsOff", it) }
         v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
+        v["conditionAdjust"]?.toBooleanStrictOrNull()?.let { _conditionAdjust.value = it; e.putBoolean("conditionAdjust", it) }
+        v["conditionPcts"]?.let { _conditionPcts.value = decodePcts(it); e.putString("conditionPcts", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 
@@ -256,8 +278,19 @@ class Settings(context: Context) {
         prefs.edit().putLong("lastPriceFetch", at).putString("priceGuideDate", createdAt).apply()
     }
 
-    private companion object {
-        const val PREFS_UPDATED_AT = "syncedPrefsUpdatedAt"
+    companion object {
+        /** What a copy in each condition counts for until the owner changes it, in percent of the card's price. */
+        val DEFAULT_CONDITION_PCTS = linkedMapOf("MT" to 100, "NM" to 100, "EX" to 85, "GD" to 70, "LP" to 60, "PL" to 45, "PO" to 30)
+
+        fun encodePcts(p: Map<String, Int>): String = p.entries.joinToString(",") { "${it.key}=${it.value}" }
+
+        /** "EX=85,GD=70": conditions it doesn't name keep their default. */
+        fun decodePcts(s: String?): Map<String, Int> = DEFAULT_CONDITION_PCTS + s.orEmpty().split(',').mapNotNull { part ->
+            val (k, v) = part.split('=').takeIf { it.size == 2 } ?: return@mapNotNull null
+            v.trim().toIntOrNull()?.let { k.trim().uppercase() to it.coerceIn(0, 100) }
+        }.filter { it.first in DEFAULT_CONDITION_PCTS }
+
+        private const val PREFS_UPDATED_AT = "syncedPrefsUpdatedAt"
         private val picksSerializer = kotlinx.serialization.builtins.MapSerializer(
             kotlinx.serialization.serializer<String>(),
             kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.serializer<String>(), kotlinx.serialization.serializer<String>()),

@@ -112,6 +112,15 @@ object PurchasePrices {
         return version(line, printing)
     }
 
+    /** The printing an order line bought, when the collection holds it (whatever finish or language): its card data. */
+    fun printing(line: OrderLine, index: Index): CardRef? {
+        val product = line.productId
+        if (product != null) return index.byProduct[product]?.firstOrNull()?.card
+        val found = find(line, index)
+        // "Another printing" is exactly what this isn't.
+        return found.stacks.firstOrNull()?.card?.takeIf { found.sure || found.why.startsWith("Bought") }
+    }
+
     private fun cents(v: Double) = (v * 100).roundToLong() / 100.0
 
     /**

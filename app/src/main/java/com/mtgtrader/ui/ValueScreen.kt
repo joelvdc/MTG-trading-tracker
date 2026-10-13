@@ -53,7 +53,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
+import com.mtgtrader.data.Buy
 import com.mtgtrader.data.PriceMove
+import com.mtgtrader.data.ProfitLoss
 import com.mtgtrader.data.PriceSource
 import com.mtgtrader.data.Pricing
 import com.mtgtrader.data.ValueHistory
@@ -87,6 +89,7 @@ fun ValueScreen(nav: NavController) {
         val from = range.days?.let { LocalDate.now().minusDays(it) }
         history.filter { from == null || !it.day.isBefore(from) }
     }
+    val profit = remember(rows, priceType, pricing) { ProfitLoss.of(rows, priceType) }
     val risers = remember(rows) { ValueHistory.biggestMoves(rows, up = true) }
     val fallers = remember(rows) { ValueHistory.biggestMoves(rows, up = false) }
     val snackbar = remember { SnackbarHostState() }
@@ -164,6 +167,15 @@ fun ValueScreen(nav: NavController) {
                     ValueChart(points)
                 }
             }
+            if (profit.counted > 0) item(key = "profit") { ProfitCard(profit) }
+            if (profit.best.isNotEmpty()) {
+                item(key = "best") { MovesHeader("Best buys") }
+                items(profit.best, key = { "b${it.row.item.id}" }) { BuyRow(it) { opened = it.row } }
+            }
+            if (profit.worst.isNotEmpty()) {
+                item(key = "worst") { MovesHeader("Worst buys") }
+                items(profit.worst, key = { "w${it.row.item.id}" }) { BuyRow(it) { opened = it.row } }
+            }
             if (risers.isNotEmpty()) {
                 item(key = "up") { MovesHeader("Rising lately") }
                 items(risers, key = { "u${it.row.item.id}" }) { MoveRow(it) { opened = it.row } }
@@ -215,6 +227,52 @@ private fun MoveRow(m: PriceMove, onClick: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text("%+.0f%%".format(m.pct), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** What was paid for the cards with a purchase price, against what those cards are worth now. Since 1.33. */
+@Composable
+internal fun ProfitCard(p: ProfitLoss) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Paid and worth", style = MaterialTheme.typography.titleMedium)
+            Row {
+                Text("Paid", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(Fmt.money(p.paid), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            }
+            Row {
+                Text("Worth now", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(Fmt.money(p.worth), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            }
+            Text(gainText(p.paid, p.worth), color = if (p.gain >= 0) TrendColors.up else TrendColors.down, style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Counts the ${p.counted} of ${p.copies} cards that have a purchase price" +
+                    (if (p.counted < p.copies) "; the other ${p.copies - p.counted} are left out" else "") +
+                    ". Each order's own figures are under ⋮ → Orders in the collection.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun BuyRow(b: Buy, onClick: () -> Unit) {
+    val item = b.row.item
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        CardThumb(item.card.imageUrl, width = 34)
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text((if (item.quantity > 1) "${item.quantity}× " else "") + item.card.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("paid ${Fmt.money(b.paid)} · now ${Fmt.money(b.now)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                (if (b.gain >= 0) "+" else "−") + Fmt.money(abs(b.gain)),
+                color = if (b.gain >= 0) TrendColors.up else TrendColors.down,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text("%+.0f%%".format(b.pct), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

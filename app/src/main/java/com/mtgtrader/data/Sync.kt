@@ -22,6 +22,8 @@ data class SyncData(
     val scans: List<ScannedCard> = emptyList(),
     /** Since 1.16; older versions leave it out (and don't delete anything from it). */
     val wishlist: List<WishlistItem> = emptyList(),
+    /** Since 1.33 (file format 3). */
+    val orders: List<PurchaseOrder> = emptyList(),
     val deletions: List<SyncDeletion> = emptyList(),
     val prefs: SyncPrefs = SyncPrefs(),
 ) {
@@ -35,6 +37,7 @@ data class SyncData(
         decks = decks.map { it.sorted() }.sortedBy { it.deck.archidektId },
         scans = scans.sortedBy { it.uid },
         wishlist = wishlist.sortedBy { it.uid },
+        orders = orders.sortedBy { it.uid },
         deletions = deletions.sortedBy { it.uid },
     )
 }
@@ -73,8 +76,9 @@ data class SyncFile(
         /**
          * 2 since 1.27: signed and altered copies are stacks of their own, which older versions would
          * merge with the plain ones (losing the marks), so they refuse the file and ask to be updated.
+         * 3 since 1.33: remembered orders, which an older version would write back without.
          */
-        const val FORMAT = 2
+        const val FORMAT = 3
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**
@@ -189,6 +193,7 @@ object SyncMerge {
         d.trades.forEach { t -> t.trade.uid?.let(::add) }
         d.scans.forEach { s -> s.uid?.let(::add) }
         d.wishlist.forEach { w -> w.uid?.let(::add) }
+        d.orders.forEach { o -> o.uid?.let(::add) }
         d.decks.forEach { add(deckKey(it.deck.archidektId)) }
     }
 
@@ -215,6 +220,7 @@ object SyncMerge {
             },
             scans = newest(local.scans, remote.scans, { it.uid }, { it.updatedAt }),
             wishlist = newest(local.wishlist, remote.wishlist, { it.uid }, { it.updatedAt }),
+            orders = newest(local.orders, remote.orders, { it.uid }, { it.updatedAt }),
             deletions = deletions,
             prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs else local.prefs,
         )
@@ -265,9 +271,17 @@ object SyncMerge {
         val decks = d.decks.filter { alive(deckKey(it.deck.archidektId), it.deck.updatedAt) }
         val scans = d.scans.filter { alive(it.uid, it.updatedAt) }
         val wishlist = d.wishlist.filter { alive(it.uid, it.updatedAt) }
+        // The same order read on two phones before they synced is kept once (the one changed last).
+        val orders = d.orders.filter { alive(it.uid, it.updatedAt) }
+            .groupBy { o -> o.number?.let { listOf(o.shop, it) } ?: listOf(o.uid) }
+            .map { (_, same) ->
+                val keep = same.maxWith(compareBy<PurchaseOrder>({ it.updatedAt }, { it.uid }))
+                for (o in same) if (o !== keep) bury(o.uid, o.updatedAt)
+                keep
+            }
 
         val cutoff = now - KEEP_DELETIONS_MS
         val deletions = deleted.filter { (uid, at) -> uid !in revived && at >= cutoff }.map { (uid, at) -> SyncDeletion(uid, at) }
-        return SyncData(binders, collection, trades, decks, scans, wishlist, deletions, d.prefs).sorted()
+        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, deletions, d.prefs).sorted()
     }
 }

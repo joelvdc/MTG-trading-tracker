@@ -102,6 +102,18 @@ object Pricing {
     /** Scryfall id → its prices at the other sources (the cards loaded so far). */
     var others by mutableStateOf<Map<String, OtherPrices>>(emptyMap())
 
+    /**
+     * Condition-adjusted values (since 1.33): the percent of a card's price a copy in each condition counts
+     * for (NM 100, EX 85…), or null while the setting is off. The price guides have one price per card
+     * whatever its condition; Card Kingdom's own per-condition prices are left as they are.
+     */
+    var conditionPct by mutableStateOf<Map<String, Int>?>(null)
+
+    /** What a copy in [condition] counts for: 0.85 for 85%; 1.0 while the setting is off or for a condition it doesn't list. */
+    fun conditionFactor(condition: String): Double = conditionPct?.get(condition)?.let { it.coerceIn(0, 100) / 100.0 } ?: 1.0
+
+    private fun adjusted(price: Double?, condition: String): Double? = price?.times(conditionFactor(condition))
+
     /** Card Kingdom's grades (NM, EX, VG, G) for the app's, by way of the TCGplayer scale Archidekt uses too. */
     fun ckCondition(condition: String): String = when (ArchidektCodes.archCondition(condition)) {
         "NM" -> "nm"
@@ -117,8 +129,8 @@ object Pricing {
 
     /** A copy's price at [source], in euros; null when it has none. [cardmarket] is Cardmarket's price for that copy. */
     fun at(source: PriceSource, scryfallId: String, finish: Finish, condition: String, cardmarket: Double?): Double? = when (source) {
-        PriceSource.CARDMARKET -> cardmarket
-        PriceSource.TCGPLAYER -> toEur(others[scryfallId]?.row(source, finish)?.price)
+        PriceSource.CARDMARKET -> adjusted(cardmarket, condition)
+        PriceSource.TCGPLAYER -> adjusted(toEur(others[scryfallId]?.row(source, finish)?.price), condition)
         PriceSource.CARD_KINGDOM -> {
             val r = others[scryfallId]?.row(source, finish)
             toEur(
@@ -134,7 +146,19 @@ object Pricing {
 
     /** The price of one copy from the chosen source, or Cardmarket's when that source has none. */
     fun unit(scryfallId: String, finish: Finish, condition: String, cardmarket: Double?): Double? =
-        at(source, scryfallId, finish, condition, cardmarket) ?: cardmarket
+        at(source, scryfallId, finish, condition, cardmarket) ?: adjusted(cardmarket, condition)
+
+    /** [cardmarket] standing in for a source without a price, adjusted for the copy's condition like [unit] does. */
+    fun fallback(condition: String, cardmarket: Double?): Double? = adjusted(cardmarket, condition)
+
+    /**
+     * The percent [unit] counted the copy's condition for, when that isn't 100: "EX 85%" is shown next
+     * to such a price. Null for Card Kingdom's own price for the condition, which needs no adjusting.
+     */
+    fun adjustedPct(scryfallId: String, finish: Finish, condition: String): Int? {
+        val pct = conditionPct?.get(condition)?.coerceIn(0, 100)?.takeIf { it != 100 } ?: return null
+        return pct.takeIf { source != PriceSource.CARD_KINGDOM || at(source, scryfallId, finish, condition, null) == null }
+    }
 
     /** True when [unit] fell back to Cardmarket's price (shown with "≈"). */
     fun isApprox(scryfallId: String, finish: Finish, condition: String): Boolean =

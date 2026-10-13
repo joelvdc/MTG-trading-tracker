@@ -60,6 +60,7 @@ import com.mtgtrader.data.OrderFile
 import com.mtgtrader.data.OrderFiles
 import com.mtgtrader.data.OrderFormat
 import com.mtgtrader.data.OrderShop
+import com.mtgtrader.data.Orders
 import com.mtgtrader.data.ScryCard
 import com.mtgtrader.data.Spreadsheet
 import kotlinx.coroutines.Dispatchers
@@ -117,6 +118,8 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
     var binder by remember { mutableStateOf(BinderChoice()) }
     var choosing by remember { mutableStateOf<OrderCandidate?>(null) }
     var importing by remember { mutableStateOf(false) }
+    // The order goes into the order history (since 1.33); a file without a date gets the one typed here.
+    var date by remember { mutableStateOf(todayIso()) }
     val owned by remember { c.db.collectionDao().observeOwned() }.collectAsStateWithLifecycle(emptyList())
     val ownedMap = remember(owned) { owned.associate { it.scryfallId to it.qty } }
     val fileName = remember(uri) { displayName(context, uri) }
@@ -159,18 +162,20 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
             if (list != null) {
                 Surface(tonalElevation = 3.dp) {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (order?.lines?.none { it.date != null } == true) OrderDateField(date, { date = it })
                         BinderPicker("Put them in", binder, { binder = it }, suggestedName = suggestedBinderName(fileName, shop ?: OrderShop.CARDTRADER))
                         Button(
                             onClick = {
                                 importing = true
                                 scope.launch {
                                     val added = c.repo.importOrder(chosen.map { it.card!! to it.line }, binder)
+                                    order?.let { file -> c.repo.recordOrders(Orders.fromFile(file, date.trim()) { i, _ -> list.firstOrNull { it.index == i }?.card }) }
                                     val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
                                     c.repo.reportImport(importSummary(added, where, list, checked))
                                     nav.safePopBackStack()
                                 }
                             },
-                            enabled = !importing && chosen.isNotEmpty() && binder.isValid,
+                            enabled = !importing && chosen.isNotEmpty() && binder.isValid && isIsoDate(date),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             val n = chosen.sumOf { it.line.quantity }

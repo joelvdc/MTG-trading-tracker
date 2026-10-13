@@ -103,7 +103,7 @@ class Release127Test {
     fun syncFilesCarryTheMarksAndOldOnesReadAsPlain() {
         val data = SyncData(collection = listOf(SyncStack(CollectionItem(card = ref, foil = false, quantity = 1, signed = true, uid = "u1"))))
         val back = SyncFile.decode(SyncFile.encode(SyncFile(data = data)))
-        assertEquals(2, back.format)
+        assertEquals(SyncFile.FORMAT, back.format)
         assertTrue(back.data.collection.single().item.signed)
         assertFalse(back.data.collection.single().item.altered)
 
@@ -120,18 +120,19 @@ class Release127Test {
     @Test
     fun newerFilesAreRefused() {
         try {
-            SyncFile.decode(gz("""{"format":3,"app":"MTG Trader"}"""))
+            SyncFile.decode(gz("""{"format":4,"app":"MTG Trader"}"""))
             fail()
         } catch (e: SyncException) {
             assertTrue("newer version" in e.message!!)
         }
         try {
-            BackupFile.decode(gz("""{"format":3,"app":"MTG Trader"}"""))
+            BackupFile.decode(gz("""{"format":4,"app":"MTG Trader"}"""))
             fail()
         } catch (e: SyncException) {
             assertTrue("newer version" in e.message!!)
         }
-        assertEquals(2, BackupFile.FORMAT)
+        // 3 since 1.33 (remembered orders).
+        assertEquals(3, BackupFile.FORMAT)
     }
 
     @Test
@@ -144,7 +145,9 @@ class Release127Test {
         // The file this phone already knows.
         assertNull(SyncFile.olderWriter(old, "e1", "e1", "Samsung SM-S911B"))
         // Written by an updated phone.
-        assertNull(SyncFile.olderWriter(old.copy(format = 2), "e2", "e1", "Samsung SM-S911B"))
+        assertNull(SyncFile.olderWriter(old.copy(format = SyncFile.FORMAT), "e2", "e1", "Samsung SM-S911B"))
+        // A phone still on 1.27 to 1.32 (format 2) is noticed the same way since 1.33.
+        assertEquals("Google Pixel 7", SyncFile.olderWriter(old.copy(format = 2), "e2", "e1", "Samsung SM-S911B"))
         assertEquals("Another phone", SyncFile.olderWriter(old.copy(writtenBy = ""), "e2", null, "Samsung SM-S911B"))
     }
 

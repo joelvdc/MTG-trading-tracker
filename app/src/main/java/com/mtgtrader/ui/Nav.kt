@@ -190,6 +190,8 @@ fun AppNav() {
                 PackageCheckScreen(nav, Uri.parse(it.arguments?.getString("uri").orEmpty()))
             }
             composable("purchaseprices") { PurchasePricesScreen(nav) }
+            composable("orders") { OrdersScreen(nav) }
+            composable("precon") { PreconScreen(nav) }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
             composable("archidekt") { ArchidektSyncScreen(nav) }

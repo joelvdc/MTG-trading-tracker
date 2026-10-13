@@ -62,6 +62,7 @@ import com.mtgtrader.data.CardTraderOrder
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.OrderFiles
 import com.mtgtrader.data.OrderShop
+import com.mtgtrader.data.Orders
 import com.mtgtrader.data.PackageCheck
 import com.mtgtrader.data.PackageCheck.Status
 import com.mtgtrader.data.ScannedCard
@@ -198,8 +199,9 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
         AddCheckedDialog(
             result = result,
             suggestedBinder = suggestedBinderName(fileName, shop),
+            askDate = loaded?.file?.lines?.none { it.date != null } == true,
             onDismiss = { confirming = false },
-            onConfirm = { binder, extras ->
+            onConfirm = { binder, extras, date ->
                 confirming = false
                 adding = true
                 scope.launch {
@@ -208,6 +210,7 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
                     for (l in result.lines) for (p in l.parts) p.scan?.let { used.merge(it.id, p.quantity, Int::plus) }
                     if (extras) for ((scan, n) in result.extras) used.merge(scan.id, n, Int::plus)
                     val added = c.repo.addCheckedPackage(additions, binder, used)
+                    loaded?.let { o -> c.repo.recordOrders(Orders.fromFile(o.file, date) { i, _ -> o.candidates.firstOrNull { it.index == i }?.card }) }
                     val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
                     val missing = result.count(Status.MISSING)
                     adding = false
@@ -235,9 +238,12 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
 }
 
 @Composable
-private fun AddCheckedDialog(result: PackageCheck.Result, suggestedBinder: String, onDismiss: () -> Unit, onConfirm: (BinderChoice, extras: Boolean) -> Unit) {
+private fun AddCheckedDialog(
+    result: PackageCheck.Result, suggestedBinder: String, askDate: Boolean, onDismiss: () -> Unit, onConfirm: (BinderChoice, extras: Boolean, date: String) -> Unit,
+) {
     var binder by remember { mutableStateOf(BinderChoice()) }
     var extras by remember { mutableStateOf(true) }
+    var date by remember { mutableStateOf(todayIso()) }
     val n = PackageCheck.additions(result, extras).sumOf { it.quantity }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -250,12 +256,13 @@ private fun AddCheckedDialog(result: PackageCheck.Result, suggestedBinder: Strin
                     style = MaterialTheme.typography.bodySmall,
                 )
                 BinderPicker("Binder", binder, { binder = it }, suggestedName = suggestedBinder)
+                if (askDate) OrderDateField(date, { date = it })
                 if (result.extraCount > 0) {
                     CheckRow("Also the ${result.extraCount} scanned card${if (result.extraCount == 1) "" else "s"} that aren't in the order", extras) { extras = it }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(binder, extras) }, enabled = n > 0 && binder.isValid) { Text("Add") } },
+        confirmButton = { TextButton(onClick = { onConfirm(binder, extras, date.trim()) }, enabled = n > 0 && binder.isValid && isIsoDate(date)) { Text("Add") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
