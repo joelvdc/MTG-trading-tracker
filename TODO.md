@@ -118,8 +118,9 @@ Settled with the owner on 2026-10-13 (no open questions left):
   (a new table; both phones must run the new version before they sync, so raise the sync file's format).
 - Past orders are loaded too: a one-time import the owner starts in the app by picking the files kept on their PC
   (43 Cardmarket monthly files, 15 CardTrader orders).
-- Claude's suggestion, not yet confirmed by the owner: each of the 17 preconstructed decks priced on 2026-10-13
-  becomes an order in the history (deck name, date, price paid), so profit and loss per deck works; ask when planning.
+- Confirmed by the owner on 2026-10-13: each of the 17 preconstructed decks priced that day becomes an order in the
+  history (deck name, date, price paid), so profit and loss per deck works. The decks, prices and per-card shares
+  are in the owner's folder (`dry-run/7-precon-prices-per-deck.csv` and `-per-card.csv`).
 
 ### 5. Profit and loss
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
@@ -180,6 +181,31 @@ Purchased Articles), semicolon-separated, one line per article:
 e.g. `1185249514;2024-12-02 16:38:27;Essence Flux;289154;Essence Flux;Shadows over Innistrad;Magic Single;1;2.38;2.38;EUR;289154`.
 "Article Value" is the price per card, "Amount" the copies, "Comments" the seller's free text (ignore). It has the
 shipment number and purchase date, which also suit the order history (item 4).
+
+### 8. Add a preconstructed deck to the collection, with the price paid
+*Added 2026-10-13. MTG Trader only.*
+
+Owner's wording: "if in the future you can create a function in the app to import a precon into a binder (or even
+as a deck) and define the price paid."
+
+How it could work (Claude's view, from doing it by script on 2026-10-13):
+- Pick the deck from a list (search by name or set), choose the binder, enter the price paid (in the app's currency)
+  and the date. The app adds the deck's cards to the collection, each with its share of the price: the price is
+  split in proportion to today's Cardmarket price, so the cards add up to what the deck cost. The deck also becomes
+  an order in the order history (item 4).
+- Deck lists: MTGJSON publishes every preconstructed product with Scryfall ids and which cards are foil
+  (`https://mtgjson.com/api/v5/DeckList.json`, about 650 KB, then one small file per deck). Scryfall has no deck
+  lists. A new source for the app, so the weekly health check should watch it.
+- Basic lands and tokens are left out (the owner doesn't track them); they get no share of the price.
+- A card already in the binder gets one more copy, and its price becomes the average weighted by copies (item 7's rule).
+- "As a deck": the Decks tab holds Archidekt decks (each is tied to an Archidekt deck number). Archidekt publishes
+  the official precon lists, so the deck could be added through the existing Archidekt import; a deck that exists
+  only in the app would be a bigger change to the Decks tab.
+
+Open questions:
+- Binder only at first, with "also add it to the Decks tab" as a later step?
+- Should the split use today's prices, or should every card simply get an equal share? (Suggested: today's prices.)
+- Other products too (Duel Decks, Challenger decks, From the Vault, Secret Lair drops), or Commander decks only?
 
 ## Done
 
