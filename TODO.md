@@ -15,10 +15,11 @@ How to use this file:
 each, stop so the owner can try it, and start the next when they say so.*
 
 1. ~~MTG Trader 1.32: sort by value change, Cardmarket orders, package check, purchase prices from orders.~~ Released.
-2. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's).
-3. **MTG Trader 1.33:** order history (4), profit and loss (5), add a precon (8). Changes the database (owner's OK
-   given) and raises the sync file's format: both phones must be updated before they sync again.
-4. **MTG Trader 1.34:** condition-adjusted values (6), on its own because it touches every place a value is shown.
+2. **MTG Trader 1.33:** order history (4), profit and loss (5), add a precon (8) and condition-adjusted values (6).
+   The owner asked on 2026-10-13 to fold the planned 1.34 into 1.33. Changes the database (owner's OK given) and
+   raises the sync file's format: both phones must be updated before they sync again.
+3. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's).
+   The owner said on 2026-10-13 to wait with this one: don't start it until they say so.
 
 ### 4. Order history
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
