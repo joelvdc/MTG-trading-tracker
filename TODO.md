@@ -186,10 +186,10 @@ Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-1
   export is not a direct download. "Export" asks Cardmarket to prepare a report (and emails the owner when a month
   has purchases; empty months produce no report and no email); the report then appears under Account → Downloads,
   where each file is one click. Chrome blocks more than one scripted download per page, so the owner clicks the
-  files. Every month from January 2018 to October 2026 has now been requested. Months with purchases: March to October
-  2018; October 2022 to March 2024; August 2024 to February 2025; June and September 2025; March, May and June 2026
-  (38 files). No purchases between November 2018 and September 2022. Not requested: anything before 2018 (the owner
-  may have bought since about 2014). The files are in the owner's Downloads folder, not in the repository.
+  files. Every month from January 2014 to October 2026 has now been requested (finished 2026-10-13). Months
+  with purchases: August to December 2014; March to October 2018; October 2022 to March 2024; August 2024 to
+  February 2025; June and September 2025; March, May and June 2026 (43 files). No purchases in 2015 to 2017, or
+  between November 2018 and September 2022. The owner keeps the files on their PC; they are not in the repository.
 - CardTrader (about 15 orders) by hand is fine.
 
 ## Done
