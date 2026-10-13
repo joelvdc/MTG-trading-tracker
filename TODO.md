@@ -202,10 +202,10 @@ How it could work (Claude's view, from doing it by script on 2026-10-13):
   the official precon lists, so the deck could be added through the existing Archidekt import; a deck that exists
   only in the app would be a bigger change to the Decks tab.
 
-Open questions:
-- Binder only at first, with "also add it to the Decks tab" as a later step?
-- Should the split use today's prices, or should every card simply get an equal share? (Suggested: today's prices.)
-- Other products too (Duel Decks, Challenger decks, From the Vault, Secret Lair drops), or Commander decks only?
+Settled with the owner on 2026-10-13 (no open questions left):
+- Binder only at first; "also add it to the Decks tab" is a later step.
+- The price is split by today's card prices.
+- Commander decks only to start with.
 
 ## Done
 
