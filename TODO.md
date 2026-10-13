@@ -140,22 +140,53 @@ Open questions:
 - Where it applies: collection totals and stats only, or also trades and the trade binder?
 - On by default, or off until switched on? How is an adjusted price marked on screen?
 
-### 7. Fill in purchase prices from past orders
-*Added 2026-10-12. MTG Trader only.*
+### 7. Update purchase prices of cards already in the collection, from an order file
+*Added 2026-10-12, confirmed as an app feature 2026-10-13. MTG Trader only.*
 
 Owner's wording: "I would also be interested in having a way to read a cardtrader excel or cardmarket csv, have the
-app find the cards in my collection and update the purchase price accordingly. [...] I have about 300 orders on
-cardmarket where the csv would have to be downloaded manually for each order, cardtrader would be less painful with
-only 15 orders."
+app find the cards in my collection and update the purchase price accordingly." And on 2026-10-13: "I still want the
+app to be able to update prices of the existing cards in the collection based on cardmarket or cardtrader purchases.
+[...] I know that we will do a bulk update for this outside the app, but I still want this functionality
+implemented."
 
-**Plan changed on 2026-10-13: done once, outside the app.** The owner proposed it: they put all the order files
-(Cardmarket's 43 monthly files, CardTrader's Excel files) and a fresh `sync.json.gz` in one folder, and Claude fills
-in the purchase prices in that sync file with a script on the owner's PC. The phones take the prices in at their next
-sync (per stack, the newer `updatedAt` wins). **Nothing is built into the app for this**: future purchases get their
-price through the order import (items 2 and 3). This one-off job does not wait for the list's green light.
+What it is: the same order reader as items 2 and 3, but instead of adding cards it finds them in the collection and
+sets what was paid. It reads all three kinds of file: CardTrader's Excel, Cardmarket's per-shipment CSV (item 3), and
+Cardmarket's monthly "Purchased Articles" CSV (format below).
+
+Proposed (2026-10-12):
+- Pick one file or several at once.
+- Match an order line to collection cards by printing, finish and language; condition as a tie-breaker.
+  Cardmarket's monthly file has no foil, language or condition: match by printing (product ID) only.
+- Show a preview before changing anything: would update N cards; lines with no card in the collection (sold or
+  traded since); cards that already have a price; ambiguous lines for the owner to choose (the same printing owned
+  as foil and non-foil, or in two languages, when the file can't say which).
+- A restore point (backup) is made first, as before other bulk changes.
+
+Decided with the owner (2026-10-12):
+- **Bought several times at different prices:** the stack gets the average paid (weighted by copies).
+- **Cards that already have a purchase price:** kept, unless the owner chooses "overwrite".
+- **More copies in the collection than the orders cover:** all copies get the price.
+- **A stack that already has a price and has more copies than the orders cover:** average them, weighted by copies
+  (4 copies at €2 with an order for 1 copy at €4 → €2.50). So "keep the existing price" only applies when the orders
+  cover no more copies than the price already stands for; "overwrite" replaces instead of averaging.
+
+Cardmarket's monthly file ("Purchased Articles-byPurchaseDate-2024-12-01_2024-12-31.csv", Account → Statistics →
+Purchased Articles), semicolon-separated, one line per article:
+`Shipment nr.;Date of purchase;Article;Product ID;Localized Product Name;Expansion;Category;Amount;Article Value;Total;Currency;Comments`
+e.g. `1185249514;2024-12-02 16:38:27;Essence Flux;289154;Essence Flux;Shadows over Innistrad;Magic Single;1;2.38;2.38;EUR;289154`.
+"Article Value" is the price per card, "Amount" the copies, "Comments" the seller's free text (ignore). It has the
+shipment number and purchase date, which also suit the order history (item 4).
+
+### 8. One-off: fill in the purchase prices of the whole collection from all past orders
+*Added 2026-10-13. Not an app feature and not waiting for the list's green light: a job Claude does on the owner's PC.*
+
+The owner proposed it: they put all the order files (Cardmarket's 43 monthly files, CardTrader's Excel files) and a
+fresh `sync.json.gz` in one folder, and Claude fills in the purchase prices in that sync file with a script. The
+phones take the prices in at their next sync (per stack, the newer `updatedAt` wins). The rules are item 7's.
 
 Steps:
-1. The owner prepares the folder (order files plus a `sync.json.gz` taken right after syncing the phone).
+1. The owner prepares the folder (order files plus a `sync.json.gz` taken right after syncing the phone), outside
+   the two app folders.
 2. Dry run, changing nothing: a report of how many stacks would get a price, order lines with no card in the
    collection (sold or traded since), and ambiguous cases.
 3. The owner reviews the report and settles the ambiguous cases.
@@ -166,20 +197,7 @@ code, collector number, foil, language and `purchasePrice`, so Cardmarket's prod
 lookups. None of the 5,210 stacks has a purchase price today. To check before step 4: whether the Archidekt sync
 sends purchase prices (then the first sync afterwards pushes thousands of changes to Archidekt).
 
-Matching rules:
-- Cardmarket's monthly file: by product ID. It has no foil or language, so a printing owned as both foil and
-  non-foil (or in two languages) is ambiguous: list it for the owner.
-- CardTrader's Excel: by set code and collector number, with foil and language from the file.
-
-Decided with the owner (2026-10-12):
-- **Bought several times at different prices:** the stack gets the average paid (weighted by copies).
-- **Cards that already have a purchase price:** kept, unless the owner chooses "overwrite".
-- **More copies in the collection than the orders cover:** all copies get the price (the owner: "average if the
-  cards already have a price").
-
-- **A stack that already has a price and has more copies than the orders cover:** average them, weighted by copies
-  (4 copies at €2 with an order for 1 copy at €4 → €2.50). So "keep the existing price" only applies when the orders
-  cover no more copies than the price already stands for; "overwrite" replaces instead of averaging.
+Keep the folder afterwards: the order history (item 4) can read the same files for past orders with real dates.
 
 Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-12):
 - The account has 300 arrived shipments. Per shipment there is the "ArticlesFromShipment" CSV of item 3.
