@@ -175,7 +175,7 @@ fun ValueScreen(nav: NavController) {
             if (risers.isNotEmpty() || fallers.isNotEmpty()) {
                 item(key = "note") {
                     Text(
-                        "Cardmarket's trend price against its 30-day average, for all the copies you own.",
+                        "Cardmarket's trend price against its 30-day average, per card (one copy). The collection can be sorted the same way.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

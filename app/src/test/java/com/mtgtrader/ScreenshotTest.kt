@@ -16,6 +16,14 @@ import com.mtgtrader.data.StatEntry
 import com.mtgtrader.data.StatMode
 import com.mtgtrader.ui.MtgColors
 import com.mtgtrader.ui.OrderReview
+import com.mtgtrader.data.Binder
+import com.mtgtrader.data.OrderFile
+import com.mtgtrader.data.OrderFormat
+import com.mtgtrader.data.PackageCheck
+import com.mtgtrader.data.PurchasePrices
+import com.mtgtrader.data.ScannedCard
+import com.mtgtrader.ui.PackageCheckList
+import com.mtgtrader.ui.PurchasePricePlan
 import com.mtgtrader.ui.PieChart
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -131,6 +139,93 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/order_review.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.32: a Cardmarket order in the same review: a playset, a language number the app doesn't know, a product without a card. */
+    @Test fun orderReviewCardmarket() {
+        fun cm(name: String, product: Int, price: Double, qty: Int = 1, condition: String = "NM", lang: String = "EN", foil: Boolean = false, playset: Boolean = false, languageKnown: Boolean = true) =
+            OrderLine("", "", name, "", qty, price, condition, lang, foil, false, false, productId = product, playset = playset, languageKnown = languageKnown)
+        val cands = listOf(
+            OrderCandidate(0, cm("Journey to Eternity", 315288, 6.98, condition = "EX"), ref("Journey to Eternity // Atzal, Cave of Eternity", "rix", "160", "rare"), false, false),
+            OrderCandidate(1, cm("Marvin, Murderous Mimic", 788181, 2.98, foil = true), ref("Marvin, Murderous Mimic", "dsk", "253", "rare"), false, false),
+            OrderCandidate(2, cm("Cavalier of Thorns", 378864, 12.0, qty = 4, lang = "ES", playset = true), ref("Cavalier of Thorns", "m20", "167", "mythic"), false, false),
+            OrderCandidate(3, cm("Cavalier of Dawn", 378651, 2.55, languageKnown = false), ref("Cavalier of Dawn", "m20", "10", "mythic"), false, false),
+            OrderCandidate(4, cm("Vanquish the Horde (V.1)", 575682, 3.0), ref("Vanquish the Horde", "mid", "41", "rare"), false, false, guessed = true),
+            OrderCandidate(5, cm("", 999001, 1.5), null, false, false),
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    OrderReview(
+                        candidates = cands, checked = setOf(0, 1, 2, 3), onToggle = {}, skipTokens = true, onSkipTokens = {},
+                        skipBasics = true, onSkipBasics = {}, owned = emptyMap(), onChoose = {},
+                    )
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/order_review_cardmarket.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.32: scanned cards against an order: problems first, then extras, what to check by hand, and the rest folded away. */
+    @Test fun packageCheck() {
+        fun scan(id: Long, name: String, set: String, number: String, qty: Int = 1, lang: String = "EN", exact: Boolean = true) =
+            ScannedCard(id = id, card = ref(name, set, number, "rare"), foil = false, quantity = qty, language = lang, exactPrinting = exact)
+        val cands = listOf(
+            OrderCandidate(0, order("Sol Ring", "cmm", "400", 1.20, qty = 2), ref("Sol Ring", "cmm", "400", "uncommon"), false, false),
+            OrderCandidate(1, order("Counterspell", "dmr", "045", 1.50), ref("Counterspell", "dmr", "45", "uncommon"), false, false),
+            OrderCandidate(2, order("Thran Turbine", "usg", "311", 1.74), ref("Thran Turbine", "usg", "311", "uncommon"), false, false),
+            OrderCandidate(3, order("Crop Rotation", "ulg", "098", 3.00), ref("Crop Rotation", "ulg", "98"), false, false),
+            OrderCandidate(4, order("Rhystic Study", "pcy", "045", 30.0, condition = "EX", foil = true), ref("Rhystic Study", "pcy", "45"), false, false),
+            OrderCandidate(5, order("Brainstorm", "ice", "061", 0.90, qty = 3), ref("Brainstorm", "ice", "61"), false, false),
+            OrderCandidate(6, order("Swords to Plowshares", "sta", "010", 2.10), ref("Swords to Plowshares", "sta", "10", "uncommon"), false, false),
+        )
+        val scans = listOf(
+            scan(1, "Sol Ring", "cmm", "400", qty = 2), scan(2, "Thran Turbine", "usg", "311", lang = "DE"), scan(3, "Crop Rotation", "ddr", "7"),
+            scan(4, "Rhystic Study", "pcy", "45"), scan(5, "Brainstorm", "ice", "61"), scan(6, "Brainstorm", "mmq", "61", exact = false),
+            scan(7, "Lightning Bolt", "m10", "146", qty = 2),
+        )
+        val result = PackageCheck.check(cands, scans, accepted = setOf(6))
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    PackageCheckList(result, scanned = scans.sumOf { it.quantity }, showReceived = false, onShowReceived = {}, onAccept = {}, onUndo = {})
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/package_check.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.32: purchase prices from order files, before anything is changed. */
+    @Test fun purchasePrices() {
+        var id = 1L
+        fun stack(name: String, set: String, number: String, product: Int, qty: Int = 1, foil: Boolean = false, lang: String = "EN", price: Double? = null, binder: Long = 1) =
+            CollectionItem(id = id++, card = ref(name, set, number, "rare").copy(cardmarketId = product), foil = foil, quantity = qty, language = lang, purchasePrice = price, binderId = binder)
+        fun bought(name: String, product: Int, price: Double, qty: Int = 1, date: String = "2023-05-19") =
+            OrderLine("", "Set", name, "", qty, price, "NM", "EN", false, false, false, productId = product, versionKnown = false, date = date)
+        val stacks = listOf(
+            stack("Snapcaster Mage", "isd", "78", 10), stack("Sign in Blood", "m15", "114", 11, qty = 5), stack("Hallowed Fountain", "rtr", "241", 12, qty = 4, price = 2.0),
+            stack("Godless Shrine", "gtc", "242", 13), stack("Godless Shrine", "gtc", "242", 13, lang = "PT", binder = 2), stack("Temple of Malady", "jou", "165", 14, price = 29.16),
+        )
+        val lines = listOf(
+            bought("Snapcaster Mage", 10, 28.0, date = "2014-11-23"), bought("Snapcaster Mage", 10, 46.0, date = "2018-04-27"), bought("Sign in Blood", 11, 0.28),
+            bought("Hallowed Fountain", 12, 4.0), bought("Godless Shrine", 13, 9.0, date = "2023-01-21"), bought("Temple of Malady", 14, 29.16),
+            bought("Force of Will", 99, 45.0, qty = 3, date = "2014-11-20"),
+        )
+        val plan = PurchasePrices.plan(lines, stacks, overwrite = false)
+        val binders = listOf(Binder(id = 1, name = "The Box"), Binder(id = 2, name = "Trade binder"))
+        val files = listOf(OrderFile(OrderFormat.CARDMARKET_MONTHLY, lines), OrderFile(OrderFormat.CARDTRADER, emptyList()))
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    PurchasePricePlan(
+                        plan = plan, files = files, failed = listOf("holiday.jpg: not an order file the app knows"), binders = binders, overwrite = false, onOverwrite = {},
+                        choices = emptyMap(), onChoice = { _, _, _ -> }, skipped = emptySet(), onSkip = { _, _ -> },
+                        showKept = true, onShowKept = {}, showNotOwned = true, onShowNotOwned = {},
+                    )
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/purchase_prices.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.27: signed and altered copies in the list, the compact list and the grid, and the card page's checkboxes during a split. */

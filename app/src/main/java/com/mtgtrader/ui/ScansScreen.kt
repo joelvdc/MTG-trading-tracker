@@ -57,6 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.FactCheck
 import com.mtgtrader.data.BinderChoice
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.PriceSet
@@ -82,6 +85,10 @@ fun ScansScreen(nav: NavController) {
     var action by remember { mutableStateOf<ScanAction?>(null) }
     var editing by remember { mutableStateOf<ScanRow?>(null) }
 
+    val orderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) nav.navigate("ordercheck?uri=${android.net.Uri.encode(uri.toString())}")
+    }
+
     val all = rows
     val selectedIds = all?.map { it.item.id }?.filterNot { it in unselected }.orEmpty()
     val selectedRows = all?.filter { it.item.id in selectedIds }.orEmpty()
@@ -97,7 +104,19 @@ fun ScansScreen(nav: NavController) {
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Scanned cards") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Scanned cards") },
+                actions = {
+                    // A package from a shop: compare what was scanned with the order's file. Since 1.32.
+                    if (!all.isNullOrEmpty()) TextButton(onClick = { orderPicker.launch(arrayOf("*/*")) }) {
+                        Icon(Icons.Default.FactCheck, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Check an order")
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -186,6 +186,10 @@ fun AppNav() {
             composable("orderimport?uri={uri}", arguments = listOf(navArgument("uri") { type = NavType.StringType })) {
                 OrderImportScreen(nav, Uri.parse(it.arguments?.getString("uri").orEmpty()))
             }
+            composable("ordercheck?uri={uri}", arguments = listOf(navArgument("uri") { type = NavType.StringType })) {
+                PackageCheckScreen(nav, Uri.parse(it.arguments?.getString("uri").orEmpty()))
+            }
+            composable("purchaseprices") { PurchasePricesScreen(nav) }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
             composable("archidekt") { ArchidektSyncScreen(nav) }

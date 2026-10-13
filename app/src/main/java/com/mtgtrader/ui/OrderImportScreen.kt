@@ -56,6 +56,10 @@ import com.mtgtrader.data.BinderChoice
 import com.mtgtrader.data.CardTraderOrder
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.OrderCandidate
+import com.mtgtrader.data.OrderFile
+import com.mtgtrader.data.OrderFiles
+import com.mtgtrader.data.OrderFormat
+import com.mtgtrader.data.OrderShop
 import com.mtgtrader.data.ScryCard
 import com.mtgtrader.data.Spreadsheet
 import kotlinx.coroutines.Dispatchers
@@ -65,9 +69,38 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** An order file read and its cards found on Scryfall. */
+class LoadedOrder(val file: OrderFile, val candidates: List<OrderCandidate>)
+
 /**
- * Import a CardTrader order (Excel export): every card is looked up on Scryfall, then shown with a
- * tick box, switches to leave out tokens and basic lands, and a binder to put them in. Since 1.26.
+ * Reads the order file at [uri] (any shop's, see [OrderFiles]) and finds its cards on Scryfall.
+ * Throws [OrderFiles.NotAnOrder] or [Spreadsheet.Unreadable] with a message for the user.
+ */
+internal suspend fun loadOrder(context: android.content.Context, uri: Uri, onProgress: (Int, Int) -> Unit): LoadedOrder {
+    val c = context.container
+    val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
+        ?: throw Spreadsheet.Unreadable("The file couldn't be opened")
+    val file = withContext(Dispatchers.Default) { OrderFiles.read(bytes, displayName(context, uri)) }
+    if (file.lines.isEmpty()) throw Spreadsheet.Unreadable("The order has no cards in it")
+    onProgress(0, file.lines.size)
+    val names: suspend (List<Int>) -> Map<Int, String> = { ids ->
+        ids.chunked(500).flatMap { c.db.catalogDao().getMany(it) }.associate { it.idProduct to it.name }
+    }
+    return LoadedOrder(file, OrderFiles.match(file, c.scryfall, names, onProgress))
+}
+
+/** What the file leaves out, to say above the list. */
+internal fun orderFileNote(file: OrderFile): String? = when (file.format) {
+    OrderFormat.CARDMARKET_MONTHLY ->
+        "Cardmarket's monthly file doesn't say foil, language or condition: the cards are taken as non-foil, English and Near Mint. " +
+            "A shipment's own file (“ArticlesFromShipment”) has those."
+    else -> null
+}
+
+/**
+ * Import an order (CardTrader's Excel export, or a Cardmarket file): every card is looked up on
+ * Scryfall, then shown with a tick box, switches to leave out tokens and basic lands, and a binder
+ * to put them in. Since 1.26; Cardmarket since 1.32.
  */
 @Composable
 fun OrderImportScreen(nav: NavController, uri: Uri) {
@@ -77,6 +110,7 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
     var progress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var candidates by remember { mutableStateOf<List<OrderCandidate>?>(null) }
+    var order by remember { mutableStateOf<OrderFile?>(null) }
     var checked by remember { mutableStateOf(emptySet<Int>()) }
     var skipTokens by remember { mutableStateOf(true) }
     var skipBasics by remember { mutableStateOf(true) }
@@ -90,15 +124,14 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
 
     LaunchedEffect(uri) {
         try {
-            val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }
-                ?: throw Spreadsheet.Unreadable("The file couldn't be opened")
-            val lines = withContext(Dispatchers.Default) { CardTraderOrder.parse(Spreadsheet.read(bytes)) }
-            if (lines.isEmpty()) throw Spreadsheet.Unreadable("The order has no cards in it")
-            progress = 0 to lines.size
-            val found = CardTraderOrder.match(lines, c.scryfall) { done, total -> progress = done to total }
+            val loaded = loadOrder(context, uri) { done, total -> progress = done to total }
+            val found = loaded.candidates
+            order = loaded.file
             candidates = found
             checked = found.filter { it.card != null && !it.token && !it.basicLand }.map { it.index }.toSet()
         } catch (e: CardTraderOrder.NotAnOrder) {
+            error = e.message
+        } catch (e: OrderFiles.NotAnOrder) {
             error = e.message
         } catch (e: Spreadsheet.Unreadable) {
             error = e.message
@@ -108,13 +141,14 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
     }
 
     val list = candidates
+    val shop = order?.shop
     val chosen = list.orEmpty().filter { it.index in checked && it.card != null }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Import CardTrader order")
+                        Text(if (shop == null) "Import an order" else "Import ${shop.label} order")
                         fileName?.let { Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     }
                 },
@@ -125,7 +159,7 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
             if (list != null) {
                 Surface(tonalElevation = 3.dp) {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        BinderPicker("Put them in", binder, { binder = it }, suggestedName = suggestedBinderName(fileName))
+                        BinderPicker("Put them in", binder, { binder = it }, suggestedName = suggestedBinderName(fileName, shop ?: OrderShop.CARDTRADER))
                         Button(
                             onClick = {
                                 importing = true
@@ -180,6 +214,7 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
                 owned = ownedMap,
                 onChoose = { choosing = it },
                 modifier = Modifier.padding(pad),
+                note = order?.let(::orderFileNote),
             )
         }
     }
@@ -218,15 +253,18 @@ internal fun importSummary(added: Int, where: String, all: List<OrderCandidate>,
     ).joinToString(" · ")
 }
 
-/** "CardTrader 23 Jun 2026" from an export named like "cardtrader_order_20260623hxrahx.xls"; else today's date. */
-internal fun suggestedBinderName(fileName: String?): String {
-    val stamp = fileName?.let { Regex("""(20\d{2})(\d{2})(\d{2})""").find(it) }?.let { m ->
+/**
+ * "CardTrader 23 Jun 2026" from an export named like "cardtrader_order_20260623hxrahx.xls"; else today's
+ * date (Cardmarket's file names carry a shipment number, no date).
+ */
+internal fun suggestedBinderName(fileName: String?, shop: OrderShop = OrderShop.CARDTRADER): String {
+    val stamp = fileName?.takeIf { shop == OrderShop.CARDTRADER }?.let { Regex("""(20\d{2})(\d{2})(\d{2})""").find(it) }?.let { m ->
         runCatching { SimpleDateFormat("yyyyMMdd", Locale.ROOT).apply { isLenient = false }.parse(m.value) }.getOrNull()
     } ?: Date()
-    return "CardTrader " + SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(stamp)
+    return shop.label + " " + SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(stamp)
 }
 
-private fun displayName(context: android.content.Context, uri: Uri): String? = runCatching {
+internal fun displayName(context: android.content.Context, uri: Uri): String? = runCatching {
     context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cur ->
         if (cur.moveToFirst()) cur.getString(0) else null
     }
@@ -245,6 +283,7 @@ fun OrderReview(
     owned: Map<String, Int>,
     onChoose: (OrderCandidate) -> Unit,
     modifier: Modifier = Modifier,
+    note: String? = null,
 ) {
     val tokens = candidates.filter { it.token }.sumOf { it.line.quantity }
     val basics = candidates.filter { it.basicLand }.sumOf { it.line.quantity }
@@ -257,6 +296,7 @@ fun OrderReview(
                     if (toCheck > 0) (if (toCheck == 1) " 1 card marked “check the printing” was" else " $toCheck cards marked “check the printing” were") + " found by name only." else "",
                 style = MaterialTheme.typography.bodyMedium,
             )
+            if (note != null) Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
         }
         item(key = "switches") {
             Column {
@@ -299,18 +339,18 @@ private fun OrderRow(cand: OrderCandidate, checked: Boolean, owned: Int?, onTogg
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    (if (line.quantity > 1) "${line.quantity}× " else "") + (card?.displayName ?: line.name),
+                    (if (line.quantity > 1) "${line.quantity}× " else "") + (card?.displayName ?: line.label),
                     style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
-                if (card != null) SetLine(card) else Text("${line.setName} (${line.setCode}) #${line.number}", style = MaterialTheme.typography.bodySmall)
+                if (card != null) SetLine(card) else Text(orderLineWhere(line), style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (card != null && line.foil) FinishTag(card, card.resolveFinish(Finish.FOIL))
-                    Tag(line.condition)
-                    if (line.language != "EN") Tag(line.language)
+                    OrderVersionTags(line)
                     if (cand.token) Tag("Token")
                     if (cand.basicLand) Tag("Basic land")
                     if (line.signed) Tag("Signed")
                     if (line.altered) Tag("Altered")
+                    if (line.playset) Tag("Playset")
                 }
                 if (owned != null && owned > 0) Text("You own $owned already", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (card == null || cand.guessed) {
@@ -324,22 +364,41 @@ private fun OrderRow(cand: OrderCandidate, checked: Boolean, owned: Int?, onTogg
     }
 }
 
+/** "Zendikar Rising (ZNR) #180", with whatever of it the file has. */
+internal fun orderLineWhere(line: com.mtgtrader.data.OrderLine): String = listOfNotNull(
+    line.setName.takeIf { it.isNotEmpty() },
+    line.setCode.takeIf { it.isNotEmpty() }?.let { "(${it.uppercase()})" },
+    line.number.takeIf { it.isNotEmpty() }?.let { "#$it" },
+    line.productId?.takeIf { line.setName.isEmpty() && line.name.isNotEmpty() }?.let { "Cardmarket product $it" },
+).joinToString(" ")
+
+/** Condition and language as the order has them: nothing for a file that doesn't say, "Language ?" for a number the app doesn't know. */
+@Composable
+internal fun OrderVersionTags(line: com.mtgtrader.data.OrderLine) {
+    if (!line.versionKnown) return
+    Tag(line.condition)
+    if (!line.languageKnown) Tag("Language ?") else if (line.language != "EN") Tag(line.language)
+}
+
 /** Every paper printing of the card's name, to pick the one that was bought. */
 @Composable
-private fun ChoosePrintingDialog(cand: OrderCandidate, onDismiss: () -> Unit, onPick: (ScryCard) -> Unit) {
+internal fun ChoosePrintingDialog(cand: OrderCandidate, onDismiss: () -> Unit, onPick: (ScryCard) -> Unit) {
     val c = LocalContext.current.container
-    val name = CardTraderOrder.cleanName(cand.line.name).substringBefore(" // ")
-    val prints by produceState<List<ScryCard>?>(null, name) { value = runCatching { c.scryfall.prints(name) }.getOrDefault(emptyList()) }
+    val name = CardTraderOrder.cleanName(cand.line.name).substringBefore(" // ").substringBefore(" / ")
+    val prints by produceState<List<ScryCard>?>(null, name) {
+        value = if (name.isEmpty()) emptyList() else runCatching { c.scryfall.prints(name) }.getOrDefault(emptyList())
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        title = { Text(name.ifEmpty { cand.line.label }, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         text = {
             val p = prints
             when {
                 p == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                name.isEmpty() -> Text("Neither Scryfall nor the app's Cardmarket list knows product ${cand.line.productId}. It can't be imported.")
                 p.isEmpty() -> Text("Scryfall has no card called “$name”. It can't be imported.")
                 else -> Column {
-                    Text("Bought as ${cand.line.setName} (${cand.line.setCode}) #${cand.line.number}", style = MaterialTheme.typography.bodySmall)
+                    Text("Bought as ${orderLineWhere(cand.line)}", style = MaterialTheme.typography.bodySmall)
                     LazyColumn(Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         items(p, key = { it.id }) { card ->
                             Row(Modifier.fillMaxWidth().clickable { onPick(card) }.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {

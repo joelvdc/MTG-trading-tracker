@@ -18,7 +18,21 @@ data class OrderLine(
     val foil: Boolean,
     val signed: Boolean,
     val altered: Boolean,
-)
+    /** Cardmarket's product number: its files name a printing by it, not by set and number. Since 1.32. */
+    val productId: Int? = null,
+    /** False for Cardmarket's monthly file, which says neither finish, language nor condition. Since 1.32. */
+    val versionKnown: Boolean = true,
+    /** False when the file gave a language number the app doesn't know ([language] is then a stand-in). Since 1.32. */
+    val languageKnown: Boolean = true,
+    /** Sold as a playset: [quantity] counts the four cards and [price] is a quarter of the article's. Since 1.32. */
+    val playset: Boolean = false,
+    /** The day it was bought (yyyy-MM-dd) and the shop's order number, where the file or its name has them. Since 1.32. */
+    val date: String? = null,
+    val order: String? = null,
+) {
+    /** What to call the line before its card is known: Cardmarket's shipment file has no names. */
+    val label: String get() = name.ifEmpty { productId?.let { "Cardmarket product $it" } ?: "Unknown card" }
+}
 
 /** An order line and the card it was matched to (null when Scryfall didn't know it). */
 data class OrderCandidate(

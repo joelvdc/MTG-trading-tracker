@@ -10,98 +10,15 @@ How to use this file:
 
 ## Collecting
 
-### 1. Sort the collection by value change
-*Added 2026-10-12. Also on the Poké Trader to-do list.*
+### Release plan
+*Agreed with the owner on 2026-10-13, when the green light for the whole list was given. One release at a time: after
+each, stop so the owner can try it, and start the next when they say so.*
 
-Owner's wording: "being able to sort by value change in the collection view (% or just raw value). Similar to your
-rising lately or falling lately in the collection value overview."
-
-What exists today: the value screen's "Rising lately" / "Falling lately" lists compare Cardmarket's trend price with
-its 30-day average (`ValueHistory.biggestMoves`), and rank by the change in money over all copies owned. The collection
-already shows that change per card as a percentage arrow. The collection's sort dialog (`SortField` in
-`data/CollectionQuery.kt`) has no such order yet.
-
-Decided with the owner (2026-10-12):
-- **Two new sort orders:** "Change in %" and "Change in money", each with the biggest risers or the biggest fallers
-  first.
-- **The change is per card**, not over all copies owned.
-- **The value screen changes too:** "Rising lately" and "Falling lately" should show and rank the change per card
-  (today they use the change over all copies), so both screens agree.
-- **Cards without a 30-day average** have no change: always last, in both directions.
-- **While TCGplayer or Card Kingdom is the price source:** still sort by Cardmarket's change, and say so in the sort
-  dialog.
-
-### 2. Check a scanned package against its CardTrader order
-*Added 2026-10-12. MTG Trader only. The owner expects a CardTrader package around 2026-10-23.*
-
-Owner's wording: "I experience often that cardtrader makes mistakes and around 1% of the cards are missing or have the
-wrong language. I think it would be great that, after a scan session, after receiving the cards from cardtrader, the
-app is able to tell me if I receive all the cards or not, or if there were mistakes in the order, by linking the excel
-file from the cardtrader order. The app already has a way to import a cardtrader excel file to the collection, but
-this is a bit different, where during a scan session, the user can attach a cardtrader excel and the app could verify
-if all the cards are there or not."
-
-What exists today: the order import (`data/CardTraderImport.kt`: `CardTraderOrder.parse` and `match`,
-`ui/OrderImportScreen.kt`) reads the Excel file and finds each line's printing; the Scan tab's list
-(`ScannedCard`, `ui/ScansScreen.kt`) holds scanned cards with printing, language, quantity and `exactPrinting`.
-
-Proposed (2026-10-12):
-- On the Scan tab: "Check against an order" → pick the Excel file → compare the order's lines with the scan list.
-- Per order line: received; wrong language (same printing); wrong printing (same name, other set/number); missing
-  (not scanned, or fewer copies); plus extra cards (scanned, not ordered). A summary line on top.
-- Fix scanner mistakes before complaining: tap a problem line to rescan it or mark it "it's here, the scan was wrong".
-- Copy a problem report (missing and wrong cards with set, number, language, price paid) to send to CardTrader.
-- Add the received cards to the collection with the order's details (price paid, condition, language, foil), then
-  clear the scan list.
-- What the camera can't check: foil, condition, signed, altered → list those lines as "check by hand". Older cards
-  print no language code → "language not checked". Scans with `exactPrinting = false` → "printing unsure", not wrong.
-
-Decided with the owner (2026-10-12):
-- **After-scan check only**, started from the scanned cards list (the Scan tab's list), not while scanning. No live
-  ticking.
-- **Adding to the collection is included**, and works like a regular scan: the checked cards go from the scan list
-  to a binder the usual way.
-- **Matched cards take the order's details** where the camera can't know them: price paid, condition, foil,
-  signed/altered. Cards that matched no order line stay as scanned.
-- **Not ahead of the list:** wait for the owner's green light for the whole to-do list.
-
-### 3. Cardmarket orders: import to the collection, and check against scanned cards
-*Added 2026-10-12. MTG Trader only.*
-
-Owner's wording: "In the same way that we have these functionalities for a cardtrader order, could you make the same
-for cardmarket orders (sample csv file attached)? Both for the existing import to collection and planned comparison
-between scanned cards and an order."
-
-The file (Cardmarket: a shipment's "ArticlesFromShipment<number>.csv"): semicolon-separated, one line per article,
-with the columns
-`idProduct;groupCount;price;idLanguage;condition;isFoil;isSigned;isAltered;isPlayset;isReverseHolo;isFirstEd;isFullArt;isUberRare;isWithDie`
-(flags are "1" or empty). It has no card names or sets, only Cardmarket's product number. Example lines:
-`315288;1;6.98;1;3;;;;;;;;;` and `788181;1;2.98;1;3;1;;;;;;;;` (a foil).
-
-Checked on 2026-10-12:
-- Scryfall finds the exact printing from the product number: `api.scryfall.com/cards/cardmarket/<idProduct>`
-  (315288 → Journey to Eternity, RIX 160; 788181 → Marvin, Murderous Mimic, DSK 253). One request per product, so an
-  order of 200 lines takes about half a minute at Scryfall's pace: show progress.
-- The app's own Cardmarket product list (`cm_products`, from products_singles_1.json) has the name and expansion of
-  every product in the sample: the fallback for products Scryfall doesn't know (show the name, let the owner pick the
-  printing, as the CardTrader import does for guessed lines).
-
-Proposed (2026-10-12):
-- One "order file" reader for both shops: recognise the file (CardTrader's Excel or Cardmarket's CSV) and turn either
-  into the same order lines, so the existing import (`ui/OrderImportScreen.kt`, `MtgRepository.importOrder`) and the
-  planned check against scanned cards (item 2) work for both. Show which shop the order is from.
-- `isPlayset` = four copies per group. `isFoil`, `isSigned`, `isAltered` as in the CardTrader import.
-- Tests use a made-up file in the same format; the owner's own order file is not committed (public repository).
-
-Decided with the owner (2026-10-12):
-- **Conditions confirmed** on the sample order: 2 = Near Mint (Obsessive Pursuit), 3 = Excellent (Journey to
-  Eternity). So Cardmarket's scale: 1 Mint, 2 Near Mint, 3 Excellent, 4 Good, 5 Light Played, 6 Played, 7 Poor.
-- **`price` is per card.**
-- **MTG Trader only:** no order import or check for Poké Trader for now.
-
-Still an assumption (only English, idLanguage 1, was in the sample): 2 French, 3 German, 4 Spanish, 5 Italian,
-6 Simplified Chinese, 7 Japanese, 8 Portuguese, 9 Russian, 10 Korean, 11 Traditional Chinese. When building, show an
-unknown number as "language ?" rather than guessing, and check the list against Cardmarket's documentation.
+1. ~~MTG Trader 1.32: sort by value change, Cardmarket orders, package check, purchase prices from orders.~~ Released.
+2. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's).
+3. **MTG Trader 1.33:** order history (4), profit and loss (5), add a precon (8). Changes the database (owner's OK
+   given) and raises the sync file's format: both phones must be updated before they sync again.
+4. **MTG Trader 1.34:** condition-adjusted values (6), on its own because it touches every place a value is shown.
 
 ### 4. Order history
 *Added 2026-10-12. MTG Trader only. Suggested by Claude, picked by the owner.*
@@ -145,7 +62,135 @@ Settled with the owner on 2026-10-13 (no open questions left):
 - It applies everywhere a value is shown, trades and the trade binder included.
 - Off until switched on; an adjusted price carries a small condition tag so it can be told apart.
 
-### 7. Update purchase prices of cards already in the collection, from an order file
+### 8. Add a preconstructed deck to the collection, with the price paid
+*Added 2026-10-13. MTG Trader only.*
+
+Owner's wording: "if in the future you can create a function in the app to import a precon into a binder (or even
+as a deck) and define the price paid."
+
+How it could work (Claude's view, from doing it by script on 2026-10-13):
+- Pick the deck from a list (search by name or set), choose the binder, enter the price paid (in the app's currency)
+  and the date. The app adds the deck's cards to the collection, each with its share of the price: the price is
+  split in proportion to today's Cardmarket price, so the cards add up to what the deck cost. The deck also becomes
+  an order in the order history (item 4).
+- Deck lists: MTGJSON publishes every preconstructed product with Scryfall ids and which cards are foil
+  (`https://mtgjson.com/api/v5/DeckList.json`, about 650 KB, then one small file per deck). Scryfall has no deck
+  lists. A new source for the app, so the weekly health check should watch it.
+- Basic lands and tokens are left out (the owner doesn't track them); they get no share of the price.
+- A card already in the binder gets one more copy, and its price becomes the average weighted by copies (item 7's rule).
+- "As a deck": the Decks tab holds Archidekt decks (each is tied to an Archidekt deck number). Archidekt publishes
+  the official precon lists, so the deck could be added through the existing Archidekt import; a deck that exists
+  only in the app would be a bigger change to the Decks tab.
+
+Settled with the owner on 2026-10-13 (no open questions left):
+- Binder only at first; "also add it to the Decks tab" is a later step.
+- The price is split by today's card prices.
+- Commander decks only to start with.
+
+## Done
+
+### Sort the collection by value change
+*Released in MTG Trader 1.32 (2026-10-13). Poké Trader still has this item open (planned as Poké Trader 1.20).*
+
+*Added 2026-10-12. Also on the Poké Trader to-do list.*
+
+Owner's wording: "being able to sort by value change in the collection view (% or just raw value). Similar to your
+rising lately or falling lately in the collection value overview."
+
+What exists today: the value screen's "Rising lately" / "Falling lately" lists compare Cardmarket's trend price with
+its 30-day average (`ValueHistory.biggestMoves`), and rank by the change in money over all copies owned. The collection
+already shows that change per card as a percentage arrow. The collection's sort dialog (`SortField` in
+`data/CollectionQuery.kt`) has no such order yet.
+
+Decided with the owner (2026-10-12):
+- **Two new sort orders:** "Change in %" and "Change in money", each with the biggest risers or the biggest fallers
+  first.
+- **The change is per card**, not over all copies owned.
+- **The value screen changes too:** "Rising lately" and "Falling lately" should show and rank the change per card
+  (today they use the change over all copies), so both screens agree.
+- **Cards without a 30-day average** have no change: always last, in both directions.
+- **While TCGplayer or Card Kingdom is the price source:** still sort by Cardmarket's change, and say so in the sort
+  dialog.
+
+### Check a scanned package against its CardTrader order
+*Released in MTG Trader 1.32 (2026-10-13). Built as planned. Started with "Check an order" above the scanned list; works for Cardmarket files too. Not built: fixing a line by picking its printing on the check screen (an unmatched line is compared by name).*
+
+*Added 2026-10-12. MTG Trader only. The owner expects a CardTrader package around 2026-10-23.*
+
+Owner's wording: "I experience often that cardtrader makes mistakes and around 1% of the cards are missing or have the
+wrong language. I think it would be great that, after a scan session, after receiving the cards from cardtrader, the
+app is able to tell me if I receive all the cards or not, or if there were mistakes in the order, by linking the excel
+file from the cardtrader order. The app already has a way to import a cardtrader excel file to the collection, but
+this is a bit different, where during a scan session, the user can attach a cardtrader excel and the app could verify
+if all the cards are there or not."
+
+What exists today: the order import (`data/CardTraderImport.kt`: `CardTraderOrder.parse` and `match`,
+`ui/OrderImportScreen.kt`) reads the Excel file and finds each line's printing; the Scan tab's list
+(`ScannedCard`, `ui/ScansScreen.kt`) holds scanned cards with printing, language, quantity and `exactPrinting`.
+
+Proposed (2026-10-12):
+- On the Scan tab: "Check against an order" → pick the Excel file → compare the order's lines with the scan list.
+- Per order line: received; wrong language (same printing); wrong printing (same name, other set/number); missing
+  (not scanned, or fewer copies); plus extra cards (scanned, not ordered). A summary line on top.
+- Fix scanner mistakes before complaining: tap a problem line to rescan it or mark it "it's here, the scan was wrong".
+- Copy a problem report (missing and wrong cards with set, number, language, price paid) to send to CardTrader.
+- Add the received cards to the collection with the order's details (price paid, condition, language, foil), then
+  clear the scan list.
+- What the camera can't check: foil, condition, signed, altered → list those lines as "check by hand". Older cards
+  print no language code → "language not checked". Scans with `exactPrinting = false` → "printing unsure", not wrong.
+
+Decided with the owner (2026-10-12):
+- **After-scan check only**, started from the scanned cards list (the Scan tab's list), not while scanning. No live
+  ticking.
+- **Adding to the collection is included**, and works like a regular scan: the checked cards go from the scan list
+  to a binder the usual way.
+- **Matched cards take the order's details** where the camera can't know them: price paid, condition, foil,
+  signed/altered. Cards that matched no order line stay as scanned.
+- **Not ahead of the list:** wait for the owner's green light for the whole to-do list.
+
+### Cardmarket orders: import to the collection, and check against scanned cards
+*Released in MTG Trader 1.32 (2026-10-13). Built as planned, in `data/OrderFiles.kt` (one reader for all three files). Assumptions to confirm with a real file: a playset's `price` is taken as the article's price, so a quarter per card (Cardmarket's monthly file showed a playset sold as one article at the full price); the language numbers are Cardmarket's API list.*
+
+*Added 2026-10-12. MTG Trader only.*
+
+Owner's wording: "In the same way that we have these functionalities for a cardtrader order, could you make the same
+for cardmarket orders (sample csv file attached)? Both for the existing import to collection and planned comparison
+between scanned cards and an order."
+
+The file (Cardmarket: a shipment's "ArticlesFromShipment<number>.csv"): semicolon-separated, one line per article,
+with the columns
+`idProduct;groupCount;price;idLanguage;condition;isFoil;isSigned;isAltered;isPlayset;isReverseHolo;isFirstEd;isFullArt;isUberRare;isWithDie`
+(flags are "1" or empty). It has no card names or sets, only Cardmarket's product number. Example lines:
+`315288;1;6.98;1;3;;;;;;;;;` and `788181;1;2.98;1;3;1;;;;;;;;` (a foil).
+
+Checked on 2026-10-12:
+- Scryfall finds the exact printing from the product number: `api.scryfall.com/cards/cardmarket/<idProduct>`
+  (315288 → Journey to Eternity, RIX 160; 788181 → Marvin, Murderous Mimic, DSK 253). One request per product, so an
+  order of 200 lines takes about half a minute at Scryfall's pace: show progress.
+- The app's own Cardmarket product list (`cm_products`, from products_singles_1.json) has the name and expansion of
+  every product in the sample: the fallback for products Scryfall doesn't know (show the name, let the owner pick the
+  printing, as the CardTrader import does for guessed lines).
+
+Proposed (2026-10-12):
+- One "order file" reader for both shops: recognise the file (CardTrader's Excel or Cardmarket's CSV) and turn either
+  into the same order lines, so the existing import (`ui/OrderImportScreen.kt`, `MtgRepository.importOrder`) and the
+  planned check against scanned cards (item 2) work for both. Show which shop the order is from.
+- `isPlayset` = four copies per group. `isFoil`, `isSigned`, `isAltered` as in the CardTrader import.
+- Tests use a made-up file in the same format; the owner's own order file is not committed (public repository).
+
+Decided with the owner (2026-10-12):
+- **Conditions confirmed** on the sample order: 2 = Near Mint (Obsessive Pursuit), 3 = Excellent (Journey to
+  Eternity). So Cardmarket's scale: 1 Mint, 2 Near Mint, 3 Excellent, 4 Good, 5 Light Played, 6 Played, 7 Poor.
+- **`price` is per card.**
+- **MTG Trader only:** no order import or check for Poké Trader for now.
+
+Still an assumption (only English, idLanguage 1, was in the sample): 2 French, 3 German, 4 Spanish, 5 Italian,
+6 Simplified Chinese, 7 Japanese, 8 Portuguese, 9 Russian, 10 Korean, 11 Traditional Chinese. When building, show an
+unknown number as "language ?" rather than guessing, and check the list against Cardmarket's documentation.
+
+### Update purchase prices of cards already in the collection, from an order file
+*Released in MTG Trader 1.32 (2026-10-13). Built as planned, in `data/PurchasePrices.kt`. On the owner's real files it gives the same cards and prices as the one-off script of 13 October (3,021 stacks against 3,019; the two extra were decided by hand that day). Not built: spotting a playset in the monthly file (it isn't marked there).*
+
 *Added 2026-10-12, confirmed as an app feature 2026-10-13. MTG Trader only.*
 
 Owner's wording: "I would also be interested in having a way to read a cardtrader excel or cardmarket csv, have the
@@ -181,33 +226,6 @@ Purchased Articles), semicolon-separated, one line per article:
 e.g. `1185249514;2024-12-02 16:38:27;Essence Flux;289154;Essence Flux;Shadows over Innistrad;Magic Single;1;2.38;2.38;EUR;289154`.
 "Article Value" is the price per card, "Amount" the copies, "Comments" the seller's free text (ignore). It has the
 shipment number and purchase date, which also suit the order history (item 4).
-
-### 8. Add a preconstructed deck to the collection, with the price paid
-*Added 2026-10-13. MTG Trader only.*
-
-Owner's wording: "if in the future you can create a function in the app to import a precon into a binder (or even
-as a deck) and define the price paid."
-
-How it could work (Claude's view, from doing it by script on 2026-10-13):
-- Pick the deck from a list (search by name or set), choose the binder, enter the price paid (in the app's currency)
-  and the date. The app adds the deck's cards to the collection, each with its share of the price: the price is
-  split in proportion to today's Cardmarket price, so the cards add up to what the deck cost. The deck also becomes
-  an order in the order history (item 4).
-- Deck lists: MTGJSON publishes every preconstructed product with Scryfall ids and which cards are foil
-  (`https://mtgjson.com/api/v5/DeckList.json`, about 650 KB, then one small file per deck). Scryfall has no deck
-  lists. A new source for the app, so the weekly health check should watch it.
-- Basic lands and tokens are left out (the owner doesn't track them); they get no share of the price.
-- A card already in the binder gets one more copy, and its price becomes the average weighted by copies (item 7's rule).
-- "As a deck": the Decks tab holds Archidekt decks (each is tied to an Archidekt deck number). Archidekt publishes
-  the official precon lists, so the deck could be added through the existing Archidekt import; a deck that exists
-  only in the app would be a bigger change to the Decks tab.
-
-Settled with the owner on 2026-10-13 (no open questions left):
-- Binder only at first; "also add it to the Decks tab" is a later step.
-- The price is split by today's card prices.
-- Commander decks only to start with.
-
-## Done
 
 ### One-off: purchase prices of the whole collection from all past orders (was item 8)
 *Done 2026-10-13 on the owner's PC, outside the app (no release).*

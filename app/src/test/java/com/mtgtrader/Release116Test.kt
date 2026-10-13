@@ -109,11 +109,12 @@ class ValueHistoryTest {
     )
 
     @Test
-    fun movesCountEveryCopy() {
+    fun movesArePerCard() {
+        // Since 1.32 a move is one copy's change, however many are owned (it used to count every copy).
         val rows = listOf(row("Up", 2, 12.0, 10.0), row("Down", 1, 5.0, 8.0), row("Flat", 4, 1.0, 1.0))
         val up = ValueHistory.biggestMoves(rows, up = true)
         assertEquals(listOf("Up"), up.map { it.row.item.card.name })
-        assertEquals(4.0, up.first().change, 1e-9)
+        assertEquals(2.0, up.first().change, 1e-9)
         assertEquals(listOf("Down"), ValueHistory.biggestMoves(rows, up = false).map { it.row.item.card.name })
         assertEquals(2 * 12.0 + 5.0 + 4 * 1.0, ValueHistory.totalValue(rows, PriceType.TREND), 1e-9)
     }

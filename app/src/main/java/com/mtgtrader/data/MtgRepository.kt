@@ -678,13 +678,27 @@ class MtgRepository(
     /** Runs before a CSV import adds anything (a backup). Since 1.21. */
     var beforeCsvImport: (suspend () -> Unit)? = null
 
-    /** Runs before a CardTrader order import adds anything (a backup). Since 1.26. */
+    /** Runs before an order file changes the collection: an import, a package check, purchase prices (a backup). Since 1.26. */
     var beforeOrderImport: (suspend () -> Unit)? = null
 
     /**
-     * Adds the chosen lines of a CardTrader order to the collection, in [binder], with each copy's
-     * price as its purchase price (kept when a card already has one). Signed and altered copies are
-     * marked so (since 1.27). Returns how many copies were added. Since 1.26.
+     * Adds copies bought at [price] each. A stack that already held copies gets the average paid,
+     * weighted by copies (since 1.32; before, it kept the price it had); without a price on one side,
+     * every copy carries the other's.
+     */
+    private suspend fun addBought(card: CardRef, finish: Finish, condition: String, language: String, qty: Int, binderId: Long, marks: Marks, price: Double?) {
+        val r = addToCollection(card, finish, condition, language, qty, binderId, marks)
+        if (price == null) return
+        coll.byId(r.itemId)?.let { item ->
+            val joined = PurchasePrices.joined(item.quantity - qty, item.purchasePrice, qty, price)
+            if (joined != item.purchasePrice) coll.update(item.copy(purchasePrice = joined))
+        }
+    }
+
+    /**
+     * Adds the chosen lines of an order (CardTrader's or Cardmarket's) to the collection, in [binder],
+     * with each copy's price as its purchase price. Signed and altered copies are marked so (since
+     * 1.27). Returns how many copies were added. Since 1.26.
      */
     suspend fun importOrder(lines: List<Pair<CardRef, OrderLine>>, binder: BinderChoice): Int {
         if (lines.isEmpty()) return 0
@@ -694,14 +708,47 @@ class MtgRepository(
         db.withTransaction {
             for ((card, l) in lines) {
                 val finish = card.resolveFinish(if (l.foil) Finish.FOIL else Finish.NONFOIL)
-                val r = addToCollection(card, finish, l.condition, l.language, l.quantity, target, Marks(l.signed, l.altered))
-                if (l.price != null) {
-                    coll.byId(r.itemId)?.let { item -> if (item.purchasePrice == null) coll.update(item.copy(purchasePrice = l.price)) }
-                }
+                addBought(card, finish, l.condition, l.language, l.quantity, target, Marks(l.signed, l.altered), l.price)
                 added += l.quantity
             }
         }
         return added
+    }
+
+    /**
+     * After a package check: adds the received cards to [binder] with the order's details, and takes
+     * the scanned copies that were used ([scanUse]: scan id to copies) off the scanned list. Returns how
+     * many copies were added. Since 1.32.
+     */
+    suspend fun addCheckedPackage(additions: List<PackageCheck.Addition>, binder: BinderChoice, scanUse: Map<Long, Int>): Int {
+        if (additions.isEmpty()) return 0
+        beforeOrderImport?.invoke()
+        val target = resolve(binder)
+        db.withTransaction {
+            for (a in additions) addBought(a.card, a.finish, a.condition, a.language, a.quantity, target, a.marks, a.price)
+            for (scan in scans.byIds(scanUse.keys.toList())) {
+                val left = scan.quantity - scanUse.getValue(scan.id)
+                if (left > 0) scans.update(scan.copy(quantity = left)) else scans.deleteMany(listOf(scan.id))
+            }
+        }
+        return additions.sumOf { it.quantity }
+    }
+
+    /** Sets what was paid per copy on the stacks in [prices] (stack id to EUR). Returns how many changed. Since 1.32. */
+    suspend fun setPurchasePrices(prices: Map<Long, Double>): Int {
+        if (prices.isEmpty()) return 0
+        beforeOrderImport?.invoke()
+        var changed = 0
+        db.withTransaction {
+            for ((id, price) in prices) {
+                val item = coll.byId(id) ?: continue
+                if (item.purchasePrice != price) {
+                    coll.update(item.copy(purchasePrice = price))
+                    changed++
+                }
+            }
+        }
+        return changed
     }
 
     private val _csvImport = MutableStateFlow<CsvImportProgress?>(null)

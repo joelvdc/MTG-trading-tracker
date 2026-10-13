@@ -346,6 +346,22 @@ data class CollectionRow(
 
     /** Cardmarket's trend arrow; none while another price source is chosen (since 1.29). */
     val trend: PriceTrend? get() = if (Pricing.source == PriceSource.CARDMARKET) price?.toSet(item.foil)?.trendChange else null
+
+    /**
+     * How one copy's price moved lately: Cardmarket's trend price against its 30-day average, whatever
+     * price source is chosen (the other sources have no history). Null without a 30-day average. Since 1.32.
+     */
+    val change: PriceChange? get() = price?.toSet(item.foil)?.let { PriceChange.of(it.trend, it.avg30) }
+}
+
+/** One copy's price change, in EUR and in percent. Since 1.32. */
+data class PriceChange(val money: Double, val pct: Double) {
+    companion object {
+        fun of(trend: Double?, avg30: Double?): PriceChange? {
+            if (trend == null || avg30 == null || avg30 <= 0) return null
+            return PriceChange(trend - avg30, (trend - avg30) / avg30 * 100)
+        }
+    }
 }
 
 @Serializable

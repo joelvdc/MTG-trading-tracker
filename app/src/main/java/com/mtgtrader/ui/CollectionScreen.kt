@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Search
@@ -174,9 +175,16 @@ fun CollectionScreen(nav: NavController) {
         c.repo.consumeCsvImportResult()
         snackbar.showSnackbar(msg)
     }
-    // A CardTrader order (Excel export) opens the import screen to choose what to add. Since 1.26.
+    // An order file (CardTrader's Excel, Cardmarket's CSV) opens the import screen to choose what to add. Since 1.26.
     val orderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) nav.navigate("orderimport?uri=${android.net.Uri.encode(uri.toString())}")
+    }
+    // One or several order files, to set what was paid for cards already in the collection. Since 1.32.
+    val pricePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) {
+            PickedOrderFiles.uris = uris
+            nav.navigate("purchaseprices")
+        }
     }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -290,9 +298,14 @@ fun CollectionScreen(nav: NavController) {
                             onClick = { menu = false; nav.navigate("value") },
                         )
                         if (!wish) DropdownMenuItem(
-                            text = { Text("Import CardTrader order (Excel)") },
+                            text = { Text("Import an order (CardTrader, Cardmarket)") },
                             leadingIcon = { Icon(Icons.Default.FileUpload, null) },
                             onClick = { menu = false; orderPicker.launch(arrayOf("*/*")) },
+                        )
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Purchase prices from orders…") },
+                            leadingIcon = { Icon(Icons.Default.Payments, null) },
+                            onClick = { menu = false; pricePicker.launch(arrayOf("*/*")) },
                         )
                         if (!wish) DropdownMenuItem(
                             text = { Text("Import CSV (ManaBox…)") },

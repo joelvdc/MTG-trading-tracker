@@ -19,7 +19,7 @@ object Spreadsheet {
         bytes.size >= 8 && bytes[0] == 0xD0.toByte() && bytes[1] == 0xCF.toByte() && bytes[2] == 0x11.toByte() && bytes[3] == 0xE0.toByte() ->
             Xls.read(bytes)
         bytes.size >= 4 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'K'.code.toByte() -> Xlsx.read(bytes)
-        else -> Csv.parse(String(bytes, Charsets.UTF_8).removePrefix("﻿"))
+        else -> String(bytes, Charsets.UTF_8).removePrefix("﻿").let { Csv.parse(it, Csv.delimiter(it)) }
     }.map { row -> row.map { it.trim() } }.filter { row -> row.any { it.isNotEmpty() } }
 
     internal fun numberText(v: Double): String =

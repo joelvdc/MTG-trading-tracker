@@ -25,9 +25,9 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.31.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.32.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.31-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.32-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
@@ -134,13 +134,33 @@ a temporary "new cards" binder into your main one; identical cards are combined)
 copies, to another binder. Completing a trade asks which binder the received cards go into (or makes a new one); given
 cards are taken from Unsorted first. CSV import/export carries a "Binder Name" column.
 
-**Import a CardTrader order:** ⋮ → **Import CardTrader order (Excel)** and pick the order file CardTrader lets you
-download (`.xls` or `.xlsx`). The app finds every card on Scryfall (tokens, The List and collector's sub-sets
-included) and shows the order first: untick what you don't want, and leave out tokens and basic lands with the two
-switches (both on by default). Cards it could only find by name say **Check the printing**, and the ones it couldn't
-find at all say **Find the card**; tap either to pick the printing yourself. Choose a binder (or make a new one, named
-after the order date) and tap **Add**: the cards keep CardTrader's finish, condition, language and the price you paid
-per copy. Signed and altered cards are marked so (see below).
+**Import an order:** ⋮ → **Import an order (CardTrader, Cardmarket)** and pick the order's file. The app finds every
+card on Scryfall (tokens, The List and collector's sub-sets included) and shows the order first: untick what you
+don't want, and leave out tokens and basic lands with the two switches (both on by default). Cards it could only find
+by name say **Check the printing**, and the ones it couldn't find at all say **Find the card**; tap either to pick the
+printing yourself. Choose a binder (or make a new one, named after the shop and date) and tap **Add**: the cards keep
+the order's finish, condition, language and the price you paid per copy. Signed and altered cards are marked so (see
+below). When a card joins copies you already have in that binder, the stack gets the average paid, weighted by copies.
+
+The order files the app reads (it tells them apart by itself):
+- **CardTrader:** the order's Excel export (`.xls` or `.xlsx`).
+- **Cardmarket, one shipment:** the "ArticlesFromShipment…" CSV from the shipment's page. It names cards by
+  Cardmarket's product number, with condition, language, foil, signed and altered. A playset counts as four cards at a
+  quarter of its price each.
+- **Cardmarket, one month:** the "Purchased Articles" CSV (Account → Statistics). It has names and prices but not
+  foil, language or condition, so it suits purchase prices (below) better than importing.
+
+**Purchase prices from orders:** ⋮ → **Purchase prices from orders…** and pick one or several order files. The app
+finds the cards in your collection (nothing is looked up online) and shows what would change before anything does:
+- a card gets the **average paid**, weighted by copies, and every copy in the stack gets it;
+- a card that **already has a price** keeps it, unless its stack holds more copies than the orders cover: then the
+  bought copies are averaged in (4 copies at €2 and an order for 1 at €4 make €2.50). **Overwrite** replaces instead;
+- **Your choice** lists purchases the file can't pin to one of your cards (you own the printing in foil and non-foil
+  or in two languages and the file doesn't say, the finish or language differs from the order, or you own the card as
+  another printing): tick the cards the purchase was for, or leave them;
+- cards you no longer own are listed under **Not in the collection** and left alone.
+
+Untick any card to leave it as it is. A restore point is made before the prices are set.
 
 The collection can be shown as a **list** (default), **compact** (one text line per card) or **cards** (a grid of
 big card pictures); pick it with the view button next to Sort. Prices show the value of one card, with the stack
@@ -148,7 +168,10 @@ total underneath, and "Value per card" sorts by it.
 
 **Sort** in layers: e.g. color, then name; or type, then mana value, then name; up to three levels, each with its own
 direction (A to Z / Z to A, highest / lowest first…), with shortcuts for the usual ones. Sort by name, color (W, U, B, R,
-G, multicolor, colorless, lands), type, mana value, rarity, set, collector number, value per card, date added or copies.
+G, multicolor, colorless, lands), type, mana value, rarity, set, collector number, value per card, date added, copies,
+or how the price moved lately: **Change in %** and **Change in money**, biggest rise or biggest fall first. The change
+is Cardmarket's trend price against its 30-day average for one copy (also while TCGplayer or Card Kingdom is your price
+source); cards without a 30-day average go last.
 
 **Filter** (the button next to Sort) for what's awkward to type: colors (has any of them, exactly these, or fits in a
 color identity), type, rarity, sets (pick from the sets you own), finish, signed or altered, condition, language, value
@@ -175,7 +198,8 @@ the back.
 
 **Collection value over time:** tap the total above the list (or ⋮ → Collection value over time). The app saves the
 collection's value once a day, so the chart fills in as days go by (1 month, 3 months, 1 year, all); underneath are the
-cards whose price is rising or falling most lately, over all the copies you own; tap one to open it. The chips at the
+cards whose price is rising or falling most lately, per card (one copy, the same change the collection can be
+sorted by); tap one to open it. The chips at the
 top switch between all cards, Unsorted and each binder (binder values are saved from version 1.25 on).
 
 **Collection stats:** the pie-chart button next to the total. For the whole collection or one binder (chips at the
@@ -233,6 +257,20 @@ Cards from before 2015 have no set code printed, so for those the scanner also l
 the type line and compares it with the symbols of every set the card was printed in. When one clearly matches, it picks
 that printing ("Set recognised by its symbol · tap if wrong"); when it isn't sure (some symbols are nearly identical,
 like M11 and M12) it leaves the choice to you as before.
+
+**Check a package against its order:** with the package's cards scanned, tap **Check an order** above the scanned
+list and pick the order's file (CardTrader's or Cardmarket's, see "Import an order"). The app compares the two:
+- **Missing**, **Wrong language** (the right printing in another language) and **Wrong printing** (the right card
+  from another set) come first, then cards you scanned that aren't in the order;
+- when the card is there and the scanner got it wrong, tap **It's here**, or **Scan more** and scan it again: the
+  check updates;
+- the camera can't tell foil, condition, signed or altered, so lines where the order says one of those are listed
+  under **Check by hand**; a card the scanner only read the name of counts as received, "printing not sure";
+- the copy button at the top puts a **problem report** on the clipboard (missing and wrong cards with set, number,
+  language and price paid) to send to the shop;
+- **Add to collection…** puts the scanned cards in a binder with what the order knows and the camera doesn't: price
+  paid, condition and finish. A card that came in another language or printing is added as scanned. They leave the
+  scanned list.
 
 **Language:** the chip under the camera reads "auto" (the language printed on the card, else English) or a language you
 choose for all scanned cards; the choice is kept for the next scans. A chosen language also lets a foreign card be
@@ -307,7 +345,8 @@ syncing may stop working until the app is updated. Sending all your cards the fi
 Settings → **Backups** keeps restore points of everything the app syncs (collection, binders, trades, decks, scans,
 wishlist and settings).
 - They're made **every day** when something changed, and before big changes: the first Nextcloud sync, Archidekt
-  syncs that change the app, CSV imports, CardTrader order imports and restoring a backup. **Back up now** makes one you keep until you delete it.
+  syncs that change the app, CSV imports, order imports (also a package check
+  and purchase prices from orders) and restoring a backup. **Back up now** makes one you keep until you delete it.
 - With Nextcloud sync they go to a **Backups** folder next to the sync file, where all your phones can use them;
   otherwise they're kept on the phone, in the app's storage or (better, as they survive uninstalling) a folder you
   choose. **Save to a file…** and **Restore from a file…** work with any file you keep elsewhere.

@@ -14,8 +14,14 @@ object Csv {
         }
     }
 
+    /** The separator of a CSV text, judged by its first line: Cardmarket's exports use semicolons. Since 1.32. */
+    fun delimiter(text: String): Char {
+        val first = text.lineSequence().firstOrNull().orEmpty()
+        return if (first.count { it == ';' } > first.count { it == ',' }) ';' else ','
+    }
+
     /** RFC 4180-ish parser: quoted fields, doubled quotes, CRLF or LF line endings. */
-    fun parse(text: String): List<List<String>> {
+    fun parse(text: String, delimiter: Char = ','): List<List<String>> {
         val rows = mutableListOf<List<String>>()
         var row = mutableListOf<String>()
         val field = StringBuilder()
@@ -30,8 +36,9 @@ object Csv {
                     } else quoted = false
                 } else field.append(c)
             } else when (c) {
-                '"' -> quoted = true
-                ',' -> { row += field.toString(); field.clear() }
+                // A quote only opens a quoted field at its start: 5" or "Pro" inside a shop's free text is just text.
+                '"' -> if (field.isEmpty()) quoted = true else field.append(c)
+                delimiter -> { row += field.toString(); field.clear() }
                 '\r' -> {}
                 '\n' -> { row += field.toString(); field.clear(); rows += row; row = mutableListOf() }
                 else -> field.append(c)

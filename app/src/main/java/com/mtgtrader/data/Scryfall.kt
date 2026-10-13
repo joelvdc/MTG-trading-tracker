@@ -307,6 +307,12 @@ class ScryfallApi(private val http: OkHttpClient) {
         return seen(json.decodeFromString<ScryCard>(body))
     }
 
+    /** The printing behind one of Cardmarket's product numbers; null when Scryfall doesn't know it. Since 1.32. */
+    suspend fun byCardmarketId(id: Int): ScryCard? {
+        val body = call(url("cards/cardmarket/$id")) ?: return null
+        return seen(json.decodeFromString<ScryCard>(body))
+    }
+
     /**
      * Batch lookup (max 75 identifiers per call). Each identifier is one of
      * {"id"}, {"set","collector_number"} or {"name"} as Scryfall expects.
