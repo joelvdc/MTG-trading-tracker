@@ -177,27 +177,35 @@ e.g. `1185249514;2024-12-02 16:38:27;Essence Flux;289154;Essence Flux;Shadows ov
 "Article Value" is the price per card, "Amount" the copies, "Comments" the seller's free text (ignore). It has the
 shipment number and purchase date, which also suit the order history (item 4).
 
-### 8. One-off: fill in the purchase prices of the whole collection from all past orders
-*Added 2026-10-13. Not an app feature and not waiting for the list's green light: a job Claude does on the owner's PC.*
+## Done
 
-The owner proposed it: they put all the order files (Cardmarket's 43 monthly files, CardTrader's Excel files) and a
-fresh `sync.json.gz` in one folder, and Claude fills in the purchase prices in that sync file with a script. The
-phones take the prices in at their next sync (per stack, the newer `updatedAt` wins). The rules are item 7's.
+### One-off: purchase prices of the whole collection from all past orders (was item 8)
+*Done 2026-10-13 on the owner's PC, outside the app (no release).*
 
-Steps:
-1. The owner prepares the folder (order files plus a `sync.json.gz` taken right after syncing the phone), outside
-   the two app folders.
-2. Dry run, changing nothing: a report of how many stacks would get a price, order lines with no card in the
-   collection (sold or traded since), and ambiguous cases.
-3. The owner reviews the report and settles the ambiguous cases.
-4. Claude writes the new sync file, keeping a copy of the original; the owner syncs the phone and checks a few cards.
+4,512 of 5,210 stacks got a purchase price (EUR 7,580 in total) from 43 Cardmarket monthly files, 15 CardTrader
+orders and 17 preconstructed Commander decks; 698 stacks have no known purchase. The new `sync.json.gz` went into
+the owner's Nextcloud folder; the phones take it over at their next sync.
 
-Checked on 2026-10-13: every collection entry in the sync file has `cardmarketId` (and `cardmarketFoilId`), set
-code, collector number, foil, language and `purchasePrice`, so Cardmarket's product IDs match directly, without
-lookups. None of the 5,210 stacks has a purchase price today. To check before step 4: whether the Archidekt sync
-sends purchase prices (then the first sync afterwards pushes thousands of changes to Archidekt).
-
-Keep the folder afterwards: the order history (item 4) can read the same files for past orders with real dates.
+How it was done, as the reference for item 7 (the app's version should give the same results):
+- Cardmarket lines match by product ID (`cardmarketId` / `cardmarketFoilId`); CardTrader lines by set code and
+  collector number with the name as a check, then finish and language. CardTrader's own set codes are one letter
+  longer than Scryfall's (CRVR, LTRH, FDNS, DCLB) or "PRE" + set for prerelease cards; The List and Mystery
+  Booster codes (MB1, PLIST, PLIST2) all mean Scryfall's `plst`/`mb1`/`mb2`.
+- A stack's price is the average of all its purchases weighted by copies; all copies get it.
+- 175 lines were not sure matches and were settled with the owner in chat: another printing owned (143), the same
+  printing owned in two finishes or languages (16), finish or language differing from the order (15), one playset
+  sold as a single article (Cardmarket's monthly file doesn't mark playsets; found by its price).
+- The monthly file's "Localized Product Name" differs from "Article" for non-English cards: a usable language hint.
+- Cardmarket's old double-faced names use " / " instead of " // ".
+- Precons: found by comparing MTGJSON's deck lists with the collection (17 decks, each 96% or more complete). The
+  owner gave the price paid per deck (DKK, 7.46 to the euro); it was split over the deck's cards in proportion to
+  today's Cardmarket price. Idea for later: the app could do the same for a precon the owner adds.
+- Also corrected at the owner's request: 8 cards set to foil, 2 to Japanese, 8 to the printing actually bought.
+- Checked before writing: the Nextcloud merge takes the newer `updatedAt` per stack, so the phones take the prices
+  over; the Archidekt sync sends prices changed in the app to Archidekt (it doesn't overwrite them).
+- The order files, the report, the decisions and the scripts are in the owner's folder `cardmarket and cardtrader`
+  inside the project folder on their PC (hidden from git through `.git/info/exclude`; never commit it). Keep it for
+  item 4 (order history).
 
 Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-12):
 - The account has 300 arrived shipments. Per shipment there is the "ArticlesFromShipment" CSV of item 3.
@@ -225,6 +233,3 @@ Getting the files out of Cardmarket (looked at in the owner's account, 2026-10-1
   between November 2018 and September 2022. The owner keeps the files on their PC; they are not in the repository.
 - CardTrader (about 15 orders) by hand is fine.
 
-## Done
-
-*(nothing yet)*
