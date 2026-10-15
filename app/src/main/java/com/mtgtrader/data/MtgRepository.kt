@@ -231,39 +231,123 @@ class MtgRepository(
         }
 
     /**
-     * Takes off the wishlist the copies you got since adding them (lowering entries you got some
-     * of). Returns the copies taken off and an undo.
+     * An undo for a change to the wishlist: the rows in [before] come back as they were (keeping each
+     * row's current updatedAt, so the sync trigger stamps the change), and rows made since ([created]) go.
      */
-    suspend fun removeOwnedFromWishlist(): Pair<Int, UndoAction> {
-        val before = wishlist.all()
-        val removed = db.withTransaction {
-            val owned = wishlistOwned(before, coll.all())
-            var n = 0
+    private fun wishUndo(before: List<WishlistItem>, created: List<Long> = emptyList()): UndoAction = {
+        db.withTransaction {
+            created.forEach { wishlist.delete(it) }
+            val now = wishlist.byIds(before.map { it.id }).associateBy { it.id }
             for (w in before) {
-                val got = owned[w.id]?.gotSince ?: 0
-                if (got <= 0) continue
-                if (got >= w.quantity) wishlist.delete(w.id)
-                else wishlist.update(w.copy(quantity = w.quantity - got, ownedAtAdd = w.ownedAtAdd + got))
-                n += minOf(got, w.quantity)
+                val cur = now[w.id]
+                if (cur == null) wishlist.insert(w) else if (cur != w) wishlist.update(w.copy(updatedAt = cur.updatedAt))
             }
-            n
         }
-        val undo: UndoAction = {
-            db.withTransaction {
-                val now = wishlist.all().associateBy { it.id }
-                for (w in before) {
-                    val cur = now[w.id]
-                    // Keeping the current updatedAt lets the sync trigger stamp the change.
-                    if (cur == null) wishlist.insert(w) else if (cur != w) wishlist.update(w.copy(updatedAt = cur.updatedAt))
+    }
+
+    /**
+     * Ticks (or with null unticks) "Ordered" on several wishlist cards; received ones are left as they
+     * are. Returns how many changed and an undo. Since 1.38.
+     */
+    suspend fun setWishlistOrdered(ids: Collection<Long>, orderedAt: Long?): Pair<Int, UndoAction> {
+        val before = wishlist.byIds(ids.toList()).filter { it.receivedAt == null && (it.orderedAt == null) != (orderedAt == null) }
+        db.withTransaction { before.forEach { wishlist.update(it.copy(orderedAt = orderedAt)) } }
+        return before.size to wishUndo(before)
+    }
+
+    /**
+     * Marks wishlist cards as received ([at]): they move to the Received section as a record. With
+     * [toCollection], each card's copies are also added to the collection (Unsorted, near mint, its own
+     * printing and finish); cards added offline, without a printing yet, are only marked. Returns how
+     * many cards were marked and an undo (which takes the added copies out again too). Since 1.38.
+     */
+    suspend fun receiveWishlist(ids: Collection<Long>, toCollection: Boolean, at: Long = System.currentTimeMillis()): Pair<Int, UndoAction> {
+        val before = wishlist.byIds(ids.toList()).filter { it.receivedAt == null }
+        val added = mutableListOf<Pair<Long, Int>>()
+        db.withTransaction {
+            for (w in before) {
+                wishlist.update(w.copy(receivedAt = at))
+                if (toCollection && !w.card.isPending) {
+                    val finish = w.card.resolveFinish(if (w.foil) Finish.FOIL else Finish.NONFOIL)
+                    added += addToCollection(w.card, finish, "NM", "EN", w.quantity).itemId to w.quantity
                 }
             }
         }
-        return removed to undo
+        val undoWish = wishUndo(before)
+        val undo: UndoAction = {
+            undoWish()
+            db.withTransaction {
+                for ((id, n) in added) {
+                    val item = coll.byId(id) ?: continue
+                    if (item.quantity > n) coll.update(item.copy(quantity = item.quantity - n)) else coll.deleteById(item.id)
+                }
+            }
+        }
+        return before.size to undo
     }
+
+    /** Every card ticked "Ordered" and not received yet. Since 1.38. */
+    suspend fun orderedWishlistIds(): List<Long> = wishlist.wanted().filter { it.orderedAt != null }.map { it.id }
+
+    /** Puts received cards back on the wishlist (wanted again). Since 1.38. */
+    suspend fun unreceiveWishlist(ids: Collection<Long>): Pair<Int, UndoAction> {
+        val before = wishlist.byIds(ids.toList()).filter { it.receivedAt != null }
+        db.withTransaction { before.forEach { wishlist.update(it.copy(receivedAt = null)) } }
+        return before.size to wishUndo(before)
+    }
+
+    /** Deletes wishlist cards. Returns how many and an undo. Since 1.38. */
+    suspend fun deleteWishlistItems(ids: Collection<Long>): Pair<Int, UndoAction> {
+        val before = wishlist.byIds(ids.toList())
+        wishlist.deleteMany(before.map { it.id })
+        return before.size to wishUndo(before)
+    }
+
+    /**
+     * The wanted cards you now own more copies of than when you added them (see [wishlistOwned]), with
+     * how many of the wanted copies that covers. Since 1.38 (before, they were simply removed).
+     */
+    suspend fun ownedSinceAdding(): List<Pair<WishlistItem, Int>> {
+        val wanted = wishlist.wanted()
+        val owned = wishlistOwned(wanted, coll.all())
+        return wanted.mapNotNull { w -> owned[w.id]?.gotSince?.takeIf { it > 0 }?.let { w to minOf(it, w.quantity) } }
+    }
+
+    /**
+     * Marks the cards you now own as received ([ownedSinceAdding]); they're already in the collection,
+     * so nothing is added there. Of a card you got only some of, those copies become a received entry
+     * of their own and the rest stays wanted. Returns the copies marked and an undo. Since 1.38.
+     */
+    suspend fun receiveOwned(at: Long = System.currentTimeMillis()): Pair<Int, UndoAction> {
+        val got = ownedSinceAdding()
+        val created = mutableListOf<Long>()
+        db.withTransaction {
+            for ((w, n) in got) {
+                if (n >= w.quantity) wishlist.update(w.copy(receivedAt = at))
+                else {
+                    wishlist.update(w.copy(quantity = w.quantity - n, ownedAtAdd = w.ownedAtAdd + n))
+                    created += wishlist.insert(w.copy(id = 0, uid = null, updatedAt = 0, quantity = n, receivedAt = at))
+                }
+            }
+        }
+        return got.sumOf { it.second } to wishUndo(got.map { it.first }, created)
+    }
+
+    /** Clears received cards: all of them, or those received before [before]. Returns how many and an undo. Since 1.38. */
+    suspend fun clearReceived(before: Long = Long.MAX_VALUE): Pair<Int, UndoAction> {
+        val gone = wishlist.receivedBefore(before)
+        if (gone.isEmpty()) return 0 to {}
+        wishlist.deleteMany(gone.map { it.id })
+        return gone.size to wishUndo(gone)
+    }
+
+    /** Clears received cards older than [clear] allows (Settings); nothing when they're kept. Since 1.38. */
+    suspend fun autoClearReceived(clear: ReceivedClear, now: Long = System.currentTimeMillis()): Int =
+        clear.cutoff(now)?.let { clearReceived(it).first } ?: 0
 
     /** Wishlist card names (lower case) with how many copies are wanted, for marking cards in trades. */
     suspend fun wishlistNames(): Map<String, Int> =
-        wishlist.all().groupBy { it.card.name.lowercase() }.mapValues { (_, v) -> v.sumOf { it.quantity } }
+        wishlist.wanted().groupBy { it.card.name.lowercase() }.mapValues { (_, v) -> v.sumOf { it.quantity } }
 
     suspend fun updateTradeItem(updated: TradeItem) {
         val old = trades.item(updated.id) ?: return
@@ -470,6 +554,121 @@ class MtgRepository(
             coll.byId(item.id) == null -> coll.insert(item)
             else -> coll.insert(item.copy(id = 0))
         }
+    }
+
+    /**
+     * Runs [change] on collection stacks of the printings [sids] and returns an undo that puts every
+     * stack of those printings back as it was: stacks merged away come back, stacks made go. Since 1.38.
+     */
+    private suspend fun collectionChange(sids: Set<String>, change: suspend () -> Unit): UndoAction {
+        val before = db.withTransaction {
+            val rows = coll.all().filter { it.card.scryfallId in sids }
+            change()
+            rows
+        }
+        val ids = before.map { it.id }.toSet()
+        return {
+            db.withTransaction {
+                for (now in coll.all().filter { it.card.scryfallId in sids && it.id !in ids }) coll.deleteById(now.id)
+                for (b in before) {
+                    val cur = coll.byId(b.id)
+                    if (cur == null) coll.insert(b) else if (cur != b) coll.update(b.copy(updatedAt = cur.updatedAt))
+                }
+            }
+        }
+    }
+
+    private suspend fun stacks(ids: Collection<Long>) = ids.mapNotNull { coll.byId(it) }
+
+    /** Moves whole stacks to [binderId] (merging with the same card there). Returns the copies moved and an undo. Since 1.38. */
+    suspend fun moveStacks(ids: Collection<Long>, binderId: Long): Pair<Int, UndoAction> {
+        val items = stacks(ids).filter { it.binderId != binderId }
+        val undo = collectionChange(items.map { it.card.scryfallId }.toSet()) {
+            items.forEach { updateCollectionItem(it.copy(binderId = binderId)) }
+        }
+        return items.sumOf { it.quantity } to undo
+    }
+
+    /** Moves [n] copies of one stack to [binderId] (the rest stays). Since 1.38. */
+    suspend fun moveCopies(id: Long, binderId: Long, n: Int): Pair<Int, UndoAction> {
+        val item = coll.byId(id) ?: return 0 to {}
+        if (item.binderId == binderId || n <= 0) return 0 to {}
+        val undo = collectionChange(setOf(item.card.scryfallId)) { saveCollectionEdit(item, binderId, n) }
+        return minOf(n, item.quantity) to undo
+    }
+
+    /**
+     * Sets condition, language and/or purchase price (null leaves it as it is) on several stacks,
+     * merging stacks that become the same. Returns the stacks changed and an undo. Since 1.38.
+     */
+    suspend fun editStacks(ids: Collection<Long>, condition: String?, language: String?, purchasePrice: Double?): Pair<Int, UndoAction> {
+        val items = stacks(ids)
+        val changed = items.map { it to it.copy(condition = condition ?: it.condition, language = language ?: it.language, purchasePrice = purchasePrice ?: it.purchasePrice) }
+            .filter { (a, b) -> a != b }
+        val undo = collectionChange(changed.map { it.first.card.scryfallId }.toSet()) {
+            // Read again each time: an earlier one may have merged into this stack.
+            for ((a, b) in changed) coll.byId(a.id)?.let { cur -> updateCollectionItem(cur.copy(condition = b.condition, language = b.language, purchasePrice = b.purchasePrice)) }
+        }
+        return changed.size to undo
+    }
+
+    /** Called before several stacks are deleted at once (a restore point). Since 1.38. */
+    var beforeBatchDelete: (suspend () -> Unit)? = null
+
+    /** Deletes several stacks (after a restore point). Returns the copies deleted and an undo. Since 1.38. */
+    suspend fun deleteStacks(ids: Collection<Long>): Pair<Int, UndoAction> {
+        val items = stacks(ids)
+        if (items.isEmpty()) return 0 to {}
+        runCatching { beforeBatchDelete?.invoke() }
+        val undo = collectionChange(items.map { it.card.scryfallId }.toSet()) { items.forEach { coll.deleteById(it.id) } }
+        return items.sumOf { it.quantity } to undo
+    }
+
+    /** One copy more ([delta] 1) or less (-1; the last copy removes the stack), with an undo. Since 1.38. */
+    suspend fun changeQuantity(id: Long, delta: Int): Pair<CollectionItem?, UndoAction> {
+        val item = coll.byId(id) ?: return null to {}
+        val undo = collectionChange(setOf(item.card.scryfallId)) {
+            val n = item.quantity + delta
+            if (n <= 0) coll.deleteById(item.id) else coll.update(item.copy(quantity = n))
+        }
+        return item to undo
+    }
+
+    /**
+     * Puts stacks on the "you give" side of trade [tradeId] (a new trade when null): [copies] of each, or
+     * every copy. Returns the trade, the copies added and an undo (a new trade goes again). Since 1.38.
+     */
+    suspend fun stacksToTrade(ids: Collection<Long>, tradeId: Long?, copies: Int? = null): Triple<Long, Int, UndoAction> {
+        val items = stacks(ids)
+        val made = tradeId == null
+        val id = tradeId ?: newTrade()
+        val before = trades.get(id)?.items.orEmpty()
+        var n = 0
+        db.withTransaction {
+            for (i in items) {
+                val qty = copies?.coerceIn(1, i.quantity) ?: i.quantity
+                addToTrade(id, Side.GIVE, i.card, i.finish, i.language, qty, i.condition)
+                n += qty
+            }
+        }
+        val undo: UndoAction = {
+            db.withTransaction {
+                if (made) trades.delete(id) else {
+                    val keep = before.associateBy { it.id }
+                    for (t in trades.get(id)?.items.orEmpty()) {
+                        val old = keep[t.id]
+                        if (old == null) trades.deleteItem(t.id) else if (old.quantity != t.quantity) trades.updateItem(t.copy(quantity = old.quantity))
+                    }
+                }
+            }
+        }
+        return Triple(id, n, undo)
+    }
+
+    /** The selected stacks as a plain list, "2 Sol Ring (C21 #263, foil)" per line. Since 1.38. */
+    fun stacksText(items: List<CollectionItem>): String = items.joinToString("\n") { i ->
+        val extra = listOfNotNull("${i.card.setCode.uppercase()} #${i.card.collectorNumber}", i.card.finishName(i.finish).lowercase().takeIf { i.foil })
+        "${i.quantity} ${i.card.name} (${extra.joinToString(", ")})"
     }
 
     // ---- binders -------------------------------------------------------------------------
@@ -875,10 +1074,11 @@ class MtgRepository(
 
     /**
      * ManaBox-compatible column names, so the file can be imported back into ManaBox. With [binderId],
-     * only that binder's cards (or Unsorted's, for [Binder.UNSORTED]) are exported.
+     * only that binder's cards (or Unsorted's, for [Binder.UNSORTED]) are exported; with [ids], only
+     * those stacks (the ones selected, since 1.38).
      */
-    suspend fun exportCollectionCsv(type: PriceType, binderId: Long? = null): String {
-        val items = coll.all().filter { binderId == null || it.binderId == binderId }
+    suspend fun exportCollectionCsv(type: PriceType, binderId: Long? = null, ids: Set<Long>? = null): String {
+        val items = coll.all().filter { (binderId == null || it.binderId == binderId) && (ids == null || it.id in ids) }
         val binderNames = binders.all().associate { it.id to it.name }
         val priceMap = prices.pricesFor(items.mapNotNull { it.card.productFor(it.foil) })
         val sb = StringBuilder()

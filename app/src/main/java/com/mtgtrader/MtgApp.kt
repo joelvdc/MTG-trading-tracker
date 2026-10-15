@@ -141,10 +141,15 @@ class AppContainer(context: Context) {
         // Wishlist cards added offline get their details whenever the phone (re)connects.
         appScope.launch { network.reconnects.collect { runCatching { repo.completePendingWishlist() } } }
         // Wishlist price alerts after each price update (since 1.37).
-        updater.onPrices = { online -> wishWatch.check(online = online) }
+        updater.onPrices = { online ->
+            // Received wishlist cards past the time chosen in Settings (since 1.38).
+            runCatching { repo.autoClearReceived(settings.receivedClear.value) }
+            wishWatch.check(online = online)
+        }
         sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
         repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
         repo.beforeOrderImport = { backups.before(com.mtgtrader.data.BackupReason.ORDER_IMPORT) }
+        repo.beforeBatchDelete = { backups.before(com.mtgtrader.data.BackupReason.BATCH_DELETE) }
     }
 
     /** A trade deleted on its own screen, so the trade list can offer Undo once it's back on screen. */

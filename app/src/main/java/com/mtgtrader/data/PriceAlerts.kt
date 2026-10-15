@@ -255,7 +255,7 @@ class WishlistWatch(
         var ctCalls = 0
         val start = System.currentTimeMillis()
         // Cards with a level first, then those whose CardTrader price is oldest.
-        val todo = items.filter { (only == null || it.id in only) && !it.card.isPending && it.orderedAt == null }
+        val todo = items.filter { (only == null || it.id in only) && !it.card.isPending && it.orderedAt == null && it.receivedAt == null }
             .map { it to dao.get(it.id) }
             .sortedWith(compareBy({ it.first.alertBelow == null }, { it.second?.ctAt ?: 0L }))
         for ((item, saved) in todo) {

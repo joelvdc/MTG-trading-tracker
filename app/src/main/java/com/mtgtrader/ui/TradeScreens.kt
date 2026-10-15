@@ -342,7 +342,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
             return@Scaffold
         }
         val balance = t.balance(priceType, tolerance)
-        val wanted = remember(wishRows) { wishRows.groupBy { it.item.card.name.lowercase() }.mapValues { (_, v) -> v.sumOf { it.item.quantity } } }
+        val wanted = remember(wishRows) { wishRows.filter { it.item.receivedAt == null }.groupBy { it.item.card.name.lowercase() }.mapValues { (_, v) -> v.sumOf { it.item.quantity } } }
         LazyColumn(
             Modifier.padding(pad),
             contentPadding = PaddingValues(12.dp),

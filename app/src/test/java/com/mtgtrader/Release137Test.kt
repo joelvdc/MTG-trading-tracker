@@ -330,8 +330,8 @@ class Release137Test {
         val merged = SyncMerge.merge(SyncData(wishlist = listOf(mine)), back.data, System.currentTimeMillis())
         assertEquals(1.5, merged.wishlist.single().alertBelow!!, 0.0)
         // An older version would write the file back without levels: it refuses format 5 and asks to be updated.
-        assertEquals(5, SyncFile.FORMAT)
-        assertEquals(5, BackupFile.FORMAT)
+        assertTrue(SyncFile.FORMAT >= 5)
+        assertTrue(BackupFile.FORMAT >= 5)
     }
 
     @Test
@@ -384,7 +384,7 @@ class Release137Test {
         createVersion15(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-137.db")
-            .addMigrations(AppDatabase.MIGRATION_15_16)
+            .addMigrations(AppDatabase.MIGRATION_15_16, AppDatabase.MIGRATION_16_17)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

@@ -57,7 +57,8 @@ fun WishlistRow.asCollectionRow() = CollectionRow(
 /** What a wishlist row says under the card: which printings will do, whether it's ordered and whether you got it. */
 fun wishLabel(item: WishlistItem, owned: WishlistOwned?, now: Long = System.currentTimeMillis()): String = listOfNotNull(
     if (item.anyPrinting) "Any printing" else "This printing only",
-    item.orderedAt?.let { "📦 ordered ${Fmt.shortDate(it, now)}" },
+    // A received card shows when it came (since 1.38) instead of when it was ordered.
+    item.receivedAt?.let { "✓ received ${Fmt.shortDate(it, now)}" } ?: item.orderedAt?.let { "📦 ordered ${Fmt.shortDate(it, now)}" },
     when {
         owned == null -> null
         owned.gotSince > 0 -> "✓ got ${owned.gotSince} since adding it"
@@ -84,6 +85,8 @@ fun wishTotalLine(rows: List<CollectionRow>, isOrdered: (Long) -> Boolean, price
  * CardTrader's cheapest offer while CardTrader is switched on. Null when there's nothing to say.
  */
 fun wishPriceLine(item: WishlistItem, wp: WishPrice?, basis: String, ctFilter: CtFilter?): String? {
+    // Received cards are a record now, not wanted: no prices to watch (since 1.38).
+    if (item.receivedAt != null) return null
     val ctKey = ctFilter?.key(item.foil)
     val best = PriceAlerts.best(wp, basis, ctKey)?.first
     val level = item.alertBelow?.let { "🔔 ${Fmt.money(it)}" + if (best != null && best <= it + 0.000_1) " ✓" else "" }
@@ -130,7 +133,7 @@ fun ctDetailLines(wp: WishPrice, zeroOnly: Boolean, anyPrinting: Boolean): List<
 
 /** The wishlist as a plain list ("1 Card name" per line) to share; ordered cards are left out, so they aren't bought twice. */
 fun wishShareText(rows: List<WishlistRow>): String =
-    rows.filter { it.item.orderedAt == null }.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
+    rows.filter { it.item.orderedAt == null && it.item.receivedAt == null }.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
 
 /** Edits a wishlist entry: how many, whether any printing will do (and the finish otherwise), notes. */
 @Composable
@@ -211,6 +214,21 @@ fun WishlistDialog(
                     Checkbox(
                         checked = item.orderedAt != null,
                         onCheckedChange = { on -> item = item.copy(orderedAt = if (on) row.item.orderedAt ?: System.currentTimeMillis() else null) },
+                    )
+                }
+                // Since 1.38: received cards move to the Received section; unticking puts the card back on the wishlist.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Received")
+                        Text(
+                            item.receivedAt?.let { "Ticked ${Fmt.date(it)}" } ?: "Tick it once it has arrived",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Checkbox(
+                        checked = item.receivedAt != null,
+                        onCheckedChange = { on -> item = item.copy(receivedAt = if (on) row.item.receivedAt ?: System.currentTimeMillis() else null) },
                     )
                 }
                 if (card.hasFoil && card.hasNonFoil) {

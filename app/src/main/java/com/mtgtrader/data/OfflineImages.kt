@@ -32,7 +32,7 @@ interface OfflineImagesDao {
     @Query(
         """SELECT imageUrl FROM deck_cards WHERE imageUrl IS NOT NULL
            UNION SELECT imageUrl FROM collection WHERE imageUrl IS NOT NULL AND name COLLATE NOCASE IN (SELECT name FROM deck_cards)
-           UNION SELECT imageUrl FROM wishlist WHERE imageUrl IS NOT NULL"""
+           UNION SELECT imageUrl FROM wishlist WHERE imageUrl IS NOT NULL AND receivedAt IS NULL"""
     )
     fun observeCardImages(): Flow<List<String>>
 

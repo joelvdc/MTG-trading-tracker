@@ -79,8 +79,9 @@ data class SyncFile(
          * 3 since 1.33: remembered orders, which an older version would write back without.
          * 4 since 1.35: wishlist cards marked as ordered, which an older version would write back unmarked.
          * 5 since 1.37: price alert levels on wishlist cards, which an older version would write back without.
+         * 6 since 1.38: wishlist cards marked as received, which an older version would show as still wanted.
          */
-        const val FORMAT = 5
+        const val FORMAT = 6
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

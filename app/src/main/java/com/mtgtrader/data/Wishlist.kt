@@ -37,6 +37,11 @@ data class WishlistItem(
      * for no notifications. Synced. Since 1.37; see [WishlistWatch].
      */
     val alertBelow: Double? = null,
+    /**
+     * When it arrived ("Received", swiped right): the card is then kept in the wishlist's Received
+     * section as a record, no longer wanted (not counted, alerted, shared or starred). Synced. Since 1.38.
+     */
+    val receivedAt: Long? = null,
     /** Sync identity and last change; filled in by database triggers (see [SyncSchema]). */
     val uid: String? = null,
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
@@ -104,8 +109,18 @@ interface WishlistDao {
     @Query("SELECT * FROM wishlist")
     suspend fun all(): List<WishlistItem>
 
-    @Query("SELECT COALESCE(SUM(quantity), 0) FROM wishlist")
+    @Query("SELECT COALESCE(SUM(quantity), 0) FROM wishlist WHERE receivedAt IS NULL")
     fun observeCount(): Flow<Int>
+
+    /** The cards still wanted (not received). Since 1.38. */
+    @Query("SELECT * FROM wishlist WHERE receivedAt IS NULL")
+    suspend fun wanted(): List<WishlistItem>
+
+    @Query("SELECT * FROM wishlist WHERE id IN (:ids)")
+    suspend fun byIds(ids: List<Long>): List<WishlistItem>
+
+    @Query("SELECT * FROM wishlist WHERE receivedAt IS NOT NULL AND receivedAt < :before")
+    suspend fun receivedBefore(before: Long): List<WishlistItem>
 
     @Query("SELECT * FROM wishlist WHERE id = :id")
     suspend fun byId(id: Long): WishlistItem?
@@ -113,7 +128,8 @@ interface WishlistDao {
     @Query("SELECT * FROM wishlist WHERE scryfallId LIKE '00000000-0000-0000-0000-%'")
     suspend fun pending(): List<WishlistItem>
 
-    @Query("SELECT * FROM wishlist WHERE name = :name COLLATE NOCASE")
+    /** The wanted (not received) entries for a card name. */
+    @Query("SELECT * FROM wishlist WHERE name = :name COLLATE NOCASE AND receivedAt IS NULL")
     suspend fun byName(name: String): List<WishlistItem>
 
     @Insert

@@ -22,6 +22,11 @@ import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CollectionItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.SwapHoriz
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.DisplayCurrency
 import com.mtgtrader.data.ExchangeRates
@@ -535,5 +540,93 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_alert_settings_token.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.38: the wishlist in sections (To buy, Ordered, Received), with what's behind a card being swiped. */
+    @Test fun wishlistSections() {
+        val oct15 = 1_792_065_600_000L
+        fun wish(id: Long, name: String, set: String, number: String, eur: Double, orderedAt: Long? = null, receivedAt: Long? = null) =
+            WishlistItem(id = id, card = ref(name, set, number, "rare").copy(fallbackEur = eur), orderedAt = orderedAt, receivedAt = receivedAt)
+        val items = listOf(
+            wish(1, "Smothering Tithe", "rna", "22", 17.5),
+            wish(2, "Rhystic Study", "jmp", "169", 38.0, orderedAt = oct15 - 86_400_000L),
+            wish(3, "Arcane Signet", "cmm", "367", 0.6, orderedAt = oct15 - 3 * 86_400_000L, receivedAt = oct15),
+        ).associateBy { it.id }
+        val rows = items.values.map { WishlistRow(it, null).asCollectionRow() }
+        val sections = com.mtgtrader.ui.wishSections(rows, { items[it] }, sections = true)
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        for (sec in sections) {
+                            sec.title?.let { com.mtgtrader.ui.SectionHeader(it, sec.rows.sumOf { r -> r.item.quantity }, folded = false) {} }
+                            for (r in sec.rows) {
+                                val w = items.getValue(r.item.id)
+                                CollectionRowView(r, PriceType.TREND, wishLabel(w, null, now = oct15), if (w.receivedAt != null) null else w.orderedAt != null, {}) {}
+                            }
+                        }
+                        Text("Swiping a card:", style = MaterialTheme.typography.labelSmall)
+                        val (right, left) = com.mtgtrader.ui.wishSwipes(received = false, onRight = {}, onLeft = {})
+                        com.mtgtrader.ui.SwipeBackground(right, toRight = true, Modifier.fillMaxWidth().height(56.dp))
+                        com.mtgtrader.ui.SwipeBackground(left, toRight = false, Modifier.fillMaxWidth().height(56.dp))
+                        com.mtgtrader.ui.SectionHeader("Received", 4, folded = true) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_sections.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.38: selecting cards in the collection: the selection bar, and picked cards in the three views. */
+    @Test fun collectionSelection() {
+        fun row(id: Long, name: String, set: String, number: String, qty: Int, eur: Double) =
+            CollectionRow(CollectionItem(id = id, card = ref(name, set, number, "rare").copy(fallbackEur = eur), foil = false, quantity = qty), null)
+        val rows = listOf(row(1, "Sol Ring", "c21", "263", 3, 1.2), row(2, "Brainstorm", "ice", "61", 1, 0.8), row(3, "Counterspell", "mh2", "267", 2, 1.5))
+        val picked = setOf(1L, 3L)
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        com.mtgtrader.ui.SelectionTopBar(5, 6.6, onClose = {}) {
+                            androidx.compose.material3.IconButton(onClick = {}) { androidx.compose.material3.Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move") }
+                            androidx.compose.material3.IconButton(onClick = {}) { androidx.compose.material3.Icon(Icons.Default.SwapHoriz, "Trade") }
+                            androidx.compose.material3.IconButton(onClick = {}) { androidx.compose.material3.Icon(Icons.Default.Delete, "Delete") }
+                            androidx.compose.material3.IconButton(onClick = {}) { androidx.compose.material3.Icon(Icons.Default.MoreVert, "More") }
+                        }
+                        Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            for (r in rows) CollectionRowView(r, PriceType.TREND, null, picked = r.item.id in picked, onLongClick = {}) {}
+                            for (r in rows) CompactRow(r, PriceType.TREND, null, picked = r.item.id in picked, onLongClick = {}) {}
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                for (r in rows) Box(Modifier.width(110.dp)) { CardTile(r, PriceType.TREND, null, picked = r.item.id in picked, onLongClick = {}) {} }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/collection_selection.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.38: Settings for received wishlist cards and for swiping, and what's behind each swipe action. */
+    @Test fun receivedAndSwipeSettings() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        com.mtgtrader.ui.ReceivedCardsSection(com.mtgtrader.data.ReceivedClear.NEVER, false, {}, {})
+                        Spacer(Modifier.height(16.dp))
+                        com.mtgtrader.ui.SwipeSection(com.mtgtrader.data.SwipeAction.MOVE_TO_BINDER, com.mtgtrader.data.SwipeAction.ADD_TO_TRADE) { _, _ -> }
+                        Spacer(Modifier.height(16.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            for (a in com.mtgtrader.data.SwipeAction.entries.filter { it != com.mtgtrader.data.SwipeAction.NOTHING }) {
+                                val (icon, color) = com.mtgtrader.ui.swipeLook(a)
+                                com.mtgtrader.ui.SwipeBackground(com.mtgtrader.ui.SwipeSpec(a.label.removeSuffix("…"), icon, color) {}, toRight = a.ordinal % 2 == 0, Modifier.fillMaxWidth().height(44.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/received_swipe_settings.png", roborazziOptions = screenshotOptions)
     }
 }

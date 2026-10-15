@@ -57,6 +57,8 @@ import com.mtgtrader.data.CT_LANGUAGES
 import com.mtgtrader.data.CardTrader
 import com.mtgtrader.data.CtCondition
 import com.mtgtrader.data.PowerSource
+import com.mtgtrader.data.ReceivedClear
+import com.mtgtrader.data.SwipeAction
 import com.mtgtrader.data.ThemeMode
 import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.ExchangeRates
@@ -183,6 +185,20 @@ fun SettingsScreen(nav: NavController) {
                     onZeroOnly = { c.settings.setCtZeroOnly(it); recheck() },
                 ),
             )
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            val receivedClear by c.settings.receivedClear.collectAsStateWithLifecycle()
+            val receivedToCollection by c.settings.receivedToCollection.collectAsStateWithLifecycle()
+            ReceivedCardsSection(
+                receivedClear, receivedToCollection,
+                onClear = { v -> c.settings.setReceivedClear(v); c.appScope.launch { runCatching { c.repo.autoClearReceived(v) } } },
+                onToCollection = c.settings::setReceivedToCollection,
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            val swipeRight by c.settings.swipeRight.collectAsStateWithLifecycle()
+            val swipeLeft by c.settings.swipeLeft.collectAsStateWithLifecycle()
+            SwipeSection(swipeRight, swipeLeft, c.settings::setSwipe)
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             CurrencySection(currency, rates, c.settings::setCurrency)
@@ -676,4 +692,40 @@ private fun CardTraderTokenRow(status: CardTrader.Status, act: AlertSettingsActi
         ) { Text(if (checking) "Checking…" else "Save and check") }
         if (status.hasToken) TextButton(onClick = { editing = false }) { Text("Cancel") }
     }
+}
+
+/** Settings → Received wishlist cards: when they're cleared, and whether they also go into the collection. Since 1.38. */
+@Composable
+internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, onClear: (ReceivedClear) -> Unit, onToCollection: (Boolean) -> Unit) {
+    Text("Received wishlist cards", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Swipe a wishlist card to the right (or tick “Received” in its window) once it has arrived: it moves to the wishlist's " +
+            "Received section, as a record. They're kept until you clear them (⋮ → Clear received cards), or as chosen here.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("Clear received cards automatically", clear, ReceivedClear.entries.toList(), { it.label }, onClear, Modifier.fillMaxWidth())
+    Spacer(Modifier.height(4.dp))
+    SwitchRow(
+        title = "Add received cards to the collection",
+        body = "Each card goes into Unsorted (near mint, its printing). Leave it off when you import your orders: they add the cards already.",
+        checked = toCollection,
+        onChange = onToCollection,
+    )
+}
+
+/** Settings → Swiping cards in the collection: what a swipe to the right and to the left does. Since 1.38. */
+@Composable
+internal fun SwipeSection(right: SwipeAction, left: SwipeAction, onPick: (right: Boolean, SwipeAction) -> Unit) {
+    Text("Swiping cards in the collection", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "In the list and compact views; every swipe can be undone. Press and hold a card to select several (in every view).",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("Swipe right →", right, SwipeAction.entries.toList(), { it.label }, { onPick(true, it) }, Modifier.fillMaxWidth())
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("← Swipe left", left, SwipeAction.entries.toList(), { it.label }, { onPick(false, it) }, Modifier.fillMaxWidth())
 }
