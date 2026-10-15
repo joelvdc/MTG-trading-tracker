@@ -208,6 +208,15 @@ class MtgRepository(
 
     suspend fun updateWishlistItem(item: WishlistItem) = wishlist.update(item)
 
+    /**
+     * Ticks or unticks "Ordered, on its way" straight from the list ([orderedAt] null unticks). Read
+     * fresh, so it keeps the row's current updatedAt and the sync trigger stamps the change. Since 1.36.
+     */
+    suspend fun setWishlistOrdered(id: Long, orderedAt: Long?) {
+        val w = wishlist.byId(id) ?: return
+        if (w.orderedAt != orderedAt) wishlist.update(w.copy(orderedAt = orderedAt))
+    }
+
     suspend fun deleteWishlistItem(id: Long) = wishlist.delete(id)
 
     suspend fun restoreWishlistItem(item: WishlistItem) {

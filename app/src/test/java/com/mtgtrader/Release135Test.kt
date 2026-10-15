@@ -51,7 +51,9 @@ class Release135Test {
     @Test
     fun theRowSaysWhenItWasOrdered() {
         val item = wish(1, "Brainstorm", 1.0, orderedAt = oct15).item
-        assertEquals("Any printing · 📦 ordered Oct 15, 2026 · you own 1", wishLabel(item, WishlistOwned(owned = 1, gotSince = 0)))
+        assertEquals("Any printing · 📦 ordered Oct 15 · you own 1", wishLabel(item, WishlistOwned(owned = 1, gotSince = 0), now = oct15))
+        // 1.36: the year only shows for an order from an earlier year.
+        assertEquals("Any printing · 📦 ordered Oct 15, 2026", wishLabel(item, null, now = oct15 + 100L * 24 * 3600 * 1000))
         assertEquals("Any printing", wishLabel(item.copy(orderedAt = null), null))
     }
 
