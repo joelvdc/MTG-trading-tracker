@@ -149,6 +149,21 @@ fun CollectionScreen(nav: NavController) {
     LaunchedEffect(binders) { tradeBinderId = c.tradeBinder.binder()?.id ?: 0L }
     val wishRows by remember { c.db.wishlistDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     var editingWish by remember { mutableStateOf<WishlistRow?>(null) }
+    // Wishlist price alerts (since 1.37): the prices found for each card, and what they're compared with.
+    val wishPrices by remember { c.db.wishPriceDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val wishPriceById = remember(wishPrices) { wishPrices.associateBy { it.wishId } }
+    val alertSource by c.settings.priceSource.collectAsStateWithLifecycle()
+    val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
+    val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
+    val ctLanguage by c.settings.ctLanguage.collectAsStateWithLifecycle()
+    val ctCondition by c.settings.ctCondition.collectAsStateWithLifecycle()
+    val ctZeroOnly by c.settings.ctZeroOnly.collectAsStateWithLifecycle()
+    val ctStatus by c.cardTrader.status.collectAsStateWithLifecycle()
+    val alertBasis = com.mtgtrader.data.PriceAlerts.basis(alertSource, alertType)
+    val ctFilter = if (ctOn && ctStatus.hasToken) com.mtgtrader.data.CtFilter(ctLanguage, ctCondition, ctZeroOnly) else null
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) scope.launch { snackbar.showSnackbar("Notifications are off for MTG Trader, so price alerts can't show") }
+    }
     var selected by rememberSaveable { mutableStateOf<BinderSel>(null) }
     // Opened from the stats screen with a filter.
     val jump by c.collectionJump.collectAsStateWithLifecycle()
@@ -158,6 +173,15 @@ fun CollectionScreen(nav: NavController) {
         filterText = j.filter.encode()
         filter = ""
         selected = j.binderId
+    }
+    // A price alert's notification opens its card on the wishlist (since 1.37).
+    val openWish by c.openWish.collectAsStateWithLifecycle()
+    LaunchedEffect(openWish, wishRows) {
+        val id = openWish ?: return@LaunchedEffect
+        val row = wishRows.firstOrNull { it.item.id == id } ?: return@LaunchedEffect
+        c.openWish.value = null
+        selected = WISHLIST
+        editingWish = row
     }
     var viewMenu by remember { mutableStateOf(false) }
     val view by c.settings.collectionView.collectAsStateWithLifecycle()
@@ -521,6 +545,8 @@ fun CollectionScreen(nav: NavController) {
                         selected == null && row.item.binderId != Binder.UNSORTED -> binderName(row.item.binderId, binders)
                         else -> null
                     }
+                    fun noteOf(row: CollectionRow) =
+                        if (wish) wishById[row.item.id]?.let { wishPriceLine(it.item, wishPriceById[it.item.id], alertBasis, ctFilter) } else null
                     fun open(row: CollectionRow) {
                         if (wish) editingWish = wishById[row.item.id] else editing = row
                     }
@@ -542,12 +568,12 @@ fun CollectionScreen(nav: NavController) {
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             items(shown, key = { it.item.id }) { row ->
-                                CollectionRowView(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }) { open(row) }
+                                CollectionRowView(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }, noteOf(row)) { open(row) }
                             }
                         }
                         CollectionView.COMPACT -> LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp)) {
                             items(shown, key = { it.item.id }) { row ->
-                                CompactRow(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }) { open(row) }
+                                CompactRow(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }, noteOf(row)) { open(row) }
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
                         }
@@ -556,7 +582,7 @@ fun CollectionScreen(nav: NavController) {
                             contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 150.dp),
                         ) {
                             gridItems(shown, key = { it.item.id }) { row ->
-                                CardTile(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }) { open(row) }
+                                CardTile(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }, noteOf(row)) { open(row) }
                             }
                         }
                     }
@@ -571,10 +597,18 @@ fun CollectionScreen(nav: NavController) {
     editingWish?.let { row ->
         WishlistDialog(
             row, wishOwned[row.item.id], priceType,
+            WishAlertInfo(wishPriceById[row.item.id], alertBasis, ctFilter, ctNeedsToken = ctOn && !ctStatus.hasToken),
             onDismiss = { editingWish = null },
             onSave = { updated ->
                 editingWish = null
-                scope.launch { c.repo.updateWishlistItem(updated.copy(notes = updated.notes?.trim()?.ifEmpty { null })) }
+                // A new level asks for notifications (Android 13 and later), and looks the card's prices up.
+                if (updated.alertBelow != null && row.item.alertBelow == null && android.os.Build.VERSION.SDK_INT >= 33 && !c.wishWatch.notifier.allowed()) {
+                    notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+                scope.launch {
+                    c.repo.updateWishlistItem(updated.copy(notes = updated.notes?.trim()?.ifEmpty { null }))
+                    if (updated != row.item) c.appScope.launch { runCatching { c.wishWatch.check(notify = false, only = setOf(updated.id)) } }
+                }
             },
             onDelete = {
                 editingWish = null
@@ -662,6 +696,8 @@ internal fun CompactRow(
     binder: String?,
     ordered: Boolean? = null,
     onOrdered: (Boolean) -> Unit = {},
+    /** A second line under the card: on the wishlist, its prices for alerts (since 1.37). */
+    note: String? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
@@ -689,6 +725,7 @@ internal fun CompactRow(
                     binder,
                 ).joinToString(" · ")
                 Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                note?.let { NoteLine(it) }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
@@ -710,6 +747,8 @@ internal fun CardTile(
     binder: String?,
     ordered: Boolean? = null,
     onOrdered: (Boolean) -> Unit = {},
+    /** A second line under the card: on the wishlist, its prices for alerts (since 1.37). */
+    note: String? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
@@ -762,6 +801,7 @@ internal fun CardTile(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            note?.let { NoteLine(it) }
         }
     }
 }
@@ -773,6 +813,8 @@ internal fun CollectionRowView(
     binder: String?,
     ordered: Boolean? = null,
     onOrdered: (Boolean) -> Unit = {},
+    /** A second line under the card: on the wishlist, its prices for alerts (since 1.37). */
+    note: String? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
@@ -794,6 +836,7 @@ internal fun CollectionRowView(
                     binder?.let {
                         Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
+                    note?.let { NoteLine(it, maxLines = 2) }
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
@@ -808,6 +851,12 @@ internal fun CollectionRowView(
             }
         }
     }
+}
+
+/** A wishlist card's price line (see [wishPriceLine]). Since 1.37. */
+@Composable
+private fun NoteLine(text: String, maxLines: Int = 1) {
+    Text(text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
 }
 
 /**

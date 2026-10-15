@@ -4,12 +4,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -436,5 +439,101 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_ordered.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.37: wishlist price alerts on the list (all three views) and in the card's window. */
+    @Test fun wishlistAlerts() {
+        val filter = com.mtgtrader.data.CtFilter("en", com.mtgtrader.data.CtCondition.SLIGHTLY_PLAYED, zeroOnly = true)
+        fun wish(id: Long, name: String, set: String, number: String, eur: Double, level: Double?, anyPrinting: Boolean = true) =
+            WishlistRow(WishlistItem(id = id, card = ref(name, set, number, "rare").copy(fallbackEur = eur), anyPrinting = anyPrinting, alertBelow = level), null)
+        val rows = listOf(
+            wish(1, "Ragavan, Nimble Pilferer", "mh2", "138", 52.0, 40.0),
+            wish(2, "Smothering Tithe", "rna", "22", 17.5, null),
+            wish(3, "Arcane Signet", "cmm", "367", 0.6, 0.5, anyPrinting = false),
+        )
+        val prices = mapOf(
+            1L to com.mtgtrader.data.WishPrice(1, "cardmarket:low", 41.5, setCode = "mh2", ctPrice = 38.5, ctSetCode = "2x2", ctCondition = "Slightly Played", ctLanguage = "en", ctAnyPrice = 36.9, ctFilter = filter.key(false), checkedAt = 1_792_065_600_000L),
+            2L to com.mtgtrader.data.WishPrice(2, "cardmarket:low", 14.2, setCode = "rna", ctZeroOver = 18.0, ctAnyPrice = 13.9, ctFilter = filter.key(false)),
+            3L to com.mtgtrader.data.WishPrice(3, "cardmarket:low", 0.55, ctPrice = 0.65, ctFilter = filter.key(false)),
+        )
+        fun note(r: WishlistRow) = com.mtgtrader.ui.wishPriceLine(r.item, prices[r.item.id], "cardmarket:low", filter)
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        for (r in rows) CollectionRowView(r.asCollectionRow(), PriceType.TREND, wishLabel(r.item, null), false, {}, note(r)) {}
+                        for (r in rows.take(2)) CompactRow(r.asCollectionRow(), PriceType.TREND, null, false, {}, note(r)) {}
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (r in rows.take(2)) Box(Modifier.width(110.dp)) { CardTile(r.asCollectionRow(), PriceType.TREND, null, false, {}, note(r)) {} }
+                        }
+                        androidx.compose.material3.HorizontalDivider()
+                        // The card window's "Price alert" part.
+                        com.mtgtrader.ui.PriceAlertFields(rows[0].item, "40.00", com.mtgtrader.ui.WishAlertInfo(prices[1L], "cardmarket:low", filter)) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_alerts.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.37: Settings → Wishlist price alerts with CardTrader on, and the price menu's explanations. */
+    @Test fun wishlistAlertSettings() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        com.mtgtrader.ui.WishlistAlertsSection(
+                            com.mtgtrader.ui.AlertSettings(cardTraderOn = true, ctStatus = com.mtgtrader.data.CardTrader.Status(hasToken = true, okAt = 1_792_065_600_000L)),
+                            com.mtgtrader.ui.AlertSettingsActions(),
+                        )
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_alert_settings.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.37: the alert price menu opened: each price with what it means for an alert (drawn as the menu shows it). */
+    @Test fun wishlistAlertPriceMenu() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        androidx.compose.material3.Card(Modifier.width(340.dp)) {
+                            Column(Modifier.padding(vertical = 4.dp)) {
+                                com.mtgtrader.ui.alertTypeHelp.forEach { (t, help) ->
+                                    Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        androidx.compose.material3.RadioButton(selected = t == PriceType.LOW, onClick = null)
+                                        Spacer(Modifier.width(12.dp))
+                                        com.mtgtrader.ui.ExplainedOption(t.label, help, t == PriceType.LOW)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_alert_price_menu.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.37: the same section waiting for a token, with notifications and automatic updates off, on TCGplayer prices. */
+    @Test fun wishlistAlertSettingsToken() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        com.mtgtrader.ui.WishlistAlertsSection(
+                            com.mtgtrader.ui.AlertSettings(
+                                source = com.mtgtrader.data.PriceSource.TCGPLAYER, autoUpdate = false, notificationsAllowed = false, cardTraderOn = true,
+                                ctLanguage = "", ctCondition = com.mtgtrader.data.CtCondition.NEAR_MINT, ctZeroOnly = false,
+                            ),
+                            com.mtgtrader.ui.AlertSettingsActions(),
+                        )
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_alert_settings_token.png", roborazziOptions = screenshotOptions)
     }
 }

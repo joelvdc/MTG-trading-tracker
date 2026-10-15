@@ -36,8 +36,15 @@ class MainActivity : ComponentActivity() {
         handleShare(intent)
     }
 
-    /** A deck link shared from Archidekt (or a browser) is imported on the Decks tab. */
+    /**
+     * A deck link shared from Archidekt (or a browser) is imported on the Decks tab; a price alert's
+     * notification opens its card on the wishlist (since 1.37).
+     */
     private fun handleShare(intent: Intent?) {
+        if (intent?.action == com.mtgtrader.data.AlertNotifier.ACTION_OPEN_WISH) {
+            intent.getLongExtra(com.mtgtrader.data.AlertNotifier.EXTRA_WISH_ID, 0L).takeIf { it > 0 }?.let { container.openWish.value = it }
+            return
+        }
         if (intent?.action != Intent.ACTION_SEND) return
         intent.getStringExtra(Intent.EXTRA_TEXT)?.let { container.sharedText.value = it }
     }

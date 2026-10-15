@@ -84,7 +84,7 @@ class Release135Test {
         val merged = SyncMerge.merge(SyncData(wishlist = listOf(mine)), back.data, System.currentTimeMillis())
         assertEquals(oct15, merged.wishlist.single().orderedAt)
         // A file from before 1.35 has no mark: its cards simply aren't ordered.
-        assertEquals(4, SyncFile.FORMAT)
+        assertTrue(SyncFile.FORMAT >= 4)
     }
 
     /** A version 14 database (app 1.33–1.34) exactly as Room made it, from the exported schema. */
@@ -113,7 +113,7 @@ class Release135Test {
         createVersion14(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-135.db")
-            .addMigrations(AppDatabase.MIGRATION_14_15)
+            .addMigrations(AppDatabase.MIGRATION_14_15, AppDatabase.MIGRATION_15_16)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

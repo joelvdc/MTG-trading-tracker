@@ -91,6 +91,8 @@ class AppContainer(context: Context) {
     val cardDetails = com.mtgtrader.data.CardDetails(db, scryfall)
     val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)
     val updater = DataUpdater(context, settings, prices, network, catalog, history, cardDetails, priceSources)
+    val cardTrader = com.mtgtrader.data.CardTrader(context, http, db)
+    val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader) { exchangeRates.rates.value }
     private val browser = HiddenBrowser(context)
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
@@ -138,6 +140,8 @@ class AppContainer(context: Context) {
         scryfall.onCards = { cards -> priceSources.fromScryfall(cards) }
         // Wishlist cards added offline get their details whenever the phone (re)connects.
         appScope.launch { network.reconnects.collect { runCatching { repo.completePendingWishlist() } } }
+        // Wishlist price alerts after each price update (since 1.37).
+        updater.onPrices = { online -> wishWatch.check(online = online) }
         sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
         repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
         repo.beforeOrderImport = { backups.before(com.mtgtrader.data.BackupReason.ORDER_IMPORT) }
@@ -151,6 +155,9 @@ class AppContainer(context: Context) {
 
     /** A filtered view of the collection the stats screen asked for, until the collection screen shows it. Since 1.21. */
     val collectionJump = MutableStateFlow<CollectionJump?>(null)
+
+    /** A wishlist card to open (from a price alert's notification), until the collection screen shows it. Since 1.37. */
+    val openWish = MutableStateFlow<Long?>(null)
 
     /** Text shared to the app (e.g. a deck link from Archidekt), waiting for the screens to handle it. */
     val sharedText = MutableStateFlow<String?>(null)
