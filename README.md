@@ -142,6 +142,21 @@ a temporary "new cards" binder into your main one; identical cards are combined)
 copies, to another binder. Completing a trade asks which binder the received cards go into (or makes a new one); given
 cards are taken from Unsorted first. CSV import/export carries a "Binder Name" column.
 
+**Selecting cards:** press and hold a card (in any view, or ⋮ → **Select cards**), then tap more; **Select all shown**
+picks every card the search and filters show. The bar at the top shows how many cards and their value, with:
+- **Move to binder…** (or a new binder);
+- **Add to a trade:** on the "You give" side of an open trade or a new one, every copy;
+- **Delete:** asks first and makes a restore point (see Backups);
+- under ⋮: **Edit condition, language, price…** (only what you change is changed; stacks that become the same are
+  combined), **Share as a list**, **Copy as a list** and **Export as CSV** (only the selected cards).
+
+Every action can be undone right after.
+
+**Swiping cards** (list and compact views): **swipe right = Move to binder…**, **swipe left = Add to a trade…** by
+default; for a stack of several copies, the window asks how many. Settings → **Swiping cards in the collection** sets
+each direction to: move to binder, add to a trade, into or out of the trade binder, one copy more, one copy less, add
+to the wishlist, or nothing. Every swipe can be undone.
+
 **Import an order:** ⋮ → **Import an order (CardTrader, Cardmarket)** and pick the order's file. The app finds every
 card on Scryfall (tokens, The List and collector's sub-sets included) and shows the order first: untick what you
 don't want, and leave out tokens and basic lands with the two switches (both on by default). Cards it could only find
@@ -255,15 +270,37 @@ own puts that copy in the trade binder instead (the one taken out goes to Unsort
 ## Wishlist
 The **★ Wishlist** in the binder bar holds the cards you want. Add them with "Add card" or the scanner while it's
 selected, or from a deck's "Cards I'm missing". By default any printing will do; it can be limited to one printing and
-finish. Each card shows whether you own it, and "Remove the cards I got since adding them" (⋮ menu) clears what you've
-acquired since (copies you already owned when you added it don't count). Cards on the wishlist get a ★ when they're on
-the "You get" side of a trade. The wishlist isn't part of the collection's value, can be shared as a list and is synced.
+finish. Each card shows whether you own it. Cards on the wishlist get a ★ when they're on the "You get" side of a
+trade. The wishlist isn't part of the collection's value, can be shared as a list and is synced.
+
+**Sections:** the wishlist shows **To buy**, **Ordered** and **Received**, each with its card count; tap a section's
+header to fold it away (Received starts folded). With "Ordered cards in their own section" off (the view menu, top
+right) it's one list with the ordered cards last, and Received below.
+
+**Received:** once a card has arrived, **swipe it to the right** (or tick "Received" in its window). It moves to the
+Received section with the date ("✓ received Oct 20"), as a record: it no longer counts as wanted (no ★ in trades, no
+price alerts, not in the total or the shared list). Swiping a received card to the right puts it back on the wishlist.
+**Swipe left** to delete a card. A swipe counts once it's gone 40% of the way, the colour behind the card shows what
+it will do, and every swipe can be undone. The ⋮ menu has:
+- **Mark all ordered cards as received.**
+- **Mark the cards I now own as received:** the app remembers how many copies you owned when you added a card; cards
+  you now own more of (from an order import, a trade, the scanner…) are shown in a list first, then marked. A card
+  you got only some copies of keeps the rest as wanted. It's greyed out while none of your wishlist cards is in your
+  collection yet.
+- **Clear received cards.** They're kept until you do, or, in Settings → **Received wishlist cards**, after 1, 3, 6 or
+  12 months.
+
+Received cards aren't added to the collection (your order imports do that). Settings → **Add received cards to the
+collection** adds them to Unsorted (near mint, their printing) instead.
+
+**Selecting:** press and hold a card (or ⋮ → **Select cards**), then tap more. The bar at the top shows how many and
+their value, with **Ordered**, **Received**, **Delete** and, under ⋮, **Back on the wishlist**, **Not ordered**,
+**Share as a list** and **Select all shown**. ✕ or Back stops selecting.
 
 **Ordered cards:** tick the "Ordered" box on the right of a wishlist card once you've bought it (or "Ordered, on its
 way" in the card's window); Undo takes back a mis-tap. The card is then faded and shows "📦 ordered" with the date, the
 line above the wishlist counts it as ordered instead of still to buy, and it's left out when you share the wishlist (so
-it isn't bought twice). Once it's in your collection, "Remove the cards I got since
-adding them" takes it off as usual.
+it isn't bought twice). Once it has arrived, swipe it to the right to mark it as received.
 
 **Price alerts:** open a wishlist card and fill in "Notify me at or below" (in the currency you show prices in; empty
 means no alert). When the card costs that much or less you get one notification ("Ragavan: €38.50 · CardTrader (2X2, SP,

@@ -284,6 +284,46 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("ctZeroOnly", on).stamp().apply()
     }
 
+    private val _wishSections = MutableStateFlow(prefs.getBoolean("wishSections", true))
+    /** The wishlist in sections (To buy, Ordered, Received); off: one list with ordered cards last (synced). Since 1.38. */
+    val wishSections: StateFlow<Boolean> = _wishSections
+
+    fun setWishSections(on: Boolean) {
+        _wishSections.value = on
+        prefs.edit().putBoolean("wishSections", on).stamp().apply()
+    }
+
+    private val _receivedClear = MutableStateFlow(ReceivedClear.fromKey(prefs.getString("receivedClear", null)))
+    /** When received wishlist cards are cleared by themselves (synced). Since 1.38. */
+    val receivedClear: StateFlow<ReceivedClear> = _receivedClear
+
+    fun setReceivedClear(v: ReceivedClear) {
+        _receivedClear.value = v
+        prefs.edit().putString("receivedClear", v.key).stamp().apply()
+    }
+
+    private val _receivedToCollection = MutableStateFlow(prefs.getBoolean("receivedToCollection", false))
+    /** A wishlist card marked as received is also added to the collection, in Unsorted (synced; off by default). Since 1.38. */
+    val receivedToCollection: StateFlow<Boolean> = _receivedToCollection
+
+    fun setReceivedToCollection(on: Boolean) {
+        _receivedToCollection.value = on
+        prefs.edit().putBoolean("receivedToCollection", on).stamp().apply()
+    }
+
+    private val _swipeRight = MutableStateFlow(SwipeAction.fromKey(prefs.getString("swipeRight", null), SwipeAction.DEFAULT_RIGHT))
+    /** What swiping a collection card to the right does (synced). Since 1.38. */
+    val swipeRight: StateFlow<SwipeAction> = _swipeRight
+
+    private val _swipeLeft = MutableStateFlow(SwipeAction.fromKey(prefs.getString("swipeLeft", null), SwipeAction.DEFAULT_LEFT))
+    /** What swiping a collection card to the left does (synced). Since 1.38. */
+    val swipeLeft: StateFlow<SwipeAction> = _swipeLeft
+
+    fun setSwipe(right: Boolean, v: SwipeAction) {
+        if (right) _swipeRight.value = v else _swipeLeft.value = v
+        prefs.edit().putString(if (right) "swipeRight" else "swipeLeft", v.key).stamp().apply()
+    }
+
     /** Preferences that follow the user to their other phone through sync (with when they last changed). */
     fun syncedPrefs() = SyncPrefs(
         updatedAt = prefs.getLong(PREFS_UPDATED_AT, 0L),
@@ -306,6 +346,11 @@ class Settings(context: Context) {
             put("ctLanguage", ctLanguage.value)
             put("ctCondition", ctCondition.value.key)
             put("ctZeroOnly", ctZeroOnly.value.toString())
+            put("wishSections", wishSections.value.toString())
+            put("receivedClear", receivedClear.value.key)
+            put("receivedToCollection", receivedToCollection.value.toString())
+            put("swipeRight", swipeRight.value.key)
+            put("swipeLeft", swipeLeft.value.key)
         },
     )
 
@@ -331,6 +376,11 @@ class Settings(context: Context) {
         v["ctLanguage"]?.let { _ctLanguage.value = it; e.putString("ctLanguage", it) }
         v["ctCondition"]?.let { _ctCondition.value = CtCondition.fromKey(it); e.putString("ctCondition", it) }
         v["ctZeroOnly"]?.toBooleanStrictOrNull()?.let { _ctZeroOnly.value = it; e.putBoolean("ctZeroOnly", it) }
+        v["wishSections"]?.toBooleanStrictOrNull()?.let { _wishSections.value = it; e.putBoolean("wishSections", it) }
+        v["receivedClear"]?.let { _receivedClear.value = ReceivedClear.fromKey(it); e.putString("receivedClear", it) }
+        v["receivedToCollection"]?.toBooleanStrictOrNull()?.let { _receivedToCollection.value = it; e.putBoolean("receivedToCollection", it) }
+        v["swipeRight"]?.let { _swipeRight.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_RIGHT); e.putString("swipeRight", it) }
+        v["swipeLeft"]?.let { _swipeLeft.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_LEFT); e.putString("swipeLeft", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

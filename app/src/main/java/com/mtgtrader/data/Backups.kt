@@ -39,10 +39,10 @@ data class BackupFile(
     companion object {
         /**
          * 2 since 1.27 (signed and altered copies), 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist
-         * cards marked as ordered), 5 since 1.37 (price alert levels), like [SyncFile.FORMAT]: older versions
-         * can't restore it without losing them.
+         * cards marked as ordered), 5 since 1.37 (price alert levels), 6 since 1.38 (wishlist cards received),
+         * like [SyncFile.FORMAT]: older versions can't restore it without losing them.
          */
-        const val FORMAT = 5
+        const val FORMAT = 6
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {
@@ -79,6 +79,7 @@ enum class BackupReason(val label: String) {
     ARCHIDEKT_FIRST("Before the first Archidekt sync"),
     CSV_IMPORT("Before a CSV import"),
     ORDER_IMPORT("Before an order import"),
+    BATCH_DELETE("Before deleting selected cards"),
     RESTORE("Before restoring a backup"),
 }
 

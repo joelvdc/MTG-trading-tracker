@@ -363,7 +363,7 @@ interface DeckDao {
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
         WishPrice::class, CtBlueprint::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -389,11 +389,21 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 17 (app 1.38): wishlist cards marked as received (synced; the sync file's format went to 6
+         * with it). Adding the column doesn't touch the rows, so it doesn't count as a change to sync.
+         */
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `wishlist` ADD COLUMN `receivedAt` INTEGER")
+            }
+        }
 
         /**
          * Version 16 (app 1.37): wishlist price alerts. The level is synced (the sync file's format went to
