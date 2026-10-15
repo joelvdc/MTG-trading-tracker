@@ -78,8 +78,9 @@ data class SyncFile(
          * merge with the plain ones (losing the marks), so they refuse the file and ask to be updated.
          * 3 since 1.33: remembered orders, which an older version would write back without.
          * 4 since 1.35: wishlist cards marked as ordered, which an older version would write back unmarked.
+         * 5 since 1.37: price alert levels on wishlist cards, which an older version would write back without.
          */
-        const val FORMAT = 4
+        const val FORMAT = 5
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

@@ -1,6 +1,19 @@
 package com.mtgtrader.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +53,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.BuildConfig
 import com.mtgtrader.container
+import com.mtgtrader.data.CT_LANGUAGES
+import com.mtgtrader.data.CardTrader
+import com.mtgtrader.data.CtCondition
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.ThemeMode
 import com.mtgtrader.data.AppCurrency
@@ -115,6 +131,58 @@ fun SettingsScreen(nav: NavController) {
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             ConditionSection(conditionAdjust, conditionPcts, priceSource, c.settings::setConditionAdjust, c.settings::setConditionPct)
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
+            val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
+            val ctStatus by c.cardTrader.status.collectAsStateWithLifecycle()
+            val ctLanguage by c.settings.ctLanguage.collectAsStateWithLifecycle()
+            val ctCondition by c.settings.ctCondition.collectAsStateWithLifecycle()
+            val ctZeroOnly by c.settings.ctZeroOnly.collectAsStateWithLifecycle()
+            // Asked again whenever the screen comes back (e.g. from the phone's notification settings).
+            var allowed by remember { mutableStateOf(c.wishWatch.notifier.allowed()) }
+            androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+                allowed = c.wishWatch.notifier.allowed()
+                onPauseOrDispose {}
+            }
+            val context = LocalContext.current
+            val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+                allowed = c.wishWatch.notifier.allowed()
+                // Asked before and refused: only the phone's settings can turn them on now.
+                if (!allowed) runCatching {
+                    context.startActivity(
+                        android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                    )
+                }
+            }
+            val recheck = { c.wishWatch.checkSoon(c.appScope) }
+            WishlistAlertsSection(
+                AlertSettings(priceSource, alertType, autoUpdate, allowed, ctOn, ctStatus, ctLanguage, ctCondition, ctZeroOnly),
+                AlertSettingsActions(
+                    onAlertType = { c.settings.setAlertPriceType(it); recheck() },
+                    onAllowNotifications = {
+                        if (android.os.Build.VERSION.SDK_INT >= 33) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        else runCatching {
+                            context.startActivity(
+                                android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                            )
+                        }
+                    },
+                    onCardTrader = { c.settings.setCardTraderOn(it); recheck() },
+                    onToken = { t ->
+                        c.cardTrader.check(t).onSuccess {
+                            c.cardTrader.setToken(t)
+                            recheck()
+                        }
+                    },
+                    onForgetToken = { c.cardTrader.setToken(null) },
+                    onLanguage = { c.settings.setCtLanguage(it); recheck() },
+                    onCondition = { c.settings.setCtCondition(it); recheck() },
+                    onZeroOnly = { c.settings.setCtZeroOnly(it); recheck() },
+                ),
+            )
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             CurrencySection(currency, rates, c.settings::setCurrency)
@@ -267,7 +335,7 @@ fun SettingsScreen(nav: NavController) {
                 "Card data and pictures: Scryfall. Prices: Cardmarket's public daily price guide (EUR). " +
                     "Decklists: Archidekt. Brackets and deck scores: Commander Salt; power level from the source chosen above.\n\n" +
                     "All of it is looked up live, so new sets show up without an app update.\n\n" +
-                    "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall, Cardmarket, Archidekt, Commander Salt, " +
+                    "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall, Cardmarket, CardTrader, Archidekt, Commander Salt, " +
                     "EDH Power Level or ScrollVault.\n\nVersion ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -414,4 +482,198 @@ internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.
     )
     Text("Both download once a day, with Cardmarket's prices.", style = small, color = MaterialTheme.colorScheme.onSurfaceVariant)
     status.cardKingdomError?.let { Text("Last try failed: $it", style = small, color = MaterialTheme.colorScheme.error) }
+}
+
+/**
+ * The Cardmarket prices an alert can compare against, each with what it means for an alert. The
+ * lowest listing is the default. Since 1.37.
+ */
+internal val alertTypeHelp = linkedMapOf(
+    PriceType.LOW to "The cheapest copy for sale right now. Reacts fastest, but counts every condition and language, so a damaged or foreign copy can set it off.",
+    PriceType.TREND to "Cardmarket's smoothed “what it really sells for”. One odd cheap copy won't set it off.",
+    PriceType.AVG7 to "What it actually sold for this past week. Steady and honest.",
+    PriceType.AVG1 to "What it sold for yesterday. Quick to react, but jumpy for cards that sell only a few times a day.",
+)
+
+/**
+ * A dropdown whose options each come with an explanation. The menu shows every option's explanation
+ * while choosing; the closed field only the chosen one's, so the screen stays short. Since 1.37.
+ */
+@Composable
+internal fun <T> ExplainedDropdown(label: String, selected: T, options: Map<T, String>, optionLabel: (T) -> String, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelSmall)
+                Text(optionLabel(selected), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Icon(Icons.Default.ArrowDropDown, null)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.widthIn(max = 340.dp)) {
+            options.forEach { (o, help) ->
+                DropdownMenuItem(
+                    text = { ExplainedOption(optionLabel(o), help, o == selected) },
+                    leadingIcon = { RadioButton(selected = o == selected, onClick = null) },
+                    onClick = { onSelect(o); open = false },
+                )
+            }
+        }
+    }
+    options[selected]?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
+    }
+}
+
+/** One option in an [ExplainedDropdown]'s menu: its name, and what it means underneath. */
+@Composable
+internal fun ExplainedOption(label: String, help: String, selected: Boolean) {
+    Column(Modifier.padding(vertical = 4.dp)) {
+        Text(label, fontWeight = if (selected) FontWeight.Bold else null)
+        Text(help, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** Everything Settings → Wishlist price alerts shows, so it can be drawn without the app (screenshots). Since 1.37. */
+data class AlertSettings(
+    val source: PriceSource = PriceSource.CARDMARKET,
+    val alertType: PriceType = PriceType.LOW,
+    val autoUpdate: Boolean = true,
+    val notificationsAllowed: Boolean = true,
+    val cardTraderOn: Boolean = false,
+    val ctStatus: CardTrader.Status = CardTrader.Status(),
+    val ctLanguage: String = "en",
+    val ctCondition: CtCondition = CtCondition.DEFAULT,
+    val ctZeroOnly: Boolean = true,
+)
+
+/** What the section's controls do. */
+class AlertSettingsActions(
+    val onAlertType: (PriceType) -> Unit = {},
+    val onAllowNotifications: () -> Unit = {},
+    val onCardTrader: (Boolean) -> Unit = {},
+    /** Saves a token after CardTrader accepted it; the result says why not otherwise. */
+    val onToken: suspend (String) -> Result<Unit> = { Result.success(Unit) },
+    val onForgetToken: () -> Unit = {},
+    val onLanguage: (String) -> Unit = {},
+    val onCondition: (CtCondition) -> Unit = {},
+    val onZeroOnly: (Boolean) -> Unit = {},
+)
+
+/** Settings → Wishlist price alerts: what alerts compare against, notifications, and CardTrader. Since 1.37. */
+@Composable
+internal fun WishlistAlertsSection(s: AlertSettings, act: AlertSettingsActions) {
+    val small = MaterialTheme.typography.bodySmall
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Text("Wishlist price alerts", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Open a card on the wishlist and set a price: you get a notification when it costs that much or less " +
+            "(for “any printing” cards, the cheapest printing). Prices are checked when they update, a few times a day.",
+        style = small, color = muted,
+    )
+    if (!s.autoUpdate) {
+        Text(
+            "“Update automatically” is off (below), so prices, and alerts, only update when you tap “Update prices now”.",
+            style = small, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+    if (!s.notificationsAllowed) {
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Notifications are off for MTG Trader.", Modifier.weight(1f), style = small, color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = act.onAllowNotifications) { Text("Allow") }
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+    if (s.source == PriceSource.CARDMARKET) {
+        ExplainedDropdown("Cardmarket price for alerts", s.alertType, alertTypeHelp, { it.label }, act.onAlertType)
+    } else {
+        Text(
+            "Alerts use ${s.source.label}'s price, the price source chosen at the top.",
+            style = small, color = muted,
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    SwitchRow(
+        title = "Also check CardTrader",
+        body = "Each wishlist card also shows CardTrader's cheapest offer, with a link to the card there, and alerts count it too.",
+        checked = s.cardTraderOn,
+        onChange = act.onCardTrader,
+    )
+    if (!s.cardTraderOn) return
+    CardTraderTokenRow(s.ctStatus, act)
+    SwitchRow(
+        title = "Only CardTrader Zero offers",
+        body = "Cards CardTrader ships together from its hub, in one parcel. Off: every seller's offer counts, each shipping on its own. " +
+            "The cheapest offer from any seller shows next to it. CardTrader only shows a printing's 25 cheapest offers: " +
+            "when none of them is CT Zero, the card says what a CT Zero copy costs at least (“CT Zero over €…”).",
+        checked = s.ctZeroOnly,
+        onChange = act.onZeroOnly,
+    )
+    Spacer(Modifier.height(4.dp))
+    DropdownSelector("Language on CardTrader", s.ctLanguage, CT_LANGUAGES.map { it.first }, { code -> CT_LANGUAGES.firstOrNull { it.first == code }?.second ?: code }, act.onLanguage, Modifier.fillMaxWidth())
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("Condition on CardTrader", s.ctCondition, CtCondition.entries.toList(), { it.label }, act.onCondition, Modifier.fillMaxWidth())
+    Text(
+        "Signed, altered and graded copies, bundles and sellers on holiday are left out. Prices don't include shipping.",
+        style = small, color = muted, modifier = Modifier.padding(top = 4.dp),
+    )
+}
+
+/** The CardTrader API token: typed in and checked with CardTrader, or saved (and how the last lookups went). */
+@Composable
+private fun CardTraderTokenRow(status: CardTrader.Status, act: AlertSettingsActions) {
+    val small = MaterialTheme.typography.bodySmall
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val scope = rememberCoroutineScope()
+    var editing by remember { mutableStateOf(!status.hasToken) }
+    var text by remember { mutableStateOf("") }
+    var checking by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    if (status.hasToken && !editing) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("API token saved on this phone", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    when {
+                        status.error != null -> "Last lookup failed: ${status.error}"
+                        status.okAt > 0 -> "Last lookup ${Fmt.dateTime(status.okAt)}"
+                        else -> "Prices are looked up with the next check."
+                    },
+                    style = small, color = if (status.error != null) MaterialTheme.colorScheme.error else muted,
+                )
+            }
+            TextButton(onClick = { text = ""; error = null; editing = true }) { Text("Change") }
+            TextButton(onClick = act.onForgetToken) { Text("Remove") }
+        }
+        return
+    }
+    Text(
+        "CardTrader needs your personal API token: on cardtrader.com, open your profile's settings and copy the token from its API section. " +
+            "It's kept encrypted on this phone only (not synced): enter it on each phone.",
+        style = small, color = muted,
+    )
+    OutlinedTextField(
+        value = text,
+        onValueChange = { text = it.trim(); error = null },
+        label = { Text("CardTrader API token") },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        isError = error != null,
+        supportingText = error?.let { { Text(it) } },
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Button(
+            onClick = {
+                checking = true
+                scope.launch {
+                    val r = act.onToken(text)
+                    checking = false
+                    r.onSuccess { editing = false; text = "" }.onFailure { error = it.message ?: "CardTrader didn't answer" }
+                }
+            },
+            enabled = text.length > 10 && !checking,
+        ) { Text(if (checking) "Checking…" else "Save and check") }
+        if (status.hasToken) TextButton(onClick = { editing = false }) { Text("Cancel") }
+    }
 }

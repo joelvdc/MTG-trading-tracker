@@ -239,6 +239,51 @@ class Settings(context: Context) {
         prefs.edit().putInt("tolerancePct", pct).stamp().apply()
     }
 
+    private val _alertPriceType = MutableStateFlow(prefs.getString("alertPriceType", null)?.let(PriceType::fromKey) ?: PriceType.LOW)
+    /** Cardmarket's price that wishlist alerts compare against (synced); the lowest listing unless changed. Since 1.37. */
+    val alertPriceType: StateFlow<PriceType> = _alertPriceType
+
+    fun setAlertPriceType(t: PriceType) {
+        _alertPriceType.value = t
+        prefs.edit().putString("alertPriceType", t.key).stamp().apply()
+    }
+
+    private val _cardTraderOn = MutableStateFlow(prefs.getBoolean("cardTraderOn", false))
+    /** Wishlist cards also show (and alert on) CardTrader's cheapest offer (synced; the token isn't). Since 1.37. */
+    val cardTraderOn: StateFlow<Boolean> = _cardTraderOn
+
+    fun setCardTraderOn(on: Boolean) {
+        _cardTraderOn.value = on
+        prefs.edit().putBoolean("cardTraderOn", on).stamp().apply()
+    }
+
+    private val _ctLanguage = MutableStateFlow(prefs.getString("ctLanguage", null) ?: "en")
+    /** The language CardTrader offers must be in ([CT_LANGUAGES]; "" any), synced. Since 1.37. */
+    val ctLanguage: StateFlow<String> = _ctLanguage
+
+    fun setCtLanguage(v: String) {
+        _ctLanguage.value = v
+        prefs.edit().putString("ctLanguage", v).stamp().apply()
+    }
+
+    private val _ctCondition = MutableStateFlow(CtCondition.fromKey(prefs.getString("ctCondition", null)))
+    /** The worst condition a CardTrader offer may be in (synced). Since 1.37. */
+    val ctCondition: StateFlow<CtCondition> = _ctCondition
+
+    fun setCtCondition(v: CtCondition) {
+        _ctCondition.value = v
+        prefs.edit().putString("ctCondition", v.key).stamp().apply()
+    }
+
+    private val _ctZeroOnly = MutableStateFlow(prefs.getBoolean("ctZeroOnly", true))
+    /** Only CardTrader Zero offers count (synced; on unless switched off). Since 1.37. */
+    val ctZeroOnly: StateFlow<Boolean> = _ctZeroOnly
+
+    fun setCtZeroOnly(on: Boolean) {
+        _ctZeroOnly.value = on
+        prefs.edit().putBoolean("ctZeroOnly", on).stamp().apply()
+    }
+
     /** Preferences that follow the user to their other phone through sync (with when they last changed). */
     fun syncedPrefs() = SyncPrefs(
         updatedAt = prefs.getLong(PREFS_UPDATED_AT, 0L),
@@ -256,6 +301,11 @@ class Settings(context: Context) {
             put("deckPicks", encodePicks(_deckPicks.value))
             put("conditionAdjust", conditionAdjust.value.toString())
             put("conditionPcts", encodePcts(conditionPcts.value))
+            put("alertPriceType", alertPriceType.value.key)
+            put("cardTraderOn", cardTraderOn.value.toString())
+            put("ctLanguage", ctLanguage.value)
+            put("ctCondition", ctCondition.value.key)
+            put("ctZeroOnly", ctZeroOnly.value.toString())
         },
     )
 
@@ -276,6 +326,11 @@ class Settings(context: Context) {
         v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
         v["conditionAdjust"]?.toBooleanStrictOrNull()?.let { _conditionAdjust.value = it; e.putBoolean("conditionAdjust", it) }
         v["conditionPcts"]?.let { _conditionPcts.value = decodePcts(it); e.putString("conditionPcts", it) }
+        v["alertPriceType"]?.let { _alertPriceType.value = PriceType.fromKey(it); e.putString("alertPriceType", it) }
+        v["cardTraderOn"]?.toBooleanStrictOrNull()?.let { _cardTraderOn.value = it; e.putBoolean("cardTraderOn", it) }
+        v["ctLanguage"]?.let { _ctLanguage.value = it; e.putString("ctLanguage", it) }
+        v["ctCondition"]?.let { _ctCondition.value = CtCondition.fromKey(it); e.putString("ctCondition", it) }
+        v["ctZeroOnly"]?.toBooleanStrictOrNull()?.let { _ctZeroOnly.value = it; e.putBoolean("ctZeroOnly", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

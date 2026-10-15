@@ -32,6 +32,11 @@ data class WishlistItem(
     @ColumnInfo(defaultValue = "0") val ownedAtAdd: Int = 0,
     /** When you ticked "Ordered, on its way"; null while it isn't ordered yet. Since 1.35. */
     val orderedAt: Long? = null,
+    /**
+     * Notify when the card costs this much or less, in euros (typed in the display currency); null
+     * for no notifications. Synced. Since 1.37; see [WishlistWatch].
+     */
+    val alertBelow: Double? = null,
     /** Sync identity and last change; filled in by database triggers (see [SyncSchema]). */
     val uid: String? = null,
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,

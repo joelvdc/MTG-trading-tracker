@@ -41,17 +41,25 @@ class DataUpdater(
             // TCGplayer and Card Kingdom (since 1.29).
             runCatching { priceSources.refreshIfStale() }
         }
-        afterUpdate()
+        afterUpdate(online = allowedNow())
     }
 
-    /** After prices changed (or on opening the app): missing links, today's value. */
-    suspend fun afterUpdate() {
+    /**
+     * After prices changed (or on opening the app): missing links, today's value, wishlist price alerts.
+     * [online] off (automatic updates off, or waiting for Wi-Fi) keeps the alerts to the prices on the phone.
+     */
+    suspend fun afterUpdate(online: Boolean = true) {
         runCatching { catalog.repair() }
         runCatching { priceSources.loadOwned() }
         runCatching { history.record() }
         // Colours, types and popularity for sorting, filters and the trade binder (once per card).
         runCatching { cardDetails.fillMissing() }
+        // Since 1.37.
+        runCatching { onPrices(online) }
     }
+
+    /** The wishlist's price alerts; see [WishlistWatch]. Set by the app container. */
+    var onPrices: suspend (online: Boolean) -> Unit = {}
 
     /** Sets up (or cancels) the background update to match the settings. */
     fun schedule() {

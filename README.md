@@ -265,6 +265,28 @@ line above the wishlist counts it as ordered instead of still to buy, and it's l
 it isn't bought twice). Once it's in your collection, "Remove the cards I got since
 adding them" takes it off as usual.
 
+**Price alerts:** open a wishlist card and fill in "Notify me at or below" (in the currency you show prices in; empty
+means no alert). When the card costs that much or less you get one notification ("Ragavan: €38.50 · CardTrader (2X2, SP,
+EN) · your level: €40.00"); tapping it opens the card. You're told once per drop: a new notification only comes after the
+price has been above your level again, or when you change the level. Ordered cards stay quiet. Prices are checked after
+each price update (when the app opens, and every few hours in the background, so "Update automatically" must be on);
+Android 13 and later ask once whether MTG Trader may send notifications. "Any printing" cards are compared at their
+cheapest printing (looked up on Scryfall once a day). The list shows each card's alert prices under it: "🔔 €40.00 ✓"
+(✓ once reached), "Low from €41.50 (MH2)", "CT Zero from €38.50". The level is synced; each phone notifies by itself.
+Settings → **Wishlist price alerts**:
+- **What's compared:** the price source chosen at the top. With Cardmarket, you choose its price for alerts: lowest
+  listing (the default), trend price, 7-day or 1-day average; the menu explains each.
+- **Also check CardTrader:** each wishlist card also shows CardTrader's cheapest offer, with "Open on CardTrader" in the
+  card's window (the page of the printing with that offer), and alerts count it too. It needs your personal CardTrader
+  API token (cardtrader.com → your profile's settings → API), kept encrypted on the phone and not synced: enter it on
+  each phone; "Save and check" asks CardTrader whether it works. You choose the language and the worst condition that
+  count. Signed, altered and graded copies, bundles and sellers on holiday are left out; prices don't include shipping.
+  Up to 25 printings per card are asked, the cheapest first; a card's CardTrader price is looked up again every 5 hours.
+- **Only CardTrader Zero offers** (on by default): only offers you can buy through CardTrader Zero count; the cheapest
+  from any seller shows next to it in the card's window. CardTrader's API shows a printing's 25 cheapest offers (in the
+  chosen language and finish); when none of them is CT Zero, the card shows "CT Zero over €…", the price of the dearest
+  of those 25, since a CT Zero copy costs at least that.
+
 **Offline:** without internet, "Add card" on the wishlist suggests names from Cardmarket's card list saved on the phone
 (the one the app downloads for prices; no extra download). The card goes on the wishlist by name, as "any printing",
 marked "Details follow when you're online"; its picture, set and prices are filled in by themselves once the phone is

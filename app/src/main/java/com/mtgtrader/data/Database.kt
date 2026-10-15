@@ -361,8 +361,9 @@ interface DeckDao {
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
+        WishPrice::class, CtBlueprint::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -382,15 +383,29 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun sourcePriceDao(): SourcePriceDao
     abstract fun orderDao(): OrderDao
     abstract fun offlineImagesDao(): OfflineImagesDao
+    abstract fun wishPriceDao(): WishPriceDao
+    abstract fun ctBlueprintDao(): CtBlueprintDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 16 (app 1.37): wishlist price alerts. The level is synced (the sync file's format went to
+         * 5 with it); the prices found for it and CardTrader's blueprints stay on the phone. Adding the
+         * column doesn't touch the rows, so it doesn't count as a change to sync.
+         */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `wishlist` ADD COLUMN `alertBelow` REAL")
+                V16_TABLES_SQL.forEach(db::execSQL)
+            }
+        }
 
         /**
          * Version 15 (app 1.35): wishlist cards marked as ordered (synced; the sync file's format went to 4
@@ -546,6 +561,16 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+
+/** New tables of version 16, exactly as Room creates them (from the exported schema, schemas/…/16.json). */
+private val V16_TABLES_SQL = listOf(
+    "CREATE TABLE IF NOT EXISTS `wish_prices` (`wishId` INTEGER NOT NULL, `basis` TEXT NOT NULL, `price` REAL, `scryfallId` TEXT, " +
+        "`setCode` TEXT, `printings` TEXT, `printingsOf` TEXT, `printingsAt` INTEGER NOT NULL, `ctPrice` REAL, `ctBlueprintId` INTEGER, " +
+        "`ctSetCode` TEXT, `ctCondition` TEXT, `ctLanguage` TEXT, `ctAnyPrice` REAL, `ctZeroOver` REAL, `ctFilter` TEXT, `ctAt` INTEGER NOT NULL, `alertedLevel` REAL, " +
+        "`checkedAt` INTEGER NOT NULL, PRIMARY KEY(`wishId`))",
+    "CREATE TABLE IF NOT EXISTS `ct_blueprints` (`scryfallId` TEXT NOT NULL, `blueprintId` INTEGER NOT NULL, `expansionId` INTEGER NOT NULL, " +
+        "PRIMARY KEY(`scryfallId`))",
+)
 
 /** New tables of version 11, exactly as Room creates them (from the exported schema, schemas/…/11.json). */
 private val V11_TABLES_SQL = listOf(

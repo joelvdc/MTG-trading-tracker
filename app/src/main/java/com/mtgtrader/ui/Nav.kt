@@ -116,6 +116,9 @@ fun AppNav() {
             else -> Toast.makeText(context, "Wait for the current import to finish", Toast.LENGTH_LONG).show()
         }
     }
+    // A price alert's notification: the Collection tab, where the wishlist opens the card (since 1.37).
+    val openWish by c.openWish.collectAsStateWithLifecycle()
+    LaunchedEffect(openWish) { if (openWish != null) nav.openTab("collection") }
     OlderPhoneDialog()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route

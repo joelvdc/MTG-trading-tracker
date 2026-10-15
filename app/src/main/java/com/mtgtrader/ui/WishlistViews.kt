@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -28,9 +29,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mtgtrader.data.CardTrader
+import com.mtgtrader.data.CardTraderParse
 import com.mtgtrader.data.CollectionItem
+import com.mtgtrader.data.CtCondition
+import com.mtgtrader.data.CtFilter
+import com.mtgtrader.data.Money
+import com.mtgtrader.data.PriceAlerts
+import com.mtgtrader.data.WishPrice
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.PriceSet
@@ -69,6 +78,56 @@ fun wishTotalLine(rows: List<CollectionRow>, isOrdered: (Long) -> Boolean, price
     else "$cards card(s) wanted · ${ordered.sumOf { it.item.quantity }} ordered · ${Fmt.money(toBuy)} still to buy (${priceType.short})"
 }
 
+/**
+ * The wishlist row's price line (since 1.37): the alert level (✓ once reached), the cheapest printing's
+ * price for the alert ("Low from €3.20 (M21)", for "any printing" cards or ones with a level) and
+ * CardTrader's cheapest offer while CardTrader is switched on. Null when there's nothing to say.
+ */
+fun wishPriceLine(item: WishlistItem, wp: WishPrice?, basis: String, ctFilter: CtFilter?): String? {
+    val ctKey = ctFilter?.key(item.foil)
+    val best = PriceAlerts.best(wp, basis, ctKey)?.first
+    val level = item.alertBelow?.let { "🔔 ${Fmt.money(it)}" + if (best != null && best <= it + 0.000_1) " ✓" else "" }
+    // Ordered cards aren't checked any more: only their level shows.
+    if (item.orderedAt != null) return level
+    val from = if (item.anyPrinting) "from " else ""
+    val source = wp?.price?.takeIf { wp.basis == basis && (item.anyPrinting || item.alertBelow != null) }?.let { p ->
+        "${PriceAlerts.basisLabel(basis)} $from${Fmt.money(p)}" + (wp.setCode?.takeIf { item.anyPrinting }?.let { " (${it.uppercase()})" } ?: "")
+    }
+    val ct = wp?.takeIf { ctKey != null && it.ctFilter == ctKey }?.let { r ->
+        val name = if (ctFilter!!.zeroOnly) "CT Zero" else "CardTrader"
+        when {
+            r.ctPrice != null -> "$name $from${Fmt.money(r.ctPrice)}"
+            r.ctZeroOver != null -> "$name over ${Fmt.money(r.ctZeroOver)}"
+            else -> null
+        }
+    }
+    return listOfNotNull(level, source, ct).joinToString(" · ").ifEmpty { null }
+}
+
+/** "2X2 · SP · EN": what CardTrader's offer is. */
+fun ctOfferLine(wp: WishPrice): String = listOfNotNull(
+    wp.ctSetCode?.uppercase(),
+    CtCondition.short(wp.ctCondition).ifEmpty { null },
+    wp.ctLanguage?.uppercase(),
+).joinToString(" · ")
+
+/**
+ * The card window's CardTrader lines: the offer that counts, and with "only CardTrader Zero" the
+ * cheapest from any seller, or what a CT Zero copy costs at least when none was among the offers
+ * CardTrader shows. Since 1.37.
+ */
+fun ctDetailLines(wp: WishPrice, zeroOnly: Boolean, anyPrinting: Boolean): List<String> {
+    val from = if (anyPrinting) "from " else ""
+    val name = if (zeroOnly) "CardTrader Zero" else "CardTrader"
+    val main = when {
+        wp.ctPrice != null -> "$name: $from${Fmt.money(wp.ctPrice)} (${ctOfferLine(wp)})"
+        wp.ctZeroOver != null -> "$name: over ${Fmt.money(wp.ctZeroOver)} (none among the ${CardTraderParse.PAGE} cheapest offers CardTrader shows)"
+        else -> "$name: no offer that matches your settings"
+    }
+    val any = wp.ctAnyPrice?.takeIf { zeroOnly && (wp.ctPrice == null || it < wp.ctPrice - 0.004) }?.let { "Any seller: $from${Fmt.money(it)} (shipped by the seller)" }
+    return listOfNotNull(main, any)
+}
+
 /** The wishlist as a plain list ("1 Card name" per line) to share; ordered cards are left out, so they aren't bought twice. */
 fun wishShareText(rows: List<WishlistRow>): String =
     rows.filter { it.item.orderedAt == null }.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
@@ -79,13 +138,16 @@ fun WishlistDialog(
     row: WishlistRow,
     owned: WishlistOwned?,
     priceType: PriceType,
+    alerts: WishAlertInfo,
     onDismiss: () -> Unit,
     onSave: (WishlistItem) -> Unit,
     onDelete: () -> Unit,
 ) {
     val card = row.item.card
     var item by remember { mutableStateOf(row.item) }
+    var levelText by remember { mutableStateOf(Money.input(row.item.alertBelow)) }
     val uriHandler = LocalUriHandler.current
+    val wp = alerts.price
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
@@ -108,6 +170,15 @@ fun WishlistDialog(
                             Text("Open on Cardmarket")
                             Spacer(Modifier.width(4.dp))
                             Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
+                        }
+                        // Since 1.37: the printing of CardTrader's cheapest offer (or the card's own printing).
+                        val blueprint = wp?.ctBlueprintId?.takeIf { alerts.ctFilter != null }
+                        if (blueprint != null) {
+                            TextButton(onClick = { runCatching { uriHandler.openUri(CardTrader.pageUrl(blueprint)) } }) {
+                                Text("Open on CardTrader")
+                                Spacer(Modifier.width(4.dp))
+                                Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
+                            }
                         }
                     }
                 }
@@ -149,6 +220,12 @@ fun WishlistDialog(
                         { item = item.copy(foil = it) }, Modifier.fillMaxWidth(),
                     )
                 }
+                HorizontalDivider()
+                PriceAlertFields(item, levelText, alerts) { text ->
+                    levelText = text
+                    item = item.copy(alertBelow = Fmt.parseMoneyEur(text)?.takeIf { it > 0 })
+                }
+                HorizontalDivider()
                 OutlinedTextField(
                     value = item.notes ?: "",
                     onValueChange = { item = item.copy(notes = it.ifBlank { null }) },
@@ -174,4 +251,54 @@ fun WishlistDialog(
             }
         },
     )
+}
+
+/** What the wishlist card window shows about alerts: the card's latest prices and what they're compared with. Since 1.37. */
+data class WishAlertInfo(
+    val price: WishPrice? = null,
+    /** [PriceAlerts.basis] of the current settings. */
+    val basis: String = "cardmarket:low",
+    /** CardTrader's filter while it's switched on (with a token), else null. */
+    val ctFilter: CtFilter? = null,
+    /** CardTrader is switched on, but there's no token yet. */
+    val ctNeedsToken: Boolean = false,
+)
+
+/** The card window's "Price alert" part: the level, and the prices it's compared with. Since 1.37. */
+@Composable
+internal fun PriceAlertFields(item: WishlistItem, levelText: String, alerts: WishAlertInfo, onLevel: (String) -> Unit) {
+    val small = MaterialTheme.typography.bodySmall
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val wp = alerts.price
+    val ctKey = alerts.ctFilter?.key(item.foil)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Price alert", style = MaterialTheme.typography.titleSmall)
+        OutlinedTextField(
+            value = levelText,
+            onValueChange = onLevel,
+            label = { Text("Notify me at or below, ${Money.symbol}") },
+            placeholder = { Text("No alert") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            "Compared with ${PriceAlerts.basisLong(alerts.basis)}" + (if (alerts.ctFilter != null) " and CardTrader" else "") +
+                (if (item.anyPrinting) " (the cheapest printing)" else "") + ". Leave it empty for no alert.",
+            style = small, color = muted,
+        )
+        if (item.orderedAt != null && item.alertBelow != null) Text("Ordered cards don't send alerts.", style = small, color = muted)
+        val from = if (item.anyPrinting) "from " else ""
+        wp?.price?.takeIf { wp.basis == alerts.basis }?.let { p ->
+            Text(
+                "Now: ${PriceAlerts.basisLabel(alerts.basis)} $from${Fmt.money(p)}" + (wp.setCode?.takeIf { item.anyPrinting }?.let { " (${it.uppercase()})" } ?: ""),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        if (alerts.ctFilter != null && wp != null && wp.ctFilter == ctKey) {
+            ctDetailLines(wp, alerts.ctFilter.zeroOnly, item.anyPrinting).forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        }
+        if (alerts.ctNeedsToken) Text("CardTrader is switched on, but needs your API token (Settings → Wishlist price alerts).", style = small, color = muted)
+        wp?.checkedAt?.takeIf { it > 0 }?.let { Text("Checked ${Fmt.dateTime(it)}", style = small, color = muted) }
+    }
 }

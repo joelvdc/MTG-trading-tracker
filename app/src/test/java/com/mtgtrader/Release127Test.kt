@@ -131,8 +131,8 @@ class Release127Test {
         } catch (e: SyncException) {
             assertTrue("newer version" in e.message!!)
         }
-        // 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist cards marked as ordered).
-        assertEquals(4, BackupFile.FORMAT)
+        // 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist cards marked as ordered), 5 since 1.37 (price alerts).
+        assertEquals(5, BackupFile.FORMAT)
     }
 
     @Test
