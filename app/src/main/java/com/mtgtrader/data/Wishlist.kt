@@ -35,6 +35,40 @@ data class WishlistItem(
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 )
 
+/**
+ * A wishlist card added while offline, known only by its name (from Cardmarket's product list on
+ * the phone). Its printing, picture and prices are filled in from Scryfall once the phone is back
+ * online. The placeholder id has Scryfall's id format, so older versions on another phone only
+ * see a card without details. Since 1.34.
+ */
+object PendingCard {
+    const val ID_PREFIX = "00000000-0000-0000-0000-"
+
+    fun isPending(scryfallId: String) = scryfallId.startsWith(ID_PREFIX)
+
+    fun ref(name: String) = CardRef(
+        scryfallId = ID_PREFIX + "%012x".format(name.lowercase().hashCode().toLong() and 0xffffffffL),
+        name = name,
+        setCode = "",
+        setName = "",
+        collectorNumber = "",
+        rarity = "",
+        imageUrl = null,
+        cardmarketId = null,
+        fallbackEur = null,
+        fallbackEurFoil = null,
+        hasNonFoil = true,
+        hasFoil = false,
+    )
+
+    /** Cardmarket names double-faced cards "Front / Back"; Scryfall (and the rest of the app) "Front // Back". */
+    fun cardName(cardmarketName: String) = cardmarketName.replace(Regex("(?<!/) / (?!/)"), " // ")
+
+    /** Names on Cardmarket's list matching what was typed: names starting with it first. Art cards are left out. */
+    fun suggestions(typed: String, starting: List<String>, containing: List<String>, max: Int = 20): List<String> =
+        (starting + containing).filterNot { it.startsWith("Art Series: ") }.map(::cardName).distinctBy { it.lowercase() }.take(max)
+}
+
 /** Wishlist entry joined with today's price guide entry. */
 data class WishlistRow(
     @Embedded val item: WishlistItem,
@@ -68,6 +102,9 @@ interface WishlistDao {
 
     @Query("SELECT * FROM wishlist WHERE id = :id")
     suspend fun byId(id: Long): WishlistItem?
+
+    @Query("SELECT * FROM wishlist WHERE scryfallId LIKE '00000000-0000-0000-0000-%'")
+    suspend fun pending(): List<WishlistItem>
 
     @Query("SELECT * FROM wishlist WHERE name = :name COLLATE NOCASE")
     suspend fun byName(name: String): List<WishlistItem>

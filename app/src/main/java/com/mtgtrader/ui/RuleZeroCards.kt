@@ -372,7 +372,7 @@ private fun CardFrame(deck: Deck, kind: String, modifier: Modifier, content: @Co
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
         Column {
             Box(Modifier.fillMaxWidth().height(116.dp)) {
-                deckArtUrl(deck)?.let { url ->
+                deck.coverUrl?.let { url ->
                     AsyncImage(
                         // Software bitmaps, so the card can be saved as an image for sharing.
                         model = ImageRequest.Builder(LocalContext.current).data(url).allowHardware(false).build(),
@@ -496,10 +496,6 @@ private fun Footer(credit: String, deck: Deck) {
         Text(by, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
-
-/** The deck's featured art from Archidekt, or its commander's art. */
-fun deckArtUrl(deck: Deck): String? =
-    deck.artUrl ?: deck.commanderScryfallId?.let { id -> "https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/$id.jpg" }
 
 // ---- Commander Salt's own images --------------------------------------------------------------
 

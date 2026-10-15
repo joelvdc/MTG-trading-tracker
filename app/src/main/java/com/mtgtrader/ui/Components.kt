@@ -381,6 +381,8 @@ fun rarityColor(rarity: String): Color = when (rarity) {
 /** The expansion symbol of [setCode]; takes no space until the symbol list has loaded. */
 @Composable
 fun SetSymbol(setCode: String, rarity: String, size: Dp = 16.dp) {
+    // Wishlist cards added offline have no set yet.
+    if (setCode.isBlank()) return
     val icons = LocalContext.current.container.setIcons
     val map by icons.icons.collectAsStateWithLifecycle()
     val url = map[setCode.lowercase()]

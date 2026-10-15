@@ -182,7 +182,10 @@ data class CardRef(
     val displayName get() = flavorName?.let { "$it ($name)" } ?: name
 
     fun fallback(foil: Boolean) = if (foil) fallbackEurFoil else fallbackEur
-    val setLabel get() = "${setCode.uppercase()} #$collectorNumber"
+    val setLabel get() = if (isPending) "Details follow when you're online" else "${setCode.uppercase()} #$collectorNumber"
+
+    /** Added to the wishlist while offline, by name only; see [PendingCard]. Since 1.34. */
+    val isPending get() = PendingCard.isPending(scryfallId)
 
     /** This printing's Cardmarket page (the same links Scryfall uses), or a name search if the id is unknown. */
     val cardmarketUrl: String

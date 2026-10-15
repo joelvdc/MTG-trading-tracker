@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,6 +69,7 @@ import com.mtgtrader.data.PriceEntity
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.ScryCard
 import com.mtgtrader.data.Side
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -99,6 +101,10 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
     var priceMap by remember { mutableStateOf(emptyMap<Int, PriceEntity>()) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Offline, the wishlist can still take cards by name (from Cardmarket's list on the phone). Since 1.34.
+    val wishlist = target == CardTarget.Wishlist
+    var offlineSuggestions by remember { mutableStateOf(false) }
+    var offlineName by remember { mutableStateOf<String?>(null) }
     val focus = remember { FocusRequester() }
 
     LaunchedEffect(Unit) { if (initialQuery == null) focus.requestFocus() }
@@ -117,9 +123,17 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
             val flavors = runCatching { c.scryfall.flavorNames(q) }.getOrDefault(emptyList())
             val (flavorsFirst, flavorsLater) = flavors.partition { it.label.startsWith(q, ignoreCase = true) }
             suggestions = (flavorsFirst + names + flavorsLater).distinctBy { it.label.lowercase() }
+            offlineSuggestions = false
             error = null
         } catch (e: Exception) {
-            error = "Can't reach Scryfall — check your connection."
+            if (e is CancellationException) throw e
+            if (wishlist) {
+                suggestions = c.catalog.offlineNames(q).map { NameSuggestion(it) }
+                offlineSuggestions = true
+                error = if (suggestions.isEmpty()) "No internet, and no card name on the phone matches." else null
+            } else {
+                error = "Can't reach Scryfall — check your connection."
+            }
         }
     }
 
@@ -131,13 +145,20 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
         }
         loading = true
         prints = null
+        offlineName = null
         try {
             val p = c.scryfall.prints(name)
             priceMap = c.prices.pricesFor(p.mapNotNull { it.cardmarketId })
             prints = p
             error = null
         } catch (e: Exception) {
-            error = "Can't reach Scryfall — check your connection."
+            if (e is CancellationException) throw e
+            if (wishlist) {
+                offlineName = name
+                error = null
+            } else {
+                error = "Can't reach Scryfall — check your connection."
+            }
         } finally {
             loading = false
         }
@@ -182,7 +203,16 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
             error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
             }
+            if (offlineSuggestions && selectedName == null && suggestions.isNotEmpty()) {
+                Text(
+                    "No internet: names from the card list saved on this phone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
             val p = prints
+            val pendingName = offlineName
             when {
                 selectedName == null -> LazyColumn {
                     items(suggestions) { s ->
@@ -195,6 +225,13 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                     }
                 }
                 loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                pendingName != null -> OfflineWishlistAdd(pendingName) {
+                    scope.launch {
+                        c.repo.addPendingToWishlist(pendingName)
+                        snackbar.currentSnackbarData?.dismiss()
+                        snackbar.showSnackbar("Added $pendingName to the wishlist")
+                    }
+                }
                 p != null && p.isEmpty() -> EmptyState("No paper printings found", "Try a different spelling.")
                 p != null -> LazyColumn(
                     contentPadding = PaddingValues(12.dp),
@@ -239,6 +276,24 @@ fun SearchScreen(nav: NavController, target: CardTarget, initialQuery: String?) 
                     }
                 }
             }
+        }
+    }
+}
+
+/** Offline, a wishlist card can only be added by name; its printing and picture follow once online. */
+@Composable
+private fun OfflineWishlistAdd(name: String, onAdd: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(name, style = MaterialTheme.typography.titleMedium)
+        Text(
+            "No internet, so the printings can't be shown. You can add the card to the wishlist now (any printing will do): " +
+                "its picture, set and prices are filled in when the phone is back online.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Button(onClick = onAdd) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(6.dp))
+            Text("Add to the wishlist")
         }
     }
 }

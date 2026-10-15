@@ -174,6 +174,15 @@ class Settings(context: Context) {
     private val _wifiOnly = MutableStateFlow(prefs.getBoolean("wifiOnly", false))
     val wifiOnly: StateFlow<Boolean> = _wifiOnly
 
+    /** Save the pictures of decks (cards and covers) and the wishlist ahead, on Wi-Fi, so they show offline. Since 1.34. */
+    private val _offlineImages = MutableStateFlow(prefs.getBoolean("offlineImages", true))
+    val offlineImages: StateFlow<Boolean> = _offlineImages
+
+    fun setOfflineImages(on: Boolean) {
+        _offlineImages.value = on
+        prefs.edit().putBoolean("offlineImages", on).apply()
+    }
+
     /** How the Collection tab shows cards. */
     private val _collectionView = MutableStateFlow(CollectionView.fromKey(prefs.getString("collectionView", null)))
     val collectionView: StateFlow<CollectionView> = _collectionView
