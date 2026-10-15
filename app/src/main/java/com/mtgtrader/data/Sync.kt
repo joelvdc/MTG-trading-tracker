@@ -77,8 +77,9 @@ data class SyncFile(
          * 2 since 1.27: signed and altered copies are stacks of their own, which older versions would
          * merge with the plain ones (losing the marks), so they refuse the file and ask to be updated.
          * 3 since 1.33: remembered orders, which an older version would write back without.
+         * 4 since 1.35: wishlist cards marked as ordered, which an older version would write back unmarked.
          */
-        const val FORMAT = 3
+        const val FORMAT = 4
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

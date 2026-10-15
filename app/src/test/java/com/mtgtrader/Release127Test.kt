@@ -120,19 +120,19 @@ class Release127Test {
     @Test
     fun newerFilesAreRefused() {
         try {
-            SyncFile.decode(gz("""{"format":4,"app":"MTG Trader"}"""))
+            SyncFile.decode(gz("""{"format":99,"app":"MTG Trader"}"""))
             fail()
         } catch (e: SyncException) {
             assertTrue("newer version" in e.message!!)
         }
         try {
-            BackupFile.decode(gz("""{"format":4,"app":"MTG Trader"}"""))
+            BackupFile.decode(gz("""{"format":99,"app":"MTG Trader"}"""))
             fail()
         } catch (e: SyncException) {
             assertTrue("newer version" in e.message!!)
         }
-        // 3 since 1.33 (remembered orders).
-        assertEquals(3, BackupFile.FORMAT)
+        // 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist cards marked as ordered).
+        assertEquals(4, BackupFile.FORMAT)
     }
 
     @Test

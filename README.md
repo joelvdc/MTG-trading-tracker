@@ -259,6 +259,11 @@ finish. Each card shows whether you own it, and "Remove the cards I got since ad
 acquired since (copies you already owned when you added it don't count). Cards on the wishlist get a ★ when they're on
 the "You get" side of a trade. The wishlist isn't part of the collection's value, can be shared as a list and is synced.
 
+**Ordered cards:** tick "Ordered, on its way" in a wishlist card's window once you've bought it. The card then shows
+"📦 ordered" with the date, the line above the wishlist counts it as ordered instead of still to buy, and it's left out
+when you share the wishlist (so it isn't bought twice). Once it's in your collection, "Remove the cards I got since
+adding them" takes it off as usual.
+
 **Offline:** without internet, "Add card" on the wishlist suggests names from Cardmarket's card list saved on the phone
 (the one the app downloads for prices; no extra download). The card goes on the wishlist by name, as "any printing",
 marked "Details follow when you're online"; its picture, set and prices are filled in by themselves once the phone is

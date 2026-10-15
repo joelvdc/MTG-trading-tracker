@@ -30,6 +30,8 @@ data class WishlistItem(
     val addedAt: Long = System.currentTimeMillis(),
     /** Copies you already owned when it was added, so only copies you get later take it off the list. */
     @ColumnInfo(defaultValue = "0") val ownedAtAdd: Int = 0,
+    /** When you ticked "Ordered, on its way"; null while it isn't ordered yet. Since 1.35. */
+    val orderedAt: Long? = null,
     /** Sync identity and last change; filled in by database triggers (see [SyncSchema]). */
     val uid: String? = null,
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
