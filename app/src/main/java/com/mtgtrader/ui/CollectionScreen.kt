@@ -112,6 +112,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.draw.alpha
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Checkbox
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders, [WISHLIST] the wishlist. */
 private typealias BinderSel = Long?
@@ -516,16 +524,30 @@ fun CollectionScreen(nav: NavController) {
                     fun open(row: CollectionRow) {
                         if (wish) editingWish = wishById[row.item.id] else editing = row
                     }
+                    // The wishlist's "Ordered" box on each card (since 1.36); null outside the wishlist, so no box shows.
+                    fun orderedOf(row: CollectionRow): Boolean? = if (wish) wishById[row.item.id]?.item?.orderedAt != null else null
+                    fun setOrdered(row: CollectionRow, on: Boolean) {
+                        val w = wishById[row.item.id]?.item ?: return
+                        scope.launch {
+                            c.repo.setWishlistOrdered(w.id, if (on) System.currentTimeMillis() else null)
+                            val name = w.card.displayName
+                            if (snackbar.showUndo(if (on) "$name marked as ordered" else "$name no longer marked as ordered")) {
+                                c.repo.setWishlistOrdered(w.id, w.orderedAt)
+                            }
+                        }
+                    }
                     when (view) {
                         CollectionView.LIST -> LazyColumn(
                             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            items(shown, key = { it.item.id }) { row -> CollectionRowView(row, priceType, binderOf(row)) { open(row) } }
+                            items(shown, key = { it.item.id }) { row ->
+                                CollectionRowView(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }) { open(row) }
+                            }
                         }
                         CollectionView.COMPACT -> LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 150.dp)) {
                             items(shown, key = { it.item.id }) { row ->
-                                CompactRow(row, priceType, binderOf(row)) { open(row) }
+                                CompactRow(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }) { open(row) }
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
                         }
@@ -533,7 +555,9 @@ fun CollectionScreen(nav: NavController) {
                             columns = GridCells.Adaptive(112.dp),
                             contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 150.dp),
                         ) {
-                            gridItems(shown, key = { it.item.id }) { row -> CardTile(row, priceType, binderOf(row)) { open(row) } }
+                            gridItems(shown, key = { it.item.id }) { row ->
+                                CardTile(row, priceType, binderOf(row), orderedOf(row), { setOrdered(row, it) }) { open(row) }
+                            }
                         }
                     }
                 }
@@ -630,120 +654,195 @@ private fun viewIcon(v: CollectionView): ImageVector = when (v) {
     CollectionView.GRID -> Icons.Default.GridView
 }
 
-/** One text line per stack: quantity, name, set and finish, price of one card (and the stack total). */
+/** One text line per stack: quantity, name, set and finish, price of one card (and the stack total); on the wishlist, its "Ordered" box. */
 @Composable
-internal fun CompactRow(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+internal fun CompactRow(
+    row: CollectionRow,
+    priceType: PriceType,
+    binder: String?,
+    ordered: Boolean? = null,
+    onOrdered: (Boolean) -> Unit = {},
+    onClick: () -> Unit,
+) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            "${item.quantity}×",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(34.dp),
-        )
-        Column(Modifier.weight(1f)) {
-            Text(item.card.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val details = listOfNotNull(
-                item.card.setLabel,
-                if (item.foil) item.card.finishName(item.finish) else null,
-                "signed".takeIf { item.signed },
-                "altered".takeIf { item.altered },
-                item.condition.takeIf { it != "NM" && it.isNotEmpty() },
-                item.language.takeIf { it != "EN" },
-                binder,
-            ).joinToString(" · ")
-            Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            ConditionNote(row)
-            if (item.quantity > 1) {
-                Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.weight(1f).alpha(orderedAlpha(ordered)), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${item.quantity}×",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(34.dp),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(item.card.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val details = listOfNotNull(
+                    item.card.setLabel,
+                    if (item.foil) item.card.finishName(item.finish) else null,
+                    "signed".takeIf { item.signed },
+                    "altered".takeIf { item.altered },
+                    item.condition.takeIf { it != "NM" && it.isNotEmpty() },
+                    item.language.takeIf { it != "EN" },
+                    binder,
+                ).joinToString(" · ")
+                Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-        }
-    }
-}
-
-/** A big card picture with its quantity and finish, price of one card, trend and name underneath. */
-@Composable
-internal fun CardTile(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
-    val item = row.item
-    val unit = row.unitPrice(priceType)
-    Column(Modifier.clickable(onClick = onClick).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            Modifier.fillMaxWidth().aspectRatio(63f / 88f).clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("🃏", fontSize = 32.sp)
-            item.card.imageUrl?.let { RetryingImage(it, Modifier.fillMaxSize(), contentDescription = item.card.displayName, contentScale = ContentScale.Crop) }
-            if (item.quantity > 1) {
-                Text(
-                    "×${item.quantity}",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).clip(RoundedCornerShape(10.dp))
-                        .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 7.dp, vertical = 2.dp),
-                )
-            }
-            if (item.foil || item.marks.any) {
-                Column(Modifier.align(Alignment.BottomStart).padding(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    FinishTag(item.card, item.finish)
-                    MarksTags(item.signed, item.altered)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                ConditionNote(row)
+                if (item.quantity > 1) {
+                    Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
-        Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
-        ConditionNote(row)
-        TrendBadge(row.trend)
-        if (item.quantity > 1) {
-            Text("×${item.quantity} · ${Fmt.money(unit?.let { it * item.quantity })}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        ordered?.let { OrderedBox(it, onOrdered, caption = false) }
+    }
+}
+
+/** A big card picture with its quantity and finish, price of one card, trend and name underneath; on the wishlist, its "Ordered" box. */
+@Composable
+internal fun CardTile(
+    row: CollectionRow,
+    priceType: PriceType,
+    binder: String?,
+    ordered: Boolean? = null,
+    onOrdered: (Boolean) -> Unit = {},
+    onClick: () -> Unit,
+) {
+    val item = row.item
+    val unit = row.unitPrice(priceType)
+    val fade = orderedAlpha(ordered)
+    Column(Modifier.clickable(onClick = onClick).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f)) {
+            Box(
+                Modifier.matchParentSize().alpha(fade).clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("🃏", fontSize = 32.sp)
+                item.card.imageUrl?.let { RetryingImage(it, Modifier.fillMaxSize(), contentDescription = item.card.displayName, contentScale = ContentScale.Crop) }
+                if (item.quantity > 1) {
+                    Text(
+                        "×${item.quantity}",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).clip(RoundedCornerShape(10.dp))
+                            .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 7.dp, vertical = 2.dp),
+                    )
+                }
+                if (item.foil || item.marks.any) {
+                    Column(Modifier.align(Alignment.BottomStart).padding(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        FinishTag(item.card, item.finish)
+                        MarksTags(item.signed, item.altered)
+                    }
+                }
+            }
+            // Not faded, on a soft round backing, so the box shows clearly on any card art.
+            ordered?.let {
+                Box(Modifier.align(Alignment.BottomEnd).padding(2.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))) {
+                    OrderedBox(it, onOrdered, caption = false)
+                }
+            }
         }
-        Text(item.card.displayName, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(
-            listOfNotNull(item.card.setLabel, binder).joinToString(" · "),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Column(Modifier.alpha(fade), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
+            ConditionNote(row)
+            TrendBadge(row.trend)
+            if (item.quantity > 1) {
+                Text("×${item.quantity} · ${Fmt.money(unit?.let { it * item.quantity })}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            }
+            Text(item.card.displayName, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                listOfNotNull(item.card.setLabel, binder).joinToString(" · "),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
 @Composable
-internal fun CollectionRowView(row: CollectionRow, priceType: PriceType, binder: String?, onClick: () -> Unit) {
+internal fun CollectionRowView(
+    row: CollectionRow,
+    priceType: PriceType,
+    binder: String?,
+    ordered: Boolean? = null,
+    onOrdered: (Boolean) -> Unit = {},
+    onClick: () -> Unit,
+) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            CardThumb(item.card.imageUrl, width = 40)
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text("${item.quantity}× ${item.card.displayName}", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SetLine(item.card)
-                    FinishTag(item.card, item.finish)
-                    MarksTags(item.signed, item.altered)
-                    if (item.condition.isNotEmpty()) Tag(item.condition)
-                    if (item.language != "EN") Tag(item.language)
+            Row(Modifier.weight(1f).alpha(orderedAlpha(ordered)), verticalAlignment = Alignment.CenterVertically) {
+                CardThumb(item.card.imageUrl, width = 40)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("${item.quantity}× ${item.card.displayName}", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        SetLine(item.card)
+                        FinishTag(item.card, item.finish)
+                        MarksTags(item.signed, item.altered)
+                        if (item.condition.isNotEmpty()) Tag(item.condition)
+                        if (item.language != "EN") Tag(item.language)
+                    }
+                    binder?.let {
+                        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
-                binder?.let {
-                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    ConditionNote(row)
+                    TrendBadge(row.trend)
+                    if (item.quantity > 1) Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(approx(row) + Fmt.money(unit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                ConditionNote(row)
-                TrendBadge(row.trend)
-                if (item.quantity > 1) Text("${Fmt.money(unit?.let { it * item.quantity })} total", style = MaterialTheme.typography.bodySmall)
+            ordered?.let {
+                Spacer(Modifier.width(4.dp))
+                OrderedBox(it, onOrdered, caption = true)
             }
         }
     }
 }
+
+/**
+ * The wishlist's "Ordered, on its way" box on a card in the list, tapped without opening the card.
+ * [caption] puts a small "Ordered" under it where there's room. Since 1.36.
+ */
+@Composable
+internal fun OrderedBox(ordered: Boolean, onChange: (Boolean) -> Unit, caption: Boolean) {
+    val label = if (ordered) "Ordered, on its way" else "Not ordered yet"
+    if (!caption) {
+        Checkbox(ordered, onChange, Modifier.semantics { contentDescription = label })
+        return
+    }
+    Column(
+        Modifier.clip(RoundedCornerShape(12.dp)).toggleable(ordered, role = Role.Checkbox, onValueChange = onChange)
+            .semantics { contentDescription = label }.padding(start = 2.dp, end = 2.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // The whole column is the tap target; the box only shows the state.
+        Checkbox(ordered, onCheckedChange = null, Modifier.padding(top = 10.dp, bottom = 6.dp))
+        Text(
+            "Ordered",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (ordered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * An ordered wishlist card is faded (all but its box), gently: it's taken care of, no longer something
+ * still to buy. Since 1.36.
+ */
+@Composable
+internal fun orderedAlpha(ordered: Boolean?): Float =
+    animateFloatAsState(if (ordered == true) 0.45f else 1f, label = "ordered").value
 
 /** "EX 85%" under a price that was lowered for the copy's condition, so an adjusted price can always be told apart. Since 1.33. */
 @Composable

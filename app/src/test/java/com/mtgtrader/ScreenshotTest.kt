@@ -404,7 +404,7 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/source_download_bar.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.35: wishlist cards marked as ordered, and the line above the wishlist. */
+    /** 1.35: wishlist cards marked as ordered, and the line above the wishlist; 1.36: the "Ordered" box on each card. */
     @Test fun wishlistOrdered() {
         val oct15 = 1_792_065_600_000L
         fun wish(id: Long, name: String, set: String, number: String, qty: Int, eur: Double, orderedAt: Long? = null, anyPrinting: Boolean = true) =
@@ -422,7 +422,15 @@ class ScreenshotTest {
                             wishTotalLine(rows.map { it.asCollectionRow() }, { id -> rows.first { it.item.id == id }.item.orderedAt != null }, PriceType.TREND),
                             style = MaterialTheme.typography.titleSmall,
                         )
-                        for (r in rows) CollectionRowView(r.asCollectionRow(), PriceType.TREND, wishLabel(r.item, if (r.item.id == 2L) WishlistOwned(1, 0) else null)) {}
+                        for (r in rows) {
+                            val label = wishLabel(r.item, if (r.item.id == 2L) WishlistOwned(1, 0) else null, now = oct15)
+                            CollectionRowView(r.asCollectionRow(), PriceType.TREND, label, r.item.orderedAt != null, {}) {}
+                        }
+                        // 1.36: the box in the compact list and on grid tiles too.
+                        for (r in rows.take(2)) CompactRow(r.asCollectionRow(), PriceType.TREND, null, r.item.orderedAt != null, {}) {}
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (r in rows.take(2)) Box(Modifier.width(110.dp)) { CardTile(r.asCollectionRow(), PriceType.TREND, null, r.item.orderedAt != null, {}) {} }
+                        }
                     }
                 }
             }

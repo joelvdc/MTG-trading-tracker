@@ -46,9 +46,9 @@ fun WishlistRow.asCollectionRow() = CollectionRow(
 )
 
 /** What a wishlist row says under the card: which printings will do, whether it's ordered and whether you got it. */
-fun wishLabel(item: WishlistItem, owned: WishlistOwned?): String = listOfNotNull(
+fun wishLabel(item: WishlistItem, owned: WishlistOwned?, now: Long = System.currentTimeMillis()): String = listOfNotNull(
     if (item.anyPrinting) "Any printing" else "This printing only",
-    item.orderedAt?.let { "📦 ordered ${Fmt.date(it)}" },
+    item.orderedAt?.let { "📦 ordered ${Fmt.shortDate(it, now)}" },
     when {
         owned == null -> null
         owned.gotSince > 0 -> "✓ got ${owned.gotSince} since adding it"

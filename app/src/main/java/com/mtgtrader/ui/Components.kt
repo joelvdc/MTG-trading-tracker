@@ -112,6 +112,13 @@ object Fmt {
     fun money(v: Double?): String = if (v == null) "—" else Money.format(v)
     fun signedMoney(v: Double): String = (if (v > 0.004) "+" else if (v < -0.004) "−" else "") + Money.format(abs(v))
     fun date(ms: Long): String = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(ms))
+    /** "Oct 15" for a day this year, the full date otherwise; for short labels. Since 1.36. */
+    fun shortDate(ms: Long, now: Long = System.currentTimeMillis()): String {
+        val year = { t: Long -> java.util.Calendar.getInstance().apply { timeInMillis = t }.get(java.util.Calendar.YEAR) }
+        if (year(ms) != year(now)) return date(ms)
+        val locale = Locale.getDefault()
+        return java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMd"), locale).format(Date(ms))
+    }
     fun dateTime(ms: Long): String = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(ms))
 
     /** Parses "3,50" or "3.50"; null for blank/invalid. */
