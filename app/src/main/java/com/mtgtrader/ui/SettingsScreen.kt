@@ -80,6 +80,7 @@ fun SettingsScreen(nav: NavController) {
     val state by c.prices.state.collectAsStateWithLifecycle()
     val autoUpdate by c.settings.autoUpdate.collectAsStateWithLifecycle()
     val wifiOnly by c.settings.wifiOnly.collectAsStateWithLifecycle()
+    val offlineImages by c.settings.offlineImages.collectAsStateWithLifecycle()
     val powerSource by c.settings.powerSource.collectAsStateWithLifecycle()
     val themeMode by c.settings.themeMode.collectAsStateWithLifecycle()
 
@@ -167,6 +168,13 @@ fun SettingsScreen(nav: NavController) {
                 checked = wifiOnly,
                 enabled = autoUpdate,
                 onChange = { c.settings.setWifiOnly(it); c.updater.schedule() },
+            )
+            SwitchRow(
+                title = "Save deck and wishlist pictures for offline use",
+                body = "On Wi-Fi, the app saves the pictures of your decks (their cards and covers) and of your wishlist, " +
+                    "so they show without internet too. About 10–15 MB per deck.",
+                checked = offlineImages,
+                onChange = c.settings::setOfflineImages,
             )
             Spacer(Modifier.height(4.dp))
             Text(

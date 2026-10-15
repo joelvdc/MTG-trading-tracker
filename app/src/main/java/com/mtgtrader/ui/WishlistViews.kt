@@ -77,8 +77,8 @@ fun WishlistDialog(
                     CardThumb(card.imageUrl, width = 72, enlargeable = true)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(card.setName, style = MaterialTheme.typography.bodyMedium)
-                        SetLine(card, " · ${card.rarity}")
+                        Text(if (card.isPending) "Added offline" else card.setName, style = MaterialTheme.typography.bodyMedium)
+                        SetLine(card, if (card.isPending) "" else " · ${card.rarity}")
                         owned?.let {
                             Text(
                                 if (it.owned > 0) "You own ${it.owned}" + (if (it.gotSince > 0) " (${it.gotSince} got since adding it)" else "") else "Not in your collection",
@@ -106,7 +106,8 @@ fun WishlistDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = item.anyPrinting, onCheckedChange = { item = item.copy(anyPrinting = it) })
+                    // A card added offline has no printing yet to keep to.
+                    Switch(checked = item.anyPrinting, onCheckedChange = { item = item.copy(anyPrinting = it) }, enabled = !card.isPending)
                 }
                 if (card.hasFoil && card.hasNonFoil) {
                     DropdownSelector(

@@ -44,6 +44,14 @@ interface CatalogDao {
     @Query("SELECT * FROM cm_products WHERE name = :name COLLATE NOCASE")
     suspend fun named(name: String): List<CmProduct>
 
+    /** Card names starting with [prefix] (no wildcards in it), for searching while offline. Since 1.34. */
+    @Query("SELECT DISTINCT name FROM cm_products WHERE name LIKE :prefix || '%' ESCAPE '\\' ORDER BY name COLLATE NOCASE LIMIT :limit")
+    suspend fun namesStarting(prefix: String, limit: Int): List<String>
+
+    /** Card names containing [part] (no wildcards in it). */
+    @Query("SELECT DISTINCT name FROM cm_products WHERE name LIKE '%' || :part || '%' ESCAPE '\\' ORDER BY name COLLATE NOCASE LIMIT :limit")
+    suspend fun namesContaining(part: String, limit: Int): List<String>
+
     @Query("SELECT COUNT(*) FROM cm_products")
     suspend fun count(): Int
 
@@ -112,6 +120,13 @@ class CardmarketCatalog(
 
     private val dao = db.catalogDao()
     private val lock = Mutex()
+
+    /** Card names matching [typed] from the list on the phone, for adding to the wishlist offline. Since 1.34. */
+    suspend fun offlineNames(typed: String): List<String> {
+        val q = typed.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        if (q.isEmpty()) return emptyList()
+        return PendingCard.suggestions(typed, dao.namesStarting(q, 30), dao.namesContaining(q, 30))
+    }
 
     val isStale get() = System.currentTimeMillis() - settings.catalogFetchedAt > MAX_AGE_MS
 
@@ -215,6 +230,8 @@ class CardmarketCatalog(
             }
         }.distinct()
         for ((set, name) in missing) {
+            // Wishlist cards added offline have no set until Scryfall fills them in.
+            if (set.isBlank()) continue
             val expansions = expansionsFor(set)
             if (expansions.isEmpty()) continue
             val id = CatalogMatch.pick(dao.named(name) + dao.named(name.substringBefore(" // ")), name, expansions) ?: continue

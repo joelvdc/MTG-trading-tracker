@@ -299,7 +299,7 @@ private fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, onCl
 /** The deck's featured art from Archidekt, or its commander's art. */
 @Composable
 fun DeckArt(deck: Deck, modifier: Modifier = Modifier) {
-    val url = deck.artUrl ?: deck.commanderScryfallId?.let { id -> "https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/$id.jpg" }
+    val url = deck.coverUrl
     Box(modifier.clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
         Text("🃏")
         if (url != null) RetryingImage(url, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)

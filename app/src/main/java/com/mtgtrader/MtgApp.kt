@@ -5,6 +5,7 @@ import android.content.Context
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.SvgDecoder
+import coil.disk.DiskCache
 import coil.util.DebugLogger
 import com.mtgtrader.data.AppDatabase
 import com.mtgtrader.data.ArchidektApi
@@ -48,12 +49,21 @@ class MtgApp : Application(), ImageLoaderFactory {
 
     // Card images come from Scryfall's CDN, which rejects OkHttp's default User-Agent.
     // Set symbols are SVGs.
+    // A picture at a given address doesn't change, so a saved one is shown however old it is: Archidekt
+    // says its deck covers may be kept for an hour or a day only, after which they wouldn't show offline.
+    // The cache keeps the pictures of decks and the wishlist (see OfflineImages), so it gets a fixed size.
     override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
         .okHttpClient { container.http }
         .components { add(SvgDecoder.Factory()) }
+        .respectCacheHeaders(false)
+        .diskCache { DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizeBytes(IMAGE_CACHE_BYTES).build() }
         .crossfade(true)
         .apply { if (BuildConfig.DEBUG) logger(DebugLogger()) }
         .build()
+
+    private companion object {
+        const val IMAGE_CACHE_BYTES = 600L * 1024 * 1024
+    }
 }
 
 /** Hand-rolled dependency container; one instance for the whole app. */
@@ -85,6 +95,7 @@ class AppContainer(context: Context) {
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
     val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
+    val offlineImages = com.mtgtrader.data.OfflineImages(context, db, settings, network, appScope)
     private val store = SyncStore(db, settings)
     private val nextcloud = NextcloudClient(http)
     val sync = SyncManager(context, db, store, nextcloud, network, appScope)
@@ -125,6 +136,8 @@ class AppContainer(context: Context) {
         com.mtgtrader.data.Pricing.usdPerEuro = usd0
         appScope.launch { exchangeRates.rates.map(usd).dropWhile { it == usd0 }.collect { com.mtgtrader.data.Pricing.usdPerEuro = it } }
         scryfall.onCards = { cards -> priceSources.fromScryfall(cards) }
+        // Wishlist cards added offline get their details whenever the phone (re)connects.
+        appScope.launch { network.reconnects.collect { runCatching { repo.completePendingWishlist() } } }
         sync.beforeFirstSync = { backups.before(com.mtgtrader.data.BackupReason.FIRST_NEXTCLOUD) }
         repo.beforeCsvImport = { backups.before(com.mtgtrader.data.BackupReason.CSV_IMPORT) }
         repo.beforeOrderImport = { backups.before(com.mtgtrader.data.BackupReason.ORDER_IMPORT) }

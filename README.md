@@ -25,13 +25,15 @@ Your collection can also be kept the same as your Archidekt collection, both way
 and tells you when there's a new version. When it asks which file to install, pick `MTG-Trader-<version>.apk`
 (or the `-universal` one if that doesn't install).
 
-**By hand:** download `MTG-Trader-1.33.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
+**By hand:** download `MTG-Trader-1.34.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
 and open it on your phone (allow "install unknown apps" for your file manager/browser when asked). It's built for 64-bit
-ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.33-universal.apk`
+ARM phones (practically every phone from the last ~6 years). If it refuses to install, use `MTG-Trader-1.34-universal.apk`
 instead (bigger, runs on any device). Either way, a new version installs over the old one and keeps your data.
 
 ## Where the data comes from (no app updates needed for new sets)
-- **Cards & images:** Scryfall API, looked up live.
+- **Cards & images:** Scryfall API, looked up live. Pictures you've seen stay saved on the phone and show offline;
+  on Wi-Fi the app also saves the pictures of your decks (cards and covers) and wishlist ahead of time (Settings →
+  "Save deck and wishlist pictures for offline use", on by default; about 10–15 MB per deck, at most 600 MB in all).
 - **Decks:** Archidekt (decklists), Commander Salt (brackets, scores and rule-zero cards) and, if chosen, edhpowerlevel.com
   or ScrollVault (power level).
 - **Prices:** Cardmarket's public daily price guide (trend, average, low, 1/7/30-day averages, normal + foil), downloaded
@@ -256,6 +258,11 @@ selected, or from a deck's "Cards I'm missing". By default any printing will do;
 finish. Each card shows whether you own it, and "Remove the cards I got since adding them" (⋮ menu) clears what you've
 acquired since (copies you already owned when you added it don't count). Cards on the wishlist get a ★ when they're on
 the "You get" side of a trade. The wishlist isn't part of the collection's value, can be shared as a list and is synced.
+
+**Offline:** without internet, "Add card" on the wishlist suggests names from Cardmarket's card list saved on the phone
+(the one the app downloads for prices; no extra download). The card goes on the wishlist by name, as "any printing",
+marked "Details follow when you're online"; its picture, set and prices are filled in by themselves once the phone is
+back online.
 
 ## Appearance
 Settings → **Appearance**: same as the phone, light or dark.

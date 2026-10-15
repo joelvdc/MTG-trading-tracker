@@ -40,11 +40,11 @@ interface CardInfoDao {
     @Query("SELECT * FROM card_info WHERE scryfallId IN (:ids)")
     suspend fun getMany(ids: List<String>): List<CardInfo>
 
-    /** Printings in the collection, wishlist or decks without details yet. */
+    /** Printings in the collection, wishlist or decks without details yet (not wishlist cards still waiting for theirs). */
     @Query(
         """SELECT DISTINCT scryfallId FROM (
              SELECT scryfallId FROM collection UNION SELECT scryfallId FROM wishlist UNION SELECT scryfallId FROM deck_cards
-           ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info)"""
+           ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info) AND scryfallId NOT LIKE '00000000-0000-0000-0000-%'"""
     )
     suspend fun missing(): List<String>
 

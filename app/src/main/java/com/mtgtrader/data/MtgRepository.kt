@@ -162,6 +162,29 @@ class MtgRepository(
         return AddResult(wishlist.insert(item.copy(ownedAtAdd = ownedFor(item, coll.all()))), AddedTo.WISHLIST)
     }
 
+    /** Adds a card by name only, while offline (any printing will do); see [PendingCard]. Since 1.34. */
+    suspend fun addPendingToWishlist(name: String): AddResult = addToWishlist(PendingCard.ref(name))
+
+    /**
+     * Fills in the wishlist cards added offline: Scryfall's usual printing of each name, with its
+     * picture and prices. Cards Scryfall can't find stay as they are. Returns how many were filled in.
+     */
+    suspend fun completePendingWishlist(): Int {
+        var done = 0
+        for (w in wishlist.pending()) {
+            val card = runCatching { scryfall.fuzzy(w.card.name) }.getOrNull() ?: continue
+            val ref = card.toRef()
+            db.withTransaction {
+                val cur = wishlist.byId(w.id) ?: return@withTransaction
+                // Owned copies were counted by the name typed offline; count again by Scryfall's name if it differs.
+                val owned = if (ref.name == cur.card.name) cur.ownedAtAdd else ownedFor(cur.copy(card = ref), coll.all())
+                wishlist.update(cur.copy(card = ref, ownedAtAdd = owned))
+            }
+            done++
+        }
+        return done
+    }
+
     /** Adds several cards (e.g. a deck's missing ones) to the wishlist. Returns the copies added and an undo. */
     suspend fun addManyToWishlist(cards: List<Pair<DeckCard, Int>>): Pair<Int, UndoAction> {
         val before = wishlist.all()

@@ -381,6 +381,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun catalogDao(): CatalogDao
     abstract fun sourcePriceDao(): SourcePriceDao
     abstract fun orderDao(): OrderDao
+    abstract fun offlineImagesDao(): OfflineImagesDao
 
     companion object {
         fun build(context: Context): AppDatabase =

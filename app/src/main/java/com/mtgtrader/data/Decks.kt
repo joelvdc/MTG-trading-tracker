@@ -8,6 +8,10 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
+/** A deck's cover: its featured art from Archidekt, or its commander's art. */
+fun deckCoverUrl(artUrl: String?, commanderScryfallId: String?): String? =
+    artUrl ?: commanderScryfallId?.takeIf { it.length > 2 }?.let { id -> "https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/$id.jpg" }
+
 /** A Commander deck imported from Archidekt, with the scores Commander Salt gave it. Since version 1.6. */
 @Serializable
 @Entity(tableName = "decks")
@@ -57,6 +61,10 @@ data class Deck(
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
     val scored get() = powerLevel != null || bracketRealistic != null
+
+    /** The deck's cover: its featured art from Archidekt, or its commander's art. */
+    val coverUrl: String?
+        get() = deckCoverUrl(artUrl, commanderScryfallId)
 
     /** The power level from the chosen source. */
     fun power(source: PowerSource): Double? = when (source) {
