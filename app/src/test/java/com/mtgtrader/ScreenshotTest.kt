@@ -1,70 +1,77 @@
 package com.mtgtrader
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.mtgtrader.data.CardRef
-import com.mtgtrader.data.OrderCandidate
-import com.mtgtrader.data.OrderLine
-import com.mtgtrader.data.StatEntry
-import com.mtgtrader.data.StatMode
-import com.mtgtrader.ui.MtgColors
-import com.mtgtrader.ui.OrderReview
+import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.Binder
-import com.mtgtrader.data.OrderFile
-import com.mtgtrader.data.OrderFormat
-import com.mtgtrader.data.PackageCheck
-import com.mtgtrader.data.PurchasePrices
-import com.mtgtrader.data.ScannedCard
-import com.mtgtrader.ui.PackageCheckList
-import com.mtgtrader.data.OrderWorth
-import com.mtgtrader.data.Precons
-import com.mtgtrader.data.ProfitLoss
-import com.mtgtrader.data.PurchaseOrder
-import com.mtgtrader.data.Settings
-import com.mtgtrader.ui.ConditionSection
-import com.mtgtrader.ui.OrderList
-import com.mtgtrader.ui.PreconList
-import com.mtgtrader.ui.ProfitCard
-import com.mtgtrader.ui.PurchasePricePlan
-import com.mtgtrader.ui.PieChart
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
+import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CollectionItem
 import com.mtgtrader.data.CollectionRow
+import com.mtgtrader.data.DisplayCurrency
+import com.mtgtrader.data.ExchangeRates
+import com.mtgtrader.data.Finish
 import com.mtgtrader.data.Marks
+import com.mtgtrader.data.Money
+import com.mtgtrader.data.OrderCandidate
+import com.mtgtrader.data.OrderFile
+import com.mtgtrader.data.OrderFormat
+import com.mtgtrader.data.OrderLine
+import com.mtgtrader.data.OrderWorth
+import com.mtgtrader.data.OtherPrices
+import com.mtgtrader.data.PackageCheck
+import com.mtgtrader.data.Precons
+import com.mtgtrader.data.PriceSource
+import com.mtgtrader.data.PriceSourceStore
 import com.mtgtrader.data.PriceType
+import com.mtgtrader.data.Pricing
+import com.mtgtrader.data.ProfitLoss
+import com.mtgtrader.data.PurchaseOrder
+import com.mtgtrader.data.PurchasePrices
+import com.mtgtrader.data.ScannedCard
+import com.mtgtrader.data.Settings
+import com.mtgtrader.data.SourcePrice
+import com.mtgtrader.data.StatEntry
+import com.mtgtrader.data.StatMode
+import com.mtgtrader.data.WishlistItem
+import com.mtgtrader.data.WishlistOwned
+import com.mtgtrader.data.WishlistRow
 import com.mtgtrader.ui.CardTile
 import com.mtgtrader.ui.CollectionRowView
 import com.mtgtrader.ui.CompactRow
-import com.mtgtrader.ui.MarksEditor
-import com.mtgtrader.data.AppCurrency
-import com.mtgtrader.data.DisplayCurrency
-import com.mtgtrader.data.ExchangeRates
-import com.mtgtrader.data.Money
+import com.mtgtrader.ui.ConditionSection
 import com.mtgtrader.ui.CurrencySection
-import com.mtgtrader.data.Finish
-import com.mtgtrader.data.OtherPrices
-import com.mtgtrader.data.PriceSource
-import com.mtgtrader.data.PriceSourceStore
-import com.mtgtrader.data.Pricing
-import com.mtgtrader.data.SourcePrice
+import com.mtgtrader.ui.MarksEditor
+import com.mtgtrader.ui.MtgColors
+import com.mtgtrader.ui.OrderList
+import com.mtgtrader.ui.OrderReview
 import com.mtgtrader.ui.OtherPrices
+import com.mtgtrader.ui.PackageCheckList
+import com.mtgtrader.ui.PieChart
+import com.mtgtrader.ui.PreconList
 import com.mtgtrader.ui.PriceGapList
 import com.mtgtrader.ui.PriceSourceSection
+import com.mtgtrader.ui.ProfitCard
+import com.mtgtrader.ui.PurchasePricePlan
 import com.mtgtrader.ui.SourceComparison
+import com.mtgtrader.ui.SourceStatusStrip
+import com.mtgtrader.ui.asCollectionRow
 import com.mtgtrader.ui.priceGaps
 import com.mtgtrader.ui.sourceTotals
-import com.mtgtrader.ui.SourceStatusStrip
+import com.mtgtrader.ui.wishLabel
+import com.mtgtrader.ui.wishTotalLine
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -395,5 +402,31 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/source_download_bar.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.35: wishlist cards marked as ordered, and the line above the wishlist. */
+    @Test fun wishlistOrdered() {
+        val oct14 = 1_792_065_600_000L
+        fun wish(id: Long, name: String, set: String, number: String, qty: Int, eur: Double, orderedAt: Long? = null, anyPrinting: Boolean = true) =
+            WishlistRow(WishlistItem(id = id, card = ref(name, set, number, "rare").copy(fallbackEur = eur), quantity = qty, anyPrinting = anyPrinting, orderedAt = orderedAt), null)
+        val rows = listOf(
+            wish(1, "Rhystic Study", "jmp", "169", 1, 38.0, orderedAt = oct14),
+            wish(2, "Smothering Tithe", "rna", "22", 1, 17.5),
+            wish(3, "Arcane Signet", "cmm", "367", 3, 0.6, orderedAt = oct14, anyPrinting = false),
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            wishTotalLine(rows.map { it.asCollectionRow() }, { id -> rows.first { it.item.id == id }.item.orderedAt != null }, PriceType.TREND),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        for (r in rows) CollectionRowView(r.asCollectionRow(), PriceType.TREND, wishLabel(r.item, if (r.item.id == 2L) WishlistOwned(1, 0) else null)) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_ordered.png", roborazziOptions = screenshotOptions)
     }
 }

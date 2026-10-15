@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,9 +45,10 @@ fun WishlistRow.asCollectionRow() = CollectionRow(
     price,
 )
 
-/** What a wishlist row says under the card: which printings will do and whether you got it. */
+/** What a wishlist row says under the card: which printings will do, whether it's ordered and whether you got it. */
 fun wishLabel(item: WishlistItem, owned: WishlistOwned?): String = listOfNotNull(
     if (item.anyPrinting) "Any printing" else "This printing only",
+    item.orderedAt?.let { "📦 ordered ${Fmt.date(it)}" },
     when {
         owned == null -> null
         owned.gotSince > 0 -> "✓ got ${owned.gotSince} since adding it"
@@ -54,6 +56,22 @@ fun wishLabel(item: WishlistItem, owned: WishlistOwned?): String = listOfNotNull
         else -> null
     },
 ).joinToString(" · ")
+
+/**
+ * The line above the wishlist: cards wanted, how many of them are ordered (and on their way), and what
+ * the rest still cost. Since 1.35.
+ */
+fun wishTotalLine(rows: List<CollectionRow>, isOrdered: (Long) -> Boolean, priceType: PriceType): String {
+    val cards = rows.sumOf { it.item.quantity }
+    val (ordered, rest) = rows.partition { isOrdered(it.item.id) }
+    val toBuy = rest.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity }
+    return if (ordered.isEmpty()) "$cards card(s) wanted · ${Fmt.money(toBuy)} to buy them (${priceType.short})"
+    else "$cards card(s) wanted · ${ordered.sumOf { it.item.quantity }} ordered · ${Fmt.money(toBuy)} still to buy (${priceType.short})"
+}
+
+/** The wishlist as a plain list ("1 Card name" per line) to share; ordered cards are left out, so they aren't bought twice. */
+fun wishShareText(rows: List<WishlistRow>): String =
+    rows.filter { it.item.orderedAt == null }.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
 
 /** Edits a wishlist entry: how many, whether any printing will do (and the finish otherwise), notes. */
 @Composable
@@ -108,6 +126,21 @@ fun WishlistDialog(
                     }
                     // A card added offline has no printing yet to keep to.
                     Switch(checked = item.anyPrinting, onCheckedChange = { item = item.copy(anyPrinting = it) }, enabled = !card.isPending)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Ordered, on its way")
+                        Text(
+                            item.orderedAt?.let { "Ticked ${Fmt.date(it)}" } ?: "Tick it once you've bought it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    // Unticking and ticking again before saving keeps the date it was ticked on.
+                    Checkbox(
+                        checked = item.orderedAt != null,
+                        onCheckedChange = { on -> item = item.copy(orderedAt = if (on) row.item.orderedAt ?: System.currentTimeMillis() else null) },
+                    )
                 }
                 if (card.hasFoil && card.hasNonFoil) {
                     DropdownSelector(

@@ -248,10 +248,10 @@ fun CollectionScreen(nav: NavController) {
                             DropdownMenuItem(
                                 text = { Text("Share the wishlist") },
                                 leadingIcon = { Icon(Icons.Default.Share, null) },
-                                enabled = wishRows.isNotEmpty(),
+                                enabled = wishRows.any { it.item.orderedAt == null },
                                 onClick = {
                                     menu = false
-                                    val text = wishRows.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
+                                    val text = wishShareText(wishRows)
                                     val send = Intent(Intent.ACTION_SEND).setType("text/plain")
                                         .putExtra(Intent.EXTRA_SUBJECT, "MTG wishlist").putExtra(Intent.EXTRA_TEXT, text)
                                     context.startActivity(Intent.createChooser(send, "Share the wishlist"))
@@ -448,7 +448,7 @@ fun CollectionScreen(nav: NavController) {
             }
             if (wish) {
                 Text(
-                    "$totalCards card(s) wanted · ${Fmt.money(totalValue)} to buy them (${priceType.short})",
+                    wishTotalLine(shown, { id -> wishById[id]?.item?.orderedAt != null }, priceType),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )

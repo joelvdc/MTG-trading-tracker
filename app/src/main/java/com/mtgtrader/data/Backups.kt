@@ -38,10 +38,10 @@ data class BackupFile(
 ) {
     companion object {
         /**
-         * 2 since 1.27 (signed and altered copies), 3 since 1.33 (remembered orders), like [SyncFile.FORMAT]:
-         * older versions can't restore it without losing them.
+         * 2 since 1.27 (signed and altered copies), 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist
+         * cards marked as ordered), like [SyncFile.FORMAT]: older versions can't restore it without losing them.
          */
-        const val FORMAT = 3
+        const val FORMAT = 4
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {
