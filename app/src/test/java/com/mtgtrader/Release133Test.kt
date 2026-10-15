@@ -225,9 +225,9 @@ class OrdersTest {
         assertEquals(listOf("New title", "Same order, read on the other phone"), m.orders.map { it.title })
         assertTrue(m.deletions.any { it.uid == "b" } && m.deletions.any { it.uid == "gone" })
         assertEquals(m, SyncMerge.merge(m, m, now))
-        // The file carries them, in format 3.
+        // The file carries them, in format 3 (4 since 1.35).
         val back = SyncFile.decode(SyncFile.encode(SyncFile(data = m)))
-        assertEquals(3, back.format)
+        assertTrue(back.format >= 3)
         assertEquals(m.orders, back.data.orders)
     }
 
@@ -243,7 +243,7 @@ class OrdersTest {
         val fromNew = BackupRestore.target(current, SyncData(orders = listOf(other)), now = 99)
         assertEquals(listOf("From the backup"), fromNew.orders.map { it.title })
         assertTrue(fromNew.deletions.any { it.uid == "o1" })
-        assertEquals(3, BackupFile.FORMAT)
+        assertTrue(BackupFile.FORMAT >= 3)
     }
 }
 
@@ -344,7 +344,7 @@ class Release133DbTest {
         createVersion13(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-133.db")
-            .addMigrations(AppDatabase.MIGRATION_13_14)
+            .addMigrations(AppDatabase.MIGRATION_13_14, AppDatabase.MIGRATION_14_15)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

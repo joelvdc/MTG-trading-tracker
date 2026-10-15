@@ -406,13 +406,13 @@ class ScreenshotTest {
 
     /** 1.35: wishlist cards marked as ordered, and the line above the wishlist. */
     @Test fun wishlistOrdered() {
-        val oct14 = 1_792_065_600_000L
+        val oct15 = 1_792_065_600_000L
         fun wish(id: Long, name: String, set: String, number: String, qty: Int, eur: Double, orderedAt: Long? = null, anyPrinting: Boolean = true) =
             WishlistRow(WishlistItem(id = id, card = ref(name, set, number, "rare").copy(fallbackEur = eur), quantity = qty, anyPrinting = anyPrinting, orderedAt = orderedAt), null)
         val rows = listOf(
-            wish(1, "Rhystic Study", "jmp", "169", 1, 38.0, orderedAt = oct14),
+            wish(1, "Rhystic Study", "jmp", "169", 1, 38.0, orderedAt = oct15),
             wish(2, "Smothering Tithe", "rna", "22", 1, 17.5),
-            wish(3, "Arcane Signet", "cmm", "367", 3, 0.6, orderedAt = oct14, anyPrinting = false),
+            wish(3, "Arcane Signet", "cmm", "367", 3, 0.6, orderedAt = oct15, anyPrinting = false),
         )
         compose.setContent {
             MtgColors(dark = false) {
