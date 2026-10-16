@@ -566,7 +566,7 @@ class ScreenshotTest {
                             }
                         }
                         Text("Swiping a card:", style = MaterialTheme.typography.labelSmall)
-                        val (right, left) = com.mtgtrader.ui.wishSwipes(received = false, onRight = {}, onLeft = {})
+                        val (right, left) = com.mtgtrader.ui.wishSwipes(items.getValue(2), onRight = {}, onLeft = {})
                         com.mtgtrader.ui.SwipeBackground(right, toRight = true, Modifier.fillMaxWidth().height(56.dp))
                         com.mtgtrader.ui.SwipeBackground(left, toRight = false, Modifier.fillMaxWidth().height(56.dp))
                         com.mtgtrader.ui.SectionHeader("Received", 4, folded = true) {}
@@ -628,5 +628,27 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/received_swipe_settings.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.39: after an order import, the order's cards that are on the wishlist (a window, so the whole screen is captured). */
+    @OptIn(com.github.takahirom.roborazzi.ExperimentalRoborazziApi::class)
+    @Test fun orderWishlistCheck() {
+        fun wish(id: Long, name: String, qty: Int, ordered: Boolean = false, any: Boolean = true) =
+            WishlistItem(id = id, card = ref(name, "m21", "1", "rare"), quantity = qty, orderedAt = if (ordered) 1L else null, anyPrinting = any)
+        val matches = listOf(
+            com.mtgtrader.data.WishOrders.Match(wish(1, "Rhystic Study", 1, ordered = true), 1),
+            com.mtgtrader.data.WishOrders.Match(wish(2, "Sol Ring", 3, ordered = true), 2),
+            com.mtgtrader.data.WishOrders.Match(wish(3, "Smothering Tithe", 1, any = false), 1),
+        )
+        compose.setContent { MtgColors(dark = false) { com.mtgtrader.ui.OrderWishlistDialog(matches, "CardTrader order #12345") {} } }
+        com.github.takahirom.roborazzi.captureScreenRoboImage("src/test/screenshots/order_wishlist_check.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.39: "Arrange binders…", with the wishlist moved first. */
+    @OptIn(com.github.takahirom.roborazzi.ExperimentalRoborazziApi::class)
+    @Test fun arrangeBinders() {
+        val labels = mapOf("wishlist" to "★ Wishlist", "unsorted" to "Unsorted", "b:1" to "⇄ Trade binder", "b:2" to "Commander decks", "b:3" to "New cards")
+        compose.setContent { MtgColors(dark = false) { com.mtgtrader.ui.ArrangeBindersDialog(labels.keys.toList(), { labels.getValue(it) }, {}) {} } }
+        com.github.takahirom.roborazzi.captureScreenRoboImage("src/test/screenshots/arrange_binders.png", roborazziOptions = screenshotOptions)
     }
 }

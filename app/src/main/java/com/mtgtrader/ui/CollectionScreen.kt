@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CallMerge
 import androidx.compose.material.icons.filled.CameraAlt
@@ -209,6 +210,8 @@ fun CollectionScreen(nav: NavController) {
     var foldOrdered by rememberSaveable { mutableStateOf(false) }
     var foldReceived by rememberSaveable { mutableStateOf(true) }
     val wishSectionsOn by c.settings.wishSections.collectAsStateWithLifecycle()
+    val binderOrder by c.settings.binderOrder.collectAsStateWithLifecycle()
+    var arranging by remember { mutableStateOf(false) }
     val toCollection by c.settings.receivedToCollection.collectAsStateWithLifecycle()
     val swipeRight by c.settings.swipeRight.collectAsStateWithLifecycle()
     val swipeLeft by c.settings.swipeLeft.collectAsStateWithLifecycle()
@@ -218,6 +221,8 @@ fun CollectionScreen(nav: NavController) {
     var deletingMany by remember { mutableStateOf<List<com.mtgtrader.data.CollectionItem>?>(null) }
     var receivingOwned by remember { mutableStateOf<List<Pair<com.mtgtrader.data.WishlistItem, Int>>?>(null) }
     var exportIds by remember { mutableStateOf<Set<Long>?>(null) }
+    // A received wishlist card on its way into the collection (since 1.39).
+    var addingWish by remember { mutableStateOf<com.mtgtrader.data.WishlistItem?>(null) }
     // The cards on screen, for "Select all shown".
     val shownIds = remember { mutableStateOf(setOf<Long>()) }
     /** Runs a change that can be undone, then offers Undo (nothing when it changed nothing). */
@@ -448,6 +453,11 @@ fun CollectionScreen(nav: NavController) {
                             leadingIcon = { Icon(Icons.Default.CreateNewFolder, null) },
                             onClick = { menu = false; creating = true },
                         )
+                        DropdownMenuItem(
+                            text = { Text("Arrange binders…") },
+                            leadingIcon = { Icon(Icons.Default.SwapVert, null) },
+                            onClick = { menu = false; arranging = true },
+                        )
                         if (currentBinder != null) {
                             DropdownMenuItem(
                                 text = { Text("Rename “${currentBinder.name}”") },
@@ -541,6 +551,7 @@ fun CollectionScreen(nav: NavController) {
             return@Scaffold
         }
         val counts = remember(all) { all.groupBy { it.item.binderId }.mapValues { (_, r) -> r.sumOf { it.item.quantity } } }
+        val barKeys = remember(binders, binderOrder, tradeBinderId) { com.mtgtrader.data.BinderOrder.arrange(binders, binderOrder, tradeBinderId) }
         val wishById = remember(wishRows) { wishRows.associateBy { it.item.id } }
         val inView = remember(all, wishRows, filter, selected) {
             val f = filter.trim()
@@ -584,33 +595,28 @@ fun CollectionScreen(nav: NavController) {
                 item(key = "all") {
                     FilterChip(selected = selected == null, onClick = { selected = null }, label = { Text("All · ${counts.values.sum()}") })
                 }
-                item(key = "unsorted") {
-                    FilterChip(
-                        selected = selected == Binder.UNSORTED,
-                        onClick = { selected = Binder.UNSORTED },
-                        label = { Text("${Binder.UNSORTED_NAME} · ${counts[Binder.UNSORTED] ?: 0}") },
-                    )
-                }
-                item(key = "wishlist") {
-                    FilterChip(
-                        selected = wish,
-                        onClick = { selected = WISHLIST },
-                        label = { Text("Wishlist · ${wishRows.filter { it.item.receivedAt == null }.sumOf { it.item.quantity }}") },
-                        leadingIcon = { Icon(Icons.Default.Star, null, Modifier.size(18.dp)) },
-                    )
-                }
-                if (tradeBinderId > 0) binders.firstOrNull { it.id == tradeBinderId }?.let { b ->
-                    item(key = "trade") {
-                        FilterChip(
+                // In the order arranged (since 1.39): Unsorted, the wishlist and the binders.
+                items(barKeys, key = { it }) { k ->
+                    val b = com.mtgtrader.data.BinderOrder.binderOf(k, binders)
+                    when {
+                        k == com.mtgtrader.data.BinderOrder.UNSORTED -> FilterChip(
+                            selected = selected == Binder.UNSORTED,
+                            onClick = { selected = Binder.UNSORTED },
+                            label = { Text("${Binder.UNSORTED_NAME} · ${counts[Binder.UNSORTED] ?: 0}") },
+                        )
+                        k == com.mtgtrader.data.BinderOrder.WISHLIST -> FilterChip(
+                            selected = wish,
+                            onClick = { selected = WISHLIST },
+                            label = { Text("Wishlist · ${wishRows.filter { it.item.receivedAt == null }.sumOf { it.item.quantity }}") },
+                            leadingIcon = { Icon(Icons.Default.Star, null, Modifier.size(18.dp)) },
+                        )
+                        b != null -> FilterChip(
                             selected = selected == b.id,
                             onClick = { selected = b.id },
                             label = { Text("${b.name} · ${counts[b.id] ?: 0}") },
-                            leadingIcon = { Icon(Icons.Default.SwapHoriz, null, Modifier.size(18.dp)) },
+                            leadingIcon = if (b.id == tradeBinderId) ({ Icon(Icons.Default.SwapHoriz, null, Modifier.size(18.dp)) }) else null,
                         )
                     }
-                }
-                items(binders.filter { it.id != tradeBinderId }, key = { it.id }) { b ->
-                    FilterChip(selected = selected == b.id, onClick = { selected = b.id }, label = { Text("${b.name} · ${counts[b.id] ?: 0}") })
                 }
                 item(key = "new") {
                     AssistChip(
@@ -749,12 +755,18 @@ fun CollectionScreen(nav: NavController) {
                         val w = wishById[row.item.id]?.item
                         if (wish && w != null) {
                             val name = w.card.displayName
-                            val received = w.receivedAt != null
                             val (r, l) = wishSwipes(
-                                received,
+                                w,
                                 onRight = {
-                                    if (received) undoable({ "$name is back on the wishlist" }) { c.repo.unreceiveWishlist(listOf(w.id)) }
-                                    else undoable({ "$name marked as received" + if (toCollection) " and added to the collection" else "" }) { c.repo.receiveWishlist(listOf(w.id), toCollection) }
+                                    when {
+                                        // Its copies are in the collection already (an order, or added when received): just off the wishlist.
+                                        w.receivedAt != null && w.receivedFrom != null ->
+                                            undoable({ "$name is in the collection already (${w.receivedFrom}): taken off the wishlist" }) { c.repo.deleteWishlistItems(listOf(w.id)) }
+                                        w.receivedAt != null -> addingWish = w
+                                        w.orderedAt != null ->
+                                            undoable({ "$name marked as received" + if (toCollection && !w.card.isPending) " and added to the collection" else "" }) { c.repo.receiveWishlist(listOf(w.id), toCollection) }
+                                        else -> undoable({ "$name marked as ordered" }) { c.repo.setWishlistOrdered(listOf(w.id), System.currentTimeMillis()) }
+                                    }
                                 },
                                 onLeft = { undoable({ "$name deleted from the wishlist" }) { c.repo.deleteWishlistItems(listOf(w.id)) } },
                             )
@@ -913,6 +925,31 @@ fun CollectionScreen(nav: NavController) {
             deletingMany = null
             stopSelecting()
             undoable({ "$it card(s) deleted" }) { c.repo.deleteStacks(items.map { it.id }) }
+        }
+    }
+    if (arranging) {
+        val keys = com.mtgtrader.data.BinderOrder.arrange(binders, binderOrder, tradeBinderId)
+        ArrangeBindersDialog(keys, { k -> barLabel(k, binders, tradeBinderId) }, onDismiss = { arranging = false }) {
+            arranging = false
+            c.settings.setBinderOrder(it)
+        }
+    }
+    addingWish?.let { w ->
+        val name = w.card.displayName
+        AddWishToCollectionDialog(
+            w, wishOwned[w.id]?.gotSince ?: 0, rows.orEmpty().map { it.item },
+            onDismiss = { addingWish = null },
+            onTakeOff = {
+                addingWish = null
+                undoable({ "$name taken off the wishlist" }) { c.repo.deleteWishlistItems(listOf(w.id)) }
+            },
+        ) { v ->
+            addingWish = null
+            scope.launch {
+                val binderId = c.repo.resolve(v.binder)
+                val undo = c.repo.wishToCollection(w.id, v.card!!, v.finish, v.condition, v.language, v.quantity, binderId, v.price)
+                if (snackbar.showUndo("${v.quantity}× $name added to ${binderName(binderId, c.db.binderDao().all())}")) undo()
+            }
         }
     }
     receivingOwned?.let { got ->
@@ -1221,3 +1258,10 @@ internal fun ConditionNote(row: CollectionRow) {
 
 /** "≈" when the chosen price source has no price for the card, so Cardmarket's stands in. Since 1.29. */
 internal fun approx(row: CollectionRow) = if (row.isApprox) "≈" else ""
+
+/** What a place in the binder bar is called, for "Arrange binders…". */
+private fun barLabel(key: String, binders: List<Binder>, tradeBinderId: Long): String = when (key) {
+    com.mtgtrader.data.BinderOrder.UNSORTED -> Binder.UNSORTED_NAME
+    com.mtgtrader.data.BinderOrder.WISHLIST -> "★ Wishlist"
+    else -> com.mtgtrader.data.BinderOrder.binderOf(key, binders)?.let { if (it.id == tradeBinderId) "⇄ ${it.name}" else it.name } ?: key
+}

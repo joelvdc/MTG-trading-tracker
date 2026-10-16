@@ -142,6 +142,10 @@ a temporary "new cards" binder into your main one; identical cards are combined)
 copies, to another binder. Completing a trade asks which binder the received cards go into (or makes a new one); given
 cards are taken from Unsorted first. CSV import/export carries a "Binder Name" column.
 
+**Arrange binders:** ⋮ → **Arrange binders…** lists Unsorted, the Wishlist and every binder; move each up or down with
+its arrows. The bar above the collection and the binder lists ("Move to", "Put them in"…) follow that order; **All**
+always comes first and new binders go at the end. The order is synced to your other phone.
+
 **Selecting cards:** press and hold a card (in any view, or ⋮ → **Select cards**), then tap more; **Select all shown**
 picks every card the search and filters show. The bar at the top shows how many cards and their value, with:
 - **Move to binder…** (or a new binder);
@@ -164,6 +168,13 @@ by name say **Check the printing**, and the ones it couldn't find at all say **F
 printing yourself. Choose a binder (or make a new one, named after the shop and date) and tap **Add**: the cards keep
 the order's finish, condition, language and the price you paid per copy. Signed and altered cards are marked so (see
 below). When a card joins copies you already have in that binder, the stack gets the average paid, weighted by copies.
+
+**The order and your wishlist:** after **Add** (and after adding a checked package), cards of the order that are on your
+wishlist (to buy, ordered or received) are listed: for each, **Received** (preselected), **Take off** or **Leave**, or
+the same for all at once. "Any printing" wishlist cards match by name, "this printing only" ones by printing and finish;
+each copy bought counts once. Marked as received, a card stays on the wishlist as a record, linked to the order
+("✓ received Oct 20 · CardTrader order #12345"), and won't be added to the collection again. Of a card bought fewer
+times than wanted, the bought copies get an entry of their own and the rest stays wanted.
 
 The order files the app reads (it tells them apart by itself):
 - **CardTrader:** the order's Excel export (`.xls` or `.xlsx`).
@@ -277,11 +288,16 @@ trade. The wishlist isn't part of the collection's value, can be shared as a lis
 header to fold it away (Received starts folded). With "Ordered cards in their own section" off (the view menu, top
 right) it's one list with the ordered cards last, and Received below.
 
-**Received:** once a card has arrived, **swipe it to the right** (or tick "Received" in its window). It moves to the
-Received section with the date ("✓ received Oct 20"), as a record: it no longer counts as wanted (no ★ in trades, no
-price alerts, not in the total or the shared list). Swiping a received card to the right puts it back on the wishlist.
-**Swipe left** to delete a card. A swipe counts once it's gone 40% of the way, the colour behind the card shows what
-it will do, and every swipe can be undone. The ⋮ menu has:
+**Swiping right moves a card one step on:** **To buy → Ordered → Received → the collection.** A received card is kept in
+the Received section with the date ("✓ received Oct 20"), as a record: it no longer counts as wanted (no ★ in trades,
+no price alerts, not in the total or the shared list). Swiped right in Received, it goes into the collection: a window
+asks the printing (to confirm for "any printing" cards, to pick for cards added offline; the list needs internet),
+finish, condition, language, copies, binder and, if you like, what you paid. Copies of a version you already have in
+that binder join its stack, whose purchase price becomes the average of all copies. The card then leaves the
+wishlist. When its copies are in the collection already (it came with an imported order, or was added when received),
+swiping right just takes it off the wishlist; and when the app sees you got a copy since adding it, the window warns
+and offers **Just take it off the wishlist**. **Swipe left** to delete a card. A swipe counts once it's gone 40% of the
+way, the colour behind the card shows what it will do, and every swipe can be undone. The ⋮ menu has:
 - **Mark all ordered cards as received.**
 - **Mark the cards I now own as received:** the app remembers how many copies you owned when you added a card; cards
   you now own more of (from an order import, a trade, the scanner…) are shown in a list first, then marked. A card
@@ -290,8 +306,9 @@ it will do, and every swipe can be undone. The ⋮ menu has:
 - **Clear received cards.** They're kept until you do, or, in Settings → **Received wishlist cards**, after 1, 3, 6 or
   12 months.
 
-Received cards aren't added to the collection (your order imports do that). Settings → **Add received cards to the
-collection** adds them to Unsorted (near mint, their printing) instead.
+Received cards aren't added to the collection when marked (your order imports do that). Settings → **Add received cards
+to the collection** adds them to Unsorted (near mint, their printing) right away instead, for many at once; they're then
+marked "added to the collection", so swiping them on doesn't add them a second time.
 
 **Selecting:** press and hold a card (or ⋮ → **Select cards**), then tap more. The bar at the top shows how many and
 their value, with **Ordered**, **Received**, **Delete** and, under ⋮, **Back on the wishlist**, **Not ordered**,
@@ -303,7 +320,8 @@ line above the wishlist counts it as ordered instead of still to buy, and it's l
 it isn't bought twice). Once it has arrived, swipe it to the right to mark it as received.
 
 **Price alerts:** open a wishlist card and fill in "Notify me at or below" (in the currency you show prices in; empty
-means no alert). When the card costs that much or less you get one notification ("Ragavan: €38.50 · CardTrader (2X2, SP,
+means no alert). The level keeps the currency you typed it in, so 300 kr. stays 300 kr. whatever the day's exchange
+rate (levels set before 1.39 were kept in euros: type them again once). When the card costs that much or less you get one notification ("Ragavan: €38.50 · CardTrader (2X2, SP,
 EN) · your level: €40.00"); tapping it opens the card. You're told once per drop: a new notification only comes after the
 price has been above your level again, or when you change the level. Ordered cards stay quiet. Prices are checked after
 each price update (when the app opens, and every few hours in the background, so "Update automatically" must be on);

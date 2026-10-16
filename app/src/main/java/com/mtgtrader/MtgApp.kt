@@ -116,6 +116,9 @@ class AppContainer(context: Context) {
         val display = { cur: com.mtgtrader.data.AppCurrency, rates: com.mtgtrader.data.ExchangeRates? -> com.mtgtrader.data.DisplayCurrency.of(cur, rates) }
         val display0 = display(settings.currency.value, exchangeRates.rates.value)
         com.mtgtrader.data.Money.display = display0
+        // Alert levels keep the currency they were typed in (since 1.39).
+        com.mtgtrader.data.Money.rates = exchangeRates.rates.value
+        appScope.launch { exchangeRates.rates.collect { com.mtgtrader.data.Money.rates = it } }
         appScope.launch {
             kotlinx.coroutines.flow.combine(settings.currency, exchangeRates.rates, display)
                 .dropWhile { it == display0 }

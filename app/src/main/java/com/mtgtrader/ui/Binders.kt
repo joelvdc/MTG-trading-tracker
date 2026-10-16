@@ -9,7 +9,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -25,11 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.container
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.BinderChoice
+import com.mtgtrader.data.BinderOrder
 
 private const val NEW_BINDER = -1L
 
@@ -51,7 +58,13 @@ fun binderName(id: Long, binders: List<Binder>): String =
 @Composable
 fun BinderPicker(label: String, choice: BinderChoice, onChange: (BinderChoice) -> Unit, suggestedName: String = "", modifier: Modifier = Modifier) {
     val binders = rememberBinders()
-    val options = listOf(Binder.UNSORTED) + binders.map { it.id } + NEW_BINDER
+    val c = LocalContext.current.container
+    val order by c.settings.binderOrder.collectAsStateWithLifecycle()
+    // In the order arranged for the binder bar (since 1.39).
+    val arranged = BinderOrder.arrange(binders, order, c.settings.tradeBinderId).mapNotNull { k ->
+        if (k == BinderOrder.UNSORTED) Binder.UNSORTED else BinderOrder.binderOf(k, binders)?.id
+    }
+    val options = arranged + NEW_BINDER
     val selected = if (choice.newName != null) NEW_BINDER else choice.binderId
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         DropdownSelector(
@@ -194,4 +207,34 @@ fun CheckRow(text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
         Checkbox(checked = checked, onCheckedChange = onChange)
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
+}
+
+/**
+ * "Arrange binders…": the binder bar's places (Unsorted, the wishlist, the binders) in order, each moved
+ * up or down with its arrows. "All" always comes first. Since 1.39.
+ */
+@Composable
+fun ArrangeBindersDialog(keys: List<String>, label: (String) -> String, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) {
+    var order by remember { mutableStateOf(keys) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Arrange binders") },
+        text = {
+            Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
+                Text(
+                    "The order of the bar above the collection, and of the binder lists. “All” always comes first. Synced to your other phone.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                order.forEachIndexed { i, k ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(label(k), Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        IconButton(onClick = { order = BinderOrder.move(order, i, -1) }, enabled = i > 0) { Icon(Icons.Default.KeyboardArrowUp, "Up") }
+                        IconButton(onClick = { order = BinderOrder.move(order, i, 1) }, enabled = i < order.lastIndex) { Icon(Icons.Default.KeyboardArrowDown, "Down") }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(order) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

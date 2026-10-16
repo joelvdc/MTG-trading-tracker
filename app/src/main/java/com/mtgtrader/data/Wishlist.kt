@@ -33,19 +33,33 @@ data class WishlistItem(
     /** When you ticked "Ordered, on its way"; null while it isn't ordered yet. Since 1.35. */
     val orderedAt: Long? = null,
     /**
-     * Notify when the card costs this much or less, in euros (typed in the display currency); null
-     * for no notifications. Synced. Since 1.37; see [WishlistWatch].
+     * Notify when the card costs this much or less, in [alertCurrency] (as typed); null for no
+     * notifications. Synced. Since 1.37 (in euros until 1.38); see [WishlistWatch].
      */
     val alertBelow: Double? = null,
+    /**
+     * The currency [alertBelow] was typed in ("DKK"); null for euros (levels set before 1.39). Kept so
+     * 300 kr. stays 300 kr. whatever the day's exchange rate. Synced. Since 1.39.
+     */
+    val alertCurrency: String? = null,
     /**
      * When it arrived ("Received", swiped right): the card is then kept in the wishlist's Received
      * section as a record, no longer wanted (not counted, alerted, shared or starred). Synced. Since 1.38.
      */
     val receivedAt: Long? = null,
+    /**
+     * Where a received card's copies went into the collection ("CardTrader order #123", "added to the
+     * collection"); null if they haven't (yet). A card with it isn't added to the collection again. Synced.
+     * Since 1.39.
+     */
+    val receivedFrom: String? = null,
     /** Sync identity and last change; filled in by database triggers (see [SyncSchema]). */
     val uid: String? = null,
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
 )
+
+/** The alert level in euros at today's rate (see [WishlistItem.alertCurrency]); null without a level. Since 1.39. */
+val WishlistItem.levelEur: Double? get() = alertBelow?.let { Money.eurOf(it, alertCurrency) }
 
 /**
  * A wishlist card added while offline, known only by its name (from Cardmarket's product list on

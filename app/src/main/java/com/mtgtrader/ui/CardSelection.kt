@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
@@ -73,12 +74,17 @@ import com.mtgtrader.data.WishlistItem
 /** What a swipe in one direction does: its colour, icon and words behind the card, and the action. */
 data class SwipeSpec(val label: String, val icon: ImageVector, val color: Color, val action: () -> Unit)
 
-/** The wishlist's swipes: right marks a card received (or, in the Received section, puts it back), left deletes it. */
+/**
+ * The wishlist's swipes (since 1.39): right moves a card one step on, To buy → Ordered → Received →
+ * the collection (or, when its copies are in the collection already, off the wishlist); left deletes it.
+ */
 @Composable
-fun wishSwipes(received: Boolean, onRight: () -> Unit, onLeft: () -> Unit): Pair<SwipeSpec, SwipeSpec> =
-    (if (received) SwipeSpec("Back on the wishlist", Icons.AutoMirrored.Filled.Undo, SwipeColors.neutral, onRight)
-    else SwipeSpec("Received", Icons.Default.TaskAlt, SwipeColors.good, onRight)) to
-        SwipeSpec("Delete", Icons.Default.Delete, MaterialTheme.colorScheme.error, onLeft)
+fun wishSwipes(w: WishlistItem, onRight: () -> Unit, onLeft: () -> Unit): Pair<SwipeSpec, SwipeSpec> = when {
+    w.receivedAt != null && w.receivedFrom != null -> SwipeSpec("Off the wishlist (in the collection)", Icons.Default.TaskAlt, SwipeColors.neutral, onRight)
+    w.receivedAt != null -> SwipeSpec("Add to the collection", Icons.Default.Inventory, MaterialTheme.colorScheme.primary, onRight)
+    w.orderedAt != null -> SwipeSpec("Received", Icons.Default.TaskAlt, SwipeColors.good, onRight)
+    else -> SwipeSpec("Ordered", Icons.Default.LocalShipping, MaterialTheme.colorScheme.tertiary, onRight)
+} to SwipeSpec("Delete", Icons.Default.Delete, MaterialTheme.colorScheme.error, onLeft)
 
 /** A collection swipe's look (the action is the screen's). */
 @Composable

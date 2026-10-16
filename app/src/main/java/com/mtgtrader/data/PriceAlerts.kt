@@ -159,12 +159,13 @@ object PriceAlerts {
     /**
      * One check of a card with alert [level] whose cheapest price is now [best]: notify once when it's
      * at or below the level, then stay quiet until it's been above the level again (or the level
-     * changes). Without a price nothing changes; without a level there's nothing to notify.
+     * changes). Without a price nothing changes; without a level there's nothing to notify. [key] is the
+     * level as typed (since 1.39: [level] is it in euros at today's rate, which moves a little each day).
      */
-    fun step(level: Double?, best: Double?, alertedLevel: Double?): Step = when {
+    fun step(level: Double?, best: Double?, alertedLevel: Double?, key: Double? = level): Step = when {
         level == null -> Step(false, null)
         best == null -> Step(false, alertedLevel)
-        best <= level + 0.000_1 -> Step(alertedLevel != level, level)
+        best <= level + 0.000_1 -> Step(alertedLevel != key, key)
         else -> Step(false, null)
     }
 
@@ -299,7 +300,7 @@ class WishlistWatch(
             }
 
             val best = PriceAlerts.best(row, basis, key)
-            val step = PriceAlerts.step(item.alertBelow, best?.first, row.alertedLevel)
+            val step = PriceAlerts.step(item.levelEur, best?.first, row.alertedLevel, key = item.alertBelow)
             if (step.notify && notify && best != null) notifier.show(item, best.first, best.second, row, basis)
             row = row.copy(alertedLevel = step.alertedLevel, checkedAt = now)
             dao.put(row)
@@ -340,7 +341,7 @@ class AlertNotifier(private val context: Context) {
         } else {
             PriceAlerts.basisLong(basis) + (row.setCode?.takeIf { item.anyPrinting }?.let { " (${it.uppercase()})" } ?: "")
         }
-        val text = "$where · your level: ${Money.format(item.alertBelow ?: price)}"
+        val text = "$where · your level: ${Money.format(item.levelEur ?: price)}"
         val open = Intent(context, com.mtgtrader.MainActivity::class.java)
             .setAction(ACTION_OPEN_WISH).putExtra(EXTRA_WISH_ID, item.id)
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)

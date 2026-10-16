@@ -143,6 +143,16 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
         }
     }
 
+    var wishCheck by remember { mutableStateOf<Pair<List<com.mtgtrader.data.WishOrders.Match>, String>?>(null) }
+    wishCheck?.let { (matches, label) ->
+        OrderWishlistDialog(matches, label) { choices ->
+            wishCheck = null
+            scope.launch {
+                c.repo.applyOrderToWishlist(choices, label)
+                nav.safePopBackStack()
+            }
+        }
+    }
     val list = candidates
     val shop = order?.shop
     val chosen = list.orEmpty().filter { it.index in checked && it.card != null }
@@ -172,7 +182,10 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
                                     order?.let { file -> c.repo.recordOrders(Orders.fromFile(file, date.trim()) { i, _ -> list.firstOrNull { it.index == i }?.card }) }
                                     val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
                                     c.repo.reportImport(importSummary(added, where, list, checked))
-                                    nav.safePopBackStack()
+                                    // Cards of the order on the wishlist (since 1.39): asked about before leaving.
+                                    val matches = c.repo.wishMatches(chosen.map { com.mtgtrader.data.WishOrders.Bought(it.card!!, it.line.foil, it.line.quantity) })
+                                    if (matches.isEmpty()) nav.safePopBackStack()
+                                    else wishCheck = matches to com.mtgtrader.data.WishOrders.label((shop ?: OrderShop.CARDTRADER).label, chosen.map { it.line.order })
                                 }
                             },
                             enabled = !importing && chosen.isNotEmpty() && binder.isValid && isIsoDate(date),

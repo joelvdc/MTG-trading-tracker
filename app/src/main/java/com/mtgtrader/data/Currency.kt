@@ -80,6 +80,22 @@ object Money {
     /** An amount typed in the display currency, in euros. */
     fun toEur(amount: Double): Double = amount / display.perEuro
 
+    /** The latest exchange rates (for amounts kept in another currency than the one shown). Since 1.39. */
+    var rates by mutableStateOf<ExchangeRates?>(null)
+
+    /**
+     * [amount] in [currency] ("DKK"; null is euros), in euros at today's rate: the display rate when it's
+     * the display currency, so the amount shows back exactly as typed. Null while the rate isn't known.
+     * Since 1.39.
+     */
+    fun eurOf(amount: Double, currency: String?): Double? {
+        val cur = AppCurrency.entries.firstOrNull { it.name == currency } ?: AppCurrency.EUR
+        if (cur == AppCurrency.EUR) return amount
+        if (cur == display.currency) return amount / display.perEuro
+        val rate = rates?.rate(cur) ?: ExchangeRates.FALLBACK.rate(cur) ?: return null
+        return amount / rate
+    }
+
     private fun eurFormat(decimals: Int) = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
         currency = java.util.Currency.getInstance("EUR")
         minimumFractionDigits = decimals

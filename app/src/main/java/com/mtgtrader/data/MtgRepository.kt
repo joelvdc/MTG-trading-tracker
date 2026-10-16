@@ -266,8 +266,10 @@ class MtgRepository(
         val added = mutableListOf<Pair<Long, Int>>()
         db.withTransaction {
             for (w in before) {
-                wishlist.update(w.copy(receivedAt = at))
-                if (toCollection && !w.card.isPending) {
+                // Copies added here are marked so (since 1.39): moving the card to the collection later won't add them again.
+                val adding = toCollection && !w.card.isPending && w.receivedFrom == null
+                wishlist.update(w.copy(receivedAt = at, receivedFrom = if (adding) WishOrders.ADDED else w.receivedFrom))
+                if (adding) {
                     val finish = w.card.resolveFinish(if (w.foil) Finish.FOIL else Finish.NONFOIL)
                     added += addToCollection(w.card, finish, "NM", "EN", w.quantity).itemId to w.quantity
                 }
@@ -284,6 +286,60 @@ class MtgRepository(
             }
         }
         return before.size to undo
+    }
+
+    /**
+     * Moves a received wishlist card into the collection (swiped right in Received, since 1.39): [qty]
+     * copies of [card] in [finish], [condition] and [language] go into [binderId] (joining the same
+     * version's stack there, whose purchase price becomes the average with [price]), and the card leaves
+     * the wishlist. Returns an undo for both.
+     */
+    suspend fun wishToCollection(
+        wishId: Long, card: CardRef, finish: Finish, condition: String, language: String, qty: Int, binderId: Long, price: Double?,
+    ): UndoAction {
+        val before = wishlist.byIds(listOf(wishId))
+        val undoCollection = collectionChange(setOf(card.scryfallId)) {
+            addBought(card, finish, condition, language, qty, binderId, Marks.NONE, price)
+            wishlist.deleteMany(listOf(wishId))
+        }
+        val undoWish = wishUndo(before)
+        return { undoCollection(); undoWish() }
+    }
+
+    /** The wishlist cards an order's copies match (see [WishOrders.match]). Since 1.39. */
+    suspend fun wishMatches(bought: List<WishOrders.Bought>): List<WishOrders.Match> = WishOrders.match(wishlist.all(), bought)
+
+    /**
+     * After an order went into the collection: each matched wishlist card is marked as received from
+     * that order ([label], e.g. "CardTrader order #123"; it then isn't added to the collection again),
+     * taken off the wishlist, or left. Of a card bought fewer times than wanted, the bought copies become
+     * an entry of their own and the rest stays as it was. Returns the cards changed and an undo. Since 1.39.
+     */
+    suspend fun applyOrderToWishlist(choices: List<Pair<WishOrders.Match, WishOrders.Choice>>, label: String, at: Long = System.currentTimeMillis()): Pair<Int, UndoAction> {
+        val todo = choices.filter { it.second != WishOrders.Choice.LEAVE }
+        val before = wishlist.byIds(todo.map { it.first.item.id })
+        val byId = before.associateBy { it.id }
+        val created = mutableListOf<Long>()
+        db.withTransaction {
+            for ((m, choice) in todo) {
+                val w = byId[m.item.id] ?: continue
+                val n = m.quantity.coerceAtMost(w.quantity)
+                val all = n >= w.quantity
+                // The copies bought are in the collection now: they no longer count as "got since adding" for what's still wanted.
+                val rest = w.copy(quantity = w.quantity - n, ownedAtAdd = w.ownedAtAdd + n)
+                when (choice) {
+                    WishOrders.Choice.RECEIVED ->
+                        if (all) wishlist.update(w.copy(receivedAt = w.receivedAt ?: at, receivedFrom = label))
+                        else {
+                            wishlist.update(rest)
+                            created += wishlist.insert(w.copy(id = 0, uid = null, updatedAt = 0, quantity = n, receivedAt = at, receivedFrom = label))
+                        }
+                    WishOrders.Choice.REMOVE -> if (all) wishlist.delete(w.id) else wishlist.update(rest)
+                    WishOrders.Choice.LEAVE -> {}
+                }
+            }
+        }
+        return todo.size to wishUndo(before, created)
     }
 
     /** Every card ticked "Ordered" and not received yet. Since 1.38. */
