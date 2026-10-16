@@ -104,6 +104,8 @@ data class ArchidektDeck(
     val cards: List<ArchidektCard>,
     /** When the deck was last changed on Archidekt. */
     val updatedAt: Long? = null,
+    /** The cards in categories left out of the deck (the maybeboard, a sideboard…). Since 1.42. */
+    val maybeboard: List<ArchidektCard> = emptyList(),
 ) {
     val commanders get() = cards.filter { it.commander }
     val cardCount get() = cards.sumOf { it.quantity }
@@ -176,10 +178,10 @@ class ArchidektApi(private val http: OkHttpClient) {
             val d = json.decodeFromString<ArchDeck>(body)
             val excluded = d.categories.filterNot { it.includedInDeck }.map { it.name }.toSet()
             val premier = d.categories.filter { it.isPremier }.map { it.name }.toSet() + "Commander"
-            val cards = d.cards.mapNotNull { e ->
+            val all = d.cards.mapNotNull { e ->
                 val cats = e.categories.orEmpty()
                 val primary = cats.firstOrNull() ?: e.card.oracleCard.defaultCategory ?: DeckGrouping.primaryType(e.card.oracleCard.types.joinToString(" "))
-                if (primary in excluded || e.card.uid.length < 2) return@mapNotNull null
+                if (e.card.uid.length < 2) return@mapNotNull null
                 val o = e.card.oracleCard
                 ArchidektCard(
                     scryfallId = e.card.uid,
@@ -191,13 +193,14 @@ class ArchidektApi(private val http: OkHttpClient) {
                     category = primary,
                     types = o.types.joinToString(" "),
                     cmc = o.cmc,
-                    commander = cats.any { it in premier },
+                    commander = primary !in excluded && cats.any { it in premier },
                     foil = e.modifier.equals("Foil", true) || e.modifier.equals("Etched", true),
                     etched = e.modifier.equals("Etched", true),
                     gameChanger = o.gameChanger,
                     colorIdentity = o.colorIdentity,
                 )
             }
+            val (maybe, cards) = all.partition { it.category in excluded }
             return ArchidektDeck(
                 id = d.id,
                 name = d.name,
@@ -205,6 +208,7 @@ class ArchidektApi(private val http: OkHttpClient) {
                 artUrl = d.customFeatured?.takeIf { it.isNotBlank() } ?: d.featured?.takeIf { it.isNotBlank() },
                 cards = cards,
                 updatedAt = DeckSorting.parseTime(d.updatedAt),
+                maybeboard = maybe,
             )
         }
     }

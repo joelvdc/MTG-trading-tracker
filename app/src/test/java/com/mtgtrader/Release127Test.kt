@@ -132,8 +132,9 @@ class Release127Test {
             assertTrue("newer version" in e.message!!)
         }
         // 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist cards marked as ordered), 5 since 1.37 (price alerts),
-        // 6 since 1.38 (wishlist cards received), 7 since 1.39 (alert level currencies, received cards' links).
-        assertEquals(7, BackupFile.FORMAT)
+        // 6 since 1.38 (wishlist cards received), 7 since 1.39 (alert level currencies, received cards' links),
+        // 8 since 1.42 (decks' maybeboards).
+        assertEquals(8, BackupFile.FORMAT)
     }
 
     @Test

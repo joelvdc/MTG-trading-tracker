@@ -18,7 +18,39 @@ How to use this file:
 3. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's
    1.32). The owner said on 2026-10-13 to wait with this one: don't start it until they say so.
 
-Nothing else is waiting on this list.
+4. ~~MTG Trader 1.42: compact deck view, folding sections, the maybeboard (stored on the phone, as the owner chose on
+   2026-10-16), adding cards from the deck page.~~ Released.
+5. **MTG Trader 1.43: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42. Not started: the owner wants
+   to revisit it, and the open questions below are settled first.
+
+### Changing decks on Archidekt (planned as MTG Trader 1.43)
+*Added 2026-10-16. MTG Trader only.*
+
+The owner's words: "I would also like to push the added cards in the app to archidekts maybeboard. And lastly I would
+like to be able to just edit the deck in the app [...] like being able to add cards and dragging them between
+categories, add or remove categories, etc. I think that it is too much to have all the functionality that archidekt
+has, but at least provide some basic edit capabilities."
+
+What was proposed (only for decks owned by the Archidekt account logged in under Settings; other people's decks stay
+read-only apart from "Added in app"):
+1. **Push "Added in app" cards to Archidekt's maybeboard**: one button on the deck page. Once Archidekt has them,
+   they leave "Added in app" and show in the maybeboard section (from 1.42).
+2. **Basic editing**: change a card's quantity, remove a card, move a card to another category, add a card straight
+   into a category, add / rename / delete a category (deleting moves its cards to another one). Needs internet; every
+   change can be undone.
+
+How big: about as much work as the four 1.42 items together. The app already logs in to Archidekt (collection sync),
+but Archidekt has no official API for changing decks: the app would use the one Archidekt's own website uses
+(`PATCH /api/decks/<id>/modifyCards/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
+from a cloud session, so the owner tries it on a spare deck first.
+
+Open questions:
+- **Where edits are saved.** Recommended: straight to Archidekt, then the deck reloads, so Archidekt stays the only
+  real decklist. The alternative (edits kept in the app only) lets the two drift apart and makes every reload a merge.
+- **Moving cards between categories:** a "Move to…" choice when tapping a card (recommended), or dragging (fiddly in
+  a long list on a phone; could come later).
+- **Offline:** edits need internet. Queue them and send them when back online, or simply say "needs internet"?
+- What happens to "Added in app" cards on other people's decks: stay in the app only (as now)?
 
 ## Done
 

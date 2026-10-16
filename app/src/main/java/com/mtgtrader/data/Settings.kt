@@ -77,6 +77,36 @@ class Settings(context: Context) {
         prefs.edit().putString("deckPrintingsOff", v.joinToString(",")).stamp().apply()
     }
 
+    /** Deck pages as one slim line per card, like the collection's compact view (this phone only). Since 1.42. */
+    private val _deckCompact = MutableStateFlow(prefs.getBoolean("deckCompact", false))
+    val deckCompact: StateFlow<Boolean> = _deckCompact
+
+    fun setDeckCompact(on: Boolean) {
+        _deckCompact.value = on
+        prefs.edit().putBoolean("deckCompact", on).apply()
+    }
+
+    /** Deck pages list the maybeboard under the deck (this phone only). Since 1.42. */
+    private val _deckMaybeboard = MutableStateFlow(prefs.getBoolean("deckMaybeboard", false))
+    val deckMaybeboard: StateFlow<Boolean> = _deckMaybeboard
+
+    fun setDeckMaybeboard(on: Boolean) {
+        _deckMaybeboard.value = on
+        prefs.edit().putBoolean("deckMaybeboard", on).apply()
+    }
+
+    /**
+     * Section headings folded away on deck pages, e.g. "Lands", for every deck that has them (this phone
+     * only). Since 1.42.
+     */
+    private val _deckCollapsed = MutableStateFlow(prefs.getStringSet("deckCollapsed", null).orEmpty().toSet())
+    val deckCollapsed: StateFlow<Set<String>> = _deckCollapsed
+
+    fun setDeckCollapsed(titles: Set<String>) {
+        _deckCollapsed.value = titles
+        prefs.edit().putStringSet("deckCollapsed", titles).apply()
+    }
+
     private val _deckPicks = MutableStateFlow(decodePicks(prefs.getString("deckPicks", null)))
     /** Deck id → card name (see [DeckPrintings.nameKey]) → the copy you picked to show ([DeckPrintings.pickValue] or [DeckPrintings.ARCHIDEKT]). Since 1.22. */
     val deckPicks: StateFlow<Map<Long, Map<String, String>>> = _deckPicks

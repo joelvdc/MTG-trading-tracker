@@ -281,9 +281,21 @@ interface DeckDao {
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
            FROM deck_cards d LEFT JOIN prices p ON p.idProduct =
              CASE WHEN d.foil = 1 AND d.cardmarketFoilId IS NOT NULL THEN d.cardmarketFoilId ELSE d.cardmarketId END
-           WHERE d.deckId = :deckId"""
+           WHERE d.deckId = :deckId AND d.maybeboard = 0"""
     )
     fun observeCards(deckId: Long): Flow<List<DeckCardRow>>
+
+    /** The deck's maybeboard (and other categories left out of the deck on Archidekt), with prices. Since 1.42. */
+    @Query(
+        """SELECT d.*, p.idProduct AS pr_idProduct, p.avg AS pr_avg, p.low AS pr_low, p.trend AS pr_trend,
+           p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
+           p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
+           p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil
+           FROM deck_cards d LEFT JOIN prices p ON p.idProduct =
+             CASE WHEN d.foil = 1 AND d.cardmarketFoilId IS NOT NULL THEN d.cardmarketFoilId ELSE d.cardmarketId END
+           WHERE d.deckId = :deckId AND d.maybeboard = 1"""
+    )
+    fun observeMaybeboard(deckId: Long): Flow<List<DeckCardRow>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(deck: Deck)
@@ -297,11 +309,15 @@ interface DeckDao {
     @Query("DELETE FROM deck_cards WHERE deckId = :deckId")
     suspend fun deleteCards(deckId: Long)
 
-    @Query("SELECT * FROM deck_cards WHERE deckId = :deckId AND addedInApp = 1")
+    @Query("SELECT * FROM deck_cards WHERE deckId = :deckId AND addedInApp = 1 AND maybeboard = 0")
     suspend fun cardsAddedInApp(deckId: Long): List<DeckCard>
 
-    @Query("SELECT * FROM deck_cards WHERE deckId = :deckId")
+    /** The cards in the deck itself (not the maybeboard). */
+    @Query("SELECT * FROM deck_cards WHERE deckId = :deckId AND maybeboard = 0")
     suspend fun cards(deckId: Long): List<DeckCard>
+
+    @Query("SELECT * FROM deck_cards WHERE id = :id")
+    suspend fun card(id: Long): DeckCard?
 
     @Query("DELETE FROM deck_cards WHERE id = :id")
     suspend fun deleteCard(id: Long)
@@ -319,16 +335,17 @@ interface DeckDao {
     suspend fun ids(): List<Long>
 
     /** Copies per card name over all decks (for what the collection must keep). */
-    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards GROUP BY name")
+    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards WHERE maybeboard = 0 GROUP BY name")
     suspend fun cardCounts(): List<NameCount>
 
-    @Query("SELECT DISTINCT name FROM deck_cards")
+    @Query("SELECT DISTINCT name FROM deck_cards WHERE maybeboard = 0")
     fun observeCardNames(): Flow<List<String>>
 
     /** Every card name with the decks it's in (and how many copies each), for "used in several decks". */
     @Query(
         """SELECT c.name AS name, c.deckId AS deckId, d.name AS deckName, SUM(c.quantity) AS quantity, MAX(c.imageUrl) AS imageUrl
            FROM deck_cards c JOIN decks d ON d.archidektId = c.deckId
+           WHERE c.maybeboard = 0
            GROUP BY c.name COLLATE NOCASE, c.deckId ORDER BY d.name COLLATE NOCASE"""
     )
     fun observeUsage(): Flow<List<DeckUse>>
@@ -363,7 +380,7 @@ interface DeckDao {
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
         WishPrice::class, CtBlueprint::class,
     ],
-    version = 18,
+    version = 19,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -389,11 +406,22 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 19 (app 1.42): a deck's maybeboard cards, kept apart from the deck's own (synced with the deck;
+         * the sync file's format went to 8 with it). Adding the column doesn't touch the rows, so it doesn't
+         * count as a change to sync.
+         */
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `deck_cards` ADD COLUMN `maybeboard` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         /**
          * Version 18 (app 1.39): the currency of a wishlist card's alert level, and where a received card went

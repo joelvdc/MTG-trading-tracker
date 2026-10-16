@@ -19,6 +19,8 @@ sealed interface CardTarget {
     data object Scans : CardTarget
     /** The wishlist (cards you want). Since 1.16. */
     data object Wishlist : CardTarget
+    /** A deck, as a card "Added in app" (Archidekt isn't changed). Since 1.42. */
+    data class ToDeck(val deckId: Long) : CardTarget
     data class ReplaceTradeItem(val itemId: Long) : CardTarget
     data class ReplaceCollectionItem(val itemId: Long) : CardTarget
     data class ReplaceScan(val itemId: Long) : CardTarget
@@ -30,6 +32,7 @@ sealed interface CardTarget {
         is Collection -> "collection:$binderId"
         Scans -> "scans"
         Wishlist -> "wishlist"
+        is ToDeck -> "deck:$deckId"
         is ReplaceTradeItem -> "rtrade:$itemId"
         is ReplaceCollectionItem -> "rcoll:$itemId"
         is ReplaceScan -> "rscan:$itemId"
@@ -42,6 +45,7 @@ sealed interface CardTarget {
                 "trade" -> TradeSide(p[1].toLong(), p[2])
                 "scans" -> Scans
                 "wishlist" -> Wishlist
+                "deck" -> ToDeck(p[1].toLong())
                 "rtrade" -> ReplaceTradeItem(p[1].toLong())
                 "rcoll" -> ReplaceCollectionItem(p[1].toLong())
                 "rscan" -> ReplaceScan(p[1].toLong())
@@ -51,17 +55,18 @@ sealed interface CardTarget {
     }
 }
 
-enum class AddedTo { TRADE, COLLECTION, SCANS, WISHLIST }
+enum class AddedTo { TRADE, COLLECTION, SCANS, WISHLIST, DECK }
 
 /** Identifies one added copy so the scanner can undo it. */
 data class AddResult(val itemId: Long, val addedTo: AddedTo) {
-    /** Where to send "choose a different printing" for this copy. */
-    val replaceTarget: CardTarget
+    /** Where to send "choose a different printing" for this copy (none for a deck's card). */
+    val replaceTarget: CardTarget?
         get() = when (addedTo) {
             AddedTo.TRADE -> CardTarget.ReplaceTradeItem(itemId)
             AddedTo.COLLECTION -> CardTarget.ReplaceCollectionItem(itemId)
             AddedTo.SCANS -> CardTarget.ReplaceScan(itemId)
             AddedTo.WISHLIST -> CardTarget.Wishlist
+            AddedTo.DECK -> null
         }
 }
 
@@ -108,8 +113,42 @@ class MtgRepository(
             is CardTarget.Collection -> addToCollection(card, finish, "NM", language, 1, target.binderId)
             CardTarget.Scans -> addToScans(card, finish, language, exactPrinting)
             CardTarget.Wishlist -> addToWishlist(card, finish)
+            is CardTarget.ToDeck -> addToDeck(target.deckId, card, finish)
             else -> null
         }
+
+    /**
+     * Adds one copy to a deck as a card "Added in app" (Archidekt isn't changed; it's kept when the deck
+     * is reloaded), next to an identical one if it's there. Its card type, which groups it in the deck,
+     * comes from the details saved for it or from Scryfall. Since 1.42.
+     */
+    suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1): AddResult {
+        val f = card.resolveFinish(finish)
+        val decks = db.deckDao()
+        val same = decks.cardsAddedInApp(deckId).firstOrNull { it.card.scryfallId == card.scryfallId && it.foil == f.foil && it.etched == f.etched }
+        if (same != null) {
+            decks.addQuantity(same.id, qty)
+            return AddResult(same.id, AddedTo.DECK)
+        }
+        val info = db.cardInfoDao().getMany(listOf(card.scryfallId)).firstOrNull()?.takeIf { it.typeLine.isNotEmpty() }
+            ?: runCatching { scryfall.collection(listOf(ScryfallApi.idIdentifier(card.scryfallId))).firstOrNull()?.toInfo() }.getOrNull()
+                ?.also { db.cardInfoDao().putAll(listOf(it)) }
+        val id = decks.insertCard(
+            DeckCard(
+                deckId = deckId,
+                card = card,
+                quantity = qty,
+                category = DeckToCollection.ADDED_IN_APP,
+                types = info?.typeLine?.substringBefore(" — ") ?: "",
+                cmc = info?.cmc ?: 0.0,
+                commander = false,
+                foil = f.foil,
+                etched = f.etched,
+                addedInApp = true,
+            )
+        )
+        return AddResult(id, AddedTo.DECK)
+    }
 
     suspend fun addToTrade(
         tradeId: Long, side: String, card: CardRef, finish: Finish, language: String = "EN", qty: Int = 1, condition: String = "NM",
@@ -145,6 +184,10 @@ class MtgRepository(
             AddedTo.WISHLIST -> {
                 val item = wishlist.byId(r.itemId) ?: return
                 if (item.quantity > 1) wishlist.update(item.copy(quantity = item.quantity - 1)) else wishlist.delete(item.id)
+            }
+            AddedTo.DECK -> {
+                val item = db.deckDao().card(r.itemId) ?: return
+                if (item.quantity > 1) db.deckDao().addQuantity(item.id, -1) else db.deckDao().deleteCard(item.id)
             }
         }
     }

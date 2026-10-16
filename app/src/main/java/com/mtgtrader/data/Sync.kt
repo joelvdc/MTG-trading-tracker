@@ -82,8 +82,9 @@ data class SyncFile(
          * 6 since 1.38: wishlist cards marked as received, which an older version would show as still wanted.
          * 7 since 1.39: alert levels in the currency typed and received cards' collection links, which an older
          * version would read as euros and lose.
+         * 8 since 1.42: decks' maybeboard cards, which an older version would count as part of the deck.
          */
-        const val FORMAT = 7
+        const val FORMAT = 8
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

@@ -667,4 +667,36 @@ class ScreenshotTest {
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/money_fields.png", roborazziOptions = screenshotOptions)
     }
+
+    /** 1.42: a deck in the compact view, a folded section, and the maybeboard under the deck. */
+    @Test fun deckCompactAndMaybeboard() {
+        fun row(id: Long, name: String, set: String, number: String, eur: Double, qty: Int = 1, category: String = "Ramp", foil: Boolean = false, added: Boolean = false, maybe: Boolean = false) =
+            com.mtgtrader.data.DeckCardRow(
+                com.mtgtrader.data.DeckCard(
+                    id = id, deckId = 7, card = ref(name, set, number, "rare").copy(fallbackEur = eur, fallbackEurFoil = eur * 2), quantity = qty, category = category,
+                    types = "Artifact", cmc = 1.0, commander = false, foil = foil, addedInApp = added, maybeboard = maybe,
+                ),
+                null,
+            )
+        val ramp = listOf(row(1, "Sol Ring", "c21", "263", 1.2), row(2, "Arcane Signet", "cmm", "374", 0.9, foil = true), row(3, "Mana Vault", "2xm", "256", 24.0, added = true))
+        val gameChanger = setOf(com.mtgtrader.data.BracketTag.GAME_CHANGER)
+        val maybe = listOf(row(10, "The Ozolith", "c21", "68", 6.5, category = "Maybeboard", maybe = true), row(11, "Lightning Greaves", "c21", "247", 0.4, qty = 2, category = "Maybeboard", maybe = true))
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Ramp", ramp), folded = false) {}
+                        for (r in ramp) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, if (r.item.id == 3L) gameChanger else emptySet()) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Lands", listOf(row(4, "Command Tower", "c21", "283", 0.2, qty = 36))), folded = true) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Maybeboard", maybe), folded = false) {}
+                        for (r in maybe) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, emptySet()) {}
+                        Spacer(Modifier.height(12.dp))
+                        // The same cards with pictures, as before.
+                        for (r in ramp.take(2)) com.mtgtrader.ui.DeckCardRowView(r, PriceType.TREND, emptySet()) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/deck_compact.png", roborazziOptions = screenshotOptions)
+    }
 }

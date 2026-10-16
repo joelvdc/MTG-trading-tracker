@@ -83,8 +83,16 @@ fun rememberTargetLabel(t: CardTarget): String {
             if (t.binderId == Binder.UNSORTED) "Adding to: Collection" else "Adding to: ${binderName(t.binderId, binders)}"
         CardTarget.Scans -> "Adding to: Scanned cards"
         CardTarget.Wishlist -> "Adding to: Wishlist"
+        is CardTarget.ToDeck -> "Adding to: ${rememberDeckName(t.deckId)} (in this app)"
         else -> "Choose the printing"
     }
+}
+
+@Composable
+private fun rememberDeckName(deckId: Long): String {
+    val c = LocalContext.current.container
+    val deck by remember(deckId) { c.db.deckDao().observe(deckId) }.collectAsStateWithLifecycle(null)
+    return deck?.name ?: "deck"
 }
 
 @Composable

@@ -119,6 +119,17 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.UnfoldLess
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.filled.ViewHeadline
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material3.ExtendedFloatingActionButton
+import com.mtgtrader.data.CardTarget
+import com.mtgtrader.data.DeckSection
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
@@ -128,6 +139,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val snackbar = remember { SnackbarHostState() }
     val deck by remember { c.db.deckDao().observe(deckId) }.collectAsStateWithLifecycle(null)
     val archidektRows by remember { c.db.deckDao().observeCards(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val maybeRows by remember { c.db.deckDao().observeMaybeboard(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val compact by c.settings.deckCompact.collectAsStateWithLifecycle()
+    val showMaybeboard by c.settings.deckMaybeboard.collectAsStateWithLifecycle()
+    val collapsed by c.settings.deckCollapsed.collectAsStateWithLifecycle()
     // Shown in the printings you own (since 1.22), unless switched off for this deck.
     val owned by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val binders = rememberBinders()
@@ -167,6 +182,18 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         return if (row.item.gameChanger) t + BracketTag.GAME_CHANGER else t
     }
 
+    val tagged = remember(rows, saltCard) { rows.associate { it.item.id to tagsOf(it) }.filterValues { it.isNotEmpty() } }
+    val sections = remember(rows, groupBy, onlyBracket, tagged) {
+        DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy)
+    }
+    // The maybeboard (and any other category left out of the deck on Archidekt), by its categories.
+    val maybeSections = remember(maybeRows) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY) }
+    // Headings are folded by their title, for every deck; the maybeboard's apart from the deck's.
+    val shownKeys = remember(sections, maybeSections, showMaybeboard) {
+        sections.map { it.title } + if (showMaybeboard) maybeSections.map { maybeKey(it.title) } else emptyList()
+    }
+    fun toggle(key: String) = c.settings.setDeckCollapsed(if (key in collapsed) collapsed - key else collapsed + key)
+
     LaunchedEffect(result) {
         val r = result ?: return@LaunchedEffect
         if (r.deckId != deckId) return@LaunchedEffect
@@ -186,6 +213,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 title = { Text(deck?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
+                    IconButton(onClick = { c.settings.setDeckCompact(!compact) }) {
+                        if (compact) Icon(Icons.Default.ViewList, "Show cards with pictures") else Icon(Icons.Default.ViewHeadline, "Compact view")
+                    }
                     IconButton(onClick = ::refresh, enabled = job == null) { Icon(Icons.Default.Refresh, "Reload decklist from Archidekt") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -206,6 +236,26 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             text = { Text("Group by ${other.label.lowercase()}") },
                             leadingIcon = { Icon(Icons.Default.ViewList, null) },
                             onClick = { menu = false; groupBy = other },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (compact) "Show cards with pictures" else "Compact view") },
+                            leadingIcon = { Icon(if (compact) Icons.Default.ViewList else Icons.Default.ViewHeadline, null) },
+                            onClick = { menu = false; c.settings.setDeckCompact(!compact) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Show maybeboard") },
+                            leadingIcon = { Icon(Icons.Default.Inventory2, null) },
+                            trailingIcon = { if (showMaybeboard) Icon(Icons.Default.Check, "On") },
+                            onClick = { menu = false; c.settings.setDeckMaybeboard(!showMaybeboard) },
+                        )
+                        val anyOpen = shownKeys.any { it !in collapsed }
+                        DropdownMenuItem(
+                            text = { Text(if (anyOpen) "Collapse all sections" else "Expand all sections") },
+                            leadingIcon = { Icon(if (anyOpen) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore, null) },
+                            onClick = {
+                                menu = false
+                                c.settings.setDeckCollapsed(if (anyOpen) collapsed + shownKeys else collapsed - shownKeys.toSet())
+                            },
                         )
                         deck?.let { d ->
                             DropdownMenuItem(
@@ -254,18 +304,23 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        floatingActionButton = {
+            if (deck != null) {
+                ExtendedFloatingActionButton(
+                    onClick = { nav.openSearch(CardTarget.ToDeck(deckId)) },
+                    icon = { Icon(Icons.Default.Add, null) },
+                    text = { Text("Add card") },
+                )
+            }
+        },
     ) { pad ->
         val d = deck
         if (d == null) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
         }
-        val tagged = remember(rows, saltCard) { rows.associate { it.item.id to tagsOf(it) }.filterValues { it.isNotEmpty() } }
-        val sections = remember(rows, groupBy, onlyBracket, tagged) {
-            DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy)
-        }
         val value = remember(rows, priceType, com.mtgtrader.data.Pricing.source, com.mtgtrader.data.Pricing.others, com.mtgtrader.data.Pricing.usdPerEuro) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
-        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 32.dp)) {
+        LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 88.dp)) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
             item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
             item(key = "printings") {
@@ -316,15 +371,43 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 item(key = "bracketcards") { BracketSummary(tagged.values, onlyBracket) { onlyBracket = it } }
             }
             sections.forEach { section ->
-                item(key = "h_${section.title}") {
-                    Text(
-                        "${section.title} (${section.count})",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
-                    )
+                val folded = section.title in collapsed
+                item(key = "h_${section.title}") { SectionHeading(section, folded) { toggle(section.title) } }
+                if (!folded) {
+                    items(section.rows, key = { "c_${it.item.id}" }) { row ->
+                        if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty()) { selected = row }
+                        else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty()) { selected = row }
+                    }
                 }
-                items(section.rows, key = { "c_${it.item.id}" }) { row -> DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty()) { selected = row } }
+            }
+            if (showMaybeboard) {
+                item(key = "maybeboard") {
+                    Column(Modifier.padding(top = 20.dp)) {
+                        HorizontalDivider()
+                        Text(
+                            "Maybeboard" + if (maybeRows.isNotEmpty()) " · ${maybeRows.sumOf { it.item.quantity }} cards" else "",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(top = 10.dp),
+                        )
+                        Text(
+                            if (maybeRows.isEmpty()) "No maybeboard cards. Decks loaded before version 1.42 get theirs when the decklist is reloaded from Archidekt (⟳)."
+                            else "On Archidekt, but left out of the deck: not counted in its cards or value.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                maybeSections.forEach { section ->
+                    val key = maybeKey(section.title)
+                    val folded = key in collapsed
+                    item(key = "mh_${section.title}") { SectionHeading(section, folded) { toggle(key) } }
+                    if (!folded) {
+                        items(section.rows, key = { "m_${it.item.id}" }) { row ->
+                            if (compact) DeckCompactRow(row, priceType, emptySet()) { selected = row }
+                            else DeckCardRowView(row, priceType, emptySet()) { selected = row }
+                        }
+                    }
+                }
             }
         }
     }
@@ -332,11 +415,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
     selected?.let { row ->
         val key = DeckPrintings.nameKey(row.item.card.name)
+        val inDeck = !row.item.maybeboard
         DeckCardDialog(
-            row, priceType, tagsOf(row), saltCard?.combosWith(row.item.card.name).orEmpty(),
+            row, priceType, if (inDeck) tagsOf(row) else emptySet(), if (inDeck) saltCard?.combosWith(row.item.card.name).orEmpty() else emptyList(),
             original = matched.original[row.item.id],
             archidektCard = archidektRows.firstOrNull { it.item.id == row.item.id }?.item,
-            copies = if (myPrintings && !DeckToCollection.isBasic(key)) owned.filter { DeckPrintings.nameKey(it.item.card.name) == key } else emptyList(),
+            copies = if (inDeck && myPrintings && !DeckToCollection.isBasic(key)) owned.filter { DeckPrintings.nameKey(it.item.card.name) == key } else emptyList(),
             binders = binders,
             picked = picks[key],
             onPick = { value ->
@@ -484,7 +568,7 @@ private fun ScoreColumn(label: String, value: String?, caption: String?, modifie
 }
 
 @Composable
-private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, onClick: () -> Unit) {
+internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
@@ -511,6 +595,77 @@ private fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<Br
             Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.bodyMedium)
             TrendBadge(row.trend, style = MaterialTheme.typography.labelSmall)
         }
+    }
+}
+
+/** How a maybeboard heading is remembered as folded, apart from a deck section with the same title. */
+private fun maybeKey(title: String) = "maybeboard:$title"
+
+/** A section's title and card count; tapping it folds the section away or opens it again. Since 1.42. */
+@Composable
+internal fun SectionHeading(section: DeckSection, folded: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 12.dp).clip(RoundedCornerShape(6.dp)).clickable(onClick = onToggle).padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "${section.title} (${section.count})",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            if (folded) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+            if (folded) "Show ${section.title}" else "Hide ${section.title}",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/** One slim line per card, like the collection's compact view: quantity, name, set and finish, price. Since 1.42. */
+@Composable
+internal fun DeckCompactRow(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, onClick: () -> Unit) {
+    val item = row.item
+    val unit = row.unitPrice(priceType)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable(onClick = onClick).padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "${item.quantity}×",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(30.dp),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(item.card.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val details = listOfNotNull(
+                item.card.setLabel,
+                if (item.foil) item.card.finishName(item.finish).lowercase() else null,
+                "added in app".takeIf { item.addedInApp },
+            ).joinToString(" · ")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    details,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (tags.isNotEmpty()) {
+                    Text(
+                        " · " + tags.joinToString(" · ") { it.label.lowercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (tags.any { it.strict }) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
