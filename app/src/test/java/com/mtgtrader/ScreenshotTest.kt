@@ -668,7 +668,7 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/money_fields.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.42: a deck in the compact view, a folded section, and the maybeboard under the deck. */
+    /** 1.42/1.43: a deck in the one-line compact view with mana costs, a folded section, and the maybeboard under the deck. */
     @Test fun deckCompactAndMaybeboard() {
         fun row(id: Long, name: String, set: String, number: String, eur: Double, qty: Int = 1, category: String = "Ramp", foil: Boolean = false, added: Boolean = false, maybe: Boolean = false) =
             com.mtgtrader.data.DeckCardRow(
@@ -678,21 +678,39 @@ class ScreenshotTest {
                 ),
                 null,
             )
-        val ramp = listOf(row(1, "Sol Ring", "c21", "263", 1.2), row(2, "Arcane Signet", "cmm", "374", 0.9, foil = true), row(3, "Mana Vault", "2xm", "256", 24.0, added = true))
-        val gameChanger = setOf(com.mtgtrader.data.BracketTag.GAME_CHANGER)
-        val maybe = listOf(row(10, "The Ozolith", "c21", "68", 6.5, category = "Maybeboard", maybe = true), row(11, "Lightning Greaves", "c21", "247", 0.4, qty = 2, category = "Maybeboard", maybe = true))
+        val gc = com.mtgtrader.data.BracketTag.GAME_CHANGER
+        val combo = com.mtgtrader.data.BracketTag.COMBO
+        val tutor = com.mtgtrader.data.BracketTag.TUTOR
+        val fast = com.mtgtrader.data.BracketTag.FAST_MANA
+        val turn = com.mtgtrader.data.BracketTag.EXTRA_TURN
+        val danse = listOf(
+            Triple(row(1, "Reanimate", "ema", "105", 4.1), "{B}", setOf(tutor)),
+            Triple(row(2, "Grave Researcher // Reanimate", "dsk", "99", 0.2), "{2}{B}", emptySet()),
+            Triple(row(3, "Saw in Half", "2x2", "93", 0.9, foil = true), "{2}{B}", emptySet()),
+            Triple(row(4, "Demonic Tutor", "uma", "93", 38.0), "{1}{B}", setOf(gc, tutor)),
+            Triple(row(5, "Dismember", "nph", "57", 1.8), "{1}{B/P}{B/P}", emptySet()),
+            Triple(row(6, "Kitchen Finks", "shm", "229", 0.4, added = true), "{1}{G/W}{G/W}", emptySet()),
+            // Long names: the labels shorten (TURN, FAST) or become dots so the name stays whole.
+            Triple(row(7, "Temporal Manipulation of the Multiverse", "ema", "77", 3.2), "{3}{U}{U}", setOf(turn)),
+            Triple(row(8, "Chrome Mox of the Very Long Name", "mrd", "152", 24.0), "{0}", setOf(gc, fast)),
+            Triple(row(9, "Thassa's Oracle and Something Even Longer", "thb", "73", 9.5, foil = true), "{U}{U}", setOf(gc, combo)),
+            Triple(row(10, "Delver of Secrets // Insectile Aberration", "isd", "51", 0.3), "{U} // ", emptySet()),
+        )
+        val maybe = listOf(row(20, "The Ozolith", "c21", "68", 6.5, category = "Maybeboard", maybe = true), row(21, "Lightning Greaves", "c21", "247", 0.4, qty = 2, category = "Maybeboard", maybe = true))
         compose.setContent {
-            MtgColors(dark = false) {
+            MtgColors(dark = true) {
                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
                     Column(Modifier.padding(horizontal = 12.dp)) {
-                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Ramp", ramp), folded = false) {}
-                        for (r in ramp) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, if (r.item.id == 3L) gameChanger else emptySet()) {}
-                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Lands", listOf(row(4, "Command Tower", "c21", "283", 0.2, qty = 36))), folded = true) {}
-                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Maybeboard", maybe), folded = false) {}
-                        for (r in maybe) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, emptySet()) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Danse!", danse.map { it.first }), 82.5, folded = false) {}
+                        for ((r, cost, tags) in danse) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, tags, cost) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Lands", listOf(row(30, "Swamp", "c21", "283", 0.05, qty = 30))), 1.5, folded = true) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Maybeboard", maybe), 7.3, folded = false) {}
+                        com.mtgtrader.ui.DeckCompactRow(maybe[0], PriceType.TREND, emptySet(), "{3}") {}
+                        com.mtgtrader.ui.DeckCompactRow(maybe[1], PriceType.TREND, emptySet(), "{2}") {}
                         Spacer(Modifier.height(12.dp))
-                        // The same cards with pictures, as before.
-                        for (r in ramp.take(2)) com.mtgtrader.ui.DeckCardRowView(r, PriceType.TREND, emptySet()) {}
+                        // The picture view: the mana cost where the set and number were.
+                        com.mtgtrader.ui.DeckCardRowView(danse[3].first, PriceType.TREND, danse[3].third, danse[3].second) {}
+                        com.mtgtrader.ui.DeckCardRowView(danse[5].first, PriceType.TREND, emptySet(), danse[5].second) {}
                     }
                 }
             }

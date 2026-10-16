@@ -35,7 +35,9 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   on Wi-Fi the app also saves the pictures of your decks (cards and covers) and wishlist ahead of time (Settings →
   "Save deck and wishlist pictures for offline use", on by default; about 10–15 MB per deck, at most 600 MB in all).
 - **Decks:** Archidekt (decklists), Commander Salt (brackets, scores and rule-zero cards) and, if chosen, edhpowerlevel.com
-  or ScrollVault (power level).
+  or ScrollVault (power level). Mana costs come from Scryfall with the cards' other details (once per card, kept on the
+  phone) and are drawn with the [Mana font](https://mana.andrewgioia.com) by Andrew Gioia (SIL Open Font License; the
+  mana symbols are © Wizards of the Coast).
 - **Prices:** Cardmarket's public daily price guide (trend, average, low, 1/7/30-day averages, normal + foil), downloaded
   automatically once a day (~26 MB) when the app opens and in the background. Settings can turn automatic updates off
   or limit them to Wi-Fi; "Update prices now" always runs.
@@ -84,8 +86,12 @@ the background. **Add to collection** (deck ⋮ menu) adds the deck's printings 
 don't own yet and without basic lands. The app shows the decklist grouped by your Archidekt categories (or by card type) with Cardmarket prices, and
 has [Commander Salt](https://www.commandersalt.com/) score it (more below).
 
-**Reading the decklist:** the view button next to ⟳ (or ⋮ → **Compact view**) switches every deck page between cards
-with pictures and one slim line per card (quantity, name, set, finish, price and bracket tags). Tap a section heading
+**Reading the decklist:** every card shows its **mana cost** in the usual symbols (since 1.43; the set and number are in
+the card's window). The view button next to ⟳ (or ⋮ → **Compact view**) switches every deck page between cards with
+pictures and **one line per card**, like Archidekt's list: amount, name, mana cost and price, with marks after the name
+(✦ foil, **+** added in the app) and the bracket labels (GC for game changer, COMBO, EXTRA TURN, LAND DENIAL in red;
+TUTOR, FAST MANA in grey). A long name keeps its room: the labels shorten (TURN, LD, FAST) or become dots (red or grey)
+first. Each section heading shows what its cards are worth. Tap a section heading
 (a category, or a card type when grouped by type) to fold its cards away and again to show them; ⋮ → **Collapse all /
 Expand all sections** does them all. Folded headings stay folded, in every deck that has them (since 1.42).
 
