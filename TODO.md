@@ -20,10 +20,13 @@ How to use this file:
 
 4. ~~MTG Trader 1.42: compact deck view, folding sections, the maybeboard (stored on the phone, as the owner chose on
    2026-10-16), adding cards from the deck page.~~ Released.
-5. **MTG Trader 1.43: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42. Not started: the owner wants
-   to revisit it, and the open questions below are settled first.
+5. ~~MTG Trader 1.43: the compact deck view on one line per card, with mana costs (Mana font), and labels that
+   give way to long names (picked by the owner from mockups on 2026-10-16).~~ Released.
+6. **MTG Trader 1.44: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
+   to 1.44 when the compact view's redo became 1.43. Not started: the owner wants to revisit it, and the open
+   questions below are settled first.
 
-### Changing decks on Archidekt (planned as MTG Trader 1.43)
+### Changing decks on Archidekt (planned as MTG Trader 1.44)
 *Added 2026-10-16. MTG Trader only.*
 
 The owner's words: "I would also like to push the added cards in the app to archidekts maybeboard. And lastly I would

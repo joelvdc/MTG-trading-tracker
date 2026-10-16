@@ -291,7 +291,7 @@ class Release139Test {
         val file = context.getDatabasePath("update-139.db").apply { parentFile?.mkdirs(); delete() }
         createVersion17(file)
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-139.db")
-            .addMigrations(AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19)
+            .addMigrations(AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

@@ -79,6 +79,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -143,6 +150,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val compact by c.settings.deckCompact.collectAsStateWithLifecycle()
     val showMaybeboard by c.settings.deckMaybeboard.collectAsStateWithLifecycle()
     val collapsed by c.settings.deckCollapsed.collectAsStateWithLifecycle()
+    // Mana costs by card name (since 1.43), from the card details kept from Scryfall.
+    val costList by remember { c.db.cardInfoDao().observeDeckCosts(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val costs = remember(costList) { costList.associate { it.name to it.manaCost } }
+    // Cards new to the app, or from before 1.43, get their details (and so their cost) now when online.
+    LaunchedEffect(deckId) { runCatching { c.cardDetails.fillMissing() } }
     // Shown in the printings you own (since 1.22), unless switched off for this deck.
     val owned by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val binders = rememberBinders()
@@ -192,6 +204,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val shownKeys = remember(sections, maybeSections, showMaybeboard) {
         sections.map { it.title } + if (showMaybeboard) maybeSections.map { maybeKey(it.title) } else emptyList()
     }
+    fun sectionValue(section: DeckSection) = section.rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity }
     fun toggle(key: String) = c.settings.setDeckCollapsed(if (key in collapsed) collapsed - key else collapsed + key)
 
     LaunchedEffect(result) {
@@ -372,11 +385,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             }
             sections.forEach { section ->
                 val folded = section.title in collapsed
-                item(key = "h_${section.title}") { SectionHeading(section, folded) { toggle(section.title) } }
+                item(key = "h_${section.title}") { SectionHeading(section, sectionValue(section), folded) { toggle(section.title) } }
                 if (!folded) {
                     items(section.rows, key = { "c_${it.item.id}" }) { row ->
-                        if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty()) { selected = row }
-                        else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty()) { selected = row }
+                        val cost = costs[row.item.card.name]
+                        if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost) { selected = row }
+                        else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost) { selected = row }
                     }
                 }
             }
@@ -400,11 +414,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 maybeSections.forEach { section ->
                     val key = maybeKey(section.title)
                     val folded = key in collapsed
-                    item(key = "mh_${section.title}") { SectionHeading(section, folded) { toggle(key) } }
+                    item(key = "mh_${section.title}") { SectionHeading(section, sectionValue(section), folded) { toggle(key) } }
                     if (!folded) {
                         items(section.rows, key = { "m_${it.item.id}" }) { row ->
-                            if (compact) DeckCompactRow(row, priceType, emptySet()) { selected = row }
-                            else DeckCardRowView(row, priceType, emptySet()) { selected = row }
+                            val cost = costs[row.item.card.name]
+                            if (compact) DeckCompactRow(row, priceType, emptySet(), cost) { selected = row }
+                            else DeckCardRowView(row, priceType, emptySet(), cost) { selected = row }
                         }
                     }
                 }
@@ -420,6 +435,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             row, priceType, if (inDeck) tagsOf(row) else emptySet(), if (inDeck) saltCard?.combosWith(row.item.card.name).orEmpty() else emptyList(),
             original = matched.original[row.item.id],
             archidektCard = archidektRows.firstOrNull { it.item.id == row.item.id }?.item,
+            cost = costs[row.item.card.name],
             copies = if (inDeck && myPrintings && !DeckToCollection.isBasic(key)) owned.filter { DeckPrintings.nameKey(it.item.card.name) == key } else emptyList(),
             binders = binders,
             picked = picks[key],
@@ -567,8 +583,9 @@ private fun ScoreColumn(label: String, value: String?, caption: String?, modifie
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, onClick: () -> Unit) {
+internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, cost: String?, onClick: () -> Unit) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
@@ -577,19 +594,23 @@ internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<B
     ) {
         CardThumb(item.card.imageUrl, width = 34)
         Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
                 (if (item.quantity > 1) "${item.quantity}× " else "") + item.card.displayName,
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                SetLine(item.card)
+            // The mana cost where the set and number were (since 1.43); they're in the card's window.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                ManaCostView(cost, modifier = Modifier.align(Alignment.CenterVertically))
                 FinishTag(item.card, item.finish)
                 if (item.addedInApp) Tag("ADDED IN APP")
+                BracketTag.entries.filter { it in tags }.forEach { t ->
+                    if (t.strict) Tag(t.label, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
+                    else Tag(t.label, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            if (tags.isNotEmpty()) BracketTags(tags)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.bodyMedium)
@@ -601,71 +622,144 @@ internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<B
 /** How a maybeboard heading is remembered as folded, apart from a deck section with the same title. */
 private fun maybeKey(title: String) = "maybeboard:$title"
 
-/** A section's title and card count; tapping it folds the section away or opens it again. Since 1.42. */
+/**
+ * A section's title and card count, with what its cards are worth (since 1.43); tapping it folds the
+ * section away or opens it again. Since 1.42.
+ */
 @Composable
-internal fun SectionHeading(section: DeckSection, folded: Boolean, onToggle: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(top = 12.dp).clip(RoundedCornerShape(6.dp)).clickable(onClick = onToggle).padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            "${section.title} (${section.count})",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(
-            if (folded) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
-            if (folded) "Show ${section.title}" else "Hide ${section.title}",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
+internal fun SectionHeading(section: DeckSection, value: Double?, folded: Boolean, onToggle: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp).clickable(onClick = onToggle)) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${section.title} (${section.count})",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
+            )
+            if (value != null) {
+                Text(Fmt.money(value), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(
+                if (folded) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+                if (folded) "Show ${section.title}" else "Hide ${section.title}",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 6.dp).size(20.dp),
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
-/** One slim line per card, like the collection's compact view: quantity, name, set and finish, price. Since 1.42. */
+/**
+ * How the compact view marks a card's bracket tags after its name: in full, shortened, or as dots,
+ * whichever still leaves the whole name readable. Since 1.43.
+ */
+object DeckMarks {
+    enum class Level { FULL, SHORT, DOTS }
+
+    fun full(t: BracketTag) = if (t == BracketTag.GAME_CHANGER) "GC" else t.label
+
+    fun short(t: BracketTag) = when (t) {
+        BracketTag.GAME_CHANGER -> "GC"
+        BracketTag.COMBO -> "COMBO"
+        BracketTag.EXTRA_TURN -> "TURN"
+        BracketTag.LAND_DENIAL -> "LD"
+        BracketTag.TUTOR -> "TUTOR"
+        BracketTag.FAST_MANA -> "FAST"
+    }
+
+    /**
+     * The fullest marks that fit next to the whole name in [available] width (all in pixels): the name
+     * is never shortened for them; when even dots don't fit, the name is cut off with "…".
+     */
+    fun level(available: Int, name: Int, extras: Int, full: Int, short: Int): Level = when {
+        name + extras + full <= available -> Level.FULL
+        name + extras + short <= available -> Level.SHORT
+        else -> Level.DOTS
+    }
+}
+
+private val MarkLabelStyle = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.SemiBold)
+private val FoilMark = Color(0xFFB083E8)
+
+/** The card's name followed by its marks: ✦ foil, + added in the app, then its bracket tags (see [DeckMarks]). */
 @Composable
-internal fun DeckCompactRow(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, onClick: () -> Unit) {
-    val item = row.item
-    val unit = row.unitPrice(priceType)
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable(onClick = onClick).padding(vertical = 3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            "${item.quantity}×",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(30.dp),
-        )
-        Column(Modifier.weight(1f)) {
-            Text(item.card.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val details = listOfNotNull(
-                item.card.setLabel,
-                if (item.foil) item.card.finishName(item.finish).lowercase() else null,
-                "added in app".takeIf { item.addedInApp },
-            ).joinToString(" · ")
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    details,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                if (tags.isNotEmpty()) {
+private fun NameWithMarks(name: String, tags: Set<BracketTag>, foil: Boolean, added: Boolean, modifier: Modifier = Modifier) {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val nameStyle = MaterialTheme.typography.bodyMedium
+    val markStyle = MaterialTheme.typography.labelMedium
+    val ordered = BracketTag.entries.filter { it in tags }
+    BoxWithConstraints(modifier) {
+        val available = constraints.maxWidth
+        val level = remember(name, ordered, foil, added, available, nameStyle, density) {
+            fun w(text: String, style: TextStyle) = measurer.measure(text, style, maxLines = 1, softWrap = false).size.width
+            val chip = with(density) { 10.dp.roundToPx() }
+            DeckMarks.level(
+                available,
+                name = w(name, nameStyle),
+                extras = (if (foil) w(" ✦", markStyle) else 0) + (if (added) w(" +", markStyle) else 0),
+                full = ordered.sumOf { w(DeckMarks.full(it), MarkLabelStyle) + chip },
+                short = ordered.sumOf { w(DeckMarks.short(it), MarkLabelStyle) + chip },
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(name, style = nameStyle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            if (foil) Text(" ✦", style = markStyle, color = FoilMark, maxLines = 1)
+            if (added) Text(" +", style = markStyle, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
+            ordered.forEach { t ->
+                val strict = t.strict
+                if (level == DeckMarks.Level.DOTS) {
+                    Box(
+                        Modifier.padding(start = 4.dp).size(7.dp).clip(CircleShape)
+                            .background(if (strict) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline)
+                    )
+                } else {
                     Text(
-                        " · " + tags.joinToString(" · ") { it.label.lowercase() },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (tags.any { it.strict }) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (level == DeckMarks.Level.FULL) DeckMarks.full(t) else DeckMarks.short(t),
+                        style = MarkLabelStyle,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
+                        color = if (strict) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp).clip(RoundedCornerShape(3.dp))
+                            .background(if (strict) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .padding(horizontal = 3.dp, vertical = 1.dp),
                     )
                 }
             }
         }
-        Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
+    }
+}
+
+/**
+ * One line per card, like Archidekt's list: amount, name and its marks, mana cost, price. The set and
+ * number are in the card's window. Since 1.42; on one line since 1.43.
+ */
+@Composable
+internal fun DeckCompactRow(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, cost: String?, onClick: () -> Unit) {
+    val item = row.item
+    val unit = row.unitPrice(priceType)
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 34.dp).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${item.quantity}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(24.dp),
+            )
+            NameWithMarks(item.card.displayName, tags, item.foil, item.addedInApp, Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            ManaCostView(cost)
+            Text(
+                Fmt.money(unit?.let { it * item.quantity }),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = 62.dp).padding(start = 6.dp),
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     }
 }
 
@@ -713,6 +807,7 @@ private fun DeckCardDialog(
     /** Archidekt's printing, when another one is shown. */
     original: CardRef?,
     archidektCard: DeckCard?,
+    cost: String?,
     /** Your copies of the card, to choose which one the deck shows (empty when the deck shows Archidekt's printings). */
     copies: List<CollectionRow>,
     binders: List<Binder>,
@@ -737,6 +832,7 @@ private fun DeckCardDialog(
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(item.card.setName, style = MaterialTheme.typography.bodyMedium)
                         SetLine(item.card)
+                        ManaCostView(cost, modifier = Modifier.padding(vertical = 2.dp))
                         Text("${item.types} · ${item.category}", style = MaterialTheme.typography.bodySmall)
                         Text(
                             if (ownedHere > 0) "$ownedHere of this printing in your collection" else "Not in your collection",

@@ -31,6 +31,7 @@ data class ScryFace(
     @SerialName("type_line") val typeLine: String = "",
     @SerialName("oracle_text") val oracleText: String? = null,
     val colors: List<String>? = null,
+    @SerialName("mana_cost") val manaCost: String? = null,
 )
 
 @Serializable
@@ -68,6 +69,8 @@ data class ScryCard(
     /** Name printed on this card instead of its real name, e.g. "Barrow-Downs" for Bojuka Bog (LTC). */
     @SerialName("flavor_name") val flavorName: String? = null,
     @SerialName("type_line") val typeLine: String = "",
+    /** e.g. "{2}{B}"; "{2}{B} // {B}" for split and adventure cards; absent for double-faced ones (see [cardFaces]). Since 1.43. */
+    @SerialName("mana_cost") val manaCost: String? = null,
     /** "normal", "token", "double_faced_token", "transform"…; the CardTrader import uses it to spot tokens. Since 1.26. */
     val layout: String = "",
     val cmc: Double = 0.0,

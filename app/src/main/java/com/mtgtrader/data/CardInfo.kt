@@ -28,6 +28,11 @@ data class CardInfo(
     /** EDHREC's popularity rank (1 = most played); null for cards EDHREC doesn't rank. */
     val edhrecRank: Int?,
     val fetchedAt: Long = System.currentTimeMillis(),
+    /**
+     * The mana cost as Scryfall writes it, e.g. "{2}{B}", with " // " between the faces of a double-faced
+     * card ("{2}{B} // {B}"); empty for lands. Null for details saved before 1.43. Since 1.43.
+     */
+    val manaCost: String? = null,
 ) {
     val isLand get() = "Land" in typeLine.substringBefore(" // ")
 }
@@ -40,13 +45,24 @@ interface CardInfoDao {
     @Query("SELECT * FROM card_info WHERE scryfallId IN (:ids)")
     suspend fun getMany(ids: List<String>): List<CardInfo>
 
-    /** Printings in the collection, wishlist or decks without details yet (not wishlist cards still waiting for theirs). */
+    /**
+     * Printings in the collection, wishlist or decks without details yet (not wishlist cards still waiting for
+     * theirs), and decks' printings whose details were saved before mana costs were (1.43).
+     */
     @Query(
         """SELECT DISTINCT scryfallId FROM (
              SELECT scryfallId FROM collection UNION SELECT scryfallId FROM wishlist UNION SELECT scryfallId FROM deck_cards
-           ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info) AND scryfallId NOT LIKE '00000000-0000-0000-0000-%'"""
+           ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info) AND scryfallId NOT LIKE '00000000-0000-0000-0000-%'
+           UNION SELECT scryfallId FROM card_info WHERE manaCost IS NULL AND scryfallId IN (SELECT scryfallId FROM deck_cards)"""
     )
     suspend fun missing(): List<String>
+
+    /** Each card name in a deck with its mana cost (once known), for the deck page. Since 1.43. */
+    @Query(
+        """SELECT DISTINCT d.name AS name, c.manaCost AS manaCost FROM deck_cards d JOIN card_info c ON c.scryfallId = d.scryfallId
+           WHERE d.deckId = :deckId AND c.manaCost IS NOT NULL"""
+    )
+    fun observeDeckCosts(deckId: Long): kotlinx.coroutines.flow.Flow<List<NameCost>>
 
     @Query("DELETE FROM card_info WHERE fetchedAt < :before")
     suspend fun deleteOlderThan(before: Long)
@@ -94,7 +110,7 @@ class CardDetails(private val db: AppDatabase, private val scryfall: ScryfallApi
                 val cards = scryfall.collection(chunk.map(ScryfallApi::idIdentifier)) { done, _ -> _progress.value = (base + done) to ids.size }
                 val found = cards.map { it.toInfo() }
                 // Printings Scryfall no longer knows get an empty entry, so they aren't asked for on every start.
-                val gone = (chunk.toSet() - found.map { it.scryfallId }.toSet()).map { CardInfo(it, null, "", "", "", 0.0, null) }
+                val gone = (chunk.toSet() - found.map { it.scryfallId }.toSet()).map { CardInfo(it, null, "", "", "", 0.0, null, manaCost = "") }
                 dao.putAll(found + gone)
                 base += chunk.size
             }
@@ -122,4 +138,10 @@ fun ScryCard.toInfo() = CardInfo(
     typeLine = typeLine.ifEmpty { cardFaces?.joinToString(" // ") { it.typeLine } ?: "" },
     cmc = cmc,
     edhrecRank = edhrecRank,
+    manaCost = manaCost?.takeIf { it.isNotEmpty() || cardFaces.isNullOrEmpty() }
+        ?: cardFaces?.map { it.manaCost.orEmpty() }?.takeIf { f -> f.any { it.isNotEmpty() } }?.joinToString(" // ")
+        ?: "",
 )
+
+/** A card name and its mana cost. Since 1.43. */
+data class NameCost(val name: String, val manaCost: String)
