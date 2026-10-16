@@ -473,7 +473,7 @@ class ScreenshotTest {
                         }
                         androidx.compose.material3.HorizontalDivider()
                         // The card window's "Price alert" part.
-                        com.mtgtrader.ui.PriceAlertFields(rows[0].item, "40.00", com.mtgtrader.ui.WishAlertInfo(prices[1L], "cardmarket:low", filter)) {}
+                        com.mtgtrader.ui.PriceAlertFields(rows[0].item, com.mtgtrader.ui.MoneyInput("40.00", AppCurrency.EUR), com.mtgtrader.ui.WishAlertInfo(prices[1L], "cardmarket:low", filter)) {}
                     }
                 }
             }
@@ -650,5 +650,21 @@ class ScreenshotTest {
         val labels = mapOf("wishlist" to "★ Wishlist", "unsorted" to "Unsorted", "b:1" to "⇄ Trade binder", "b:2" to "Commander decks", "b:3" to "New cards")
         compose.setContent { MtgColors(dark = false) { com.mtgtrader.ui.ArrangeBindersDialog(labels.keys.toList(), { labels.getValue(it) }, {}) {} } }
         com.github.takahirom.roborazzi.captureScreenRoboImage("src/test/screenshots/arrange_binders.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.40: price fields with their currency button; one typed in euros while the app shows kroner says what it comes to. */
+    @Test fun moneyFields() = inCurrency(DisplayCurrency(AppCurrency.DKK, 7.4612)) {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.mtgtrader.ui.MoneyField(com.mtgtrader.ui.MoneyInput("10", AppCurrency.EUR), "Purchase price per copy (optional)", Modifier.fillMaxWidth())
+                        com.mtgtrader.ui.MoneyField(com.mtgtrader.ui.MoneyInput("74.61", AppCurrency.DKK), "Purchase price per copy (optional)", Modifier.fillMaxWidth())
+                        com.mtgtrader.ui.MoneyField(com.mtgtrader.ui.MoneyInput("", AppCurrency.DKK), "Agreed price per copy (optional)", Modifier.fillMaxWidth(), placeholder = "Uses Cardmarket price if empty")
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/money_fields.png", roborazziOptions = screenshotOptions)
     }
 }

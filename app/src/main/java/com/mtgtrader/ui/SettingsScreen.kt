@@ -418,7 +418,7 @@ internal fun CurrencySection(currency: AppCurrency, rates: ExchangeRates?, onPic
     Text("Currency", style = MaterialTheme.typography.titleMedium)
     Text(
         "Prices come from Cardmarket in euros and are converted with the European Central Bank's daily rates. " +
-            "Purchase prices you type are in this currency too. CSV files and Archidekt keep euros.",
+            "Prices you type can be in any of these: the € ▾ button in each price field picks the currency you paid in. CSV files and Archidekt keep euros.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

@@ -101,7 +101,7 @@ fun AddWishToCollectionDialog(
 ) {
     val binders = rememberBinders()
     var v by remember { mutableStateOf(WishToCollection.of(item)) }
-    var priceText by remember { mutableStateOf("") }
+    val priceInput = remember { MoneyInput.of(null) }
     var picking by remember { mutableStateOf(false) }
     val small = MaterialTheme.typography.bodySmall
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
@@ -148,14 +148,7 @@ fun AddWishToCollectionDialog(
                     QuantityStepper(v.quantity, { v = v.copy(quantity = it) })
                 }
                 BinderPicker("Put it in", v.binder, { v = v.copy(binder = it) })
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = { priceText = it; v = v.copy(price = Fmt.parseMoneyEur(it)?.takeIf { p -> p >= 0 }) },
-                    label = { Text("Paid per copy, ${Money.symbol} (optional)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                MoneyField(priceInput, "Paid per copy (optional)", Modifier.fillMaxWidth()) { v = v.copy(price = priceInput.eur?.takeIf { p -> p >= 0 }) }
                 joiningStack(collection, v, v.binder.takeIf { it.newName == null }?.binderId)?.let { s ->
                     Text(
                         "You have ${s.quantity} of this version in ${binderName(s.binderId, binders)} already: these join that stack" +

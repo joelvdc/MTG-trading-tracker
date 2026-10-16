@@ -93,7 +93,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
         EditValues(it.quantity, it.finish, it.condition, it.language, null, it.binderId, it.quantity, it.notes, it.purchasePrice, it.signed, it.altered)
     }
     var v by remember(item.id) { mutableStateOf(initialFor(current)) }
-    var paidText by remember(item.id) { mutableStateOf(Money.input(item.purchasePrice)) }
+    val paidInput = rememberMoneyInput(item.purchasePrice, item.id)
     var pricesOpen by remember { mutableStateOf(false) }
     var switchTo by remember { mutableStateOf<CollectionRow?>(null) }
     val uriHandler = LocalUriHandler.current
@@ -236,12 +236,20 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                     MarksEditor(Marks(v.signed, v.altered), item.marks, v.quantity, v.keepMarks, ::setMarks) { askingMarks = Marks(v.signed, v.altered) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CompactTextField(
-                            "Paid per copy", paidText, {
-                                paidText = it
-                                v = v.copy(purchasePrice = Fmt.parseMoneyEur(it))
+                            "Paid per copy", paidInput.text, {
+                                paidInput.text = it
+                                v = v.copy(purchasePrice = paidInput.eur)
                             },
-                            Modifier.weight(0.38f), placeholder = Money.symbol, keyboardType = KeyboardType.Decimal,
-                        )
+                            Modifier.weight(0.38f), placeholder = "0.00", keyboardType = KeyboardType.Decimal,
+                            note = convertedHint(paidInput),
+                        ) {
+                            // The currency it was paid in (since 1.40).
+                            CurrencyButton(paidInput.currency) { cur ->
+                                paidInput.currency = cur
+                                TypedCurrency.pick(cur)
+                                v = v.copy(purchasePrice = paidInput.eur)
+                            }
+                        }
                         CompactTextField("Notes", v.notes ?: "", { v = v.copy(notes = it.ifBlank { null }) }, Modifier.weight(0.62f), placeholder = "Where from, condition…", singleLine = false)
                     }
                     val paid = v.purchasePrice
@@ -606,20 +614,30 @@ private fun CompactTextField(
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text,
     singleLine: Boolean = true,
+    /** A small line under the text, e.g. what a price in another currency comes to (since 1.40). */
+    note: String? = null,
+    /** Something at the end of the field, e.g. the currency button (since 1.40). */
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     CompactBox(label, modifier) {
-        Box {
-            if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.outline, maxLines = 1)
-            BasicTextField(
-                value = value,
-                onValueChange = onChange,
-                singleLine = singleLine,
-                maxLines = if (singleLine) 1 else 4,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
-            )
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.outline, maxLines = 1)
+                    BasicTextField(
+                        value = value,
+                        onValueChange = onChange,
+                        singleLine = singleLine,
+                        maxLines = if (singleLine) 1 else 4,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                        modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                    )
+                }
+                trailing?.invoke()
+            }
+            note?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
 }

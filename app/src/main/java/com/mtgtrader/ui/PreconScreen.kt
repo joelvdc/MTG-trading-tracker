@@ -135,7 +135,7 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
     var cards by remember { mutableStateOf<List<Triple<CardRef, Precons.Card, Double?>>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var binder by remember { mutableStateOf(BinderChoice()) }
-    var paidText by remember { mutableStateOf("") }
+    val paidInput = remember { MoneyInput.of(null) }
     var date by remember { mutableStateOf(info.releaseDate?.takeIf(::isIsoDate) ?: todayIso()) }
     var adding by remember { mutableStateOf(false) }
 
@@ -154,7 +154,7 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
     }
 
     val list = cards
-    val paid = Fmt.parseMoneyEur(paidText)?.takeIf { it >= 0 }
+    val paid = paidInput.eur?.takeIf { it >= 0 }
     val count = list.orEmpty().sumOf { it.second.count }
     AlertDialog(
         onDismissRequest = { if (!adding) onDismiss() },
@@ -170,11 +170,7 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
                     else -> {
                         val worth = list.sumOf { (it.third ?: 0.0) * it.second.count }
                         Text("$count cards without the basic lands, worth ${Fmt.money(worth)} today.", style = MaterialTheme.typography.bodyMedium)
-                        OutlinedTextField(
-                            value = paidText, onValueChange = { paidText = it },
-                            label = { Text("What you paid (${Money.display.currency.name})") },
-                            singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
-                        )
+                        MoneyField(paidInput, "What you paid", Modifier.fillMaxWidth())
                         OrderDateField(date, { date = it })
                         BinderPicker("Binder", binder, { binder = it }, suggestedName = info.name)
                         if (paid != null && paid > 0 && list.isNotEmpty()) {

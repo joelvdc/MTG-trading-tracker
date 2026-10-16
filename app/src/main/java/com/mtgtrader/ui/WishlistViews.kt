@@ -150,9 +150,10 @@ fun WishlistDialog(
 ) {
     val card = row.item.card
     var item by remember { mutableStateOf(row.item) }
-    // The level as typed when it's in the currency shown (since 1.39), else converted.
-    var levelText by remember {
-        mutableStateOf(row.item.alertBelow?.let { a -> if (row.item.alertCurrency == Money.display.currency.name) "%.2f".format(a) else Money.input(row.item.levelEur) } ?: "")
+    // The level as typed, in the currency it was typed in (since 1.39; chosen in the field since 1.40).
+    val level = remember {
+        row.item.alertBelow?.let { a -> MoneyInput("%.2f".format(a), com.mtgtrader.data.AppCurrency.entries.firstOrNull { it.name == row.item.alertCurrency } ?: com.mtgtrader.data.AppCurrency.EUR) }
+            ?: MoneyInput.of(null)
     }
     val uriHandler = LocalUriHandler.current
     val wp = alerts.price
@@ -244,10 +245,9 @@ fun WishlistDialog(
                     )
                 }
                 HorizontalDivider()
-                PriceAlertFields(item, levelText, alerts) { text ->
-                    levelText = text
-                    val typed = Fmt.parseMoney(text)?.takeIf { it > 0 }
-                    item = item.copy(alertBelow = typed, alertCurrency = typed?.let { Money.display.currency.name })
+                PriceAlertFields(item, level, alerts) {
+                    val typed = level.typed?.takeIf { it > 0 }
+                    item = item.copy(alertBelow = typed, alertCurrency = typed?.let { level.currency.name })
                 }
                 HorizontalDivider()
                 OutlinedTextField(
@@ -290,22 +290,14 @@ data class WishAlertInfo(
 
 /** The card window's "Price alert" part: the level, and the prices it's compared with. Since 1.37. */
 @Composable
-internal fun PriceAlertFields(item: WishlistItem, levelText: String, alerts: WishAlertInfo, onLevel: (String) -> Unit) {
+internal fun PriceAlertFields(item: WishlistItem, level: MoneyInput, alerts: WishAlertInfo, onLevel: () -> Unit) {
     val small = MaterialTheme.typography.bodySmall
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val wp = alerts.price
     val ctKey = alerts.ctFilter?.key(item.foil)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("Price alert", style = MaterialTheme.typography.titleSmall)
-        OutlinedTextField(
-            value = levelText,
-            onValueChange = onLevel,
-            label = { Text("Notify me at or below, ${Money.symbol}") },
-            placeholder = { Text("No alert") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth(),
-        )
+        MoneyField(level, "Notify me at or below", Modifier.fillMaxWidth(), placeholder = "No alert", onChange = onLevel)
         Text(
             "Compared with ${PriceAlerts.basisLong(alerts.basis)}" + (if (alerts.ctFilter != null) " and CardTrader" else "") +
                 (if (item.anyPrinting) " (the cheapest printing)" else "") + ". Leave it empty for no alert.",

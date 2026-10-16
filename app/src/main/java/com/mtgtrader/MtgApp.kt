@@ -116,6 +116,9 @@ class AppContainer(context: Context) {
         val display = { cur: com.mtgtrader.data.AppCurrency, rates: com.mtgtrader.data.ExchangeRates? -> com.mtgtrader.data.DisplayCurrency.of(cur, rates) }
         val display0 = display(settings.currency.value, exchangeRates.rates.value)
         com.mtgtrader.data.Money.display = display0
+        // Prices are typed in the currency last chosen (since 1.40).
+        com.mtgtrader.ui.TypedCurrency.last = com.mtgtrader.data.AppCurrency.entries.firstOrNull { it.name == settings.typedCurrency }
+        com.mtgtrader.ui.TypedCurrency.save = { settings.typedCurrency = it.name }
         // Alert levels keep the currency they were typed in (since 1.39).
         com.mtgtrader.data.Money.rates = exchangeRates.rates.value
         appScope.launch { exchangeRates.rates.collect { com.mtgtrader.data.Money.rates = it } }
