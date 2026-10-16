@@ -326,11 +326,11 @@ class DeckRepository(
     private suspend fun load(id: Long, step: (String) -> Unit, fetched: ArchidektDeck? = null): Deck {
         val a = fetched ?: archidekt.deck(id)
         if (a.cards.isEmpty()) throw IllegalStateException("${a.name.ifBlank { "This deck" }} has no cards")
-        step("Looking up ${a.cards.size} cards…")
+        step("Looking up ${a.cards.size + a.maybeboard.size} cards…")
         val found = runCatching {
-            scryfall.collection(a.cards.map { it.scryfallId }.distinct().map(ScryfallApi::idIdentifier)).associateBy { it.id }
+            scryfall.collection((a.cards + a.maybeboard).map { it.scryfallId }.distinct().map(ScryfallApi::idIdentifier)).associateBy { it.id }
         }.getOrDefault(emptyMap())
-        val cards = a.cards.map { c ->
+        fun deckCard(c: ArchidektCard, maybeboard: Boolean): DeckCard {
             val ref = found[c.scryfallId]?.toRef() ?: CardRef(
                 scryfallId = c.scryfallId,
                 name = c.name,
@@ -346,7 +346,7 @@ class DeckRepository(
                 hasFoil = c.foil,
                 hasEtched = c.etched,
             )
-            DeckCard(
+            return DeckCard(
                 deckId = a.id,
                 card = ref,
                 quantity = c.quantity,
@@ -357,8 +357,10 @@ class DeckRepository(
                 foil = c.foil,
                 etched = c.etched,
                 gameChanger = c.gameChanger,
+                maybeboard = maybeboard,
             )
         }
+        val cards = a.cards.map { deckCard(it, false) } + a.maybeboard.map { deckCard(it, true) }
         val old = dao.get(a.id)
         val deck = (old ?: Deck(a.id, "", "", "", null, null, "", 0)).copy(
             name = a.name,

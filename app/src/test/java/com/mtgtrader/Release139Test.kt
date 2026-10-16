@@ -262,8 +262,8 @@ class Release139Test {
         assertEquals("DKK", back.alertCurrency)
         assertEquals("CardTrader order #9", back.receivedFrom)
         // An older version would read the level as euros and lose the link: it refuses format 7 and asks to be updated.
-        assertEquals(7, SyncFile.FORMAT)
-        assertEquals(7, BackupFile.FORMAT)
+        assertTrue(SyncFile.FORMAT >= 7)
+        assertTrue(BackupFile.FORMAT >= 7)
     }
 
     /** A version 17 database (app 1.38) exactly as Room made it, from the exported schema. */
@@ -291,7 +291,7 @@ class Release139Test {
         val file = context.getDatabasePath("update-139.db").apply { parentFile?.mkdirs(); delete() }
         createVersion17(file)
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-139.db")
-            .addMigrations(AppDatabase.MIGRATION_17_18)
+            .addMigrations(AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

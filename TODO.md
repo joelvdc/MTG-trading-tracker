@@ -18,8 +18,9 @@ How to use this file:
 3. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's
    1.32). The owner said on 2026-10-13 to wait with this one: don't start it until they say so.
 
-4. **MTG Trader 1.43: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42 (compact
-   deck view, collapsible sections, maybeboard toggle, adding cards from the deck page). Not started: the owner wants
+4. ~~MTG Trader 1.42: compact deck view, folding sections, the maybeboard (stored on the phone, as the owner chose on
+   2026-10-16), adding cards from the deck page.~~ Released.
+5. **MTG Trader 1.43: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42. Not started: the owner wants
    to revisit it, and the open questions below are settled first.
 
 ### Changing decks on Archidekt (planned as MTG Trader 1.43)

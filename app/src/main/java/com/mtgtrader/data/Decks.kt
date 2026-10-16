@@ -127,6 +127,12 @@ data class DeckCard(
     val gameChanger: Boolean = false,
     /** Added in this app (e.g. from the Scan tab) rather than on Archidekt; kept when the deck is refreshed. Since 1.7. */
     @ColumnInfo(defaultValue = "0") val addedInApp: Boolean = false,
+    /**
+     * In one of the deck's categories left out of the deck on Archidekt (the maybeboard, a sideboard…):
+     * shown only when asked for, and never counted in the deck's cards, value or what the collection needs.
+     * Since 1.42.
+     */
+    @ColumnInfo(defaultValue = "0") val maybeboard: Boolean = false,
 ) {
     val finish get() = Finish.of(foil, etched)
     val primaryType get() = DeckGrouping.primaryType(types)

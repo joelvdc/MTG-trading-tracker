@@ -84,6 +84,21 @@ the background. **Add to collection** (deck ⋮ menu) adds the deck's printings 
 don't own yet and without basic lands. The app shows the decklist grouped by your Archidekt categories (or by card type) with Cardmarket prices, and
 has [Commander Salt](https://www.commandersalt.com/) score it (more below).
 
+**Reading the decklist:** the view button next to ⟳ (or ⋮ → **Compact view**) switches every deck page between cards
+with pictures and one slim line per card (quantity, name, set, finish, price and bracket tags). Tap a section heading
+(a category, or a card type when grouped by type) to fold its cards away and again to show them; ⋮ → **Collapse all /
+Expand all sections** does them all. Folded headings stay folded, in every deck that has them (since 1.42).
+
+**Maybeboard:** ⋮ → **Show maybeboard** lists the deck's maybeboard on Archidekt (and any other category Archidekt
+leaves out of the deck, such as a sideboard) under the deck, by category and with prices. It's never counted in the
+deck's cards or value, "Cards I'm missing", "Add to collection", "Cards in several decks" or what the trade binder must
+keep. It's loaded with the deck (decks loaded before 1.42 get it at their next reload) and saved on the phone, so it
+shows offline and syncs with the deck.
+
+**Adding cards:** **+ Add card** on a deck page opens card search (and from there the scanner) for that deck; the Scan
+tab's **To deck** and **Recommendations** add cards too. They're added in this app only, under "Added in app": Archidekt
+isn't changed, and they stay when the deck is reloaded. Tap such a card to remove it again.
+
 **Your printings:** the decklist shows each card in a printing you own rather than the one on Archidekt (the deck on
 Archidekt isn't changed). The app takes a copy in the binder named after the deck if there is one, else Archidekt's
 printing if you own it, else the printing you own most copies of (outside the trade binder if possible); cards you don't
@@ -411,7 +426,8 @@ pictures aren't synced; each phone downloads those itself.
   Archidekt, so an old list can't come back because the other phone scored or rated its copy later. With **Sync automatically** on, it syncs when you open the app, about 30 seconds
   after a change, when you leave the app and every hour; **Only on Wi-Fi** keeps automatic syncs off mobile data.
   "Sync now" always works.
-- **Update every phone:** from version 1.27 (signed and altered cards) the sync file has a new format. Older versions
+- **Update every phone:** from version 1.27 (signed and altered cards) the sync file has a new format, and it changes again
+  with some updates (most recently 1.42, for decks' maybeboards). Older versions
   stop syncing and ask to be updated, so they can't lose the Signed and Altered marks; their changes wait on the phone
   and sync after the update. An updated phone that sees another one still on an older version says so (and Settings
   keeps a note until it's updated).
