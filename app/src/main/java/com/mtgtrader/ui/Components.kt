@@ -616,11 +616,11 @@ fun EditCardDialog(
     extra: @Composable () -> Unit = {},
 ) {
     var v by remember { mutableStateOf(initial) }
-    var paidText by remember { mutableStateOf(Money.input(initial.purchasePrice)) }
+    val paid = rememberMoneyInput(initial.purchasePrice)
     val uriHandler = LocalUriHandler.current
     // Cards saved before version 1.2 may not list the finish they were saved with.
     val finishOptions = remember(card) { (card.finishes + initial.finish).distinct() }
-    var customText by remember { mutableStateOf(Money.input(initial.customPrice)) }
+    val agreed = rememberMoneyInput(initial.customPrice)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
@@ -689,40 +689,22 @@ fun EditCardDialog(
                     DropdownSelector("Language", v.language, LANGUAGES.map { it.first }, { l -> LANGUAGES.firstOrNull { it.first == l }?.second ?: l }, { v = v.copy(language = it) }, Modifier.weight(1f), enabled)
                 }
                 if (allowCustomPrice) {
-                    OutlinedTextField(
-                        value = customText,
-                        onValueChange = {
-                            customText = it
-                            v = v.copy(customPrice = Fmt.parseMoneyEur(it))
-                        },
-                        label = { Text("Agreed price per copy, ${Money.symbol} (optional)") },
-                        placeholder = { Text("Uses Cardmarket price if empty") },
-                        singleLine = true,
-                        enabled = enabled,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    MoneyField(
+                        agreed, "Agreed price per copy (optional)", Modifier.fillMaxWidth(),
+                        placeholder = "Uses Cardmarket price if empty", enabled = enabled,
+                    ) { v = v.copy(customPrice = agreed.eur) }
                 }
                 if (showNotes) {
-                    OutlinedTextField(
-                        value = paidText,
-                        onValueChange = {
-                            paidText = it
-                            v = v.copy(purchasePrice = Fmt.parseMoneyEur(it))
-                        },
-                        label = { Text("Purchase price per copy, ${Money.symbol} (optional)") },
-                        singleLine = true,
-                        enabled = enabled,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    val paid = v.purchasePrice
+                    MoneyField(paid, "Purchase price per copy (optional)", Modifier.fillMaxWidth(), enabled = enabled) {
+                        v = v.copy(purchasePrice = paid.eur)
+                    }
+                    val paidEur = v.purchasePrice
                     val now = prices(v.finish.foil)?.get(priceType)
-                    if (paid != null && paid > 0 && now != null) {
-                        val diff = (now - paid) * v.quantity
+                    if (paidEur != null && paidEur > 0 && now != null) {
+                        val diff = (now - paidEur) * v.quantity
                         Text(
-                            "Paid ${Fmt.money(paid * v.quantity)} · now ${Fmt.money(now * v.quantity)} · " +
-                                (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paid) / paid * 100),
+                            "Paid ${Fmt.money(paidEur * v.quantity)} · now ${Fmt.money(now * v.quantity)} · " +
+                                (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paidEur) / paidEur * 100),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (diff >= 0) TrendColors.up else TrendColors.down,
                         )

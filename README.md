@@ -59,9 +59,15 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   are. The setting and the percentages sync between phones.
 - **Currency:** Cardmarket's prices are in euros. Settings → **Currency** shows them in Danish kroner or US dollars
   instead, converted with the [European Central Bank's daily rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html)
-  (downloaded twice a day at most, kept for offline use; the choice syncs between phones). Purchase and agreed prices
-  you type are in that currency too; the app keeps them in euros, which is also what CSV files and Archidekt get. The
-  value-over-time chart is converted at today's rate.
+  (downloaded twice a day at most, kept for offline use; the choice syncs between phones). The value-over-time chart is
+  converted at today's rate.
+- **Typing a price in the currency you paid in** (since 1.40): every field for a price paid or agreed (purchase price
+  on a card's page and in the card window, the agreed price in a trade, "Edit condition, language, price…" for
+  selected cards, "Add to collection" from the wishlist, what a precon cost, and a wishlist card's alert level) has a
+  small **€ ▾ / kr. ▾ / $ ▾** button: type the amount as paid, e.g. 10 in euros while the app shows kroner, and the
+  field says what it comes to ("≈ 74,61 kr."). The app converts it with the day's rate and keeps it in euros (also
+  what CSV files and Archidekt get); alert levels keep the currency typed. A new price field starts on the currency
+  you chose last (kept per phone), or the one the app shows.
 - **Cardmarket's product list** (~20 MB, once a week): Scryfall links almost every printing to its Cardmarket product,
   but not all. With this list the app finds the missing ones itself (The List reprints such as Urza's Saga, some surge
   foils, older promos) and the separate foil products of special foils such as The Lord of the Rings' silver-foil scrolls.
@@ -319,8 +325,8 @@ way" in the card's window); Undo takes back a mis-tap. The card is then faded an
 line above the wishlist counts it as ordered instead of still to buy, and it's left out when you share the wishlist (so
 it isn't bought twice). Once it has arrived, swipe it to the right to mark it as received.
 
-**Price alerts:** open a wishlist card and fill in "Notify me at or below" (in the currency you show prices in; empty
-means no alert). The level keeps the currency you typed it in, so 300 kr. stays 300 kr. whatever the day's exchange
+**Price alerts:** open a wishlist card and fill in "Notify me at or below" (in any currency, with the button in the
+field; empty means no alert). The level keeps the currency you typed it in, so 300 kr. stays 300 kr. whatever the day's exchange
 rate (levels set before 1.39 were kept in euros: type them again once). When the card costs that much or less you get one notification ("Ragavan: €38.50 · CardTrader (2X2, SP,
 EN) · your level: €40.00"); tapping it opens the card. You're told once per drop: a new notification only comes after the
 price has been above your level again, or when you change the level. Ordered cards stay quiet. Prices are checked after

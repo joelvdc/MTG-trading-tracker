@@ -106,6 +106,11 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("tradeColumns", v).apply()
     }
 
+    /** The currency last chosen for typing a price (per phone, not synced; null until chosen). Since 1.40. */
+    var typedCurrency: String?
+        get() = prefs.getString("typedCurrency", null)
+        set(v) = prefs.edit().putString("typedCurrency", v).apply()
+
     /** The language the scanner adds cards in ("" = as read from the card, else e.g. "DE"). Since 1.16. */
     var scanLanguage: String
         get() = prefs.getString("scanLanguage", "") ?: ""

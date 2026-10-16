@@ -257,8 +257,8 @@ fun GiveInTradeDialog(title: String, maxCopies: Int, onDismiss: () -> Unit, onAd
 fun EditStacksDialog(count: Int, onDismiss: () -> Unit, onSave: (condition: String?, language: String?, purchasePrice: Double?) -> Unit) {
     var condition by remember { mutableStateOf<String?>(null) }
     var language by remember { mutableStateOf<String?>(null) }
-    var priceText by remember { mutableStateOf("") }
-    val price = Fmt.parseMoneyEur(priceText)?.takeIf { it >= 0 }
+    val priceInput = remember { MoneyInput.of(null) }
+    val price = priceInput.eur?.takeIf { it >= 0 }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit $count stack(s)") },
@@ -267,15 +267,7 @@ fun EditStacksDialog(count: Int, onDismiss: () -> Unit, onSave: (condition: Stri
                 Text("Only what you change here is changed; the rest stays as each card has it.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 DropdownSelector("Condition", condition, listOf<String?>(null) + CONDITIONS.map { it.first }, { code -> code?.let { k -> CONDITIONS.first { it.first == k }.let { "${it.second} (${it.first})" } } ?: "Keep as they are" }, { condition = it }, Modifier.fillMaxWidth())
                 DropdownSelector("Language", language, listOf<String?>(null) + LANGUAGES.map { it.first }, { code -> code?.let { k -> LANGUAGES.firstOrNull { it.first == k }?.second ?: k } ?: "Keep as they are" }, { language = it }, Modifier.fillMaxWidth())
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = { priceText = it },
-                    label = { Text("Purchase price per copy, ${Money.symbol}") },
-                    placeholder = { Text("Keep as they are") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                MoneyField(priceInput, "Purchase price per copy", Modifier.fillMaxWidth(), placeholder = "Keep as they are")
             }
         },
         confirmButton = {
