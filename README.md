@@ -65,7 +65,8 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   on a card's page and in the card window, the agreed price in a trade, "Edit condition, language, price…" for
   selected cards, "Add to collection" from the wishlist, what a precon cost, and a wishlist card's alert level) has a
   small **€ ▾ / kr. ▾ / $ ▾** button: type the amount as paid, e.g. 10 in euros while the app shows kroner, and the
-  field says what it comes to ("≈ 74,61 kr."). The app converts it with the day's rate and keeps it in euros (also
+  field says what it comes to ("≈ 74,61 kr."). Picking another currency for an amount already there converts it, so
+  it keeps its value (since 1.41): 300 kr. becomes 40,21 €, and back again exactly 300,00 kr. The app converts it with the day's rate and keeps it in euros (also
   what CSV files and Archidekt get); alert levels keep the currency typed. A new price field starts on the currency
   you chose last (kept per phone), or the one the app shows.
 - **Cardmarket's product list** (~20 MB, once a week): Scryfall links almost every printing to its Cardmarket product,
@@ -326,7 +327,7 @@ line above the wishlist counts it as ordered instead of still to buy, and it's l
 it isn't bought twice). Once it has arrived, swipe it to the right to mark it as received.
 
 **Price alerts:** open a wishlist card and fill in "Notify me at or below" (in any currency, with the button in the
-field; empty means no alert). The level keeps the currency you typed it in, so 300 kr. stays 300 kr. whatever the day's exchange
+field, which converts the level when you change it; empty means no alert). The level keeps the currency you typed it in, so 300 kr. stays 300 kr. whatever the day's exchange
 rate (levels set before 1.39 were kept in euros: type them again once). When the card costs that much or less you get one notification ("Ragavan: €38.50 · CardTrader (2X2, SP,
 EN) · your level: €40.00"); tapping it opens the card. You're told once per drop: a new notification only comes after the
 price has been above your level again, or when you change the level. Ordered cards stay quiet. Prices are checked after
