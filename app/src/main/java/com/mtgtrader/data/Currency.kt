@@ -96,6 +96,14 @@ object Money {
         return amount / rate
     }
 
+    /** [eur] in [currency], at the same rates as [eurOf]; null while the rate isn't known. Since 1.41. */
+    fun amountIn(eur: Double, currency: AppCurrency): Double? {
+        if (currency == AppCurrency.EUR) return eur
+        if (currency == display.currency) return eur * display.perEuro
+        val rate = rates?.rate(currency) ?: ExchangeRates.FALLBACK.rate(currency) ?: return null
+        return eur * rate
+    }
+
     private fun eurFormat(decimals: Int) = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
         currency = java.util.Currency.getInstance("EUR")
         minimumFractionDigits = decimals

@@ -245,7 +245,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                         ) {
                             // The currency it was paid in (since 1.40).
                             CurrencyButton(paidInput.currency) { cur ->
-                                paidInput.currency = cur
+                                paidInput.switchTo(cur)
                                 TypedCurrency.pick(cur)
                                 v = v.copy(purchasePrice = paidInput.eur)
                             }

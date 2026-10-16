@@ -53,14 +53,42 @@ fun currencySymbol(c: AppCurrency) = when (c) {
 /** A price being typed: the text and the currency it's in. */
 @Stable
 class MoneyInput(text: String, currency: AppCurrency) {
-    var text by mutableStateOf(text)
+    private var typedText by mutableStateOf(text)
+
+    /** The amount in euros before rounding to cents, until the text is edited (see [switchTo]). */
+    private var exactEur: Double? = null
+
+    var text: String
+        get() = typedText
+        set(value) {
+            if (value != typedText) exactEur = null
+            typedText = value
+        }
+
     var currency by mutableStateOf(currency)
+        private set
 
     /** The amount as typed, in [currency]; null when empty or not a number. */
     val typed: Double? get() = Fmt.parseMoney(text)
 
     /** In euros (how the app keeps prices) at today's rate; null when empty or the rate isn't known. */
-    val eur: Double? get() = typed?.let { Money.eurOf(it, currency.name) }
+    val eur: Double? get() = exactEur ?: typed?.let { Money.eurOf(it, currency.name) }
+
+    /**
+     * Shows the price in [c] instead, converted at today's rate, so it keeps its value: 300 kr. becomes
+     * 40,12 €, and back again 300,00 kr. (not 299,99). An empty field, or one whose rate isn't known, only
+     * changes its currency. Since 1.41; before, the number stayed and only the currency changed.
+     */
+    fun switchTo(c: AppCurrency) {
+        if (c == currency) return
+        val inEur = eur
+        val amount = inEur?.let { Money.amountIn(it, c) }
+        if (amount != null) {
+            typedText = "%.2f".format(amount)
+            exactEur = inEur
+        }
+        currency = c
+    }
 
     companion object {
         /**
@@ -68,7 +96,11 @@ class MoneyInput(text: String, currency: AppCurrency) {
          * field starts on the currency last chosen.
          */
         fun of(savedEur: Double?): MoneyInput =
-            if (savedEur != null) MoneyInput(Money.input(savedEur), Money.display.currency) else MoneyInput("", TypedCurrency.start)
+            if (savedEur != null) {
+                MoneyInput(Money.input(savedEur), Money.display.currency).also { it.exactEur = savedEur }
+            } else {
+                MoneyInput("", TypedCurrency.start)
+            }
     }
 }
 
@@ -99,8 +131,8 @@ fun convertedHint(input: MoneyInput): String? =
     input.eur?.takeIf { input.currency != Money.display.currency }?.let { "≈ ${Money.format(it)}" }
 
 /**
- * A price field with its currency button: type the amount as paid, in € , kr. or $; [onChange] runs
- * after each change of the text or the currency. Shown in another currency than the app's, the field
+ * A price field with its currency button: type the amount as paid, in € , kr. or $ (choosing another
+ * converts what's there); [onChange] runs after each change of the text or the currency. Shown in another currency than the app's, the field
  * says what it comes to.
  */
 @Composable
@@ -120,7 +152,7 @@ fun MoneyField(
         placeholder = placeholder?.let { { Text(it) } },
         trailingIcon = {
             CurrencyButton(input.currency, enabled) { c ->
-                input.currency = c
+                input.switchTo(c)
                 TypedCurrency.pick(c)
                 onChange()
             }
