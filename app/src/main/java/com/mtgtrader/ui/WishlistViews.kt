@@ -38,6 +38,7 @@ import com.mtgtrader.data.CollectionItem
 import com.mtgtrader.data.CtCondition
 import com.mtgtrader.data.CtFilter
 import com.mtgtrader.data.Money
+import com.mtgtrader.data.levelEur
 import com.mtgtrader.data.PriceAlerts
 import com.mtgtrader.data.WishPrice
 import com.mtgtrader.data.CollectionRow
@@ -58,7 +59,8 @@ fun WishlistRow.asCollectionRow() = CollectionRow(
 fun wishLabel(item: WishlistItem, owned: WishlistOwned?, now: Long = System.currentTimeMillis()): String = listOfNotNull(
     if (item.anyPrinting) "Any printing" else "This printing only",
     // A received card shows when it came (since 1.38) instead of when it was ordered.
-    item.receivedAt?.let { "✓ received ${Fmt.shortDate(it, now)}" } ?: item.orderedAt?.let { "📦 ordered ${Fmt.shortDate(it, now)}" },
+    item.receivedAt?.let { "✓ received ${Fmt.shortDate(it, now)}" + (item.receivedFrom?.let { f -> " · $f" } ?: "") }
+        ?: item.orderedAt?.let { "📦 ordered ${Fmt.shortDate(it, now)}" },
     when {
         owned == null -> null
         owned.gotSince > 0 -> "✓ got ${owned.gotSince} since adding it"
@@ -89,7 +91,7 @@ fun wishPriceLine(item: WishlistItem, wp: WishPrice?, basis: String, ctFilter: C
     if (item.receivedAt != null) return null
     val ctKey = ctFilter?.key(item.foil)
     val best = PriceAlerts.best(wp, basis, ctKey)?.first
-    val level = item.alertBelow?.let { "🔔 ${Fmt.money(it)}" + if (best != null && best <= it + 0.000_1) " ✓" else "" }
+    val level = item.levelEur?.let { "🔔 ${Fmt.money(it)}" + if (best != null && best <= it + 0.000_1) " ✓" else "" }
     // Ordered cards aren't checked any more: only their level shows.
     if (item.orderedAt != null) return level
     val from = if (item.anyPrinting) "from " else ""
@@ -148,7 +150,10 @@ fun WishlistDialog(
 ) {
     val card = row.item.card
     var item by remember { mutableStateOf(row.item) }
-    var levelText by remember { mutableStateOf(Money.input(row.item.alertBelow)) }
+    // The level as typed when it's in the currency shown (since 1.39), else converted.
+    var levelText by remember {
+        mutableStateOf(row.item.alertBelow?.let { a -> if (row.item.alertCurrency == Money.display.currency.name) "%.2f".format(a) else Money.input(row.item.levelEur) } ?: "")
+    }
     val uriHandler = LocalUriHandler.current
     val wp = alerts.price
     AlertDialog(
@@ -241,7 +246,8 @@ fun WishlistDialog(
                 HorizontalDivider()
                 PriceAlertFields(item, levelText, alerts) { text ->
                     levelText = text
-                    item = item.copy(alertBelow = Fmt.parseMoneyEur(text)?.takeIf { it > 0 })
+                    val typed = Fmt.parseMoney(text)?.takeIf { it > 0 }
+                    item = item.copy(alertBelow = typed, alertCurrency = typed?.let { Money.display.currency.name })
                 }
                 HorizontalDivider()
                 OutlinedTextField(

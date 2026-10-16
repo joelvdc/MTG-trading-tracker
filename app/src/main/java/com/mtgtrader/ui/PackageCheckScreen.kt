@@ -99,6 +99,8 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
     var confirming by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
     var done by remember { mutableStateOf<String?>(null) }
+    var wishMatches by remember { mutableStateOf<List<com.mtgtrader.data.WishOrders.Match>>(emptyList()) }
+    var wishLabel by remember { mutableStateOf("") }
     val scanRows by remember { c.db.scanDao().observeAll() }.collectAsStateWithLifecycle(null)
     val fileName = remember(uri) { displayName(context, uri) }
     val binders = rememberBinders()
@@ -213,6 +215,9 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
                     loaded?.let { o -> c.repo.recordOrders(Orders.fromFile(o.file, date) { i, _ -> o.candidates.firstOrNull { it.index == i }?.card }) }
                     val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
                     val missing = result.count(Status.MISSING)
+                    // Cards of the package on the wishlist (since 1.39): asked about next.
+                    wishMatches = c.repo.wishMatches(additions.map { com.mtgtrader.data.WishOrders.Bought(it.card, it.finish.foil, it.quantity) })
+                    wishLabel = com.mtgtrader.data.WishOrders.label(shop.label, loaded?.file?.lines?.map { it.order }.orEmpty())
                     adding = false
                     done = "Added $added card${if (added == 1) "" else "s"} to $where, with what the order says was paid." +
                         if (missing > 0) " $missing ordered card${if (missing == 1) " is" else "s are"} missing." else ""
@@ -221,7 +226,13 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
         )
     }
 
-    done?.let { message ->
+    wishMatches.takeIf { it.isNotEmpty() && done != null }?.let { matches ->
+        OrderWishlistDialog(matches, wishLabel) { choices ->
+            wishMatches = emptyList()
+            scope.launch { c.repo.applyOrderToWishlist(choices, wishLabel) }
+        }
+    }
+    if (wishMatches.isEmpty()) done?.let { message ->
         AlertDialog(
             onDismissRequest = { done = null; nav.safePopBackStack() },
             title = { Text("Package added") },

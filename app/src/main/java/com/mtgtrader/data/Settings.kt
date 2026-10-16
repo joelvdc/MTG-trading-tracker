@@ -324,6 +324,15 @@ class Settings(context: Context) {
         prefs.edit().putString(if (right) "swipeRight" else "swipeLeft", v.key).stamp().apply()
     }
 
+    private val _binderOrder = MutableStateFlow(BinderOrder.decode(prefs.getString("binderOrder", null)))
+    /** The binder bar's order, as arranged ([BinderOrder] keys; synced). Empty until arranged. Since 1.39. */
+    val binderOrder: StateFlow<List<String>> = _binderOrder
+
+    fun setBinderOrder(keys: List<String>) {
+        _binderOrder.value = keys
+        prefs.edit().putString("binderOrder", BinderOrder.encode(keys)).stamp().apply()
+    }
+
     /** Preferences that follow the user to their other phone through sync (with when they last changed). */
     fun syncedPrefs() = SyncPrefs(
         updatedAt = prefs.getLong(PREFS_UPDATED_AT, 0L),
@@ -351,6 +360,7 @@ class Settings(context: Context) {
             put("receivedToCollection", receivedToCollection.value.toString())
             put("swipeRight", swipeRight.value.key)
             put("swipeLeft", swipeLeft.value.key)
+            put("binderOrder", BinderOrder.encode(binderOrder.value))
         },
     )
 
@@ -381,6 +391,7 @@ class Settings(context: Context) {
         v["receivedToCollection"]?.toBooleanStrictOrNull()?.let { _receivedToCollection.value = it; e.putBoolean("receivedToCollection", it) }
         v["swipeRight"]?.let { _swipeRight.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_RIGHT); e.putString("swipeRight", it) }
         v["swipeLeft"]?.let { _swipeLeft.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_LEFT); e.putString("swipeLeft", it) }
+        v["binderOrder"]?.let { _binderOrder.value = BinderOrder.decode(it); e.putString("binderOrder", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

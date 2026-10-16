@@ -80,8 +80,10 @@ data class SyncFile(
          * 4 since 1.35: wishlist cards marked as ordered, which an older version would write back unmarked.
          * 5 since 1.37: price alert levels on wishlist cards, which an older version would write back without.
          * 6 since 1.38: wishlist cards marked as received, which an older version would show as still wanted.
+         * 7 since 1.39: alert levels in the currency typed and received cards' collection links, which an older
+         * version would read as euros and lose.
          */
-        const val FORMAT = 6
+        const val FORMAT = 7
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

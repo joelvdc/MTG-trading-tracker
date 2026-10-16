@@ -375,8 +375,8 @@ class Release138Test {
         assertEquals(oct15, back.data.wishlist.single().receivedAt)
         assertEquals(oct15, SyncMerge.merge(SyncData(wishlist = listOf(mine)), back.data, System.currentTimeMillis()).wishlist.single().receivedAt)
         // An older version would show received cards as wanted again: it refuses format 6 and asks to be updated.
-        assertEquals(6, SyncFile.FORMAT)
-        assertEquals(6, BackupFile.FORMAT)
+        assertTrue(SyncFile.FORMAT >= 6)
+        assertTrue(BackupFile.FORMAT >= 6)
     }
 
     /** A version 16 database (app 1.37) exactly as Room made it, from the exported schema. */
@@ -405,7 +405,7 @@ class Release138Test {
         createVersion16(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-138.db")
-            .addMigrations(AppDatabase.MIGRATION_16_17)
+            .addMigrations(AppDatabase.MIGRATION_16_17, AppDatabase.MIGRATION_17_18)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })
