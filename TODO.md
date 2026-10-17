@@ -24,8 +24,8 @@ How to use this file:
    give way to long names (picked by the owner from mockups on 2026-10-16).~~ Released.
 6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
-   token printings became 1.45 (2026-10-17). Not started: the owner wants to revisit it, and the open questions below
-   are settled first.
+   token printings became 1.45 (2026-10-17). Not started: the owner answered the first questions on 2026-10-17 and
+   added local decks; the remaining open questions below are settled first.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
@@ -52,13 +52,38 @@ but Archidekt has no official API for changing decks: the app would use the one 
 (`PATCH /api/decks/<id>/modifyCards/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
 from a cloud session, so the owner tries it on a spare deck first.
 
+Answered by the owner on 2026-10-17:
+- **Where edits are saved:** asked whether saving to Archidekt and reloading would slow the app down. Claude's answer:
+  not noticeably, because an edit shows on the phone at once and goes to Archidekt in the background (one small
+  request). Only the changed card goes, with no reload of the whole deck (the full reload, with the Scryfall lookup
+  and the scoring, takes a few seconds, as today's "refresh" does). Recommended, still to confirm: Archidekt stays the
+  real decklist.
+- **Moving cards between categories:** both. Select one or several cards and move them, and also drag them.
+- **Offline:** "save edits locally and then push them to Archidekt when online."
+- **Other people's decks are not editable.** Only decks of the Archidekt account logged in to the app, and the new
+  local decks (below).
+- **New idea, local decks:** "Could we allow for local decks, that could eventually be pushed to a deck on archidekt
+  (or create a new deck on the user's account that is logged in the app)? That deck could also just live locally if
+  the user decides so." So: a deck made in the app (empty, or from a precon, or from scans?) that can stay on the phone,
+  or later be sent to Archidekt as a new deck on the logged-in account, or into one of its existing decks.
+
 Open questions:
-- **Where edits are saved.** Recommended: straight to Archidekt, then the deck reloads, so Archidekt stays the only
-  real decklist. The alternative (edits kept in the app only) lets the two drift apart and makes every reload a merge.
-- **Moving cards between categories:** a "Move to…" choice when tapping a card (recommended), or dragging (fiddly in
-  a long list on a phone; could come later).
-- **Offline:** edits need internet. Queue them and send them when back online, or simply say "needs internet"?
-- What happens to "Added in app" cards on other people's decks: stay in the app only (as now)?
+- **Edits waiting to be sent when Archidekt changed meanwhile** (edited on the website, or on the other phone): the
+  usual choice is to send the waiting edits one by one on top of Archidekt's list (a card removed there in the
+  meantime is skipped and reported). Fine, or ask each time?
+- **Both phones:** decks sync between phones. Should only the phone that made an edit send it to Archidekt
+  (recommended, so it isn't sent twice), with the other phone seeing it at the next sync?
+- **Dragging:** dragging within the screen, a card onto another category's heading (with the list scrolling while
+  dragging). Selecting: long-press to start selecting, then "Move to…". To be shown in mockups.
+- **Local decks need a database change:** today every deck is known by its Archidekt number. Local decks need their
+  own numbers, which older versions of the app can't read: both phones must run the new version before they sync
+  (the sync file's format goes up). Needs the owner's OK.
+- **Pushing a local deck into an existing Archidekt deck:** add its cards to that deck, or replace that deck's list?
+- **How a local deck starts:** empty, from a precon (1.33's precon list), from the Scan tab, or a copy of another deck?
+  And do local decks get scores (Commander Salt, power level)? Salt scores Archidekt decks by link, so probably only
+  once pushed.
+- **Size:** with local decks this is bigger than 1.42 was. Release it in two steps (editing Archidekt decks first,
+  local decks after)?
 
 ## Done
 
