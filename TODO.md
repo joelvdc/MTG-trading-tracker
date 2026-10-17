@@ -147,10 +147,16 @@ Settled with the owner on 2026-10-17:
 - **Size:** the owner wants everything on the list first; whether 1.46 is one big release or is split is decided
   later.
 
-Open questions:
-- **Archidekt folders, now that the Decks tab doesn't show them:** choose the folder when sending a local deck to
-  Archidekt as a new deck (or always put it in "Home")? Move a deck to another folder from the app? Make, rename or
-  delete folders from the app, or leave all that to the website?
+- **Archidekt folders:** pick the folder when sending a local deck to Archidekt as a new deck; a deck can be moved to
+  another folder from the app. Making, renaming and deleting folders stays on the website.
+- **Deleting a deck in the app** only removes it from the app, never from Archidekt. Asked by the owner on 2026-10-17;
+  the delete question already says so today ("The deck is only removed from this app; it stays on Archidekt and
+  Commander Salt."). In 1.46 the message fits the kind of deck: a local deck exists nowhere else, so deleting it is
+  for good (it says so, plus an undo); a deck with edits still waiting to be sent warns that those edits are lost.
+
+Open question:
+- **Deleting on Archidekt too:** should the app ever offer to delete one of the owner's decks on Archidekt itself
+  (asking twice), or never (recommended: deleting on the website only, so a slip in the app can't lose a deck)?
 
 Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
