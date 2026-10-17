@@ -35,7 +35,7 @@ How to use this file:
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
    remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
 9. **MTG Trader 1.47: life tracker and game records for Commander** (below). Asked for by the owner on 2026-10-17;
-   a draft plan is below, with open questions. Comes after 1.46.
+   a draft plan is below; the owner answered its questions the same day. Comes after 1.46.
 
 ### Changing decks on Archidekt (planned as MTG Trader 1.46)
 *Added 2026-10-16. MTG Trader only.*
@@ -276,20 +276,34 @@ Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets
 - **Size:** about as big as the deck stats (1.44); one release if the owner agrees, otherwise the tracker first and
   the stats right after.
 
-Open questions:
-- **The tab bar:** the app has five tabs today (Trades, Collection, Scan, Decks, Settings). A sixth fits, but the
-  labels get tight on a small screen. Alternatives: a sixth tab "Games"; or move Settings into a ⋮/gear button at the
-  top and keep five tabs. Shown as mockups when planned.
-- **Players:** only the owner's own decks recorded, or also friends' decks and names (needed for head-to-head stats)?
-- **One phone on the table** (like Lifetap), or should each player be able to use their own phone? (One phone is much
-  simpler; several phones would need a live connection between them.)
-- **Which counters** besides commander damage, poison and commander tax: energy, experience, rad, others? Monarch,
-  the initiative and day/night as table items?
-- **Turns on or off by default?** And should turn times be shown during the game (e.g. a clock on the active panel)
-  or only afterwards in the stats?
-- **Importing old games** from Mythic Tools or playgroup.gg, if the owner has history there and those apps can export
-  it (to check when building)?
-- **Two-player and other formats** (20 life, no commander damage), or Commander only?
+Settled with the owner on 2026-10-17:
+- **The tab bar:** a sixth tab "Games" is fine for the owner, but only decided after seeing the mockups (so the plan
+  shows the six-tab bar on a small and a large phone, next to the alternative with Settings behind a gear button).
+- **Friends:** yes, friends can be added with their names and commanders ("would be neat"). Their decks are a name
+  plus a commander found on Scryfall (an Archidekt link optional), so head-to-head stats work.
+- **One phone** in the middle of the table, like Lifetap. No connection between phones during a game.
+- **Counters:** the most common ones can be switched on per game (commander damage, poison and commander tax always
+  there; energy, experience, rad, storm, monarch, the initiative, day/night as options), plus "Custom counter": the
+  owner names it, and it works like the others.
+- **Turns:** off by default (switch in the game setup, default in Settings). An option shows a clock during the game:
+  the game's time, and with turns on the current turn's time on the active player's panel.
+- **No import of old games.** Instead **export**: the game history as a spreadsheet file (one line per player per
+  game, with date, deck, commander, place, length, turns), saved or shared like the app's other exports.
+- **Formats:** Commander first, but the starting life can be set (e.g. 20 for two-player games); commander damage can
+  be switched off for non-Commander games.
+
+Design notes from the owner (2026-10-17):
+- **Backgrounds:** the commanders' pictures as backgrounds, or plain colours; both must look good, with a different
+  colour for every player. A player without a commander set (a friend added by name only, or no deck picked) gets
+  their colour, so commander pictures and colours can be mixed at one table. The colours: a set of six that look
+  good together and stay easy to tell apart (also for colour-blindness), with the life total in white on top. A
+  player can tap their panel's colour to pick another. Shown as mockups (commanders, colours, mixed).
+- **Low life animation:** when a player's life is below 25% of the starting life (below 10 at 40), their panel gets
+  an animation like Mythic Tools' ghost (for example a faint ghost drifting up through the panel, or a slow pulsing
+  dark edge; options shown in the plan). It can be switched off in Settings.
+
+Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
+counters, the low life animation, the end-of-game screen, the stats).
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
