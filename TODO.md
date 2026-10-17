@@ -99,11 +99,32 @@ Settled with the owner on 2026-10-17:
 - **Health check:** this release adds Archidekt's deck-editing addresses and its card data's `defaultCategory`, so the
   weekly health check's instructions get these when it is built.
 
-No open questions left; still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
+Added by the owner on 2026-10-17, for 1.46: "When creating a new deck in the app, I would like to be able to import
+a decklist from moxfield too."
+- Moxfield has no connection the app can use (see "Moxfield connection" below), so not by link. Instead the decklist
+  as text: Moxfield's Export gives the list as plain text ("1 Sol Ring (CMR) 263", foils marked "*F*", sections such
+  as SIDEBOARD/MAYBEBOARD). The app reads that pasted text or a .txt file into a new local deck, with the exact
+  printings where the text has set and number, and auto categories for the cards. The same reader takes most other
+  sites' text lists (Archidekt, MTG Arena, EDHREC). No new outside service, so no health check change.
+
+Other people's Archidekt decks (asked 2026-10-17): today a deck imported from anyone's Archidekt link stays linked
+to it. "Refresh" and "Update all decks" reload it from Archidekt (so it follows its owner's changes), keeping the
+cards "Added in app"; if the owner makes it private or deletes it, the update says it failed and the app keeps the
+last version. In 1.46 such decks stay read-only.
+
+Open questions:
+- **Moxfield text:** paste only, or also pick a .txt file? Should the reader also keep Moxfield's categories when the
+  export has them (otherwise auto categories)?
+- **Someone else's deck you want to change:** "Make a local copy" (the copy option above) gives an editable deck that
+  no longer follows the original. Should the copy keep a "copied from" link, to compare with the original later, or
+  is a plain copy enough?
+
+Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
-### Moxfield connection (after 1.46)
-*Added 2026-10-17. MTG Trader only. Not planned into a release yet.*
+### Moxfield connection (some day, not planned)
+*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
+the idea and its open questions can be picked up again when wished.*
 
 The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
 moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
