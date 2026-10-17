@@ -26,7 +26,8 @@ How to use this file:
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
    token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
    added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
-   Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket (below).
+   Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket, and all decks'
+   bracket or power level cards from the Decks tab (both below).
    Next step: on the owner's green light, write the full plan with mockups (CLAUDE.md), including the health check
    changes and the size; whether it is one release or split is decided then.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
@@ -199,6 +200,30 @@ relevant combos."):
   the bracket" for Auntie Ool). The bracket summary's "combo pieces" stays bracket combos only.
 
 No open questions left; the colours and short forms are shown as mockups when it is planned.
+
+### All decks' bracket or power level cards (planned for MTG Trader 1.46)
+*Added 2026-10-17. MTG Trader only.*
+
+The owner's words: "Another thing for 1.46 release: View all bracket cards or power level card under the decks page,
+maybe an option under the 3 dots."
+
+What exists today: each deck's page has two buttons, "Bracket" and "Power level" (`RuleZeroCard` in `data/Decks.kt`,
+`RuleZeroDialog` in `ui/RuleZeroCards.kt`), which show Commander Salt's rule-zero card for that one deck. The Decks
+tab's ⋮ menu has "Update all decks from Archidekt", "Re-score all decks on Commander Salt", "Recommendations for
+all decks" and "Cards in several decks".
+
+Proposed:
+- Two new items in the Decks tab's ⋮ menu: "Bracket cards of all decks" and "Power level cards of all decks".
+- They open the cards of every scored deck, one after the other: swipe left and right between decks, with the deck's
+  name and its place ("3 of 19") on top; tapping a card opens that deck.
+- In the Decks tab's order (and its sections: Archidekt, Archidekt (read only), Local). Decks Commander Salt hasn't
+  scored (e.g. local decks never sent to Archidekt) are left out, with a line saying how many.
+- No new service (the same Commander Salt data the deck page uses), so no health check change.
+
+Open questions:
+- **Swiping one card at a time** (recommended, the cards are tall), or a scrolling list of all cards one below the
+  other?
+- **Which decks:** all sections, or just your own (Archidekt and Local)?
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
