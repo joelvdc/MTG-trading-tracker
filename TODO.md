@@ -25,7 +25,9 @@ How to use this file:
 6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
    token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
-   added local decks and auto categories; waiting for the green light.
+   added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
+   Next step: on the owner's green light, write the full plan with mockups (CLAUDE.md), including the health check
+   changes and the size; whether it is one release or split is decided then.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
