@@ -249,7 +249,7 @@ Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets
 3. **The life tracker, like Lifetap:** the whole screen split in one coloured panel per player, each turned to face
    its player around the table (layouts for 2 to 6 players, the phone lying flat in the middle). The commander's
    picture or a colour as the panel's background (see the design notes). Tap for −1 / +1 (left/right or above/below,
-   see the design notes), hold to keep counting (in steps of 10 after a moment); the change since the last pause shows next to the life total. The screen stays on.
+   see the design notes), hold for ±10 (see the design notes); the change since the last pause shows next to the life total. The screen stays on.
    Per player, from a small button on the panel: commander damage from each opponent (both commanders for partners;
    commander damage also takes life), poison, commander tax, and optional counters (energy, experience, rad). Table
    items: monarch, the initiative, day/night, a dice roll and a coin flip. A player at 0 life, 21 commander damage
@@ -293,13 +293,15 @@ Settled with the owner on 2026-10-17:
   be switched off for non-Commander games.
 
 Design notes from the owner (2026-10-17):
-- **Backgrounds:** one choice per game, never mixed (owner, 2026-10-17: "I don't like the idea of mixing a
-  background commander picture with plain colors"):
+- **Backgrounds:** one setting in Settings for all games (owner, 2026-10-17: a general setting, not a choice per
+  game), never mixed at one table ("I don't like the idea of mixing a background commander picture with plain
+  colors"):
   - **Commander pictures:** every panel shows a commander's art (Scryfall's art crop). A player without a commander
     set (a friend added by name only, or no deck picked) gets a random commander's art instead, picked when the game
     is set up and kept for the whole game; tapping it during setup picks another. Random pictures come from Scryfall
-    (`/cards/random?q=is:commander`, a new address for the app), and when the phone is offline from the commanders of
-    the owner's own decks that aren't at the table.
+    (`/cards/random?q=is:commander`, a new address for the app). For when the phone is offline, the app keeps a small
+    store of random commander pictures on the phone (about 20, refreshed now and then when online), just for
+    backgrounds, so they aren't limited to the owner's own decks and show other commanders by default.
   - **Plain colours:** a different colour for every player, from a set of six that look good together and stay easy
     to tell apart (also for colour-blindness), with the life total in white on top. A player can tap their panel's
     colour to pick another.
@@ -308,7 +310,8 @@ Design notes from the owner (2026-10-17):
   an animation, like Mythic Tools' ghost. A few to choose from in Settings (for example a faint ghost drifting up
   through the panel, a slowly pulsing dark edge, a fading or cracking life total), each with a preview, or off.
 - **Changing life:** two ways, chosen in Settings: tap to the **left / right** of the life total, or **above / below**
-  it (always as seen by the player the panel faces). Holding keeps counting, as planned above. A setting also shows
+  it (always as seen by the player the panel faces). Holding: −10 / +10 (as Lifetap does, owner 2026-10-17), and
+  keeping the finger down repeats it; a setting can make holding count by 1 instead. A setting also shows
   **− and + symbols** on the panels, for those who like to see where to tap. Shown as mockups (both ways, with and
   without the symbols).
 - **Health check:** the random commander pictures add Scryfall's `/cards/random` (the art crops are already used for
