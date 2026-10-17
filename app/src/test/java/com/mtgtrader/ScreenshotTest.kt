@@ -749,4 +749,19 @@ class ScreenshotTest {
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_stats.png", roborazziOptions = screenshotOptions)
     }
+    /** 1.45: choosing a token's printing for a deck: the cards' own first, the chosen one with a gold border and a tick. */
+    @Test fun tokenPrintings() {
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.weight(1f)) { com.mtgtrader.ui.PrintingTile("ac4384b7", "Edge of Eternities Commander Tokens", "5", own = true, chosen = false) {} }
+                        Box(Modifier.weight(1f)) { com.mtgtrader.ui.PrintingTile("d1892b78", "The Hobbit Tokens", "13", own = false, chosen = true) {} }
+                        Box(Modifier.weight(1f)) { com.mtgtrader.ui.PrintingTile("0bb11342", "Secret Lair Drop", "2820", own = false, chosen = false) {} }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/token_printings.png", roborazziOptions = screenshotOptions)
+    }
 }

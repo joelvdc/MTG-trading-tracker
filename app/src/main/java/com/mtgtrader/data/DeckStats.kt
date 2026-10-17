@@ -50,8 +50,25 @@ data class ColourSources(val colour: Char, val cards: List<SourceLine>) {
     val count get() = cards.sumOf { it.quantity }
 }
 
-/** A token (or helper card) the deck makes: one picture of it, and the deck's cards that make it. */
-data class DeckToken(val id: String, val name: String, val label: String, val oracleId: String?, val makers: List<String>)
+/**
+ * A token (or helper card) the deck makes, and the deck's cards that make it. [key] names it whatever the
+ * printing (Scryfall's oracle id, or its name and type); [id] is the printing shown: the one picked for the
+ * deck (since 1.45), else [defaultId], the one the cards link to.
+ */
+data class DeckToken(
+    val id: String,
+    val name: String,
+    val label: String,
+    val oracleId: String?,
+    val makers: List<String>,
+    val key: String = oracleId ?: name,
+    val defaultId: String = id,
+) {
+    val picked get() = id != defaultId
+}
+
+/** Scryfall's picture of a printing (a token's too), made from its id; [size] "normal" or "small". */
+fun scryfallImage(id: String, size: String = "normal") = "https://cards.scryfall.io/$size/front/${id[0]}/${id[1]}/$id.jpg"
 
 /**
  * The deck page's stats (since 1.44): the mana curve, the colours in the cards' costs, the mana the deck
@@ -153,20 +170,26 @@ object DeckStats {
     /**
      * The deck's tokens, one per token whatever printing each card links to (by Scryfall's oracle id from
      * [details], else by name and type), sorted by name. Each is labelled with its power and toughness when
-     * it has them ("Insect 1/1").
+     * it has them ("Insect 1/1"), and shows the printing [picks] holds for its key, if any.
      */
-    fun tokens(parts: Map<TokenPart, List<String>>, details: Map<String, CardInfo>): List<DeckToken> =
+    fun tokens(parts: Map<TokenPart, List<String>>, details: Map<String, CardInfo>, picks: Map<String, String> = emptyMap()): List<DeckToken> =
         parts.entries.groupBy { (p, _) -> details[p.id]?.oracleId ?: "${p.name}|${p.typeLine}" }
-            .map { (_, same) ->
+            .map { (key, same) ->
                 val first = same.first().key
                 val info = details[first.id]
                 DeckToken(
-                    id = first.id,
+                    id = picks[key] ?: first.id,
                     name = first.name,
                     label = first.name + (info?.powerToughness?.let { " $it" } ?: ""),
                     oracleId = info?.oracleId,
                     makers = same.flatMap { it.value }.distinct().sorted(),
+                    key = key,
+                    defaultId = first.id,
                 )
             }
             .sortedWith(compareBy({ it.name.lowercase() }, { it.label }))
+
+    /** The token printings decks show, for saving their pictures for offline use: the cards' own and the ones picked. Since 1.45. */
+    fun tokenImageIds(tokenLists: List<String?>, picks: Map<Long, Map<String, String>>): Set<String> =
+        tokenLists.flatMap { TokenPart.decode(it).map(TokenPart::id) }.toSet() + picks.values.flatMap { it.values }
 }
