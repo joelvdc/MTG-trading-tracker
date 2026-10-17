@@ -253,7 +253,7 @@ Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets
    Per player, from a small button on the panel: commander damage from each opponent (both commanders for partners;
    commander damage also takes life), poison, commander tax, and optional counters (energy, experience, rad). Table
    items: monarch, the initiative, day/night, a dice roll and a coin flip. A player at 0 life, 21 commander damage
-   from one commander or 10 poison is shown as out (asks to confirm); undo for the last changes.
+   from one commander or 10 poison is asked whether they're out (see the design notes); undo for the last changes.
 4. **Turns (optional, a switch in the game setup and a default in Settings), like playgroup.gg:** the active player's
    panel is marked, a "next turn" tap passes the turn in seating order, and the app counts the rounds and times each
    turn (pause button for breaks). Turned off, the game still records its start, end and length.
@@ -314,6 +314,11 @@ Design notes from the owner (2026-10-17):
   keeping the finger down repeats it; a setting can make holding count by 1 instead. A setting also shows
   **− and + symbols** on the panels, for those who like to see where to tap. Shown as mockups (both ways, with and
   without the symbols).
+- **A player who is out:** when a player's life reaches 0 or below (or 21 commander damage from one commander, or 10
+  poison), a button appears in their panel: "Dead?" (owner, 2026-10-17, like Lifetap and Mythic Tools). Yes: the
+  panel turns dark with a big skull, the player counts as out (their place and the turn are recorded) and their panel
+  stops reacting to taps, except a small "Undo" to bring them back. No (e.g. life gain is coming): the button goes
+  away until the life changes again. The low life animation stops once a player is out. Shown as a mockup.
 - **Health check:** the random commander pictures add Scryfall's `/cards/random` (the art crops are already used for
   the decks' pictures), so the weekly health check gets it when this is built.
 
