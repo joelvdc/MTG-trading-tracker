@@ -67,23 +67,33 @@ Answered by the owner on 2026-10-17:
   the user decides so." So: a deck made in the app (empty, or from a precon, or from scans?) that can stay on the phone,
   or later be sent to Archidekt as a new deck on the logged-in account, or into one of its existing decks.
 
+Settled with the owner on 2026-10-17:
+- **Waiting edits when Archidekt changed meanwhile:** sent one by one on top of Archidekt's list; an edit that no longer
+  fits (a card already removed there) is skipped and reported.
+- **Both phones:** only the phone that made an edit sends it to Archidekt; the other phone sees it at the next sync.
+- **Local decks' database change:** OK (both phones must run the new version before they sync).
+- **Pushing a local deck into an existing Archidekt deck:** ask each time: add its cards, or replace that deck's list.
+- **How a local deck starts:** empty, from a precon, or from scanned cards. The Scan tab can already send cards to a
+  deck; it gets the option to make a new deck from them.
+- **One release** for all of it (editing Archidekt decks and local decks), for now.
+
+New question from the owner (2026-10-17): "Archidekt has an option to auto categorize cards, could that function be
+mirrored in the app? I actually love their auto categories and really use them a lot when drafting a decklist."
+- What Archidekt does: when a card is added, it goes into a category chosen from about 30 broad ones (Ramp, Draw,
+  Removal, Protection…), picked from how Archidekt's users most often categorise that card. Not every card has one
+  (newer or rarely played cards). It's a setting on the Archidekt account; existing decks can be re-sorted by
+  dragging all cards onto "Auto".
+- Checked 2026-10-17: Archidekt's public card data has this category per card (`oracleCard.defaultCategory`, from
+  `/api/cards/v2/?uids=...`, no login needed; the app already reads this for the collection sync). Sol Ring → Ramp,
+  Cultivate → Ramp, Swords to Plowshares → Removal, Wrath of God → Removal, Rhystic Study → Draw, Lightning Greaves
+  → Protection. So the app can use exactly Archidekt's categories, and they stay the same as on the website.
+
 Open questions:
-- **Edits waiting to be sent when Archidekt changed meanwhile** (edited on the website, or on the other phone): the
-  usual choice is to send the waiting edits one by one on top of Archidekt's list (a card removed there in the
-  meantime is skipped and reported). Fine, or ask each time?
-- **Both phones:** decks sync between phones. Should only the phone that made an edit send it to Archidekt
-  (recommended, so it isn't sent twice), with the other phone seeing it at the next sync?
-- **Dragging:** dragging within the screen, a card onto another category's heading (with the list scrolling while
-  dragging). Selecting: long-press to start selecting, then "Move to…". To be shown in mockups.
-- **Local decks need a database change:** today every deck is known by its Archidekt number. Local decks need their
-  own numbers, which older versions of the app can't read: both phones must run the new version before they sync
-  (the sync file's format goes up). Needs the owner's OK.
-- **Pushing a local deck into an existing Archidekt deck:** add its cards to that deck, or replace that deck's list?
-- **How a local deck starts:** empty, from a precon (1.33's precon list), from the Scan tab, or a copy of another deck?
-  And do local decks get scores (Commander Salt, power level)? Salt scores Archidekt decks by link, so probably only
-  once pushed.
-- **Size:** with local decks this is bigger than 1.42 was. Release it in two steps (editing Archidekt decks first,
-  local decks after)?
+- **When it applies:** to every card added in the app (to Archidekt decks and local decks), with a switch in Settings
+  to turn it off? Plus an "Auto-categorise all cards" action on a deck, asking first since it moves cards out of
+  categories made by hand?
+- **Cards without an auto category:** into a category by card type (Creature, Instant…), as Archidekt does when it
+  has nothing better, or into one the owner picks?
 
 ## Done
 
