@@ -190,12 +190,14 @@ something." / "3 card combos should get flagged" / "The deck should count total 
 relevant combos."):
 - **Colour says whether it counts, the text says how many cards.** Today's flags: red for WotC's bracket rules (GAME
   CHANGER, COMBO, EXTRA TURN, LAND DENIAL), grey for TUTOR and FAST MANA, purple for the foil mark. So blue is free:
-  - red "2-CARD COMBO" / "3-CARD COMBO": a combo Commander Salt counts for the bracket (two-card and early-game
-    combos; an early-game one can have three cards);
-  - blue "2-CARD COMBO": a two-card combo that doesn't count;
-  - blue "3-CARD COMBO": a combo of three or more cards that doesn't count ("3+" when it has four or more).
-  The compact view's shorter forms (e.g. "COMBO 2", or a red/blue dot) are worked out with mockups. A card in
-  several combos shows one flag: red before blue, then the fewest cards; its "Combo with …" lines list them all.
+  - the label stays "COMBO" with the number of cards added as a small digit: "COMBO 2", "COMBO 3" ("COMBO 3" also
+    for four or more cards). Red = Commander Salt counts it for the bracket (two-card and early-game combos; an
+    early-game one can have three cards), blue = it doesn't.
+  - The owner found "2-CARD COMBO" / "3-CARD COMBO" too big (2026-10-17) and left the design to Claude: so the flag is
+    barely wider than today's "COMBO". In the compact view, when space runs short, it shortens to "C2" / "C3" and then
+    to a red or blue dot, like the other flags (`DeckMarks` in `ui/DeckScreen.kt`). Shown as mockups when planned.
+  A card in several combos shows one flag: red before blue, then the fewest cards; its "Combo with …" lines list them
+  all, each saying whether it counts for the bracket.
 - **The deck counts both:** the total number of combos and how many count for the bracket (e.g. "8 combos, 2 count for
   the bracket" for Auntie Ool). The bracket summary's "combo pieces" stays bracket combos only.
 
