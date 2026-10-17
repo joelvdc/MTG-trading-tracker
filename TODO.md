@@ -102,6 +102,47 @@ Settled with the owner on 2026-10-17:
 No open questions left; still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
+### Moxfield connection (after 1.46)
+*Added 2026-10-17. MTG Trader only. Not planned into a release yet.*
+
+The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
+moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
+categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
+if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
+
+What was found (2026-10-17):
+- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
+  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
+  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
+  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
+  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
+- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
+  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
+
+Draft plan, in steps (each its own release):
+1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
+   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
+   also reads Moxfield links (to check when building).
+2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
+   condition, language, purchase price), for the logged-in Moxfield account.
+3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
+   categories as tags), sending a local deck to Moxfield as a new deck.
+- Health check: each step adds Moxfield addresses to the weekly health check.
+
+Open questions:
+- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
+- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
+  password; Google/Apple sign-in would need a password set on the Moxfield account first.
+- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
+  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
+  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
+- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
+  enough for the collection?
+- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
+  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
+  Moxfield; the app shows a card under its first category today.
+- **Which step first,** or all three together?
+
 ## Done
 
 ### Order history
