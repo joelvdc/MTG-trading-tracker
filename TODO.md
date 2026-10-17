@@ -248,8 +248,8 @@ Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets
    hand, or at random with a short animation.
 3. **The life tracker, like Lifetap:** the whole screen split in one coloured panel per player, each turned to face
    its player around the table (layouts for 2 to 6 players, the phone lying flat in the middle). The commander's
-   picture as the panel's background. Tap the left or right half for −1 / +1, hold to keep counting (in steps of
-   10 after a moment); the change since the last pause shows next to the life total. The screen stays on.
+   picture or a colour as the panel's background (see the design notes). Tap for −1 / +1 (left/right or above/below,
+   see the design notes), hold to keep counting (in steps of 10 after a moment); the change since the last pause shows next to the life total. The screen stays on.
    Per player, from a small button on the panel: commander damage from each opponent (both commanders for partners;
    commander damage also takes life), poison, commander tax, and optional counters (energy, experience, rad). Table
    items: monarch, the initiative, day/night, a dice roll and a coin flip. A player at 0 life, 21 commander damage
@@ -272,7 +272,7 @@ Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets
 7. **Storage and both phones:** games are stored in the app's database (new tables: players, games, the players of a
    game, turns) and go into backups and the Nextcloud sync, so both phones see the same history. That is a database
    change: both phones must run 1.47 before they sync (as for 1.46).
-- **Health check:** no new service (Scryfall's card search and pictures are already used), so no change expected.
+- **Health check:** no new service, but one new Scryfall address (see the design notes).
 - **Size:** about as big as the deck stats (1.44); one release if the owner agrees, otherwise the tracker first and
   the stats right after.
 
@@ -293,14 +293,26 @@ Settled with the owner on 2026-10-17:
   be switched off for non-Commander games.
 
 Design notes from the owner (2026-10-17):
-- **Backgrounds:** the commanders' pictures as backgrounds, or plain colours; both must look good, with a different
-  colour for every player. A player without a commander set (a friend added by name only, or no deck picked) gets
-  their colour, so commander pictures and colours can be mixed at one table. The colours: a set of six that look
-  good together and stay easy to tell apart (also for colour-blindness), with the life total in white on top. A
-  player can tap their panel's colour to pick another. Shown as mockups (commanders, colours, mixed).
-- **Low life animation:** when a player's life is below 25% of the starting life (below 10 at 40), their panel gets
-  an animation like Mythic Tools' ghost (for example a faint ghost drifting up through the panel, or a slow pulsing
-  dark edge; options shown in the plan). It can be switched off in Settings.
+- **Backgrounds:** one choice per game, never mixed (owner, 2026-10-17: "I don't like the idea of mixing a
+  background commander picture with plain colors"):
+  - **Commander pictures:** every panel shows a commander's art (Scryfall's art crop). A player without a commander
+    set (a friend added by name only, or no deck picked) gets a random commander's art instead, picked when the game
+    is set up and kept for the whole game; tapping it during setup picks another. Random pictures come from Scryfall
+    (`/cards/random?q=is:commander`, a new address for the app), and when the phone is offline from the commanders of
+    the owner's own decks that aren't at the table.
+  - **Plain colours:** a different colour for every player, from a set of six that look good together and stay easy
+    to tell apart (also for colour-blindness), with the life total in white on top. A player can tap their panel's
+    colour to pick another.
+  Shown as mockups (commander pictures, plain colours).
+- **Low life animations:** when a player's life is below 25% of the starting life (below 10 at 40), their panel gets
+  an animation, like Mythic Tools' ghost. A few to choose from in Settings (for example a faint ghost drifting up
+  through the panel, a slowly pulsing dark edge, a fading or cracking life total), each with a preview, or off.
+- **Changing life:** two ways, chosen in Settings: tap to the **left / right** of the life total, or **above / below**
+  it (always as seen by the player the panel faces). Holding keeps counting, as planned above. A setting also shows
+  **− and + symbols** on the panels, for those who like to see where to tap. Shown as mockups (both ways, with and
+  without the symbols).
+- **Health check:** the random commander pictures add Scryfall's `/cards/random` (the art crops are already used for
+  the decks' pictures), so the weekly health check gets it when this is built.
 
 Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
 counters, the low life animation, the end-of-game screen, the stats).
