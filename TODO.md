@@ -26,6 +26,7 @@ How to use this file:
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
    token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
    added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
+   Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket (below).
    Next step: on the owner's green light, write the full plan with mockups (CLAUDE.md), including the health check
    changes and the size; whether it is one release or split is decided then.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
@@ -161,8 +162,8 @@ Settled with the owner on 2026-10-17:
 No open questions left. Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
-### Combos that don't count for the bracket
-*Added 2026-10-17. MTG Trader only. Not planned into a release yet.*
+### Combos that don't count for the bracket (planned for MTG Trader 1.46)
+*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: "I want this for release 1.46".*
 
 The owner's words: "add a flag for not bracket relevant combos. Maybe the same combo flag but in another color?"
 
