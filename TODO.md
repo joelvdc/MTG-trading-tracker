@@ -49,7 +49,7 @@ read-only apart from "Added in app"):
 
 How big: about as much work as the four 1.42 items together. The app already logs in to Archidekt (collection sync),
 but Archidekt has no official API for changing decks: the app would use the one Archidekt's own website uses
-(`PATCH /api/decks/<id>/modifyCards/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
+(`PATCH /api/decks/<id>/modifyCards/`, now `.../modifyCards/v2/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
 from a cloud session, so the owner tries it on a spare deck first.
 
 Answered by the owner on 2026-10-17:
@@ -112,12 +112,35 @@ to it. "Refresh" and "Update all decks" reload it from Archidekt (so it follows 
 cards "Added in app"; if the owner makes it private or deletes it, the update says it failed and the app keeps the
 last version. In 1.46 such decks stay read-only.
 
+Settled with the owner on 2026-10-17:
+- **Moxfield import:** choosing "Import from Moxfield" when making a new deck shows a field to paste the decklist
+  into (paste only). If the pasted list has Moxfield tags, the app asks: use those as categories, or Archidekt's auto
+  categories.
+- **Which decks can be edited:** a deck imported from another Archidekt user is read-only (and keeps following its
+  owner's changes). A deck of the logged-in user can be read and edited.
+- **Detach:** any deck from an Archidekt link (own or someone else's) can be "detached": it becomes a local deck,
+  editable, no longer linked or reloaded. (So no separate "copied from" link is needed.)
+- **Link a local deck:** a local deck can be linked to an existing Archidekt deck of the logged-in user (asking each
+  time whether to add its cards or replace that deck's list, as settled above) or create a new deck on that account.
+- **Folders:** the owner asks whether the app can see and change the folders the decks are in on Archidekt.
+
+Checked 2026-10-17 (Archidekt, read without logging in):
+- Every deck tells its folder (`parentFolder` on /api/decks/<id>/, `parentFolderId`/`parentFolderName` in the deck
+  list). Folders can be read at /api/decks/folders/<id>/ with their name, parent, subfolders and decks: the owner's
+  "Home" holds 00. Retired, 01. Ready to Play (19 decks), 02. Brewing, 03. May Brew, 04. Inspiration, 99. MTGO.
+- Archidekt's website code creates a deck with POST /api/decks/v2/ (with `parent_folder`, `private`, a name and the
+  format), copies one with POST /api/decks/copy/, changes a deck's details with PATCH /api/decks/<id>/update/,
+  changes its cards with PATCH /api/decks/<id>/modifyCards/v2/ (the address moved to "v2" since the 2026-10-16
+  check) and makes a category with POST /api/decks/createCategory/.
+- Not found yet: the addresses for creating, renaming, moving or deleting a folder (that part of the website's code
+  wasn't loaded on its home page). Likely there, to be checked when building.
+
 Open questions:
-- **Moxfield text:** paste only, or also pick a .txt file? Should the reader also keep Moxfield's categories when the
-  export has them (otherwise auto categories)?
-- **Someone else's deck you want to change:** "Make a local copy" (the copy option above) gives an editable deck that
-  no longer follows the original. Should the copy keep a "copied from" link, to compare with the original later, or
-  is a plain copy enough?
+- **Folders in the app:** show the decks in Archidekt's folders on the Decks tab (instead of one list)? Choose the
+  folder when sending a deck to Archidekt (surely yes), and move a deck to another folder? Also make, rename and delete
+  folders, or leave that to the website?
+- **Local decks and folders:** should local decks have folders too (the app's own), or one "Local decks" group?
+- **New deck on Archidekt:** private, unlisted or public by default?
 
 Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
