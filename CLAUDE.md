@@ -26,6 +26,11 @@ the green light for the list; then plan all of it together, as below.
    - check the published `MTG-Trader-<version>.apk` is signed with the same certificate as the previous release
      (`apksigner verify --print-certs`, compare the SHA-256 digests). If it isn't, tell the owner at once;
    - report what's new, with links to the pull request and the release.
+   - keep the weekly health check current (the scheduled task "MTG & Poké Trader health and new-release check"): it
+     checks every outside service and data field the apps rely on. In every plan, say whether the change needs the
+     health check updated (a new service, a new address, a new field read from a service, or a changed one) or not.
+     When it does, update the scheduled task's instructions after the release, raise the app version it mentions,
+     and tell the owner in the report what was added.
 3. **Still ask first**, even after a green light, before anything that:
    - deletes or rewrites the owner's data, or changes the database in a way older versions or other phones can't read;
    - touches signing, the keystore or the repository secrets;

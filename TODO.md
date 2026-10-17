@@ -24,8 +24,8 @@ How to use this file:
    give way to long names (picked by the owner from mockups on 2026-10-16).~~ Released.
 6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
-   token printings became 1.45 (2026-10-17). Not started: the owner answered the first questions on 2026-10-17 and
-   added local decks; the remaining open questions below are settled first.
+   token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
+   added local decks and auto categories; waiting for the green light.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
@@ -88,12 +88,19 @@ mirrored in the app? I actually love their auto categories and really use them a
   Cultivate → Ramp, Swords to Plowshares → Removal, Wrath of God → Removal, Rhystic Study → Draw, Lightning Greaves
   → Protection. So the app can use exactly Archidekt's categories, and they stay the same as on the website.
 
-Open questions:
-- **When it applies:** to every card added in the app (to Archidekt decks and local decks), with a switch in Settings
-  to turn it off? Plus an "Auto-categorise all cards" action on a deck, asking first since it moves cards out of
-  categories made by hand?
-- **Cards without an auto category:** into a category by card type (Creature, Instant…), or into one the owner picks? (What the website does with
-  them was not checked.)
+Settled with the owner on 2026-10-17:
+- **Auto categories:** every card added in the app (to Archidekt decks and local decks) goes into its auto category,
+  with a switch in Settings to turn it off; a deck also gets "Auto-categorise all cards", which asks first.
+- **Cards without an auto category** go into a category by card type (Creature, Instant…); the owner says that is
+  what Archidekt does too.
+- **A new deck can also start as a copy** of an existing deck in the app (so: empty, a precon, scanned cards, or a copy).
+- **The card page opened from a deck** shows the card's category and lets the owner change it (on decks that can be
+  edited).
+- **Health check:** this release adds Archidekt's deck-editing addresses and its card data's `defaultCategory`, so the
+  weekly health check's instructions get these when it is built.
+
+No open questions left; still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
+category, making a new deck) come with the plan.
 
 ## Done
 
