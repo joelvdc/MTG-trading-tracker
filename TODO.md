@@ -34,6 +34,8 @@ How to use this file:
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
    remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
+9. **MTG Trader 1.47: life tracker and game records for Commander** (below). Asked for by the owner on 2026-10-17;
+   a draft plan is below, with open questions. Comes after 1.46.
 
 ### Changing decks on Archidekt (planned as MTG Trader 1.46)
 *Added 2026-10-16. MTG Trader only.*
@@ -227,6 +229,67 @@ Proposed:
 Settled with the owner on 2026-10-17: "All cards in one scrolling list (maybe make a compacted version for this),
 when clicking on a card allow for swiping or go back to the scrolling list. Only my own decks, archidekt and local."
 No open questions left.
+
+### Life tracker and game records for Commander (planned for MTG Trader 1.47)
+*Added 2026-10-17. MTG Trader only.*
+
+The owner's words: "Life tracker for commander games. New tab in the app. UI and usage design like the lifetap app.
+Track commander decks games, wins and losses just like the mythic tools or playgroup.gg app. Track games length,
+average length for each deck, etc, whatever stats are relevant to track. Track turns like the playgroup.gg APP, I
+think this could be optional in the app. Can you work out a plan?"
+
+Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets the green light):
+1. **A new "Games" tab** next to Decks. It opens on "New game", the game in progress (if any) and the game history
+   with the stats.
+2. **Setting up a game:** 2 to 6 players (4 by default), starting life 40, and per player a name and a deck. The
+   owner's own decks are picked from the app's decks (the "Archidekt" and "Local" sections, so the commander and its
+   picture come with it); friends are saved as players with their own decks (a name and a commander, found by name on
+   Scryfall, or an Archidekt link). The last table setup is remembered, so a rematch is one tap. Who starts: picked by
+   hand, or at random with a short animation.
+3. **The life tracker, like Lifetap:** the whole screen split in one coloured panel per player, each turned to face
+   its player around the table (layouts for 2 to 6 players, the phone lying flat in the middle). The commander's
+   picture as the panel's background. Tap the left or right half for −1 / +1, hold to keep counting (in steps of
+   10 after a moment); the change since the last pause shows next to the life total. The screen stays on.
+   Per player, from a small button on the panel: commander damage from each opponent (both commanders for partners;
+   commander damage also takes life), poison, commander tax, and optional counters (energy, experience, rad). Table
+   items: monarch, the initiative, day/night, a dice roll and a coin flip. A player at 0 life, 21 commander damage
+   from one commander or 10 poison is shown as out (asks to confirm); undo for the last changes.
+4. **Turns (optional, a switch in the game setup and a default in Settings), like playgroup.gg:** the active player's
+   panel is marked, a "next turn" tap passes the turn in seating order, and the app counts the rounds and times each
+   turn (pause button for breaks). Turned off, the game still records its start, end and length.
+5. **Ending a game:** the last player standing wins (or the owner picks the winner, or a draw); optionally how it was
+   won (combat, commander damage, combo, poison, alternative win, everyone conceded) and a note. Recorded by itself:
+   date, length, players, decks, seats and who started, the order players went out (and on which turn, with turns on),
+   final life totals. A past game can also be added by hand (without the tracker), and a recorded game can be changed
+   or deleted.
+6. **Stats** (in the Games tab, and a "Games" section on each deck's page):
+   - per deck: games, wins, losses, win rate, average game length, average length of its wins, average number of turns
+     and the turn it usually wins on (with turns on), average place, how its games ended, its last games;
+   - per player and against each opponent (head to head), wins when starting first or by seat, games per month;
+   - the deck's bracket and power level (from Commander Salt) next to its results, so it's easy to see whether a deck
+     is too strong or too weak for the group;
+   - all decks in one table that can be sorted (most played, best win rate, longest games…).
+7. **Storage and both phones:** games are stored in the app's database (new tables: players, games, the players of a
+   game, turns) and go into backups and the Nextcloud sync, so both phones see the same history. That is a database
+   change: both phones must run 1.47 before they sync (as for 1.46).
+- **Health check:** no new service (Scryfall's card search and pictures are already used), so no change expected.
+- **Size:** about as big as the deck stats (1.44); one release if the owner agrees, otherwise the tracker first and
+  the stats right after.
+
+Open questions:
+- **The tab bar:** the app has five tabs today (Trades, Collection, Scan, Decks, Settings). A sixth fits, but the
+  labels get tight on a small screen. Alternatives: a sixth tab "Games"; or move Settings into a ⋮/gear button at the
+  top and keep five tabs. Shown as mockups when planned.
+- **Players:** only the owner's own decks recorded, or also friends' decks and names (needed for head-to-head stats)?
+- **One phone on the table** (like Lifetap), or should each player be able to use their own phone? (One phone is much
+  simpler; several phones would need a live connection between them.)
+- **Which counters** besides commander damage, poison and commander tax: energy, experience, rad, others? Monarch,
+  the initiative and day/night as table items?
+- **Turns on or off by default?** And should turn times be shown during the game (e.g. a clock on the active panel)
+  or only afterwards in the stats?
+- **Importing old games** from Mythic Tools or playgroup.gg, if the owner has history there and those apps can export
+  it (to check when building)?
+- **Two-player and other formats** (20 life, no commander damage), or Commander only?
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
