@@ -177,17 +177,27 @@ battlefield) is left out. Salt doesn't publish its rule; this is read from its d
 
 Proposed:
 - Read the whole combo list too, and flag the cards of combos that aren't counted with the same "COMBO" label in
-  another colour (e.g. grey or blue instead of today's colour), so the bracket ones still stand out.
+  another colour, so the bracket ones still stand out (settled below).
 - The card's "Combo with …" line says which kind it is ("counts for the bracket" or "doesn't count for the bracket"),
   with a link to the combo on Commander Spellbook (`spellbookUri`).
 - No new service (the data is already in Commander Salt's answer); the health check gets the `details.combos.list`
   fields added.
 
-Open questions:
-- **Which colour** for the second flag (shown as mockups when planned)?
-- **Combos of three or more cards** (Salt lists them too, e.g. Hapatra + Obelisk Spider + Yawgmoth): flag those as
-  well, or only two-card combos?
-- Should the deck's "combo pieces" count (the bracket summary) stay bracket combos only? (Recommended: yes.)
+Settled with the owner on 2026-10-17 ("Just choose a color that does not clash with other flags. Idk, blue or
+something." / "3 card combos should get flagged" / "The deck should count total number of combos and bracket
+relevant combos."):
+- **Colour says whether it counts, the text says how many cards.** Today's flags: red for WotC's bracket rules (GAME
+  CHANGER, COMBO, EXTRA TURN, LAND DENIAL), grey for TUTOR and FAST MANA, purple for the foil mark. So blue is free:
+  - red "2-CARD COMBO" / "3-CARD COMBO": a combo Commander Salt counts for the bracket (two-card and early-game
+    combos; an early-game one can have three cards);
+  - blue "2-CARD COMBO": a two-card combo that doesn't count;
+  - blue "3-CARD COMBO": a combo of three or more cards that doesn't count ("3+" when it has four or more).
+  The compact view's shorter forms (e.g. "COMBO 2", or a red/blue dot) are worked out with mockups. A card in
+  several combos shows one flag: red before blue, then the fewest cards; its "Combo with …" lines list them all.
+- **The deck counts both:** the total number of combos and how many count for the bracket (e.g. "8 combos, 2 count for
+  the bracket" for Auntie Ool). The bracket summary's "combo pieces" stays bracket combos only.
+
+No open questions left; the colours and short forms are shown as mockups when it is planned.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
