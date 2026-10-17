@@ -75,7 +75,7 @@ Settled with the owner on 2026-10-17:
 - **Pushing a local deck into an existing Archidekt deck:** ask each time: add its cards, or replace that deck's list.
 - **How a local deck starts:** empty, from a precon, or from scanned cards. The Scan tab can already send cards to a
   deck; it gets the option to make a new deck from them.
-- **One release** for all of it (editing Archidekt decks and local decks), for now.
+- **One release** for all of it, for now (on 2026-10-17 the owner said: one release or split is decided later).
 
 New question from the owner (2026-10-17): "Archidekt has an option to auto categorize cards, could that function be
 mirrored in the app? I actually love their auto categories and really use them a lot when drafting a decklist."
@@ -136,11 +136,21 @@ Checked 2026-10-17 (Archidekt, read without logging in):
   wasn't loaded on its home page). Likely there, to be checked when building.
 
 Open questions:
-- **Folders in the app:** show the decks in Archidekt's folders on the Decks tab (instead of one list)? Choose the
-  folder when sending a deck to Archidekt (surely yes), and move a deck to another folder? Also make, rename and delete
-  folders, or leave that to the website?
-- **Local decks and folders:** should local decks have folders too (the app's own), or one "Local decks" group?
-- **New deck on Archidekt:** private, unlisted or public by default?
+Settled with the owner on 2026-10-17:
+- **The Decks tab has three sections, not Archidekt's folders:** "Archidekt" (the logged-in user's decks),
+  "Archidekt (read only)" (other people's decks) and "Local". Each section can be folded away.
+- **New decks on Archidekt are private** by default. The app can also change whether one of the owner's decks is
+  private, unlisted or public (Archidekt's website does this through PATCH /api/decks/<id>/update/; to confirm the
+  field names when building).
+- **Importing from Archidekt:** the import screen gets a switch "Make it a local deck", for importing a deck straight
+  as a local deck (the same as importing it and then detaching it).
+- **Size:** the owner wants everything on the list first; whether 1.46 is one big release or is split is decided
+  later.
+
+Open questions:
+- **Archidekt folders, now that the Decks tab doesn't show them:** choose the folder when sending a local deck to
+  Archidekt as a new deck (or always put it in "Home")? Move a deck to another folder from the app? Make, rename or
+  delete folders from the app, or leave all that to the website?
 
 Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
