@@ -214,16 +214,17 @@ all decks" and "Cards in several decks".
 
 Proposed:
 - Two new items in the Decks tab's ⋮ menu: "Bracket cards of all decks" and "Power level cards of all decks".
-- They open the cards of every scored deck, one after the other: swipe left and right between decks, with the deck's
-  name and its place ("3 of 19") on top; tapping a card opens that deck.
-- In the Decks tab's order (and its sections: Archidekt, Archidekt (read only), Local). Decks Commander Salt hasn't
-  scored (e.g. local decks never sent to Archidekt) are left out, with a line saying how many.
+- They open a scrolling list of every scored deck's card, one below the other, in a compact version of the card (so
+  several fit on the screen; worked out with mockups). Tapping a card opens it full size; from there swipe left and
+  right to the other decks' cards, or go back to the list.
+- Only the owner's own decks: the "Archidekt" and "Local" sections, in the Decks tab's order; not "Archidekt (read
+  only)". Decks Commander Salt hasn't scored (e.g. local decks never sent to Archidekt) are left out, with a line
+  saying how many.
 - No new service (the same Commander Salt data the deck page uses), so no health check change.
 
-Open questions:
-- **Swiping one card at a time** (recommended, the cards are tall), or a scrolling list of all cards one below the
-  other?
-- **Which decks:** all sections, or just your own (Archidekt and Local)?
+Settled with the owner on 2026-10-17: "All cards in one scrolling list (maybe make a compacted version for this),
+when clicking on a card allow for swiping or go back to the scrolling list. Only my own decks, archidekt and local."
+No open questions left.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
