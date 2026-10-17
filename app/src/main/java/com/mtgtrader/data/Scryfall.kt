@@ -32,6 +32,18 @@ data class ScryFace(
     @SerialName("oracle_text") val oracleText: String? = null,
     val colors: List<String>? = null,
     @SerialName("mana_cost") val manaCost: String? = null,
+    /** Since 1.44, for the deck stats. */
+    val power: String? = null,
+    val toughness: String? = null,
+)
+
+/** A card linked to another, e.g. a token it makes ("token") or a helper card like The Monarch ("combo_piece"). Since 1.44. */
+@Serializable
+data class ScryPart(
+    val id: String,
+    val component: String = "",
+    val name: String = "",
+    @SerialName("type_line") val typeLine: String = "",
 )
 
 @Serializable
@@ -82,6 +94,12 @@ data class ScryCard(
     /** This printing isn't the card's first. */
     val reprint: Boolean = false,
     @SerialName("oracle_text") val oracleText: String? = null,
+    /** The colours of mana the card can make ("C" for colourless), each once, e.g. ["B", "C", "G"] for Twilight Mire. Since 1.44. */
+    @SerialName("produced_mana") val producedMana: List<String>? = null,
+    /** Tokens and helper cards the card makes, and other cards it's linked to. Since 1.44. */
+    @SerialName("all_parts") val allParts: List<ScryPart>? = null,
+    val power: String? = null,
+    val toughness: String? = null,
 ) {
     /** Rules text of every face. */
     val fullText: String get() = oracleText ?: cardFaces?.joinToString("\n") { it.oracleText.orEmpty() }.orEmpty()
@@ -271,6 +289,14 @@ class ScryfallApi(private val http: OkHttpClient) {
             pages++
         }
         return seen(out)
+    }
+
+    /** Every paper printing of the card (or token) with this oracle id, newest first; first page (175) only. Since 1.44. */
+    suspend fun printsOfOracle(oracleId: String): List<ScryCard> {
+        val body = call(
+            url("cards/search", "q" to "oracleid:$oracleId game:paper", "unique" to "prints", "order" to "released", "dir" to "desc", "include_extras" to "true")
+        ) ?: return emptyList()
+        return json.decodeFromString<ScryList>(body).data
     }
 
     /** Free-form Scryfall search (e.g. `set:mkm`), first page only. */

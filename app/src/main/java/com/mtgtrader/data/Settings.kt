@@ -107,6 +107,33 @@ class Settings(context: Context) {
         prefs.edit().putStringSet("deckCollapsed", titles).apply()
     }
 
+    /** Which of the deck pages' "Stats" and "Tokens" sections are open ([DeckStats.STATS], [DeckStats.TOKENS]); folded until opened (this phone only). Since 1.44. */
+    private val _deckStatsOpen = MutableStateFlow(prefs.getStringSet("deckStatsOpen", null).orEmpty().toSet())
+    val deckStatsOpen: StateFlow<Set<String>> = _deckStatsOpen
+
+    fun setDeckStatsOpen(keys: Set<String>) {
+        _deckStatsOpen.value = keys
+        prefs.edit().putStringSet("deckStatsOpen", keys).apply()
+    }
+
+    /** The deck stats' mana production counts lands only (this phone only). Since 1.44. */
+    private val _deckLandsOnly = MutableStateFlow(prefs.getBoolean("deckLandsOnly", false))
+    val deckLandsOnly: StateFlow<Boolean> = _deckLandsOnly
+
+    fun setDeckLandsOnly(on: Boolean) {
+        _deckLandsOnly.value = on
+        prefs.edit().putBoolean("deckLandsOnly", on).apply()
+    }
+
+    /** The deck stats' mana production shows colourless sources (this phone only). Since 1.44. */
+    private val _deckColourless = MutableStateFlow(prefs.getBoolean("deckColourless", true))
+    val deckColourless: StateFlow<Boolean> = _deckColourless
+
+    fun setDeckColourless(on: Boolean) {
+        _deckColourless.value = on
+        prefs.edit().putBoolean("deckColourless", on).apply()
+    }
+
     private val _deckPicks = MutableStateFlow(decodePicks(prefs.getString("deckPicks", null)))
     /** Deck id → card name (see [DeckPrintings.nameKey]) → the copy you picked to show ([DeckPrintings.pickValue] or [DeckPrintings.ARCHIDEKT]). Since 1.22. */
     val deckPicks: StateFlow<Map<Long, Map<String, String>>> = _deckPicks

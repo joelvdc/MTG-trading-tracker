@@ -95,6 +95,25 @@ first. Each section heading shows what its cards are worth. Tap a section headin
 (a category, or a card type when grouped by type) to fold its cards away and again to show them; ⋮ → **Collapse all /
 Expand all sections** does them all. Folded headings stay folded, in every deck that has them (since 1.42).
 
+**Deck stats** (since 1.44): two folding sections above the cards, **Stats** and **Tokens**, folded until you open
+them (they stay open or folded for every deck).
+- **Mana curve:** the cards by mana value, 0 to 7+, lands left out, with the average.
+- **Mana cost:** one bar split by colour, like Archidekt's: the coloured symbols in the cards' costs, with counts and
+  shares. A hybrid symbol counts for both its colours, a Phyrexian one for its colour.
+- **Mana production:** the deck's **sources** of each colour, the way mana bases are built: each card counts once for
+  every colour it can make, however much (Twilight Mire is one black and one green source, Sol Ring one colourless).
+  The colours are Scryfall's, with three rules on top: fetch lands count for the colours of the lands they can find
+  *in this deck* (Fabled Passage for your basics, Bloodstained Mire for every Swamp and Mountain, Overgrown Tomb
+  included); "any colour" cards (Command Tower, Exotic Orchard, Arcane Signet) count only for the commander's colours;
+  spells that search for lands (Farseek, Cultivate) don't count. Double-faced cards with a land on either face are
+  lands. The switches **Lands only** and **Colourless** sit right on the deck page. Tap a colour to see the cards
+  counted, and what each fetch land finds.
+- **Tokens:** a picture of every token and helper card (The Monarch, Poison Counter…) the deck's cards make, with the
+  cards that make it. Tap one to see it large and swipe through its other printings (online).
+
+The stats use the card details the app keeps from Scryfall; decks' cards get the new ones once, the first time a deck
+page is opened online after updating to 1.44.
+
 **Maybeboard:** ⋮ → **Show maybeboard** lists the deck's maybeboard on Archidekt (and any other category Archidekt
 leaves out of the deck, such as a sideboard) under the deck, by category and with prices. It's never counted in the
 deck's cards or value, "Cards I'm missing", "Add to collection", "Cards in several decks" or what the trade binder must

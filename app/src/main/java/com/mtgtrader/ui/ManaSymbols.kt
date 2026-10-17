@@ -45,10 +45,10 @@ object ManaCost {
 /** The Mana font by Andrew Gioia (SIL Open Font License; see assets/licenses/mana-font.txt). */
 private val ManaFont = FontFamily(Font(R.font.mana))
 
-private val ManaTint = mapOf(
+internal val ManaTint = mapOf(
     "W" to Color(0xFFF0F2C0), "U" to Color(0xFFB5CDE3), "B" to Color(0xFFACA29A), "R" to Color(0xFFDB8664), "G" to Color(0xFF93B483),
 )
-private val GenericTint = Color(0xFFBEB9B2)
+internal val GenericTint = Color(0xFFBEB9B2)
 private val SymbolInk = Color(0xFF111111)
 
 /** The font's character for a symbol, or null when it has none (then the symbol is written out). */

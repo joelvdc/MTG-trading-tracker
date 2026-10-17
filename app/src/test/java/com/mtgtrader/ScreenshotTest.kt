@@ -717,4 +717,36 @@ class ScreenshotTest {
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_compact.png", roborazziOptions = screenshotOptions)
     }
+    /** 1.44: the deck stats of the owner's Auntie Plague: mana curve, colours in the costs, and lands as sources (colourless hidden). */
+    @Test fun deckStats() {
+        val cc = { c: Char, n: Int -> com.mtgtrader.data.ColourCount(c, n) }
+        val line = { name: String, n: Int, finds: List<String> -> com.mtgtrader.data.SourceLine(name, n, finds) }
+        val sources = listOf(
+            com.mtgtrader.data.ColourSources('B', List(23) { line("Black source $it", 1, emptyList()) }),
+            com.mtgtrader.data.ColourSources('R', listOf(line("Mountain", 4, emptyList()), line("Fabled Passage", 1, listOf("Mountain"))) + List(14) { line("Red source $it", 1, emptyList()) }),
+            com.mtgtrader.data.ColourSources('G', List(23) { line("Green source $it", 1, emptyList()) }),
+        )
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.StatsHeading("Stats", folded = false) {}
+                        com.mtgtrader.ui.ManaCurveCard(com.mtgtrader.data.ManaCurve(listOf(0, 3, 17, 14, 12, 9, 6, 1), 62, 3.4677))
+                        com.mtgtrader.ui.ColoursCard(
+                            costs = listOf(cc('B', 63), cc('R', 16), cc('G', 22)),
+                            sources = sources,
+                            landsOnly = true,
+                            colourless = false,
+                            landCount = 38,
+                            detailsMissing = 0,
+                            onLandsOnly = {},
+                            onColourless = {},
+                        )
+                        com.mtgtrader.ui.StatsHeading("Tokens (6)", folded = true) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/deck_stats.png", roborazziOptions = screenshotOptions)
+    }
 }
