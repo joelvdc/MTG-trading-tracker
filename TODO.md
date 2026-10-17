@@ -161,6 +161,34 @@ Settled with the owner on 2026-10-17:
 No open questions left. Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
+### Combos that don't count for the bracket
+*Added 2026-10-17. MTG Trader only. Not planned into a release yet.*
+
+The owner's words: "add a flag for not bracket relevant combos. Maybe the same combo flag but in another color?"
+
+Background (asked about the Auntie Ool deck, archidekt.com/decks/20263351, on 2026-10-17): the app's "COMBO" flag
+shows only the combos Commander Salt counts for the bracket (`details.brackets.categories.twoCardCombos` and
+`earlyGameInfiniteCombos`, read in `data/SaltCard.kt` SaltCardParser). Commander Salt's full combo list
+(`details.combos.list`: each with `cards`, `categories`, `spellbookUri`, `complexity.requiresCardsOnBoard`) has more:
+8 for Auntie Ool, of which 2 count (Devoted Druid + Mikaeus, the Unhallowed; Flourishing Defenses + High Perfect
+Morcant). Tree of Perdition + Soul Immolation and All Will Be One + Everlasting Torment are in the list but not
+counted: every two-card combo there with `requiresCardsOnBoard: true` (needs more than its two cards on the
+battlefield) is left out. Salt doesn't publish its rule; this is read from its data.
+
+Proposed:
+- Read the whole combo list too, and flag the cards of combos that aren't counted with the same "COMBO" label in
+  another colour (e.g. grey or blue instead of today's colour), so the bracket ones still stand out.
+- The card's "Combo with …" line says which kind it is ("counts for the bracket" or "doesn't count for the bracket"),
+  with a link to the combo on Commander Spellbook (`spellbookUri`).
+- No new service (the data is already in Commander Salt's answer); the health check gets the `details.combos.list`
+  fields added.
+
+Open questions:
+- **Which colour** for the second flag (shown as mockups when planned)?
+- **Combos of three or more cards** (Salt lists them too, e.g. Hapatra + Obelisk Spider + Yawgmoth): flag those as
+  well, or only two-card combos?
+- Should the deck's "combo pieces" count (the bracket summary) stay bracket combos only? (Recommended: yes.)
+
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
 the idea and its open questions can be picked up again when wished.*
