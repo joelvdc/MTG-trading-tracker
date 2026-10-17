@@ -92,8 +92,8 @@ Open questions:
 - **When it applies:** to every card added in the app (to Archidekt decks and local decks), with a switch in Settings
   to turn it off? Plus an "Auto-categorise all cards" action on a deck, asking first since it moves cards out of
   categories made by hand?
-- **Cards without an auto category:** into a category by card type (Creature, Instant…), as Archidekt does when it
-  has nothing better, or into one the owner picks?
+- **Cards without an auto category:** into a category by card type (Creature, Instant…), or into one the owner picks? (What the website does with
+  them was not checked.)
 
 ## Done
 
