@@ -26,6 +26,8 @@ How to use this file:
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
    token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
    added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
+   Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket, and all decks'
+   bracket or power level cards from the Decks tab (both below).
    Next step: on the owner's green light, write the full plan with mockups (CLAUDE.md), including the health check
    changes and the size; whether it is one release or split is decided then.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
@@ -161,8 +163,8 @@ Settled with the owner on 2026-10-17:
 No open questions left. Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
-### Combos that don't count for the bracket
-*Added 2026-10-17. MTG Trader only. Not planned into a release yet.*
+### Combos that don't count for the bracket (planned for MTG Trader 1.46)
+*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: "I want this for release 1.46".*
 
 The owner's words: "add a flag for not bracket relevant combos. Maybe the same combo flag but in another color?"
 
@@ -177,17 +179,52 @@ battlefield) is left out. Salt doesn't publish its rule; this is read from its d
 
 Proposed:
 - Read the whole combo list too, and flag the cards of combos that aren't counted with the same "COMBO" label in
-  another colour (e.g. grey or blue instead of today's colour), so the bracket ones still stand out.
+  another colour, so the bracket ones still stand out (settled below).
 - The card's "Combo with …" line says which kind it is ("counts for the bracket" or "doesn't count for the bracket"),
   with a link to the combo on Commander Spellbook (`spellbookUri`).
 - No new service (the data is already in Commander Salt's answer); the health check gets the `details.combos.list`
   fields added.
 
-Open questions:
-- **Which colour** for the second flag (shown as mockups when planned)?
-- **Combos of three or more cards** (Salt lists them too, e.g. Hapatra + Obelisk Spider + Yawgmoth): flag those as
-  well, or only two-card combos?
-- Should the deck's "combo pieces" count (the bracket summary) stay bracket combos only? (Recommended: yes.)
+Settled with the owner on 2026-10-17 ("Just choose a color that does not clash with other flags. Idk, blue or
+something." / "3 card combos should get flagged" / "The deck should count total number of combos and bracket
+relevant combos."):
+- **Colour says whether it counts, the text says how many cards.** Today's flags: red for WotC's bracket rules (GAME
+  CHANGER, COMBO, EXTRA TURN, LAND DENIAL), grey for TUTOR and FAST MANA, purple for the foil mark. So blue is free:
+  - red "2-CARD COMBO" / "3-CARD COMBO": a combo Commander Salt counts for the bracket (two-card and early-game
+    combos; an early-game one can have three cards);
+  - blue "2-CARD COMBO": a two-card combo that doesn't count;
+  - blue "3-CARD COMBO": a combo of three or more cards that doesn't count ("3+" when it has four or more).
+  The compact view's shorter forms (e.g. "COMBO 2", or a red/blue dot) are worked out with mockups. A card in
+  several combos shows one flag: red before blue, then the fewest cards; its "Combo with …" lines list them all.
+- **The deck counts both:** the total number of combos and how many count for the bracket (e.g. "8 combos, 2 count for
+  the bracket" for Auntie Ool). The bracket summary's "combo pieces" stays bracket combos only.
+
+No open questions left; the colours and short forms are shown as mockups when it is planned.
+
+### All decks' bracket or power level cards (planned for MTG Trader 1.46)
+*Added 2026-10-17. MTG Trader only.*
+
+The owner's words: "Another thing for 1.46 release: View all bracket cards or power level card under the decks page,
+maybe an option under the 3 dots."
+
+What exists today: each deck's page has two buttons, "Bracket" and "Power level" (`RuleZeroCard` in `data/Decks.kt`,
+`RuleZeroDialog` in `ui/RuleZeroCards.kt`), which show Commander Salt's rule-zero card for that one deck. The Decks
+tab's ⋮ menu has "Update all decks from Archidekt", "Re-score all decks on Commander Salt", "Recommendations for
+all decks" and "Cards in several decks".
+
+Proposed:
+- Two new items in the Decks tab's ⋮ menu: "Bracket cards of all decks" and "Power level cards of all decks".
+- They open a scrolling list of every scored deck's card, one below the other, in a compact version of the card (so
+  several fit on the screen; worked out with mockups). Tapping a card opens it full size; from there swipe left and
+  right to the other decks' cards, or go back to the list.
+- Only the owner's own decks: the "Archidekt" and "Local" sections, in the Decks tab's order; not "Archidekt (read
+  only)". Decks Commander Salt hasn't scored (e.g. local decks never sent to Archidekt) are left out, with a line
+  saying how many.
+- No new service (the same Commander Salt data the deck page uses), so no health check change.
+
+Settled with the owner on 2026-10-17: "All cards in one scrolling list (maybe make a compacted version for this),
+when clicking on a card allow for swiping or go back to the scrolling list. Only my own decks, archidekt and local."
+No open questions left.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
