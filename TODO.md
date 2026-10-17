@@ -154,11 +154,10 @@ Settled with the owner on 2026-10-17:
   Commander Salt."). In 1.46 the message fits the kind of deck: a local deck exists nowhere else, so deleting it is
   for good (it says so, plus an undo); a deck with edits still waiting to be sent warns that those edits are lost.
 
-Open question:
-- **Deleting on Archidekt too:** should the app ever offer to delete one of the owner's decks on Archidekt itself
-  (asking twice), or never (recommended: deleting on the website only, so a slip in the app can't lose a deck)?
+- **Deleting on Archidekt:** never from the app (owner, 2026-10-17: "deleting archidekt decks is done through
+  archidekt").
 
-Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
+No open questions left. Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
 ### Moxfield connection (some day, not planned)
