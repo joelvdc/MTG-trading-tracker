@@ -36,12 +36,16 @@ interface OfflineImagesDao {
     )
     fun observeCardImages(): Flow<List<String>>
 
+    /** The tokens decks' cards make, as [TokenPart] JSON lists. Since 1.45. */
+    @Query("SELECT DISTINCT c.tokens FROM deck_cards d JOIN card_info c ON c.scryfallId = d.scryfallId WHERE c.tokens IS NOT NULL")
+    fun observeDeckTokens(): Flow<List<String>>
+
     @Query("SELECT artUrl, commanderScryfallId FROM decks")
     fun observeCovers(): Flow<List<DeckCoverRow>>
 }
 
 /**
- * Keeps the pictures of decks (their cards and covers) and of the wishlist in the image cache, so
+ * Keeps the pictures of decks (their cards, covers and tokens) and of the wishlist in the image cache, so
  * they show offline even if they were never on screen. Runs on Wi-Fi only, when decks or the
  * wishlist change and when the phone connects; pictures already saved are skipped. Since 1.34.
  */
@@ -57,8 +61,10 @@ class OfflineImages(
 
     init {
         scope.launch {
-            combine(settings.offlineImages, network.reconnects, dao.observeCovers(), dao.observeCardImages()) { on, _, covers, cards ->
-                if (on) covers.mapNotNull { deckCoverUrl(it.artUrl, it.commanderScryfallId) } + cards else emptyList()
+            // The decks' tokens too, in the printings they show (since 1.45).
+            val tokens = combine(dao.observeDeckTokens(), settings.deckTokenPicks) { lists, picks -> DeckStats.tokenImageIds(lists, picks).map { scryfallImage(it) } }
+            combine(settings.offlineImages, network.reconnects, dao.observeCovers(), dao.observeCardImages(), tokens) { on, _, covers, cards, tokenUrls ->
+                if (on) covers.mapNotNull { deckCoverUrl(it.artUrl, it.commanderScryfallId) } + cards + tokenUrls else emptyList()
             }
                 .debounce(5_000)
                 .collectLatest { urls -> if (urls.isNotEmpty() && network.onUnmeteredNetwork()) runCatching { save(urls.distinct()) } }

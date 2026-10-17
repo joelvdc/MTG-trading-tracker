@@ -22,13 +22,16 @@ How to use this file:
    2026-10-16), adding cards from the deck page.~~ Released.
 5. ~~MTG Trader 1.43: the compact deck view on one line per card, with mana costs (Mana font), and labels that
    give way to long names (picked by the owner from mockups on 2026-10-16).~~ Released.
-6. **MTG Trader 1.45: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
-   to 1.44 when the compact view's redo became 1.43, and to 1.45 when the deck stats became 1.44 (2026-10-17). Not
-   started: the owner wants to revisit it, and the open questions below are settled first.
+6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
+   to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
+   token printings became 1.45 (2026-10-17). Not started: the owner wants to revisit it, and the open questions below
+   are settled first.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
+8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
+   remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
 
-### Changing decks on Archidekt (planned as MTG Trader 1.45)
+### Changing decks on Archidekt (planned as MTG Trader 1.46)
 *Added 2026-10-16. MTG Trader only.*
 
 The owner's words: "I would also like to push the added cards in the app to archidekts maybeboard. And lastly I would

@@ -139,7 +139,6 @@ import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.DeckSection
 import com.mtgtrader.data.CardInfo
 import com.mtgtrader.data.DeckStats
-import com.mtgtrader.data.DeckToken
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
@@ -167,8 +166,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val tokenDetails by produceState(emptyMap<String, CardInfo>(), tokenParts.keys) {
         value = runCatching { c.cardDetails.forIds(tokenParts.keys.map { it.id }) }.getOrDefault(emptyMap())
     }
-    val tokens = remember(tokenParts, tokenDetails) { DeckStats.tokens(tokenParts, tokenDetails) }
-    var openToken by remember { mutableStateOf<DeckToken?>(null) }
+    // Token printings picked for this deck (since 1.45).
+    val allTokenPicks by c.settings.deckTokenPicks.collectAsStateWithLifecycle()
+    val tokenPicks = allTokenPicks[deckId].orEmpty()
+    val tokens = remember(tokenParts, tokenDetails, tokenPicks) { DeckStats.tokens(tokenParts, tokenDetails, tokenPicks) }
+    var openToken by rememberSaveable { mutableStateOf<String?>(null) }
     fun toggleStats(key: String) = c.settings.setDeckStatsOpen(if (key in statsOpen) statsOpen - key else statsOpen + key)
     // Shown in the printings you own (since 1.22), unless switched off for this deck.
     val owned by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
@@ -422,10 +424,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 val tokensFolded = DeckStats.TOKENS !in statsOpen
                 item(key = "tokens_h") { StatsHeading("Tokens (${tokens.size})", tokensFolded) { toggleStats(DeckStats.TOKENS) } }
                 if (!tokensFolded) {
-                    tokens.chunked(3).forEachIndexed { i, row -> item(key = "tokens_$i") { TokenRow(row) { openToken = it } } }
+                    tokens.chunked(3).forEachIndexed { i, row -> item(key = "tokens_$i") { TokenRow(row) { openToken = it.key } } }
                     item(key = "tokens_note") {
                         Text(
-                            "Tap a token to see it large, with its other printings.",
+                            "Tap a token to see it large and choose its printing for this deck.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 6.dp),
@@ -478,7 +480,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
 
     showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
-    openToken?.let { t -> TokenDialog(t) { openToken = null } }
+    tokens.firstOrNull { it.key == openToken }?.let { t ->
+        TokenDialog(t, onPick = { c.settings.setDeckTokenPick(deckId, t.key, it) }) { openToken = null }
+    }
     selected?.let { row ->
         val key = DeckPrintings.nameKey(row.item.card.name)
         val inDeck = !row.item.maybeboard

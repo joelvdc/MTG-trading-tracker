@@ -109,7 +109,9 @@ them (they stay open or folded for every deck).
   lands. The switches **Lands only** and **Colourless** sit right on the deck page. Tap a colour to see the cards
   counted, and what each fetch land finds.
 - **Tokens:** a picture of every token and helper card (The Monarch, Poison Counter…) the deck's cards make, with the
-  cards that make it. Tap one to see it large and swipe through its other printings (online).
+  cards that make it. Tap one to see it large; **Other printings** lists every printing Scryfall has (online), and the
+  one you tap is what that deck shows from then on (since 1.45; **Use the cards' own printing** goes back). Picks are
+  kept per deck, survive reloading the deck, sync to your other phones and are saved for offline use.
 
 The stats use the card details the app keeps from Scryfall; decks' cards get the new ones once, the first time a deck
 page is opened online after updating to 1.44.

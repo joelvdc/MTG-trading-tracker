@@ -18,8 +18,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Style
+import androidx.compose.material3.OutlinedButton
+import com.mtgtrader.data.scryfallImage
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -63,9 +70,6 @@ import com.mtgtrader.data.DeckToken
 import com.mtgtrader.data.ManaCurve
 import com.mtgtrader.data.ScryCard
 import kotlin.math.roundToInt
-
-/** Scryfall's picture of a printing (a token's too), made from its id. */
-fun scryfallImage(id: String) = "https://cards.scryfall.io/normal/front/${id[0]}/${id[1]}/$id.jpg"
 
 private fun colourName(c: Char) = when (c) {
     'W' -> "white"
@@ -301,53 +305,118 @@ internal fun TokenRow(tokens: List<DeckToken>, onOpen: (DeckToken) -> Unit) {
 }
 
 /**
- * A token large, with its other printings to swipe through (fetched from Scryfall, so online only). The
- * printing the deck's cards link to comes first. Tapping the picture opens it full screen.
+ * A token large, with a button to its other printings (since 1.45): pick one and the deck shows it from then
+ * on (remembered per deck, synced). Tapping the picture opens it full screen. The printings come from
+ * Scryfall, so choosing needs internet.
  */
 @Composable
-internal fun TokenDialog(token: DeckToken, onDismiss: () -> Unit) {
+internal fun TokenDialog(token: DeckToken, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
     val c = LocalContext.current.container
-    val others by produceState<List<ScryCard>?>(null, token.oracleId) {
+    // Every printing, newest first; null while loading, empty when Scryfall can't be reached.
+    val prints by produceState<List<ScryCard>?>(null, token.oracleId) {
         value = token.oracleId?.let { id -> runCatching { c.scryfall.printsOfOracle(id) }.getOrNull() } ?: emptyList()
     }
-    val pages: List<Pair<String, String?>> = remember(others) {
-        listOf(token.id to null) + others.orEmpty().filter { it.id != token.id }.map { it.id to "${it.setName} · #${it.collectorNumber}" }
-    }
-    val first = others?.firstOrNull { it.id == token.id }?.let { "${it.setName} · #${it.collectorNumber}" }
+    fun where(id: String) = prints?.firstOrNull { it.id == id }?.let { "${it.setName} · #${it.collectorNumber}" }
+    var choosing by rememberSaveable { mutableStateOf(false) }
     var zoom by remember { mutableStateOf<String?>(null) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxWidth().padding(16.dp), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(token.label, style = MaterialTheme.typography.titleLarge)
-                Text("Made by " + token.makers.joinToString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                val pager = rememberPagerState { pages.size }
-                HorizontalPager(pager, Modifier.fillMaxWidth().height(380.dp), pageSpacing = 12.dp) { i ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        val url = scryfallImage(pages[i].first)
-                        Box(Modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainer).clickable { zoom = url }) {
-                            RetryingImage(url, Modifier.fillMaxSize(), contentDescription = token.label, contentScale = ContentScale.Fit)
+                if (!choosing) {
+                    Text(token.label, style = MaterialTheme.typography.titleLarge)
+                    Note("Made by " + token.makers.joinToString())
+                    val url = scryfallImage(token.id)
+                    Box(
+                        Modifier.height(400.dp).aspectRatio(63f / 88f).clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainer).clickable { zoom = url },
+                    ) {
+                        RetryingImage(url, Modifier.fillMaxSize(), contentDescription = token.label, contentScale = ContentScale.Fit)
+                    }
+                    where(token.id)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    if (token.picked) Text("Your pick for this deck", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = { choosing = true }, enabled = token.oracleId != null) {
+                            Icon(Icons.Default.Style, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Other printings")
+                        }
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = onDismiss) { Text("Close") }
+                    }
+                } else {
+                    Text("${token.name} · choose a printing", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                    val list = prints
+                    when {
+                        list == null -> Row(Modifier.padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Note("Looking up its printings on Scryfall…")
+                        }
+                        list.isEmpty() -> Note("Its printings can't be looked up right now: choosing one needs internet.")
+                        else -> {
+                            Note("${list.size} printings on Scryfall, newest first. The one you pick shows for this deck.")
+                            // The cards' own printing first, then the rest.
+                            val ids = listOf(token.defaultId) + list.map { it.id }.filter { it != token.defaultId }
+                            LazyVerticalGrid(
+                                GridCells.Fixed(3),
+                                Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(ids, key = { it }) { id ->
+                                    PrintingTile(
+                                        id,
+                                        set = list.firstOrNull { it.id == id }?.setName.orEmpty(),
+                                        number = list.firstOrNull { it.id == id }?.collectorNumber,
+                                        own = id == token.defaultId,
+                                        chosen = id == token.id,
+                                    ) {
+                                        onPick(id.takeIf { it != token.defaultId })
+                                        choosing = false
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-                val page = pages.getOrNull(pager.currentPage)
-                Text(
-                    (if (pager.currentPage == 0) first ?: "The printing the deck's cards link to" else page?.second.orEmpty()) +
-                        if (pages.size > 1) "  ·  ${pager.currentPage + 1} of ${pages.size}" else "",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                when {
-                    others == null -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Note("Looking up its other printings…")
+                    Row(Modifier.fillMaxWidth()) {
+                        if (token.picked) {
+                            TextButton(onClick = { onPick(null); choosing = false }) { Text("Use the cards' own printing") }
+                        }
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = { choosing = false }) { Text("Cancel") }
                     }
-                    pages.size > 1 -> Note("Swipe to see its other printings.")
-                    token.oracleId == null || others!!.isEmpty() -> Note("Other printings can't be looked up right now (they need internet).")
-                    else -> Note("Scryfall knows no other printings of it.")
                 }
-                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text("Close") }
             }
         }
     }
     zoom?.let { url -> CardImageDialog(url) { zoom = null } }
+}
+
+/** A printing to choose: its picture, set and number; the chosen one has a gold border and a tick. */
+@Composable
+internal fun PrintingTile(id: String, set: String, number: String?, own: Boolean, chosen: Boolean, onClick: () -> Unit) {
+    val gold = MaterialTheme.colorScheme.primary
+    Column(Modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box {
+            Box(
+                Modifier.fillMaxWidth().aspectRatio(63f / 88f).clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .then(if (chosen) Modifier.border(3.dp, gold, RoundedCornerShape(6.dp)) else Modifier),
+            ) {
+                RetryingImage(scryfallImage(id, "small"), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            }
+            if (chosen) {
+                Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(22.dp).clip(CircleShape).background(gold), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Check, "Chosen", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
+        }
+        Text(set, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            listOfNotNull(number?.let { "#$it" }, if (own) "the cards' own" else null).joinToString(" · "),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
 }

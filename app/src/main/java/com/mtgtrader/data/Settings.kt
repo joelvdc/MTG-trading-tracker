@@ -134,6 +134,17 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("deckColourless", on).apply()
     }
 
+    private val _deckTokenPicks = MutableStateFlow(decodePicks(prefs.getString("deckTokenPicks", null)))
+    /** Deck id → token ([DeckToken.key]) → the printing (Scryfall id) picked to show for that deck; synced. Since 1.45. */
+    val deckTokenPicks: StateFlow<Map<Long, Map<String, String>>> = _deckTokenPicks
+
+    fun setDeckTokenPick(deckId: Long, tokenKey: String, printingId: String?) {
+        val forDeck = _deckTokenPicks.value[deckId].orEmpty().let { if (printingId == null) it - tokenKey else it + (tokenKey to printingId) }
+        val v = if (forDeck.isEmpty()) _deckTokenPicks.value - deckId else _deckTokenPicks.value + (deckId to forDeck)
+        _deckTokenPicks.value = v
+        prefs.edit().putString("deckTokenPicks", encodePicks(v)).stamp().apply()
+    }
+
     private val _deckPicks = MutableStateFlow(decodePicks(prefs.getString("deckPicks", null)))
     /** Deck id → card name (see [DeckPrintings.nameKey]) → the copy you picked to show ([DeckPrintings.pickValue] or [DeckPrintings.ARCHIDEKT]). Since 1.22. */
     val deckPicks: StateFlow<Map<Long, Map<String, String>>> = _deckPicks
@@ -410,6 +421,7 @@ class Settings(context: Context) {
             put("powerSource", powerSource.value.name)
             put("deckPrintingsOff", _deckPrintingsOff.value.joinToString(","))
             put("deckPicks", encodePicks(_deckPicks.value))
+            put("deckTokenPicks", encodePicks(_deckTokenPicks.value))
             put("conditionAdjust", conditionAdjust.value.toString())
             put("conditionPcts", encodePcts(conditionPcts.value))
             put("alertPriceType", alertPriceType.value.key)
@@ -441,6 +453,7 @@ class Settings(context: Context) {
         v["powerSource"]?.let { _powerSource.value = PowerSource.fromKey(it); e.putString("powerSource", it) }
         v["deckPrintingsOff"]?.let { _deckPrintingsOff.value = decodeIds(it); e.putString("deckPrintingsOff", it) }
         v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
+        v["deckTokenPicks"]?.let { _deckTokenPicks.value = decodePicks(it); e.putString("deckTokenPicks", it) }
         v["conditionAdjust"]?.toBooleanStrictOrNull()?.let { _conditionAdjust.value = it; e.putBoolean("conditionAdjust", it) }
         v["conditionPcts"]?.let { _conditionPcts.value = decodePcts(it); e.putString("conditionPcts", it) }
         v["alertPriceType"]?.let { _alertPriceType.value = PriceType.fromKey(it); e.putString("alertPriceType", it) }
