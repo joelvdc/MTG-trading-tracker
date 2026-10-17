@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 /**
  * What the collection's sorting, filters and trade binder need to know about a printing beyond
@@ -33,8 +37,45 @@ data class CardInfo(
      * card ("{2}{B} // {B}"); empty for lands. Null for details saved before 1.43. Since 1.43.
      */
     val manaCost: String? = null,
+    /**
+     * The colours of mana the card can make, in WUBRGC order (C for colourless), each once, as Scryfall lists them
+     * ("BGC" for Twilight Mire); empty for none. Null for details saved before 1.44. Since 1.44.
+     */
+    val producedMana: String? = null,
+    /** The rules text, faces separated by [FACE_BREAK]. Since 1.44. */
+    val oracleText: String? = null,
+    /** The tokens and helper cards (The Monarch…) the card makes, as [TokenPart] JSON; null for none. Since 1.44. */
+    val tokens: String? = null,
+    /** Power and toughness, e.g. "1/1" (the front face's); for naming tokens. Since 1.44. */
+    val powerToughness: String? = null,
 ) {
     val isLand get() = "Land" in typeLine.substringBefore(" // ")
+
+    companion object {
+        /** Between the faces' rules text in [oracleText]. */
+        const val FACE_BREAK = "\n//\n"
+    }
+}
+
+/** A token or helper card a card makes, as Scryfall links them. Since 1.44. */
+@Serializable
+data class TokenPart(val id: String, val name: String, val typeLine: String) {
+    companion object {
+        private val json = Json { ignoreUnknownKeys = true }
+
+        fun encode(parts: List<TokenPart>): String? = parts.takeIf { it.isNotEmpty() }?.let { json.encodeToString(it) }
+
+        fun decode(s: String?): List<TokenPart> = s?.let { runCatching { json.decodeFromString<List<TokenPart>>(it) }.getOrNull() }.orEmpty()
+
+        /**
+         * The tokens among a card's linked parts, and the helper cards Scryfall links as "combo pieces" with the
+         * type "Card" (The Monarch, Poison Counter, The Initiative…).
+         */
+        fun of(card: ScryCard): List<TokenPart> = card.allParts.orEmpty()
+            .filter { p -> p.id != card.id && (p.component == "token" || (p.component == "combo_piece" && p.typeLine.split(" // ").all { it == "Card" })) }
+            .map { TokenPart(it.id, it.name, it.typeLine) }
+            .distinctBy { it.id }
+    }
 }
 
 @Dao
@@ -47,15 +88,24 @@ interface CardInfoDao {
 
     /**
      * Printings in the collection, wishlist or decks without details yet (not wishlist cards still waiting for
-     * theirs), and decks' printings whose details were saved before mana costs were (1.43).
+     * theirs), and decks' printings whose details were saved before mana costs (1.43) or the mana they make (1.44) were.
      */
     @Query(
         """SELECT DISTINCT scryfallId FROM (
              SELECT scryfallId FROM collection UNION SELECT scryfallId FROM wishlist UNION SELECT scryfallId FROM deck_cards
            ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info) AND scryfallId NOT LIKE '00000000-0000-0000-0000-%'
-           UNION SELECT scryfallId FROM card_info WHERE manaCost IS NULL AND scryfallId IN (SELECT scryfallId FROM deck_cards)"""
+           UNION SELECT scryfallId FROM card_info WHERE (manaCost IS NULL OR producedMana IS NULL) AND scryfallId IN (SELECT scryfallId FROM deck_cards)"""
     )
     suspend fun missing(): List<String>
+
+    /** The deck's own cards (not the maybeboard) with what the deck stats need. Since 1.44. */
+    @Query(
+        """SELECT d.name AS name, d.scryfallId AS scryfallId, d.quantity AS quantity, d.cmc AS cmc, d.types AS types, d.commander AS commander,
+                  c.typeLine AS typeLine, c.manaCost AS manaCost, c.producedMana AS producedMana, c.oracleText AS oracleText, c.tokens AS tokens
+           FROM deck_cards d LEFT JOIN card_info c ON c.scryfallId = d.scryfallId
+           WHERE d.deckId = :deckId AND d.maybeboard = 0"""
+    )
+    fun observeDeckStats(deckId: Long): kotlinx.coroutines.flow.Flow<List<StatsCard>>
 
     /** Each card name in a deck with its mana cost (once known), for the deck page. Since 1.43. */
     @Query(
@@ -110,7 +160,7 @@ class CardDetails(private val db: AppDatabase, private val scryfall: ScryfallApi
                 val cards = scryfall.collection(chunk.map(ScryfallApi::idIdentifier)) { done, _ -> _progress.value = (base + done) to ids.size }
                 val found = cards.map { it.toInfo() }
                 // Printings Scryfall no longer knows get an empty entry, so they aren't asked for on every start.
-                val gone = (chunk.toSet() - found.map { it.scryfallId }.toSet()).map { CardInfo(it, null, "", "", "", 0.0, null, manaCost = "") }
+                val gone = (chunk.toSet() - found.map { it.scryfallId }.toSet()).map { CardInfo(it, null, "", "", "", 0.0, null, manaCost = "", producedMana = "") }
                 dao.putAll(found + gone)
                 base += chunk.size
             }
@@ -141,6 +191,10 @@ fun ScryCard.toInfo() = CardInfo(
     manaCost = manaCost?.takeIf { it.isNotEmpty() || cardFaces.isNullOrEmpty() }
         ?: cardFaces?.map { it.manaCost.orEmpty() }?.takeIf { f -> f.any { it.isNotEmpty() } }?.joinToString(" // ")
         ?: "",
+    producedMana = MtgColors.ORDER.plus('C').filter { it.toString() in producedMana.orEmpty() },
+    oracleText = oracleText ?: cardFaces?.joinToString(CardInfo.FACE_BREAK) { it.oracleText.orEmpty() },
+    tokens = TokenPart.encode(TokenPart.of(this)),
+    powerToughness = (power ?: cardFaces?.firstOrNull()?.power)?.let { p -> "$p/${toughness ?: cardFaces?.firstOrNull()?.toughness.orEmpty()}" },
 )
 
 /** A card name and its mana cost. Since 1.43. */

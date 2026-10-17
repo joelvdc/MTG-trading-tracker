@@ -58,7 +58,8 @@ class Release143Test {
     private fun ref(name: String, id: String = name.lowercase().replace(' ', '-')) =
         CardRef(id, name, "m21", "M21", "1", "rare", null, null, 1.0, 2.0, true, true)
 
-    private fun info(id: String, cost: String?) = CardInfo(id, null, "", "", "Sorcery", 1.0, null, manaCost = cost)
+    // With 1.44's fields filled in, so only the cost decides (1.44's own rule is tested in Release144Test).
+    private fun info(id: String, cost: String?) = CardInfo(id, null, "", "", "Sorcery", 1.0, null, manaCost = cost, producedMana = "")
 
     // ---- Reading mana costs ----------------------------------------------------------------------
 
@@ -151,7 +152,7 @@ class Release143Test {
         createVersion19(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-143.db")
-            .addMigrations(AppDatabase.MIGRATION_19_20)
+            .addMigrations(AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

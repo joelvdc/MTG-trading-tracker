@@ -137,6 +137,9 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.ExtendedFloatingActionButton
 import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.DeckSection
+import com.mtgtrader.data.CardInfo
+import com.mtgtrader.data.DeckStats
+import com.mtgtrader.data.DeckToken
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
@@ -153,8 +156,20 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     // Mana costs by card name (since 1.43), from the card details kept from Scryfall.
     val costList by remember { c.db.cardInfoDao().observeDeckCosts(deckId) }.collectAsStateWithLifecycle(emptyList())
     val costs = remember(costList) { costList.associate { it.name to it.manaCost } }
-    // Cards new to the app, or from before 1.43, get their details (and so their cost) now when online.
+    // Cards new to the app, or from before 1.43 / 1.44, get their details (cost, mana made, tokens) now when online.
     LaunchedEffect(deckId) { runCatching { c.cardDetails.fillMissing() } }
+    // The deck stats and the deck's tokens (since 1.44).
+    val statCards by remember { c.db.cardInfoDao().observeDeckStats(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val statsOpen by c.settings.deckStatsOpen.collectAsStateWithLifecycle()
+    val landsOnly by c.settings.deckLandsOnly.collectAsStateWithLifecycle()
+    val colourless by c.settings.deckColourless.collectAsStateWithLifecycle()
+    val tokenParts = remember(statCards) { DeckStats.tokenParts(statCards) }
+    val tokenDetails by produceState(emptyMap<String, CardInfo>(), tokenParts.keys) {
+        value = runCatching { c.cardDetails.forIds(tokenParts.keys.map { it.id }) }.getOrDefault(emptyMap())
+    }
+    val tokens = remember(tokenParts, tokenDetails) { DeckStats.tokens(tokenParts, tokenDetails) }
+    var openToken by remember { mutableStateOf<DeckToken?>(null) }
+    fun toggleStats(key: String) = c.settings.setDeckStatsOpen(if (key in statsOpen) statsOpen - key else statsOpen + key)
     // Shown in the printings you own (since 1.22), unless switched off for this deck.
     val owned by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val binders = rememberBinders()
@@ -383,6 +398,41 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             if (tagged.isNotEmpty()) {
                 item(key = "bracketcards") { BracketSummary(tagged.values, onlyBracket) { onlyBracket = it } }
             }
+            // The stats and tokens, folded until opened (remembered for every deck).
+            val statsFolded = DeckStats.STATS !in statsOpen
+            item(key = "stats_h") { StatsHeading("Stats", statsFolded) { toggleStats(DeckStats.STATS) } }
+            if (!statsFolded) {
+                // Only decks with a commander keep "any colour" sources to its colours.
+                val identity = d.colorIdentity.takeIf { d.commanders.isNotBlank() }
+                item(key = "stats_curve") { ManaCurveCard(remember(statCards) { DeckStats.curve(statCards) }) }
+                item(key = "stats_colours") {
+                    ColoursCard(
+                        costs = remember(statCards) { DeckStats.costs(statCards) },
+                        sources = remember(statCards, identity, landsOnly, colourless) { DeckStats.sources(statCards, identity, landsOnly, colourless) },
+                        landsOnly = landsOnly,
+                        colourless = colourless,
+                        landCount = statCards.filter { it.isLand }.sumOf { it.quantity },
+                        detailsMissing = statCards.count { it.producedMana == null },
+                        onLandsOnly = c.settings::setDeckLandsOnly,
+                        onColourless = c.settings::setDeckColourless,
+                    )
+                }
+            }
+            if (tokens.isNotEmpty()) {
+                val tokensFolded = DeckStats.TOKENS !in statsOpen
+                item(key = "tokens_h") { StatsHeading("Tokens (${tokens.size})", tokensFolded) { toggleStats(DeckStats.TOKENS) } }
+                if (!tokensFolded) {
+                    tokens.chunked(3).forEachIndexed { i, row -> item(key = "tokens_$i") { TokenRow(row) { openToken = it } } }
+                    item(key = "tokens_note") {
+                        Text(
+                            "Tap a token to see it large, with its other printings.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                }
+            }
             sections.forEach { section ->
                 val folded = section.title in collapsed
                 item(key = "h_${section.title}") { SectionHeading(section, sectionValue(section), folded) { toggle(section.title) } }
@@ -428,6 +478,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
 
     showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
+    openToken?.let { t -> TokenDialog(t) { openToken = null } }
     selected?.let { row ->
         val key = DeckPrintings.nameKey(row.item.card.name)
         val inDeck = !row.item.maybeboard

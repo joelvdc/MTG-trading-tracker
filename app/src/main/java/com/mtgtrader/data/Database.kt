@@ -380,7 +380,7 @@ interface DeckDao {
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
         WishPrice::class, CtBlueprint::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -406,11 +406,25 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 21 (app 1.44): what the deck stats need in the card details kept from Scryfall: the mana a card
+         * makes, its rules text, its tokens, and power and toughness (a cache on the phone, not synced, so the sync
+         * file's format stays 8). Decks' cards get them at the next details update.
+         */
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `card_info` ADD COLUMN `producedMana` TEXT")
+                db.execSQL("ALTER TABLE `card_info` ADD COLUMN `oracleText` TEXT")
+                db.execSQL("ALTER TABLE `card_info` ADD COLUMN `tokens` TEXT")
+                db.execSQL("ALTER TABLE `card_info` ADD COLUMN `powerToughness` TEXT")
+            }
+        }
 
         /**
          * Version 20 (app 1.43): cards' mana costs, in the card details kept from Scryfall (a cache on the phone,
