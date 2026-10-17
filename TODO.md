@@ -25,7 +25,9 @@ How to use this file:
 6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
    token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
-   added local decks and auto categories; waiting for the green light.
+   added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
+   Next step: on the owner's green light, write the full plan with mockups (CLAUDE.md), including the health check
+   changes and the size; whether it is one release or split is decided then.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
@@ -49,7 +51,7 @@ read-only apart from "Added in app"):
 
 How big: about as much work as the four 1.42 items together. The app already logs in to Archidekt (collection sync),
 but Archidekt has no official API for changing decks: the app would use the one Archidekt's own website uses
-(`PATCH /api/decks/<id>/modifyCards/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
+(`PATCH /api/decks/<id>/modifyCards/`, now `.../modifyCards/v2/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
 from a cloud session, so the owner tries it on a spare deck first.
 
 Answered by the owner on 2026-10-17:
@@ -75,7 +77,7 @@ Settled with the owner on 2026-10-17:
 - **Pushing a local deck into an existing Archidekt deck:** ask each time: add its cards, or replace that deck's list.
 - **How a local deck starts:** empty, from a precon, or from scanned cards. The Scan tab can already send cards to a
   deck; it gets the option to make a new deck from them.
-- **One release** for all of it (editing Archidekt decks and local decks), for now.
+- **One release** for all of it, for now (on 2026-10-17 the owner said: one release or split is decided later).
 
 New question from the owner (2026-10-17): "Archidekt has an option to auto categorize cards, could that function be
 mirrored in the app? I actually love their auto categories and really use them a lot when drafting a decklist."
@@ -99,8 +101,107 @@ Settled with the owner on 2026-10-17:
 - **Health check:** this release adds Archidekt's deck-editing addresses and its card data's `defaultCategory`, so the
   weekly health check's instructions get these when it is built.
 
-No open questions left; still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
+Added by the owner on 2026-10-17, for 1.46: "When creating a new deck in the app, I would like to be able to import
+a decklist from moxfield too."
+- Moxfield has no connection the app can use (see "Moxfield connection" below), so not by link. Instead the decklist
+  as text: Moxfield's Export gives the list as plain text ("1 Sol Ring (CMR) 263", foils marked "*F*", sections such
+  as SIDEBOARD/MAYBEBOARD). The app reads that pasted text or a .txt file into a new local deck, with the exact
+  printings where the text has set and number, and auto categories for the cards. The same reader takes most other
+  sites' text lists (Archidekt, MTG Arena, EDHREC). No new outside service, so no health check change.
+
+Other people's Archidekt decks (asked 2026-10-17): today a deck imported from anyone's Archidekt link stays linked
+to it. "Refresh" and "Update all decks" reload it from Archidekt (so it follows its owner's changes), keeping the
+cards "Added in app"; if the owner makes it private or deletes it, the update says it failed and the app keeps the
+last version. In 1.46 such decks stay read-only.
+
+Settled with the owner on 2026-10-17:
+- **Moxfield import:** choosing "Import from Moxfield" when making a new deck shows a field to paste the decklist
+  into (paste only). If the pasted list has Moxfield tags, the app asks: use those as categories, or Archidekt's auto
+  categories.
+- **Which decks can be edited:** a deck imported from another Archidekt user is read-only (and keeps following its
+  owner's changes). A deck of the logged-in user can be read and edited.
+- **Detach:** any deck from an Archidekt link (own or someone else's) can be "detached": it becomes a local deck,
+  editable, no longer linked or reloaded. (So no separate "copied from" link is needed.)
+- **Link a local deck:** a local deck can be linked to an existing Archidekt deck of the logged-in user (asking each
+  time whether to add its cards or replace that deck's list, as settled above) or create a new deck on that account.
+- **Folders:** the owner asks whether the app can see and change the folders the decks are in on Archidekt.
+
+Checked 2026-10-17 (Archidekt, read without logging in):
+- Every deck tells its folder (`parentFolder` on /api/decks/<id>/, `parentFolderId`/`parentFolderName` in the deck
+  list). Folders can be read at /api/decks/folders/<id>/ with their name, parent, subfolders and decks: the owner's
+  "Home" holds 00. Retired, 01. Ready to Play (19 decks), 02. Brewing, 03. May Brew, 04. Inspiration, 99. MTGO.
+- Archidekt's website code creates a deck with POST /api/decks/v2/ (with `parent_folder`, `private`, a name and the
+  format), copies one with POST /api/decks/copy/, changes a deck's details with PATCH /api/decks/<id>/update/,
+  changes its cards with PATCH /api/decks/<id>/modifyCards/v2/ (the address moved to "v2" since the 2026-10-16
+  check) and makes a category with POST /api/decks/createCategory/.
+- Not found yet: the addresses for creating, renaming, moving or deleting a folder (that part of the website's code
+  wasn't loaded on its home page). Likely there, to be checked when building.
+
+Settled with the owner on 2026-10-17:
+- **The Decks tab has three sections, not Archidekt's folders:** "Archidekt" (the logged-in user's decks),
+  "Archidekt (read only)" (other people's decks) and "Local". Each section can be folded away.
+- **New decks on Archidekt are private** by default. The app can also change whether one of the owner's decks is
+  private, unlisted or public (Archidekt's website does this through PATCH /api/decks/<id>/update/; to confirm the
+  field names when building).
+- **Importing from Archidekt:** the import screen gets a switch "Make it a local deck", for importing a deck straight
+  as a local deck (the same as importing it and then detaching it).
+- **Size:** the owner wants everything on the list first; whether 1.46 is one big release or is split is decided
+  later.
+
+- **Archidekt folders:** pick the folder when sending a local deck to Archidekt as a new deck; a deck can be moved to
+  another folder from the app. Making, renaming and deleting folders stays on the website.
+- **Deleting a deck in the app** only removes it from the app, never from Archidekt. Asked by the owner on 2026-10-17;
+  the delete question already says so today ("The deck is only removed from this app; it stays on Archidekt and
+  Commander Salt."). In 1.46 the message fits the kind of deck: a local deck exists nowhere else, so deleting it is
+  for good (it says so, plus an undo); a deck with edits still waiting to be sent warns that those edits are lost.
+
+- **Deleting on Archidekt:** never from the app (owner, 2026-10-17: "deleting archidekt decks is done through
+  archidekt").
+
+No open questions left. Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
+
+### Moxfield connection (some day, not planned)
+*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
+the idea and its open questions can be picked up again when wished.*
+
+The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
+moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
+categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
+if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
+
+What was found (2026-10-17):
+- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
+  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
+  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
+  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
+  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
+- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
+  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
+
+Draft plan, in steps (each its own release):
+1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
+   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
+   also reads Moxfield links (to check when building).
+2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
+   condition, language, purchase price), for the logged-in Moxfield account.
+3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
+   categories as tags), sending a local deck to Moxfield as a new deck.
+- Health check: each step adds Moxfield addresses to the weekly health check.
+
+Open questions:
+- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
+- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
+  password; Google/Apple sign-in would need a password set on the Moxfield account first.
+- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
+  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
+  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
+- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
+  enough for the collection?
+- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
+  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
+  Moxfield; the app shows a card under its first category today.
+- **Which step first,** or all three together?
 
 ## Done
 
