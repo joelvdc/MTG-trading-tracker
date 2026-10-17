@@ -135,7 +135,6 @@ Checked 2026-10-17 (Archidekt, read without logging in):
 - Not found yet: the addresses for creating, renaming, moving or deleting a folder (that part of the website's code
   wasn't loaded on its home page). Likely there, to be checked when building.
 
-Open questions:
 Settled with the owner on 2026-10-17:
 - **The Decks tab has three sections, not Archidekt's folders:** "Archidekt" (the logged-in user's decks),
   "Archidekt (read only)" (other people's decks) and "Local". Each section can be folded away.
