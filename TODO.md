@@ -24,8 +24,8 @@ How to use this file:
    give way to long names (picked by the owner from mockups on 2026-10-16).~~ Released.
 6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
    to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
-   token printings became 1.45 (2026-10-17). Not started: the owner wants to revisit it, and the open questions below
-   are settled first.
+   token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
+   added local decks and auto categories; waiting for the green light.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
@@ -52,13 +52,55 @@ but Archidekt has no official API for changing decks: the app would use the one 
 (`PATCH /api/decks/<id>/modifyCards/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
 from a cloud session, so the owner tries it on a spare deck first.
 
-Open questions:
-- **Where edits are saved.** Recommended: straight to Archidekt, then the deck reloads, so Archidekt stays the only
-  real decklist. The alternative (edits kept in the app only) lets the two drift apart and makes every reload a merge.
-- **Moving cards between categories:** a "Move to…" choice when tapping a card (recommended), or dragging (fiddly in
-  a long list on a phone; could come later).
-- **Offline:** edits need internet. Queue them and send them when back online, or simply say "needs internet"?
-- What happens to "Added in app" cards on other people's decks: stay in the app only (as now)?
+Answered by the owner on 2026-10-17:
+- **Where edits are saved:** asked whether saving to Archidekt and reloading would slow the app down. Claude's answer:
+  not noticeably, because an edit shows on the phone at once and goes to Archidekt in the background (one small
+  request). Only the changed card goes, with no reload of the whole deck (the full reload, with the Scryfall lookup
+  and the scoring, takes a few seconds, as today's "refresh" does). Recommended, still to confirm: Archidekt stays the
+  real decklist.
+- **Moving cards between categories:** both. Select one or several cards and move them, and also drag them.
+- **Offline:** "save edits locally and then push them to Archidekt when online."
+- **Other people's decks are not editable.** Only decks of the Archidekt account logged in to the app, and the new
+  local decks (below).
+- **New idea, local decks:** "Could we allow for local decks, that could eventually be pushed to a deck on archidekt
+  (or create a new deck on the user's account that is logged in the app)? That deck could also just live locally if
+  the user decides so." So: a deck made in the app (empty, or from a precon, or from scans?) that can stay on the phone,
+  or later be sent to Archidekt as a new deck on the logged-in account, or into one of its existing decks.
+
+Settled with the owner on 2026-10-17:
+- **Waiting edits when Archidekt changed meanwhile:** sent one by one on top of Archidekt's list; an edit that no longer
+  fits (a card already removed there) is skipped and reported.
+- **Both phones:** only the phone that made an edit sends it to Archidekt; the other phone sees it at the next sync.
+- **Local decks' database change:** OK (both phones must run the new version before they sync).
+- **Pushing a local deck into an existing Archidekt deck:** ask each time: add its cards, or replace that deck's list.
+- **How a local deck starts:** empty, from a precon, or from scanned cards. The Scan tab can already send cards to a
+  deck; it gets the option to make a new deck from them.
+- **One release** for all of it (editing Archidekt decks and local decks), for now.
+
+New question from the owner (2026-10-17): "Archidekt has an option to auto categorize cards, could that function be
+mirrored in the app? I actually love their auto categories and really use them a lot when drafting a decklist."
+- What Archidekt does: when a card is added, it goes into a category chosen from about 30 broad ones (Ramp, Draw,
+  Removal, Protection…), picked from how Archidekt's users most often categorise that card. Not every card has one
+  (newer or rarely played cards). It's a setting on the Archidekt account; existing decks can be re-sorted by
+  dragging all cards onto "Auto".
+- Checked 2026-10-17: Archidekt's public card data has this category per card (`oracleCard.defaultCategory`, from
+  `/api/cards/v2/?uids=...`, no login needed; the app already reads this for the collection sync). Sol Ring → Ramp,
+  Cultivate → Ramp, Swords to Plowshares → Removal, Wrath of God → Removal, Rhystic Study → Draw, Lightning Greaves
+  → Protection. So the app can use exactly Archidekt's categories, and they stay the same as on the website.
+
+Settled with the owner on 2026-10-17:
+- **Auto categories:** every card added in the app (to Archidekt decks and local decks) goes into its auto category,
+  with a switch in Settings to turn it off; a deck also gets "Auto-categorise all cards", which asks first.
+- **Cards without an auto category** go into a category by card type (Creature, Instant…); the owner says that is
+  what Archidekt does too.
+- **A new deck can also start as a copy** of an existing deck in the app (so: empty, a precon, scanned cards, or a copy).
+- **The card page opened from a deck** shows the card's category and lets the owner change it (on decks that can be
+  edited).
+- **Health check:** this release adds Archidekt's deck-editing addresses and its card data's `defaultCategory`, so the
+  weekly health check's instructions get these when it is built.
+
+No open questions left; still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
+category, making a new deck) come with the plan.
 
 ## Done
 
