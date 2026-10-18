@@ -27,7 +27,8 @@ How to use this file:
    token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
    added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
    Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket, and all decks'
-   bracket or power level cards from the Decks tab (both below).
+   bracket or power level cards from the Decks tab (both below), and when the deck can cast its commander and has its
+   colours (owner, 2026-10-18, below).
    Next step: on the owner's green light, write the full plan with mockups (CLAUDE.md), including the health check
    changes and the size; whether it is one release or split is decided then.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
@@ -324,6 +325,48 @@ Design notes from the owner (2026-10-17):
 
 Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
 counters, the low life animation, the end-of-game screen, the stats).
+
+### When the deck can cast its commander and has its colours (planned for MTG Trader 1.46)
+*Added 2026-10-18. MTG Trader only. The owner said on 2026-10-18: "Add it to 1.46".*
+
+The owner's words: "Regarding mana production, I base myself on some rules I found online while ago. Like, if you
+want white by turn 2, you need at least 21 pips to have that reliable. By turn 3, then 20 pips, and so on." Then:
+"try to give an estimation of the probability when the deck is able to cast the commander. Based on lands and ramp
+spells and commander's mana cost. Instead of focusing on the most demanding cards for each color. Also add when the
+different deck colors are likely to be available, which turn number."
+
+Background (researched 2026-10-18):
+- The rule is Frank Karsten's "How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update"
+  (tcgplayer.com). It counts sources (cards that make the colour), not pips. For 99-card decks, about 90% on curve:
+  1C on turn 2 needs 19, 2C 18, CC 30, 1CC 28, 2CC 26, CCC 36 sources; the owner's 21/20 are the older 2018 numbers
+  (the 2022 update counts Commander's free mulligan and the first player's draw). It assumes 41 lands; mana rocks
+  count ¾, mana creatures ½. Claude's own simulation of Karsten's model gave the same numbers within one source.
+- Instead of a table, the app can simulate the deck itself: shuffle the real 99, mulligan like Karsten (free
+  mulligan, then London), draw (also on turn 1), play a land each turn (enters-tapped lands come in tapped), cast
+  mana rocks, mana creatures (usable the next turn) and land ramp spells (Cultivate, Farseek, Three Visits…) when it
+  can, and note the first turn the commander's cost can be paid with the right colours, and the turn each colour
+  is first available. Thousands of games take about a second on a phone. It plays "goldfish" (no opponents, no
+  removal), so the numbers are a best case for comparing decks and changes, not a promise.
+- Tried on Auntie Plague (archidekt.com/decks/20263351, Auntie Ool {1}{B}{R}{G}, 38 lands, 2 rocks, 4 mana
+  creatures, 3 ramp spells; 30,000 games): commander out by turn 3 in 39%, turn 4 79%, turn 5 91%, turn 6 95%.
+  With only the lands it would be 0% / 59% / 81% / 88%, so the ramp adds about 20 points on turn 4. Colours: black
+  96%, red 92%, green 94% by turn 3; all three colours 66% by turn 2, 84% by turn 3, 90% by turn 4.
+
+Proposed (in the deck page's Stats section, under mana production; worked out with mockups):
+- **Casting the commander:** one line, e.g. "Auntie Ool (4 mana): turn 4 in 79% of games, turn 5 in 91%", with the
+  chance per turn as a small row of bars (turns 2 to 8). For partners: each commander, and both. The commander's
+  cost as printed (commander tax isn't counted: it's the first cast).
+- **Colours:** per colour of the deck the turn it's usually there and the turn it's there in 9 of 10 games
+  ("Red: usually by turn 1, 9 in 10 by turn 3"), and the same for all colours together.
+- **Counted:** lands (also double-faced cards with a land side and fetch lands, which find the colours they can
+  fetch), mana rocks and creatures with "{T}: Add" costing up to 4, and land ramp spells costing up to 4. Treasure
+  makers, rituals and cost reducers aren't counted (said in the ⓘ, which also explains the method and links to
+  Karsten's article). Hybrid costs can be paid with either colour; Phyrexian mana is left out.
+- The result is worked out when the stats are opened (and again after edits), not stored or synced.
+- No new service: it uses the mana costs, mana production and card text the app already has (since 1.43/1.44), so no
+  health check change.
+- Open: whether to also show Karsten's table numbers (sources needed per cost) in the ⓘ. Claude suggests not: the
+  simulation answers the owner's question for the real deck.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
