@@ -172,6 +172,17 @@ fun DecksScreen(nav: NavController) {
                         }
                         HorizontalDivider()
                         DropdownMenuItem(
+                            text = { Text("Bracket cards of all decks") },
+                            enabled = any,
+                            onClick = { moreMenu = false; nav.navigate("decks/cards/BRACKET") },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Power level cards of all decks") },
+                            enabled = any,
+                            onClick = { moreMenu = false; nav.navigate("decks/cards/POWER") },
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
                             text = { Text("Recommendations for all decks") },
                             enabled = any,
                             onClick = { moreMenu = false; nav.navigate("decks/recs") },

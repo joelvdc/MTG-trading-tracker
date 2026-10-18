@@ -58,6 +58,9 @@ data class Deck(
     val svAt: Long? = null,
     val svError: String? = null,
 ) {
+    /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
+    val local get() = archidektId < 0
+
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
     val scored get() = powerLevel != null || bracketRealistic != null
@@ -88,6 +91,25 @@ data class Deck(
 
     /** ScrollVault's extra findings (win turns, its bracket verdict, the line for your pod). */
     val scrollVaultReading get() = ScrollVaultReading.decode(scrollVault)
+}
+
+/**
+ * The Decks tab's three sections (since 1.46): the logged-in Archidekt user's own decks (editable), other
+ * people's Archidekt decks (read only, following their owner's changes) and decks that live only in the app.
+ */
+enum class DeckGroup(val title: String) {
+    OWN("Archidekt"),
+    OTHERS("Archidekt (read only)"),
+    LOCAL("Local · on this phone");
+
+    companion object {
+        /** [owner] is the Archidekt user whose decks are "own": the one logged in, else the one decks were last imported from. */
+        fun of(deck: Deck, owner: String?): DeckGroup = when {
+            deck.local -> LOCAL
+            owner != null && deck.owner.equals(owner, ignoreCase = true) -> OWN
+            else -> OTHERS
+        }
+    }
 }
 
 /** Where the power level comes from; everything else (brackets, salt, the cards' details) is Commander Salt's. */
