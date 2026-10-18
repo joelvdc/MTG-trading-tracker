@@ -112,7 +112,7 @@ data class Deck(
 enum class DeckGroup(val title: String) {
     OWN("Archidekt"),
     OTHERS("Archidekt (read only)"),
-    LOCAL("Local · on this phone");
+    LOCAL("Local · in the app, synced between your phones");
 
     companion object {
         /** [owner] is the Archidekt user whose decks are "own": the one logged in, else the one decks were last imported from. */

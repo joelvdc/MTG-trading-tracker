@@ -488,7 +488,7 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String, Boolean) 
                     Column(Modifier.weight(1f)) {
                         Text("Make it a local deck", style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "A copy on this phone you can change freely; it's no longer reloaded from Archidekt.",
+                            "A copy in the app you can change freely (synced to your other phones); it's no longer reloaded from Archidekt.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
