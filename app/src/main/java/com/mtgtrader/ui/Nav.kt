@@ -175,6 +175,9 @@ fun AppNav() {
             composable("deck/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 DeckScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }
+            composable("deck/{id}/categories", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                DeckCategoriesScreen(nav, it.arguments?.getLong("id") ?: 0L)
+            }
             composable("deck/{id}/missing", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 MissingCardsScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }

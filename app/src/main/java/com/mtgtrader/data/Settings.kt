@@ -154,6 +154,39 @@ class Settings(context: Context) {
         prefs.edit().putString("deckTokenPicks", encodePicks(v)).stamp().apply()
     }
 
+    private val _deckHidden = MutableStateFlow(decodePicks(prefs.getString("deckHidden", null)))
+    /**
+     * Deck id → categories switched off in "Manage categories" (lower case → the name): left out of the deck page's
+     * category sections (their cards go to "Hidden categories") and of the category lists; synced. Since 1.47.
+     */
+    val deckHidden: StateFlow<Map<Long, Map<String, String>>> = _deckHidden
+
+    fun isDeckHidden(deckId: Long, category: String) = _deckHidden.value[deckId]?.containsKey(category.lowercase()) == true
+
+    fun setDeckHidden(deckId: Long, category: String, hidden: Boolean) {
+        val key = category.lowercase()
+        val forDeck = _deckHidden.value[deckId].orEmpty().let { if (hidden) it + (key to category) else it - key }
+        if (forDeck == _deckHidden.value[deckId].orEmpty()) return
+        val v = if (forDeck.isEmpty()) _deckHidden.value - deckId else _deckHidden.value + (deckId to forDeck)
+        _deckHidden.value = v
+        prefs.edit().putString("deckHidden", encodePicks(v)).stamp().apply()
+    }
+
+    /** A deck that got a new id (detached, or a local deck sent to Archidekt) keeps its hidden categories. */
+    fun moveDeckHidden(from: Long, to: Long) {
+        val forDeck = _deckHidden.value[from] ?: return
+        val v = _deckHidden.value - from + (to to forDeck)
+        _deckHidden.value = v
+        prefs.edit().putString("deckHidden", encodePicks(v)).stamp().apply()
+    }
+
+    /** A renamed category stays hidden under its new name. */
+    fun renameDeckHidden(deckId: Long, from: String, to: String) {
+        if (!isDeckHidden(deckId, from)) return
+        setDeckHidden(deckId, from, false)
+        setDeckHidden(deckId, to, true)
+    }
+
     private val _deckPicks = MutableStateFlow(decodePicks(prefs.getString("deckPicks", null)))
     /** Deck id → card name (see [DeckPrintings.nameKey]) → the copy you picked to show ([DeckPrintings.pickValue] or [DeckPrintings.ARCHIDEKT]). Since 1.22. */
     val deckPicks: StateFlow<Map<Long, Map<String, String>>> = _deckPicks
@@ -431,6 +464,7 @@ class Settings(context: Context) {
             put("deckPrintingsOff", _deckPrintingsOff.value.joinToString(","))
             put("deckPicks", encodePicks(_deckPicks.value))
             put("deckTokenPicks", encodePicks(_deckTokenPicks.value))
+            put("deckHidden", encodePicks(_deckHidden.value))
             put("conditionAdjust", conditionAdjust.value.toString())
             put("conditionPcts", encodePcts(conditionPcts.value))
             put("alertPriceType", alertPriceType.value.key)
@@ -463,6 +497,7 @@ class Settings(context: Context) {
         v["deckPrintingsOff"]?.let { _deckPrintingsOff.value = decodeIds(it); e.putString("deckPrintingsOff", it) }
         v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
         v["deckTokenPicks"]?.let { _deckTokenPicks.value = decodePicks(it); e.putString("deckTokenPicks", it) }
+        v["deckHidden"]?.let { _deckHidden.value = decodePicks(it); e.putString("deckHidden", it) }
         v["conditionAdjust"]?.toBooleanStrictOrNull()?.let { _conditionAdjust.value = it; e.putBoolean("conditionAdjust", it) }
         v["conditionPcts"]?.let { _conditionPcts.value = decodePcts(it); e.putString("conditionPcts", it) }
         v["alertPriceType"]?.let { _alertPriceType.value = PriceType.fromKey(it); e.putString("alertPriceType", it) }

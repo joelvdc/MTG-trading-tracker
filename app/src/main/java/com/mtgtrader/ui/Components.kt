@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -452,7 +451,7 @@ fun <T> DropdownSelector(
             }
             Icon(Icons.Default.ArrowDropDown, null)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        ScreenMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEach { o ->
                 DropdownMenuItem(text = { Text(optionLabel(o)) }, onClick = { onSelect(o); open = false })
             }

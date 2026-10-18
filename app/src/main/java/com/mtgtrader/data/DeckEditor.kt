@@ -204,37 +204,81 @@ class DeckEditor(
     suspend fun addedToMaybeboard(deckId: Long): UndoAction =
         move(deckId, dao.cardsAddedInApp(deckId).map { it.lineUid }, DeckEdits.MAYBEBOARD)
 
+    /**
+     * Renames a category: its cards move to [to]. On Archidekt the category itself is renamed first (since 1.47), so
+     * it keeps its place there instead of an emptied old one staying behind.
+     */
     suspend fun renameCategory(deckId: Long, from: String, to: String): UndoAction {
         val before = dao.allLines(deckId).filter { it.category.equals(from, true) }
         val deck = dao.get(deckId) ?: return {}
+        val old = DeckEdits.categories(deck.categoryInfo).firstOrNull { it.name.equals(from, true) }
+        if (!deck.local && old?.id != null) queueCategory(deckId, old.id, from, DeckEdits.renameOp(to))
         renameInfo(deck, from, to)
+        settings.renameDeckHidden(deckId, from, to)
         val info = DeckEdits.categories(dao.get(deckId)?.categoryInfo)
-        return change(deckId, before, before.map { it.inCategory(to, maybe = !DeckEdits.included(to, info)) })
+        val undo = change(deckId, before, before.map { it.inCategory(to, maybe = !DeckEdits.included(to, info)) })
+        return {
+            undo()
+            dao.get(deckId)?.let { d ->
+                val now = DeckEdits.categories(d.categoryInfo)
+                if (!d.local && old?.id != null) queueCategory(deckId, old.id, to, DeckEdits.renameOp(from))
+                dao.update(d.copy(categoryInfo = DeckEdits.encode(now.filterNot { it.name.equals(to, true) || it.name.equals(from, true) } + (old ?: ArchidektCategory(from)))))
+                settings.renameDeckHidden(deckId, to, from)
+            }
+        }
     }
 
-    /** Deletes a category: its cards move to [moveTo], or to their auto categories when null. */
+    /**
+     * Deletes a category: its cards move to [moveTo], or to their auto categories when null, and since 1.47 the
+     * emptied category is deleted on Archidekt too.
+     */
     suspend fun deleteCategory(deckId: Long, name: String, moveTo: String?): UndoAction {
         val uids = dao.allLines(deckId).filter { it.category.equals(name, true) }.map { it.lineUid }
         val undo = move(deckId, uids, moveTo ?: AUTO)
-        dao.get(deckId)?.let { d ->
-            dao.update(d.copy(categoryInfo = DeckEdits.encode(DeckEdits.categories(d.categoryInfo).filterNot { it.name.equals(name, true) && it.id == null })))
+        val deck = dao.get(deckId) ?: return undo
+        val info = DeckEdits.categories(deck.categoryInfo)
+        val old = info.firstOrNull { it.name.equals(name, true) }
+        dao.update(deck.copy(categoryInfo = DeckEdits.encode(info.filterNot { it.name.equals(name, true) })))
+        val queued = if (!deck.local && old?.id != null) queueCategory(deckId, old.id, name, DeckEdits.OP_DELETE) else null
+        val wasHidden = settings.isDeckHidden(deckId, name)
+        settings.setDeckHidden(deckId, name, false)
+        return {
+            // Not sent yet: the deletion is simply dropped; sent already: Archidekt makes the category again when
+            // the cards go back into it.
+            val notSent = queued != null && edits.forDeck(deckId).any { it.lineUid == queued }
+            queued?.let { edits.deleteByUid(deckId, it) }
+            undo()
+            dao.get(deckId)?.let { d ->
+                val now = DeckEdits.categories(d.categoryInfo)
+                val back = old?.let { if (queued == null || notSent) it else it.copy(id = null) } ?: ArchidektCategory(name)
+                if (now.none { it.name.equals(name, true) }) dao.update(d.copy(categoryInfo = DeckEdits.encode(now + back)))
+            }
+            settings.setDeckHidden(deckId, name, wasHidden)
         }
-        return undo
     }
 
-    /** A new, empty category (kept in the app until a card goes in; Archidekt makes it then). */
+    /** A new, empty category; on Archidekt it's made right away (since 1.47; before, only when a card went in). */
     suspend fun addCategory(deckId: Long, name: String) {
         val d = dao.get(deckId) ?: return
         val info = DeckEdits.categories(d.categoryInfo)
-        if (info.any { it.name.equals(name, true) }) return
+        if (info.any { it.name.equals(name, true) } || name.equals(DeckEdits.COMMANDER, true) || name.equals(DeckEdits.MAYBEBOARD, true)) return
         dao.update(d.copy(categoryInfo = DeckEdits.encode(info + ArchidektCategory(name))))
+        if (!d.local) queueCategory(deckId, null, name, DeckEdits.OP_CREATE)
+    }
+
+    /** Queues a change to a category itself for Archidekt; returns the edit's key. */
+    private suspend fun queueCategory(deckId: Long, categoryId: Long?, name: String, op: String): String {
+        val uid = DeckEdits.CATEGORY_PREFIX + UUID.randomUUID()
+        edits.add(listOf(DeckEdit(deckId = deckId, lineUid = uid, relationId = categoryId, archidektCardId = null, name = name, categories = op)))
+        sendSoon()
+        return uid
     }
 
     private suspend fun renameInfo(deck: Deck, from: String, to: String) {
         val info = DeckEdits.categories(deck.categoryInfo)
         val old = info.firstOrNull { it.name.equals(from, true) }
         val kept = info.filterNot { it.name.equals(from, true) || it.name.equals(to, true) }
-        dao.update(deck.copy(categoryInfo = DeckEdits.encode(kept + ArchidektCategory(to, old?.included ?: true))))
+        dao.update(deck.copy(categoryInfo = DeckEdits.encode(kept + ArchidektCategory(to, old?.included ?: true, old?.id))))
     }
 
     /** Every card of the deck (not the commander or the maybeboard) into its Archidekt auto category. */
@@ -345,6 +389,16 @@ class DeckEditor(
             var sent = 0
             val skipped = mutableListOf<String>()
             for (e in waiting) {
+                if (e.lineUid.startsWith(DeckEdits.CATEGORY_PREFIX)) {
+                    try {
+                        sendCategory(deckId, e)
+                        sent++
+                    } catch (ex: IOException) {
+                        if (ex.message?.startsWith("Archidekt answered 4") == true) skipped += "the category ${e.name}" else throw ex
+                    }
+                    edits.delete(e.id)
+                    continue
+                }
                 val line = fresh[e.lineUid]
                 val item = DeckEditItems.item(e, line)
                 if (item == null) {
@@ -376,6 +430,29 @@ class DeckEditor(
             DeckSendReport(deckId, 0, emptyList(), e.message ?: "Archidekt couldn't be reached").also { _report.value = it }
         } finally {
             _sending.value = false
+        }
+    }
+
+    /** Makes, renames or deletes a category on Archidekt (since 1.47); a new one's id is kept with the deck's categories. */
+    private suspend fun sendCategory(deckId: Long, e: DeckEdit) {
+        val op = e.categories.orEmpty()
+        val id = e.relationId
+        when {
+            op == DeckEdits.OP_CREATE -> {
+                val info = DeckEdits.categories(dao.get(deckId)?.categoryInfo)
+                val cat = info.firstOrNull { it.name.equals(e.name, true) } ?: return
+                if (cat.id != null) return
+                val made = archidekt.withLogin { client, login -> client.createCategory(login, deckId, cat.name, cat.included) }
+                if (made != null) dao.get(deckId)?.let { d ->
+                    val now = DeckEdits.categories(d.categoryInfo).map { if (it.name.equals(cat.name, true) && it.id == null) it.copy(id = made) else it }
+                    dao.update(d.copy(categoryInfo = DeckEdits.encode(now)))
+                }
+            }
+            op == DeckEdits.OP_DELETE && id != null -> archidekt.withLogin { client, login -> Unit to client.deleteCategory(login, id) }
+            op.startsWith(DeckEdits.OP_RENAME) && id != null -> {
+                val to = op.removePrefix(DeckEdits.OP_RENAME)
+                archidekt.withLogin { client, login -> Unit to client.renameCategory(login, id, to) }
+            }
         }
     }
 
@@ -466,6 +543,7 @@ class DeckEditor(
             dao.insertCards(lines.map { it.copy(id = 0, deckId = id, relationId = null, addedInApp = false, lineUid = it.lineUid.ifEmpty { UUID.randomUUID().toString() }) })
             dao.delete(deckId)
             edits.clear(deckId)
+            settings.moveDeckHidden(deckId, id)
         }
         return id
     }
@@ -606,7 +684,13 @@ class DeckEditor(
             dao.insertCards(lines.map { it.copy(id = 0, deckId = newId, relationId = null, addedInApp = false) })
             dao.delete(deckId)
             edits.add(lines.map { DeckEdit(deckId = newId, lineUid = it.lineUid, relationId = null, archidektCardId = it.archidektCardId, name = it.card.name) })
+            // Categories without cards are made on Archidekt too (since 1.47); the others come with their cards.
+            val used = lines.map { it.category.lowercase() }.toSet()
+            val empty = DeckEdits.categories(local.categoryInfo).filter { it.name.lowercase() !in used }
+            edits.add(empty.map { DeckEdit(deckId = newId, lineUid = DeckEdits.CATEGORY_PREFIX + UUID.randomUUID(), relationId = null, archidektCardId = null, name = it.name, categories = DeckEdits.OP_CREATE) })
+            dao.get(newId)?.let { d -> dao.update(d.copy(categoryInfo = DeckEdits.encode(DeckEdits.categories(d.categoryInfo).map { it.copy(id = null) }))) }
         }
+        settings.moveDeckHidden(deckId, newId)
         val r = send(newId)
         if (r.error != null) throw IOException(r.error)
         if (visibility != ArchidektCollectionClient.VISIBILITY_PRIVATE) decks.rescore(newId)
