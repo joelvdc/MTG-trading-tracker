@@ -180,6 +180,9 @@ fun AppNav() {
             }
             composable("decks/shared") { SharedCardsScreen(nav) }
             composable("decks/recs") { AllDeckRecommendationsScreen(nav) }
+            composable("decks/cards/{kind}", arguments = listOf(navArgument("kind") { type = NavType.StringType })) {
+                AllRuleZeroCardsScreen(nav, com.mtgtrader.data.RuleZeroCard.entries.firstOrNull { k -> k.name == it.arguments?.getString("kind") } ?: com.mtgtrader.data.RuleZeroCard.BRACKET)
+            }
             composable("deck/{id}/recs", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 RecommendationsScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }
@@ -194,7 +197,10 @@ fun AppNav() {
             }
             composable("purchaseprices") { PurchasePricesScreen(nav) }
             composable("orders") { OrdersScreen(nav) }
-            composable("precon") { PreconScreen(nav) }
+            composable(
+                "precon?local={local}",
+                arguments = listOf(navArgument("local") { type = NavType.BoolType; defaultValue = false }),
+            ) { PreconScreen(nav, it.arguments?.getBoolean("local") == true) }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
             composable("archidekt") { ArchidektSyncScreen(nav) }

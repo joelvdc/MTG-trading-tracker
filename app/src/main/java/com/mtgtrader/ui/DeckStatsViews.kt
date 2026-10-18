@@ -110,7 +110,7 @@ private fun StatsCardBox(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Note(text: String) = Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun Note(text: String, modifier: Modifier = Modifier) = Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = modifier)
 
 /** The mana curve: a bar per mana value, 0 to 7+, with the count over it. */
 @Composable
@@ -418,5 +418,94 @@ internal fun PrintingTile(id: String, set: String, number: String?, own: Boolean
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
         )
+    }
+}
+
+/**
+ * When the deck can cast its commander and has its colours (since 1.46): a table of the chance by each turn,
+ * the commander(s) first, then each colour and all colours together. [odds] is null while it's worked out.
+ */
+@Composable
+internal fun CommanderOddsCard(odds: com.mtgtrader.data.ManaOdds?, missing: Int) = StatsCardBox("Casting the commander") {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    var about by rememberSaveable { mutableStateOf(false) }
+    if (odds == null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Note("Shuffling the deck…")
+        }
+        return@StatsCardBox
+    }
+    odds.commanders.forEach { c ->
+        val turn = c.byTurn.indexOfFirst { it >= 50 }.takeIf { it >= 0 }?.plus(1)
+        Text(
+            "${c.name} (${c.manaValue} mana): " + if (turn == null) "not by turn ${odds.turns} in most games"
+            else "turn $turn in ${c.byTurn[turn - 1]}% of games",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+    val labelWidth = 92.dp
+    Row {
+        Spacer(Modifier.width(labelWidth))
+        (1..odds.turns).forEach {
+            Text(
+                "T$it",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+    odds.commanders.forEach { c ->
+        OddsRow(labelWidth, odds.commanders.size > 1, { Text(if (odds.commanders.size > 1) c.name else "Commander", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) }, c.byTurn)
+    }
+    odds.colours.forEach { (colour, values) ->
+        OddsRow(labelWidth, false, { ManaCostView("{$colour}", size = 18.dp) }, values)
+    }
+    odds.allColours?.let { values -> OddsRow(labelWidth, false, { Text("All colours", style = MaterialTheme.typography.bodyMedium) }, values) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Note(
+            "% of games, from ${"%,d".format(java.util.Locale.ROOT, odds.games)} shuffles of this deck (playing alone, a best case).",
+            Modifier.weight(1f),
+        )
+        TextButton(onClick = { about = !about }) { Text(if (about) "Less" else "How?") }
+    }
+    if (about) {
+        Note(
+            "The app plays the deck alone: it draws (also on turn 1), keeps a hand like Commander players do (a free " +
+                "mulligan, then London mulligans), plays a land each turn and casts mana makers when it can. Counted: " +
+                "${odds.lands} lands, ${odds.rocks} mana rocks, ${odds.creatures} mana creatures (from the turn after) and " +
+                "${odds.ramp} land ramp spells, all costing up to 4. Lands that enter tapped come in tapped. Not counted: " +
+                "opponents, removal, Treasure, rituals and cost reducers. The method follows Frank Karsten's mana base " +
+                "articles, with this deck's own cards instead of his tables."
+        )
+        TextButton(onClick = {
+            runCatching { uriHandler.openUri("https://www.tcgplayer.com/content/article/How-Many-Sources-Do-You-Need-to-Consistently-Cast-Your-Spells-A-2022-Update/dc23a7d2-0a16-4c0b-ad36-586fcca03ad8/") }
+        }) { Text("Frank Karsten's article") }
+    }
+    if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they count as plain spells for now.")
+}
+
+@Composable
+private fun OddsRow(labelWidth: androidx.compose.ui.unit.Dp, small: Boolean, label: @Composable () -> Unit, values: List<Int>) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(labelWidth).padding(end = 4.dp)) { label() }
+        val primary = MaterialTheme.colorScheme.primary
+        values.forEach { v ->
+            val strength = (v / 100f).coerceIn(0.08f, 1f)
+            Box(
+                Modifier.weight(1f).padding(1.dp).height(if (small) 24.dp else 26.dp).clip(RoundedCornerShape(4.dp))
+                    .background(primary.copy(alpha = strength * 0.85f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "$v",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (v > 55) InkOnTint else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
     }
 }

@@ -247,6 +247,9 @@ interface ScanDao {
     @Query("SELECT * FROM scans WHERE id IN (:ids)")
     suspend fun byIds(ids: List<Long>): List<ScannedCard>
 
+    @Query("SELECT id FROM scans")
+    suspend fun allIds(): List<Long>
+
     @Insert
     suspend fun insert(item: ScannedCard): Long
 
@@ -334,6 +337,25 @@ interface DeckDao {
     @Query("SELECT archidektId FROM decks")
     suspend fun ids(): List<Long>
 
+    /** Every line of the deck, the maybeboard's too. Since 1.46. */
+    @Query("SELECT * FROM deck_cards WHERE deckId = :deckId")
+    suspend fun allLines(deckId: Long): List<DeckCard>
+
+    @Query("DELETE FROM deck_cards WHERE deckId = :deckId AND lineUid IN (:uids)")
+    suspend fun deleteLines(deckId: Long, uids: List<String>)
+
+    @Query("UPDATE deck_cards SET lineUid = :uid WHERE id = :id")
+    suspend fun setLineUid(id: Long, uid: String)
+
+    @Query("UPDATE deck_cards SET relationId = :relationId, archidektCardId = :cardId WHERE deckId = :deckId AND lineUid = :uid")
+    suspend fun setArchidektIds(deckId: Long, uid: String, relationId: Long?, cardId: Long?)
+
+    @Query("UPDATE deck_cards SET archidektCardId = :cardId WHERE deckId = :deckId AND lineUid = :uid")
+    suspend fun setArchidektCardId(deckId: Long, uid: String, cardId: Long)
+
+    @Query("UPDATE deck_cards SET deckId = :to WHERE deckId = :from")
+    suspend fun moveCards(from: Long, to: Long)
+
     /** Copies per card name over all decks (for what the collection must keep). */
     @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards WHERE maybeboard = 0 GROUP BY name")
     suspend fun cardCounts(): List<NameCount>
@@ -378,9 +400,9 @@ interface DeckDao {
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
-        WishPrice::class, CtBlueprint::class,
+        WishPrice::class, CtBlueprint::class, DeckEdit::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -402,15 +424,43 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun offlineImagesDao(): OfflineImagesDao
     abstract fun wishPriceDao(): WishPriceDao
     abstract fun ctBlueprintDao(): CtBlueprintDao
+    abstract fun deckEditDao(): DeckEditDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 22 (app 1.46): editing decks. Deck lines keep all their Archidekt categories, Archidekt's ids for
+         * the printing and the line, its colour label and an id of their own; decks keep their Archidekt folder,
+         * visibility and categories, and where a local deck came from (all synced; the sync file's format went to
+         * 9 with them). Edits waiting to be sent to Archidekt are kept on this phone only. Adding the columns
+         * doesn't touch the rows, so it doesn't count as a change to sync.
+         */
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `deck_cards` ADD COLUMN `categories` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `deck_cards` ADD COLUMN `archidektCardId` INTEGER")
+                db.execSQL("ALTER TABLE `deck_cards` ADD COLUMN `relationId` INTEGER")
+                db.execSQL("ALTER TABLE `deck_cards` ADD COLUMN `label` TEXT")
+                db.execSQL("ALTER TABLE `deck_cards` ADD COLUMN `lineUid` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `folderId` INTEGER")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `folderName` TEXT")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `visibility` TEXT")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `categoryInfo` TEXT")
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `origin` TEXT")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `deck_edits` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deckId` INTEGER NOT NULL, " +
+                        "`lineUid` TEXT NOT NULL, `relationId` INTEGER, `archidektCardId` INTEGER, `name` TEXT NOT NULL, `categories` TEXT, `createdAt` INTEGER NOT NULL)"
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_deck_edits_deckId_lineUid` ON `deck_edits` (`deckId`, `lineUid`)")
+            }
+        }
 
         /**
          * Version 21 (app 1.44): what the deck stats need in the card details kept from Scryfall: the mana a card

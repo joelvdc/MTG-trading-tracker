@@ -116,6 +116,15 @@ class Settings(context: Context) {
         prefs.edit().putStringSet("deckStatsOpen", keys).apply()
     }
 
+    /** Cards added to a deck in the app go into Archidekt's auto category (this phone only). Since 1.46. */
+    private val _deckAutoCategories = MutableStateFlow(prefs.getBoolean("deckAutoCategories", true))
+    val deckAutoCategories: StateFlow<Boolean> = _deckAutoCategories
+
+    fun setDeckAutoCategories(on: Boolean) {
+        _deckAutoCategories.value = on
+        prefs.edit().putBoolean("deckAutoCategories", on).apply()
+    }
+
     /** The deck stats' mana production counts lands only (this phone only). Since 1.44. */
     private val _deckLandsOnly = MutableStateFlow(prefs.getBoolean("deckLandsOnly", false))
     val deckLandsOnly: StateFlow<Boolean> = _deckLandsOnly

@@ -78,6 +78,8 @@ import com.mtgtrader.container
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckJob
 import com.mtgtrader.data.DeckLinks
+import com.mtgtrader.data.DeckGroup
+import androidx.compose.material.icons.filled.CloudUpload
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -90,6 +92,14 @@ fun DecksScreen(nav: NavController) {
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
     var importing by rememberSaveable { mutableStateOf(false) }
+    var newDeck by rememberSaveable { mutableStateOf(false) }
+    var way by rememberSaveable { mutableStateOf<NewDeckWay?>(null) }
+    val account by c.archidekt.status.collectAsStateWithLifecycle()
+    val owner = account.username ?: c.settings.archidektUser.takeIf { it.isNotBlank() }
+    val waiting by c.deckEditor.waiting.collectAsStateWithLifecycle(emptyMap())
+    val collapsed by c.settings.deckCollapsed.collectAsStateWithLifecycle()
+    val scanCount by remember { c.db.scanDao().observeCount() }.collectAsStateWithLifecycle(0)
+    fun groupKey(g: DeckGroup) = "group:${g.name}"
     var sort by remember { mutableStateOf(c.settings.deckSort) }
     var reversed by remember { mutableStateOf(c.settings.deckSortReversed) }
     var sortMenu by remember { mutableStateOf(false) }
@@ -109,6 +119,14 @@ fun DecksScreen(nav: NavController) {
     // With another site as the power level source, decks without its power level get one (shown as a job).
     LaunchedEffect(source, job == null) {
         if (job == null && c.decks.powerMissing()) c.decks.rateMissingPower()
+    }
+
+    // A local deck deleted on its page can be brought back here (since 1.46).
+    val deleted by c.deckEditor.deleted.collectAsStateWithLifecycle()
+    LaunchedEffect(deleted) {
+        val (name, undo) = deleted ?: return@LaunchedEffect
+        c.deckEditor.consumeDeleted()
+        scope.launch { if (snackbar.showUndo("Deleted $name")) undo() }
     }
 
     LaunchedEffect(result) {
@@ -158,6 +176,19 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; busy(c.decks.updateAll()) },
                         )
+                        val waitingTotal = waiting.values.sum()
+                        if (waitingTotal > 0) {
+                            DropdownMenuItem(
+                                text = { Text("Send waiting edits now ($waitingTotal)") },
+                                onClick = {
+                                    moreMenu = false
+                                    scope.launch {
+                                        val reports = c.deckEditor.sendAll()
+                                        snackbar.showSnackbar(reports.map { it.message }.filter { it.isNotEmpty() }.joinToString(" · ").ifEmpty { "Nothing to send" })
+                                    }
+                                },
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Re-score all decks on Commander Salt") },
                             enabled = any,
@@ -172,6 +203,17 @@ fun DecksScreen(nav: NavController) {
                         }
                         HorizontalDivider()
                         DropdownMenuItem(
+                            text = { Text("Bracket cards of all decks") },
+                            enabled = any,
+                            onClick = { moreMenu = false; nav.navigate("decks/cards/BRACKET") },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Power level cards of all decks") },
+                            enabled = any,
+                            onClick = { moreMenu = false; nav.navigate("decks/cards/POWER") },
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
                             text = { Text("Recommendations for all decks") },
                             enabled = any,
                             onClick = { moreMenu = false; nav.navigate("decks/recs") },
@@ -181,6 +223,16 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; nav.navigate("decks/shared") },
                         )
+                        HorizontalDivider()
+                        val keys = DeckGroup.entries.map(::groupKey)
+                        val anyOpen = keys.any { it !in collapsed }
+                        DropdownMenuItem(
+                            text = { Text(if (anyOpen) "Fold all sections" else "Unfold all sections") },
+                            onClick = {
+                                moreMenu = false
+                                c.settings.setDeckCollapsed(if (anyOpen) collapsed + keys else collapsed - keys.toSet())
+                            },
+                        )
                     }
                 },
             )
@@ -188,9 +240,9 @@ fun DecksScreen(nav: NavController) {
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { importing = true },
+                onClick = { newDeck = true },
                 icon = { Icon(Icons.Default.Add, null) },
-                text = { Text("Import deck") },
+                text = { Text("New deck") },
                 expanded = job == null,
             )
         },
@@ -215,18 +267,71 @@ fun DecksScreen(nav: NavController) {
                     )
                 }
             }
-            items(list, key = { it.archidektId }) { deck ->
-                DeckRow(deck, source, showModified = sort == DeckSort.MODIFIED) { nav.navigate("deck/${deck.archidektId}") }
+            // Three sections (since 1.46): the user's own Archidekt decks, other people's, and local decks.
+            val groups = list.groupBy { DeckGroup.of(it, owner) }
+            for (g in DeckGroup.entries) {
+                val inGroup = groups[g].orEmpty()
+                if (inGroup.isEmpty()) continue
+                val folded = groupKey(g) in collapsed
+                item(key = "g_${g.name}") {
+                    val title = if (g == DeckGroup.OWN && owner != null) "${g.title} · $owner" else g.title
+                    SectionHeading(com.mtgtrader.data.DeckSection("$title", emptyList()), null, folded, count = inGroup.size) {
+                        c.settings.setDeckCollapsed(if (folded) collapsed - groupKey(g) else collapsed + groupKey(g))
+                    }
+                }
+                if (!folded) {
+                    items(inGroup, key = { it.archidektId }) { deck ->
+                        DeckRow(deck, source, showModified = sort == DeckSort.MODIFIED, waiting = waiting[deck.archidektId] ?: 0) { nav.navigate("deck/${deck.archidektId}") }
+                    }
+                }
             }
         }
+    }
+
+    if (newDeck) {
+        NewDeckSheet(onDismiss = { newDeck = false }) { picked ->
+            newDeck = false
+            when (picked) {
+                NewDeckWay.LINK -> importing = true
+                NewDeckWay.USER -> nav.navigate("decks/user")
+                NewDeckWay.PRECON -> nav.navigate("precon?local=true")
+                else -> way = picked
+            }
+        }
+    }
+    fun made(id: Long, what: String) {
+        way = null
+        scope.launch { snackbar.showSnackbar(what) }
+        nav.navigate("deck/$id")
+    }
+    fun failed(e: Exception) {
+        scope.launch { snackbar.showSnackbar(e.message ?: "Couldn't make the deck") }
+    }
+    when (way) {
+        NewDeckWay.EMPTY -> NameDeckDialog("New local deck", "", onDismiss = { way = null }) { name, _ ->
+            scope.launch { try { made(c.deckEditor.newEmpty(name), "Made $name") } catch (e: Exception) { failed(e) } }
+        }
+        NewDeckWay.COPY -> NameDeckDialog("Copy a deck", "", decks = decks.orEmpty(), onDismiss = { way = null }) { name, from ->
+            scope.launch { try { made(c.deckEditor.copyOf(from!!.archidektId, name), "Made $name, a copy of ${from.name}") } catch (e: Exception) { failed(e) } }
+        }
+        NewDeckWay.SCANS -> ScansDeckDialog(scanCount, onDismiss = { way = null }) { name, keep ->
+            scope.launch {
+                try {
+                    val ids = c.db.scanDao().allIds()
+                    made(c.deckEditor.fromScans(ids, name, keep), "Made $name from the scanned cards")
+                } catch (e: Exception) { failed(e) }
+            }
+        }
+        NewDeckWay.TEXT -> PasteDeckDialog(onDismiss = { way = null }) { id -> made(id, "Made the deck from the pasted list") }
+        else -> {}
     }
 
     if (importing) {
         ImportDeckDialog(
             onDismiss = { importing = false },
-            onImport = { link ->
+            onImport = { link, local ->
                 importing = false
-                if (!c.decks.import(link)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
+                if (!c.decks.import(link, local)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
             },
             onFromUser = {
                 importing = false
@@ -257,7 +362,7 @@ private fun reverseLabel(sort: DeckSort) = when (sort) {
 }
 
 @Composable
-private fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, onClick: () -> Unit) {
+internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, waiting: Int, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             DeckArt(deck, Modifier.width(88.dp).height(64.dp))
@@ -275,7 +380,21 @@ private fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, onCl
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (deck.scored) {
+                if (waiting > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CloudUpload, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("$waiting edit" + (if (waiting == 1) "" else "s") + " waiting to be sent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                }
+                if (deck.local && !deck.scored) {
+                    Text(
+                        listOfNotNull("Local deck", deck.origin).joinToString(" · "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                } else if (deck.scored) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         deck.power(source)?.let { Tag("Power ${Scores.power(it, source)}") }
                         deck.bracketRealistic?.let { Tag("Realistic B$it") }
@@ -284,7 +403,10 @@ private fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, onCl
                 } else {
                     Text("Not scored yet", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (showModified) {
+                if (deck.local && deck.scored) {
+                    Text(listOfNotNull("Local deck", deck.origin).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (showModified && !deck.local) {
                     Text(
                         deck.archidektUpdatedAt?.let { "Changed on Archidekt ${Fmt.date(it)}" } ?: "Last change unknown (refresh the deck)",
                         style = MaterialTheme.typography.labelSmall,
@@ -329,7 +451,7 @@ object Scores {
 }
 
 @Composable
-private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit, onFromUser: () -> Unit) {
+private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String, Boolean) -> Unit, onFromUser: () -> Unit) {
     val context = LocalContext.current
     // Most people copy the link first, so offer what's on the clipboard when it's a deck link.
     val clip = remember {
@@ -339,6 +461,7 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit, 
         }.getOrNull()?.takeIf { DeckLinks.archidektId(it) != null && "archidekt" in it.lowercase() }
     }
     var link by rememberSaveable { mutableStateOf(clip?.trim() ?: "") }
+    var local by rememberSaveable { mutableStateOf(false) }
     val valid = DeckLinks.archidektId(link) != null
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -358,9 +481,20 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit, 
                     supportingText = { if (link.isNotBlank() && !valid) Text("That isn't an Archidekt deck link") },
                     trailingIcon = { if (link.isNotEmpty()) IconButton(onClick = { link = "" }) { Icon(Icons.Default.Clear, "Clear") } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(onGo = { if (valid) onImport(link) }),
+                    keyboardActions = KeyboardActions(onGo = { if (valid) onImport(link, local) }),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Make it a local deck", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "A copy on this phone you can change freely; it's no longer reloaded from Archidekt.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    androidx.compose.material3.Switch(local, { local = it })
+                }
                 HorizontalDivider()
                 Text("Or pick several decks from someone's Archidekt profile.", style = MaterialTheme.typography.bodyMedium)
                 OutlinedButton(onClick = onFromUser, modifier = Modifier.fillMaxWidth()) {
@@ -370,7 +504,7 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit, 
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onImport(link) }, enabled = valid) { Text("Import", fontWeight = FontWeight.SemiBold) } },
+        confirmButton = { TextButton(onClick = { onImport(link, local) }, enabled = valid) { Text("Import", fontWeight = FontWeight.SemiBold) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

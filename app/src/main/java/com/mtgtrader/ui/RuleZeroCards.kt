@@ -185,11 +185,11 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
 
 // ---- The cards --------------------------------------------------------------------------------
 
-private val HEADER_TINT = Color(0xCC26215C)
+internal val HEADER_TINT = Color(0xCC26215C)
 private val BAR = Color(0xFF7F77DD)
 
 /** Fixed tile colours per bracket (light tints with dark text, readable on light and dark themes). */
-private fun bracketColors(b: Int?): Pair<Color, Color> = when (b) {
+internal fun bracketColors(b: Int?): Pair<Color, Color> = when (b) {
     1 -> Color(0xFFE1F5EE) to Color(0xFF085041)
     2 -> Color(0xFFEAF3DE) to Color(0xFF27500A)
     3 -> Color(0xFFFAEEDA) to Color(0xFF633806)
@@ -199,7 +199,7 @@ private fun bracketColors(b: Int?): Pair<Color, Color> = when (b) {
 }
 
 /** Power meter colours, green (1) to red (10). */
-private val METER = listOf(
+internal val METER = listOf(
     0xFF5DCAA5, 0xFF5DCAA5, 0xFF97C459, 0xFF97C459, 0xFFEF9F27,
     0xFFEF9F27, 0xFFD85A30, 0xFFD85A30, 0xFFE24B4A, 0xFFA32D2D,
 ).map(::Color)

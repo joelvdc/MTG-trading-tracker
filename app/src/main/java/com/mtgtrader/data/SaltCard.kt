@@ -43,6 +43,8 @@ data class SaltCard(
     /** The tutors and fast mana Commander Salt counted, by name. Since 1.16. */
     val tutors: List<String> = emptyList(),
     val fastMana: List<String> = emptyList(),
+    /** Every combo Commander Salt found, also those that don't count for the bracket. Since 1.46. */
+    val combos: List<SaltCombo> = emptyList(),
     /** Which of these fields the data was read with; older data is fetched again (see [CURRENT]). */
     val version: Int = 0,
 ) {
@@ -50,12 +52,28 @@ data class SaltCard(
 
     val current get() = version >= CURRENT
 
+    /**
+     * Every combo, those that count for the bracket first. Data from before 1.46 only knows the ones
+     * that count.
+     */
+    val allCombos: List<SaltCombo> by lazy {
+        val counted = (twoCardCombos + earlyCombos).distinct()
+        val known = combos.map { c -> c.cards.map(::key).toSet() }.toSet()
+        val all = combos + counted.filter { it.map(::key).toSet() !in known }.map { SaltCombo(it, counts = true) }
+        all.sortedWith(compareByDescending<SaltCombo> { it.counts }.thenBy { it.cards.size })
+    }
+
     /** The bracket-relevant tags of each card, keyed by [key]. */
     val tagsByCard: Map<String, Set<BracketTag>> by lazy {
         val m = HashMap<String, MutableSet<BracketTag>>()
         fun tag(names: List<String>, t: BracketTag) = names.forEach { m.getOrPut(key(it)) { sortedSetOf() } += t }
         tag(gameChangers, BracketTag.GAME_CHANGER)
-        tag((twoCardCombos + earlyCombos).flatten(), BracketTag.COMBO)
+        // One combo flag of each colour per card: the smallest combo it's in.
+        allCombos.forEach { combo -> tag(combo.cards, BracketTag.combo(combo.counts, combo.cards.size)) }
+        m.values.forEach { tags ->
+            if (BracketTag.COMBO in tags) tags -= BracketTag.COMBO_3
+            if (BracketTag.OTHER_COMBO in tags) tags -= BracketTag.OTHER_COMBO_3
+        }
         tag(extraTurns, BracketTag.EXTRA_TURN)
         tag(massLandDenial, BracketTag.LAND_DENIAL)
         tag(tutors, BracketTag.TUTOR)
@@ -65,14 +83,16 @@ data class SaltCard(
 
     fun tags(cardName: String): Set<BracketTag> = tagsByCard[key(cardName)].orEmpty()
 
-    /** The combos (each as its other cards) this card is part of. */
+    /** The combos (each as its other cards) this card is part of that count for the bracket. */
     fun combosWith(cardName: String): List<List<String>> =
-        (twoCardCombos + earlyCombos).distinct().filter { combo -> combo.any { key(it) == key(cardName) } }
-            .map { combo -> combo.filter { key(it) != key(cardName) } }
+        combosOf(cardName).filter { it.counts }.map { combo -> combo.cards.filter { key(it) != key(cardName) } }
+
+    /** Every combo this card is part of, those that count for the bracket first. */
+    fun combosOf(cardName: String): List<SaltCombo> = allCombos.filter { combo -> combo.cards.any { key(it) == key(cardName) } }
 
     companion object {
-        /** 2: tutors and fast mana by name (1.16). */
-        const val CURRENT = 2
+        /** 2: tutors and fast mana by name (1.16). 3: every combo, also those that don't count (1.46). */
+        const val CURRENT = 3
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
 
         /** Cards are matched by their front face, case-insensitively ("Fable of the Mirror-Breaker // Reflection…"). */
@@ -82,14 +102,62 @@ data class SaltCard(
     }
 }
 
-/** What makes a card matter for the deck's bracket, shown next to it in the decklist. [strict]: one of WotC's bracket rules. */
+/** A combo Commander Salt found in the deck. Since 1.46. */
+@Serializable
+data class SaltCombo(
+    val cards: List<String>,
+    /** Counted for the bracket (Commander Salt's two-card and early-game combos). */
+    val counts: Boolean = false,
+    /** What it does, as Commander Salt's labels ("infinite-etb", "win-game"…). */
+    val results: List<String> = emptyList(),
+    /** Needs more on the battlefield than its own cards. */
+    val needsBoard: Boolean = false,
+    val spellbookUri: String? = null,
+) {
+    /** "infinite ETB, infinite life loss". */
+    val resultText get() = results.joinToString(", ") { r ->
+        when (r) {
+            "win-game" -> "wins the game"
+            "opponents-locked" -> "locks opponents"
+            else -> r.split('-').joinToString(" ") { w ->
+                when (w) {
+                    "etb", "ltb" -> w.uppercase()
+                    "lifeloss" -> "life loss"
+                    "lifegain" -> "life gain"
+                    else -> w
+                }
+            }
+        }
+    }
+}
+
+/**
+ * What makes a card matter for the deck's bracket, shown next to it in the decklist. [strict]: one of WotC's
+ * bracket rules. The combo tags since 1.46: red ones count for the bracket, blue ones ([otherCombo]) don't;
+ * "3" for combos of three or more cards.
+ */
 enum class BracketTag(val label: String, val strict: Boolean) {
     GAME_CHANGER("GAME CHANGER", true),
-    COMBO("COMBO", true),
+    COMBO("COMBO 2", true),
+    COMBO_3("COMBO 3+", true),
     EXTRA_TURN("EXTRA TURN", true),
     LAND_DENIAL("LAND DENIAL", true),
+    OTHER_COMBO("COMBO 2", false),
+    OTHER_COMBO_3("COMBO 3+", false),
     TUTOR("TUTOR", false),
-    FAST_MANA("FAST MANA", false),
+    FAST_MANA("FAST MANA", false);
+
+    val combo get() = this == COMBO || this == COMBO_3 || otherCombo
+    val otherCombo get() = this == OTHER_COMBO || this == OTHER_COMBO_3
+
+    companion object {
+        fun combo(counts: Boolean, cards: Int) = when {
+            counts && cards <= 2 -> COMBO
+            counts -> COMBO_3
+            cards <= 2 -> OTHER_COMBO
+            else -> OTHER_COMBO_3
+        }
+    }
 }
 
 @Serializable
@@ -141,12 +209,24 @@ object SaltCardParser {
         val details = root.obj("details")
         val brackets = details?.obj("brackets")
         val categories = brackets?.obj("categories")
-        val combosById = details?.obj("combos")?.arr("list").orEmpty().mapNotNull { it as? JsonObject }
-            .associate { c -> c.str("id").orEmpty() to c.arr("cards").orEmpty().mapNotNull(::idOf) }
+        val comboObjects = details?.obj("combos")?.arr("list").orEmpty().mapNotNull { it as? JsonObject }
+        val combosById = comboObjects.associate { c -> c.str("id").orEmpty() to c.arr("cards").orEmpty().mapNotNull(::idOf) }
         fun cardList(key: String) = categories?.obj(key)?.arr("list").orEmpty().mapNotNull(::idOf).map(::name)
         fun comboList(key: String) = categories?.obj(key)?.arr("list").orEmpty().mapNotNull(::idOf).map { id ->
             combosById[id]?.map(::name) ?: listOf(name(id))
         }
+
+        val countedIds = listOf("twoCardCombos", "earlyGameInfiniteCombos")
+            .flatMap { categories?.obj(it)?.arr("list").orEmpty().mapNotNull(::idOf) }.toSet()
+        val combos = comboObjects.map { c ->
+            SaltCombo(
+                cards = c.arr("cards").orEmpty().mapNotNull(::idOf).map(::name),
+                counts = c.str("id") in countedIds,
+                results = c.arr("categories").orEmpty().mapNotNull { (it as? JsonPrimitive)?.content },
+                needsBoard = (c.obj("complexity")?.get("requiresCardsOnBoard") as? JsonPrimitive)?.content == "true",
+                spellbookUri = c.str("spellbookUri"),
+            )
+        }.filter { it.cards.isNotEmpty() }
 
         val power = details?.obj("powerLevel")
         val spike = power?.obj("ratings")?.obj("spike")
@@ -181,6 +261,7 @@ object SaltCardParser {
             wincons = wincons,
             tutors = scored(SaltEffect.TUTORS.key),
             fastMana = scored(SaltEffect.FAST_MANA.key),
+            combos = combos,
             version = SaltCard.CURRENT,
         )
     }

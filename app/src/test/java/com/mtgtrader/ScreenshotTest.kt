@@ -25,6 +25,7 @@ import com.mtgtrader.data.CollectionItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SwapHoriz
 import com.mtgtrader.data.CollectionRow
@@ -763,5 +764,136 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/token_printings.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.46: combo flags (red counts for the bracket, blue doesn't; 2 or 3+ cards), shortened for long names, and the card page's combo lines. */
+    @Test fun comboFlags() {
+        fun row(id: Long, name: String, eur: Double) = com.mtgtrader.data.DeckCardRow(
+            com.mtgtrader.data.DeckCard(
+                id = id, deckId = 7, card = ref(name, "shm", "$id", "rare").copy(fallbackEur = eur), quantity = 1, category = "Combo",
+                types = "Creature", cmc = 2.0, commander = false, foil = false,
+            ),
+            null,
+        )
+        val t = com.mtgtrader.data.BracketTag.entries
+        val c2 = com.mtgtrader.data.BracketTag.COMBO
+        val o2 = com.mtgtrader.data.BracketTag.OTHER_COMBO
+        val o3 = com.mtgtrader.data.BracketTag.OTHER_COMBO_3
+        val gc = com.mtgtrader.data.BracketTag.GAME_CHANGER
+        val rows = listOf(
+            Triple(row(1, "Devoted Druid", 1.1), "{1}{G}", setOf(c2, o3)),
+            Triple(row(2, "Mikaeus, the Unhallowed", 9.8), "{2}{B}{B}{B}", setOf(c2)),
+            Triple(row(3, "Blowfly Infestation", 0.4), "{2}{B}", setOf(o2)),
+            Triple(row(4, "Yawgmoth, Thran Physician", 8.9), "{2}{B}{B}", setOf(gc, o3)),
+            Triple(row(5, "Hapatra, Vizier of Poisons and a Longer Name", 1.2), "{B}{G}", setOf(o2, o3)),
+            Triple(row(6, "Everlasting Torment of the Very Long Name Indeed", 0.9), "{2}{B/R}", setOf(o2)),
+        )
+        val combos = listOf(
+            com.mtgtrader.data.SaltCombo(listOf("Devoted Druid", "Mikaeus, the Unhallowed"), counts = true, results = listOf("infinite-etb", "infinite-lifeloss"), spellbookUri = "x"),
+            com.mtgtrader.data.SaltCombo(listOf("Devoted Druid", "Obelisk Spider", "Yawgmoth, Thran Physician"), counts = false, results = listOf("infinite-lifeloss"), needsBoard = true, spellbookUri = "y"),
+        )
+        check(t.isNotEmpty())
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.BracketSummary(rows.map { it.third }, combos + List(6) { combos[1] }, only = false) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Combo", rows.map { it.first }), 22.3, folded = false) {}
+                        for ((r, cost, tags) in rows) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, tags, cost) {}
+                        Spacer(Modifier.height(8.dp))
+                        com.mtgtrader.ui.DeckCardRowView(rows[0].first, PriceType.TREND, rows[0].third, rows[0].second) {}
+                        Spacer(Modifier.height(8.dp))
+                        com.mtgtrader.ui.BracketTags(rows[0].third)
+                        combos.forEach { com.mtgtrader.ui.ComboLine("Devoted Druid", it) {} }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/combo_flags.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.46: when Auntie Plague can cast its commander and has its colours (the table the owner picked). */
+    @Test fun commanderOdds() {
+        val odds = com.mtgtrader.data.ManaOdds(
+            games = 10_000,
+            commanders = listOf(com.mtgtrader.data.CastOdds("Auntie Ool, Cursewretch", "{1}{B}{R}{G}", 4, listOf(0, 0, 39, 79, 91, 95, 97))),
+            colours = listOf('B' to listOf(67, 88, 96, 98, 99, 99, 99), 'R' to listOf(58, 83, 92, 95, 97, 98, 98), 'G' to listOf(74, 89, 94, 97, 98, 99, 99)),
+            allColours = listOf(16, 66, 84, 90, 94, 97, 98),
+            lands = 38, rocks = 2, creatures = 4, ramp = 3,
+        )
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) { com.mtgtrader.ui.CommanderOddsCard(odds, missing = 0) }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/commander_odds.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.46: the bracket and power level cards of all decks, small. */
+    @Test fun allDecksCards() {
+        fun deck(id: Long, name: String, cmd: String, colours: String, base: Int, real: Int, power: Double) =
+            com.mtgtrader.data.Deck(id, name, "joelvdc", cmd, null, null, colours, 100, powerLevel = power, bracketBaseline = base, bracketRealistic = real, saltPercent = 31.0, saltId = "s")
+        val card = com.mtgtrader.data.SaltCard(
+            gameChangers = listOf("A", "B", "C"), twoCardCombos = listOf(listOf("X", "Y"), listOf("Z", "W")), playStyle = "Focused", manaFixing = 86,
+        )
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.mtgtrader.ui.SmallBracketCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card) {}
+                        com.mtgtrader.ui.SmallBracketCard(deck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9), com.mtgtrader.data.SaltCard()) {}
+                        com.mtgtrader.ui.SmallPowerCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
+                        com.mtgtrader.ui.SmallPowerCard(deck(3, "Cult of Athreos (LC)", "Athreos, God of Passage", "WB", 2, 2, 4.8), null, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/all_decks_cards.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.46: editing a deck: waiting edits, drag handles, selected cards, the card page's controls, the Decks tab's sections. */
+    @Test fun deckEditing() {
+        fun row(id: Long, name: String, cost: Double, category: String = "Ramp", added: Boolean = false) = com.mtgtrader.data.DeckCardRow(
+            com.mtgtrader.data.DeckCard(
+                id = id, deckId = 7, card = ref(name, "cmr", "$id").copy(fallbackEur = cost), quantity = 1, category = category,
+                types = "Artifact", cmc = 1.0, commander = false, foil = false, addedInApp = added, lineUid = "u$id",
+            ),
+            null,
+        )
+        val handle: @androidx.compose.runtime.Composable () -> Unit = {
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Default.DragIndicator, null, Modifier.padding(start = 4.dp))
+        }
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.DeckRow(
+                            com.mtgtrader.data.Deck(-5, "Kenrith brew", "", "Kenrith, the Returned King", null, null, "WUBRG", 100, origin = "Pasted decklist"),
+                            com.mtgtrader.data.PowerSource.COMMANDER_SALT, showModified = false, waiting = 0,
+                        ) {}
+                        Spacer(Modifier.height(6.dp))
+                        com.mtgtrader.ui.DeckRow(
+                            com.mtgtrader.data.Deck(5, "Auntie Plague", "joelvdc", "Auntie Ool, Cursewretch", null, null, "BRG", 100, powerLevel = 6.4, bracketRealistic = 3, bracketBaseline = 4),
+                            com.mtgtrader.data.PowerSource.COMMANDER_SALT, showModified = false, waiting = 2,
+                        ) {}
+                        com.mtgtrader.ui.WaitingBanner(2, offline = true, loggedIn = true, sending = false) {}
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Ramp", emptyList()), 4.3, folded = false, count = 3, highlight = true, menu = {
+                            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Default.MoreVert, null)
+                        }) {}
+                        com.mtgtrader.ui.DeckCompactRow(row(1, "Sol Ring", 1.9), PriceType.TREND, emptySet(), "{1}", com.mtgtrader.ui.RowEditing(handle = handle)) {}
+                        com.mtgtrader.ui.DeckCompactRow(row(2, "Cultivate", 0.3), PriceType.TREND, emptySet(), "{2}{G}", com.mtgtrader.ui.RowEditing(selected = true)) {}
+                        com.mtgtrader.ui.DeckCompactRow(row(3, "Three Visits", 2.4), PriceType.TREND, emptySet(), "{1}{G}", com.mtgtrader.ui.RowEditing(selected = false)) {}
+                        Spacer(Modifier.height(12.dp))
+                        com.mtgtrader.ui.CardEditControls(
+                            category = "Combo", autoCategory = "Ramp", categories = listOf("Maybeboard", "Combo", "Ramp", "Commander"),
+                            maybeboard = false, quantity = 1, onCategory = {}, onBoard = {}, onQuantity = {},
+                        )
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/deck_editing.png", roborazziOptions = screenshotOptions)
     }
 }

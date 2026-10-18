@@ -57,7 +57,7 @@ import kotlinx.coroutines.launch
  * remembered as an order. Since 1.33.
  */
 @Composable
-fun PreconScreen(nav: NavController) {
+fun PreconScreen(nav: NavController, local: Boolean = false) {
     val c = LocalContext.current.container
     var decks by remember { mutableStateOf<List<Precons.Info>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -75,7 +75,7 @@ fun PreconScreen(nav: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add a preconstructed deck") },
+                title = { Text(if (local) "Deck from a precon" else "Add a preconstructed deck") },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
         },
@@ -87,12 +87,46 @@ fun PreconScreen(nav: NavController) {
             else -> Column(Modifier.padding(pad)) {
                 SearchField(query, { query = it }, "Deck name or set code", Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp))
                 val shown = remember(all, query) { Precons.search(all, query) }
-                PreconList(shown, onPick = { picked = it })
+                PreconList(shown, onPick = { picked = it }, forDeck = local)
             }
         }
     }
 
-    picked?.let { info ->
+    if (local) picked?.let { info ->
+        val scope = rememberCoroutineScope()
+        var making by remember { mutableStateOf(false) }
+        var error by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = { if (!making) picked = null },
+            title = { Text(info.name) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Makes a local deck with this precon's cards (in their printings), each in Archidekt's auto category. Your collection isn't changed.")
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    if (making) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator()
+                        Text("Getting the deck's cards…")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !making, onClick = {
+                    making = true
+                    scope.launch {
+                        try {
+                            val id = c.deckEditor.fromPrecon(info)
+                            picked = null
+                            nav.navigate("deck/$id") { popUpTo("decks") }
+                        } catch (e: Exception) {
+                            error = "Couldn't make the deck: ${e.message ?: e.javaClass.simpleName}"
+                            making = false
+                        }
+                    }
+                }) { Text("Make deck") }
+            },
+            dismissButton = { TextButton(onClick = { picked = null }, enabled = !making) { Text("Cancel") } },
+        )
+    } else picked?.let { info ->
         AddPreconDialog(info, onDismiss = { picked = null }) { message ->
             picked = null
             c.repo.reportImport(message)
@@ -103,11 +137,12 @@ fun PreconScreen(nav: NavController) {
 
 /** Commander decks, newest first. Split out for the screenshot tests. */
 @Composable
-fun PreconList(decks: List<Precons.Info>, onPick: (Precons.Info) -> Unit, modifier: Modifier = Modifier) {
+fun PreconList(decks: List<Precons.Info>, onPick: (Precons.Info) -> Unit, modifier: Modifier = Modifier, forDeck: Boolean = false) {
     LazyColumn(modifier, contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         item(key = "note") {
             Text(
-                "Commander decks, newest first (the lists come from MTGJSON). The deck's cards are added in their own printing, without basic lands; " +
+                if (forDeck) "Commander decks, newest first (the lists come from MTGJSON). Pick one to make a local deck of it."
+                else "Commander decks, newest first (the lists come from MTGJSON). The deck's cards are added in their own printing, without basic lands; " +
                     "what you paid is split over them by what each is worth today.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

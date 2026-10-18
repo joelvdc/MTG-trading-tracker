@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 
 /** An import or refresh in progress: which deck (once known) and what it's doing. [canStop] for batches. */
 data class DeckJob(val deckId: Long?, val message: String, val canStop: Boolean = false)
@@ -63,6 +64,15 @@ class DeckRepository(
     @Volatile
     private var powerStopped = false
 
+    /**
+     * Set by [DeckEditor] (since 1.46): reads a deck with the Archidekt login, so the user's private decks load
+     * too; sends a deck's waiting edits before its list is reloaded (true when none are left); and turns an
+     * imported deck into a local one.
+     */
+    var privateReader: (suspend (Long) -> ArchidektDeck?)? = null
+    var editSender: (suspend (Long) -> Boolean)? = null
+    var detacher: (suspend (Long) -> Long)? = null
+
     fun consumeResult() {
         _result.value = null
     }
@@ -73,14 +83,52 @@ class DeckRepository(
         _job.value = _job.value?.copy(message = "Stopping after this deck…", canStop = false)
     }
 
-    /** Starts importing the deck in [link]; false if no Archidekt deck can be found in it or another import is running. */
-    fun import(link: String): Boolean {
+    /**
+     * Starts importing the deck in [link]; false if no Archidekt deck can be found in it or another import is running.
+     * With [local] (since 1.46) it becomes a local deck right after: editable, no longer linked to Archidekt.
+     */
+    fun import(link: String, local: Boolean = false): Boolean {
         val id = DeckLinks.archidektId(link) ?: return false
         return start(DeckJob(null, "Loading the decklist from Archidekt…")) {
             val (deck, error) = importOne(id, "")
-            DeckJobResult(id, error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: "Imported ${deck.name}", openDeck = id)
+            val opened = if (local) detacher?.invoke(id) ?: id else id
+            DeckJobResult(
+                opened,
+                error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: ("Imported ${deck.name}" + if (local) " as a local deck" else ""),
+                openDeck = opened,
+            )
         }
     }
+
+    /** Reads a deck from Archidekt: as anyone can (public and unlisted decks), else with the login (the user's private ones). */
+    private suspend fun readDeck(id: Long): ArchidektDeck = try {
+        archidekt.deck(id)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        privateReader?.let { r -> runCatching { r(id) }.getOrNull() } ?: throw e
+    }
+
+    /**
+     * Reloads a deck's list from Archidekt without scoring it again (before editing, so every line knows its ids
+     * on Archidekt). Waiting edits are sent first; when they can't be, the list isn't reloaded. Since 1.46.
+     */
+    suspend fun reloadList(deckId: Long) {
+        val deck = dao.get(deckId) ?: return
+        if (deck.local) return
+        if (editSender?.invoke(deckId) == false) throw IOException("Changes made in the app are still waiting to be sent to Archidekt")
+        load(deckId, {})
+    }
+
+    /** Imports a deck without scoring it or reporting (for sending a local deck into it). Since 1.46. */
+    suspend fun importQuietly(deckId: Long) {
+        load(deckId, {})
+    }
+
+    /** The folder of one of [user]'s decks on Archidekt (to find their folders from). Since 1.46. */
+    suspend fun userDeckFolder(user: String): Long? = runCatching {
+        archidekt.userDecks(user).firstOrNull()?.let { readDeck(it.id).folderId }
+    }.getOrNull()
 
     /**
      * Has Commander Salt score the deck again (brackets and its power level) and, when another site
@@ -89,9 +137,10 @@ class DeckRepository(
      */
     fun rescore(deckId: Long): Boolean = start(DeckJob(deckId, "Checking the decklist on Archidekt…")) {
         val deck = dao.get(deckId) ?: throw IllegalStateException("The deck is gone")
+        if (deck.local) throw IllegalStateException("A local deck can only be scored once it's on Archidekt")
         val source = settings.powerSource.value
         // When Archidekt can't be reached, the deck is scored as it is.
-        val fetched = runCatching { archidekt.deck(deckId) }.getOrNull()
+        val fetched = runCatching { readDeck(deckId) }.getOrNull()
         val changed = fetched != null && listChanged(deck, fetched.updatedAt)
         val done = if (changed) importOne(deckId, "", fetched = fetched).first
         else score(deck) { _job.value = DeckJob(deckId, it) }
@@ -118,6 +167,7 @@ class DeckRepository(
 
     /** Re-reads the deck from Archidekt (whether it changed or not) and has it scored again. */
     fun refresh(deckId: Long): Boolean = start(DeckJob(deckId, "Loading the decklist from Archidekt…")) {
+        if (deckId < 0) throw IllegalStateException("A local deck isn't on Archidekt")
         val (deck, error) = importOne(deckId, "")
         DeckJobResult(deckId, error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: "Reloaded ${deck.name} from Archidekt and scored it again")
     }
@@ -132,7 +182,7 @@ class DeckRepository(
      * call per owner instead of downloading every deck again. Quietly does nothing when offline.
      */
     suspend fun fillMissingUpdateDates() {
-        val missing = dao.withoutUpdateDate()
+        val missing = dao.withoutUpdateDate().filter { !it.local }
         for ((owner, decks) in missing.groupBy { it.owner }) {
             if (owner.isBlank()) continue
             val dates = runCatching { archidekt.userDecks(owner) }.getOrNull()?.associate { it.id to it.updatedAt } ?: continue
@@ -178,7 +228,7 @@ class DeckRepository(
      * imported. Decks that never got a score are scored again too. Can be stopped between decks.
      */
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
-        val decks = dao.all()
+        val decks = dao.all().filter { !it.local }
         val source = settings.powerSource.value
         val listed = archidektDates(decks)
         var updated = 0
@@ -191,7 +241,7 @@ class DeckRepository(
             val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
             _job.value = DeckJob(d.archidektId, prefix + "checking…", !stopRequested)
             try {
-                val fetched = if (listed[d.archidektId] == null) archidekt.deck(d.archidektId) else null
+                val fetched = if (listed[d.archidektId] == null) readDeck(d.archidektId) else null
                 val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
                 val changed = listChanged(d, remoteAt)
                 val needsPower = source.external && d.power(source) == null
@@ -235,7 +285,7 @@ class DeckRepository(
      * asked ([rescorePowerAll]). Can be stopped between decks.
      */
     fun rescoreAll(): Boolean = start(DeckJob(null, "Scoring your decks on Commander Salt…", canStop = true)) {
-        val decks = dao.all()
+        val decks = dao.all().filter { !it.local }
         var scored = 0
         val unscored = mutableListOf<String>()
         val failed = mutableListOf<String>()
@@ -266,7 +316,7 @@ class DeckRepository(
         val source = settings.powerSource.value
         if (!source.external) return false
         return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
-            val decks = dao.all()
+            val decks = dao.all().filter { !it.local }
             var rated = 0
             val retry = mutableListOf<Deck>()
             for ((i, d) in decks.withIndex()) {
@@ -315,6 +365,10 @@ class DeckRepository(
         fun step(msg: String) {
             _job.value = DeckJob(id, prefix + msg, canStop && !stopRequested)
         }
+        // Edits made in the app go to Archidekt first, so reloading doesn't lose them.
+        if (dao.get(id) != null && editSender?.invoke(id) == false) {
+            throw IOException("Changes made in the app are still waiting to be sent to Archidekt; reload once they're sent")
+        }
         step("Loading the decklist from Archidekt…")
         val deck = load(id, ::step, fetched)
         step("Scoring on Commander Salt…")
@@ -324,7 +378,7 @@ class DeckRepository(
 
     /** Fetches the list and saves it, keeping any scores from before until new ones arrive. */
     private suspend fun load(id: Long, step: (String) -> Unit, fetched: ArchidektDeck? = null): Deck {
-        val a = fetched ?: archidekt.deck(id)
+        val a = fetched ?: readDeck(id)
         if (a.cards.isEmpty()) throw IllegalStateException("${a.name.ifBlank { "This deck" }} has no cards")
         step("Looking up ${a.cards.size + a.maybeboard.size} cards…")
         val found = runCatching {
@@ -358,6 +412,10 @@ class DeckRepository(
                 etched = c.etched,
                 gameChanger = c.gameChanger,
                 maybeboard = maybeboard,
+                categories = c.categories.joinToString("\n"),
+                archidektCardId = c.archidektCardId,
+                relationId = c.relationId,
+                label = c.label,
             )
         }
         val cards = a.cards.map { deckCard(it, false) } + a.maybeboard.map { deckCard(it, true) }
@@ -372,6 +430,10 @@ class DeckRepository(
             cardCount = a.cardCount,
             importedAt = System.currentTimeMillis(),
             archidektUpdatedAt = a.updatedAt ?: old?.archidektUpdatedAt,
+            folderId = a.folderId ?: old?.folderId,
+            folderName = old?.folderName?.takeIf { old.folderId == a.folderId },
+            visibility = a.visibility,
+            categoryInfo = DeckEdits.encode(a.categories),
         ).let {
             // The list may have changed: the chosen site's power level is redone right after; the other site's is dropped.
             val source = settings.powerSource.value
@@ -467,7 +529,7 @@ class DeckRepository(
         if (!source.external) return false
         return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
             powerStopped = false
-            val decks = dao.all().filter { it.power(source) == null && it.powerError(source) == null }
+            val decks = dao.all().filter { !it.local && it.power(source) == null && it.powerError(source) == null }
             var rated = 0
             val failed = mutableListOf<String>()
             for ((i, d) in decks.withIndex()) {
@@ -489,7 +551,7 @@ class DeckRepository(
     /** Whether some decks still need the chosen site's power level. */
     suspend fun powerMissing(): Boolean {
         val source = settings.powerSource.value
-        return !powerStopped && source.external && dao.all().any { it.power(source) == null && it.powerError(source) == null }
+        return !powerStopped && source.external && dao.all().any { !it.local && it.power(source) == null && it.powerError(source) == null }
     }
 
     /** Fetches the rule-zero card details for decks scored before 1.12 (without scoring them again). Quietly does nothing when offline. */
@@ -529,6 +591,7 @@ class DeckRepository(
 
     suspend fun delete(deckId: Long) {
         dao.delete(deckId)
+        db.deckEditDao().clear(deckId)
         withContext(Dispatchers.IO) { RuleZeroCard.entries.forEach { cardFile(deckId, it).delete() } }
     }
 
