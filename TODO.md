@@ -22,17 +22,8 @@ How to use this file:
    2026-10-16), adding cards from the deck page.~~ Released.
 5. ~~MTG Trader 1.43: the compact deck view on one line per card, with mana costs (Mana font), and labels that
    give way to long names (picked by the owner from mockups on 2026-10-16).~~ Released.
-6. **MTG Trader 1.46: changing decks on Archidekt** (below). Planned with the owner on 2026-10-16, after 1.42; moved
-   to 1.44 when the compact view's redo became 1.43, to 1.45 when the deck stats became 1.44, and to 1.46 when choosing
-   token printings became 1.45 (2026-10-17). Not started: the owner settled all its questions on 2026-10-17 and
-   added local decks, auto categories, Moxfield text import, detach/link, folders and the Decks tab's sections.
-   Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket, and all decks'
-   bracket or power level cards from the Decks tab (both below), and when the deck can cast its commander and has its
-   colours (owner, 2026-10-18, below).
-   Green light given 2026-10-18; the full plan with 16 mockups was sent the same day. The owner chose (2026-10-18):
-   **one release**, the bracket cards of all decks as small cards (option A), the commander odds as a table (option
-   B), and new Archidekt decks **unlisted** by default (private decks can't be scored by Commander Salt).
-   Being built.
+6. ~~MTG Trader 1.46: changing decks on Archidekt, local decks, the combo flags, all decks' bracket or power level
+   cards and when the deck can cast its commander (one release, as the owner chose on 2026-10-18).~~ Released.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
@@ -40,7 +31,146 @@ How to use this file:
 9. **MTG Trader 1.47: life tracker and game records for Commander** (below). Asked for by the owner on 2026-10-17;
    a draft plan is below; the owner answered its questions the same day. Comes after 1.46.
 
-### Changing decks on Archidekt (planned as MTG Trader 1.46)
+### Life tracker and game records for Commander (planned for MTG Trader 1.47)
+*Added 2026-10-17. MTG Trader only.*
+
+The owner's words: "Life tracker for commander games. New tab in the app. UI and usage design like the lifetap app.
+Track commander decks games, wins and losses just like the mythic tools or playgroup.gg app. Track games length,
+average length for each deck, etc, whatever stats are relevant to track. Track turns like the playgroup.gg APP, I
+think this could be optional in the app. Can you work out a plan?"
+
+Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets the green light):
+1. **A new "Games" tab** next to Decks. It opens on "New game", the game in progress (if any) and the game history
+   with the stats.
+2. **Setting up a game:** 2 to 6 players (4 by default), starting life 40, and per player a name and a deck. The
+   owner's own decks are picked from the app's decks (the "Archidekt" and "Local" sections, so the commander and its
+   picture come with it); friends are saved as players with their own decks (a name and a commander, found by name on
+   Scryfall, or an Archidekt link). The last table setup is remembered, so a rematch is one tap. Who starts: picked by
+   hand, or at random with a short animation.
+3. **The life tracker, like Lifetap:** the whole screen split in one coloured panel per player, each turned to face
+   its player around the table (layouts for 2 to 6 players, the phone lying flat in the middle). The commander's
+   picture or a colour as the panel's background (see the design notes). Tap for −1 / +1 (left/right or above/below,
+   see the design notes), hold for ±10 (see the design notes); the change since the last pause shows next to the life total. The screen stays on.
+   Per player, from a small button on the panel: commander damage from each opponent (both commanders for partners;
+   commander damage also takes life), poison, commander tax, and optional counters (energy, experience, rad). Table
+   items: monarch, the initiative, day/night, a dice roll and a coin flip. A player at 0 life, 21 commander damage
+   from one commander or 10 poison is asked whether they're out (see the design notes); undo for the last changes.
+4. **Turns (optional, a switch in the game setup and a default in Settings), like playgroup.gg:** the active player's
+   panel is marked, a "next turn" tap passes the turn in seating order, and the app counts the rounds and times each
+   turn (pause button for breaks). Turned off, the game still records its start, end and length.
+5. **Ending a game:** the last player standing wins (or the owner picks the winner, or a draw); optionally how it was
+   won (combat, commander damage, combo, poison, alternative win, everyone conceded) and a note. Recorded by itself:
+   date, length, players, decks, seats and who started, the order players went out (and on which turn, with turns on),
+   final life totals. A past game can also be added by hand (without the tracker), and a recorded game can be changed
+   or deleted.
+6. **Stats** (in the Games tab, and a "Games" section on each deck's page):
+   - per deck: games, wins, losses, win rate, average game length, average length of its wins, average number of turns
+     and the turn it usually wins on (with turns on), average place, how its games ended, its last games;
+   - per player and against each opponent (head to head), wins when starting first or by seat, games per month;
+   - the deck's bracket and power level (from Commander Salt) next to its results, so it's easy to see whether a deck
+     is too strong or too weak for the group;
+   - all decks in one table that can be sorted (most played, best win rate, longest games…).
+7. **Storage and both phones:** games are stored in the app's database (new tables: players, games, the players of a
+   game, turns) and go into backups and the Nextcloud sync, so both phones see the same history. That is a database
+   change: both phones must run 1.47 before they sync (as for 1.46).
+- **Health check:** no new service, but one new Scryfall address (see the design notes).
+- **Size:** about as big as the deck stats (1.44); one release if the owner agrees, otherwise the tracker first and
+  the stats right after.
+
+Settled with the owner on 2026-10-17:
+- **The tab bar:** a sixth tab "Games" is fine for the owner, but only decided after seeing the mockups (so the plan
+  shows the six-tab bar on a small and a large phone, next to the alternative with Settings behind a gear button).
+- **Friends:** yes, friends can be added with their names and commanders ("would be neat"). Their decks are a name
+  plus a commander found on Scryfall (an Archidekt link optional), so head-to-head stats work.
+- **One phone** in the middle of the table, like Lifetap. No connection between phones during a game.
+- **Counters:** the most common ones can be switched on per game (commander damage, poison and commander tax always
+  there; energy, experience, rad, storm, monarch, the initiative, day/night as options), plus "Custom counter": the
+  owner names it, and it works like the others.
+- **Turns:** off by default (switch in the game setup, default in Settings). An option shows a clock during the game:
+  the game's time, and with turns on the current turn's time on the active player's panel.
+- **No import of old games.** Instead **export**: the game history as a spreadsheet file (one line per player per
+  game, with date, deck, commander, place, length, turns), saved or shared like the app's other exports.
+- **Formats:** Commander first, but the starting life can be set (e.g. 20 for two-player games); commander damage can
+  be switched off for non-Commander games.
+
+Design notes from the owner (2026-10-17):
+- **Backgrounds:** one setting in Settings for all games (owner, 2026-10-17: a general setting, not a choice per
+  game), never mixed at one table ("I don't like the idea of mixing a background commander picture with plain
+  colors"):
+  - **Commander pictures:** every panel shows a commander's art (Scryfall's art crop). A player without a commander
+    set (a friend added by name only, or no deck picked) gets a random commander's art instead, picked when the game
+    is set up and kept for the whole game; tapping it during setup picks another. Random pictures come from Scryfall
+    (`/cards/random?q=is:commander`, a new address for the app). For when the phone is offline, the app keeps a small
+    store of random commander pictures on the phone (about 20, refreshed now and then when online), just for
+    backgrounds, so they aren't limited to the owner's own decks and show other commanders by default.
+  - **Plain colours:** a different colour for every player, from a set of six that look good together and stay easy
+    to tell apart (also for colour-blindness), with the life total in white on top. A player can tap their panel's
+    colour to pick another.
+  Shown as mockups (commander pictures, plain colours).
+- **Low life animations:** when a player's life is below 25% of the starting life (below 10 at 40), their panel gets
+  an animation, like Mythic Tools' ghost. A few to choose from in Settings (for example a faint ghost drifting up
+  through the panel, a slowly pulsing dark edge, a fading or cracking life total), each with a preview, or off.
+- **Changing life:** two ways, chosen in Settings: tap to the **left / right** of the life total, or **above / below**
+  it (always as seen by the player the panel faces). Holding: −10 / +10 (as Lifetap does, owner 2026-10-17), and
+  keeping the finger down repeats it; a setting can make holding count by 1 instead. A setting also shows
+  **− and + symbols** on the panels, for those who like to see where to tap. Shown as mockups (both ways, with and
+  without the symbols).
+- **A player who is out:** when a player's life reaches 0 or below (or 21 commander damage from one commander, or 10
+  poison), a button appears in their panel: "Dead?" (owner, 2026-10-17, like Lifetap and Mythic Tools). Yes: the
+  panel turns dark with a big skull, the player counts as out (their place and the turn are recorded) and their panel
+  stops reacting to taps, except a small "Undo" to bring them back. No (e.g. life gain is coming): the button goes
+  away until the life changes again. The low life animation stops once a player is out. Shown as a mockup.
+- **Health check:** the random commander pictures add Scryfall's `/cards/random` (the art crops are already used for
+  the decks' pictures), so the weekly health check gets it when this is built.
+
+Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
+counters, the low life animation, the end-of-game screen, the stats).
+
+### Moxfield connection (some day, not planned)
+*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
+the idea and its open questions can be picked up again when wished.*
+
+The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
+moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
+categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
+if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
+
+What was found (2026-10-17):
+- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
+  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
+  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
+  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
+  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
+- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
+  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
+
+Draft plan, in steps (each its own release):
+1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
+   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
+   also reads Moxfield links (to check when building).
+2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
+   condition, language, purchase price), for the logged-in Moxfield account.
+3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
+   categories as tags), sending a local deck to Moxfield as a new deck.
+- Health check: each step adds Moxfield addresses to the weekly health check.
+
+Open questions:
+- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
+- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
+  password; Google/Apple sign-in would need a password set on the Moxfield account first.
+- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
+  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
+  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
+- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
+  enough for the collection?
+- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
+  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
+  Moxfield; the app shows a card under its first category today.
+- **Which step first,** or all three together?
+
+## Done
+
+### Changing decks on Archidekt (MTG Trader 1.46)
 *Added 2026-10-16. MTG Trader only.*
 
 The owner's words: "I would also like to push the added cards in the app to archidekts maybeboard. And lastly I would
@@ -168,7 +298,7 @@ Settled with the owner on 2026-10-17:
 No open questions left. Still waiting for the owner's green light. Mockups (selecting, dragging, the card page's
 category, making a new deck) come with the plan.
 
-### Combos that don't count for the bracket (planned for MTG Trader 1.46)
+### Combos that don't count for the bracket (MTG Trader 1.46)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: "I want this for release 1.46".*
 
 The owner's words: "add a flag for not bracket relevant combos. Maybe the same combo flag but in another color?"
@@ -208,7 +338,7 @@ relevant combos."):
 
 No open questions left; the colours and short forms are shown as mockups when it is planned.
 
-### All decks' bracket or power level cards (planned for MTG Trader 1.46)
+### All decks' bracket or power level cards (MTG Trader 1.46)
 *Added 2026-10-17. MTG Trader only.*
 
 The owner's words: "Another thing for 1.46 release: View all bracket cards or power level card under the decks page,
@@ -233,102 +363,7 @@ Settled with the owner on 2026-10-17: "All cards in one scrolling list (maybe ma
 when clicking on a card allow for swiping or go back to the scrolling list. Only my own decks, archidekt and local."
 No open questions left.
 
-### Life tracker and game records for Commander (planned for MTG Trader 1.47)
-*Added 2026-10-17. MTG Trader only.*
-
-The owner's words: "Life tracker for commander games. New tab in the app. UI and usage design like the lifetap app.
-Track commander decks games, wins and losses just like the mythic tools or playgroup.gg app. Track games length,
-average length for each deck, etc, whatever stats are relevant to track. Track turns like the playgroup.gg APP, I
-think this could be optional in the app. Can you work out a plan?"
-
-Draft plan (Claude, 2026-10-17; to be worked out with mockups when the list gets the green light):
-1. **A new "Games" tab** next to Decks. It opens on "New game", the game in progress (if any) and the game history
-   with the stats.
-2. **Setting up a game:** 2 to 6 players (4 by default), starting life 40, and per player a name and a deck. The
-   owner's own decks are picked from the app's decks (the "Archidekt" and "Local" sections, so the commander and its
-   picture come with it); friends are saved as players with their own decks (a name and a commander, found by name on
-   Scryfall, or an Archidekt link). The last table setup is remembered, so a rematch is one tap. Who starts: picked by
-   hand, or at random with a short animation.
-3. **The life tracker, like Lifetap:** the whole screen split in one coloured panel per player, each turned to face
-   its player around the table (layouts for 2 to 6 players, the phone lying flat in the middle). The commander's
-   picture or a colour as the panel's background (see the design notes). Tap for −1 / +1 (left/right or above/below,
-   see the design notes), hold for ±10 (see the design notes); the change since the last pause shows next to the life total. The screen stays on.
-   Per player, from a small button on the panel: commander damage from each opponent (both commanders for partners;
-   commander damage also takes life), poison, commander tax, and optional counters (energy, experience, rad). Table
-   items: monarch, the initiative, day/night, a dice roll and a coin flip. A player at 0 life, 21 commander damage
-   from one commander or 10 poison is asked whether they're out (see the design notes); undo for the last changes.
-4. **Turns (optional, a switch in the game setup and a default in Settings), like playgroup.gg:** the active player's
-   panel is marked, a "next turn" tap passes the turn in seating order, and the app counts the rounds and times each
-   turn (pause button for breaks). Turned off, the game still records its start, end and length.
-5. **Ending a game:** the last player standing wins (or the owner picks the winner, or a draw); optionally how it was
-   won (combat, commander damage, combo, poison, alternative win, everyone conceded) and a note. Recorded by itself:
-   date, length, players, decks, seats and who started, the order players went out (and on which turn, with turns on),
-   final life totals. A past game can also be added by hand (without the tracker), and a recorded game can be changed
-   or deleted.
-6. **Stats** (in the Games tab, and a "Games" section on each deck's page):
-   - per deck: games, wins, losses, win rate, average game length, average length of its wins, average number of turns
-     and the turn it usually wins on (with turns on), average place, how its games ended, its last games;
-   - per player and against each opponent (head to head), wins when starting first or by seat, games per month;
-   - the deck's bracket and power level (from Commander Salt) next to its results, so it's easy to see whether a deck
-     is too strong or too weak for the group;
-   - all decks in one table that can be sorted (most played, best win rate, longest games…).
-7. **Storage and both phones:** games are stored in the app's database (new tables: players, games, the players of a
-   game, turns) and go into backups and the Nextcloud sync, so both phones see the same history. That is a database
-   change: both phones must run 1.47 before they sync (as for 1.46).
-- **Health check:** no new service, but one new Scryfall address (see the design notes).
-- **Size:** about as big as the deck stats (1.44); one release if the owner agrees, otherwise the tracker first and
-  the stats right after.
-
-Settled with the owner on 2026-10-17:
-- **The tab bar:** a sixth tab "Games" is fine for the owner, but only decided after seeing the mockups (so the plan
-  shows the six-tab bar on a small and a large phone, next to the alternative with Settings behind a gear button).
-- **Friends:** yes, friends can be added with their names and commanders ("would be neat"). Their decks are a name
-  plus a commander found on Scryfall (an Archidekt link optional), so head-to-head stats work.
-- **One phone** in the middle of the table, like Lifetap. No connection between phones during a game.
-- **Counters:** the most common ones can be switched on per game (commander damage, poison and commander tax always
-  there; energy, experience, rad, storm, monarch, the initiative, day/night as options), plus "Custom counter": the
-  owner names it, and it works like the others.
-- **Turns:** off by default (switch in the game setup, default in Settings). An option shows a clock during the game:
-  the game's time, and with turns on the current turn's time on the active player's panel.
-- **No import of old games.** Instead **export**: the game history as a spreadsheet file (one line per player per
-  game, with date, deck, commander, place, length, turns), saved or shared like the app's other exports.
-- **Formats:** Commander first, but the starting life can be set (e.g. 20 for two-player games); commander damage can
-  be switched off for non-Commander games.
-
-Design notes from the owner (2026-10-17):
-- **Backgrounds:** one setting in Settings for all games (owner, 2026-10-17: a general setting, not a choice per
-  game), never mixed at one table ("I don't like the idea of mixing a background commander picture with plain
-  colors"):
-  - **Commander pictures:** every panel shows a commander's art (Scryfall's art crop). A player without a commander
-    set (a friend added by name only, or no deck picked) gets a random commander's art instead, picked when the game
-    is set up and kept for the whole game; tapping it during setup picks another. Random pictures come from Scryfall
-    (`/cards/random?q=is:commander`, a new address for the app). For when the phone is offline, the app keeps a small
-    store of random commander pictures on the phone (about 20, refreshed now and then when online), just for
-    backgrounds, so they aren't limited to the owner's own decks and show other commanders by default.
-  - **Plain colours:** a different colour for every player, from a set of six that look good together and stay easy
-    to tell apart (also for colour-blindness), with the life total in white on top. A player can tap their panel's
-    colour to pick another.
-  Shown as mockups (commander pictures, plain colours).
-- **Low life animations:** when a player's life is below 25% of the starting life (below 10 at 40), their panel gets
-  an animation, like Mythic Tools' ghost. A few to choose from in Settings (for example a faint ghost drifting up
-  through the panel, a slowly pulsing dark edge, a fading or cracking life total), each with a preview, or off.
-- **Changing life:** two ways, chosen in Settings: tap to the **left / right** of the life total, or **above / below**
-  it (always as seen by the player the panel faces). Holding: −10 / +10 (as Lifetap does, owner 2026-10-17), and
-  keeping the finger down repeats it; a setting can make holding count by 1 instead. A setting also shows
-  **− and + symbols** on the panels, for those who like to see where to tap. Shown as mockups (both ways, with and
-  without the symbols).
-- **A player who is out:** when a player's life reaches 0 or below (or 21 commander damage from one commander, or 10
-  poison), a button appears in their panel: "Dead?" (owner, 2026-10-17, like Lifetap and Mythic Tools). Yes: the
-  panel turns dark with a big skull, the player counts as out (their place and the turn are recorded) and their panel
-  stops reacting to taps, except a small "Undo" to bring them back. No (e.g. life gain is coming): the button goes
-  away until the life changes again. The low life animation stops once a player is out. Shown as a mockup.
-- **Health check:** the random commander pictures add Scryfall's `/cards/random` (the art crops are already used for
-  the decks' pictures), so the weekly health check gets it when this is built.
-
-Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
-counters, the low life animation, the end-of-game screen, the stats).
-
-### When the deck can cast its commander and has its colours (planned for MTG Trader 1.46)
+### When the deck can cast its commander and has its colours (MTG Trader 1.46)
 *Added 2026-10-18. MTG Trader only. The owner said on 2026-10-18: "Add it to 1.46".*
 
 The owner's words: "Regarding mana production, I base myself on some rules I found online while ago. Like, if you
@@ -372,49 +407,10 @@ Proposed (in the deck page's Stats section, under mana production; worked out wi
 
 No open questions left.
 
-### Moxfield connection (some day, not planned)
-*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
-the idea and its open questions can be picked up again when wished.*
-
-The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
-moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
-categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
-if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
-
-What was found (2026-10-17):
-- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
-  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
-  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
-  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
-  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
-- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
-  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
-
-Draft plan, in steps (each its own release):
-1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
-   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
-   also reads Moxfield links (to check when building).
-2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
-   condition, language, purchase price), for the logged-in Moxfield account.
-3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
-   categories as tags), sending a local deck to Moxfield as a new deck.
-- Health check: each step adds Moxfield addresses to the weekly health check.
-
-Open questions:
-- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
-- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
-  password; Google/Apple sign-in would need a password set on the Moxfield account first.
-- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
-  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
-  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
-- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
-  enough for the collection?
-- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
-  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
-  Moxfield; the app shows a card under its first category today.
-- **Which step first,** or all three together?
-
-## Done
+Released in MTG Trader 1.46 (2026-10-18). Notes from building it: the Archidekt addresses were read from its website's code
+(modifyCards/v2 with "add", "modify" and "remove"; POST /api/decks/v2/; PATCH /api/decks/<id>/update/; PATCH
+/api/massUpdate/ to move a deck to a folder; GET /api/decks/folders/<id>/). Deleting an emptied category on Archidekt is
+left to its website. A card in a counted and an uncounted combo shows both flags (as in the approved mockups).
 
 ### Order history
 *Released in MTG Trader 1.33 (2026-10-13). Built as settled: ⋮ → Orders in the collection, in `data/Orders.kt` and `ui/OrdersScreen.kt`. An order is one row with its cards as JSON (database version 14, sync and backup file format 3). "+" adds past order files without touching the collection; a Cardmarket month becomes one order per shipment. The owner's 17 precons of 13 October are in `precon-orders.json` in their order-files folder, in the app's own orders format, to add with "+". Restoring a backup from before 1.33 leaves the orders as they are.*

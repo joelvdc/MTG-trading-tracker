@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
@@ -180,7 +181,7 @@ fun CardEditControls(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Category", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(76.dp))
             androidx.compose.foundation.layout.Box {
-                AssistChip(onClick = { menu = true }, label = { Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis) }, trailingIcon = { Icon(Icons.Default.Style, null, Modifier.size(16.dp)) })
+                AssistChip(onClick = { menu = true }, label = { Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis) }, trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp)) })
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text("Auto" + (autoCategory?.let { " ($it)" } ?: "")) }, onClick = { menu = false; onCategory(DeckEditor.AUTO) })
                     categories.filter { it != category }.forEach { c -> DropdownMenuItem(text = { Text(c) }, onClick = { menu = false; onCategory(c) }) }

@@ -103,6 +103,7 @@ import com.mtgtrader.data.DeckEdits
 import com.mtgtrader.data.DeckEditor
 import com.mtgtrader.data.UndoAction
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.input.pointer.pointerInput
@@ -494,12 +495,15 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 for (cat in categoryInfo) if (cat.included) putIfAbsent("e_${cat.name}", cat.name)
             }
         }
-        val dropCategory: String? = drag?.let { d ->
+        // Read when the drag ends too, so always the latest list and targets (not the ones when the drag began).
+        val targets by rememberUpdatedState(dropTargets)
+        fun dropTarget(d: DragInfo): String? {
             val info = listState.layoutInfo.visibleItemsInfo
-            val me = info.firstOrNull { it.key == d.key } ?: return@let null
+            val me = info.firstOrNull { it.key == d.key } ?: return null
             val center = me.offset + d.dy + me.size / 2
-            info.firstOrNull { it.key != d.key && center >= it.offset && center < it.offset + it.size }?.let { dropTargets[it.key] }
+            return info.firstOrNull { it.key != d.key && center >= it.offset && center < it.offset + it.size }?.let { targets[it.key] }
         }
+        val dropCategory: String? = drag?.let(::dropTarget)
         @Composable
         fun rowEditing(row: DeckCardRow, key: String): RowEditing? {
             if (!editable || row.item.commander) return null
@@ -523,7 +527,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                     },
                                     onDragEnd = {
                                         val d = drag
-                                        val to = dropCategory
+                                        val to = d?.let(::dropTarget)
                                         drag = null
                                         if (d != null && to != null && !to.equals(d.category, true)) {
                                             edit("Moved ${d.name} to $to") { c.deckEditor.move(deckId, listOf(d.uid), to) }

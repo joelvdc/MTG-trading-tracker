@@ -34,7 +34,8 @@ instead (bigger, runs on any device). Either way, a new version installs over th
 - **Cards & images:** Scryfall API, looked up live. Pictures you've seen stay saved on the phone and show offline;
   on Wi-Fi the app also saves the pictures of your decks (cards and covers) and wishlist ahead of time (Settings →
   "Save deck and wishlist pictures for offline use", on by default; about 10–15 MB per deck, at most 600 MB in all).
-- **Decks:** Archidekt (decklists), Commander Salt (brackets, scores and rule-zero cards) and, if chosen, edhpowerlevel.com
+- **Decks:** Archidekt (decklists, and since 1.46 changes to your own decks, sent the way Archidekt's own editor does,
+  with your login), Commander Salt (brackets, scores and rule-zero cards) and, if chosen, edhpowerlevel.com
   or ScrollVault (power level). Mana costs come from Scryfall with the cards' other details (once per card, kept on the
   phone) and are drawn with the [Mana font](https://mana.andrewgioia.com) by Andrew Gioia (SIL Open Font License; the
   mana symbols are © Wizards of the Coast).
@@ -80,9 +81,14 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   [recommander.cards](https://recommander.cards/) (its public API, which ranks cards for a decklist).
 
 ## Commander decks
-Import a public deck from **Archidekt**: paste its link in the Decks tab, share it to the app from the Archidekt app or
-a browser, or pick several decks from someone's Archidekt profile (Select all / Select none); they're scored one by one in
-the background. **Add to collection** (deck ⋮ menu) adds the deck's printings to a binder, optionally only the cards you
+**New deck** (Decks tab) starts a deck from **Archidekt**: paste a deck's link, share it to the app from the Archidekt
+app or a browser, or pick several decks from someone's Archidekt profile (Select all / Select none); they're scored one
+by one in the background. Or make a **local deck** that lives in the app (since 1.46; see below): empty, from a
+preconstructed deck, from the cards in the Scan tab, as a copy of one of your decks, or from a pasted Moxfield list.
+
+The Decks tab has three sections, each folding away (since 1.46): **Archidekt** (the decks of the Archidekt account
+logged in under Settings, which you can edit), **Archidekt (read only)** (other people's decks, which follow their
+owner's changes) and **Local** (decks only in the app). **Add to collection** (deck ⋮ menu) adds the deck's printings to a binder, optionally only the cards you
 don't own yet and without basic lands. The app shows the decklist grouped by your Archidekt categories (or by card type) with Cardmarket prices, and
 has [Commander Salt](https://www.commandersalt.com/) score it (more below).
 
@@ -113,6 +119,14 @@ them (they stay open or folded for every deck).
   one you tap is what that deck shows from then on (since 1.45; **Use the cards' own printing** goes back). Picks are
   kept per deck, survive reloading the deck, sync to your other phones and are saved for offline use.
 
+- **Casting the commander** (since 1.46): a table of the chance, turn by turn (1–7), that the commander can be cast,
+  and that each of the deck's colours (and all of them together) is there. The app plays the deck alone 10,000 times
+  (a few seconds' work on the phone): a Commander mulligan (one free, then London), a draw each turn (also on turn 1),
+  a land each turn (tapped lands come in tapped) and the mana rocks, mana creatures (from the next turn) and land ramp
+  spells costing up to 4 cast when they can be. No opponents, removal, Treasure, rituals or cost reducers, so it's a
+  best case to compare decks and changes by. **How?** explains it and links to Frank Karsten's mana base article, whose
+  method it follows with the deck's own cards.
+
 The stats use the card details the app keeps from Scryfall; decks' cards get the new ones once, the first time a deck
 page is opened online after updating to 1.44.
 
@@ -123,8 +137,42 @@ keep. It's loaded with the deck (decks loaded before 1.42 get it at their next r
 shows offline and syncs with the deck.
 
 **Adding cards:** **+ Add card** on a deck page opens card search (and from there the scanner) for that deck; the Scan
-tab's **To deck** and **Recommendations** add cards too. They're added in this app only, under "Added in app": Archidekt
-isn't changed, and they stay when the deck is reloaded. Tap such a card to remove it again.
+tab's **To deck** and **Recommendations** add cards too. On a deck you can edit (below) they go straight into the deck,
+in their auto category. On other people's decks they're added in this app only, under "Added in app": Archidekt isn't
+changed, and they stay when the deck is reloaded. Tap such a card to remove it again.
+
+**Editing decks** (since 1.46): your own Archidekt decks (of the account logged in under Settings → Archidekt) and
+local decks can be changed in the app; other people's stay read only.
+- Each card has a **drag handle** (⠿): drag it onto another category. **Press and hold** a card to select it, tap more,
+  then **move** them to a category (or **Auto**: each card's Archidekt auto category, or a new one), put them in the
+  **maybeboard** or back, or **remove** them.
+- A category's **⋮**: add a card right there, select all its cards, rename it, or delete it (its cards go to their
+  auto categories or another category). The deck's ⋮ menu has **Add a category…** and **Auto-categorise all cards**.
+- Tapping a card shows its **category** (with its auto category), **Deck or Maybeboard** and the number of **copies**.
+- Cards "Added in app" on your own deck can go **Into the deck** or **To maybeboard** with one tap.
+- **Auto categories** are Archidekt's own (Ramp, Draw, Removal…, from its card data); cards without one go by card
+  type, as on Archidekt. Settings → **Auto categories for new cards** turns them off for new cards.
+- Every edit can be **undone** right after. On an Archidekt deck it shows at once and goes to Archidekt in the
+  background, the way Archidekt's own editor sends it. Offline (or logged out) the edits wait on the phone, with a note
+  on the deck, and go once the phone is online again (**Send now**, or Decks tab ⋮ → **Send waiting edits now**). Only
+  the phone that made an edit sends it; the other phone gets the changed deck through the sync. An edit Archidekt
+  refuses (e.g. the card was removed there meanwhile) is skipped and reported. A deck isn't reloaded from Archidekt
+  while edits wait. Decks loaded before 1.46 are reloaded once before editing, to learn Archidekt's ids for their cards.
+- Deleting a deck in the app never deletes it on Archidekt; Archidekt decks are deleted on Archidekt's website.
+
+**Local decks** (since 1.46) live in the app (and on your other phone through the sync). Make one with **New deck**:
+**Empty deck** (add the commander, then put it in the Commander category), **From a preconstructed deck** (any Commander
+precon on MTGJSON, every card in its printing), **From scanned cards** (the Scan tab's **To deck** offers **New local
+deck** too), **Copy of one of my decks**, or **Paste a Moxfield list**: Moxfield's export text (also Archidekt's,
+MTG Arena's or a plain "1 Sol Ring" list) is read with the exact printings where it names set and number, foils
+(\*F\*) and its headings (Commander, Sideboard, Maybeboard); if the list has tags, choose whether they become the
+categories or Archidekt's auto categories are used. Any Archidekt deck can be **detached** (deck ⋮ menu) into a local
+deck, and importing a link can make it a local deck right away. A local deck's ⋮ menu has **Send to Archidekt…**: as a
+**new deck** of your account (name, one of your Archidekt **folders**, and who can see it: private, unlisted (the
+default) or public; Commander Salt can't score a private deck), or **into one of your decks** (adding its cards, a card
+in both keeping the higher number, or replacing that deck's list). Your own Archidekt decks have **Folder and
+visibility…** to move them to another folder or change who can see them. Deleting a local deck is for good (with an undo
+right after).
 
 **Your printings:** the decklist shows each card in a printing you own rather than the one on Archidekt (the deck on
 Archidekt isn't changed). The app takes a copy in the binder named after the deck if there is one, else Archidekt's
@@ -153,6 +201,17 @@ bracket call (and whether it's borderline) and its "tell your pod" line.
 **Bracket-relevant cards** are tagged right in the decklist: game changers, combo pieces, extra turns and land denial
 (WotC's bracket rules, in red) and tutors and fast mana (in grey), with a count above the list and **Only these cards**
 to list just them. Tapping a card names its combo partners and the other decks it's in.
+
+**Combos** (since 1.46): every combo Commander Salt finds is flagged, not only those it counts for the bracket:
+**COMBO 2** for two cards, **COMBO 3+** for three or more, **red** when it counts for the bracket (two-card and
+early-game combos) and **blue** when it doesn't (e.g. a two-card combo that needs more on the battlefield). A card in
+several combos shows the smallest of each colour; in the compact view the flags shorten to C2 / C3+ and then a dot when
+a long name needs the room. Above the list: "Combos: 8, of which 2 count for the bracket". Tapping a card lists each of
+its combos, whether it counts, what it does, and a link to it on Commander Spellbook.
+
+**All decks' cards** (since 1.46; Decks tab ⋮ → **Bracket cards of all decks** / **Power level cards of all decks**):
+every one of your own decks' (Archidekt and Local) bracket or power level card as a small card, in the Decks tab's order;
+tap one for the full cards and swipe from deck to deck. Decks not scored yet are listed at the bottom.
 
 **Recommendations** (deck page, or the deck's ⋮ menu): cards for the deck from **EDHREC** or **recommander.cards**
 (switch at the top; the choice is remembered). EDHREC's are in its own sections (New Cards, High Synergy, Top Cards, Game

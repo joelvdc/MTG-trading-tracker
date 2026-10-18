@@ -216,8 +216,8 @@ class Release142Test {
         val back = SyncFile.decode(SyncFile.encode(SyncFile(data = data))).data.decks.single().cards
         assertEquals(listOf(false, true), back.map { it.maybeboard })
         // An older version would count the maybeboard as part of the deck: it refuses format 8 and asks to be updated.
-        assertEquals(8, SyncFile.FORMAT)
-        assertEquals(8, BackupFile.FORMAT)
+        assertTrue(SyncFile.FORMAT >= 8)
+        assertTrue(BackupFile.FORMAT >= 8)
     }
 
     /** A version 18 database (app 1.39–1.41) exactly as Room made it, from the exported schema. */
