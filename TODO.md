@@ -217,10 +217,11 @@ app do not get deleted on archidekt, is this not possible at all?"
 - "Shown" is kept in the app (Archidekt has no such setting) and synced between the phones.
 
 Open questions (sent 2026-10-18):
-- Cards in a category that is switched off: shown in one folded "Hidden categories" section at the bottom
-  (suggested), or not shown on the deck page at all?
+- ~~Cards in a category that is switched off~~: settled 2026-10-18, they show in one folded "Hidden categories"
+  section at the bottom of the deck page.
 - Empty categories: offered in the move lists (if shown) but on the deck page only with ⋮ → "Show empty categories"
-  (off at first)?
+  (off at first)? Asked again more simply on 2026-10-18.
+- Health check: after the release, send the owner the full new text to paste (owner, 2026-10-18).
 
 What was found (Claude, 2026-10-18):
 1. The category list in the card window and 5. the deck page's ⋮ menu: Android's drop-down menus run under the
