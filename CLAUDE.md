@@ -58,3 +58,10 @@ the green light for the list; then plan all of it together, as below.
   `KEY_PASSWORD`; never print, copy or change them.
 - The owner can also build releases on their PC with the local keystore; never reuse a version number that was
   already released.
+
+## After a release
+The owner clears the conversation after every new release (owner, 2026-10-18). So before the final report, make sure
+everything worth keeping is in the repository: the work committed and merged, `TODO.md` up to date (what shipped, what's
+still open), and `docs/health-check-instructions.txt` holding the full current health check text. When the health check
+changed, give the owner that full text to paste in the final report; assume they paste it before clearing, without
+telling you.

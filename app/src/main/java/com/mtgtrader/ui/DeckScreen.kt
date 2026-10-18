@@ -565,15 +565,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 if (!row.item.commander) toggleSelected(row.item.lineUid)
             } else selected = row
         }
-        // The row being dragged is lifted in the same box it always sits in: wrapping it in a new one when the drag
-        // began made the row (and its drag handle) start over, which cancelled the drag at once (fixed in 1.47).
         @Composable
-        fun dragged(key: String, content: @Composable () -> Unit) {
-            val d = drag?.takeIf { it.key == key }
-            val lifted = if (d == null) Modifier else Modifier.zIndex(1f).graphicsLayer { translationY = d.dy; shadowElevation = 12f }
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(6.dp))
-            Box(lifted) { content() }
-        }
+        fun dragged(key: String, content: @Composable () -> Unit) = LiftableRow(drag?.takeIf { it.key == key }?.dy, content)
         @Composable
         fun categoryMenu(title: String, rows: List<DeckCardRow>): (@Composable () -> Unit)? {
             if (!editable || groupBy != DeckGroupBy.CATEGORY || title == DeckToCollection.ADDED_IN_APP || title.equals(DeckEdits.COMMANDER, true)) return null
@@ -1245,6 +1238,18 @@ object DeckMarks {
 }
 
 /** A card being dragged to another category: its line, list key and category, and how far it moved. Since 1.46. */
+/**
+ * A deck row that can be dragged: [lift] is how far it has moved while it's being dragged (null otherwise). The
+ * row is lifted in the same box it always sits in: wrapping it in a new one when the drag began made the row (and
+ * its drag handle) start over, which cancelled the drag at once (fixed in 1.47).
+ */
+@Composable
+internal fun LiftableRow(lift: Float?, content: @Composable () -> Unit) {
+    val lifted = if (lift == null) Modifier else Modifier.zIndex(1f).graphicsLayer { translationY = lift; shadowElevation = 12f }
+        .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(6.dp))
+    Box(lifted) { content() }
+}
+
 private data class DragInfo(val uid: String, val key: String, val category: String, val name: String, val dy: Float = 0f)
 
 private val MarkLabelStyle = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.SemiBold)

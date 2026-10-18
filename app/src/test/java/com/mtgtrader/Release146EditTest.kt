@@ -201,7 +201,7 @@ class Release146EditTest {
         createVersion21(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-146.db")
-            .addMigrations(AppDatabase.MIGRATION_21_22)
+            .addMigrations(AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })
@@ -219,7 +219,7 @@ class Release146EditTest {
         } finally {
             updated.close()
         }
-        // Local decks and deck editing don't fit older versions' sync files.
-        assertEquals(9, SyncFile.FORMAT)
+        // Local decks and deck editing don't fit older versions' sync files (9 in 1.46; 10 since 1.47's games).
+        assertEquals(10, SyncFile.FORMAT)
     }
 }

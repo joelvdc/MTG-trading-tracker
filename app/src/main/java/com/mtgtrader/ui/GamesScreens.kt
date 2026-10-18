@@ -107,6 +107,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private val Trophy = Color(0xFFE0A526)
 
@@ -115,7 +116,7 @@ private fun gameDate(ms: Long) = SimpleDateFormat("EEE d MMM", Locale.getDefault
 /** "Joel won with Auntie Plague", "A draw". */
 internal fun gameTitle(g: GameRecord): String {
     val w = g.winner ?: return if (g.draw) "A draw" else "No winner told yet"
-    return "${w.name} won" + (w.deckName.ifBlank { w.commander }.takeIf { it.isNotBlank() }?.let { " with $it" } ?: "")
+    return (if (w.me) "You won" else "${w.name} won") + (w.deckName.ifBlank { w.commander }.takeIf { it.isNotBlank() }?.let { " with $it" } ?: "")
 }
 
 internal fun gameLine(g: GameRecord): String = listOfNotNull(
@@ -207,7 +208,7 @@ fun GamesScreen(nav: NavController) {
                         Text("Stats", style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             StatTile("${games.size}", if (games.size == 1) "game" else "games", Modifier.weight(1f))
-                            StatTile(GameStats.myWinRate(games)?.let { "${(it * 100).toInt()} %" } ?: "–", "you won", Modifier.weight(1f))
+                            StatTile(GameStats.myWinRate(games)?.let { "${(it * 100).roundToInt()} %" } ?: "–", "you won", Modifier.weight(1f))
                             StatTile(Games.duration(games.map { it.durationMs }.average().toLong()).replace(" min", ""), "average game", Modifier.weight(1f))
                         }
                         OutlinedButton(onClick = { nav.navigate("games/stats") }, modifier = Modifier.fillMaxWidth()) {
@@ -347,7 +348,8 @@ fun GameOverScreen(nav: NavController) {
     }
     val base = remember(g.uid) { LiveGames.record(g, endedAt, null, null, null) }
     var places by remember(g.uid) { mutableStateOf(base.seatList.associate { it.seat to it.place }) }
-    var draw by remember(g.uid) { mutableStateOf(base.draw) }
+    // Several players still in: the winner is picked here (or "A draw" ticked), not assumed.
+    var draw by remember(g.uid) { mutableStateOf(false) }
     var winType by remember { mutableStateOf<WinType?>(null) }
     var note by rememberSaveable { mutableStateOf("") }
     fun saved(): GameRecord {
@@ -568,7 +570,7 @@ private fun DeckTableRow(d: DeckResult, onClick: () -> Unit) {
             Text(d.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         listOf(
-            "${d.games}" to 1f, "${d.wins} · ${(d.winRate * 100).toInt()} %" to 1.25f,
+            "${d.games}" to 1f, "${d.wins} · ${(d.winRate * 100).roundToInt()} %" to 1.25f,
             Games.duration(d.avgMs).replace(" min", "") to 1.1f, (d.bracket?.toString() ?: "–") to 0.7f,
         ).forEach { (t, w) -> Text(t, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.weight(w)) }
     }
@@ -581,7 +583,7 @@ private fun PlayerRow(p: PlayerResult) {
             Text(p.name + if (p.me) " (you)" else "", style = MaterialTheme.typography.bodyLarge)
             Text(
                 listOfNotNull(
-                    "${p.games} games", "${p.wins} won (${(p.winRate * 100).toInt()} %)", p.avgPlace?.let { "average place %.1f".format(it) },
+                    "${p.games} games", "${p.wins} won (${(p.winRate * 100).roundToInt()} %)", p.avgPlace?.let { "average place %.1f".format(it) },
                     if (p.startedGames > 0) "started ${p.startedGames}, won ${p.startedWins} of those" else null,
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -616,7 +618,7 @@ internal fun DeckGamesCard(r: DeckResult, last: List<GameRecord>, deckId: Long, 
                         Text(l, style = MaterialTheme.typography.bodySmall)
                     }
                     big("${r.wins}–${r.losses}", "won–lost", Modifier.weight(1f))
-                    big("${(r.winRate * 100).toInt()} %", "win rate", Modifier.weight(1f))
+                    big("${(r.winRate * 100).roundToInt()} %", "win rate", Modifier.weight(1f))
                     big(r.avgPlace?.let { "%.1f".format(it) } ?: "–", "average place", Modifier.weight(1f))
                 }
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))

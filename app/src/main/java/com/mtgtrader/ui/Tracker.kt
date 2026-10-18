@@ -478,17 +478,22 @@ internal fun PlayerPanel(
                 )
             }
         }
+        // On a wide panel (a player at a long side) these go beside the total, else below it, clear of the counters.
+        val wide = maxWidth > maxHeight * 1.3f
+        val asidePlace = if (wide) Modifier.align(Alignment.CenterEnd).padding(end = 12.dp) else Modifier.align(Alignment.Center).offset(y = small * 0.26f)
         if (starts) {
             Text(
                 "${s.name} starts!", color = Color.Black, fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center).offset(y = small * 0.3f).background(Color.White, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+                modifier = asidePlace.background(Color.White, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
         if (LiveGames.asksDead(s)) {
-            Row(
-                Modifier.align(Alignment.Center).offset(y = small * 0.3f).background(Color.Black.copy(alpha = 0.78f), RoundedCornerShape(20.dp)).padding(horizontal = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            val bg = Modifier.background(Color.Black.copy(alpha = 0.78f), RoundedCornerShape(20.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
+            if (wide) Column(asidePlace.then(bg), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Dead?", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+                TextButton(onClick = { onDead(true) }) { Text("Yes", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold) }
+                TextButton(onClick = { onDead(false) }) { Text("No", color = Color.White) }
+            } else Row(asidePlace.then(bg), verticalAlignment = Alignment.CenterVertically) {
                 Text("Dead?", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
                 TextButton(onClick = { onDead(true) }) { Text("Yes", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold) }
                 TextButton(onClick = { onDead(false) }) { Text("No", color = Color.White) }

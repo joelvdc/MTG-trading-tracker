@@ -29,13 +29,116 @@ How to use this file:
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
    remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
 - **Open since 1.46 (2026-10-18):** the owner tries the Archidekt editing on a spare deck first and reports what
-  happens. (The weekly health check was updated by the owner on 2026-10-18.)
+  happens.
+- **Since 1.47 (2026-10-18):** the weekly health check's full new text (Scryfall's random commanders, Archidekt's
+  category addresses, and a new part C for the Commander rules) is in `docs/health-check-instructions.txt`; it was
+  given to the owner to paste, and the owner pastes it before clearing the conversation.
 
-9. **MTG Trader 1.47: life tracker and game records for Commander, with the deck page fixes** (both below). The
-   owner said on 2026-10-18 to start on this release and include the fixes; the plan with mockups was sent the same
-   day and waits for the owner's choices and green light.
+9. ~~MTG Trader 1.47: life tracker and game records for Commander, with the deck page fixes and Manage categories
+   (green light and choices from the owner on 2026-10-18: five tabs with Settings behind a gear, commander pictures
+   and the ghost by default).~~ Released.
 
-### Life tracker and game records for Commander (planned for MTG Trader 1.47)
+### Moxfield connection (some day, not planned)
+*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
+the idea and its open questions can be picked up again when wished.*
+
+The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
+moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
+categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
+if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
+
+What was found (2026-10-17):
+- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
+  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
+  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
+  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
+  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
+- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
+  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
+
+Draft plan, in steps (each its own release):
+1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
+   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
+   also reads Moxfield links (to check when building).
+2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
+   condition, language, purchase price), for the logged-in Moxfield account.
+3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
+   categories as tags), sending a local deck to Moxfield as a new deck.
+- Health check: each step adds Moxfield addresses to the weekly health check.
+
+Open questions:
+- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
+- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
+  password; Google/Apple sign-in would need a password set on the Moxfield account first.
+- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
+  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
+  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
+- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
+  enough for the collection?
+- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
+  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
+  Moxfield; the app shows a card under its first category today.
+- **Which step first,** or all three together?
+
+## Done
+
+### Fixes on the deck page and the card window, and Manage categories (MTG Trader 1.47)
+*Added 2026-10-18. MTG Trader only. Reported by the owner with screenshots (phone).*
+
+The owner's words:
+1. "Category drop down list seems the last item is always cut?" (the category list in a deck card's window: the
+   last entry, under "Commander", is cut off by the bottom of the screen).
+2. "Maybeboard button looks weird on the card page." (the Deck / Maybeboard switch in the card window: "Maybeboard"
+   breaks over two lines as "Maybeboar / d" and the button sticks out of its row; the "auto: Proliferate" note next
+   to the category also breaks letter by letter.)
+3. "When scrolling up and down on the deck page, the casting the commander stats seem to be refreshed every time it
+   is scrolled by."
+4. "Empty categories are visible in the deck page, I would rather have them not visible."
+5. "The last item of the menu under the 3 dots for the deck page seems to be cut." (the deck page's menu is longer
+   than the screen; its last entry, "Delete deck", is only half visible.)
+6. "Cannot drag cards between categories. The card gets selected/highlighted but it does not drag."
+
+Settled with the owner on 2026-10-18:
+- **Empty categories:** never shown on the deck page, new or not. A category gets its first card from the card
+  window's category list or by selecting cards and using the top bar's "Move to category" button.
+- **When:** together with the life tracker, in 1.47.
+
+Owner's choices on the 1.47 mockups (2026-10-18): tab bar B (five tabs, Settings behind a gear at the top);
+commander pictures as the default background; the ghost as the default low-life animation; the new card window
+layout as drawn.
+
+**Manage categories** (owner, 2026-10-18, replaces "Add a category…" in the deck's ⋮ menu): "add an option to
+'manage categories'. Here the user can add categories and choose which categories to be shown and available on drop
+down menus in the card pages and so on. This would affect the categories shown when the cards are grouped by
+categories. Empty categories are still not shown by default. I also think it is weird that deleted categories in the
+app do not get deleted on archidekt, is this not possible at all?"
+- Drawn as a mockup (Categories screen: add, a "Shown" switch per category, rename and delete per category).
+- Archidekt *can* do it (found 2026-10-18 in the deck page's JavaScript): POST /api/decks/createCategory/ (with the
+  deck's id), PATCH /api/decks/category/<id>/ (rename, included in deck) and DELETE /api/decks/category/<id>/. 1.46
+  only moved the cards, so an emptied or renamed category stayed on Archidekt. In 1.47 adding, renaming and deleting
+  a category also happen on Archidekt (queued like other edits when offline); the health check gets these three
+  addresses.
+- "Shown" is kept in the app (Archidekt has no such setting) and synced between the phones.
+
+Settled with the owner on 2026-10-18:
+- Cards in a category that is switched off show in one folded "Hidden categories" section at the bottom of the deck
+  page.
+- Empty categories are never shown on the deck page (no option to show them); they're offered in the move lists.
+- Health check: after the release, the owner gets the full new text to paste.
+
+What was found (Claude, 2026-10-18):
+1. The category list in the card window and 5. the deck page's ⋮ menu: Android's drop-down menus run under the
+   phone's own buttons at the bottom of the screen. Fix: the card window's category opens the same list from the
+   bottom as "Move to category" (current one ticked, "New category…" last); long menus stop above the phone's buttons
+   and scroll.
+2. The card window's controls get too little room when the phone's text is larger: labels go above the controls,
+   "In the deck / Maybeboard" uses the full width, the auto category goes on its own line.
+3. The commander odds sit in a list row that is thrown away when it scrolls out of sight, so the calculation starts
+   again each time it comes back. Fix: work it out once per deck change, outside the list.
+6. Dragging: when a drag starts, the dragged row is redrawn inside a new box, and that cancels the drag at once (the
+   row only flashes). Fix: keep the row in the same box and only lift it; a test that drags a card.
+
+### Life tracker and game records for Commander (MTG Trader 1.47)
 *Added 2026-10-17. MTG Trader only.*
 
 The owner's words: "Life tracker for commander games. New tab in the app. UI and usage design like the lifetap app.
@@ -136,106 +239,6 @@ Design notes from the owner (2026-10-17):
 Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
 counters, the low life animation, the end-of-game screen, the stats).
 
-### Moxfield connection (some day, not planned)
-*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
-the idea and its open questions can be picked up again when wished.*
-
-The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
-moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
-categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
-if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
-
-What was found (2026-10-17):
-- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
-  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
-  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
-  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
-  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
-- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
-  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
-
-Draft plan, in steps (each its own release):
-1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
-   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
-   also reads Moxfield links (to check when building).
-2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
-   condition, language, purchase price), for the logged-in Moxfield account.
-3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
-   categories as tags), sending a local deck to Moxfield as a new deck.
-- Health check: each step adds Moxfield addresses to the weekly health check.
-
-Open questions:
-- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
-- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
-  password; Google/Apple sign-in would need a password set on the Moxfield account first.
-- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
-  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
-  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
-- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
-  enough for the collection?
-- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
-  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
-  Moxfield; the app shows a card under its first category today.
-- **Which step first,** or all three together?
-
-### Fixes on the deck page and the card window (after 1.46)
-*Added 2026-10-18. MTG Trader only. Reported by the owner with screenshots (phone).*
-
-The owner's words:
-1. "Category drop down list seems the last item is always cut?" (the category list in a deck card's window: the
-   last entry, under "Commander", is cut off by the bottom of the screen).
-2. "Maybeboard button looks weird on the card page." (the Deck / Maybeboard switch in the card window: "Maybeboard"
-   breaks over two lines as "Maybeboar / d" and the button sticks out of its row; the "auto: Proliferate" note next
-   to the category also breaks letter by letter.)
-3. "When scrolling up and down on the deck page, the casting the commander stats seem to be refreshed every time it
-   is scrolled by."
-4. "Empty categories are visible in the deck page, I would rather have them not visible."
-5. "The last item of the menu under the 3 dots for the deck page seems to be cut." (the deck page's menu is longer
-   than the screen; its last entry, "Delete deck", is only half visible.)
-6. "Cannot drag cards between categories. The card gets selected/highlighted but it does not drag."
-
-Settled with the owner on 2026-10-18:
-- **Empty categories:** never shown on the deck page, new or not. A category gets its first card from the card
-  window's category list or by selecting cards and using the top bar's "Move to category" button.
-- **When:** together with the life tracker, in 1.47.
-
-Owner's choices on the 1.47 mockups (2026-10-18): tab bar B (five tabs, Settings behind a gear at the top);
-commander pictures as the default background; the ghost as the default low-life animation; the new card window
-layout as drawn.
-
-**Manage categories** (owner, 2026-10-18, replaces "Add a category…" in the deck's ⋮ menu): "add an option to
-'manage categories'. Here the user can add categories and choose which categories to be shown and available on drop
-down menus in the card pages and so on. This would affect the categories shown when the cards are grouped by
-categories. Empty categories are still not shown by default. I also think it is weird that deleted categories in the
-app do not get deleted on archidekt, is this not possible at all?"
-- Drawn as a mockup (Categories screen: add, a "Shown" switch per category, rename and delete per category).
-- Archidekt *can* do it (found 2026-10-18 in the deck page's JavaScript): POST /api/decks/createCategory/ (with the
-  deck's id), PATCH /api/decks/category/<id>/ (rename, included in deck) and DELETE /api/decks/category/<id>/. 1.46
-  only moved the cards, so an emptied or renamed category stayed on Archidekt. In 1.47 adding, renaming and deleting
-  a category also happen on Archidekt (queued like other edits when offline); the health check gets these three
-  addresses.
-- "Shown" is kept in the app (Archidekt has no such setting) and synced between the phones.
-
-Open questions (sent 2026-10-18):
-- ~~Cards in a category that is switched off~~: settled 2026-10-18, they show in one folded "Hidden categories"
-  section at the bottom of the deck page.
-- Empty categories: offered in the move lists (if shown) but on the deck page only with ⋮ → "Show empty categories"
-  (off at first)? Asked again more simply on 2026-10-18.
-- Health check: after the release, send the owner the full new text to paste (owner, 2026-10-18).
-
-What was found (Claude, 2026-10-18):
-1. The category list in the card window and 5. the deck page's ⋮ menu: Android's drop-down menus run under the
-   phone's own buttons at the bottom of the screen. Fix: the card window's category opens the same list from the
-   bottom as "Move to category" (current one ticked, "New category…" last); long menus stop above the phone's buttons
-   and scroll.
-2. The card window's controls get too little room when the phone's text is larger: labels go above the controls,
-   "In the deck / Maybeboard" uses the full width, the auto category goes on its own line.
-3. The commander odds sit in a list row that is thrown away when it scrolls out of sight, so the calculation starts
-   again each time it comes back. Fix: work it out once per deck change, outside the list.
-6. Dragging: when a drag starts, the dragged row is redrawn inside a new box, and that cancels the drag at once (the
-   row only flashes). Fix: keep the row in the same box and only lift it; a test that drags a card.
-
-## Done
 
 ### Changing decks on Archidekt (MTG Trader 1.46)
 *Added 2026-10-16. MTG Trader only.*
