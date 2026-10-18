@@ -28,14 +28,12 @@ How to use this file:
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
    remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
-- **Open since 1.46 (2026-10-18):** the weekly health check ("MTG & Poké Trader health and new-release check") can't
-  be edited by Claude (it was made outside a Claude session). Its full updated text for 1.46 is in
-  `docs/health-check-instructions.txt`; the owner pastes it over the old text at
-  https://claude.ai/code/routines/trig_01XUHcD4LbA8cysfhWn2NVrK. Also still open: the owner tries the Archidekt editing on
-  a spare deck first and reports what happens.
+- **Open since 1.46 (2026-10-18):** the owner tries the Archidekt editing on a spare deck first and reports what
+  happens. (The weekly health check was updated by the owner on 2026-10-18.)
 
-9. **MTG Trader 1.47: life tracker and game records for Commander** (below). Asked for by the owner on 2026-10-17;
-   a draft plan is below; the owner answered its questions the same day. Comes after 1.46.
+9. **MTG Trader 1.47: life tracker and game records for Commander, with the deck page fixes** (both below). The
+   owner said on 2026-10-18 to start on this release and include the fixes; the plan with mockups was sent the same
+   day and waits for the owner's choices and green light.
 
 ### Life tracker and game records for Commander (planned for MTG Trader 1.47)
 *Added 2026-10-17. MTG Trader only.*
@@ -128,6 +126,12 @@ Design notes from the owner (2026-10-17):
   away until the life changes again. The low life animation stops once a player is out. Shown as a mockup.
 - **Health check:** the random commander pictures add Scryfall's `/cards/random` (the art crops are already used for
   the decks' pictures), so the weekly health check gets it when this is built.
+- **Rules in the health check** (owner, 2026-10-18: "the health check should look for MTG commander rule updates").
+  It doesn't today. Added when 1.47 is released: the Comprehensive Rules (magic.wizards.com/en/rules links the
+  current text file; effective September 25, 2026 at the time) and Wizards' Commander announcements, checked for the
+  rules the tracker relies on: starting life 40 (903.7), 21 *combat* damage from one commander (903.10a, 704.6c),
+  10 poison (704.5c), commander tax {2} per earlier cast (903.8), the monarch (725), the initiative (726) and
+  day/night. The report says when the rules have a new date and whether any of these changed.
 
 Open questions: none for now; the mockups come with the plan (tab bar, table layouts for 2–6 players, backgrounds,
 counters, the low life animation, the end-of-game screen, the stats).
@@ -190,11 +194,22 @@ The owner's words:
    than the screen; its last entry, "Delete deck", is only half visible.)
 6. "Cannot drag cards between categories. The card gets selected/highlighted but it does not drag."
 
-Open questions:
-- **Empty categories:** hide them always, or keep showing a category the owner has just made with "Add a
-  category…" until it has cards (otherwise a new category can't be seen to drag cards into)? The card window's
-  category list would still offer every category.
-- **When:** a small fix release (1.47) before the life tracker, which then becomes 1.48?
+Settled with the owner on 2026-10-18:
+- **Empty categories:** never shown on the deck page, new or not. A category gets its first card from the card
+  window's category list or by selecting cards and using the top bar's "Move to category" button.
+- **When:** together with the life tracker, in 1.47.
+
+What was found (Claude, 2026-10-18):
+1. The category list in the card window and 5. the deck page's ⋮ menu: Android's drop-down menus run under the
+   phone's own buttons at the bottom of the screen. Fix: the card window's category opens the same list from the
+   bottom as "Move to category" (current one ticked, "New category…" last); long menus stop above the phone's buttons
+   and scroll.
+2. The card window's controls get too little room when the phone's text is larger: labels go above the controls,
+   "In the deck / Maybeboard" uses the full width, the auto category goes on its own line.
+3. The commander odds sit in a list row that is thrown away when it scrolls out of sight, so the calculation starts
+   again each time it comes back. Fix: work it out once per deck change, outside the list.
+6. Dragging: when a drag starts, the dragged row is redrawn inside a new box, and that cancels the drag at once (the
+   row only flashes). Fix: keep the row in the same box and only lift it; a test that drags a card.
 
 ## Done
 
