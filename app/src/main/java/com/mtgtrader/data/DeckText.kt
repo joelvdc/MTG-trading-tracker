@@ -50,7 +50,7 @@ object DeckText {
             if (line.startsWith("Name ", ignoreCase = true) && lines.isEmpty() && !sawHeading) continue
             val m = heading.matchEntire(line)
             if (m != null) {
-                sawHeading = true
+                if (lines.isEmpty()) sawHeading = true
                 board = when (m.groupValues[1].lowercase()) {
                     "commander", "commanders" -> Board.COMMANDER
                     "sideboard", "maybeboard", "considering", "tokens", "token", "about" -> Board.MAYBE
@@ -66,7 +66,7 @@ object DeckText {
                 lines += parsed
             }
         }
-        // Moxfield's plain text has no headings: a first block of one or two cards set apart by a blank line is the commander.
+        // Moxfield's text starts without a heading: a first block of one or two cards set apart by a blank line is the commander.
         if (!sawHeading && lines.none { it.board == Board.COMMANDER }) {
             val first = blocks.firstOrNull { it.isNotEmpty() }
             if (first != null && first.size <= 2 && blocks.count { it.isNotEmpty() } > 1 && first.all { lines[it].quantity == 1 }) {

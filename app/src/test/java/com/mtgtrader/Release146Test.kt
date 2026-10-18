@@ -8,6 +8,9 @@ import com.mtgtrader.data.SaltCombo
 import com.mtgtrader.data.StatsCard
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -153,5 +156,100 @@ class Release146OddsTest {
         val odds = ManaOddsCalc.calculate(listOf(cmd, swamp), "B", games = 200)!!
         assertEquals(100, odds.commanders.single().byTurn[0])
         assertEquals(null, odds.allColours)
+    }
+}
+
+class Release146TextTest {
+    @Test
+    fun readsMoxfieldsExportWithTagsAndFinishes() {
+        val r = com.mtgtrader.data.DeckText.parse(
+            """
+            1 Kenrith, the Returned King (ELD) 303
+
+            1 Sol Ring (CMR) 263 #Ramp
+            1 Swords to Plowshares (STA) 10 *F* #Removal #!Staple
+            2 Island (UST) 213
+
+            SIDEBOARD:
+            1 Rhystic Study (PCY) 45
+            """.trimIndent()
+        )
+        assertTrue(r.unreadable.isEmpty())
+        val kenrith = r.lines.first()
+        assertEquals(com.mtgtrader.data.DeckText.Board.COMMANDER, kenrith.board)
+        assertEquals("eld", kenrith.setCode)
+        assertEquals("303", kenrith.number)
+        val swords = r.lines.first { it.name == "Swords to Plowshares" }
+        assertTrue(swords.foil)
+        assertEquals(listOf("Removal", "Staple"), swords.tags)
+        assertEquals(2, r.lines.first { it.name == "Island" }.quantity)
+        assertEquals(com.mtgtrader.data.DeckText.Board.MAYBE, r.lines.last().board)
+        assertTrue(r.hasTags)
+        assertEquals(5, r.cardCount)
+    }
+
+    @Test
+    fun readsArchidektAndArenaLists() {
+        val archidekt = com.mtgtrader.data.DeckText.parse(
+            "1x Auntie Ool, Cursewretch (ecl) 201 [Commander{top}]\n1x Sol Ring (cmr) 263 [Ramp]\n1x Lightning Greaves (c21) 247 [Maybeboard{noDeck}{noPrice},Protection]"
+        )
+        assertEquals(com.mtgtrader.data.DeckText.Board.COMMANDER, archidekt.lines[0].board)
+        assertEquals(listOf("Ramp"), archidekt.lines[1].tags)
+        assertEquals(com.mtgtrader.data.DeckText.Board.MAYBE, archidekt.lines[2].board)
+        val arena = com.mtgtrader.data.DeckText.parse("Commander\n1 Teval, the Balanced Scale (TDM) 230\n\nDeck\n1 Sol Ring\n35 Forest")
+        assertEquals(com.mtgtrader.data.DeckText.Board.COMMANDER, arena.lines[0].board)
+        assertEquals(null, arena.lines[1].setCode)
+        assertEquals(35, arena.lines[2].quantity)
+        assertEquals(37, arena.cardCount)
+        // A plain list without a commander block guesses none.
+        val plain = com.mtgtrader.data.DeckText.parse("1 Sol Ring\n1 Arcane Signet\nthis isn't a card line")
+        assertTrue(plain.lines.none { it.board == com.mtgtrader.data.DeckText.Board.COMMANDER })
+        assertEquals(listOf("this isn't a card line"), plain.unreadable)
+    }
+}
+
+class Release146ItemsTest {
+    private val ref = com.mtgtrader.data.CardRef("sr", "Sol Ring", "cmr", "Commander Legends", "263", "uncommon", null, 1, 1.0, null, true, true)
+    private fun line(rel: Long?, cardId: Long? = 77, qty: Int = 1, foil: Boolean = false) = com.mtgtrader.data.DeckCard(
+        deckId = 5, card = ref, quantity = qty, category = "Ramp", types = "Artifact", cmc = 1.0, commander = false, foil = foil,
+        categories = "Ramp\nStaples", archidektCardId = cardId, relationId = rel, lineUid = "u1",
+    )
+    private fun edit(rel: Long?) = com.mtgtrader.data.DeckEdit(deckId = 5, lineUid = "u1", relationId = rel, archidektCardId = 77, name = "Sol Ring", categories = "Ramp")
+
+    @Test
+    fun addsModifiesAndRemovesLikeArchidektsEditor() {
+        val add = com.mtgtrader.data.DeckEditItems.item(edit(null), line(null, qty = 2, foil = true))!!
+        assertEquals("add", add["action"]!!.jsonPrimitive.content)
+        assertEquals(77, add["cardid"]!!.jsonPrimitive.content.toInt())
+        assertEquals("u1", add["patchId"]!!.jsonPrimitive.content)
+        assertEquals(listOf("Ramp", "Staples"), add["categories"]!!.jsonArray.map { it.jsonPrimitive.content })
+        assertEquals("2", add["modifications"]!!.jsonObject["quantity"]!!.jsonPrimitive.content)
+        assertEquals("Foil", add["modifications"]!!.jsonObject["modifier"]!!.jsonPrimitive.content)
+        assertTrue("deckRelationId" !in add)
+        val modify = com.mtgtrader.data.DeckEditItems.item(edit(900), line(900))!!
+        assertEquals("modify", modify["action"]!!.jsonPrimitive.content)
+        assertEquals("900", modify["deckRelationId"]!!.jsonPrimitive.content)
+        val remove = com.mtgtrader.data.DeckEditItems.item(edit(900), null)!!
+        assertEquals("remove", remove["action"]!!.jsonPrimitive.content)
+        assertEquals("900", remove["deckRelationId"]!!.jsonPrimitive.content)
+        // Never on Archidekt and gone again, or a printing Archidekt doesn't know: nothing to send.
+        assertEquals(null, com.mtgtrader.data.DeckEditItems.item(edit(null), null))
+        assertEquals(null, com.mtgtrader.data.DeckEditItems.item(edit(null), line(null, cardId = null)))
+    }
+
+    @Test
+    fun readsTheIdArchidektGaveAnAddedLine() {
+        val answer = Json.parseToJsonElement("""{"add": [{"patchId": "u1", "deckRelationId": 4242, "createdAt": "x"}], "createdCategories": []}""").jsonObject
+        assertEquals(4242L, com.mtgtrader.data.DeckEditItems.addedRelation(answer, "u1"))
+        assertEquals(null, com.mtgtrader.data.DeckEditItems.addedRelation(answer, "other"))
+    }
+
+    @Test
+    fun movingKeepsTheOtherCategories() {
+        val moved = line(1).inCategory("Mana", maybe = false)
+        assertEquals(listOf("Mana", "Staples"), moved.categoryList)
+        val maybe = line(1).inCategory(com.mtgtrader.data.DeckEdits.MAYBEBOARD, maybe = true)
+        assertTrue(maybe.maybeboard)
+        assertEquals("Maybeboard", maybe.category)
     }
 }

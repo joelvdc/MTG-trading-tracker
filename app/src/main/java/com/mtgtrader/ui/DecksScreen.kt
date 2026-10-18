@@ -362,7 +362,7 @@ private fun reverseLabel(sort: DeckSort) = when (sort) {
 }
 
 @Composable
-private fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, waiting: Int, onClick: () -> Unit) {
+internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, waiting: Int, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             DeckArt(deck, Modifier.width(88.dp).height(64.dp))

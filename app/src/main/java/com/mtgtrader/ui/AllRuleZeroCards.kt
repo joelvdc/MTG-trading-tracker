@@ -131,7 +131,7 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
 }
 
 @Composable
-private fun SmallBracketCard(deck: Deck, data: SaltCard?, onClick: () -> Unit) {
+internal fun SmallBracketCard(deck: Deck, data: SaltCard?, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Box(Modifier.fillMaxWidth().height(54.dp)) {
             DeckArt(deck, Modifier.fillMaxSize())
@@ -183,7 +183,7 @@ private fun Criterion(label: String, n: Int) {
 }
 
 @Composable
-private fun SmallPowerCard(deck: Deck, data: SaltCard?, source: PowerSource, onClick: () -> Unit) {
+internal fun SmallPowerCard(deck: Deck, data: SaltCard?, source: PowerSource, onClick: () -> Unit) {
     val power = deck.power(source)
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
