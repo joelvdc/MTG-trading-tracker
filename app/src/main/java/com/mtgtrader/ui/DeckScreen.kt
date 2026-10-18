@@ -98,6 +98,12 @@ import com.mtgtrader.data.BinderChoice
 import com.mtgtrader.data.BracketTag
 import com.mtgtrader.data.Brackets
 import com.mtgtrader.data.SaltCard
+import com.mtgtrader.data.SaltCombo
+import com.mtgtrader.data.ManaOdds
+import com.mtgtrader.data.ManaOddsCalc
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material.icons.filled.RemoveShoppingCart
@@ -398,7 +404,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 }
             }
             if (tagged.isNotEmpty()) {
-                item(key = "bracketcards") { BracketSummary(tagged.values, onlyBracket) { onlyBracket = it } }
+                item(key = "bracketcards") { BracketSummary(tagged.values, saltCard?.allCombos.orEmpty(), onlyBracket) { onlyBracket = it } }
             }
             // The stats and tokens, folded until opened (remembered for every deck).
             val statsFolded = DeckStats.STATS !in statsOpen
@@ -418,6 +424,16 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         onLandsOnly = c.settings::setDeckLandsOnly,
                         onColourless = c.settings::setDeckColourless,
                     )
+                }
+                if (d.commanders.isNotBlank()) {
+                    item(key = "stats_odds") {
+                        // Worked out in the background whenever the deck's cards or their details change.
+                        val odds by produceState<ManaOdds?>(null, statCards, d.colorIdentity) {
+                            this.value = null
+                            this.value = withContext(Dispatchers.Default) { ManaOddsCalc.calculate(statCards, d.colorIdentity) }
+                        }
+                        if (statCards.any { it.commander }) CommanderOddsCard(odds, statCards.count { it.oracleText == null })
+                    }
                 }
             }
             if (tokens.isNotEmpty()) {
@@ -487,7 +503,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         val key = DeckPrintings.nameKey(row.item.card.name)
         val inDeck = !row.item.maybeboard
         DeckCardDialog(
-            row, priceType, if (inDeck) tagsOf(row) else emptySet(), if (inDeck) saltCard?.combosWith(row.item.card.name).orEmpty() else emptyList(),
+            row, priceType, if (inDeck) tagsOf(row) else emptySet(), if (inDeck) saltCard?.combosOf(row.item.card.name).orEmpty() else emptyList(),
             original = matched.original[row.item.id],
             archidektCard = archidektRows.firstOrNull { it.item.id == row.item.id }?.item,
             cost = costs[row.item.card.name],
@@ -662,8 +678,8 @@ internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<B
                 FinishTag(item.card, item.finish)
                 if (item.addedInApp) Tag("ADDED IN APP")
                 BracketTag.entries.filter { it in tags }.forEach { t ->
-                    if (t.strict) Tag(t.label, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
-                    else Tag(t.label, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
+                    val (bg, fg) = tagColors(t)
+                    Tag(t.label, bg, fg)
                 }
             }
         }
@@ -716,7 +732,8 @@ object DeckMarks {
 
     fun short(t: BracketTag) = when (t) {
         BracketTag.GAME_CHANGER -> "GC"
-        BracketTag.COMBO -> "COMBO"
+        BracketTag.COMBO, BracketTag.OTHER_COMBO -> "C2"
+        BracketTag.COMBO_3, BracketTag.OTHER_COMBO_3 -> "C3+"
         BracketTag.EXTRA_TURN -> "TURN"
         BracketTag.LAND_DENIAL -> "LD"
         BracketTag.TUTOR -> "TUTOR"
@@ -735,6 +752,30 @@ object DeckMarks {
 }
 
 private val MarkLabelStyle = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.SemiBold)
+
+/**
+ * A tag's colours: red for WotC's bracket rules (and combos that count for the bracket), blue for combos that
+ * don't (since 1.46), grey for tutors and fast mana.
+ */
+@Composable
+internal fun tagColors(t: BracketTag): Pair<Color, Color> {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    return when {
+        t.otherCombo -> if (dark) Color(0xFF0F4C81) to Color(0xFFD6E6FF) else Color(0xFFD6E6FF) to Color(0xFF0A2F55)
+        t.strict -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.surfaceContainerHighest to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+}
+
+/** The dot a tag shrinks to when a long name needs the room. */
+@Composable
+internal fun dotColor(t: BracketTag): Color = when {
+    t.otherCombo -> OtherComboDot
+    t.strict -> MaterialTheme.colorScheme.error
+    else -> MaterialTheme.colorScheme.outline
+}
+
+private val OtherComboDot = Color(0xFF4A8FE0)
 private val FoilMark = Color(0xFFB083E8)
 
 /** The card's name followed by its marks: ✦ foil, + added in the app, then its bracket tags (see [DeckMarks]). */
@@ -763,21 +804,18 @@ private fun NameWithMarks(name: String, tags: Set<BracketTag>, foil: Boolean, ad
             if (foil) Text(" ✦", style = markStyle, color = FoilMark, maxLines = 1)
             if (added) Text(" +", style = markStyle, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
             ordered.forEach { t ->
-                val strict = t.strict
                 if (level == DeckMarks.Level.DOTS) {
-                    Box(
-                        Modifier.padding(start = 4.dp).size(7.dp).clip(CircleShape)
-                            .background(if (strict) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline)
-                    )
+                    Box(Modifier.padding(start = 4.dp).size(7.dp).clip(CircleShape).background(dotColor(t)))
                 } else {
+                    val (bg, fg) = tagColors(t)
                     Text(
                         if (level == DeckMarks.Level.FULL) DeckMarks.full(t) else DeckMarks.short(t),
                         style = MarkLabelStyle,
                         maxLines = 1,
                         softWrap = false,
-                        color = if (strict) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = fg,
                         modifier = Modifier.padding(start = 4.dp).clip(RoundedCornerShape(3.dp))
-                            .background(if (strict) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .background(bg)
                             .padding(horizontal = 3.dp, vertical = 1.dp),
                     )
                 }
@@ -858,7 +896,7 @@ private fun DeckCardDialog(
     row: DeckCardRow,
     priceType: PriceType,
     tags: Set<BracketTag>,
-    combos: List<List<String>>,
+    combos: List<SaltCombo>,
     /** Archidekt's printing, when another one is shown. */
     original: CardRef?,
     archidektCard: DeckCard?,
@@ -901,12 +939,8 @@ private fun DeckCardDialog(
                         }
                     }
                 }
-                if (tags.isNotEmpty()) {
-                    BracketTags(tags)
-                    combos.forEach { other ->
-                        Text("Combo with " + other.joinToString(" + "), style = MaterialTheme.typography.bodySmall)
-                    }
-                }
+                if (tags.isNotEmpty()) BracketTags(tags)
+                combos.forEach { combo -> ComboLine(item.card.name, combo) { runCatching { uriHandler.openUri(it) } } }
                 DeckUsageLine(item.card.name, exceptDeck = item.deckId, prefix = "Also in")
                 if (original != null) {
                     Text(
@@ -967,10 +1001,27 @@ private fun DeckCardDialog(
 
 /** The deck's bracket-relevant cards in a line, with a switch to list only them. */
 @Composable
-private fun BracketSummary(tags: Collection<Set<BracketTag>>, only: Boolean, onOnly: (Boolean) -> Unit) {
-    val counts = BracketTag.entries.mapNotNull { t -> tags.count { t in it }.takeIf { it > 0 }?.let { t to it } }
+internal fun BracketSummary(tags: Collection<Set<BracketTag>>, combos: List<SaltCombo>, only: Boolean, onOnly: (Boolean) -> Unit) {
+    // The two red combo tags count together as "combo pieces"; the blue ones aren't bracket-relevant.
+    val counts = BracketTag.entries.filter { it != BracketTag.COMBO_3 && !it.otherCombo }.mapNotNull { t ->
+        val n = if (t == BracketTag.COMBO) tags.count { BracketTag.COMBO in it || BracketTag.COMBO_3 in it } else tags.count { t in it }
+        n.takeIf { it > 0 }?.let { t to it }
+    }
+    val counted = combos.count { it.counts }
     Column(Modifier.padding(top = 12.dp)) {
-        Text(
+        if (combos.isNotEmpty()) {
+            Text(
+                "Combos: ${combos.size}" + when {
+                    counted == combos.size && counted == 1 -> ", it counts for the bracket"
+                    counted == combos.size -> ", all count for the bracket"
+                    counted == 0 -> ", none count for the bracket"
+                    else -> ", of which $counted count" + (if (counted == 1) "s" else "") + " for the bracket"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (counts.isNotEmpty()) Text(
             "Bracket-relevant: " + counts.joinToString(" · ") { (t, n) -> "$n ${t.plural(n)}" },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -981,7 +1032,7 @@ private fun BracketSummary(tags: Collection<Set<BracketTag>>, only: Boolean, onO
 
 private fun BracketTag.plural(n: Int) = when (this) {
     BracketTag.GAME_CHANGER -> if (n == 1) "game changer" else "game changers"
-    BracketTag.COMBO -> if (n == 1) "combo piece" else "combo pieces"
+    BracketTag.COMBO, BracketTag.COMBO_3, BracketTag.OTHER_COMBO, BracketTag.OTHER_COMBO_3 -> if (n == 1) "combo piece" else "combo pieces"
     BracketTag.EXTRA_TURN -> if (n == 1) "extra turn" else "extra turns"
     BracketTag.LAND_DENIAL -> "land denial"
     BracketTag.TUTOR -> if (n == 1) "tutor" else "tutors"
@@ -993,9 +1044,46 @@ private fun BracketTag.plural(n: Int) = when (this) {
 @Composable
 fun BracketTags(tags: Set<BracketTag>) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        tags.forEach { t ->
-            if (t.strict) Tag(t.label, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
-            else Tag(t.label, MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
+        BracketTag.entries.filter { it in tags }.forEach { t ->
+            val (bg, fg) = tagColors(t)
+            Tag(t.label, bg, fg)
+        }
+    }
+}
+
+/**
+ * One of the card's combos: the other cards, whether it counts for the bracket and what it does, with a
+ * link to it on Commander Spellbook. Since 1.46.
+ */
+@Composable
+internal fun ComboLine(cardName: String, combo: SaltCombo, onOpen: ((String) -> Unit)?) {
+    val others = combo.cards.filter { SaltCard.key(it) != SaltCard.key(cardName) }
+    Row(verticalAlignment = Alignment.Top) {
+        Box(
+            Modifier.padding(top = 5.dp).size(8.dp).clip(CircleShape)
+                .background(if (combo.counts) MaterialTheme.colorScheme.error else OtherComboDot)
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                "Combo with " + others.joinToString(" + ") + if (combo.needsBoard) " (needs more on the battlefield)" else "",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                listOfNotNull(
+                    if (combo.counts) "Counts for the bracket" else "Doesn't count for the bracket",
+                    combo.resultText.takeIf { it.isNotEmpty() },
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        val uri = combo.spellbookUri
+        if (uri != null && onOpen != null) {
+            Row(Modifier.clip(RoundedCornerShape(4.dp)).clickable { onOpen(uri) }.padding(start = 6.dp, end = 2.dp, top = 2.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Spellbook", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.padding(start = 2.dp).size(14.dp), tint = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }
