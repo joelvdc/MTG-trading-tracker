@@ -527,6 +527,7 @@ fun CollectionScreen(nav: NavController) {
                             },
                         )
                     }
+                    SettingsButton(nav)
                 },
             )
         },

@@ -129,6 +129,7 @@ fun TradesListScreen(nav: NavController) {
                             onClick = { menu = false; exporter.launch("mtg-trades.csv") },
                         )
                     }
+                    SettingsButton(nav)
                 },
             )
         },

@@ -26,6 +26,9 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             scans = dao.scans().map { it.copy(id = 0) },
             wishlist = dao.wishlist().map { it.copy(id = 0) },
             orders = dao.orders().map { it.copy(id = 0) },
+            players = dao.players().map { it.copy(id = 0) },
+            friendDecks = dao.friendDecks().map { it.copy(id = 0) },
+            games = dao.games().map { it.copy(id = 0) },
             deletions = dao.deletions(),
             prefs = settings.syncedPrefs(),
         ).sorted() to (dao.lastChange() ?: 0L)
@@ -136,6 +139,41 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
                 val mine = localByUid[uid]
                 if (mine == null) db.orderDao().insert(want.copy(id = 0))
                 else if (want.copy(id = mine.id) != mine) db.orderDao().insert(want.copy(id = mine.id))
+            }
+        }
+
+        // The life tracker's players, friends' decks and games (since 1.47).
+        if (current.players != merged.players) {
+            val local = dao.players()
+            val localByUid = local.filter { it.uid != null }.associateBy { it.uid!! }
+            val wanted = merged.players.associateBy { it.uid!! }
+            for (row in local) if (wanted[row.uid] == null) exec("DELETE FROM players WHERE id = ?", row.id)
+            for ((uid, want) in wanted) {
+                val mine = localByUid[uid]
+                if (mine == null) db.gameDao().insertPlayer(want.copy(id = 0))
+                else if (want.copy(id = mine.id) != mine) db.gameDao().updatePlayer(want.copy(id = mine.id))
+            }
+        }
+        if (current.friendDecks != merged.friendDecks) {
+            val local = dao.friendDecks()
+            val localByUid = local.filter { it.uid != null }.associateBy { it.uid!! }
+            val wanted = merged.friendDecks.associateBy { it.uid!! }
+            for (row in local) if (wanted[row.uid] == null) exec("DELETE FROM player_decks WHERE id = ?", row.id)
+            for ((uid, want) in wanted) {
+                val mine = localByUid[uid]
+                if (mine == null) db.gameDao().insertFriendDeck(want.copy(id = 0))
+                else if (want.copy(id = mine.id) != mine) db.gameDao().updateFriendDeck(want.copy(id = mine.id))
+            }
+        }
+        if (current.games != merged.games) {
+            val local = dao.games()
+            val localByUid = local.filter { it.uid != null }.associateBy { it.uid!! }
+            val wanted = merged.games.associateBy { it.uid!! }
+            for (row in local) if (wanted[row.uid] == null) exec("DELETE FROM games WHERE id = ?", row.id)
+            for ((uid, want) in wanted) {
+                val mine = localByUid[uid]
+                if (mine == null) db.gameDao().insertGame(want.copy(id = 0))
+                else if (want.copy(id = mine.id) != mine) db.gameDao().updateGame(want.copy(id = mine.id))
             }
         }
 

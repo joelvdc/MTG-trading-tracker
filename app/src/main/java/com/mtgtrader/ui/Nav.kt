@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.runtime.remember
@@ -52,8 +54,14 @@ private val tabs = listOf(
     Tab("collection", "Collection", Icons.Default.CollectionsBookmark),
     Tab("scans", "Scan", Icons.Default.CameraAlt),
     Tab("decks", "Decks", Icons.Default.Style),
-    Tab("settings", "Settings", Icons.Default.Settings),
+    Tab("games", "Games", Icons.Default.Casino),
 )
+
+/** Settings (since 1.47 behind a gear at the top of every tab, to make room for the Games tab). */
+@Composable
+fun SettingsButton(nav: NavController) {
+    IconButton(onClick = { nav.navigate("settings") { launchSingleTop = true } }) { Icon(Icons.Default.Settings, "Settings") }
+}
 
 private fun NavController.openTab(route: String) = navigate(route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }

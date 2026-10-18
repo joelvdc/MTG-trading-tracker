@@ -233,6 +233,7 @@ fun DecksScreen(nav: NavController) {
                             },
                         )
                     }
+                    SettingsButton(nav)
                 },
             )
         },

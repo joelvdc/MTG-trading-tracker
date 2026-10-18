@@ -24,6 +24,10 @@ data class SyncData(
     val wishlist: List<WishlistItem> = emptyList(),
     /** Since 1.33 (file format 3). */
     val orders: List<PurchaseOrder> = emptyList(),
+    /** The life tracker's players, friends' decks and games; since 1.47 (file format 10). */
+    val players: List<Player> = emptyList(),
+    val friendDecks: List<FriendDeck> = emptyList(),
+    val games: List<GameRecord> = emptyList(),
     val deletions: List<SyncDeletion> = emptyList(),
     val prefs: SyncPrefs = SyncPrefs(),
 ) {
@@ -38,6 +42,9 @@ data class SyncData(
         scans = scans.sortedBy { it.uid },
         wishlist = wishlist.sortedBy { it.uid },
         orders = orders.sortedBy { it.uid },
+        players = players.sortedBy { it.uid },
+        friendDecks = friendDecks.sortedBy { it.uid },
+        games = games.sortedBy { it.uid },
         deletions = deletions.sortedBy { it.uid },
     )
 }
@@ -85,8 +92,10 @@ data class SyncFile(
          * 8 since 1.42: decks' maybeboard cards, which an older version would count as part of the deck.
          * 9 since 1.46: local decks and deck editing (cards' Archidekt categories and ids, decks' folders), which an
          * older version would write back without, so the changes couldn't be sent to Archidekt.
+         * 10 since 1.47: the life tracker's players, friends' decks and games, which an older version would write
+         * back without.
          */
-        const val FORMAT = 9
+        const val FORMAT = 10
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**
@@ -202,6 +211,9 @@ object SyncMerge {
         d.scans.forEach { s -> s.uid?.let(::add) }
         d.wishlist.forEach { w -> w.uid?.let(::add) }
         d.orders.forEach { o -> o.uid?.let(::add) }
+        d.players.forEach { p -> p.uid?.let(::add) }
+        d.friendDecks.forEach { f -> f.uid?.let(::add) }
+        d.games.forEach { g -> g.uid?.let(::add) }
         d.decks.forEach { add(deckKey(it.deck.archidektId)) }
     }
 
@@ -229,6 +241,9 @@ object SyncMerge {
             scans = newest(local.scans, remote.scans, { it.uid }, { it.updatedAt }),
             wishlist = newest(local.wishlist, remote.wishlist, { it.uid }, { it.updatedAt }),
             orders = newest(local.orders, remote.orders, { it.uid }, { it.updatedAt }),
+            players = newest(local.players, remote.players, { it.uid }, { it.updatedAt }),
+            friendDecks = newest(local.friendDecks, remote.friendDecks, { it.uid }, { it.updatedAt }),
+            games = newest(local.games, remote.games, { it.uid }, { it.updatedAt }),
             deletions = deletions,
             prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs else local.prefs,
         )
@@ -288,8 +303,21 @@ object SyncMerge {
                 keep
             }
 
+        // Players: the owner ("me") once, the one made first, so two phones that each made one end up with one.
+        val players = d.players.filter { alive(it.uid, it.updatedAt) }.let { list ->
+            val mes = list.filter { it.me }
+            if (mes.size <= 1) list
+            else {
+                val keep = mes.minWith(compareBy<Player>({ it.createdAt }, { it.uid }))
+                for (p in mes) if (p !== keep) bury(p.uid, p.updatedAt)
+                list.filter { !it.me || it === keep }
+            }
+        }
+        val friendDecks = d.friendDecks.filter { alive(it.uid, it.updatedAt) }
+        val games = d.games.filter { alive(it.uid, it.updatedAt) }
+
         val cutoff = now - KEEP_DELETIONS_MS
         val deletions = deleted.filter { (uid, at) -> uid !in revived && at >= cutoff }.map { (uid, at) -> SyncDeletion(uid, at) }
-        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, deletions, d.prefs).sorted()
+        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, players, friendDecks, games, deletions, d.prefs).sorted()
     }
 }
