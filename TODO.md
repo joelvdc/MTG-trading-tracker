@@ -174,6 +174,28 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
+### Fixes on the deck page and the card window (after 1.46)
+*Added 2026-10-18. MTG Trader only. Reported by the owner with screenshots (phone).*
+
+The owner's words:
+1. "Category drop down list seems the last item is always cut?" (the category list in a deck card's window: the
+   last entry, under "Commander", is cut off by the bottom of the screen).
+2. "Maybeboard button looks weird on the card page." (the Deck / Maybeboard switch in the card window: "Maybeboard"
+   breaks over two lines as "Maybeboar / d" and the button sticks out of its row; the "auto: Proliferate" note next
+   to the category also breaks letter by letter.)
+3. "When scrolling up and down on the deck page, the casting the commander stats seem to be refreshed every time it
+   is scrolled by."
+4. "Empty categories are visible in the deck page, I would rather have them not visible."
+5. "The last item of the menu under the 3 dots for the deck page seems to be cut." (the deck page's menu is longer
+   than the screen; its last entry, "Delete deck", is only half visible.)
+6. "Cannot drag cards between categories. The card gets selected/highlighted but it does not drag."
+
+Open questions:
+- **Empty categories:** hide them always, or keep showing a category the owner has just made with "Add a
+  category…" until it has cards (otherwise a new category can't be seen to drag cards into)? The card window's
+  category list would still offer every category.
+- **When:** a small fix release (1.47) before the life tracker, which then becomes 1.48?
+
 ## Done
 
 ### Changing decks on Archidekt (MTG Trader 1.46)
