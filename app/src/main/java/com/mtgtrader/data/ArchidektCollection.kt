@@ -298,6 +298,30 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
         return send(login) { it.url(url("/api/massUpdate/")).patch(body.toString().toRequestBody(jsonType)) }.second
     }
 
+    /** Makes an empty category in a deck, as Archidekt's deck editor does (since 1.47); returns its id when given. */
+    suspend fun createCategory(login: ArchidektLogin, deckId: Long, name: String, included: Boolean): Pair<Long?, ArchidektLogin> {
+        val body = buildJsonObject {
+            put("name", name)
+            put("includedInDeck", included)
+            put("includedInPrice", included)
+            put("isPremier", false)
+            put("deck", deckId)
+        }
+        val (text, a) = send(login) { it.url(url("/api/decks/createCategory/")).post(body.toString().toRequestBody(jsonType)) }
+        val id = runCatching { json.parseToJsonElement(text).jsonObject["id"]?.jsonPrimitive?.longOrNull }.getOrNull()
+        return id to a
+    }
+
+    /** Renames a deck's category on Archidekt (its cards stay in it). Since 1.47. */
+    suspend fun renameCategory(login: ArchidektLogin, categoryId: Long, name: String): ArchidektLogin {
+        val body = buildJsonObject { put("id", categoryId); put("name", name) }
+        return send(login) { it.url(url("/api/decks/category/$categoryId/")).patch(body.toString().toRequestBody(jsonType)) }.second
+    }
+
+    /** Deletes a deck's (emptied) category on Archidekt. Since 1.47. */
+    suspend fun deleteCategory(login: ArchidektLogin, categoryId: Long): ArchidektLogin =
+        send(login) { it.url(url("/api/decks/category/$categoryId/")).delete() }.second
+
     /** One of the user's folders, with its subfolders. */
     suspend fun folder(login: ArchidektLogin, id: Long): Pair<ArchidektFolder, ArchidektLogin> {
         val (text, a) = send(login) { it.url(url("/api/decks/folders/$id/")).get() }

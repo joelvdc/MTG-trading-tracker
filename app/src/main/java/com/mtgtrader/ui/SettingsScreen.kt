@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -36,6 +35,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,7 +104,12 @@ fun SettingsScreen(nav: NavController) {
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Settings") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings") },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            )
+        },
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(16.dp)) {
             PriceSourceSection(priceSource, sourceStatus, c.settings::setPriceSource)
@@ -199,6 +204,9 @@ fun SettingsScreen(nav: NavController) {
             val swipeRight by c.settings.swipeRight.collectAsStateWithLifecycle()
             val swipeLeft by c.settings.swipeLeft.collectAsStateWithLifecycle()
             SwipeSection(swipeRight, swipeLeft, c.settings::setSwipe)
+
+            HorizontalDivider(Modifier.padding(vertical = 16.dp))
+            TrackerSection(nav)
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             CurrencySection(currency, rates, c.settings::setCurrency)
@@ -536,7 +544,7 @@ internal fun <T> ExplainedDropdown(label: String, selected: T, options: Map<T, S
             }
             Icon(Icons.Default.ArrowDropDown, null)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.widthIn(max = 340.dp)) {
+        ScreenMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.widthIn(max = 340.dp)) {
             options.forEach { (o, help) ->
                 DropdownMenuItem(
                     text = { ExplainedOption(optionLabel(o), help, o == selected) },
@@ -723,6 +731,42 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
         checked = toCollection,
         onChange = onToCollection,
     )
+}
+
+/** Settings → Life tracker (since 1.47): how the panels look and react, and the defaults for new games. */
+@Composable
+internal fun TrackerSection(nav: NavController) {
+    val c = LocalContext.current.container
+    val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
+    val aboveBelow by c.settings.trackerAboveBelow.collectAsStateWithLifecycle()
+    val holdOne by c.settings.trackerHoldOne.collectAsStateWithLifecycle()
+    val symbols by c.settings.trackerSymbols.collectAsStateWithLifecycle()
+    val lowLife by c.settings.trackerLowLife.collectAsStateWithLifecycle()
+    val turns by c.settings.trackerTurns.collectAsStateWithLifecycle()
+    val clock by c.settings.trackerClock.collectAsStateWithLifecycle()
+    Text("Life tracker", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "For the Games tab. These follow you to your other phone.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("Panel backgrounds", pictures, listOf(true, false), { if (it) "Commander pictures" else "Plain colours" }, { c.settings.setTracker("trackerPictures", it) }, Modifier.fillMaxWidth())
+    Text(
+        if (pictures) "A player without a commander gets a random commander's picture (a few are kept on the phone for when it's offline)."
+        else "Six colours that stay easy to tell apart; a seat's colour can be changed in the New game screen (tap the seat).",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("Changing life", aboveBelow, listOf(false, true), { if (it) "Tap above (+) or below (−) the total" else "Tap left (−) or right (+) of the total" }, { c.settings.setTracker("trackerAboveBelow", it) }, Modifier.fillMaxWidth())
+    Spacer(Modifier.height(8.dp))
+    DropdownSelector("Holding", holdOne, listOf(false, true), { if (it) "Counts by 1, faster while held" else "Counts by 10 (as Lifetap)" }, { c.settings.setTracker("trackerHoldOne", it) }, Modifier.fillMaxWidth())
+    SwitchRow(title = "Show − and + on the panels", body = "Where to tap, for those who like to see it.", checked = symbols, onChange = { c.settings.setTracker("trackerSymbols", it) })
+    DropdownSelector("Low life (below a quarter of the starting life)", lowLife, com.mtgtrader.data.LowLifeStyle.entries.toList(), { it.label }, c.settings::setTrackerLowLife, Modifier.fillMaxWidth())
+    SwitchRow(title = "Count turns in new games", body = "Can be switched for each game when it's set up.", checked = turns, onChange = { c.settings.setTracker("trackerTurns", it) })
+    SwitchRow(title = "Show a clock in new games", body = "The game's time, and the turn's when turns are counted.", checked = clock, onChange = { c.settings.setTracker("trackerClock", it) })
+    TextButton(onClick = { nav.navigate("games/players") }) { Text("Players and their decks") }
 }
 
 /** Settings → Swiping cards in the collection: what a swipe to the right and to the left does. Since 1.38. */

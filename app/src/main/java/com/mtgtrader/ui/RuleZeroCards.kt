@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -141,7 +140,7 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
                 }) { Icon(Icons.Default.Share, "Share", tint = Color.White) }
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More", tint = Color.White) }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
                             text = { Text(if (original) "Show the app's cards" else "Show Commander Salt's original") },
                             onClick = { menu = false; original = !original },

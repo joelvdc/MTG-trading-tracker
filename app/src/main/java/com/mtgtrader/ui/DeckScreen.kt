@@ -41,7 +41,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -155,6 +154,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.UnfoldLess
@@ -187,6 +187,17 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     // The deck stats and the deck's tokens (since 1.44).
     val statCards by remember { c.db.cardInfoDao().observeDeckStats(deckId) }.collectAsStateWithLifecycle(emptyList())
     val statsOpen by c.settings.deckStatsOpen.collectAsStateWithLifecycle()
+    val allGames by c.games.games.collectAsStateWithLifecycle(emptyList())
+    val deckGames = remember(allGames, deckId) { com.mtgtrader.data.GameStats.gamesOfDeck(allGames, deckId) }
+    // The commander odds, worked out in the background when the Stats are open and whenever the deck's cards or
+    // their details change; kept here, not in the list, whose rows start over when they scroll back into sight.
+    val oddsWanted = DeckStats.STATS in statsOpen && statCards.any { it.commander }
+    val odds by produceState<ManaOdds?>(null, statCards, deck?.colorIdentity, oddsWanted) {
+        val identity = deck?.colorIdentity
+        if (!oddsWanted || identity == null) return@produceState
+        value = null
+        value = withContext(Dispatchers.Default) { ManaOddsCalc.calculate(statCards, identity) }
+    }
     val landsOnly by c.settings.deckLandsOnly.collectAsStateWithLifecycle()
     val colourless by c.settings.deckColourless.collectAsStateWithLifecycle()
     val tokenParts = remember(statCards) { DeckStats.tokenParts(statCards) }
@@ -239,8 +250,17 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
 
     val tagged = remember(rows, saltCard) { rows.associate { it.item.id to tagsOf(it) }.filterValues { it.isNotEmpty() } }
-    val sections = remember(rows, groupBy, onlyBracket, tagged) {
+    // Categories switched off in "Manage categories" (since 1.47): their cards go to one folded section at the bottom.
+    val hiddenAll by c.settings.deckHidden.collectAsStateWithLifecycle()
+    val hidden = hiddenAll[deckId].orEmpty().keys
+    val allSections = remember(rows, groupBy, onlyBracket, tagged) {
         DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy)
+    }
+    val sections = remember(allSections, hidden, groupBy) {
+        if (groupBy != DeckGroupBy.CATEGORY) allSections else allSections.filter { it.title.lowercase() !in hidden }
+    }
+    val hiddenRows = remember(allSections, sections) {
+        (allSections - sections.toSet()).flatMap { s -> s.rows }.sortedWith(compareBy({ it.item.category.lowercase() }, { it.item.card.name }))
     }
     // The maybeboard (and any other category left out of the deck on Archidekt), by its categories.
     val maybeSections = remember(maybeRows) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY) }
@@ -276,10 +296,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val online = remember(reconnects, waiting, sending) { c.network.online() }
     var selection by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var movingTo by remember { mutableStateOf<List<String>?>(null) }
+    var categoryFor by remember { mutableStateOf<Pair<DeckCardRow, String?>?>(null) }
     var namingFor by remember { mutableStateOf<List<String>?>(null) }
     var renaming by remember { mutableStateOf<String?>(null) }
     var deletingCategory by remember { mutableStateOf<String?>(null) }
-    var addingCategory by remember { mutableStateOf(false) }
     var sendingDeck by remember { mutableStateOf(false) }
     var folderDialog by remember { mutableStateOf(false) }
     var renameDeck by remember { mutableStateOf(false) }
@@ -339,7 +359,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                     if (deck?.local != true) IconButton(onClick = ::refresh, enabled = job == null) { Icon(Icons.Default.Refresh, "Reload decklist from Archidekt") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         val local = deck?.local == true
                         if (!local) DropdownMenuItem(
                             text = { Text("Reload decklist from Archidekt") },
@@ -369,9 +389,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         }
                         if (editable) {
                             DropdownMenuItem(
-                                text = { Text("Add a category…") },
-                                leadingIcon = { Icon(Icons.Default.Add, null) },
-                                onClick = { menu = false; addingCategory = true },
+                                text = { Text("Manage categories…") },
+                                leadingIcon = { Icon(Icons.Default.Category, null) },
+                                onClick = { menu = false; nav.navigate("deck/$deckId/categories") },
                             )
                             DropdownMenuItem(
                                 text = { Text("Auto-categorise all cards") },
@@ -492,7 +512,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     put("mh_${sct.title}", sct.title)
                     sct.rows.forEach { put("m_${it.item.id}", sct.title) }
                 }
-                for (cat in categoryInfo) if (cat.included) putIfAbsent("e_${cat.name}", cat.name)
             }
         }
         // Read when the drag ends too, so always the latest list and targets (not the ones when the drag began).
@@ -547,15 +566,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             } else selected = row
         }
         @Composable
-        fun dragged(key: String, content: @Composable () -> Unit) {
-            val d = drag
-            if (d != null && d.key == key) {
-                Box(
-                    Modifier.zIndex(1f).graphicsLayer { translationY = d.dy; shadowElevation = 12f }
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(6.dp))
-                ) { content() }
-            } else content()
-        }
+        fun dragged(key: String, content: @Composable () -> Unit) = LiftableRow(drag?.takeIf { it.key == key }?.dy, content)
         @Composable
         fun categoryMenu(title: String, rows: List<DeckCardRow>): (@Composable () -> Unit)? {
             if (!editable || groupBy != DeckGroupBy.CATEGORY || title == DeckToCollection.ADDED_IN_APP || title.equals(DeckEdits.COMMANDER, true)) return null
@@ -563,7 +574,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 var open by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { open = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreVert, "$title: more", Modifier.size(18.dp)) }
-                    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                    ScreenMenu(expanded = open, onDismissRequest = { open = false }) {
                         DropdownMenuItem(text = { Text("Add a card here") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = {
                             open = false
                             nav.openSearch(CardTarget.ToDeck(deckId, title))
@@ -656,11 +667,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 }
                 if (d.commanders.isNotBlank()) {
                     item(key = "stats_odds") {
-                        // Worked out in the background whenever the deck's cards or their details change.
-                        val odds by produceState<ManaOdds?>(null, statCards, d.colorIdentity) {
-                            this.value = null
-                            this.value = withContext(Dispatchers.Default) { ManaOddsCalc.calculate(statCards, d.colorIdentity) }
-                        }
                         if (statCards.any { it.commander }) CommanderOddsCard(odds, statCards.count { it.oracleText == null })
                     }
                 }
@@ -678,6 +684,15 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             modifier = Modifier.padding(top = 6.dp),
                         )
                     }
+                }
+            }
+            // The deck's games from the life tracker (since 1.47), folded until opened.
+            if (deckGames.isNotEmpty()) {
+                val gamesFolded = GAMES_OPEN !in statsOpen
+                item(key = "games_h") { StatsHeading("Games (${deckGames.size})", gamesFolded) { toggleStats(GAMES_OPEN) } }
+                if (!gamesFolded) item(key = "games_card") {
+                    val r = remember(deckGames) { com.mtgtrader.data.GameStats.decks(deckGames).firstOrNull { it.deckId == deckId } }
+                    r?.let { DeckGamesCard(it, deckGames, deckId) { g -> g.uid?.let { uid -> nav.navigate("games/game/$uid") } } }
                 }
             }
             sections.forEach { section ->
@@ -711,12 +726,21 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                 }
             }
-            // Categories made in the app that hold no cards yet, so cards can be moved into them.
-            if (editable && groupBy == DeckGroupBy.CATEGORY) {
-                val shown = sections.map { it.title.lowercase() }.toSet() + maybeSections.map { it.title.lowercase() }
-                categoryInfo.filter { it.included && it.name.lowercase() !in shown }.forEach { cat ->
-                    item(key = "e_${cat.name}") {
-                        SectionHeading(com.mtgtrader.data.DeckSection(cat.name, emptyList()), null, false, highlight = dropCategory == cat.name, menu = categoryMenu(cat.name, emptyList())) {}
+            // Cards of the categories switched off in "Manage categories", folded until opened (since 1.47).
+            // Categories without cards aren't shown at all.
+            if (hiddenRows.isNotEmpty()) {
+                val hiddenSection = com.mtgtrader.data.DeckSection(HIDDEN_TITLE, hiddenRows)
+                val folded = HIDDEN_OPEN !in collapsed
+                item(key = "hidden_h") { SectionHeading(hiddenSection, sectionValue(hiddenSection), folded) { toggle(HIDDEN_OPEN) } }
+                if (!folded) {
+                    items(hiddenRows, key = { "x_${it.item.id}" }) { row ->
+                        val cost = costs[row.item.card.name]
+                        val key = "x_${row.item.id}"
+                        val editing = rowEditing(row, key)
+                        dragged(key) {
+                            if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                            else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                        }
                     }
                 }
             }
@@ -793,18 +817,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 {
                     val uid = row.item.lineUid
                     val auto by produceState<String?>(null, row.item.card.scryfallId) { value = c.deckEditor.autoCategories(listOf(row.item.card.scryfallId))[row.item.card.scryfallId] }
-                    val allCategories = remember(archidektRows, maybeRows, categoryInfo) {
-                        categoryChoices((archidektRows + maybeRows).map { it.item.category }.filter { it != DeckToCollection.ADDED_IN_APP } + categoryInfo.map { it.name })
-                    }
                     CardEditControls(
                         category = row.item.category,
                         autoCategory = auto,
-                        categories = allCategories,
                         maybeboard = row.item.maybeboard,
                         quantity = row.item.quantity,
-                        onCategory = { to ->
+                        onPickCategory = {
                             selected = null
-                            edit("Moved ${row.item.card.name}") { c.deckEditor.move(deckId, listOf(uid), to) }
+                            categoryFor = row to auto
                         },
                         onBoard = { maybe ->
                             selected = null
@@ -865,10 +885,24 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             .groupBy { it.item.category }.mapValues { (_, l) -> l.sumOf { it.item.quantity } }
         categoryChoices(counts.keys + categoryInfo.map { it.name }).filter { !it.equals(DeckEdits.COMMANDER, true) }.map { it to (counts[it] ?: 0) }
     }
+    categoryFor?.let { (row, auto) ->
+        val uid = row.item.lineUid
+        CategoryPickerSheet(
+            "Category of ${row.item.card.name}",
+            categoryCounts.filter { it.first.lowercase() !in hidden || it.first.equals(row.item.category, true) },
+            onDismiss = { categoryFor = null },
+            onNew = { categoryFor = null; namingFor = listOf(uid) },
+            current = row.item.category,
+            autoLabel = "Auto" + (auto?.let { " ($it)" } ?: ""),
+        ) { to ->
+            categoryFor = null
+            edit("Moved ${row.item.card.name}" + if (to == DeckEditor.AUTO) " to its auto category" else " to $to") { c.deckEditor.move(deckId, listOf(uid), to) }
+        }
+    }
     movingTo?.let { uids ->
         CategoryPickerSheet(
             "Move ${uids.size} card(s) to",
-            categoryCounts,
+            categoryCounts.filter { it.first.lowercase() !in hidden },
             onDismiss = { movingTo = null },
             onNew = { movingTo = null; namingFor = uids },
         ) { to ->
@@ -892,18 +926,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
     deletingCategory?.let { name ->
         val count = (archidektRows + maybeRows).filter { it.item.category.equals(name, true) }.sumOf { it.item.quantity }
-        DeleteCategoryDialog(name, count, categoryCounts.map { it.first }.filterNot { it.equals(name, true) }, onDismiss = { deletingCategory = null }) { to ->
+        DeleteCategoryDialog(name, count, categoryCounts.map { it.first }.filterNot { it.equals(name, true) }, onDismiss = { deletingCategory = null }, onArchidekt = deck?.local == false) { to ->
             deletingCategory = null
             edit("Deleted the category $name") { c.deckEditor.deleteCategory(deckId, name, to) }
-        }
-    }
-    if (addingCategory) {
-        TextInputDialog("Add a category", "Category name", "", "Add", onDismiss = { addingCategory = false }) { name ->
-            addingCategory = false
-            scope.launch {
-                c.deckEditor.addCategory(deckId, name)
-                snackbar.showSnackbar("Added $name: move or add cards to it")
-            }
         }
     }
     if (confirmAuto) {
@@ -1134,6 +1159,13 @@ internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<B
 /** How a maybeboard heading is remembered as folded, apart from a deck section with the same title. */
 private fun maybeKey(title: String) = "maybeboard:$title"
 
+/** The section of the cards in categories switched off in "Manage categories" (since 1.47), and its "opened" key. */
+internal const val HIDDEN_TITLE = "Hidden categories"
+private const val HIDDEN_OPEN = "\u0000hidden-open"
+
+/** The deck page's "Games" section is open (with the Stats' and Tokens' keys). Since 1.47. */
+private const val GAMES_OPEN = "games"
+
 /**
  * A section's title and card count, with what its cards are worth (since 1.43); tapping it folds the
  * section away or opens it again. Since 1.42.
@@ -1206,6 +1238,18 @@ object DeckMarks {
 }
 
 /** A card being dragged to another category: its line, list key and category, and how far it moved. Since 1.46. */
+/**
+ * A deck row that can be dragged: [lift] is how far it has moved while it's being dragged (null otherwise). The
+ * row is lifted in the same box it always sits in: wrapping it in a new one when the drag began made the row (and
+ * its drag handle) start over, which cancelled the drag at once (fixed in 1.47).
+ */
+@Composable
+internal fun LiftableRow(lift: Float?, content: @Composable () -> Unit) {
+    val lifted = if (lift == null) Modifier else Modifier.zIndex(1f).graphicsLayer { translationY = lift; shadowElevation = 12f }
+        .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(6.dp))
+    Box(lifted) { content() }
+}
+
 private data class DragInfo(val uid: String, val key: String, val category: String, val name: String, val dy: Float = 0f)
 
 private val MarkLabelStyle = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.SemiBold)

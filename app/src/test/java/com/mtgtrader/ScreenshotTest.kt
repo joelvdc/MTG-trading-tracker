@@ -887,13 +887,67 @@ class ScreenshotTest {
                         com.mtgtrader.ui.DeckCompactRow(row(3, "Three Visits", 2.4), PriceType.TREND, emptySet(), "{1}{G}", com.mtgtrader.ui.RowEditing(selected = false)) {}
                         Spacer(Modifier.height(12.dp))
                         com.mtgtrader.ui.CardEditControls(
-                            category = "Combo", autoCategory = "Ramp", categories = listOf("Maybeboard", "Combo", "Ramp", "Commander"),
-                            maybeboard = false, quantity = 1, onCategory = {}, onBoard = {}, onQuantity = {},
+                            category = "Combo", autoCategory = "Ramp",
+                            maybeboard = false, quantity = 1, onPickCategory = {}, onBoard = {}, onQuantity = {},
                         )
                     }
                 }
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_editing.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.47: the life tracker with plain colours: a turn running, low life, "Dead?" and a player out. */
+    @Test fun lifeTracker() {
+        fun seat(i: Int, name: String, deck: String, life: Int) = com.mtgtrader.data.LiveSeat(seat = i, name = name, deckName = deck, life = life, colour = i)
+        var g = com.mtgtrader.data.LiveGame(
+            uid = "g", startedAt = 0, turnsOn = true, firstSeat = 0, active = 0, round = 7, turnStartMs = 2_000_000,
+            counters = listOf("energy", com.mtgtrader.data.LiveGames.MONARCH),
+            seats = listOf(seat(0, "Joel", "Auntie Plague", 34), seat(1, "Mads", "Atraxa", 27), seat(2, "Sofie", "Ruby", 0), seat(3, "Anders", "Korvold", 0)),
+            monarch = 0,
+        )
+        g = com.mtgtrader.data.LiveGames.commanderDamage(g, 0, "1", 6)
+        g = com.mtgtrader.data.LiveGames.changeLife(g, 0, 6)
+        g = com.mtgtrader.data.LiveGames.poison(g, 1, 3)
+        g = com.mtgtrader.data.LiveGames.casts(g, 0, 1)
+        g = com.mtgtrader.data.LiveGames.knockOut(g, 3, 2_000_000)
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MtgColors(dark = true) {
+                Box(Modifier.width(411.dp).height(860.dp)) {
+                    com.mtgtrader.ui.TrackerTable(
+                        g, com.mtgtrader.ui.PanelLook(pictures = false, lowLife = com.mtgtrader.data.LowLifeStyle.OFF), now = 2_102_000,
+                        delta = { if (it == 0) -3 else null },
+                        centre = { com.mtgtrader.ui.CentreButton(Modifier.align(Alignment.Center), "R7", "35:02") {} },
+                    )
+                }
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onRoot().captureRoboImage("src/test/screenshots/life_tracker.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.47: the deck page's Games section. */
+    @Test fun deckGames() {
+        fun seat(place: Int, deck: Long?, name: String, rounds: Int?) = com.mtgtrader.data.GameSeat(0, "me", name, me = deck != null, deckId = deck, deckName = "Auntie Plague", place = place, bracket = 3, power = 6.4, started = place == 1)
+        fun rec(at: Long, minutes: Long, rounds: Int?, place: Int, win: com.mtgtrader.data.WinType?) = com.mtgtrader.data.GameRecord(
+            startedAt = at, endedAt = at, durationMs = minutes * 60_000, turnsOn = rounds != null, rounds = rounds, winType = win?.key,
+            seats = com.mtgtrader.data.Games.encodeSeats(listOf(seat(place, 1, "Joel", rounds), com.mtgtrader.data.GameSeat(1, "mads", "Mads", deckName = "Atraxa", place = if (place == 1) 2 else 1, bracket = 4, power = 7.5))),
+            uid = "u$at",
+        )
+        val games = listOf(
+            rec(1_792_000_000_000, 74, 11, 1, com.mtgtrader.data.WinType.COMBO),
+            rec(1_791_900_000_000, 52, null, 2, null),
+            rec(1_791_000_000_000, 58, 8, 1, com.mtgtrader.data.WinType.COMBAT),
+        )
+        val r = com.mtgtrader.data.GameStats.decks(games).first { it.deckId == 1L }
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) { com.mtgtrader.ui.DeckGamesCard(r, games, 1L) {} }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/deck_games.png", roborazziOptions = screenshotOptions)
     }
 }

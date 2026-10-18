@@ -400,9 +400,9 @@ interface DeckDao {
         Binder::class, ScannedCard::class, SyncDeletion::class, SyncControl::class,
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
-        WishPrice::class, CtBlueprint::class, DeckEdit::class,
+        WishPrice::class, CtBlueprint::class, DeckEdit::class, Player::class, FriendDeck::class, GameRecord::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -425,15 +425,43 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun wishPriceDao(): WishPriceDao
     abstract fun ctBlueprintDao(): CtBlueprintDao
     abstract fun deckEditDao(): DeckEditDao
+    abstract fun gameDao(): GameDao
 
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 23 (app 1.47): the life tracker's records: players, friends' decks and finished games (all synced;
+         * the sync file's format went to 10 with them). New tables only, so nothing changes for the rows already there.
+         */
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `players` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`me` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_players_uid` ON `players` (`uid`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `player_decks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `playerUid` TEXT NOT NULL, " +
+                        "`name` TEXT NOT NULL, `commander` TEXT NOT NULL, `scryfallId` TEXT, `partner` TEXT, `partnerScryfallId` TEXT, " +
+                        "`colorIdentity` TEXT NOT NULL, `archidektUrl` TEXT, `createdAt` INTEGER NOT NULL, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_player_decks_uid` ON `player_decks` (`uid`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `games` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startedAt` INTEGER NOT NULL, " +
+                        "`endedAt` INTEGER NOT NULL, `durationMs` INTEGER NOT NULL, `startingLife` INTEGER NOT NULL, `turnsOn` INTEGER NOT NULL, " +
+                        "`rounds` INTEGER, `winType` TEXT, `note` TEXT, `draw` INTEGER NOT NULL, `manual` INTEGER NOT NULL, `seats` TEXT NOT NULL, " +
+                        "`turns` TEXT, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_uid` ON `games` (`uid`)")
+            }
+        }
 
         /**
          * Version 22 (app 1.46): editing decks. Deck lines keep all their Archidekt categories, Archidekt's ids for

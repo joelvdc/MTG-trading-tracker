@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.runtime.remember
@@ -52,8 +54,14 @@ private val tabs = listOf(
     Tab("collection", "Collection", Icons.Default.CollectionsBookmark),
     Tab("scans", "Scan", Icons.Default.CameraAlt),
     Tab("decks", "Decks", Icons.Default.Style),
-    Tab("settings", "Settings", Icons.Default.Settings),
+    Tab("games", "Games", Icons.Default.Casino),
 )
+
+/** Settings (since 1.47 behind a gear at the top of every tab, to make room for the Games tab). */
+@Composable
+fun SettingsButton(nav: NavController) {
+    IconButton(onClick = { nav.navigate("settings") { launchSingleTop = true } }) { Icon(Icons.Default.Settings, "Settings") }
+}
 
 private fun NavController.openTab(route: String) = navigate(route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
@@ -166,6 +174,21 @@ fun AppNav() {
             composable("collection") { CollectionScreen(nav) }
             composable("scans") { ScansScreen(nav) }
             composable("decks") { DecksScreen(nav) }
+            // The life tracker and game records (since 1.47).
+            composable("games") { GamesScreen(nav) }
+            composable("games/new?rematch={rematch}", arguments = listOf(navArgument("rematch") { type = NavType.BoolType; defaultValue = false })) {
+                GameSetupScreen(nav, it.arguments?.getBoolean("rematch") == true)
+            }
+            composable("games/add") { GameSetupScreen(nav, rematch = false, addPast = true) }
+            composable("games/play") { TrackerScreen(nav) }
+            composable("games/end") { GameOverScreen(nav) }
+            composable("games/all") { GamesListScreen(nav) }
+            composable("games/stats") { GameStatsScreen(nav) }
+            composable("games/players") { PlayersScreen(nav) }
+            composable(
+                "games/game/{uid}?fresh={fresh}",
+                arguments = listOf(navArgument("uid") { type = NavType.StringType }, navArgument("fresh") { type = NavType.BoolType; defaultValue = false }),
+            ) { GameDetailScreen(nav, it.arguments?.getString("uid").orEmpty(), it.arguments?.getBoolean("fresh") == true) }
             composable(
                 "decks/user?name={name}",
                 arguments = listOf(navArgument("name") { type = NavType.StringType; nullable = true; defaultValue = null }),
@@ -174,6 +197,9 @@ fun AppNav() {
             }
             composable("deck/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 DeckScreen(nav, it.arguments?.getLong("id") ?: 0L)
+            }
+            composable("deck/{id}/categories", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                DeckCategoriesScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }
             composable("deck/{id}/missing", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 MissingCardsScreen(nav, it.arguments?.getLong("id") ?: 0L)

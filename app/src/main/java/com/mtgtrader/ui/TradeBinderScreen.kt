@@ -28,7 +28,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -119,7 +118,7 @@ fun TradeBinderScreen(nav: NavController) {
                 actions = {
                     IconButton(onClick = { editingRules = true }) { Icon(Icons.Default.Tune, "Rules") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
                             text = { Text("Suggest turned-down cards again") },
                             onClick = {

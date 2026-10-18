@@ -41,10 +41,10 @@ data class BackupFile(
          * 2 since 1.27 (signed and altered copies), 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist
          * cards marked as ordered), 5 since 1.37 (price alert levels), 6 since 1.38 (wishlist cards received),
          * 7 since 1.39 (alert level currencies, received cards' collection links), 8 since 1.42 (decks'
-         * maybeboards), 9 since 1.46 (local decks, deck editing), like [SyncFile.FORMAT]: older versions can't
-         * restore it without losing them.
+         * maybeboards), 9 since 1.46 (local decks, deck editing), 10 since 1.47 (the life tracker's players and
+         * games), like [SyncFile.FORMAT]: older versions can't restore it without losing them.
          */
-        const val FORMAT = 9
+        const val FORMAT = 10
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {
@@ -171,14 +171,19 @@ object BackupRestore {
         val wishlist = pick(current.wishlist, backup.wishlist, { it.uid }) { it.copy(updatedAt = now) }
         // A backup from before 1.33 knows no orders: the order history is then left as it is, not emptied.
         val orders = if (backup.orders.isEmpty()) current.orders else pick(current.orders, backup.orders, { it.uid }) { it.copy(updatedAt = now) }
+        // A backup from before 1.47 knows no games: the game records are then left as they are, not emptied.
+        val noGames = backup.players.isEmpty() && backup.friendDecks.isEmpty() && backup.games.isEmpty()
+        val players = if (noGames) current.players else pick(current.players, backup.players, { it.uid }) { it.copy(updatedAt = now) }
+        val friendDecks = if (noGames) current.friendDecks else pick(current.friendDecks, backup.friendDecks, { it.uid }) { it.copy(updatedAt = now) }
+        val games = if (noGames) current.games else pick(current.games, backup.games, { it.uid }) { it.copy(updatedAt = now) }
         val alive = buildSet {
             binders.forEach { add(it.uid) }; collection.forEach { add(it.item.uid) }; trades.forEach { add(it.trade.uid) }
             decks.forEach { add(SyncMerge.deckKey(it.deck.archidektId)) }; scans.forEach { add(it.uid) }; wishlist.forEach { add(it.uid) }
-            orders.forEach { add(it.uid) }
+            orders.forEach { add(it.uid) }; players.forEach { add(it.uid) }; friendDecks.forEach { add(it.uid) }; games.forEach { add(it.uid) }
         }
         val deletions = (current.deletions.filter { it.uid !in alive } + gone).groupBy { it.uid }.map { (_, d) -> d.maxBy { it.deletedAt } }
         val prefs = if (backup.prefs.values == current.prefs.values) current.prefs else backup.prefs.copy(updatedAt = now)
-        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, deletions, prefs).sorted()
+        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, players, friendDecks, games, deletions, prefs).sorted()
     }
 }
 

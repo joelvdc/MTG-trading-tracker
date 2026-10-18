@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudUpload
@@ -32,7 +35,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -42,6 +44,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -94,12 +97,24 @@ fun SelectionBar(count: Int, inMaybeboard: Boolean, onClose: () -> Unit, onMove:
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoryPickerSheet(title: String, categories: List<Pair<String, Int>>, onDismiss: () -> Unit, onNew: () -> Unit, onPick: (String) -> Unit) {
+fun CategoryPickerSheet(
+    title: String,
+    categories: List<Pair<String, Int>>,
+    onDismiss: () -> Unit,
+    onNew: () -> Unit,
+    current: String? = null,
+    autoLabel: String = "Auto (Archidekt's category for each card)",
+    onPick: (String) -> Unit,
+) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.navigationBarsPadding().heightIn(max = 560.dp).verticalScroll(rememberScrollState()).padding(bottom = 12.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 24.dp, bottom = 4.dp))
-            SheetItem(Icons.Default.AutoAwesome, "Auto (Archidekt's category for each card)", null) { onPick(DeckEditor.AUTO) }
-            categories.forEach { (name, n) -> SheetItem(Icons.AutoMirrored.Filled.Label, name, n) { onPick(name) } }
+        // Never taller than the room above the phone's buttons, so the last line ("New category…") always shows.
+        Column(Modifier.navigationBarsPadding().heightIn(max = menuMaxHeight()).verticalScroll(rememberScrollState()).padding(bottom = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 4.dp))
+            SheetItem(Icons.Default.AutoAwesome, autoLabel, null) { onPick(DeckEditor.AUTO) }
+            categories.forEach { (name, n) ->
+                val now = current?.equals(name, true) == true
+                SheetItem(if (now) Icons.Default.Check else Icons.AutoMirrored.Filled.Label, name, n, bold = now) { if (now) onDismiss() else onPick(name) }
+            }
             ListItem(
                 headlineContent = { Text("New category…", color = MaterialTheme.colorScheme.primary) },
                 leadingContent = { Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.primary) },
@@ -111,9 +126,9 @@ fun CategoryPickerSheet(title: String, categories: List<Pair<String, Int>>, onDi
 }
 
 @Composable
-private fun SheetItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, count: Int?, onClick: () -> Unit) {
+private fun SheetItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, count: Int?, bold: Boolean = false, onClick: () -> Unit) {
     ListItem(
-        headlineContent = { Text(text) },
+        headlineContent = { Text(text, fontWeight = if (bold) FontWeight.Bold else null) },
         trailingContent = { count?.let { Text("$it") } },
         leadingContent = { Icon(icon, null) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -136,7 +151,7 @@ fun TextInputDialog(title: String, label: String, initial: String, confirm: Stri
 
 /** Deleting a category: where its cards go (their auto categories, or another category). */
 @Composable
-fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismiss: () -> Unit, onConfirm: (moveTo: String?) -> Unit) {
+fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismiss: () -> Unit, onArchidekt: Boolean = false, onConfirm: (moveTo: String?) -> Unit) {
     var auto by remember { mutableStateOf(true) }
     var to by remember { mutableStateOf(others.firstOrNull()) }
     AlertDialog(
@@ -152,6 +167,7 @@ fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismi
                         if (!auto) DropdownSelector("Category", to, others, { it.orEmpty() }, { to = it }, Modifier.fillMaxWidth())
                     }
                 }
+                if (onArchidekt) Text("The category is deleted on Archidekt too.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = { TextButton(onClick = { onConfirm(if (auto) null else to) }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
@@ -161,56 +177,39 @@ fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismi
 
 /**
  * The card page's editing controls on an editable deck: its category (with its auto category), deck or
- * maybeboard, and how many copies.
+ * maybeboard, and how many copies. Since 1.47 the labels sit above the controls, so they keep their room when the
+ * phone's text is larger, and the category opens the list from the bottom ([onPickCategory]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardEditControls(
     category: String,
     autoCategory: String?,
-    categories: List<String>,
     maybeboard: Boolean,
     quantity: Int,
-    onCategory: (String) -> Unit,
+    onPickCategory: () -> Unit,
     onBoard: (Boolean) -> Unit,
     onQuantity: (Int) -> Unit,
 ) {
-    var menu by remember { mutableStateOf(false) }
-    var naming by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Category", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(76.dp))
-            androidx.compose.foundation.layout.Box {
-                AssistChip(onClick = { menu = true }, label = { Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis) }, trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp)) })
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("Auto" + (autoCategory?.let { " ($it)" } ?: "")) }, onClick = { menu = false; onCategory(DeckEditor.AUTO) })
-                    categories.filter { it != category }.forEach { c -> DropdownMenuItem(text = { Text(c) }, onClick = { menu = false; onCategory(c) }) }
-                    DropdownMenuItem(text = { Text("New category…") }, onClick = { menu = false; naming = true })
-                }
-            }
-            autoCategory?.takeIf { it != category }?.let {
-                Spacer(Modifier.width(6.dp))
-                Text("auto: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        Text("Category", style = MaterialTheme.typography.titleSmall)
+        OutlinedButton(onClick = onPickCategory, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(start = 16.dp, end = 8.dp)) {
+            Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ArrowDropDown, null)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("In", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(76.dp))
-            SingleChoiceSegmentedButtonRow {
-                SegmentedButton(!maybeboard, { if (maybeboard) onBoard(false) }, SegmentedButtonDefaults.itemShape(0, 2)) { Text("Deck") }
-                SegmentedButton(maybeboard, { if (!maybeboard) onBoard(true) }, SegmentedButtonDefaults.itemShape(1, 2)) { Text("Maybeboard") }
-            }
+        autoCategory?.takeIf { !it.equals(category, true) }?.let {
+            Text("Auto category: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp))
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Copies", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(76.dp))
+        Spacer(Modifier.height(4.dp))
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            SegmentedButton(!maybeboard, { if (maybeboard) onBoard(false) }, SegmentedButtonDefaults.itemShape(0, 2), icon = {}) { Text("In the deck", maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            SegmentedButton(maybeboard, { if (!maybeboard) onBoard(true) }, SegmentedButtonDefaults.itemShape(1, 2), icon = {}) { Text("Maybeboard", maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        }
+        Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Copies", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             FilledTonalIconButton(onClick = { onQuantity(quantity - 1) }, enabled = quantity > 1) { Icon(Icons.Default.Remove, "One fewer") }
             Text("$quantity", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 12.dp))
             FilledTonalIconButton(onClick = { onQuantity(quantity + 1) }) { Icon(Icons.Default.Add, "One more") }
-        }
-    }
-    if (naming) {
-        TextInputDialog("New category", "Category name", "", "Move", onDismiss = { naming = false }) { name ->
-            naming = false
-            onCategory(name)
         }
     }
 }

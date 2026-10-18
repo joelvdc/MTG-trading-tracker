@@ -38,7 +38,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
@@ -123,13 +122,14 @@ fun TradesListScreen(nav: NavController) {
                 title = { Text("Trades") },
                 actions = {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
                             text = { Text("Export trades (CSV)") },
                             leadingIcon = { Icon(Icons.Default.FileDownload, null) },
                             onClick = { menu = false; exporter.launch("mtg-trades.csv") },
                         )
                     }
+                    SettingsButton(nav)
                 },
             )
         },
@@ -278,7 +278,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                         }
                     }) { Icon(Icons.Default.Share, "Share") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
                             text = { Text("Refresh prices") },
                             leadingIcon = { Icon(Icons.Default.Refresh, null) },

@@ -3,7 +3,6 @@ package com.mtgtrader.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -115,7 +114,7 @@ fun CurrencyButton(currency: AppCurrency, enabled: Boolean = true, onPick: (AppC
         TextButton(onClick = { open = true }, enabled = enabled, contentPadding = PaddingValues(horizontal = 8.dp)) {
             Text("${currencySymbol(currency)} ▾", fontWeight = FontWeight.SemiBold)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        ScreenMenu(expanded = open, onDismissRequest = { open = false }) {
             AppCurrency.entries.forEach { c ->
                 DropdownMenuItem(
                     text = { Text(c.label, fontWeight = if (c == currency) FontWeight.Bold else null) },

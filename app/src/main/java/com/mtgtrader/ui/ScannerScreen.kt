@@ -109,7 +109,6 @@ import com.mtgtrader.scan.ScanGuide
 import com.mtgtrader.scan.SetSymbolMatcher
 import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.Settings
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.text.font.FontWeight as FW
 import kotlinx.coroutines.delay
@@ -373,7 +372,7 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                         onClick = { langMenu = true },
                         label = { Text(if (controller.language.isEmpty()) "Language: auto" else "Language: ${controller.language}") },
                     )
-                    DropdownMenu(expanded = langMenu, onDismissRequest = { langMenu = false }) {
+                    ScreenMenu(expanded = langMenu, onDismissRequest = { langMenu = false }) {
                         (listOf("" to "As printed on the card") + LANGUAGES).forEach { (code, name) ->
                             DropdownMenuItem(
                                 text = { Text(name, fontWeight = if (code == controller.language) FW.Bold else null) },

@@ -22,7 +22,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 @Serializable
-data class ScryImageUris(val small: String? = null, val normal: String? = null)
+data class ScryImageUris(
+    val small: String? = null,
+    val normal: String? = null,
+    /** Just the art; the life tracker's backgrounds (since 1.47). */
+    @SerialName("art_crop") val artCrop: String? = null,
+)
 
 @Serializable
 data class ScryFace(
@@ -297,6 +302,12 @@ class ScryfallApi(private val http: OkHttpClient) {
             url("cards/search", "q" to "oracleid:$oracleId game:paper", "unique" to "prints", "order" to "released", "dir" to "desc", "include_extras" to "true")
         ) ?: return emptyList()
         return json.decodeFromString<ScryList>(body).data
+    }
+
+    /** A random card matching [query], e.g. "is:commander" for the life tracker's backgrounds. Since 1.47. */
+    suspend fun random(query: String): ScryCard? {
+        val body = call(url("cards/random", "q" to query)) ?: return null
+        return json.decodeFromString<ScryCard>(body)
     }
 
     /** Free-form Scryfall search (e.g. `set:mkm`), first page only. */

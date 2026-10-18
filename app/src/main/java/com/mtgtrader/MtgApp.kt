@@ -110,6 +110,9 @@ class AppContainer(context: Context) {
         backups, network, appScope,
     )
 
+    /** The life tracker's games and players (since 1.47). */
+    val games = com.mtgtrader.data.GameStore(context, db, scryfall, appScope)
+
     /** Editing decks and sending the edits to Archidekt (since 1.46). */
     val deckEditor = com.mtgtrader.data.DeckEditor(db, scryfall, archidekt, decks, settings, network, precons, repo, appScope).also { editor ->
         decks.privateReader = { id ->

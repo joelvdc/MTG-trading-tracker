@@ -48,7 +48,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -317,7 +316,7 @@ fun CollectionScreen(nav: NavController) {
                             Icon(WishActionIcons.delete, "Delete")
                         }
                         IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, "More") }
-                        DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                        ScreenMenu(expanded = more, onDismissRequest = { more = false }) {
                             DropdownMenuItem(
                                 text = { Text("Back on the wishlist") }, leadingIcon = { Icon(WishActionIcons.back, null) },
                                 enabled = pickedWish.any { it.receivedAt != null },
@@ -347,7 +346,7 @@ fun CollectionScreen(nav: NavController) {
                             Icon(Icons.Default.Delete, "Delete")
                         }
                         IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, "More") }
-                        DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                        ScreenMenu(expanded = more, onDismissRequest = { more = false }) {
                             DropdownMenuItem(
                                 text = { Text("Edit condition, language, price…") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, enabled = ids.isNotEmpty(),
                                 onClick = { more = false; editingMany = ids },
@@ -380,7 +379,7 @@ fun CollectionScreen(nav: NavController) {
                 title = { Text("Collection") },
                 actions = {
                     IconButton(onClick = { viewMenu = true }) { Icon(viewIcon(view), "View") }
-                    DropdownMenu(expanded = viewMenu, onDismissRequest = { viewMenu = false }) {
+                    ScreenMenu(expanded = viewMenu, onDismissRequest = { viewMenu = false }) {
                         CollectionView.entries.forEach { v ->
                             DropdownMenuItem(
                                 text = { Text(v.label, fontWeight = if (v == view) FontWeight.Bold else null) },
@@ -402,7 +401,7 @@ fun CollectionScreen(nav: NavController) {
                     }
                     IconButton(onClick = { sorting = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
                             text = { Text("Select cards") },
                             leadingIcon = { Icon(Icons.Default.Checklist, null) },
@@ -528,6 +527,7 @@ fun CollectionScreen(nav: NavController) {
                             },
                         )
                     }
+                    SettingsButton(nav)
                 },
             )
         },

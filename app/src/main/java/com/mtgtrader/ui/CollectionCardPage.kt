@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -594,7 +593,7 @@ private fun <T> CompactDropdown(
         CompactBox(label, Modifier.fillMaxWidth(), onClick = { open = true }, trailing = { Icon(Icons.Default.ArrowDropDown, null) }) {
             Text(optionLabel(selected), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        ScreenMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEach { o ->
                 DropdownMenuItem(
                     text = { Text(menuLabel(o), fontWeight = if (o == selected) FontWeight.Bold else null) },

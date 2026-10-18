@@ -147,8 +147,14 @@ local decks can be changed in the app; other people's stay read only.
   then **move** them to a category (or **Auto**: each card's Archidekt auto category, or a new one), put them in the
   **maybeboard** or back, or **remove** them.
 - A category's **⋮**: add a card right there, select all its cards, rename it, or delete it (its cards go to their
-  auto categories or another category). The deck's ⋮ menu has **Add a category…** and **Auto-categorise all cards**.
-- Tapping a card shows its **category** (with its auto category), **Deck or Maybeboard** and the number of **copies**.
+  auto categories or another category). The deck's ⋮ menu has **Manage categories…** and **Auto-categorise all cards**.
+- **Manage categories** (since 1.47): add categories, rename or delete them, and switch off the ones you don't want to
+  see. A switched-off category is left out of the category lists when moving cards, and its cards show in one folded
+  **Hidden categories** section at the bottom of the deck page. Categories without cards are never shown on the deck
+  page; give one its first card from a card's page or with **Move to category**. On an Archidekt deck, adding,
+  renaming and deleting a category happen on Archidekt too.
+- Tapping a card shows its **category** (tap it for the list of categories, from the bottom of the screen), **In the
+  deck or Maybeboard** and the number of **copies**.
 - Cards "Added in app" on your own deck can go **Into the deck** or **To maybeboard** with one tap.
 - **Auto categories** are Archidekt's own (Ramp, Draw, Removal…, from its card data); cards without one go by card
   type, as on Archidekt. Settings → **Auto categories for new cards** turns them off for new cards.
@@ -455,6 +461,35 @@ Settings → **Wishlist price alerts**:
 marked "Details follow when you're online"; its picture, set and prices are filled in by themselves once the phone is
 back online.
 
+## Games: life tracker and game records
+The **Games** tab (since 1.47; Settings moved behind the ⚙ at the top of every tab) keeps score in Commander games and
+remembers them.
+- **New game:** 2 to 6 players, starting life (40, or 20, 30 or your own), who sits where (clockwise) and which deck
+  each plays: yours are the app's decks; friends are added as players with their own decks (a commander, or two
+  partners, found on Scryfall, and optionally the Archidekt link). Who starts: picked, or at random with a short run
+  around the table. Switches for counting turns, a clock and commander damage, and extra counters (energy,
+  experience, rad, storm, the monarch, the initiative, day/night, or one you name). **Rematch** sets up the last table
+  again.
+- **The table:** the phone lies in the middle; each player's panel faces them, with their commander's picture (or a
+  plain colour, Settings → Life tracker) and their life. Tap to change it by 1 (left −/right +, or above +/below −),
+  hold for 10; the change shows next to the total for a moment. The screen stays on. Below the total: commander damage
+  (the most from one commander), poison and commander tax; **⋯** opens the player's counters (commander damage taken
+  from each opponent, which takes life too, poison, tax, the extra counters, conceding). At low life (below a quarter
+  of the starting life) the panel shows an animation (a ghost, a dark edge or a cracking total, or none). At 0 life,
+  10 poison or 21 commander damage from one commander, **Dead?** asks: yes turns the panel dark with a skull (Undo
+  brings them back), no waits until something changes.
+- **Turns:** with turns counted, the player whose turn it is has a gold frame and their turn's time; tap it (or Next
+  turn) to pass the turn clockwise. The centre button shows the round and the game's time, and opens the table menu:
+  next turn, pause, undo, monarch, initiative, day/night, a die, a d20, a coin, a random player, and **End the game**.
+- **Game over:** the last one standing wins (or pick the winner, or a draw); the places, how it was won and a note are
+  saved, and the game goes into the history (backups and the Nextcloud sync too). Recorded games can be changed or
+  deleted, and a game played without the tracker can be added by hand (Games ⋮ → **Add a past game**).
+- **Stats:** the Games tab shows the last games, how many you won and the average length; **Decks, players and head
+  to head** has every deck's games, wins, win rate, average length and bracket (sortable), each player's results, and
+  how you did against each friend. Each deck's page has a **Games** section: won–lost, average place and length, the
+  turn it usually wins on, how it wins, and its bracket and power level next to the decks it played against.
+  Games ⋮ → **Export game history (CSV)** saves one line per player per game.
+
 ## Appearance
 Settings → **Appearance**: same as the phone, light or dark.
 
@@ -496,7 +531,7 @@ choose for all scanned cards; the choice is kept for the next scans. A chosen la
 identified by its set code and number alone.
 
 ## Sync between phones
-Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans and preferences the same on all
+Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans, games and preferences the same on all
 your phones, using a file (`sync.json.gz`) in a folder of your own [Nextcloud](https://nextcloud.com/). Prices and
 pictures aren't synced; each phone downloads those itself.
 - **Connect:** enter your server address and log in in the browser; the app gets its own app password, which you can
@@ -513,7 +548,7 @@ pictures aren't synced; each phone downloads those itself.
   after a change, when you leave the app and every hour; **Only on Wi-Fi** keeps automatic syncs off mobile data.
   "Sync now" always works.
 - **Update every phone:** from version 1.27 (signed and altered cards) the sync file has a new format, and it changes again
-  with some updates (most recently 1.42, for decks' maybeboards). Older versions
+  with some updates (most recently 1.47, for the life tracker's games). Older versions
   stop syncing and ask to be updated, so they can't lose the Signed and Altered marks; their changes wait on the phone
   and sync after the update. An updated phone that sees another one still on an older version says so (and Settings
   keeps a note until it's updated).

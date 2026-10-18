@@ -154,6 +154,39 @@ class Settings(context: Context) {
         prefs.edit().putString("deckTokenPicks", encodePicks(v)).stamp().apply()
     }
 
+    private val _deckHidden = MutableStateFlow(decodePicks(prefs.getString("deckHidden", null)))
+    /**
+     * Deck id → categories switched off in "Manage categories" (lower case → the name): left out of the deck page's
+     * category sections (their cards go to "Hidden categories") and of the category lists; synced. Since 1.47.
+     */
+    val deckHidden: StateFlow<Map<Long, Map<String, String>>> = _deckHidden
+
+    fun isDeckHidden(deckId: Long, category: String) = _deckHidden.value[deckId]?.containsKey(category.lowercase()) == true
+
+    fun setDeckHidden(deckId: Long, category: String, hidden: Boolean) {
+        val key = category.lowercase()
+        val forDeck = _deckHidden.value[deckId].orEmpty().let { if (hidden) it + (key to category) else it - key }
+        if (forDeck == _deckHidden.value[deckId].orEmpty()) return
+        val v = if (forDeck.isEmpty()) _deckHidden.value - deckId else _deckHidden.value + (deckId to forDeck)
+        _deckHidden.value = v
+        prefs.edit().putString("deckHidden", encodePicks(v)).stamp().apply()
+    }
+
+    /** A deck that got a new id (detached, or a local deck sent to Archidekt) keeps its hidden categories. */
+    fun moveDeckHidden(from: Long, to: Long) {
+        val forDeck = _deckHidden.value[from] ?: return
+        val v = _deckHidden.value - from + (to to forDeck)
+        _deckHidden.value = v
+        prefs.edit().putString("deckHidden", encodePicks(v)).stamp().apply()
+    }
+
+    /** A renamed category stays hidden under its new name. */
+    fun renameDeckHidden(deckId: Long, from: String, to: String) {
+        if (!isDeckHidden(deckId, from)) return
+        setDeckHidden(deckId, from, false)
+        setDeckHidden(deckId, to, true)
+    }
+
     private val _deckPicks = MutableStateFlow(decodePicks(prefs.getString("deckPicks", null)))
     /** Deck id → card name (see [DeckPrintings.nameKey]) → the copy you picked to show ([DeckPrintings.pickValue] or [DeckPrintings.ARCHIDEKT]). Since 1.22. */
     val deckPicks: StateFlow<Map<Long, Map<String, String>>> = _deckPicks
@@ -366,6 +399,54 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("ctZeroOnly", on).stamp().apply()
     }
 
+    // ---- The life tracker (since 1.47; synced) ----
+
+    private val _trackerPictures = MutableStateFlow(prefs.getBoolean("trackerPictures", true))
+    /** Panels show commander pictures (off: plain colours); one choice for all games, never mixed at one table. */
+    val trackerPictures: StateFlow<Boolean> = _trackerPictures
+
+    private val _trackerAboveBelow = MutableStateFlow(prefs.getBoolean("trackerAboveBelow", false))
+    /** Life changes by tapping above (+) / below (−) the total; off: left (−) / right (+). */
+    val trackerAboveBelow: StateFlow<Boolean> = _trackerAboveBelow
+
+    private val _trackerHoldOne = MutableStateFlow(prefs.getBoolean("trackerHoldOne", false))
+    /** Holding counts by 1 (repeating); off: by 10, as Lifetap does. */
+    val trackerHoldOne: StateFlow<Boolean> = _trackerHoldOne
+
+    private val _trackerSymbols = MutableStateFlow(prefs.getBoolean("trackerSymbols", false))
+    /** − and + symbols on the panels, where to tap. */
+    val trackerSymbols: StateFlow<Boolean> = _trackerSymbols
+
+    private val _trackerLowLife = MutableStateFlow(LowLifeStyle.fromKey(prefs.getString("trackerLowLife", null)))
+    /** The animation on a panel at low life. */
+    val trackerLowLife: StateFlow<LowLifeStyle> = _trackerLowLife
+
+    private val _trackerTurns = MutableStateFlow(prefs.getBoolean("trackerTurns", false))
+    /** New games count turns, unless switched off in the game's setup. */
+    val trackerTurns: StateFlow<Boolean> = _trackerTurns
+
+    private val _trackerClock = MutableStateFlow(prefs.getBoolean("trackerClock", true))
+    /** New games show a clock, unless switched off in the game's setup. */
+    val trackerClock: StateFlow<Boolean> = _trackerClock
+
+    fun setTracker(key: String, on: Boolean) {
+        when (key) {
+            "trackerPictures" -> _trackerPictures.value = on
+            "trackerAboveBelow" -> _trackerAboveBelow.value = on
+            "trackerHoldOne" -> _trackerHoldOne.value = on
+            "trackerSymbols" -> _trackerSymbols.value = on
+            "trackerTurns" -> _trackerTurns.value = on
+            "trackerClock" -> _trackerClock.value = on
+            else -> return
+        }
+        prefs.edit().putBoolean(key, on).stamp().apply()
+    }
+
+    fun setTrackerLowLife(v: LowLifeStyle) {
+        _trackerLowLife.value = v
+        prefs.edit().putString("trackerLowLife", v.key).stamp().apply()
+    }
+
     private val _wishSections = MutableStateFlow(prefs.getBoolean("wishSections", true))
     /** The wishlist in sections (To buy, Ordered, Received); off: one list with ordered cards last (synced). Since 1.38. */
     val wishSections: StateFlow<Boolean> = _wishSections
@@ -431,6 +512,7 @@ class Settings(context: Context) {
             put("deckPrintingsOff", _deckPrintingsOff.value.joinToString(","))
             put("deckPicks", encodePicks(_deckPicks.value))
             put("deckTokenPicks", encodePicks(_deckTokenPicks.value))
+            put("deckHidden", encodePicks(_deckHidden.value))
             put("conditionAdjust", conditionAdjust.value.toString())
             put("conditionPcts", encodePcts(conditionPcts.value))
             put("alertPriceType", alertPriceType.value.key)
@@ -444,6 +526,13 @@ class Settings(context: Context) {
             put("swipeRight", swipeRight.value.key)
             put("swipeLeft", swipeLeft.value.key)
             put("binderOrder", BinderOrder.encode(binderOrder.value))
+            put("trackerPictures", trackerPictures.value.toString())
+            put("trackerAboveBelow", trackerAboveBelow.value.toString())
+            put("trackerHoldOne", trackerHoldOne.value.toString())
+            put("trackerSymbols", trackerSymbols.value.toString())
+            put("trackerLowLife", trackerLowLife.value.key)
+            put("trackerTurns", trackerTurns.value.toString())
+            put("trackerClock", trackerClock.value.toString())
         },
     )
 
@@ -463,6 +552,7 @@ class Settings(context: Context) {
         v["deckPrintingsOff"]?.let { _deckPrintingsOff.value = decodeIds(it); e.putString("deckPrintingsOff", it) }
         v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
         v["deckTokenPicks"]?.let { _deckTokenPicks.value = decodePicks(it); e.putString("deckTokenPicks", it) }
+        v["deckHidden"]?.let { _deckHidden.value = decodePicks(it); e.putString("deckHidden", it) }
         v["conditionAdjust"]?.toBooleanStrictOrNull()?.let { _conditionAdjust.value = it; e.putBoolean("conditionAdjust", it) }
         v["conditionPcts"]?.let { _conditionPcts.value = decodePcts(it); e.putString("conditionPcts", it) }
         v["alertPriceType"]?.let { _alertPriceType.value = PriceType.fromKey(it); e.putString("alertPriceType", it) }
@@ -476,6 +566,13 @@ class Settings(context: Context) {
         v["swipeRight"]?.let { _swipeRight.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_RIGHT); e.putString("swipeRight", it) }
         v["swipeLeft"]?.let { _swipeLeft.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_LEFT); e.putString("swipeLeft", it) }
         v["binderOrder"]?.let { _binderOrder.value = BinderOrder.decode(it); e.putString("binderOrder", it) }
+        v["trackerPictures"]?.toBooleanStrictOrNull()?.let { _trackerPictures.value = it; e.putBoolean("trackerPictures", it) }
+        v["trackerAboveBelow"]?.toBooleanStrictOrNull()?.let { _trackerAboveBelow.value = it; e.putBoolean("trackerAboveBelow", it) }
+        v["trackerHoldOne"]?.toBooleanStrictOrNull()?.let { _trackerHoldOne.value = it; e.putBoolean("trackerHoldOne", it) }
+        v["trackerSymbols"]?.toBooleanStrictOrNull()?.let { _trackerSymbols.value = it; e.putBoolean("trackerSymbols", it) }
+        v["trackerLowLife"]?.let { _trackerLowLife.value = LowLifeStyle.fromKey(it); e.putString("trackerLowLife", it) }
+        v["trackerTurns"]?.toBooleanStrictOrNull()?.let { _trackerTurns.value = it; e.putBoolean("trackerTurns", it) }
+        v["trackerClock"]?.toBooleanStrictOrNull()?.let { _trackerClock.value = it; e.putBoolean("trackerClock", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

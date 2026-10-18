@@ -114,6 +114,7 @@ fun ScansScreen(nav: NavController) {
                         Spacer(Modifier.width(6.dp))
                         Text("Check an order")
                     }
+                    SettingsButton(nav)
                 },
             )
         },

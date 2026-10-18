@@ -64,6 +64,9 @@ interface DeckEditDao {
     @Query("DELETE FROM deck_edits WHERE deckId = :deckId")
     suspend fun clear(deckId: Long)
 
+    @Query("DELETE FROM deck_edits WHERE deckId = :deckId AND lineUid = :lineUid")
+    suspend fun deleteByUid(deckId: Long, lineUid: String)
+
     @Query("UPDATE deck_edits SET deckId = :to WHERE deckId = :from")
     suspend fun moveDeck(from: Long, to: Long)
 }
@@ -72,6 +75,18 @@ interface DeckEditDao {
 object DeckEdits {
     const val MAYBEBOARD = "Maybeboard"
     const val COMMANDER = "Commander"
+
+    /**
+     * A waiting change to a category itself (since 1.47) is kept as a [DeckEdit] whose lineUid starts with this; its
+     * name is the category's, relationId its id on Archidekt and categories the change ([OP_CREATE], [OP_DELETE] or
+     * [OP_RENAME] + the new name).
+     */
+    const val CATEGORY_PREFIX = "category:"
+    const val OP_CREATE = "create"
+    const val OP_DELETE = "delete"
+    const val OP_RENAME = "rename:"
+
+    fun renameOp(to: String) = OP_RENAME + to
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
     private val listSerializer = ListSerializer(ArchidektCategory.serializer())

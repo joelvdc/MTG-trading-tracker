@@ -29,7 +29,6 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import com.mtgtrader.data.DeckSort
 import com.mtgtrader.data.DeckSorting
@@ -145,7 +144,7 @@ fun DecksScreen(nav: NavController) {
                 title = { Text("Commander decks") },
                 actions = {
                     IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
-                    DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                    ScreenMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                         DeckSort.entries.forEach { s ->
                             DropdownMenuItem(
                                 text = { Text(s.label, fontWeight = if (s == sort) FontWeight.Bold else null) },
@@ -169,7 +168,7 @@ fun DecksScreen(nav: NavController) {
                         )
                     }
                     IconButton(onClick = { moreMenu = true }) { Icon(Icons.Default.MoreVert, "More") }
-                    DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }) {
+                    ScreenMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }) {
                         val any = !decks.isNullOrEmpty()
                         DropdownMenuItem(
                             text = { Text("Update all decks from Archidekt") },
@@ -234,6 +233,7 @@ fun DecksScreen(nav: NavController) {
                             },
                         )
                     }
+                    SettingsButton(nav)
                 },
             )
         },
@@ -488,7 +488,7 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String, Boolean) 
                     Column(Modifier.weight(1f)) {
                         Text("Make it a local deck", style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "A copy on this phone you can change freely; it's no longer reloaded from Archidekt.",
+                            "A copy in the app you can change freely (synced to your other phones); it's no longer reloaded from Archidekt.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
