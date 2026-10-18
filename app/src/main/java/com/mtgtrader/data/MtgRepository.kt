@@ -20,7 +20,8 @@ sealed interface CardTarget {
     /** The wishlist (cards you want). Since 1.16. */
     data object Wishlist : CardTarget
     /** A deck, as a card "Added in app" (Archidekt isn't changed). Since 1.42. */
-    data class ToDeck(val deckId: Long) : CardTarget
+    /** A deck, and since 1.46 the category the card goes into (on decks that can be edited). */
+    data class ToDeck(val deckId: Long, val category: String? = null) : CardTarget
     data class ReplaceTradeItem(val itemId: Long) : CardTarget
     data class ReplaceCollectionItem(val itemId: Long) : CardTarget
     data class ReplaceScan(val itemId: Long) : CardTarget
@@ -32,7 +33,7 @@ sealed interface CardTarget {
         is Collection -> "collection:$binderId"
         Scans -> "scans"
         Wishlist -> "wishlist"
-        is ToDeck -> "deck:$deckId"
+        is ToDeck -> "deck:$deckId" + (category?.let { ":" + java.net.URLEncoder.encode(it, "UTF-8") } ?: "")
         is ReplaceTradeItem -> "rtrade:$itemId"
         is ReplaceCollectionItem -> "rcoll:$itemId"
         is ReplaceScan -> "rscan:$itemId"
@@ -45,7 +46,7 @@ sealed interface CardTarget {
                 "trade" -> TradeSide(p[1].toLong(), p[2])
                 "scans" -> Scans
                 "wishlist" -> Wishlist
-                "deck" -> ToDeck(p[1].toLong())
+                "deck" -> ToDeck(p[1].toLong(), p.getOrNull(2)?.let { java.net.URLDecoder.decode(it, "UTF-8") })
                 "rtrade" -> ReplaceTradeItem(p[1].toLong())
                 "rcoll" -> ReplaceCollectionItem(p[1].toLong())
                 "rscan" -> ReplaceScan(p[1].toLong())
@@ -113,12 +114,12 @@ class MtgRepository(
             is CardTarget.Collection -> addToCollection(card, finish, "NM", language, 1, target.binderId)
             CardTarget.Scans -> addToScans(card, finish, language, exactPrinting)
             CardTarget.Wishlist -> addToWishlist(card, finish)
-            is CardTarget.ToDeck -> addToDeck(target.deckId, card, finish)
+            is CardTarget.ToDeck -> addToDeck(target.deckId, card, finish, category = target.category)
             else -> null
         }
 
     /** Set by the deck editor (since 1.46): adds to an editable deck (null for other decks), and undoes that. */
-    var deckAdder: (suspend (Long, CardRef, Finish, Int) -> AddResult?)? = null
+    var deckAdder: (suspend (Long, CardRef, Finish, Int, String?) -> AddResult?)? = null
     var deckUndo: (suspend (Long) -> Boolean)? = null
 
     /**
@@ -126,9 +127,9 @@ class MtgRepository(
      * is reloaded), next to an identical one if it's there. Its card type, which groups it in the deck,
      * comes from the details saved for it or from Scryfall. Since 1.42.
      */
-    suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1): AddResult {
+    suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1, category: String? = null): AddResult {
         // Decks that can be edited (since 1.46) get the card straight into the deck, in its auto category.
-        deckAdder?.invoke(deckId, card, finish, qty)?.let { return it }
+        deckAdder?.invoke(deckId, card, finish, qty, category)?.let { return it }
         val f = card.resolveFinish(finish)
         val decks = db.deckDao()
         val same = decks.cardsAddedInApp(deckId).firstOrNull { it.card.scryfallId == card.scryfallId && it.foil == f.foil && it.etched == f.etched }

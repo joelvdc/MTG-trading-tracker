@@ -315,6 +315,16 @@ fun SettingsScreen(nav: NavController) {
                 }
             }
 
+            // Editing decks (since 1.46).
+            val autoCategories by c.settings.deckAutoCategories.collectAsStateWithLifecycle()
+            SwitchRow(
+                "Auto categories for new cards",
+                "Cards added to a deck you can edit go into Archidekt's auto category for them (Ramp, Draw, Removal…), " +
+                    "or by card type when they have none. Off: by card type.",
+                autoCategories,
+                c.settings::setDeckAutoCategories,
+            )
+
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             SyncSection()
 

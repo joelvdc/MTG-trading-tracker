@@ -117,8 +117,8 @@ class AppContainer(context: Context) {
         }
         decks.editSender = { id -> editor.waitingCount(id) == 0 || editor.send(id).let { editor.waitingCount(id) == 0 } }
         decks.detacher = { id -> editor.detach(id) }
-        repo.deckAdder = { deckId, card, finish, qty ->
-            db.deckDao().get(deckId)?.takeIf(editor::canEdit)?.let { editor.addCard(deckId, card, finish, qty) }
+        repo.deckAdder = { deckId, card, finish, qty, category ->
+            db.deckDao().get(deckId)?.takeIf(editor::canEdit)?.let { editor.addCard(deckId, card, finish, qty, category) }
         }
         repo.deckUndo = { lineId ->
             val line = db.deckDao().card(lineId)

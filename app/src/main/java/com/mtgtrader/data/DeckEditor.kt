@@ -86,6 +86,13 @@ class DeckEditor(
     /** Whether the deck can be edited here: a local deck, or one of the logged-in Archidekt user's own decks. */
     fun canEdit(deck: Deck): Boolean = deck.local || archidekt.username?.equals(deck.owner, ignoreCase = true) == true
 
+    /**
+     * Whether a deck from Archidekt is ready to be edited: loaded by 1.46 or later, so every line knows its id on
+     * Archidekt (else a change would be sent as a new card). Such a load keeps the deck's categories, which older
+     * versions didn't; [prepare] reloads the list when they're missing.
+     */
+    fun ready(deck: Deck): Boolean = deck.local || deck.categoryInfo != null
+
     // ---- Getting a deck ready -----------------------------------------------------------------
 
     /**
@@ -97,8 +104,7 @@ class DeckEditor(
         val lines = dao.allLines(deckId)
         val nameless = lines.filter { it.lineUid.isEmpty() }
         if (nameless.isNotEmpty()) db.withTransaction { nameless.forEach { dao.setLineUid(it.id, UUID.randomUUID().toString()) } }
-        if (deck.local || !canEdit(deck)) return null
-        if (lines.none { !it.addedInApp && it.relationId == null }) return null
+        if (deck.local || !canEdit(deck) || ready(deck)) return null
         if (edits.count(deckId) > 0) return null
         return runCatching { decks.reloadList(deckId) }.exceptionOrNull()?.let { it.message ?: "Archidekt couldn't be reached" }
     }
@@ -132,8 +138,8 @@ class DeckEditor(
                     )
                 })
             }
-            refreshSummary(deckId)
         }
+        refreshSummary(deckId)
         if (!deck.local) sendSoon()
         return { change(deckId, after, before) }
     }
@@ -379,6 +385,32 @@ class DeckEditor(
     suspend fun waitingCount(deckId: Long) = edits.count(deckId)
 
     // ---- Local decks ---------------------------------------------------------------------------
+
+    private val _deleted = MutableStateFlow<Pair<String, UndoAction>?>(null)
+    /** A local deck just deleted, with its undo, for the Decks tab to offer. */
+    val deleted: StateFlow<Pair<String, UndoAction>?> = _deleted
+
+    fun consumeDeleted() {
+        _deleted.value = null
+    }
+
+    /** Deletes a local deck for good, keeping an undo for the Decks tab. */
+    suspend fun deleteLocal(deckId: Long) {
+        val deck = dao.get(deckId) ?: return
+        val lines = dao.allLines(deckId)
+        dao.delete(deckId)
+        edits.clear(deckId)
+        _deleted.value = deck.name to {
+            db.withTransaction {
+                dao.upsert(deck)
+                dao.insertCards(lines.map { it.copy(id = 0) })
+            }
+        }
+    }
+
+    suspend fun renameLocal(deckId: Long, name: String) {
+        dao.get(deckId)?.takeIf { it.local }?.let { dao.update(it.copy(name = name)) }
+    }
 
     /** Saves a new local deck with [lines]; returns its id. */
     private suspend fun createLocal(name: String, lines: List<DeckCard>, origin: String?, commanderIdentity: String? = null): Long {

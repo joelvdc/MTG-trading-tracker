@@ -121,6 +121,14 @@ fun DecksScreen(nav: NavController) {
         if (job == null && c.decks.powerMissing()) c.decks.rateMissingPower()
     }
 
+    // A local deck deleted on its page can be brought back here (since 1.46).
+    val deleted by c.deckEditor.deleted.collectAsStateWithLifecycle()
+    LaunchedEffect(deleted) {
+        val (name, undo) = deleted ?: return@LaunchedEffect
+        c.deckEditor.consumeDeleted()
+        scope.launch { if (snackbar.showUndo("Deleted $name")) undo() }
+    }
+
     LaunchedEffect(result) {
         val r = result ?: return@LaunchedEffect
         c.decks.consumeResult()
