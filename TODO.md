@@ -199,6 +199,29 @@ Settled with the owner on 2026-10-18:
   window's category list or by selecting cards and using the top bar's "Move to category" button.
 - **When:** together with the life tracker, in 1.47.
 
+Owner's choices on the 1.47 mockups (2026-10-18): tab bar B (five tabs, Settings behind a gear at the top);
+commander pictures as the default background; the ghost as the default low-life animation; the new card window
+layout as drawn.
+
+**Manage categories** (owner, 2026-10-18, replaces "Add a category…" in the deck's ⋮ menu): "add an option to
+'manage categories'. Here the user can add categories and choose which categories to be shown and available on drop
+down menus in the card pages and so on. This would affect the categories shown when the cards are grouped by
+categories. Empty categories are still not shown by default. I also think it is weird that deleted categories in the
+app do not get deleted on archidekt, is this not possible at all?"
+- Drawn as a mockup (Categories screen: add, a "Shown" switch per category, rename and delete per category).
+- Archidekt *can* do it (found 2026-10-18 in the deck page's JavaScript): POST /api/decks/createCategory/ (with the
+  deck's id), PATCH /api/decks/category/<id>/ (rename, included in deck) and DELETE /api/decks/category/<id>/. 1.46
+  only moved the cards, so an emptied or renamed category stayed on Archidekt. In 1.47 adding, renaming and deleting
+  a category also happen on Archidekt (queued like other edits when offline); the health check gets these three
+  addresses.
+- "Shown" is kept in the app (Archidekt has no such setting) and synced between the phones.
+
+Open questions (sent 2026-10-18):
+- Cards in a category that is switched off: shown in one folded "Hidden categories" section at the bottom
+  (suggested), or not shown on the deck page at all?
+- Empty categories: offered in the move lists (if shown) but on the deck page only with ⋮ → "Show empty categories"
+  (off at first)?
+
 What was found (Claude, 2026-10-18):
 1. The category list in the card window and 5. the deck page's ⋮ menu: Android's drop-down menus run under the
    phone's own buttons at the bottom of the screen. Fix: the card window's category opens the same list from the
