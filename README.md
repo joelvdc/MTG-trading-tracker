@@ -464,26 +464,46 @@ back online.
 ## Games: life tracker and game records
 The **Games** tab (since 1.47; Settings moved behind the ⚙ at the top of every tab) keeps score in Commander games and
 remembers them.
-- **New game:** 2 to 6 players, starting life (40, or 20, 30 or your own), who sits where (clockwise) and which deck
-  each plays: yours are the app's decks; friends are added as players with their own decks (a commander, or two
-  partners, found on Scryfall, and optionally the Archidekt link). Who starts: picked, or at random with a short run
-  around the table. Switches for counting turns, a clock and commander damage, and extra counters (energy,
-  experience, rad, storm, the monarch, the initiative, day/night, or one you name). **Rematch** sets up the last table
-  again.
-- **The table:** the phone lies in the middle; each player's panel faces them, with their commander's picture (or a
-  plain colour, Settings → Life tracker) and their life. Tap to change it by 1 (left −/right +, or above +/below −),
-  hold for 10; the change shows next to the total for a moment. The screen stays on. Below the total: commander damage
-  (the most from one commander), poison and commander tax; **⋯** opens the player's counters (commander damage taken
-  from each opponent, which takes life too, poison, tax, the extra counters, conceding). At low life (below a quarter
-  of the starting life) the panel shows an animation (a ghost, a dark edge or a cracking total, or none). At 0 life,
-  10 poison or 21 commander damage from one commander, **Dead?** asks: yes turns the panel dark with a skull (Undo
-  brings them back), no waits until something changes.
-- **Turns:** with turns counted, the player whose turn it is has a gold frame and their turn's time; tap it (or Next
-  turn) to pass the turn clockwise. The centre button shows the round and the game's time, and opens the table menu:
-  next turn, pause, undo, monarch, initiative, day/night, a die, a d20, a coin, a random player, and **End the game**.
-- **Game over:** the last one standing wins (or pick the winner, or a draw); the places, how it was won and a note are
-  saved, and the game goes into the history (backups and the Nextcloud sync too). Recorded games can be changed or
-  deleted, and a game played without the tracker can be added by hand (Games ⋮ → **Add a past game**).
+The tracker looks and works like the Lifetap app (since 1.48): soft colours with dark text, a menu bar across the
+middle of the table, and everything about the game (counters, settings, dice, mana, history) inside the game.
+- **New game:** 2 to 6 players, who sits where (clockwise) and which deck each plays: yours are the app's decks;
+  friends are added as players with their own decks (a commander, or two partners, found on Scryfall, and optionally
+  the Archidekt link). Who starts: picked, or at random with a short run around the table. **Rematch** sets up the
+  last table again. Starting life and the game's other settings are set in the game.
+- **The table:** the phone lies in the middle; each player's panel faces them, in a soft colour (or their commander's
+  picture), with their name on a label, their life with room around it, − and + at the ends, and the **commander
+  damage mini-grid**: a tiny copy of the table, "me" on their own seat, each box the damage taken from that player's
+  commander (partners split in two, "0|4"). Counters in use show as small badges next to it. Tap left of the total
+  for −1 and right for +1 (or below/above), hold for 10 (or by 1, fast); the change shows next to the total for a
+  moment. At low life the panel shows an animation (a ghost, a dark edge, a cracking total, or none). At 0 life, 10
+  poison or 21 commander damage from one commander, **Dead?** asks (or the player goes out at once, or nothing
+  happens, as set): yes turns the panel dark with a skull (Undo brings them back).
+- **A player's sheet** (tap their name; the mini-grid opens it on Counters), facing them: **Counters** has the
+  commander damage taken on a big seating grid (tap a box for +1; hold it for − and + and the **Partner commanders**
+  switch, which splits it into two counts) and tiles for poison, commander tax (one per partner), the monarch, the
+  initiative, day/night, the city's blessing, energy, experience, rad, treasure, counters you name, and K.O. (tap
+  adds one, hold takes one off). **Player** changes who sits there and their deck during the game, their background
+  (the commander's picture or one of six colours), stronger contrast, and conceding.
+- **The middle bar:** ↻ ends the game; the circle with the number of players opens **Game settings**; the clock
+  (round and game time, when on; tap to pause); ☀/☾ when it's day or night; the clock with an arrow opens the
+  **history** (hold it to undo the last change); the coloured dots open the **mana pool** (WUBRG, colourless and a
+  storm count); the die opens **Dice & random** (random player or opponent, a coin, a custom die, d4 to d20; hold
+  the die for a d20 at once). Rolls show twice, so both sides of the table can read them.
+- **Game settings:** players, layout (for 4 and 6 players: side by side, or one at each end), starting life (20, 25,
+  30, 40, 60 or your own), each seat's player and deck; commander damage, its life loss, what happens when a player is
+  down, turns and clock, the game log; tapping above/below or left/right, holding by 10 or by 1, vibration; colours or
+  commander pictures, coloured mini-grids, the panel layout (default, name only, big font), the low-life animation,
+  hiding the bar until tapped, dice animations; keeping the screen on and hiding the phone's bars. Changing the
+  players or the starting life once the game is going asks before starting over. The choices are kept for the next
+  games and follow you to your other phone.
+- **Turns:** with turns counted, the player whose turn it is has a gold frame and their turn's time; tap it to pass
+  the turn clockwise.
+- **History:** the game's log (life changes, commander damage, poison, tax, counters, turns, players going out, the
+  monarch), with Undo last and Pause; and the games played before.
+- **Ending a game:** ↻ in the bar: who won (or a draw) and how, then **Save and rematch** (same seats, a new game at
+  once), **Save, then new players**, or end without saving. The game goes into the history (backups and the Nextcloud
+  sync too); a note can be added on the game's page. Recorded games can be changed or deleted, and a game played
+  without the tracker can be added by hand (Games ⋮ → **Add a past game**).
 - **Stats:** the Games tab shows the last games, how many you won and the average length; **Decks, players and head
   to head** has every deck's games, wins, win rate, average length and bracket (sortable), each player's results, and
   how you did against each friend. Each deck's page has a **Games** section: won–lost, average place and length, the

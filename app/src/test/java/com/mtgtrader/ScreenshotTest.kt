@@ -897,34 +897,95 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_editing.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.47: the life tracker with plain colours: a turn running, low life, "Dead?" and a player out. */
-    @Test fun lifeTracker() {
-        fun seat(i: Int, name: String, deck: String, life: Int) = com.mtgtrader.data.LiveSeat(seat = i, name = name, deckName = deck, life = life, colour = i)
+    /** 1.47, as Lifetap since 1.48: four players, a turn running, the monarch, partners, "Dead?" and a player out, the middle bar. */
+    @Test fun lifeTracker() = tracker("life_tracker") { g -> trackerTable(g) }
+
+    /** 1.48: three players, and six with one at each end. */
+    @Test fun lifeTrackerThree() = tracker("life_tracker_3", sampleGame(3)) { g -> trackerTable(g) }
+
+    @Test fun lifeTrackerSixEnds() = tracker("life_tracker_6_ends", sampleGame(6).copy(ends = true)) { g -> trackerTable(g) }
+
+    /** 1.48: a player's sheet: the commander damage grid and the counter tiles; the Player tab. */
+    @Test fun trackerCounters() = tracker("tracker_counters") { g ->
+        trackerTable(g)
+        com.mtgtrader.ui.PlayerSheet(g, 0, com.mtgtrader.ui.PanelLook(), startOnCounters = true, onClose = {})
+    }
+
+    @Test fun trackerPlayer() = tracker("tracker_player") { g ->
+        trackerTable(g)
+        com.mtgtrader.ui.PlayerSheet(g, 0, com.mtgtrader.ui.PanelLook(), startOnCounters = false, onClose = {})
+    }
+
+    /** 1.48: holding an opponent's box: their commander damage big, partners split in two. */
+    @Test fun trackerDamageDetail() = tracker("tracker_damage_detail") { g ->
+        trackerTable(g)
+        com.mtgtrader.ui.PlayerSheet(g, 0, com.mtgtrader.ui.PanelLook(), startOnCounters = true, onClose = {}, startFocus = 2)
+    }
+
+    /** 1.48: the game's settings, from the middle bar. */
+    @Test @Config(qualifiers = "w411dp-h2100dp-xhdpi") fun trackerSettings() = tracker("tracker_settings", height = 2100) { g ->
+        com.mtgtrader.ui.GameSettingsPage(g, onClose = {})
+    }
+
+    @Test fun trackerDice() = tracker("tracker_dice") { g -> com.mtgtrader.ui.DicePage(g, {}, {}, {}, {}) }
+
+    @Test fun trackerMana() = tracker("tracker_mana") { g -> com.mtgtrader.ui.ManaPage(g) {} }
+
+    @Test fun trackerHistory() = tracker("tracker_history") { g ->
+        com.mtgtrader.ui.HistoryPage(g, now = 2_102_000, canUndo = true, nav = androidx.navigation.compose.rememberNavController()) {}
+    }
+
+    @Test fun trackerEndGame() = tracker("tracker_end_game") { g ->
+        trackerTable(g)
+        com.mtgtrader.ui.EndGameDialog(g, onCancel = {}, onLeave = {}, nav = androidx.navigation.compose.rememberNavController(), onDone = {})
+    }
+
+    @Test fun trackerRoll() = tracker("tracker_roll") { g ->
+        trackerTable(g)
+        com.mtgtrader.ui.RollOverlay(com.mtgtrader.ui.Roll("d20", "17", 20), animate = false, onAgain = {}) {}
+    }
+
+    /** A game in progress for the tracker's pictures: [players] at the table, things happening. */
+    private fun sampleGame(players: Int = 4): com.mtgtrader.data.LiveGame {
+        val names = listOf("Joel" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Kraum & Tymna", "Anders" to "Korvold", "Freja" to "Edgar Markov", "Kasper" to "Yuriko")
+        fun seat(i: Int) = com.mtgtrader.data.LiveSeat(
+            seat = i, name = names[i].first, deckName = names[i].second, me = i == 0, life = 40, colour = i,
+            commander = if (i == 2) "Kraum, Ludevic's Opus" else names[i].second, partner = if (i == 2) "Tymna the Weaver" else null,
+        )
         var g = com.mtgtrader.data.LiveGame(
             uid = "g", startedAt = 0, turnsOn = true, firstSeat = 0, active = 0, round = 7, turnStartMs = 2_000_000,
-            counters = listOf("energy", com.mtgtrader.data.LiveGames.MONARCH),
-            seats = listOf(seat(0, "Joel", "Auntie Plague", 34), seat(1, "Mads", "Atraxa", 27), seat(2, "Sofie", "Ruby", 0), seat(3, "Anders", "Korvold", 0)),
-            monarch = 0,
+            seats = (0 until players).map(::seat), monarch = 0, counters = listOf(com.mtgtrader.data.LiveGames.CUSTOM + "Rings"),
         )
-        g = com.mtgtrader.data.LiveGames.commanderDamage(g, 0, "1", 6)
-        g = com.mtgtrader.data.LiveGames.changeLife(g, 0, 6)
-        g = com.mtgtrader.data.LiveGames.poison(g, 1, 3)
-        g = com.mtgtrader.data.LiveGames.casts(g, 0, 1)
-        g = com.mtgtrader.data.LiveGames.knockOut(g, 3, 2_000_000)
+        fun step(t: Long, f: (com.mtgtrader.data.LiveGame) -> com.mtgtrader.data.LiveGame) { g = com.mtgtrader.data.LiveGames.settle(g, f(g), t) }
+        step(60_000) { com.mtgtrader.data.LiveGames.casts(it, 0, 1) }
+        step(400_000) { com.mtgtrader.data.LiveGames.commanderDamage(it, 0, "1", 6) }
+        if (players >= 3) step(700_000) { com.mtgtrader.data.LiveGames.commanderDamage(it, 0, com.mtgtrader.data.LiveGames.cmdKey(2, true), 4) }
+        step(900_000) { com.mtgtrader.data.LiveGames.counter(com.mtgtrader.data.LiveGames.poison(it, 1, 3), 1, "energy", 4) }
+        step(1_000_000) { com.mtgtrader.data.LiveGames.changeLife(it, 1, -13) }
+        if (players == 4) {
+            step(1_500_000) { com.mtgtrader.data.LiveGames.changeLife(it, 2, -40) }
+            step(1_800_000) { com.mtgtrader.data.LiveGames.knockOut(com.mtgtrader.data.LiveGames.changeLife(it, 3, -40), 3, 1_800_000) }
+        }
+        step(2_101_000) { com.mtgtrader.data.LiveGames.changeLife(it, 0, 3) }
+        return g
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun trackerTable(g: com.mtgtrader.data.LiveGame) = com.mtgtrader.ui.TrackerTable(
+        g, com.mtgtrader.ui.PanelLook(lowLife = com.mtgtrader.data.LowLifeStyle.OFF), now = 2_102_000,
+        delta = { if (it == 0) 3 else null },
+        bar = { com.mtgtrader.ui.MenuBar(g, 2_102_000) },
+    )
+
+    private fun tracker(file: String, game: com.mtgtrader.data.LiveGame = sampleGame(), height: Int = 900, content: @androidx.compose.runtime.Composable (com.mtgtrader.data.LiveGame) -> Unit) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             MtgColors(dark = true) {
-                Box(Modifier.width(411.dp).height(860.dp)) {
-                    com.mtgtrader.ui.TrackerTable(
-                        g, com.mtgtrader.ui.PanelLook(pictures = false, lowLife = com.mtgtrader.data.LowLifeStyle.OFF), now = 2_102_000,
-                        delta = { if (it == 0) -3 else null },
-                        centre = { com.mtgtrader.ui.CentreButton(Modifier.align(Alignment.Center), "R7", "35:02") {} },
-                    )
-                }
+                Box(Modifier.width(411.dp).height(height.dp)) { content(game) }
             }
         }
         compose.mainClock.advanceTimeByFrame()
-        compose.onRoot().captureRoboImage("src/test/screenshots/life_tracker.png", roborazziOptions = screenshotOptions)
+        compose.onRoot().captureRoboImage("src/test/screenshots/$file.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.47: the deck page's Games section. */

@@ -85,6 +85,7 @@ import com.mtgtrader.data.Games
 import com.mtgtrader.data.LiveGame
 import com.mtgtrader.data.LiveGames
 import com.mtgtrader.data.LiveSeat
+import com.mtgtrader.data.LogEntry
 import com.mtgtrader.data.Player
 import com.mtgtrader.data.SeatChoice
 import com.mtgtrader.data.TableSetup
@@ -117,6 +118,14 @@ internal fun seatDeck(choice: SeatChoice, decks: List<Deck>, friendDecks: List<F
     return null
 }
 
+/** A new table with [seats], the starting life of the last game and the game settings last used (since 1.48). */
+internal fun newTable(settings: com.mtgtrader.data.Settings, last: TableSetup?, seats: List<SeatChoice>) = TableSetup(
+    seats = seats, startingLife = last?.startingLife ?: 40,
+    commanderDamage = settings.trackerFlag("trackerCommanderDamage").value, turnsOn = settings.trackerTurns.value, clock = settings.trackerClock.value,
+    cmdLifeLoss = settings.trackerFlag("trackerCmdLifeLoss").value, whenDown = settings.trackerWhenDown.value.key,
+    ends = settings.trackerFlag("trackerEnds").value, logOn = settings.trackerFlag("trackerLog").value,
+)
+
 /** The game that starts from a table setup: everyone at the starting life, a background and colour each, the first player. */
 internal fun startGame(setup: TableSetup, decks: List<Deck>, friendDecks: List<FriendDeck>, randomArt: List<String>, now: Long, first: Int): LiveGame {
     var spare = randomArt
@@ -135,13 +144,36 @@ internal fun startGame(setup: TableSetup, decks: List<Deck>, friendDecks: List<F
     }
     return LiveGame(
         uid = UUID.randomUUID().toString(), startedAt = now, startingLife = setup.startingLife, commanderDamage = setup.commanderDamage,
-        turnsOn = setup.turnsOn, clock = setup.clock, counters = setup.counters, seats = seats, firstSeat = first, active = first,
+        turnsOn = setup.turnsOn, clock = setup.clock, counters = setup.counters.filter { it.startsWith(LiveGames.CUSTOM) }, seats = seats,
+        firstSeat = first, active = first, cmdLifeLoss = setup.cmdLifeLoss, whenDown = setup.whenDown, ends = setup.ends && seats.size in setOf(4, 6),
+        logOn = setup.logOn, log = if (setup.logOn) listOf(LogEntry(0, first, "start")) else emptyList(),
     )
 }
 
+/** The table setup a game in progress stands for: its seats as they are now, and its settings (for a rematch). */
+internal fun setupOf(g: LiveGame, firstSeat: Int?): TableSetup = TableSetup(
+    seats = g.seats.map { SeatChoice(it.playerUid, it.name, it.me, it.deckId, it.friendDeckUid, it.artUrl, it.colour) },
+    startingLife = g.startingLife, commanderDamage = g.commanderDamage, turnsOn = g.turnsOn, clock = g.clock,
+    counters = g.counters, firstSeat = firstSeat?.takeIf { it < g.seats.size }, cmdLifeLoss = g.cmdLifeLoss, whenDown = g.whenDown,
+    ends = g.ends, logOn = g.logOn,
+)
+
+/** [seat] with another player or deck, picked during the game (since 1.48); their damage, counters and life stay. */
+internal fun reseat(g: LiveGame, seat: Int, ch: SeatChoice, d: SeatDeck?): LiveGame = g.copy(
+    seats = g.seats.map { s ->
+        if (s.seat != seat) s else s.copy(
+            playerUid = ch.playerUid, name = ch.name.ifBlank { "Player ${seat + 1}" }, me = ch.me, deckId = ch.deckId, friendDeckUid = ch.friendDeckUid,
+            deckName = d?.name.orEmpty(), commander = d?.commander.orEmpty(), scryfallId = d?.scryfallId, partner = d?.partner,
+            colorIdentity = d?.colorIdentity.orEmpty(), bracket = d?.bracket, power = d?.power, artUrl = d?.artUrl ?: ch.artUrl ?: s.artUrl,
+            partners = null,
+        )
+    },
+)
+
 /**
- * New game (since 1.47): players, starting life, who sits where and plays which deck, who starts, and the game's
- * options. A rematch starts from the last table. With [addPast], it records a game played without the tracker.
+ * New game (since 1.47): players, who sits where and plays which deck, and who starts; since 1.48 the game's own
+ * settings (starting life, turns, counters…) are set in the game. A rematch starts from the last table. With
+ * [addPast], it records a game played without the tracker.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -152,8 +184,6 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
     val players by c.games.players.collectAsStateWithLifecycle(emptyList())
     val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
-    val turnsDefault by c.settings.trackerTurns.collectAsStateWithLifecycle()
-    val clockDefault by c.settings.trackerClock.collectAsStateWithLifecycle()
     val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
     var setupText by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
@@ -161,10 +191,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
         if (setupText == null) {
             val me = c.games.me()
             val last = c.games.lastTable
-            val start = if (rematch && last != null) last else TableSetup(
-                seats = listOf(SeatChoice(me.uid, me.name, me = true)) + (2..4).map { SeatChoice(name = "Player $it") },
-                turnsOn = turnsDefault, clock = clockDefault,
-            )
+            val start = if (rematch && last != null) last else newTable(c.settings, last, listOf(SeatChoice(me.uid, me.name, me = true)) + (2..4).map { SeatChoice(name = "Player $it") })
             setupText = setupJson.encodeToString(TableSetup.serializer(), start)
         }
     }
@@ -173,8 +200,6 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
         setup?.let { setupText = setupJson.encodeToString(TableSetup.serializer(), f(it)) }
     }
     var picking by remember { mutableStateOf<Int?>(null) }
-    var otherLife by remember { mutableStateOf(false) }
-    var customCounter by remember { mutableStateOf(false) }
     var pastDate by rememberSaveable { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())) }
     var pastMinutes by rememberSaveable { mutableStateOf("") }
 
@@ -199,18 +224,6 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
                             t.copy(seats = seats, firstSeat = t.firstSeat?.takeIf { it < n })
                         }
                     }, SegmentedButtonDefaults.itemShape(n - 2, 5), icon = {}) { Text("$n") }
-                }
-            }
-            if (!addPast) {
-                Label("Starting life")
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    val presets = listOf(20, 30, 40)
-                    presets.forEachIndexed { i, life ->
-                        SegmentedButton(s.startingLife == life, { change { it.copy(startingLife = life) } }, SegmentedButtonDefaults.itemShape(i, 4), icon = {}) { Text("$life") }
-                    }
-                    SegmentedButton(s.startingLife !in presets, { otherLife = true }, SegmentedButtonDefaults.itemShape(3, 4), icon = {}) {
-                        Text(if (s.startingLife in presets) "Other" else "${s.startingLife}")
-                    }
                 }
             }
             Label("Seats (clockwise)")
@@ -246,20 +259,10 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     s.seats.forEachIndexed { i, ch -> FilterChip(s.firstSeat == i, { change { it.copy(firstSeat = i) } }, label = { Text(ch.name.ifBlank { "Player ${i + 1}" }) }) }
                 }
-                HorizontalDivider()
-                SwitchRow("Count turns", "Marks whose turn it is and times each turn", s.turnsOn) { on -> change { it.copy(turnsOn = on) } }
-                SwitchRow("Show a clock", "The game's time (and the turn's, with turns counted)", s.clock) { on -> change { it.copy(clock = on) } }
-                SwitchRow("Commander damage", "Off for games that aren't Commander", s.commanderDamage) { on -> change { it.copy(commanderDamage = on) } }
-                Label("Extra counters")
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (LiveGames.EXTRA_COUNTERS + LiveGames.TABLE_ITEMS).forEach { (key, label) ->
-                        FilterChip(key in s.counters, { change { t -> t.copy(counters = if (key in t.counters) t.counters - key else t.counters + key) } }, label = { Text(label) })
-                    }
-                    s.counters.filter { it.startsWith(LiveGames.CUSTOM) }.forEach { key ->
-                        FilterChip(true, { change { t -> t.copy(counters = t.counters - key) } }, label = { Text(LiveGames.counterLabel(key)) })
-                    }
-                    FilterChip(false, { customCounter = true }, label = { Text("+ Custom") })
-                }
+                Text(
+                    "Starting life, turns, commander damage and the counters are set in the game: tap the circle with the number of players in the middle of the table.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (pictures && s.seats.any { seatDeck(it, decks, friendDecks)?.artUrl == null && it.artUrl == null } && c.games.storedArt().isEmpty()) {
                     Text(
                         "Players without a commander get a random commander's picture; none are stored yet (the app fetches them when online), so this game uses plain colours.",
@@ -327,38 +330,15 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
             onDismiss = { picking = null },
         ) { new -> change { t -> t.copy(seats = t.seats.mapIndexed { j, ch -> if (j == i) new else ch }) } }
     }
-    if (otherLife) {
-        TextInputDialog("Starting life", "Life", "${setup?.startingLife ?: 40}", "OK", onDismiss = { otherLife = false }) { v ->
-            otherLife = false
-            v.toIntOrNull()?.takeIf { it in 1..999 }?.let { life -> change { it.copy(startingLife = life) } }
-        }
-    }
-    if (customCounter) {
-        TextInputDialog("Custom counter", "Its name", "", "Add", onDismiss = { customCounter = false }) { name ->
-            customCounter = false
-            change { it.copy(counters = it.counters + (LiveGames.CUSTOM + name.trim())) }
-        }
-    }
 }
 
 @Composable
 private fun Label(text: String) = Text(text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
 
-@Composable
-private fun SwitchRow(title: String, sub: String?, on: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable { onChange(!on) }, verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            sub?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        }
-        Switch(on, onChange)
-    }
-}
-
 /** A seat's picture: the commander's art, or the panel's colour. */
 @Composable
 internal fun SeatPicture(url: String?, colour: Int, size: Dp) {
-    Box(Modifier.size(size).clip(RoundedCornerShape(8.dp)).background(Color(LiveGames.PALETTE[colour % LiveGames.PALETTE.size]))) {
+    Box(Modifier.size(size).clip(RoundedCornerShape(8.dp)).background(seatBrush(colour))) {
         if (url != null) AsyncImage(url, null, Modifier.size(size), contentScale = ContentScale.Crop)
     }
 }
@@ -366,7 +346,7 @@ internal fun SeatPicture(url: String?, colour: Int, size: Dp) {
 /** Who sits in a seat and which deck they play; friends and their decks can be added here. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SeatPickerSheet(
+internal fun SeatPickerSheet(
     seatIndex: Int,
     choice: SeatChoice,
     taken: Set<String>,
@@ -375,6 +355,8 @@ private fun SeatPickerSheet(
     friendDecks: List<FriendDeck>,
     pictures: Boolean,
     onDismiss: () -> Unit,
+    /** The colour and background choices; in a game they're on the player's own sheet instead. */
+    showLook: Boolean = true,
     onChange: (SeatChoice) -> Unit,
 ) {
     val c = LocalContext.current.container
@@ -423,7 +405,7 @@ private fun SeatPickerSheet(
             if (choice.deckId != null || choice.friendDeckUid != null) {
                 TextButton(onClick = { onChange(choice.copy(deckId = null, friendDeckUid = null)) }) { Text("No deck") }
             }
-            if (!pictures) {
+            if (showLook && !pictures) {
                 Text("Colour", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LiveGames.PALETTE.indices.forEach { i ->
@@ -436,7 +418,7 @@ private fun SeatPickerSheet(
                     }
                 }
             }
-            if (pictures && seatDeck(choice, decks, friendDecks)?.artUrl == null) {
+            if (showLook && pictures && seatDeck(choice, decks, friendDecks)?.artUrl == null) {
                 Text("Background", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SeatPicture(choice.artUrl, seatIndex, 56.dp)

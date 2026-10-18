@@ -181,7 +181,6 @@ fun AppNav() {
             }
             composable("games/add") { GameSetupScreen(nav, rematch = false, addPast = true) }
             composable("games/play") { TrackerScreen(nav) }
-            composable("games/end") { GameOverScreen(nav) }
             composable("games/all") { GamesListScreen(nav) }
             composable("games/stats") { GameStatsScreen(nav) }
             composable("games/players") { PlayersScreen(nav) }

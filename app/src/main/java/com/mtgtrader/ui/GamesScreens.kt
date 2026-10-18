@@ -223,7 +223,7 @@ fun GamesScreen(nav: NavController) {
         AlertDialog(
             onDismissRequest = { confirmDrop = false },
             title = { Text("Drop the game in progress?") },
-            text = { Text("It isn't saved; to keep it, continue it and end it from the centre button.") },
+            text = { Text("It isn't saved; to keep it, continue it and end it with the arrow at the left of the middle bar.") },
             confirmButton = { TextButton(onClick = { confirmDrop = false; c.games.abandon() }) { Text("Drop it", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { confirmDrop = false }) { Text("Cancel") } },
         )
@@ -277,8 +277,8 @@ fun GamesListScreen(nav: NavController) {
 private fun placeLabel(p: Int?) = p?.toString() ?: "–"
 
 /**
- * The results of a game, to change: places (who won), how it was won and a note; used when a game ends
- * ([GameOverScreen]) and for a recorded game ([GameDetailScreen]).
+ * The results of a game, to change: places (who won), how it was won and a note, for a recorded game
+ * ([GameDetailScreen]); a game ends on the tracker's own End the game window since 1.48.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -331,70 +331,6 @@ private fun ResultsForm(
             }
         }
         OutlinedTextField(note, onNote, label = { Text("Note") }, modifier = Modifier.fillMaxWidth())
-    }
-}
-
-/** The game just ended: who won (the last one standing, or picked), how, and a note; saved to the game history. */
-@Composable
-fun GameOverScreen(nav: NavController) {
-    val c = LocalContext.current.container
-    val scope = rememberCoroutineScope()
-    val live by c.games.live.collectAsStateWithLifecycle()
-    val g = live
-    val endedAt = remember { System.currentTimeMillis() }
-    if (g == null) {
-        LaunchedEffect(Unit) { nav.safePopBackStack() }
-        return
-    }
-    val base = remember(g.uid) { LiveGames.record(g, endedAt, null, null, null) }
-    var places by remember(g.uid) { mutableStateOf(base.seatList.associate { it.seat to it.place }) }
-    // Several players still in: the winner is picked here (or "A draw" ticked), not assumed.
-    var draw by remember(g.uid) { mutableStateOf(false) }
-    var winType by remember { mutableStateOf<WinType?>(null) }
-    var note by rememberSaveable { mutableStateOf("") }
-    fun saved(): GameRecord {
-        val seats = base.seatList.map { it.copy(place = places[it.seat]) }
-        return base.copy(seats = Games.encodeSeats(seats), draw = draw || seats.none { it.place == 1 }, winType = winType?.key.takeIf { !draw }, note = note.ifBlank { null })
-    }
-    val winner = base.seatList.firstOrNull { places[it.seat] == 1 }.takeIf { !draw }
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Game over") }, navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back to the game") } }) },
-    ) { pad ->
-        Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                g.seats.firstOrNull { it.seat == winner?.seat }?.artUrl?.let { AsyncImage(it, null, Modifier.fillMaxWidth().fillMaxHeight(), contentScale = ContentScale.Crop) }
-                Box(Modifier.fillMaxWidth().fillMaxHeight().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))))
-                Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (winner != null) { Icon(Icons.Default.EmojiEvents, null, tint = Color(0xFFFFC94D)); Spacer(Modifier.width(6.dp)) }
-                        Text(winner?.let { "${it.name} wins" } ?: if (draw) "A draw" else "Who won?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Text(
-                        listOfNotNull(winner?.deckName?.ifBlank { null }, Games.duration(base.durationMs), base.rounds?.let { "$it turns" }).joinToString(" · "),
-                        color = Color.White.copy(alpha = 0.85f),
-                    )
-                }
-            }
-            if (winner == null && !draw) Text("More than one player is still in: give the winner place 1, or tick “A draw”.", style = MaterialTheme.typography.bodySmall)
-            ResultsForm(base.seatList, places, { seat, p -> places = places + (seat to p) }, draw, { draw = it }, winType, { winType = it }, note, { note = it }, base.turnsOn)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { nav.safePopBackStack() }, modifier = Modifier.weight(1f)) { Text("Back to the game") }
-                Button(onClick = {
-                    scope.launch {
-                        c.games.finish(saved())
-                        nav.navigate("games") { popUpTo("games") { inclusive = true } }
-                    }
-                }, modifier = Modifier.weight(1f)) { Text("Save") }
-            }
-            OutlinedButton(onClick = {
-                scope.launch {
-                    c.games.finish(saved())
-                    nav.navigate("games/new?rematch=true") { popUpTo("games") }
-                }
-            }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Replay, null); Spacer(Modifier.width(6.dp)); Text("Save and rematch") }
-            Spacer(Modifier.height(16.dp))
-        }
     }
 }
 
