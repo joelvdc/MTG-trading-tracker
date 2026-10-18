@@ -28,6 +28,12 @@ How to use this file:
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
    remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
+- **Open since 1.46 (2026-10-18):** the weekly health check ("MTG & Poké Trader health and new-release check") can't
+  be edited by Claude (it was made outside a Claude session). Its full updated text for 1.46 is in
+  `docs/health-check-instructions.txt`; the owner pastes it over the old text at
+  https://claude.ai/code/routines/trig_01XUHcD4LbA8cysfhWn2NVrK. Also still open: the owner tries the Archidekt editing on
+  a spare deck first and reports what happens.
+
 9. **MTG Trader 1.47: life tracker and game records for Commander** (below). Asked for by the owner on 2026-10-17;
    a draft plan is below; the owner answered its questions the same day. Comes after 1.46.
 
