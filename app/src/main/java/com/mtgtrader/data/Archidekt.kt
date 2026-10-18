@@ -13,7 +13,7 @@ import java.io.IOException
 private data class ArchOwner(val username: String = "")
 
 @Serializable
-private data class ArchCategory(val name: String, val includedInDeck: Boolean = true, val isPremier: Boolean = false)
+private data class ArchCategory(val name: String, val includedInDeck: Boolean = true, val isPremier: Boolean = false, val id: Long? = null)
 
 @Serializable
 private data class ArchEdition(val editioncode: String = "", val editionname: String = "")
@@ -30,6 +30,7 @@ private data class ArchOracle(
 
 @Serializable
 private data class ArchCard(
+    val id: Long? = null,
     val uid: String,
     val collectorNumber: String = "",
     val edition: ArchEdition = ArchEdition(),
@@ -38,6 +39,8 @@ private data class ArchCard(
 
 @Serializable
 private data class ArchEntry(
+    val id: Long? = null,
+    val label: String? = null,
     val categories: List<String>? = null,
     val quantity: Int = 1,
     val modifier: String = "Normal",
@@ -52,6 +55,8 @@ private data class ArchDeck(
     val featured: String? = null,
     val customFeatured: String? = null,
     @SerialName("private") val isPrivate: Boolean = false,
+    val unlisted: Boolean = false,
+    val parentFolder: kotlinx.serialization.json.JsonElement? = null,
     val categories: List<ArchCategory> = emptyList(),
     val cards: List<ArchEntry> = emptyList(),
     val updatedAt: String? = null,
@@ -90,6 +95,11 @@ data class ArchidektCard(
     val etched: Boolean,
     val gameChanger: Boolean,
     val colorIdentity: List<String>,
+    /** All its categories, [category] first, and Archidekt's ids for the line and the printing (since 1.46). */
+    val categories: List<String> = listOf(category),
+    val relationId: Long? = null,
+    val archidektCardId: Long? = null,
+    val label: String? = null,
 ) {
     /** Scryfall serves every card image at a path made from its id. */
     val imageUrl get() = "https://cards.scryfall.io/normal/front/${scryfallId[0]}/${scryfallId[1]}/$scryfallId.jpg"
@@ -106,6 +116,10 @@ data class ArchidektDeck(
     val updatedAt: Long? = null,
     /** The cards in categories left out of the deck (the maybeboard, a sideboard…). Since 1.42. */
     val maybeboard: List<ArchidektCard> = emptyList(),
+    /** The deck's folder, who can see it ("private", "unlisted", "public") and its categories. Since 1.46. */
+    val folderId: Long? = null,
+    val visibility: String? = null,
+    val categories: List<ArchidektCategory> = emptyList(),
 ) {
     val commanders get() = cards.filter { it.commander }
     val cardCount get() = cards.sumOf { it.quantity }
@@ -198,6 +212,10 @@ class ArchidektApi(private val http: OkHttpClient) {
                     etched = e.modifier.equals("Etched", true),
                     gameChanger = o.gameChanger,
                     colorIdentity = o.colorIdentity,
+                    categories = cats.ifEmpty { listOf(primary) },
+                    relationId = e.id,
+                    archidektCardId = e.card.id,
+                    label = e.label,
                 )
             }
             val (maybe, cards) = all.partition { it.category in excluded }
@@ -209,6 +227,14 @@ class ArchidektApi(private val http: OkHttpClient) {
                 cards = cards,
                 updatedAt = DeckSorting.parseTime(d.updatedAt),
                 maybeboard = maybe,
+                folderId = (d.parentFolder as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull()
+                    ?: ((d.parentFolder as? kotlinx.serialization.json.JsonObject)?.get("id") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull(),
+                visibility = when {
+                    d.isPrivate -> ArchidektCollectionClient.VISIBILITY_PRIVATE
+                    d.unlisted -> ArchidektCollectionClient.VISIBILITY_UNLISTED
+                    else -> ArchidektCollectionClient.VISIBILITY_PUBLIC
+                },
+                categories = d.categories.map { ArchidektCategory(it.name, it.includedInDeck, it.id) },
             )
         }
     }

@@ -110,6 +110,23 @@ class AppContainer(context: Context) {
         backups, network, appScope,
     )
 
+    /** Editing decks and sending the edits to Archidekt (since 1.46). */
+    val deckEditor = com.mtgtrader.data.DeckEditor(db, scryfall, archidekt, decks, settings, network, precons, repo, appScope).also { editor ->
+        decks.privateReader = { id ->
+            archidekt.withLogin { c, l -> c.deckJson(l, id) }.let(com.mtgtrader.data.ArchidektApi::parse)
+        }
+        decks.editSender = { id -> editor.waitingCount(id) == 0 || editor.send(id).let { editor.waitingCount(id) == 0 } }
+        decks.detacher = { id -> editor.detach(id) }
+        repo.deckAdder = { deckId, card, finish, qty ->
+            db.deckDao().get(deckId)?.takeIf(editor::canEdit)?.let { editor.addCard(deckId, card, finish, qty) }
+        }
+        repo.deckUndo = { lineId ->
+            val line = db.deckDao().card(lineId)
+            val deck = line?.let { db.deckDao().get(it.deckId) }
+            if (deck != null && editor.canEdit(deck) && !line.addedInApp) { editor.undoAdd(lineId); true } else false
+        }
+    }
+
     init {
         // Prices show in the chosen currency at the latest rate (since 1.28), from the chosen source (since 1.29).
         // Set right away, so the first screen is right; afterwards the watchers below only pass on changes.

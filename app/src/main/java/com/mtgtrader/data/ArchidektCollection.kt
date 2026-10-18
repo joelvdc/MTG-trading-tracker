@@ -125,7 +125,15 @@ data class ArchidektTag(val id: Long, val name: String, val color: String = "")
 data class ArchidektCollectionData(val entries: List<ArchidektEntry>, val tags: List<ArchidektTag>)
 
 /** A printing as Archidekt knows it: its own card id and the finishes it comes in. */
-data class ArchidektPrinting(val cardId: Long, val options: List<String>)
+data class ArchidektPrinting(
+    val cardId: Long,
+    val options: List<String>,
+    /** The card's "auto" category on Archidekt (Ramp, Draw, Removal…), if it has one. Since 1.46. */
+    val defaultCategory: String? = null,
+)
+
+/** A folder of the logged-in user's decks on Archidekt, with its subfolders (id and name). Since 1.46. */
+data class ArchidektFolder(val id: Long, val name: String, val parentId: Long?, val subfolders: List<Pair<Long, String>>)
 
 /** Logged in to Archidekt: the tokens its website uses (never the password). */
 @Serializable
@@ -222,7 +230,8 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
                     val uid = co["uid"]?.jsonPrimitive?.contentOrNull ?: return@forEach
                     val id = co["id"]?.jsonPrimitive?.longOrNull ?: return@forEach
                     val options = (co["options"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
-                    out[uid] = ArchidektPrinting(id, options)
+                    val auto = ((co["oracleCard"] as? JsonObject)?.get("defaultCategory") as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                    out[uid] = ArchidektPrinting(id, options, auto)
                 }
                 next = (o["next"] as? JsonPrimitive)?.contentOrNull?.let(::sameScheme)
                 pages++
@@ -230,6 +239,81 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
         }
         out
     }
+
+    // ---- Decks (since 1.46): the calls Archidekt's own deck editor makes ----------------------
+
+    /**
+     * Changes a deck's cards: [items] are Archidekt's "add", "modify" and "remove" actions (see [DeckEditor]).
+     * Returns Archidekt's answer, which names the lines it added ("add": patchId → deckRelationId).
+     */
+    suspend fun modifyDeckCards(login: ArchidektLogin, deckId: Long, items: JsonArray): Pair<JsonObject, ArchidektLogin> {
+        val body = buildJsonObject { put("cards", items) }
+        val (text, a) = send(login) { it.url(url("/api/decks/$deckId/modifyCards/v2/")).patch(body.toString().toRequestBody(jsonType)) }
+        return (runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull() ?: JsonObject(emptyMap())) to a
+    }
+
+    /** Makes a new, empty Commander deck in [folderId] (the user's home folder when null); returns its id. */
+    suspend fun createDeck(login: ArchidektLogin, name: String, folderId: Long?, visibility: String): Pair<Long, ArchidektLogin> {
+        val body = buildJsonObject {
+            put("name", name)
+            put("deckFormat", 3)
+            put("edhBracket", JsonNull)
+            put("description", "")
+            put("featured", "")
+            put("playmat", "")
+            put("private", visibility == VISIBILITY_PRIVATE)
+            put("unlisted", visibility == VISIBILITY_UNLISTED)
+            put("theorycrafted", false)
+            put("game", JsonNull)
+            if (folderId != null) put("parent_folder", folderId)
+            put("cardPackage", JsonNull)
+            put("extras", buildJsonObject { put("forceCardsToSingleton", false); put("ignoreCardsOutOfCommanderIdentity", true) })
+        }
+        val (text, a) = send(login) { it.url(url("/api/decks/v2/")).post(body.toString().toRequestBody(jsonType)) }
+        val id = runCatching { json.parseToJsonElement(text).jsonObject["id"]?.jsonPrimitive?.longOrNull }.getOrNull()
+            ?: throw IOException("Archidekt didn't say which deck it made")
+        return id to a
+    }
+
+    /** Changes who can see a deck: [VISIBILITY_PRIVATE], [VISIBILITY_UNLISTED] or [VISIBILITY_PUBLIC]. */
+    suspend fun setDeckVisibility(login: ArchidektLogin, deckId: Long, visibility: String): ArchidektLogin {
+        val body = buildJsonObject {
+            put("private", visibility == VISIBILITY_PRIVATE)
+            put("unlisted", visibility == VISIBILITY_UNLISTED)
+        }
+        return send(login) { it.url(url("/api/decks/$deckId/update/")).patch(body.toString().toRequestBody(jsonType)) }.second
+    }
+
+    /** Moves a deck into another of the user's folders. */
+    suspend fun moveDeck(login: ArchidektLogin, deckId: Long, folderId: Long): ArchidektLogin {
+        val body = buildJsonObject {
+            put("items", buildJsonArray {
+                add(buildJsonObject {
+                    put("type", "deck")
+                    put("id", deckId)
+                    put("patch", buildJsonObject { put("parentFolder", folderId) })
+                })
+            })
+        }
+        return send(login) { it.url(url("/api/massUpdate/")).patch(body.toString().toRequestBody(jsonType)) }.second
+    }
+
+    /** One of the user's folders, with its subfolders. */
+    suspend fun folder(login: ArchidektLogin, id: Long): Pair<ArchidektFolder, ArchidektLogin> {
+        val (text, a) = send(login) { it.url(url("/api/decks/folders/$id/")).get() }
+        val o = json.parseToJsonElement(text).jsonObject
+        val parent = (o["parentFolder"] as? JsonObject)?.get("id")?.jsonPrimitive?.longOrNull
+        val subs = (o["subfolders"] as? JsonArray).orEmpty().mapNotNull { e ->
+            val so = e as? JsonObject ?: return@mapNotNull null
+            val sid = so["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            sid to (so["name"]?.jsonPrimitive?.contentOrNull ?: "Folder $sid")
+        }
+        return ArchidektFolder(o["id"]?.jsonPrimitive?.longOrNull ?: id, o["name"]?.jsonPrimitive?.contentOrNull ?: "Folder", parent, subs) to a
+    }
+
+    /** A deck as Archidekt's API sends it, read with the login (so private decks can be read too). */
+    suspend fun deckJson(login: ArchidektLogin, deckId: Long): Pair<String, ArchidektLogin> =
+        send(login) { it.url(url("/api/decks/$deckId/")).get() }
 
     /** Adds an entry ([entry]'s id is ignored); returns it with Archidekt's id. */
     suspend fun create(login: ArchidektLogin, entry: ArchidektEntry): Pair<ArchidektEntry, ArchidektLogin> {
@@ -382,6 +466,9 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
 
     companion object {
         const val DEFAULT_BASE = "https://archidekt.com"
+        const val VISIBILITY_PRIVATE = "private"
+        const val VISIBILITY_UNLISTED = "unlisted"
+        const val VISIBILITY_PUBLIC = "public"
         private const val PAGE = 250
         private const val MAX_PAGES = 400
 

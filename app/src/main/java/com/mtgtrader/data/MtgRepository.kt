@@ -117,12 +117,18 @@ class MtgRepository(
             else -> null
         }
 
+    /** Set by the deck editor (since 1.46): adds to an editable deck (null for other decks), and undoes that. */
+    var deckAdder: (suspend (Long, CardRef, Finish, Int) -> AddResult?)? = null
+    var deckUndo: (suspend (Long) -> Boolean)? = null
+
     /**
      * Adds one copy to a deck as a card "Added in app" (Archidekt isn't changed; it's kept when the deck
      * is reloaded), next to an identical one if it's there. Its card type, which groups it in the deck,
      * comes from the details saved for it or from Scryfall. Since 1.42.
      */
     suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1): AddResult {
+        // Decks that can be edited (since 1.46) get the card straight into the deck, in its auto category.
+        deckAdder?.invoke(deckId, card, finish, qty)?.let { return it }
         val f = card.resolveFinish(finish)
         val decks = db.deckDao()
         val same = decks.cardsAddedInApp(deckId).firstOrNull { it.card.scryfallId == card.scryfallId && it.foil == f.foil && it.etched == f.etched }
@@ -186,6 +192,7 @@ class MtgRepository(
                 if (item.quantity > 1) wishlist.update(item.copy(quantity = item.quantity - 1)) else wishlist.delete(item.id)
             }
             AddedTo.DECK -> {
+                if (deckUndo?.invoke(r.itemId) == true) return
                 val item = db.deckDao().card(r.itemId) ?: return
                 if (item.quantity > 1) db.deckDao().addQuantity(item.id, -1) else db.deckDao().deleteCard(item.id)
             }

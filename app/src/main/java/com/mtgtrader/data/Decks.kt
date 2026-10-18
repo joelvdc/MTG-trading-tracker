@@ -57,6 +57,18 @@ data class Deck(
     val scrollVault: String? = null,
     val svAt: Long? = null,
     val svError: String? = null,
+    /** The deck's folder on Archidekt (id and name). Since 1.46. */
+    val folderId: Long? = null,
+    val folderName: String? = null,
+    /** Who can see the deck on Archidekt: "private", "unlisted" or "public". Since 1.46. */
+    val visibility: String? = null,
+    /**
+     * The deck's categories on Archidekt as [ArchidektCategory] JSON (which are left out of the deck, like the
+     * maybeboard), plus categories made in the app that hold no cards yet. Since 1.46.
+     */
+    val categoryInfo: String? = null,
+    /** Where a local deck came from ("Copy of Teval", "Moxfield list"…), shown under its name. Since 1.46. */
+    val origin: String? = null,
 ) {
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0
@@ -155,9 +167,34 @@ data class DeckCard(
      * Since 1.42.
      */
     @ColumnInfo(defaultValue = "0") val maybeboard: Boolean = false,
+    /**
+     * All the card's categories on Archidekt, one per line, [category] first; empty for just [category].
+     * Since 1.46 (editing keeps a card's other categories, e.g. "Maybeboard" and "Land").
+     */
+    @ColumnInfo(defaultValue = "''") val categories: String = "",
+    /** Archidekt's id for the printing, needed to send the card to Archidekt. Since 1.46. */
+    val archidektCardId: Long? = null,
+    /** Archidekt's id for this line of the deck, needed to change or remove it there. Since 1.46. */
+    val relationId: Long? = null,
+    /** Archidekt's colour label of the line ("name,#rrggbb"), kept as it was when the line is changed. Since 1.46. */
+    val label: String? = null,
+    /**
+     * Names this line whatever the phone, so an edit waiting to be sent still finds it after a sync has
+     * rewritten the deck's cards. Lines from before 1.46 have none until the deck is reloaded. Since 1.46.
+     */
+    @ColumnInfo(defaultValue = "''") val lineUid: String = java.util.UUID.randomUUID().toString(),
 ) {
     val finish get() = Finish.of(foil, etched)
     val primaryType get() = DeckGrouping.primaryType(types)
+
+    /** Every category of the line, [category] first. Since 1.46. */
+    val categoryList: List<String> get() = categories.split('\n').filter { it.isNotBlank() }.ifEmpty { listOf(category) }
+
+    /** The line moved to [to] as its first category, keeping its other ones. Since 1.46. */
+    fun inCategory(to: String, maybe: Boolean): DeckCard {
+        val rest = categoryList.drop(1).filterNot { it.equals(to, true) || it.equals(DeckEdits.MAYBEBOARD, true) }
+        return copy(category = to, categories = (listOf(to) + rest).joinToString("\n"), maybeboard = maybe)
+    }
 }
 
 /** Deck card joined with today's price guide entry. */

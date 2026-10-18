@@ -125,6 +125,23 @@ class ArchidektSync(
         prefs.edit().putString(K_LOGIN, SecretStore.encrypt(json.encodeToString(ArchidektLogin.serializer(), l))).apply()
     }
 
+    /** The logged-in Archidekt user's name, or null. Since 1.46. */
+    val username: String? get() = login()?.username
+
+    /**
+     * Runs [block] with the saved login, keeping the tokens it was refreshed to (for editing decks). Throws
+     * [ArchidektAuthException] when nobody is logged in. Since 1.46.
+     */
+    suspend fun <T> withLogin(block: suspend (ArchidektCollectionClient, ArchidektLogin) -> Pair<T, ArchidektLogin>): T {
+        val l = login() ?: throw ArchidektAuthException("Log in to Archidekt first (Settings → Archidekt).")
+        val (result, after) = block(client, l)
+        if (after != l) saveLogin(after)
+        return result
+    }
+
+    /** The client, for calls that need no login (looking up Archidekt's card ids). Since 1.46. */
+    val publicClient: ArchidektCollectionClient get() = client
+
     /** The address of Archidekt; only debug builds can point it at a test server. */
     var server: String
         get() = prefs.getString(K_SERVER, null) ?: ArchidektCollectionClient.DEFAULT_BASE
