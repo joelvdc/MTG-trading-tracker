@@ -29,10 +29,10 @@ How to use this file:
    Also in 1.46 (owner, 2026-10-17): the combo flags for combos that don't count for the bracket, and all decks'
    bracket or power level cards from the Decks tab (both below), and when the deck can cast its commander and has its
    colours (owner, 2026-10-18, below).
-   Green light given 2026-10-18; the full plan with 16 mockups was sent the same day. Waiting for the owner's choices:
-   one release or three (Claude suggests 1.46 combo flags + all decks' cards + commander odds, 1.47 local decks and
-   editing on the phone, 1.48 changes sent to Archidekt; the life tracker then becomes 1.49), bracket list A or B,
-   commander odds A or B, and the visibility of new Archidekt decks (private decks can't be scored).
+   Green light given 2026-10-18; the full plan with 16 mockups was sent the same day. The owner chose (2026-10-18):
+   **one release**, the bracket cards of all decks as small cards (option A), the commander odds as a table (option
+   B), and new Archidekt decks **unlisted** by default (private decks can't be scored by Commander Salt).
+   Being built.
 7. ~~MTG Trader 1.44: deck stats (mana curve, mana cost, mana production as sources, the deck's tokens), asked for and
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
