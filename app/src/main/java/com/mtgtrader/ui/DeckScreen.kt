@@ -187,6 +187,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     // The deck stats and the deck's tokens (since 1.44).
     val statCards by remember { c.db.cardInfoDao().observeDeckStats(deckId) }.collectAsStateWithLifecycle(emptyList())
     val statsOpen by c.settings.deckStatsOpen.collectAsStateWithLifecycle()
+    val allGames by c.games.games.collectAsStateWithLifecycle(emptyList())
+    val deckGames = remember(allGames, deckId) { com.mtgtrader.data.GameStats.gamesOfDeck(allGames, deckId) }
     // The commander odds, worked out in the background when the Stats are open and whenever the deck's cards or
     // their details change; kept here, not in the list, whose rows start over when they scroll back into sight.
     val oddsWanted = DeckStats.STATS in statsOpen && statCards.any { it.commander }
@@ -691,6 +693,15 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                 }
             }
+            // The deck's games from the life tracker (since 1.47), folded until opened.
+            if (deckGames.isNotEmpty()) {
+                val gamesFolded = GAMES_OPEN !in statsOpen
+                item(key = "games_h") { StatsHeading("Games (${deckGames.size})", gamesFolded) { toggleStats(GAMES_OPEN) } }
+                if (!gamesFolded) item(key = "games_card") {
+                    val r = remember(deckGames) { com.mtgtrader.data.GameStats.decks(deckGames).firstOrNull { it.deckId == deckId } }
+                    r?.let { DeckGamesCard(it, deckGames, deckId) { g -> g.uid?.let { uid -> nav.navigate("games/game/$uid") } } }
+                }
+            }
             sections.forEach { section ->
                 val folded = section.title in collapsed
                 item(key = "h_${section.title}") {
@@ -1158,6 +1169,9 @@ private fun maybeKey(title: String) = "maybeboard:$title"
 /** The section of the cards in categories switched off in "Manage categories" (since 1.47), and its "opened" key. */
 internal const val HIDDEN_TITLE = "Hidden categories"
 private const val HIDDEN_OPEN = "\u0000hidden-open"
+
+/** The deck page's "Games" section is open (with the Stats' and Tokens' keys). Since 1.47. */
+private const val GAMES_OPEN = "games"
 
 /**
  * A section's title and card count, with what its cards are worth (since 1.43); tapping it folds the

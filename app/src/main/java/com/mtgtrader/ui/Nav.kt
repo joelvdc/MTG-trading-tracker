@@ -174,6 +174,21 @@ fun AppNav() {
             composable("collection") { CollectionScreen(nav) }
             composable("scans") { ScansScreen(nav) }
             composable("decks") { DecksScreen(nav) }
+            // The life tracker and game records (since 1.47).
+            composable("games") { GamesScreen(nav) }
+            composable("games/new?rematch={rematch}", arguments = listOf(navArgument("rematch") { type = NavType.BoolType; defaultValue = false })) {
+                GameSetupScreen(nav, it.arguments?.getBoolean("rematch") == true)
+            }
+            composable("games/add") { GameSetupScreen(nav, rematch = false, addPast = true) }
+            composable("games/play") { TrackerScreen(nav) }
+            composable("games/end") { GameOverScreen(nav) }
+            composable("games/all") { GamesListScreen(nav) }
+            composable("games/stats") { GameStatsScreen(nav) }
+            composable("games/players") { PlayersScreen(nav) }
+            composable(
+                "games/game/{uid}?fresh={fresh}",
+                arguments = listOf(navArgument("uid") { type = NavType.StringType }, navArgument("fresh") { type = NavType.BoolType; defaultValue = false }),
+            ) { GameDetailScreen(nav, it.arguments?.getString("uid").orEmpty(), it.arguments?.getBoolean("fresh") == true) }
             composable(
                 "decks/user?name={name}",
                 arguments = listOf(navArgument("name") { type = NavType.StringType; nullable = true; defaultValue = null }),
