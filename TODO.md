@@ -365,8 +365,10 @@ Proposed (in the deck page's Stats section, under mana production; worked out wi
 - The result is worked out when the stats are opened (and again after edits), not stored or synced.
 - No new service: it uses the mana costs, mana production and card text the app already has (since 1.43/1.44), so no
   health check change.
-- Open: whether to also show Karsten's table numbers (sources needed per cost) in the ⓘ. Claude suggests not: the
-  simulation answers the owner's question for the real deck.
+- **Karsten's table stays out** (owner, 2026-10-18): the ⓘ explains the method and links to his article, without
+  the table.
+
+No open questions left.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
