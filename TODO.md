@@ -38,6 +38,44 @@ How to use this file:
    (green light and choices from the owner on 2026-10-18: five tabs with Settings behind a gear, commander pictures
    and the ghost by default).~~ Released.
 
+### Test 1.46 and 1.47 in an emulator (in a session on the owner's PC)
+*Added 2026-10-18. MTG Trader only.*
+
+The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
+for testing all the functions that this cloud session could not."
+
+Cloud sessions can't run an Android emulator: 1.46 and 1.47 were checked with unit tests, screenshot tests and a
+simulated run of the screens, never on a real (or emulated) phone. In a session on the owner's PC: start an emulator
+(Android Studio's, a recent Pixel), install the debug build (`./gradlew installDebug`), drive the app with `adb`
+(taps, swipes, screenshots), and report what works and what doesn't, with screenshots. Use a spare Archidekt deck
+(not the owner's real decks) for anything that writes to Archidekt, and a spare Nextcloud folder for sync. Fixes
+found go through the usual plan → green light → release.
+
+Checklist:
+- **Deck editing (1.46):** drag a card by its handle to another category (also in the compact view and the
+  maybeboard); press and hold to select, Move to category, To maybeboard, Remove; undo each; a category's ⋮ (add a
+  card, select all, rename, delete); the card window's controls (category list from the bottom, In the deck /
+  Maybeboard, copies), also with the phone's text set larger; Auto-categorise all cards.
+- **Archidekt sending (1.46, 1.47):** edits reach Archidekt (check on archidekt.com); offline edits wait and go when
+  back online; adding, renaming and deleting a category happen on Archidekt; send a local deck to Archidekt (new deck,
+  folder, visibility); Folder and visibility.
+- **Local decks (1.46):** New deck from empty, a precon, scans, a copy, a pasted Moxfield list; detach; a local deck
+  reaches the other phone through Nextcloud sync (two emulators, or one emulator and a phone).
+- **Menus (1.47):** every long menu (deck ⋮, collection ⋮, sort menus, category lists) fits above the phone's
+  buttons, with gesture navigation and with three-button navigation, small and large screens, larger text.
+- **Manage categories (1.47):** switch categories off and on (deck page, Hidden categories section, move lists);
+  empty categories never on the deck page; rename and delete with undo.
+- **Commander odds (1.47):** open the Stats, scroll the odds away and back: they don't start over.
+- **Life tracker (1.47):** New game with 2 to 6 players (layouts, panels facing the right way), tap and hold on every
+  panel in both tap modes, the − + symbols, holding by 1; commander damage, poison, tax, extra counters, monarch,
+  initiative, day/night; Dead? (yes, no, undo); low life animations; turns, clock, pause, undo; random who starts;
+  the screen stays on and the system bars hide; leaving and coming back keeps the game; End the game, Game over, Save
+  and rematch; commander pictures, random pictures offline, plain colours and picking a colour.
+- **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
+  head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
+  other phone through sync; a backup restore keeps them.
+- **Tab bar (1.47):** five tabs, Settings behind the gear on every tab, back from Settings.
+
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
 the idea and its open questions can be picked up again when wished.*
