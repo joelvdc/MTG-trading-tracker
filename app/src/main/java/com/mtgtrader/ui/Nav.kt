@@ -197,7 +197,10 @@ fun AppNav() {
             }
             composable("purchaseprices") { PurchasePricesScreen(nav) }
             composable("orders") { OrdersScreen(nav) }
-            composable("precon") { PreconScreen(nav) }
+            composable(
+                "precon?local={local}",
+                arguments = listOf(navArgument("local") { type = NavType.BoolType; defaultValue = false }),
+            ) { PreconScreen(nav, it.arguments?.getBoolean("local") == true) }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
             composable("archidekt") { ArchidektSyncScreen(nav) }

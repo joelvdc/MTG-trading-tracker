@@ -698,11 +698,23 @@ private fun maybeKey(title: String) = "maybeboard:$title"
  * section away or opens it again. Since 1.42.
  */
 @Composable
-internal fun SectionHeading(section: DeckSection, value: Double?, folded: Boolean, onToggle: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp).clickable(onClick = onToggle)) {
+internal fun SectionHeading(
+    section: DeckSection,
+    value: Double?,
+    folded: Boolean,
+    count: Int? = null,
+    highlight: Boolean = false,
+    menu: (@Composable () -> Unit)? = null,
+    onToggle: () -> Unit,
+) {
+    Column(
+        Modifier.fillMaxWidth().padding(top = 12.dp).clip(RoundedCornerShape(4.dp))
+            .background(if (highlight) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+            .clickable(onClick = onToggle)
+    ) {
         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "${section.title} (${section.count})",
+                "${section.title} (${count ?: section.count})",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
@@ -710,6 +722,7 @@ internal fun SectionHeading(section: DeckSection, value: Double?, folded: Boolea
             if (value != null) {
                 Text(Fmt.money(value), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            menu?.invoke()
             Icon(
                 if (folded) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
                 if (folded) "Show ${section.title}" else "Hide ${section.title}",

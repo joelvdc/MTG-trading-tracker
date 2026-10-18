@@ -247,6 +247,9 @@ interface ScanDao {
     @Query("SELECT * FROM scans WHERE id IN (:ids)")
     suspend fun byIds(ids: List<Long>): List<ScannedCard>
 
+    @Query("SELECT id FROM scans")
+    suspend fun allIds(): List<Long>
+
     @Insert
     suspend fun insert(item: ScannedCard): Long
 

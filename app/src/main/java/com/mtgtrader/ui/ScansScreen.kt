@@ -245,7 +245,15 @@ fun ScansScreen(nav: NavController) {
             action = null
             val ids = selectedIds
             scope.launch {
-                val undo = c.decks.scansToDeck(ids, deckId, keep)
+                if (deckId == NEW_DECK) {
+                    // A new local deck from these cards (since 1.46).
+                    val id = c.deckEditor.fromScans(ids, deckName, keep)
+                    nav.navigate("deck/$id")
+                    return@launch
+                }
+                val deck = c.db.deckDao().get(deckId)
+                val undo = if (deck != null && c.deckEditor.canEdit(deck)) c.deckEditor.addScans(ids, deckId, keep)
+                else c.decks.scansToDeck(ids, deckId, keep)
                 report("Added $selectedCount card(s) to $deckName", undo)
             }
         }
@@ -341,34 +349,47 @@ private fun ToTradeDialog(count: Int, onDismiss: () -> Unit, onConfirm: (tradeId
     )
 }
 
+/** Stands for "a new local deck" in the deck choice (no deck has id 0). */
+private const val NEW_DECK = 0L
+
 @Composable
 private fun ToDeckDialog(count: Int, onDismiss: () -> Unit, onConfirm: (deckId: Long, name: String, keep: Boolean) -> Unit) {
     val c = LocalContext.current.container
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     var deckId by remember { mutableStateOf<Long?>(null) }
     var keep by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("Scanned deck") }
+    val picked = decks.firstOrNull { it.archidektId == deckId }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add $count card(s) to a deck") },
         text = {
             Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
-                if (decks.isEmpty()) {
-                    Text("Import a deck in the Decks tab first.", style = MaterialTheme.typography.bodyMedium)
-                } else {
-                    Text(
-                        "The cards are added to the deck in this app only (Archidekt isn't changed), listed under " +
-                            "“Added in app”. They stay when the deck is refreshed.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    decks.forEach { d -> RadioRow(d.name, deckId == d.archidektId) { deckId = d.archidektId } }
-                    CheckRow("Keep them in the scanned list", keep) { keep = it }
+                Text(
+                    when {
+                        deckId == NEW_DECK -> "A new local deck with these cards, each in its auto category."
+                        picked != null && c.deckEditor.canEdit(picked) -> "The cards go into the deck, each in its auto category" +
+                            (if (picked.local) "." else ", and to Archidekt.")
+                        else -> "The cards are added to the deck in this app only (Archidekt isn't changed), listed under " +
+                            "“Added in app”. They stay when the deck is refreshed."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                RadioRow("New local deck", deckId == NEW_DECK) { deckId = NEW_DECK }
+                if (deckId == NEW_DECK) {
+                    androidx.compose.material3.OutlinedTextField(newName, { newName = it }, label = { Text("Deck name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
+                decks.forEach { d -> RadioRow(d.name, deckId == d.archidektId) { deckId = d.archidektId } }
+                CheckRow("Keep them in the scanned list", keep) { keep = it }
             }
         },
         confirmButton = {
-            TextButton(onClick = { deckId?.let { id -> onConfirm(id, decks.first { it.archidektId == id }.name, keep) } }, enabled = deckId != null) {
-                Text("Add")
+            TextButton(
+                onClick = { deckId?.let { id -> onConfirm(id, if (id == NEW_DECK) newName.trim() else decks.first { it.archidektId == id }.name, keep) } },
+                enabled = deckId != null && (deckId != NEW_DECK || newName.isNotBlank()),
+            ) {
+                Text(if (deckId == NEW_DECK) "Make deck" else "Add")
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },

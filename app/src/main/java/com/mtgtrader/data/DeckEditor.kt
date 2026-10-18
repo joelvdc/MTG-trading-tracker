@@ -271,6 +271,19 @@ class DeckEditor(
         return AddResult(dao.allLines(deckId).firstOrNull { it.lineUid == line.lineUid }?.id ?: 0, AddedTo.DECK)
     }
 
+    /** Scanned cards into an editable deck (each in its auto category); unless [keep], they leave the scan list. */
+    suspend fun addScans(scanIds: List<Long>, deckId: Long, keep: Boolean): UndoAction {
+        val scans = repo.scansById(scanIds)
+        val before = dao.allLines(deckId).associateBy { it.lineUid }
+        for (s in scans) addCard(deckId, s.card, Finish.of(s.foil, s.etched), s.quantity)
+        if (!keep) repo.deleteScans(scanIds)
+        val changed = dao.allLines(deckId).filter { before[it.lineUid] != it.copy(id = before[it.lineUid]?.id ?: it.id) }
+        return {
+            change(deckId, changed, changed.mapNotNull { before[it.lineUid] })
+            if (!keep) repo.restoreScans(scans)
+        }
+    }
+
     /** Undoes [addCard] (one copy). */
     suspend fun undoAdd(lineId: Long) {
         val line = dao.card(lineId) ?: return
@@ -429,7 +442,8 @@ class DeckEditor(
     suspend fun fromPrecon(info: Precons.Info): Long {
         val deck = precons.deck(info)
         val commanders = deck.commander.map { it.name }.toSet()
-        val cards = Precons.cards(deck)
+        // The whole deck this time, basic lands too (the sideboard holds extras, not deck cards).
+        val cards = (deck.commander + deck.mainBoard).filter { it.identifiers.scryfallId != null }
         val found = scryfall.collection(cards.mapNotNull { it.identifiers.scryfallId }.distinct().map(ScryfallApi::idIdentifier)).associateBy { it.id }
         val auto = if (settings.deckAutoCategories.value) autoCategories(found.keys) else emptyMap()
         val lines = cards.groupBy { (it.identifiers.scryfallId ?: it.name) to it.isFoil }.mapNotNull { (_, same) ->
