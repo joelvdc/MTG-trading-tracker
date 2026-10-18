@@ -16,16 +16,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,42 +33,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.AddCircleOutline
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Casino
+import androidx.compose.material.icons.outlined.Diamond
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Thunderstorm
+import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -79,9 +63,11 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -93,16 +79,23 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -112,24 +105,37 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.mtgtrader.container
+import com.mtgtrader.data.CardLayout
 import com.mtgtrader.data.Games
 import com.mtgtrader.data.LiveGame
 import com.mtgtrader.data.LiveGames
 import com.mtgtrader.data.LiveSeat
 import com.mtgtrader.data.LowLifeStyle
-import com.mtgtrader.data.OutReason
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
 
-private val Gold = Color(0xFFFFC94D)
-private val SheetBg = Color(0xFF211E28)
+internal val TurnGold = Color(0xFFFFC94D)
+/** The tracker's own highlight colour, as Lifetap's (since 1.48). */
+internal val TrackerAccent = Color(0xFF6DD3FF)
+/** Text on the soft panel colours. */
+internal val PanelInk = Color(0xFF111111)
 
-/** How the panels look and react, from Settings → Life tracker. */
+/** A seat's colour: a soft fade from [LiveGames.PALETTE] to [LiveGames.PALETTE_END]. */
+internal fun seatBrush(colour: Int): Brush {
+    val i = colour.mod(LiveGames.PALETTE.size)
+    return Brush.linearGradient(listOf(Color(LiveGames.PALETTE[i]), Color(LiveGames.PALETTE_END[i])))
+}
+
+/** How the panels look and react: the tracker's settings. */
 internal data class PanelLook(
-    val pictures: Boolean = true,
+    val pictures: Boolean = false,
     val aboveBelow: Boolean = false,
-    val symbols: Boolean = false,
     val lowLife: LowLifeStyle = LowLifeStyle.GHOST,
+    val layout: CardLayout = CardLayout.DEFAULT,
+    val colourGrids: Boolean = true,
 )
 
 /** Turns a box a quarter (or half) turn, swapping its width and height for a quarter turn. */
@@ -146,30 +152,72 @@ internal fun Modifier.turned(degrees: Int) = layout { m, c ->
 /**
  * Where each seat sits around a phone lying flat in the middle of the table, clockwise from the first seat: the
  * panel's turn (so it faces its player) for 2 to 6 players. 90° faces a player on the left side, −90° the right.
+ * With [ends] (4 and 6 players, since 1.48) the first player sits at the top end and one more at the bottom end.
  */
-internal fun seatTurn(players: Int, index: Int): Int = when (players) {
-    2 -> if (index == 0) 180 else 0
-    3 -> when (index) { 0 -> 90; 1 -> -90; else -> 0 }
-    4 -> if (index == 0 || index == 3) 90 else -90
-    5 -> when (index) { 0, 4 -> 90; 3 -> 0; else -> -90 }
+internal fun seatTurn(players: Int, index: Int, ends: Boolean = false): Int = when {
+    ends && players == 4 -> when (index) { 0 -> 180; 1 -> -90; 2 -> 0; else -> 90 }
+    ends && players == 6 -> when (index) { 0 -> 180; 1, 2 -> -90; 3 -> 0; else -> 90 }
+    players == 2 -> if (index == 0) 180 else 0
+    players == 3 -> when (index) { 0 -> 90; 1 -> -90; else -> 0 }
+    players == 4 -> if (index == 0 || index == 3) 90 else -90
+    players == 5 -> when (index) { 0, 4 -> 90; 3 -> 0; else -> -90 }
     else -> if (index == 0 || index >= 4) 90 else -90
 }
 
-/** The life tracker (since 1.47): the whole screen split into one panel per player, like Lifetap. */
+/** The seats as they lie on the screen: rows of seat indexes, top to bottom (a seat twice in a row spans it). */
+internal fun arrangement(players: Int, ends: Boolean = false): List<List<Int>> = when {
+    ends && players == 4 -> listOf(listOf(0, 0), listOf(3, 1), listOf(2, 2))
+    ends && players == 6 -> listOf(listOf(0, 0), listOf(5, 1), listOf(4, 2), listOf(3, 3))
+    players <= 1 -> listOf(listOf(0))
+    players == 2 -> listOf(listOf(0), listOf(1))
+    players == 3 -> listOf(listOf(0, 1), listOf(2, 2))
+    players == 4 -> listOf(listOf(0, 1), listOf(3, 2))
+    players == 5 -> listOf(listOf(0, 1), listOf(4, 2), listOf(3, 3))
+    else -> listOf(listOf(0, 1), listOf(5, 2), listOf(4, 3))
+}
+
+/** The row the middle bar sits under: the gap nearest the middle of the screen. */
+internal fun barAfterRow(players: Int, ends: Boolean): Int = if (ends && players == 6) 1 else 0
+
+private fun rowWeight(players: Int, ends: Boolean, row: Int, rows: Int): Float = when {
+    ends && players in setOf(4, 6) && (row == 0 || row == rows - 1) -> 0.75f
+    players == 3 && row == 0 -> 1.4f
+    else -> 1f
+}
+
+/** Which of the tracker's overlays is open: a player's sheet, a page from the middle bar, the end of the game. */
+private data class SheetFor(val seat: Int, val counters: Boolean)
+
+internal enum class TrackerPage { SETTINGS, DICE, MANA, HISTORY }
+
+/** A die roll, coin flip or pick shown over the table. */
+internal data class Roll(val title: String, val value: String, val sides: Int = 0)
+
+/** The life tracker (since 1.47; laid out as Lifetap since 1.48): one panel per player, a menu bar across the middle. */
 @Composable
 fun TrackerScreen(nav: NavController) {
     val c = LocalContext.current.container
+    val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val game by c.games.live.collectAsStateWithLifecycle()
     val canUndo by c.games.canUndo.collectAsStateWithLifecycle()
     val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
     val aboveBelow by c.settings.trackerAboveBelow.collectAsStateWithLifecycle()
     val holdOne by c.settings.trackerHoldOne.collectAsStateWithLifecycle()
-    val symbols by c.settings.trackerSymbols.collectAsStateWithLifecycle()
     val lowLife by c.settings.trackerLowLife.collectAsStateWithLifecycle()
-    FullScreen()
+    val cardLayout by c.settings.trackerCardLayout.collectAsStateWithLifecycle()
+    val colourGrids by c.settings.trackerFlag("trackerColourGrids").collectAsStateWithLifecycle()
+    val haptics by c.settings.trackerFlag("trackerHaptics").collectAsStateWithLifecycle()
+    val autoHide by c.settings.trackerFlag("trackerAutoHide").collectAsStateWithLifecycle()
+    val animations by c.settings.trackerFlag("trackerAnimations").collectAsStateWithLifecycle()
+    val keepAwake by c.settings.trackerFlag("trackerKeepAwake").collectAsStateWithLifecycle()
+    val hideBars by c.settings.trackerFlag("trackerHideBars").collectAsStateWithLifecycle()
+    FullScreen(keepAwake, hideBars)
+    // Set when the game ends from here, so the screen doesn't step back on its own meanwhile.
+    var leaving by remember { mutableStateOf(false) }
     val g = game
     if (g == null) {
-        LaunchedEffect(Unit) { nav.safePopBackStack() }
+        if (!leaving) LaunchedEffect(Unit) { nav.safePopBackStack() }
         Box(Modifier.fillMaxSize().background(Color.Black))
         return
     }
@@ -186,84 +234,128 @@ fun TrackerScreen(nav: NavController) {
         val t = System.currentTimeMillis()
         val was = deltas[seat]?.takeIf { t - it.second < DELTA_MS }?.first ?: 0
         deltas[seat] = (was + by) to t
+        if (haptics) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         c.games.update { LiveGames.changeLife(it, seat, by) }
     }
-    var sheetFor by remember { mutableStateOf<Int?>(null) }
-    var menu by remember { mutableStateOf(false) }
+    var sheet by remember { mutableStateOf<SheetFor?>(null) }
+    var page by remember { mutableStateOf<TrackerPage?>(null) }
+    var ending by remember { mutableStateOf(false) }
+    var roll by remember { mutableStateOf<Roll?>(null) }
     var spin by remember { mutableStateOf<Int?>(null) }
-    var spinDone by remember { mutableStateOf<Int?>(null) }
-    BackHandler(enabled = sheetFor != null || menu) { sheetFor = null; menu = false }
-    // Who starts, picked at random: a short run around the table that stops on the first player.
-    LaunchedEffect(g.uid) {
-        if (g.turns.isEmpty() && g.round == 1 && g.elapsed(System.currentTimeMillis()) < 4_000 && g.seats.size > 1) {
-            val order = g.seats.map { it.seat }
-            val steps = order.size * 2 + order.indexOf(g.firstSeat).coerceAtLeast(0) + 1
-            for (i in 0 until steps) {
-                spin = order[i % order.size]
-                delay(70L + i * 12L)
-            }
-            spin = null
-            spinDone = g.firstSeat
-            delay(1_600)
-            spinDone = null
+    var banner by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    var barUntil by remember { mutableLongStateOf(0L) }
+    BackHandler(enabled = sheet != null || page != null || ending || roll != null) {
+        when {
+            roll != null -> roll = null
+            ending -> ending = false
+            sheet != null -> sheet = null
+            else -> page = null
         }
     }
-    val look = PanelLook(pictures && g.seats.all { it.artUrl != null }, aboveBelow, symbols, lowLife)
+    /** A short run around the table (when animations are on) that stops on [pick], then [label] on its panel. */
+    fun spinTo(order: List<Int>, pick: Int, label: String) {
+        scope.launch {
+            if (animations && order.size > 1) {
+                val steps = order.size * 2 + order.indexOf(pick).coerceAtLeast(0) + 1
+                for (i in 0 until steps) {
+                    spin = order[i % order.size]
+                    delay(70L + i * 12L)
+                }
+            }
+            spin = null
+            banner = pick to label
+            delay(1_800)
+            banner = null
+        }
+    }
+    // Who starts, picked at random: the run around the table stops on the first player.
+    LaunchedEffect(g.uid) {
+        if (g.turns.isEmpty() && g.round == 1 && g.elapsed(System.currentTimeMillis()) < 4_000 && g.seats.size > 1) {
+            val first = g.seats.firstOrNull { it.seat == g.firstSeat } ?: return@LaunchedEffect
+            spinTo(g.seats.map { it.seat }, first.seat, "${first.name} starts!")
+        }
+    }
+    val look = PanelLook(pictures, aboveBelow, lowLife, cardLayout, colourGrids)
     TrackerTable(
         g, look, now,
         delta = { seat -> deltas[seat]?.takeIf { now - it.second < DELTA_MS }?.first },
-        highlight = spin ?: spinDone,
-        starts = spinDone,
-        centre = {
-            CentreButton(
-                Modifier.align(if (g.seats.size == 2) Alignment.CenterEnd else Alignment.Center).padding(end = if (g.seats.size == 2) 8.dp else 0.dp),
-                round = if (g.turnsOn) "R${g.round}" else null,
-                clock = if (g.clock) Games.clock(g.elapsed(now)) else null,
-                paused = g.paused,
-            ) { menu = true }
+        highlight = spin,
+        banner = banner,
+        bar = {
+            MenuBar(
+                g, now, hidden = autoHide && now > barUntil,
+                onShow = { barUntil = System.currentTimeMillis() + BAR_SHOWN_MS },
+                onEnd = { ending = true },
+                onSettings = { page = TrackerPage.SETTINGS },
+                onPause = { c.games.update(undoable = false) { if (it.paused) LiveGames.resume(it, System.currentTimeMillis()) else LiveGames.pause(it, System.currentTimeMillis()) } },
+                onDayNight = { c.games.update { LiveGames.toggleDayNight(it) } },
+                onHistory = { page = TrackerPage.HISTORY },
+                onUndo = { if (c.games.undo() && haptics) haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+                onMana = { page = TrackerPage.MANA },
+                onDice = { page = TrackerPage.DICE },
+                onQuickRoll = { roll = Roll("d20", "${Random.nextInt(1, 21)}", 20) },
+            )
         },
         onLife = ::changeLife,
         holdOne = holdOne,
-        onMore = { sheetFor = it },
+        onSheet = { seat, counters -> sheet = SheetFor(seat, counters) },
         onDead = { seat, yes -> c.games.update { if (yes) LiveGames.knockOut(it, seat, System.currentTimeMillis()) else LiveGames.notDead(it, seat) } },
         onBack = { seat -> c.games.update { LiveGames.bringBack(it, seat) } },
         onNextTurn = { c.games.update { LiveGames.nextTurn(it, System.currentTimeMillis()) } },
     )
-    sheetFor?.let { seat ->
-        val s = g.seats.firstOrNull { it.seat == seat }
-        if (s != null) {
-            val turn = seatTurn(g.seats.size, g.seats.indexOf(s))
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable { sheetFor = null }) {
-                Box(Modifier.fillMaxSize().turned(turn).padding(12.dp)) {
-                    CountersSheet(g, s, onClose = { sheetFor = null })
+    sheet?.let { sh ->
+        if (g.seats.none { it.seat == sh.seat }) sheet = null
+        else PlayerSheet(g, sh.seat, look, startOnCounters = sh.counters, onClose = { sheet = null })
+    }
+    when (page) {
+        TrackerPage.SETTINGS -> GameSettingsPage(g, onClose = { page = null })
+        TrackerPage.DICE -> DicePage(
+            g,
+            onClose = { page = null },
+            onRoll = { page = null; roll = it },
+            onRandomPlayer = {
+                page = null
+                g.alive.randomOrNull()?.let { p -> spinTo(g.alive.map { it.seat }, p.seat, "${p.name}!") }
+            },
+            onRandomOpponent = {
+                page = null
+                // An opponent for the player whose turn it is (or, without turns, for the phone's owner).
+                val forSeat = if (g.turnsOn) g.active else g.seats.firstOrNull { it.me }?.seat
+                val pool = g.alive.filter { it.seat != forSeat }.ifEmpty { g.alive }
+                pool.randomOrNull()?.let { p ->
+                    val who = g.seats.firstOrNull { it.seat == forSeat }?.name
+                    spinTo(pool.map { it.seat }, p.seat, if (who != null) "$who's opponent: ${p.name}" else "${p.name}!")
                 }
-            }
-        }
+            },
+        )
+        TrackerPage.MANA -> ManaPage(g, onClose = { page = null })
+        TrackerPage.HISTORY -> HistoryPage(g, now, canUndo, nav, onClose = { page = null })
+        null -> {}
     }
-    if (menu) {
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable { menu = false }, contentAlignment = Alignment.Center) {
-            TableMenu(
-                g, now, canUndo,
-                onClose = { menu = false },
-                onUndo = { c.games.undo() },
-                onEnd = { menu = false; nav.navigate("games/end") },
-            )
-        }
-    }
+    if (ending) EndGameDialog(g, onCancel = { ending = false }, onLeave = { leaving = true }, nav = nav, onDone = { ending = false })
+    roll?.let { RollOverlay(it, animate = animations, onAgain = { roll = it.copy(value = reroll(it)) }) { roll = null } }
 }
 
 private const val DELTA_MS = 2_500L
+private const val BAR_SHOWN_MS = 6_000L
 
-/** Hides the status and navigation bars and keeps the screen on while the tracker shows. */
+/** The same kind of roll again: a die, the coin, or nothing for a pick. */
+internal fun reroll(r: Roll): String = when {
+    r.sides == 2 -> if (Random.nextBoolean()) "Heads" else "Tails"
+    r.sides > 2 -> "${Random.nextInt(1, r.sides + 1)}"
+    else -> r.value
+}
+
+/** Hides the status and navigation bars and keeps the screen on while the tracker shows (each can be switched off). */
 @Composable
-private fun FullScreen() {
+private fun FullScreen(keepAwake: Boolean, hideBars: Boolean) {
     val view = LocalView.current
-    DisposableEffect(view) {
-        view.keepScreenOn = true
+    DisposableEffect(view, keepAwake, hideBars) {
+        view.keepScreenOn = keepAwake
         val window = view.context.findActivity()?.window
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
         controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        if (hideBars) controller?.hide(WindowInsetsCompat.Type.systemBars()) else controller?.show(WindowInsetsCompat.Type.systemBars())
         onDispose {
             view.keepScreenOn = false
             controller?.show(WindowInsetsCompat.Type.systemBars())
@@ -280,7 +372,7 @@ private fun Context.findActivity(): Activity? {
     return null
 }
 
-/** The table: every player's panel around the centre button. */
+/** The table: every player's panel, with the menu bar across the middle. */
 @Composable
 internal fun TrackerTable(
     g: LiveGame,
@@ -288,88 +380,134 @@ internal fun TrackerTable(
     now: Long,
     delta: (Int) -> Int? = { null },
     highlight: Int? = null,
-    starts: Int? = null,
-    centre: @Composable BoxScope.() -> Unit = {},
+    banner: Pair<Int, String>? = null,
+    bar: @Composable () -> Unit = {},
     onLife: (Int, Int) -> Unit = { _, _ -> },
     holdOne: Boolean = false,
-    onMore: (Int) -> Unit = {},
+    onSheet: (Int, Boolean) -> Unit = { _, _ -> },
     onDead: (Int, Boolean) -> Unit = { _, _ -> },
     onBack: (Int) -> Unit = {},
     onNextTurn: () -> Unit = {},
 ) {
     val seats = g.seats
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        @Composable
-        fun pl(i: Int, m: Modifier) {
-            val s = seats[i]
-            Box(m.turned(seatTurn(seats.size, i))) {
-                PlayerPanel(
-                    s, g, look, now,
-                    delta = delta(s.seat),
-                    highlight = highlight == s.seat,
-                    starts = starts == s.seat,
-                    holdOne = holdOne,
-                    onLife = { onLife(s.seat, it) },
-                    onMore = { onMore(s.seat) },
-                    onDead = { onDead(s.seat, it) },
-                    onBack = { onBack(s.seat) },
-                    onNextTurn = onNextTurn,
-                    modifier = Modifier.fillMaxSize(),
+    val n = seats.size
+    val rows = arrangement(n, g.ends)
+    val barAfter = barAfterRow(n, g.ends)
+    Column(Modifier.fillMaxSize().background(Color.Black).padding(horizontal = 2.dp, vertical = 4.dp)) {
+        rows.forEachIndexed { r, row ->
+            Row(Modifier.weight(rowWeight(n, g.ends, r, rows.size)).fillMaxWidth()) {
+                row.distinct().forEach { i ->
+                    val s = seats[i]
+                    Box(Modifier.weight(row.count { it == i }.toFloat()).fillMaxHeight().turned(seatTurn(n, i, g.ends))) {
+                        PlayerPanel(
+                            s, g, look, now,
+                            delta = delta(s.seat),
+                            highlight = highlight == s.seat,
+                            banner = banner?.takeIf { it.first == s.seat }?.second,
+                            holdOne = holdOne,
+                            onLife = { onLife(s.seat, it) },
+                            onSheet = { onSheet(s.seat, it) },
+                            onDead = { onDead(s.seat, it) },
+                            onBack = { onBack(s.seat) },
+                            onNextTurn = onNextTurn,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
+            if (r == barAfter) bar()
+        }
+    }
+}
+
+/**
+ * The bar across the middle of the table: end the game, the game's settings (the number of players), the clock
+ * (tap to pause), day/night, history (hold: undo), the mana pool and the dice (hold: a d20 at once).
+ */
+@Composable
+internal fun MenuBar(
+    g: LiveGame,
+    now: Long,
+    hidden: Boolean = false,
+    onShow: () -> Unit = {},
+    onEnd: () -> Unit = {},
+    onSettings: () -> Unit = {},
+    onPause: () -> Unit = {},
+    onDayNight: () -> Unit = {},
+    onHistory: () -> Unit = {},
+    onUndo: () -> Unit = {},
+    onMana: () -> Unit = {},
+    onDice: () -> Unit = {},
+    onQuickRoll: () -> Unit = {},
+) {
+    if (hidden) {
+        Box(Modifier.fillMaxWidth().height(16.dp).clickable(onClick = onShow), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(36.dp, 4.dp).clip(CircleShape).background(Color(0xFF555555)))
+        }
+        return
+    }
+    Row(Modifier.fillMaxWidth().height(58.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        BarIcon(Icons.Outlined.Replay, "End the game", onTap = onEnd)
+        Box(
+            Modifier.size(38.dp).clip(CircleShape).border(2.dp, TrackerAccent, CircleShape).clickable(onClick = onSettings),
+            contentAlignment = Alignment.Center,
+        ) { Text("${g.seats.size}", color = Color.White, fontSize = 16.sp) }
+        if (g.turnsOn || g.clock) {
+            Row(
+                Modifier.clip(RoundedCornerShape(14.dp)).border(1.dp, Color(0xFF555555), RoundedCornerShape(14.dp)).clickable(onClick = onPause)
+                    .padding(horizontal = 9.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (g.paused) Icon(Icons.Default.Pause, "Paused", Modifier.size(15.dp), tint = TurnGold)
+                Text(
+                    listOfNotNull(if (g.turnsOn) "R${g.round}" else null, if (g.clock) Games.clock(g.elapsed(now)) else null).joinToString(" · "),
+                    color = Color.White, fontSize = 13.sp,
                 )
             }
         }
-        when (seats.size) {
-            1, 2 -> Column(Modifier.fillMaxSize()) {
-                seats.indices.forEach { i -> pl(i, Modifier.weight(1f).fillMaxWidth()) }
-            }
-            3 -> Column(Modifier.fillMaxSize()) {
-                Row(Modifier.weight(1.6f)) {
-                    pl(0, Modifier.weight(1f).fillMaxHeight())
-                    pl(1, Modifier.weight(1f).fillMaxHeight())
-                }
-                pl(2, Modifier.weight(1f).fillMaxWidth())
-            }
-            4 -> Row(Modifier.fillMaxSize()) {
-                Column(Modifier.weight(1f)) { pl(0, Modifier.weight(1f).fillMaxWidth()); pl(3, Modifier.weight(1f).fillMaxWidth()) }
-                Column(Modifier.weight(1f)) { pl(1, Modifier.weight(1f).fillMaxWidth()); pl(2, Modifier.weight(1f).fillMaxWidth()) }
-            }
-            5 -> Column(Modifier.fillMaxSize()) {
-                Row(Modifier.weight(2.2f)) {
-                    Column(Modifier.weight(1f)) { pl(0, Modifier.weight(1f).fillMaxWidth()); pl(4, Modifier.weight(1f).fillMaxWidth()) }
-                    Column(Modifier.weight(1f)) { pl(1, Modifier.weight(1f).fillMaxWidth()); pl(2, Modifier.weight(1f).fillMaxWidth()) }
-                }
-                pl(3, Modifier.weight(1f).fillMaxWidth())
-            }
-            else -> Row(Modifier.fillMaxSize()) {
-                Column(Modifier.weight(1f)) {
-                    pl(0, Modifier.weight(1f).fillMaxWidth()); pl(5, Modifier.weight(1f).fillMaxWidth()); pl(4, Modifier.weight(1f).fillMaxWidth())
-                }
-                Column(Modifier.weight(1f)) {
-                    pl(1, Modifier.weight(1f).fillMaxWidth()); pl(2, Modifier.weight(1f).fillMaxWidth()); pl(3, Modifier.weight(1f).fillMaxWidth())
-                }
-            }
-        }
-        centre()
+        if (g.dayNight != null) BarIcon(if (g.dayNight == "night") Icons.Default.DarkMode else Icons.Default.WbSunny, "It's ${g.dayNight}: tap to change", size = 26.dp, onTap = onDayNight)
+        BarIcon(Icons.Outlined.History, "History (hold: undo)", onTap = onHistory, onHold = onUndo)
+        ManaDots(Modifier.clip(CircleShape).clickable(onClick = onMana))
+        BarIcon(Icons.Outlined.Casino, "Dice (hold: roll a d20)", onTap = onDice, onHold = onQuickRoll)
     }
 }
 
-/** The round button in the middle: the round and the game's clock; opens the table menu. */
 @Composable
-internal fun CentreButton(modifier: Modifier, round: String?, clock: String?, paused: Boolean = false, size: Dp = 70.dp, onClick: () -> Unit) {
-    Box(
-        modifier.size(size).clip(CircleShape).background(Color(0xFF15131A)).border(3.dp, Color(0xFFE0A526), CircleShape).clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (paused) Icon(Icons.Default.Pause, "Paused", Modifier.size(16.dp), tint = Gold)
-            if (round != null) Text(round, color = Color(0xFFFFDF9E), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            if (clock != null) Text(clock, color = Color.White, fontSize = 11.sp)
-            if (round == null && clock == null && !paused) Icon(Icons.Default.Menu, "Table menu", tint = Color.White)
-        }
+private fun BarIcon(icon: ImageVector, label: String, size: Dp = 32.dp, onTap: () -> Unit, onHold: (() -> Unit)? = null) {
+    Icon(
+        icon, label,
+        Modifier.clip(CircleShape).pointerInput(onTap, onHold) { detectTapGestures(onTap = { onTap() }, onLongPress = onHold?.let { h -> { h() } }) }.padding(4.dp).size(size),
+        tint = Color.White,
+    )
+}
+
+/** Five coloured dots, as Lifetap's mana button. */
+@Composable
+private fun ManaDots(modifier: Modifier) = Canvas(modifier.size(40.dp).padding(2.dp)) {
+    val r = size.width * 0.11f
+    val colours = listOf(Color.White, Color(0xFF4A9DE0), Color(0xFF888888), Color(0xFFE5483C), Color(0xFF52B05A))
+    for (k in 0 until 5) {
+        val a = Math.toRadians(-90.0 + k * 72.0)
+        val at = Offset(center.x + cos(a).toFloat() * size.width * 0.32f, center.y + sin(a).toFloat() * size.width * 0.32f)
+        if (k == 2) drawCircle(Color.White, r, at, style = Stroke(2f)) else drawCircle(colours[k], r, at)
     }
 }
 
-/** A player's panel: picture or colour, name and deck, life (tap and hold to change), counters, "Dead?". */
+/** The badge icons of a player's counters, as on the counter tiles. */
+internal fun counterIcon(key: String): ImageVector = when (key) {
+    "energy" -> Icons.Outlined.Bolt
+    "experience" -> Icons.Outlined.AutoAwesome
+    "treasure" -> Icons.Outlined.Diamond
+    "storm" -> Icons.Outlined.Thunderstorm
+    LiveGames.ASCEND -> Icons.Outlined.AccountBalance
+    else -> Icons.Outlined.Star
+}
+
+/**
+ * A player's panel (as Lifetap's since 1.48): their name on a label (tap: their sheet), the life total with room
+ * around it (tap and hold to change), − and + at the ends, the commander damage mini-grid (tap: their counters) and
+ * badges for counters in use; "Dead?", the turn and low life on top.
+ */
 @Composable
 internal fun PlayerPanel(
     s: LiveSeat,
@@ -378,50 +516,52 @@ internal fun PlayerPanel(
     now: Long,
     delta: Int? = null,
     highlight: Boolean = false,
-    starts: Boolean = false,
+    banner: String? = null,
     holdOne: Boolean = false,
     onLife: (Int) -> Unit = {},
-    onMore: () -> Unit = {},
+    onSheet: (counters: Boolean) -> Unit = {},
     onDead: (Boolean) -> Unit = {},
     onBack: () -> Unit = {},
     onNextTurn: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier.padding(3.dp).clip(RoundedCornerShape(18.dp))) {
+    val shape = RoundedCornerShape(24.dp)
+    BoxWithConstraints(modifier.padding(3.dp).clip(shape)) {
         val small = minOf(maxWidth, maxHeight)
-        val lifeSize = (small.value * 0.42f).coerceIn(28f, 130f).sp
-        val roomy = small > 150.dp
+        val wide = maxWidth > maxHeight * 1.3f
+        val picture = (s.picture ?: look.pictures) && s.artUrl != null
+        val ink = if (picture) Color.White else PanelInk
+        val pill = if (picture) Color.Black.copy(alpha = if (s.contrast) 0.62f else 0.38f) else Color.White.copy(alpha = if (s.contrast) 0.85f else 0.5f)
         // Background
-        if (look.pictures && s.artUrl != null) {
-            Box(Modifier.fillMaxSize().background(Color(LiveGames.PALETTE[s.colour % LiveGames.PALETTE.size])))
-            AsyncImage(s.artUrl, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)))
+        if (s.out) {
+            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF3A3F47), Color(0xFF25282E)))))
         } else {
-            Box(Modifier.fillMaxSize().background(Color(LiveGames.PALETTE[s.colour % LiveGames.PALETTE.size])))
+            Box(Modifier.fillMaxSize().background(seatBrush(s.colour)))
+            if (picture) {
+                AsyncImage(s.artUrl, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (s.contrast) 0.58f else 0.36f)))
+            }
         }
         val low = LiveGames.lowLife(s, g.startingLife)
         if (low && look.lowLife == LowLifeStyle.EDGE) PulsingEdge(small)
-        if (low && look.lowLife == LowLifeStyle.GHOST) DriftingGhost(small)
+        if (low && look.lowLife == LowLifeStyle.GHOST) DriftingGhost(small, if (picture) Color.White else PanelInk)
         val active = g.turnsOn && g.active == s.seat && !s.out
-        if (active) Box(Modifier.fillMaxSize().border(4.dp, Gold, RoundedCornerShape(18.dp)))
-        if (highlight) Box(Modifier.fillMaxSize().border(6.dp, Color.White, RoundedCornerShape(18.dp)))
+        if (active) Box(Modifier.fillMaxSize().border(4.dp, TurnGold, shape))
+        if (highlight) Box(Modifier.fillMaxSize().border(6.dp, if (picture) Color.White else PanelInk, shape))
 
         if (s.out) {
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.78f)))
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Skull(Modifier.size(small * 0.4f))
+                Skull(Modifier.size(small * 0.36f))
                 Text(
                     "${s.name} is out" + (s.outRound?.takeIf { g.turnsOn }?.let { " · round $it" } ?: ""),
-                    color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, textAlign = TextAlign.Center,
+                    color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, textAlign = TextAlign.Center,
                 )
             }
-            Text(s.name, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp))
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).height(32.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White.copy(alpha = 0.8f)),
-            ) { Text("Undo", fontSize = 12.sp) }
+            Text(
+                "Undo", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(14.dp)).clickable(onClick = onBack).padding(horizontal = 12.dp, vertical = 5.dp),
+            )
             return@BoxWithConstraints
         }
 
@@ -445,104 +585,214 @@ internal fun PlayerPanel(
                 }
             },
         )
-        // Name and deck
-        Column(Modifier.align(Alignment.TopCenter).padding(top = 8.dp, start = 40.dp, end = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (g.monarch == s.seat) Icon(Icons.Default.WorkspacePremium, "Monarch", Modifier.padding(end = 3.dp).size(16.dp), tint = Gold)
-                if (g.initiative == s.seat) Icon(Icons.Default.Explore, "Initiative", Modifier.padding(end = 3.dp).size(16.dp), tint = Gold)
-                Text(s.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            if (roomy && s.deckName.isNotBlank()) Text(s.deckName, color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
         // Where to tap
-        if (look.symbols) {
-            val tint = Color.White.copy(alpha = 0.55f)
-            if (!look.aboveBelow) {
-                Text("−", color = tint, fontSize = 40.sp, modifier = Modifier.align(Alignment.CenterStart).padding(start = 14.dp))
-                Text("+", color = tint, fontSize = 40.sp, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp))
+        val symbol = (small.value * 0.17f).coerceIn(22f, 40f).sp
+        if (!look.aboveBelow) {
+            Text("−", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.CenterStart).padding(start = 14.dp))
+            Text("+", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp))
+        } else {
+            Text("+", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.TopEnd).padding(end = 16.dp, top = 6.dp))
+            Text("−", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 6.dp))
+        }
+        // The label, the total and the mini-grid, one above the other with room between them.
+        val sideRoom = (symbol.value * 1.3f + 18f).dp
+        val panelWidth = maxWidth
+        // A short, wide panel (at an end of the table) has the mini-grid beside the total, so the total keeps its room.
+        val beside = look.layout == CardLayout.DEFAULT && g.commanderDamage && wide && maxHeight < miniGridSize(g, s).second + 150.dp
+        Column(Modifier.fillMaxSize().padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (look.layout == CardLayout.BIG) {
+                Box(Modifier.clip(CircleShape).clickable { onSheet(false) }.padding(horizontal = 18.dp, vertical = 6.dp)) {
+                    Box(Modifier.size(34.dp, 5.dp).clip(CircleShape).background(ink.copy(alpha = 0.35f)))
+                }
             } else {
-                Text("+", color = tint, fontSize = 34.sp, modifier = Modifier.align(Alignment.Center).offset(y = -(small * 0.36f)))
-                Text("−", color = tint, fontSize = 34.sp, modifier = Modifier.align(Alignment.Center).offset(y = small * 0.32f))
+                NameLabel(s, g, ink, pill, panelWidth * 0.72f, roomy = small > 150.dp) { onSheet(false) }
             }
-        }
-        // Life
-        Box(Modifier.align(Alignment.Center)) {
-            Text("${s.life}", color = Color.White, fontSize = lifeSize, fontWeight = FontWeight.Bold, lineHeight = lifeSize)
-            if (low && look.lowLife == LowLifeStyle.CRACK) Cracks(Modifier.matchParentSize())
-            delta?.takeIf { it != 0 }?.let {
-                Text(
-                    if (it > 0) "+$it" else "−${-it}",
-                    color = if (it > 0) Color(0xFFB7F5C4) else Color(0xFFFFC2C2),
-                    fontSize = (lifeSize.value * 0.24f).sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.TopEnd).offset(x = (lifeSize.value * 0.45f).dp, y = 4.dp),
-                )
+            Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = sideRoom), verticalAlignment = Alignment.CenterVertically) {
+            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+                val big = look.layout == CardLayout.BIG
+                val digits = "${s.life}".length.coerceAtLeast(2)
+                val font = minOf(maxHeight * if (big) 1f else 0.9f, maxWidth / (0.6f * digits), small * if (big) 0.62f else 0.42f).coerceAtLeast(16.dp)
+                val fontSp = with(LocalDensity.current) { font.toSp() }
+                Box {
+                    Text(
+                        "${s.life}", color = ink, fontSize = fontSp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false,
+                        style = TextStyle(
+                            lineHeight = fontSp, platformStyle = PlatformTextStyle(includeFontPadding = false),
+                            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+                        ),
+                    )
+                    if (low && look.lowLife == LowLifeStyle.CRACK) Cracks(Modifier.matchParentSize())
+                    delta?.takeIf { it != 0 }?.let {
+                        Text(
+                            if (it > 0) "+$it" else "−${-it}",
+                            color = if (picture) (if (it > 0) Color(0xFFB7F5C4) else Color(0xFFFFC2C2)) else (if (it > 0) Color(0xFF1E7A3A) else Color(0xFFB3261E)),
+                            fontSize = (fontSp.value * 0.24f).sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopEnd).offset(x = font * 0.36f, y = -(font * 0.05f)),
+                        )
+                    }
+                }
             }
+            if (beside) BottomRow(s, g, look, ink, pill) { onSheet(true) }
+            }
+            if (look.layout == CardLayout.DEFAULT && !beside) BottomRow(s, g, look, ink, pill) { onSheet(true) }
         }
-        // On a wide panel (a player at a long side) these go beside the total, else below it, clear of the counters.
-        val wide = maxWidth > maxHeight * 1.3f
-        val asidePlace = if (wide) Modifier.align(Alignment.CenterEnd).padding(end = 12.dp) else Modifier.align(Alignment.Center).offset(y = small * 0.26f)
-        if (starts) {
+        // On a wide panel (a player at a long side) these go beside the total, else below it.
+        val asidePlace = if (wide) Modifier.align(Alignment.CenterEnd).padding(end = sideRoom) else Modifier.align(Alignment.Center).offset(y = small * 0.28f)
+        if (banner != null) {
             Text(
-                "${s.name} starts!", color = Color.Black, fontWeight = FontWeight.Bold,
-                modifier = asidePlace.background(Color.White, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+                banner, color = Color.White, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.Center).widthIn(max = maxWidth * 0.8f).background(Color(0xE0111111), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
-        if (LiveGames.asksDead(s)) {
-            val bg = Modifier.background(Color.Black.copy(alpha = 0.78f), RoundedCornerShape(20.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
-            if (wide) Column(asidePlace.then(bg), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Dead?", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
-                TextButton(onClick = { onDead(true) }) { Text("Yes", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold) }
-                TextButton(onClick = { onDead(false) }) { Text("No", color = Color.White) }
-            } else Row(asidePlace.then(bg), verticalAlignment = Alignment.CenterVertically) {
-                Text("Dead?", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
-                TextButton(onClick = { onDead(true) }) { Text("Yes", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold) }
-                TextButton(onClick = { onDead(false) }) { Text("No", color = Color.White) }
+        if (LiveGames.asksDead(g, s)) {
+            Column(
+                asidePlace.clip(RoundedCornerShape(16.dp)).background(Color(0xE6111111)).padding(horizontal = 14.dp, vertical = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("Dead?", color = Color.White, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Yes", color = Color(0xFFFF8A80), fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onDead(true) }.padding(10.dp))
+                    Text("No", color = Color.White, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onDead(false) }.padding(10.dp))
+                }
             }
         }
         if (active) {
             Row(
-                Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(8.dp)).background(Gold).clickable(onClick = onNextTurn)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                Modifier.align(Alignment.TopStart).padding(10.dp).clip(RoundedCornerShape(10.dp)).background(TurnGold).clickable(onClick = onNextTurn)
+                    .padding(horizontal = 7.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(if (g.clock) "Turn ${Games.clock(g.turnElapsed(now))}" else "Your turn", color = Color(0xFF231A00), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Icon(Icons.Default.SkipNext, "Next turn", Modifier.size(16.dp), tint = Color(0xFF231A00))
             }
         }
-        // Counters, and ⋯ for the rest
-        Row(
-            Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).clip(RoundedCornerShape(14.dp)).clickable(onClick = onMore).padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val sz = if (roomy) 16.dp else 13.dp
-            if (g.commanderDamage) CounterBit(Icons.Default.Shield, "${s.maxCommanderDamage}", sz)
-            CounterBit(Icons.Default.WaterDrop, "${s.poison}", sz)
-            CounterBit(Icons.Default.AddCircleOutline, "${s.tax}", sz)
-            g.counters.filter { it in LiveGames.EXTRA_COUNTERS || it.startsWith(LiveGames.CUSTOM) }.forEach { k ->
-                s.counters[k]?.let { CounterBit(if (k == "energy") Icons.Default.Bolt else Icons.Default.Star, "$it", sz) }
-            }
-            Icon(Icons.Default.MoreHoriz, "${s.name}: counters", Modifier.size(sz + 8.dp), tint = Color.White)
+    }
+}
+
+/** The name on its label (with the deck, when there's room); the monarch's crown and the initiative go before it. */
+@Composable
+private fun NameLabel(s: LiveSeat, g: LiveGame, ink: Color, pill: Color, maxWidth: Dp, roomy: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.widthIn(max = maxWidth).clip(RoundedCornerShape(14.dp)).background(pill).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (g.monarch == s.seat) Icon(Icons.Default.WorkspacePremium, "Monarch", Modifier.padding(end = 4.dp).size(17.dp), tint = ink)
+        if (g.initiative == s.seat) Icon(Icons.Default.Explore, "Initiative", Modifier.padding(end = 4.dp).size(17.dp), tint = ink)
+        Text(s.name, color = ink, fontSize = 16.sp, fontWeight = if (s.contrast) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = maxWidth * 0.55f))
+        if (roomy && s.deckName.isNotBlank()) {
+            Text("  ${s.deckName}", color = ink.copy(alpha = 0.7f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
+/** The mini-grid's size as [s]'s player sees it (the grid itself lies as the table does). */
+private fun miniGridSize(g: LiveGame, s: LiveSeat): Pair<Dp, Dp> {
+    val n = g.seats.size
+    val rows = arrangement(n, g.ends)
+    val cell = if (n >= 5) 19.dp else 22.dp
+    val sw = cell * rows.maxOf { it.size } + 2.dp * (rows.maxOf { it.size } - 1)
+    val sh = cell * rows.size + 2.dp * (rows.size - 1)
+    val sideways = seatTurn(n, g.seats.indexOf(s), g.ends) % 180 != 0
+    return if (sideways) sh to sw else sw to sh
+}
+
+/** The mini-grid and the badges of the counters in use; tap for the counters. */
 @Composable
-private fun CounterBit(icon: ImageVector, value: String, size: Dp) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, Modifier.size(size), tint = Color.White.copy(alpha = 0.9f))
-        Spacer(Modifier.width(2.dp))
-        Text(value, color = Color.White, fontSize = (size.value * 0.8f).sp, fontWeight = FontWeight.SemiBold)
+private fun BottomRow(s: LiveSeat, g: LiveGame, look: PanelLook, ink: Color, pill: Color, onClick: () -> Unit) {
+    val badges = buildList {
+        if (s.poison > 0) add(Icons.Outlined.WaterDrop to "${s.poison}")
+        if (s.casts > 0 || s.partnerCasts > 0) add(Icons.Outlined.AddCircleOutline to (if (s.hasPartners) "+${s.tax}/+${s.partnerTax}" else "+${s.tax}"))
+        s.counters.filter { it.value > 0 }.toSortedMap().forEach { (k, v) -> add(counterIcon(k) to if (k == LiveGames.ASCEND) "" else "$v") }
+    }
+    if (!g.commanderDamage && badges.isEmpty()) return
+    Row(
+        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (g.commanderDamage) {
+            val n = g.seats.size
+            val (w, h) = miniGridSize(g, s)
+            SeatGrid(g, s.seat, w, h, look.colourGrids, ink) { j ->
+                MiniCell(g, s, j, if (look.colourGrids && j != s.seat) PanelInk else ink, if (n >= 5) 9.sp else 11.sp)
+            }
+        }
+        if (badges.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            badges.chunked(3).forEach { column ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    column.forEach { (icon, v) ->
+                        Row(Modifier.clip(RoundedCornerShape(8.dp)).background(pill).padding(horizontal = 5.dp, vertical = 1.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(icon, null, Modifier.size(14.dp), tint = ink)
+                            if (v.isNotEmpty()) Text(" $v", color = ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A mini-grid box: "me", or the damage taken from that player's commander ("3|0" for partners). */
+@Composable
+private fun BoxScope.MiniCell(g: LiveGame, me: LiveSeat, j: Int, ink: Color, font: TextUnit) {
+    val o = g.seats[j]
+    val text = when {
+        j == me.seat -> "me"
+        o.hasPartners -> "${me.cmd[LiveGames.cmdKey(o.seat)] ?: 0}|${me.cmd[LiveGames.cmdKey(o.seat, true)] ?: 0}"
+        else -> "${me.cmd[LiveGames.cmdKey(o.seat)] ?: 0}"
+    }
+    Text(
+        text, color = if (j == me.seat) ink.copy(alpha = 0.45f) else ink, fontSize = if (text.length > 3) (font.value * 0.8f).sp else font,
+        fontWeight = if (j == me.seat) FontWeight.Normal else FontWeight.SemiBold, maxLines = 1, modifier = Modifier.align(Alignment.Center),
+    )
+}
+
+/**
+ * The table in miniature, as it lies on the screen, so every player sees the same picture; each box faces [me]
+ * (its content is drawn the way [me] reads). [w] × [h] is the size as [me] sees it. Boxes are in their player's
+ * colour ([colourise]); with [focus] the others fade.
+ */
+@Composable
+internal fun SeatGrid(
+    g: LiveGame,
+    me: Int,
+    w: Dp,
+    h: Dp,
+    colourise: Boolean,
+    ink: Color,
+    modifier: Modifier = Modifier,
+    gap: Dp = 2.dp,
+    radius: Dp = 5.dp,
+    focus: Int? = null,
+    cell: @Composable BoxScope.(Int) -> Unit,
+) {
+    val n = g.seats.size
+    val turn = seatTurn(n, g.seats.indexOfFirst { it.seat == me }.coerceAtLeast(0), g.ends)
+    val sideways = turn % 180 != 0
+    Box(modifier.turned(-turn)) {
+        Column(Modifier.size(if (sideways) h else w, if (sideways) w else h), verticalArrangement = Arrangement.spacedBy(gap)) {
+            arrangement(n, g.ends).forEach { row ->
+                Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    row.distinct().forEach { j ->
+                        val seat = g.seats[j]
+                        val bg = if (seat.seat == me || !colourise) Modifier.background(ink.copy(alpha = 0.13f)) else Modifier.background(seatBrush(seat.colour))
+                        Box(Modifier.weight(row.count { it == j }.toFloat()).fillMaxHeight().alpha(if (focus != null && focus != seat.seat) 0.25f else 1f).clip(RoundedCornerShape(radius)).then(bg)) {
+                            Box(Modifier.fillMaxSize().turned(turn)) { cell(j) }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 /** Low life: a faint ghost drifting up through the panel, over and over. */
 @Composable
-private fun BoxScope.DriftingGhost(small: Dp) {
+private fun BoxScope.DriftingGhost(small: Dp, colour: Color) {
     val t = rememberInfiniteTransition(label = "ghost")
     val p by t.animateFloat(0f, 1f, infiniteRepeatable(tween(4_500, easing = LinearEasing)), label = "rise")
     Ghost(
-        Modifier.align(Alignment.BottomEnd).padding(end = 16.dp)
+        colour = colour,
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp)
             .graphicsLayer { translationY = -p * (small.toPx() * 1.1f); alpha = (if (p < 0.15f) p / 0.15f else 1f) * (1f - p) }
             .size(small * 0.26f, small * 0.34f),
     )
@@ -557,7 +807,7 @@ private fun PulsingEdge(small: Dp) {
 }
 
 @Composable
-internal fun Ghost(modifier: Modifier) = Canvas(modifier) {
+internal fun Ghost(modifier: Modifier, colour: Color = Color.White) = Canvas(modifier) {
     val w = size.width
     val h = size.height
     val path = Path().apply {
@@ -572,9 +822,9 @@ internal fun Ghost(modifier: Modifier) = Canvas(modifier) {
         }
         close()
     }
-    drawPath(path, Color.White.copy(alpha = 0.32f))
-    drawOval(Color.Black.copy(alpha = 0.45f), Offset(w * 0.25f, w * 0.35f), Size(w * 0.16f, w * 0.22f))
-    drawOval(Color.Black.copy(alpha = 0.45f), Offset(w * 0.58f, w * 0.35f), Size(w * 0.16f, w * 0.22f))
+    drawPath(path, colour.copy(alpha = if (colour == Color.White) 0.32f else 0.22f))
+    drawOval((if (colour == Color.White) Color.Black else Color.White).copy(alpha = 0.45f), Offset(w * 0.25f, w * 0.35f), Size(w * 0.16f, w * 0.22f))
+    drawOval((if (colour == Color.White) Color.Black else Color.White).copy(alpha = 0.45f), Offset(w * 0.58f, w * 0.35f), Size(w * 0.16f, w * 0.22f))
 }
 
 /** Low life: cracks across the life total. */
@@ -610,147 +860,3 @@ internal fun Skull(modifier: Modifier, colour: Color = Color.White.copy(alpha = 
     }
 }
 
-/** A player's counters (⋯ on the panel), facing them: commander damage taken, poison, tax and the extras. */
-@Composable
-private fun CountersSheet(g: LiveGame, s: LiveSeat, onClose: () -> Unit) {
-    val c = LocalContext.current.container
-    Column(
-        Modifier.fillMaxSize().clip(RoundedCornerShape(20.dp)).background(SheetBg).clickable(enabled = false) {}.padding(16.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${s.name} · counters", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
-        }
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val wide = maxWidth > 480.dp
-            val left: @Composable ColumnScope.() -> Unit = {
-                if (g.commanderDamage) {
-                    SheetTitle("Commander damage taken")
-                    g.seats.filter { it.seat != s.seat }.forEach { o ->
-                        val label = o.commander.ifBlank { o.name } + " (${o.name})"
-                        Stepper(label, "${s.cmd[LiveGames.cmdKey(o.seat)] ?: 0}") { by -> c.games.update { LiveGames.commanderDamage(it, s.seat, LiveGames.cmdKey(o.seat), by) } }
-                        o.partner?.let { p ->
-                            Stepper("$p (${o.name})", "${s.cmd[LiveGames.cmdKey(o.seat, true)] ?: 0}") { by -> c.games.update { LiveGames.commanderDamage(it, s.seat, LiveGames.cmdKey(o.seat, true), by) } }
-                        }
-                    }
-                    Text("Combat damage from a commander; it takes life too. 21 from one commander: out.", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
-                }
-            }
-            val right: @Composable ColumnScope.() -> Unit = {
-                SheetTitle("Counters")
-                Stepper("Poison", "${s.poison}") { by -> c.games.update { LiveGames.poison(it, s.seat, by) } }
-                Stepper("Commander tax" + (s.commander.takeIf { s.partner != null && it.isNotBlank() }?.let { " ($it)" } ?: ""), "+${s.tax}") { by -> c.games.update { LiveGames.casts(it, s.seat, by) } }
-                s.partner?.let { p -> Stepper("Commander tax ($p)", "+${s.partnerTax}") { by -> c.games.update { LiveGames.casts(it, s.seat, by, partner = true) } } }
-                g.counters.filter { it in LiveGames.EXTRA_COUNTERS || it.startsWith(LiveGames.CUSTOM) }.forEach { k ->
-                    Stepper(LiveGames.counterLabel(k), "${s.counters[k] ?: 0}") { by -> c.games.update { LiveGames.counter(it, s.seat, k, by) } }
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { c.games.update { LiveGames.knockOut(it, s.seat, System.currentTimeMillis(), OutReason.CONCEDED) }; onClose() },
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                ) { Text("${s.name} concedes") }
-            }
-            if (wide) {
-                Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = left)
-                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), content = right)
-                }
-            } else {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    left()
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    right()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SheetTitle(text: String) = Text(text, color = Color(0xFFFFDF9E), fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp, bottom = 2.dp))
-
-@Composable
-private fun Stepper(label: String, value: String, onChange: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-        FilledTonalIconButton(onClick = { onChange(-1) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Remove, "One less") }
-        Text(value, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.width(48.dp))
-        FilledTonalIconButton(onClick = { onChange(1) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Add, "One more") }
-    }
-}
-
-/** The centre button's menu: turns, pause, undo, table items, a die, a coin, who starts, ending the game. */
-@Composable
-private fun TableMenu(g: LiveGame, now: Long, canUndo: Boolean, onClose: () -> Unit, onUndo: () -> Unit, onEnd: () -> Unit) {
-    val c = LocalContext.current.container
-    var picking by remember { mutableStateOf<String?>(null) }
-    var result by remember { mutableStateOf<String?>(null) }
-    Column(
-        Modifier.widthIn(max = 340.dp).padding(16.dp).clip(RoundedCornerShape(24.dp)).background(SheetBg).clickable(enabled = false) {}.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            listOfNotNull(if (g.turnsOn) "Round ${g.round}" else null, "game ${Games.clock(g.elapsed(now))}").joinToString(" · "),
-            color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold,
-        )
-        if (g.turnsOn) g.seats.firstOrNull { it.seat == g.active }?.let {
-            Text("${it.name}'s turn ${Games.clock(g.turnElapsed(now))}", color = Color(0xFFFFDF9E), fontSize = 13.sp)
-        }
-        result?.let { Text(it, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp)) }
-        val pick = picking
-        if (pick != null) {
-            Text(if (pick == LiveGames.MONARCH) "Who's the monarch?" else "Who has the initiative?", color = Color.White, modifier = Modifier.padding(top = 10.dp))
-            g.alive.forEach { s ->
-                TextButton(onClick = {
-                    c.games.update { if (pick == LiveGames.MONARCH) LiveGames.setMonarch(it, s.seat) else LiveGames.setInitiative(it, s.seat) }
-                    picking = null
-                }) { Text(s.name, color = Color.White) }
-            }
-            TextButton(onClick = {
-                c.games.update { if (pick == LiveGames.MONARCH) LiveGames.setMonarch(it, null) else LiveGames.setInitiative(it, null) }
-                picking = null
-            }) { Text("Nobody", color = Color.White.copy(alpha = 0.7f)) }
-            return@Column
-        }
-        Spacer(Modifier.height(8.dp))
-        val buttons = buildList<Triple<ImageVector, String, () -> Unit>> {
-            if (g.turnsOn) add(Triple(Icons.Default.SkipNext, "Next turn") { c.games.update { LiveGames.nextTurn(it, System.currentTimeMillis()) } })
-            add(
-                if (g.paused) Triple(Icons.Default.PlayArrow, "Go on") { c.games.update(undoable = false) { LiveGames.resume(it, System.currentTimeMillis()) } }
-                else Triple(Icons.Default.Pause, "Pause") { c.games.update(undoable = false) { LiveGames.pause(it, System.currentTimeMillis()) } }
-            )
-            if (canUndo) add(Triple(Icons.AutoMirrored.Filled.Undo, "Undo") { onUndo() })
-            if (LiveGames.MONARCH in g.counters) add(Triple(Icons.Default.WorkspacePremium, "Monarch") { picking = LiveGames.MONARCH })
-            if (LiveGames.INITIATIVE in g.counters) add(Triple(Icons.Default.Explore, "Initiative") { picking = LiveGames.INITIATIVE })
-            if (LiveGames.DAY_NIGHT in g.counters) add(
-                Triple(if (g.dayNight == "night") Icons.Default.DarkMode else Icons.Default.WbSunny, when (g.dayNight) { null -> "Make it day"; "day" -> "Day → night"; else -> "Night → day" }) {
-                    c.games.update { LiveGames.toggleDayNight(it) }
-                }
-            )
-            add(Triple(Icons.Default.Casino, "Roll a die") { result = "🎲 ${Random.nextInt(1, 7)}" })
-            add(Triple(Icons.Default.Casino, "Roll a d20") { result = "d20: ${Random.nextInt(1, 21)}" })
-            add(Triple(Icons.Default.Paid, "Flip a coin") { result = if (Random.nextBoolean()) "Heads" else "Tails" })
-            add(Triple(Icons.Default.Shuffle, "Random player") { result = g.alive.randomOrNull()?.name })
-        }
-        buttons.chunked(3).forEach { row ->
-            Row {
-                row.forEach { (icon, label, action) ->
-                    Column(Modifier.width(92.dp).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        FilledTonalIconButton(onClick = action, modifier = Modifier.size(52.dp)) { Icon(icon, null) }
-                        Text(label, color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 2)
-                    }
-                }
-            }
-        }
-        if (g.dayNight != null && LiveGames.DAY_NIGHT in g.counters) {
-            Text("It's ${g.dayNight}", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-        }
-        Spacer(Modifier.height(6.dp))
-        Button(onClick = onEnd, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Flag, null)
-            Spacer(Modifier.width(6.dp))
-            Text("End the game")
-        }
-        TextButton(onClick = onClose) { Text("Back to the game") }
-    }
-}

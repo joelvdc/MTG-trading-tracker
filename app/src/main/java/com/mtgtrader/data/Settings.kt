@@ -399,52 +399,73 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("ctZeroOnly", on).stamp().apply()
     }
 
-    // ---- The life tracker (since 1.47; synced) ----
+    // ---- The life tracker (since 1.47; synced; most of it set in the game's own settings since 1.48) ----
 
-    private val _trackerPictures = MutableStateFlow(prefs.getBoolean("trackerPictures", true))
-    /** Panels show commander pictures (off: plain colours); one choice for all games, never mixed at one table. */
-    val trackerPictures: StateFlow<Boolean> = _trackerPictures
+    /** The tracker's on/off choices and their defaults. */
+    private val trackerFlagDefaults = linkedMapOf(
+        // Panels show commander pictures; off (the default since 1.48): plain colours. A player can switch their own.
+        "trackerPictures" to false,
+        // Life changes by tapping above (+) / below (−) the total; off: left (−) / right (+).
+        "trackerAboveBelow" to false,
+        // Holding counts by 1 (repeating); off: by 10, as Lifetap does.
+        "trackerHoldOne" to false,
+        // The defaults for new games, changed when the game's settings change (since 1.48 for most of them).
+        "trackerTurns" to false,
+        "trackerClock" to true,
+        "trackerCommanderDamage" to true,
+        "trackerCmdLifeLoss" to true,
+        "trackerLog" to true,
+        "trackerEnds" to false,
+        // How the tracker looks and behaves (since 1.48).
+        "trackerHaptics" to true,
+        "trackerColourGrids" to true,
+        "trackerAutoHide" to false,
+        "trackerAnimations" to true,
+        "trackerKeepAwake" to true,
+        "trackerHideBars" to true,
+    )
+    private val trackerFlags = trackerFlagDefaults.mapValues { (k, d) -> MutableStateFlow(prefs.getBoolean(k, d)) }
 
-    private val _trackerAboveBelow = MutableStateFlow(prefs.getBoolean("trackerAboveBelow", false))
-    /** Life changes by tapping above (+) / below (−) the total; off: left (−) / right (+). */
-    val trackerAboveBelow: StateFlow<Boolean> = _trackerAboveBelow
+    /** One of the tracker's on/off choices ([trackerFlagDefaults] keys). */
+    fun trackerFlag(key: String): StateFlow<Boolean> = trackerFlags.getValue(key)
 
-    private val _trackerHoldOne = MutableStateFlow(prefs.getBoolean("trackerHoldOne", false))
-    /** Holding counts by 1 (repeating); off: by 10, as Lifetap does. */
-    val trackerHoldOne: StateFlow<Boolean> = _trackerHoldOne
-
-    private val _trackerSymbols = MutableStateFlow(prefs.getBoolean("trackerSymbols", false))
-    /** − and + symbols on the panels, where to tap. */
-    val trackerSymbols: StateFlow<Boolean> = _trackerSymbols
+    val trackerPictures: StateFlow<Boolean> get() = trackerFlag("trackerPictures")
+    val trackerAboveBelow: StateFlow<Boolean> get() = trackerFlag("trackerAboveBelow")
+    val trackerHoldOne: StateFlow<Boolean> get() = trackerFlag("trackerHoldOne")
+    val trackerTurns: StateFlow<Boolean> get() = trackerFlag("trackerTurns")
+    val trackerClock: StateFlow<Boolean> get() = trackerFlag("trackerClock")
 
     private val _trackerLowLife = MutableStateFlow(LowLifeStyle.fromKey(prefs.getString("trackerLowLife", null)))
     /** The animation on a panel at low life. */
     val trackerLowLife: StateFlow<LowLifeStyle> = _trackerLowLife
 
-    private val _trackerTurns = MutableStateFlow(prefs.getBoolean("trackerTurns", false))
-    /** New games count turns, unless switched off in the game's setup. */
-    val trackerTurns: StateFlow<Boolean> = _trackerTurns
+    private val _trackerCardLayout = MutableStateFlow(CardLayout.fromKey(prefs.getString("trackerCardLayout", null)))
+    /** What a player's panel shows (since 1.48). */
+    val trackerCardLayout: StateFlow<CardLayout> = _trackerCardLayout
 
-    private val _trackerClock = MutableStateFlow(prefs.getBoolean("trackerClock", true))
-    /** New games show a clock, unless switched off in the game's setup. */
-    val trackerClock: StateFlow<Boolean> = _trackerClock
+    private val _trackerWhenDown = MutableStateFlow(WhenDown.fromKey(prefs.getString("trackerWhenDown", null)))
+    /** What happens when a player is down, for new games (since 1.48). */
+    val trackerWhenDown: StateFlow<WhenDown> = _trackerWhenDown
 
     fun setTracker(key: String, on: Boolean) {
-        when (key) {
-            "trackerPictures" -> _trackerPictures.value = on
-            "trackerAboveBelow" -> _trackerAboveBelow.value = on
-            "trackerHoldOne" -> _trackerHoldOne.value = on
-            "trackerSymbols" -> _trackerSymbols.value = on
-            "trackerTurns" -> _trackerTurns.value = on
-            "trackerClock" -> _trackerClock.value = on
-            else -> return
-        }
+        val f = trackerFlags[key] ?: return
+        f.value = on
         prefs.edit().putBoolean(key, on).stamp().apply()
     }
 
     fun setTrackerLowLife(v: LowLifeStyle) {
         _trackerLowLife.value = v
         prefs.edit().putString("trackerLowLife", v.key).stamp().apply()
+    }
+
+    fun setTrackerCardLayout(v: CardLayout) {
+        _trackerCardLayout.value = v
+        prefs.edit().putString("trackerCardLayout", v.key).stamp().apply()
+    }
+
+    fun setTrackerWhenDown(v: WhenDown) {
+        _trackerWhenDown.value = v
+        prefs.edit().putString("trackerWhenDown", v.key).stamp().apply()
     }
 
     private val _wishSections = MutableStateFlow(prefs.getBoolean("wishSections", true))
@@ -526,13 +547,10 @@ class Settings(context: Context) {
             put("swipeRight", swipeRight.value.key)
             put("swipeLeft", swipeLeft.value.key)
             put("binderOrder", BinderOrder.encode(binderOrder.value))
-            put("trackerPictures", trackerPictures.value.toString())
-            put("trackerAboveBelow", trackerAboveBelow.value.toString())
-            put("trackerHoldOne", trackerHoldOne.value.toString())
-            put("trackerSymbols", trackerSymbols.value.toString())
+            trackerFlags.forEach { (k, f) -> put(k, f.value.toString()) }
             put("trackerLowLife", trackerLowLife.value.key)
-            put("trackerTurns", trackerTurns.value.toString())
-            put("trackerClock", trackerClock.value.toString())
+            put("trackerCardLayout", trackerCardLayout.value.key)
+            put("trackerWhenDown", trackerWhenDown.value.key)
         },
     )
 
@@ -566,13 +584,10 @@ class Settings(context: Context) {
         v["swipeRight"]?.let { _swipeRight.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_RIGHT); e.putString("swipeRight", it) }
         v["swipeLeft"]?.let { _swipeLeft.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_LEFT); e.putString("swipeLeft", it) }
         v["binderOrder"]?.let { _binderOrder.value = BinderOrder.decode(it); e.putString("binderOrder", it) }
-        v["trackerPictures"]?.toBooleanStrictOrNull()?.let { _trackerPictures.value = it; e.putBoolean("trackerPictures", it) }
-        v["trackerAboveBelow"]?.toBooleanStrictOrNull()?.let { _trackerAboveBelow.value = it; e.putBoolean("trackerAboveBelow", it) }
-        v["trackerHoldOne"]?.toBooleanStrictOrNull()?.let { _trackerHoldOne.value = it; e.putBoolean("trackerHoldOne", it) }
-        v["trackerSymbols"]?.toBooleanStrictOrNull()?.let { _trackerSymbols.value = it; e.putBoolean("trackerSymbols", it) }
+        trackerFlags.forEach { (k, f) -> v[k]?.toBooleanStrictOrNull()?.let { f.value = it; e.putBoolean(k, it) } }
         v["trackerLowLife"]?.let { _trackerLowLife.value = LowLifeStyle.fromKey(it); e.putString("trackerLowLife", it) }
-        v["trackerTurns"]?.toBooleanStrictOrNull()?.let { _trackerTurns.value = it; e.putBoolean("trackerTurns", it) }
-        v["trackerClock"]?.toBooleanStrictOrNull()?.let { _trackerClock.value = it; e.putBoolean("trackerClock", it) }
+        v["trackerCardLayout"]?.let { _trackerCardLayout.value = CardLayout.fromKey(it); e.putString("trackerCardLayout", it) }
+        v["trackerWhenDown"]?.let { _trackerWhenDown.value = WhenDown.fromKey(it); e.putString("trackerWhenDown", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

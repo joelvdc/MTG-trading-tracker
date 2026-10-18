@@ -37,8 +37,14 @@ How to use this file:
 9. ~~MTG Trader 1.47: life tracker and game records for Commander, with the deck page fixes and Manage categories
    (green light and choices from the owner on 2026-10-18: five tabs with Settings behind a gear, commander pictures
    and the ghost by default).~~ Released.
+10. ~~MTG Trader 1.48: the life tracker redesigned as Lifetap (the owner's screenshots of Lifetap, 2026-10-18): soft
+   colours, a menu bar across the middle, each player's sheet with commander damage on a seating grid (hold a box for
+   − and + and partner commanders) and counter tiles, game settings, dice, mana pool, history and ending a game all
+   inside the game; players and decks can be changed during the game. The owner's choices: the pastel look (A), plain
+   colours by default, keep the New game screen (shorter), more room around the life total; no camera mode, no
+   one-player mode; Planechase, Archenemy and Bounty left out.~~ Released.
 
-### Test 1.46 and 1.47 in an emulator (in a session on the owner's PC)
+### Test 1.46, 1.47 and 1.48 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
 
 The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
@@ -66,11 +72,15 @@ Checklist:
 - **Manage categories (1.47):** switch categories off and on (deck page, Hidden categories section, move lists);
   empty categories never on the deck page; rename and delete with undo.
 - **Commander odds (1.47):** open the Stats, scroll the odds away and back: they don't start over.
-- **Life tracker (1.47):** New game with 2 to 6 players (layouts, panels facing the right way), tap and hold on every
-  panel in both tap modes, the − + symbols, holding by 1; commander damage, poison, tax, extra counters, monarch,
-  initiative, day/night; Dead? (yes, no, undo); low life animations; turns, clock, pause, undo; random who starts;
-  the screen stays on and the system bars hide; leaving and coming back keeps the game; End the game, Game over, Save
-  and rematch; commander pictures, random pictures offline, plain colours and picking a colour.
+- **Life tracker (1.47, redesigned in 1.48):** New game with 2 to 6 players (layouts, also one at each end for 4 and 6;
+  panels facing the right way; the middle bar in a gap), tap and hold on every panel in both tap modes, holding by 1;
+  the name label opens the player's sheet facing them; the seating grid (tap +1, hold for − and +, the partner switch);
+  every counter tile (tap and hold), K.O., custom counters; changing a player and a deck during the game; background
+  picture or colour, contrast; Dead? / out at once / nothing; low life animations; turns, clock, pause (tap the clock),
+  undo (hold History); Game settings (players and starting life restart after asking); dice, coin, custom die, random
+  player and opponent, the quick d20 (hold the die); the mana pool; the history log; auto-hiding bar; vibration; the
+  screen stays on and the system bars hide (and both switches); leaving and coming back keeps the game; End the game:
+  Save and rematch, Save then new players, end without saving.
 - **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
   head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
   other phone through sync; a backup restore keeps them.

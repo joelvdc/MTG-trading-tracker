@@ -733,39 +733,15 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
     )
 }
 
-/** Settings → Life tracker (since 1.47): how the panels look and react, and the defaults for new games. */
+/** Settings → Life tracker (since 1.47): since 1.48 its settings are in the game itself, as in Lifetap. */
 @Composable
 internal fun TrackerSection(nav: NavController) {
-    val c = LocalContext.current.container
-    val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
-    val aboveBelow by c.settings.trackerAboveBelow.collectAsStateWithLifecycle()
-    val holdOne by c.settings.trackerHoldOne.collectAsStateWithLifecycle()
-    val symbols by c.settings.trackerSymbols.collectAsStateWithLifecycle()
-    val lowLife by c.settings.trackerLowLife.collectAsStateWithLifecycle()
-    val turns by c.settings.trackerTurns.collectAsStateWithLifecycle()
-    val clock by c.settings.trackerClock.collectAsStateWithLifecycle()
     Text("Life tracker", style = MaterialTheme.typography.titleMedium)
     Text(
-        "For the Games tab. These follow you to your other phone.",
+        "The life tracker's settings are in the game: tap the circle with the number of players in the bar across the middle of the table.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Spacer(Modifier.height(8.dp))
-    DropdownSelector("Panel backgrounds", pictures, listOf(true, false), { if (it) "Commander pictures" else "Plain colours" }, { c.settings.setTracker("trackerPictures", it) }, Modifier.fillMaxWidth())
-    Text(
-        if (pictures) "A player without a commander gets a random commander's picture (a few are kept on the phone for when it's offline)."
-        else "Six colours that stay easy to tell apart; a seat's colour can be changed in the New game screen (tap the seat).",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(8.dp))
-    DropdownSelector("Changing life", aboveBelow, listOf(false, true), { if (it) "Tap above (+) or below (−) the total" else "Tap left (−) or right (+) of the total" }, { c.settings.setTracker("trackerAboveBelow", it) }, Modifier.fillMaxWidth())
-    Spacer(Modifier.height(8.dp))
-    DropdownSelector("Holding", holdOne, listOf(false, true), { if (it) "Counts by 1, faster while held" else "Counts by 10 (as Lifetap)" }, { c.settings.setTracker("trackerHoldOne", it) }, Modifier.fillMaxWidth())
-    SwitchRow(title = "Show − and + on the panels", body = "Where to tap, for those who like to see it.", checked = symbols, onChange = { c.settings.setTracker("trackerSymbols", it) })
-    DropdownSelector("Low life (below a quarter of the starting life)", lowLife, com.mtgtrader.data.LowLifeStyle.entries.toList(), { it.label }, c.settings::setTrackerLowLife, Modifier.fillMaxWidth())
-    SwitchRow(title = "Count turns in new games", body = "Can be switched for each game when it's set up.", checked = turns, onChange = { c.settings.setTracker("trackerTurns", it) })
-    SwitchRow(title = "Show a clock in new games", body = "The game's time, and the turn's when turns are counted.", checked = clock, onChange = { c.settings.setTracker("trackerClock", it) })
     TextButton(onClick = { nav.navigate("games/players") }) { Text("Players and their decks") }
 }
 

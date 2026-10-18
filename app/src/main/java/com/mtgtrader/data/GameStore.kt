@@ -29,6 +29,11 @@ data class TableSetup(
     val counters: List<String> = emptyList(),
     /** Who starts: a seat, or null for a random pick. */
     val firstSeat: Int? = null,
+    /** The game's own settings (since 1.48; see [LiveGame]). */
+    val cmdLifeLoss: Boolean = true,
+    val whenDown: String = WhenDown.ASK.key,
+    val ends: Boolean = false,
+    val logOn: Boolean = true,
 )
 
 /** A seat's player and deck in the setup. */
@@ -80,10 +85,13 @@ class GameStore(
         prefs.edit().putString(K_LIVE, g?.let(LiveGames::encode)).apply()
     }
 
-    /** Changes the game; [undoable] changes can be taken back (the last [UNDO_STEPS]). */
+    /**
+     * Changes the game; [undoable] changes can be taken back (the last [UNDO_STEPS]). Since 1.48 every change is
+     * settled too ([LiveGames.settle]): written to the log, and players who are down go out when the game says so.
+     */
     fun update(undoable: Boolean = true, change: (LiveGame) -> LiveGame) {
         val g = _live.value ?: return
-        val next = change(g)
+        val next = LiveGames.settle(g, change(g), System.currentTimeMillis())
         if (next == g) return
         if (undoable) {
             undo.addLast(g)
@@ -123,6 +131,11 @@ class GameStore(
         undo.clear()
         _canUndo.value = false
         save(null)
+    }
+
+    /** Keeps [setup] as the table a rematch starts from (also after players or decks change during a game). */
+    fun keepTable(setup: TableSetup) {
+        lastTable = setup
     }
 
     var lastTable: TableSetup?
