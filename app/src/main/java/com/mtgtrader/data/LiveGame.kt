@@ -204,8 +204,8 @@ object LiveGames {
     /** Whether to ask "Dead?" on [s]'s panel. */
     fun asksDead(s: LiveSeat): Boolean = !s.out && outCause(s) != null && s.notDead != deathKey(s)
 
-    /** Low life: below a quarter of the starting life (below 10 at 40), and still above 0. */
-    fun lowLife(s: LiveSeat, startingLife: Int): Boolean = !s.out && s.life > 0 && s.life * 4 < startingLife
+    /** Low life: a quarter of the starting life or less (10 or less at 40; since 1.50), and still above 0. */
+    fun lowLife(s: LiveSeat, startingLife: Int): Boolean = !s.out && s.life > 0 && s.life * 4 <= startingLife
 
     private fun LiveGame.seat(i: Int, f: (LiveSeat) -> LiveSeat) = copy(seats = seats.map { if (it.seat == i) f(it) else it })
 
