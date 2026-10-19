@@ -468,26 +468,28 @@ The tracker looks and works like the Lifetap app (since 1.48): soft colours with
 middle of the table, and everything about the game (counters, settings, dice, mana, history) inside the game.
 - **New game:** 2 to 6 players, who sits where (clockwise) and which deck each plays: yours are the app's decks;
   friends are added as players with their own decks (a commander, or two partners, found on Scryfall, and optionally
-  the Archidekt link). Who starts: picked, or at random with a short run around the table. **Rematch** sets up the
+  the Archidekt link). Who starts: picked, or at random with a run around the table that slows down before it stops (about 3 seconds). **Rematch** sets up the
   last table again. Starting life and the game's other settings are set in the game.
 - **The table:** the phone lies in the middle; each player's panel faces them, in a soft colour (or their commander's
   picture), with their name on a label, their life with room around it, − and + at the ends, and the **commander
-  damage mini-grid**: a tiny copy of the table, "me" on their own seat, each box the damage taken from that player's
-  commander (partners split in two, "0|4"). Counters in use show as small badges next to it. Tap left of the total
+  damage mini-grid**: a tiny copy of the table in a light frame, centred under the total (as in Lifetap), each box the
+  damage taken from that player's commander (partners split in two, "0|4"); their own seat says "me" until their own
+  commander has dealt them damage (say when another player controls it). Counters in use show as small badges beside
+  it. Tap left of the total
   for −1 and right for +1 (or below/above), hold for 10 (or by 1, fast); the change shows next to the total for a
   moment. At low life the panel shows an animation (a ghost, a dark edge, a cracking total, or none). At 0 life, 10
   poison or 21 commander damage from one commander, **Dead?** asks (or the player goes out at once, or nothing
   happens, as set): yes turns the panel dark with a skull (Undo brings them back).
 - **A player's sheet** (tap their name; the mini-grid opens it on Counters), facing them: **Counters** has the
-  commander damage taken on a big seating grid (tap a box for +1; hold it for − and + and the **Partner commanders**
-  switch, which splits it into two counts) and tiles for poison, commander tax (one per partner), the monarch, the
+  commander damage taken on a big seating grid, their own commander included (tap a box for +1; hold it for − and +
+  and the **Partner commanders** switch, which splits it into two counts) and tiles for poison, commander tax (one per partner), the monarch, the
   initiative, day/night, the city's blessing, energy, experience, rad, treasure, counters you name, and K.O. (tap
   adds one, hold takes one off). **Player** changes who sits there and their deck during the game, their background
   (the commander's picture or one of six colours), stronger contrast, and conceding.
 - **The middle bar:** ↻ ends the game; the circle with the number of players opens **Game settings**; the clock
   (round and game time, when on; tap to pause); ☀/☾ when it's day or night; the clock with an arrow opens the
   **history** (hold it to undo the last change); the coloured dots open the **mana pool** (WUBRG, colourless and a
-  storm count); the die opens **Dice & random** (random player or opponent, a coin, a custom die, d4 to d20; hold
+  storm count); the die opens **Dice & random** (random player or opponent, picked by a run around the table that slows down before it stops, a coin, a custom die, d4 to d20; hold
   the die for a d20 at once). Rolls show twice, so both sides of the table can read them.
 - **Game settings:** players, layout (for 4 and 6 players: side by side, or one at each end), starting life (20, 25,
   30, 40, 60 or your own), each seat's player and deck; commander damage, its life loss, what happens when a player is
