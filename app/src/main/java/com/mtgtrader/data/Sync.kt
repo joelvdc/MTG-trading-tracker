@@ -30,6 +30,8 @@ data class SyncData(
     val games: List<GameRecord> = emptyList(),
     val deletions: List<SyncDeletion> = emptyList(),
     val prefs: SyncPrefs = SyncPrefs(),
+    /** Games paused to be continued on any phone; since 1.51 (file format 11). */
+    val pausedGames: List<PausedGame> = emptyList(),
 ) {
     val isEmpty get() = binders.isEmpty() && collection.isEmpty() && trades.isEmpty() && decks.isEmpty() && scans.isEmpty()
 
@@ -46,6 +48,7 @@ data class SyncData(
         friendDecks = friendDecks.sortedBy { it.uid },
         games = games.sortedBy { it.uid },
         deletions = deletions.sortedBy { it.uid },
+        pausedGames = pausedGames.sortedBy { it.uid },
     )
 }
 
@@ -94,8 +97,9 @@ data class SyncFile(
          * older version would write back without, so the changes couldn't be sent to Archidekt.
          * 10 since 1.47: the life tracker's players, friends' decks and games, which an older version would write
          * back without.
+         * 11 since 1.51: paused games, which an older version would write back without (so they'd vanish).
          */
-        const val FORMAT = 10
+        const val FORMAT = 11
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**
@@ -214,6 +218,7 @@ object SyncMerge {
         d.players.forEach { p -> p.uid?.let(::add) }
         d.friendDecks.forEach { f -> f.uid?.let(::add) }
         d.games.forEach { g -> g.uid?.let(::add) }
+        d.pausedGames.forEach { p -> p.uid?.let(::add) }
         d.decks.forEach { add(deckKey(it.deck.archidektId)) }
     }
 
@@ -246,6 +251,7 @@ object SyncMerge {
             games = newest(local.games, remote.games, { it.uid }, { it.updatedAt }),
             deletions = deletions,
             prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs else local.prefs,
+            pausedGames = newest(local.pausedGames, remote.pausedGames, { it.uid }, { it.updatedAt }),
         )
     }
 
@@ -315,9 +321,11 @@ object SyncMerge {
         }
         val friendDecks = d.friendDecks.filter { alive(it.uid, it.updatedAt) }
         val games = d.games.filter { alive(it.uid, it.updatedAt) }
+        // A paused game continued on one phone is gone from the others too (its deletion wins).
+        val pausedGames = d.pausedGames.filter { alive(it.uid, it.updatedAt) }
 
         val cutoff = now - KEEP_DELETIONS_MS
         val deletions = deleted.filter { (uid, at) -> uid !in revived && at >= cutoff }.map { (uid, at) -> SyncDeletion(uid, at) }
-        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, players, friendDecks, games, deletions, d.prefs).sorted()
+        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, players, friendDecks, games, deletions, d.prefs, pausedGames).sorted()
     }
 }

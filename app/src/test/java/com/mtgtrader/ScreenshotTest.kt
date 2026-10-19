@@ -909,6 +909,38 @@ class ScreenshotTest {
     @Test fun lifeTrackerSixEnds() = tracker("life_tracker_6_ends", sampleGame(6).copy(ends = true)) { g -> trackerTable(g) }
 
     /**
+     * 1.51: a narrower phone (as the owner's Samsung, 384 dp wide) keeps the name, total and grid centred on the
+     * long sides; five players; the end seats' grid right beside the total (in the six-player picture above).
+     */
+    @Test @Config(qualifiers = "w384dp-h832dp-xhdpi") fun lifeTrackerNarrowPhone() = tracker("life_tracker_narrow", width = 384, height = 832) { g -> trackerTable(g) }
+
+    @Test fun lifeTrackerFive() = tracker("life_tracker_5", sampleGame(5)) { g -> trackerTable(g) }
+
+    /** 1.51: the Games tab's paused games, each with its date, players, round and time, Continue and ⋮ (Drop it). */
+    @Test fun pausedGames() {
+        fun paused(at: Long, players: Int, round: Int) = com.mtgtrader.data.PausedGame(
+            pausedAt = at, uid = "p$at",
+            game = com.mtgtrader.data.LiveGames.encode(sampleGame(players).let { g -> com.mtgtrader.data.LiveGames.pause(g.copy(round = round), g.startedAt + 2_100_000) }),
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text("Paused games", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 10.dp))
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                            listOf(paused(1_792_430_040_000, 4, 7), paused(1_792_368_000_000, 3, 4)).forEachIndexed { i, p ->
+                                if (i > 0) androidx.compose.material3.HorizontalDivider()
+                                com.mtgtrader.ui.PausedGameRow(p, onContinue = {}, onDrop = {})
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/paused_games.png", roborazziOptions = screenshotOptions)
+    }
+
+    /**
      * 1.50: low life (a quarter of the starting life or less) with the ghost, part-way up: between the total and the
      * +, and on the − side where the mini-grid sits beside the total (the end seats).
      */
@@ -1000,11 +1032,11 @@ class ScreenshotTest {
         bar = { com.mtgtrader.ui.MenuBar(g, 2_102_000) },
     )
 
-    private fun tracker(file: String, game: com.mtgtrader.data.LiveGame = sampleGame(), height: Int = 900, advanceMs: Long = 0, content: @androidx.compose.runtime.Composable (com.mtgtrader.data.LiveGame) -> Unit) {
+    private fun tracker(file: String, game: com.mtgtrader.data.LiveGame = sampleGame(), width: Int = 411, height: Int = 900, advanceMs: Long = 0, content: @androidx.compose.runtime.Composable (com.mtgtrader.data.LiveGame) -> Unit) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             MtgColors(dark = true) {
-                Box(Modifier.width(411.dp).height(height.dp)) { content(game) }
+                Box(Modifier.width(width.dp).height(height.dp)) { content(game) }
             }
         }
         compose.mainClock.advanceTimeByFrame()

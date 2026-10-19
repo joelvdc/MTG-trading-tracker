@@ -54,9 +54,9 @@ data class SeatChoice(
 data class CommanderArt(val name: String, val url: String)
 
 /**
- * The life tracker's records (since 1.47): the game being played (kept on this phone, with undo), players, friends'
- * decks and finished games (in the database, synced), the last table for a rematch, and a small store of random
- * commanders' art for backgrounds when offline.
+ * The life tracker's records (since 1.47): the game being played (kept on this phone, with undo), paused games,
+ * players, friends' decks and finished games (in the database, synced), the last table for a rematch, and a small
+ * store of random commanders' art for backgrounds when offline.
  */
 class GameStore(
     private val context: Context,
@@ -131,6 +131,38 @@ class GameStore(
         undo.clear()
         _canUndo.value = false
         save(null)
+    }
+
+    // ---- Paused games (since 1.51) -----------------------------------------------------------------
+
+    /** Games paused to be continued later, here or on another phone (synced), the last paused first. */
+    val pausedGames: Flow<List<PausedGame>> = dao.observePausedGames()
+
+    /** Stops the game being played and its clock, and puts it with the paused games; the tracker then closes. */
+    suspend fun pauseAndLeave() {
+        val g = _live.value ?: return
+        val now = System.currentTimeMillis()
+        dao.insertPausedGame(PausedGame(pausedAt = now, game = LiveGames.encode(LiveGames.pause(g, now)), clockStopped = g.paused, uid = g.uid))
+        abandon()
+    }
+
+    /**
+     * Makes [p] the game being played again, its clock going on (unless it had been stopped by hand), and takes it
+     * off the paused games, on the other phones too once they sync. False if the game can't be read.
+     */
+    suspend fun continuePaused(p: PausedGame): Boolean {
+        val g = p.live ?: return false
+        dao.deletePausedGame(p.id)
+        undo.clear()
+        _canUndo.value = false
+        save(if (p.clockStopped) g else LiveGames.resume(g, System.currentTimeMillis()))
+        return true
+    }
+
+    /** Drops a paused game without saving it (on every phone). */
+    suspend fun dropPaused(p: PausedGame): UndoAction {
+        dao.deletePausedGame(p.id)
+        return { dao.insertPausedGame(p.copy(id = 0)) }
     }
 
     /** Keeps [setup] as the table a rematch starts from (also after players or decks change during a game). */

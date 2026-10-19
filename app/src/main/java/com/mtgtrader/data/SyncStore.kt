@@ -31,6 +31,7 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             games = dao.games().map { it.copy(id = 0) },
             deletions = dao.deletions(),
             prefs = settings.syncedPrefs(),
+            pausedGames = dao.pausedGames().map { it.copy(id = 0) },
         ).sorted() to (dao.lastChange() ?: 0L)
     }
 
@@ -174,6 +175,18 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
                 val mine = localByUid[uid]
                 if (mine == null) db.gameDao().insertGame(want.copy(id = 0))
                 else if (want.copy(id = mine.id) != mine) db.gameDao().updateGame(want.copy(id = mine.id))
+            }
+        }
+        // Paused games (since 1.51).
+        if (current.pausedGames != merged.pausedGames) {
+            val local = dao.pausedGames()
+            val localByUid = local.filter { it.uid != null }.associateBy { it.uid!! }
+            val wanted = merged.pausedGames.associateBy { it.uid!! }
+            for (row in local) if (wanted[row.uid] == null) exec("DELETE FROM paused_games WHERE id = ?", row.id)
+            for ((uid, want) in wanted) {
+                val mine = localByUid[uid]
+                if (mine == null) db.gameDao().insertPausedGame(want.copy(id = 0))
+                else if (want.copy(id = mine.id) != mine) db.gameDao().updatePausedGame(want.copy(id = mine.id))
             }
         }
 

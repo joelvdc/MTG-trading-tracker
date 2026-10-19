@@ -42,9 +42,10 @@ data class BackupFile(
          * cards marked as ordered), 5 since 1.37 (price alert levels), 6 since 1.38 (wishlist cards received),
          * 7 since 1.39 (alert level currencies, received cards' collection links), 8 since 1.42 (decks'
          * maybeboards), 9 since 1.46 (local decks, deck editing), 10 since 1.47 (the life tracker's players and
-         * games), like [SyncFile.FORMAT]: older versions can't restore it without losing them.
+         * games), 11 since 1.51 (paused games), like [SyncFile.FORMAT]: older versions can't restore it without
+         * losing them.
          */
-        const val FORMAT = 10
+        const val FORMAT = 11
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {
@@ -183,7 +184,8 @@ object BackupRestore {
         }
         val deletions = (current.deletions.filter { it.uid !in alive } + gone).groupBy { it.uid }.map { (_, d) -> d.maxBy { it.deletedAt } }
         val prefs = if (backup.prefs.values == current.prefs.values) current.prefs else backup.prefs.copy(updatedAt = now)
-        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, players, friendDecks, games, deletions, prefs).sorted()
+        // Paused games stay as they are now: an old backup shouldn't bring back games already continued, or drop new ones.
+        return SyncData(binders, collection, trades, decks, scans, wishlist, orders, players, friendDecks, games, deletions, prefs, current.pausedGames).sorted()
     }
 }
 

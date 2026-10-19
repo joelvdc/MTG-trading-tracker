@@ -475,7 +475,8 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   damage mini-grid**: a tiny copy of the table in a light frame, centred under the total (as in Lifetap), each box the
   damage taken from that player's commander (partners split in two, "0|4"); their own seat says "me" until their own
   commander has dealt them damage (say when another player controls it). Counters in use show as small badges beside
-  it. Tap left of the total
+  it. The name, total and grid stay in one line on narrower phones too (since 1.51); only the short seats at the ends
+  of a 5–6 player table have the grid right beside the total, with the total in the middle. Tap left of the total
   for −1 and right for +1 (or below/above), hold for 10 (or by 1, fast); the change shows next to the total for a
   moment. At low life (a quarter of the starting life or less: 10 at 40) the panel shows an animation (a ghost
   rising between the total and the +, a dark edge, a cracking total, or none). At 0 life, 10
@@ -487,7 +488,7 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   initiative, day/night, the city's blessing, energy, experience, rad, treasure, counters you name, and K.O. (tap
   adds one, hold takes one off). **Player** changes who sits there and their deck during the game, their background
   (the commander's picture or one of six colours), stronger contrast, and conceding.
-- **The middle bar:** ↻ ends the game; the circle with the number of players opens **Game settings**; the clock
+- **The middle bar:** ↻ ends the game; the ⚙ opens **Game settings**; the clock
   (round and game time, when on; tap to pause); ☀/☾ when it's day or night; the clock with an arrow opens the
   **history** (hold it to undo the last change); the coloured dots open the **mana pool** (WUBRG, colourless and a
   storm count); the die opens **Dice & random** (random player or opponent, picked by a run around the table that slows down before it stops, a coin, a custom die, d4 to d20; hold
@@ -502,7 +503,12 @@ middle of the table, and everything about the game (counters, settings, dice, ma
 - **Turns:** with turns counted, the player whose turn it is has a gold frame and their turn's time; tap it to pass
   the turn clockwise.
 - **History:** the game's log (life changes, commander damage, poison, tax, counters, turns, players going out, the
-  monarch), with Undo last and Pause; and the games played before.
+  monarch), with Undo last and Pause clock; and the games played before.
+- **Pausing a game to continue later** (since 1.51): History → **Pause game and leave** stops the clock, closes the
+  tracker and puts the game with the paused games. They sync, so the Games tab of both phones lists them under
+  **Paused games** (when paused, the players, the round and the time played): **Continue** carries on, on either phone,
+  and takes it off the list everywhere; ⋮ → **Drop it** removes it. Several games can be paused; continuing one while
+  another is running pauses that one first. The undo steps stay behind; the game's log goes along.
 - **Ending a game:** ↻ in the bar: who won (or a draw) and how, then **Save and rematch** (same seats, a new game at
   once), **Save, then new players**, or end without saving. The game goes into the history (backups and the Nextcloud
   sync too); a note can be added on the game's page. Recorded games can be changed or deleted, and a game played
@@ -554,7 +560,7 @@ choose for all scanned cards; the choice is kept for the next scans. A chosen la
 identified by its set code and number alone.
 
 ## Sync between phones
-Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans, games and preferences the same on all
+Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans, games (also paused ones) and preferences the same on all
 your phones, using a file (`sync.json.gz`) in a folder of your own [Nextcloud](https://nextcloud.com/). Prices and
 pictures aren't synced; each phone downloads those itself.
 - **Connect:** enter your server address and log in in the browser; the app gets its own app password, which you can
@@ -571,7 +577,7 @@ pictures aren't synced; each phone downloads those itself.
   after a change, when you leave the app and every hour; **Only on Wi-Fi** keeps automatic syncs off mobile data.
   "Sync now" always works.
 - **Update every phone:** from version 1.27 (signed and altered cards) the sync file has a new format, and it changes again
-  with some updates (most recently 1.47, for the life tracker's games). Older versions
+  with some updates (most recently 1.51, for paused games). Older versions
   stop syncing and ask to be updated, so they can't lose the Signed and Altered marks; their changes wait on the phone
   and sync after the update. An updated phone that sees another one still on an older version says so (and Settings
   keeps a note until it's updated).

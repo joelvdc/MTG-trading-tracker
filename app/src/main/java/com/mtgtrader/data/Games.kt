@@ -123,6 +123,25 @@ data class GameSeat(
 @Serializable
 data class TurnTime(val round: Int, val seat: Int, val ms: Long)
 
+/**
+ * A game paused to be continued later, here or on another phone (since 1.51): the [LiveGame] as JSON, synced, so
+ * every phone's Games tab lists it until one of them continues it (which takes it off the list everywhere).
+ */
+@Serializable
+@Entity(tableName = "paused_games", indices = [Index("uid")])
+data class PausedGame(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val pausedAt: Long,
+    /** [LiveGame] JSON, its clock stopped at [pausedAt]. */
+    val game: String,
+    /** The clock had been stopped by hand before the game was paused, so it stays stopped when the game goes on. */
+    val clockStopped: Boolean = false,
+    val uid: String? = null,
+    @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
+) {
+    val live: LiveGame? get() = LiveGames.decode(game)
+}
+
 @Dao
 interface GameDao {
     @Query("SELECT * FROM players ORDER BY me DESC, name COLLATE NOCASE")
@@ -172,6 +191,18 @@ interface GameDao {
 
     @Query("DELETE FROM games WHERE id = :id")
     suspend fun deleteGame(id: Long)
+
+    @Query("SELECT * FROM paused_games ORDER BY pausedAt DESC")
+    fun observePausedGames(): Flow<List<PausedGame>>
+
+    @Insert
+    suspend fun insertPausedGame(p: PausedGame): Long
+
+    @Update
+    suspend fun updatePausedGame(p: PausedGame)
+
+    @Query("DELETE FROM paused_games WHERE id = :id")
+    suspend fun deletePausedGame(id: Long)
 }
 
 /** How a game was won (told at its end, optional). */
