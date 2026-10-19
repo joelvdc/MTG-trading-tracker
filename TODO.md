@@ -137,6 +137,39 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
+### Pause a game and pick it up on another phone
+*Added 2026-10-19. MTG Trader only.*
+
+The owner's words: "Add the hand-over button, actually just a pause button. Instead of canceling the game, it pauses
+the game and leaves, then syncs and can be picked up in another phone."
+
+Today the game being played stays on the phone it started on (only finished games sync). The idea: a **Pause** that
+leaves the tracker without ending the game, sends the paused game through the Nextcloud sync, and lets the other
+phone carry on with it.
+
+Open questions:
+- **Where the button goes:** in the end-of-game choices (↻: "Pause and leave" next to Save and End without saving),
+  or its own button in the middle bar?
+- **On the other phone:** the Games tab shows "Paused game: continue" (and the phone that paused shows it too)?
+  Picking it up takes it off the paused list, so two phones can't play on with the same game.
+- **Several paused games** at once, or one at a time (a new pause replaces the old, or asks)?
+- **Undo:** the undo steps stay on the phone that paused (the game's history log goes along); OK?
+- The sync file gets a new part for paused games, so every phone needs the update before it syncs again (as with
+  earlier sync changes).
+
+### The mini-grid beside the total on narrower phones (fix, MTG Trader 1.51)
+*Added 2026-10-19. MTG Trader only.*
+
+The owner's words: "In version 1.49 the commander damage, life total and player name were centered and aligned, just
+like the lifetap app. In 1.50 you changed that and it is not aligned anymore. … my pixel 8 pro shows everything
+centered as it should be. But that screenshot was from my Samsung A37."
+
+What was found: 1.50 didn't change the panel layout. Since 1.48 a panel shorter than the mini-grid + 150 dp puts the
+grid beside the total (meant for the end seats of a 5–6 player table). The Samsung's screen is a little narrower
+than the Pixel's, so its 4-player panels fall just under that limit and get the side layout. The fix lowers the
+limit to the grid + 110 dp: the long-side seats stay centred on phones down to 360 dp wide, the end seats keep the
+side layout. Waiting for the owner's green light (plan given on 2026-10-19).
+
 ## Done
 
 ### Fixes on the deck page and the card window, and Manage categories (MTG Trader 1.47)
