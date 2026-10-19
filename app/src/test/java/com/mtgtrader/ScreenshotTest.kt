@@ -908,6 +908,25 @@ class ScreenshotTest {
 
     @Test fun lifeTrackerSixEnds() = tracker("life_tracker_6_ends", sampleGame(6).copy(ends = true)) { g -> trackerTable(g) }
 
+    /**
+     * 1.50: low life (a quarter of the starting life or less) with the ghost, part-way up: between the total and the
+     * +, and on the − side where the mini-grid sits beside the total (the end seats).
+     */
+    @Test fun trackerLowLife() = tracker("tracker_low_life", lowLifeGame(4), advanceMs = 1_600) { g -> lowLifeTable(g) }
+
+    @Test fun trackerLowLifeSixEnds() = tracker("tracker_low_life_6_ends", lowLifeGame(6).copy(ends = true), advanceMs = 1_600) { g -> lowLifeTable(g) }
+
+    private fun lowLifeGame(players: Int): com.mtgtrader.data.LiveGame {
+        val lives = listOf(10, 4, 23, 7, 3, 9)
+        val g = sampleGame(players)
+        return g.copy(seats = g.seats.map { it.copy(life = lives[it.seat], out = false, outRound = null) })
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun lowLifeTable(g: com.mtgtrader.data.LiveGame) = com.mtgtrader.ui.TrackerTable(
+        g, com.mtgtrader.ui.PanelLook(), now = 2_102_000, bar = { com.mtgtrader.ui.MenuBar(g, 2_102_000) },
+    )
+
     /** 1.48: a player's sheet: the commander damage grid and the counter tiles; the Player tab. */
     @Test fun trackerCounters() = tracker("tracker_counters") { g ->
         trackerTable(g)
@@ -981,7 +1000,7 @@ class ScreenshotTest {
         bar = { com.mtgtrader.ui.MenuBar(g, 2_102_000) },
     )
 
-    private fun tracker(file: String, game: com.mtgtrader.data.LiveGame = sampleGame(), height: Int = 900, content: @androidx.compose.runtime.Composable (com.mtgtrader.data.LiveGame) -> Unit) {
+    private fun tracker(file: String, game: com.mtgtrader.data.LiveGame = sampleGame(), height: Int = 900, advanceMs: Long = 0, content: @androidx.compose.runtime.Composable (com.mtgtrader.data.LiveGame) -> Unit) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             MtgColors(dark = true) {
@@ -989,6 +1008,7 @@ class ScreenshotTest {
             }
         }
         compose.mainClock.advanceTimeByFrame()
+        if (advanceMs > 0) compose.mainClock.advanceTimeBy(advanceMs)
         compose.onRoot().captureRoboImage("src/test/screenshots/$file.png", roborazziOptions = screenshotOptions)
     }
 

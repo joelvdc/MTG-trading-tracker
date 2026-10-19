@@ -477,7 +477,8 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   commander has dealt them damage (say when another player controls it). Counters in use show as small badges beside
   it. Tap left of the total
   for −1 and right for +1 (or below/above), hold for 10 (or by 1, fast); the change shows next to the total for a
-  moment. At low life the panel shows an animation (a ghost, a dark edge, a cracking total, or none). At 0 life, 10
+  moment. At low life (a quarter of the starting life or less: 10 at 40) the panel shows an animation (a ghost
+  rising between the total and the +, a dark edge, a cracking total, or none). At 0 life, 10
   poison or 21 commander damage from one commander, **Dead?** asks (or the player goes out at once, or nothing
   happens, as set): yes turns the panel dark with a skull (Undo brings them back).
 - **A player's sheet** (tap their name; the mini-grid opens it on Counters), facing them: **Counters** has the

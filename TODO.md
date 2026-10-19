@@ -46,8 +46,11 @@ How to use this file:
 11. ~~MTG Trader 1.49: the owner's comments on the tracker (2026-10-19): the random pick 2 seconds longer and slowing
    down at the end; commander damage from your own commander; the mini-grid centred in a frame as in Lifetap, with
    the counter badges beside it (the owner picked A from the mockups).~~ Released.
+12. ~~MTG Trader 1.50: the low-life ghost no longer floats over the + (it rises between the total and the +, or on
+   the − side where the grid sits beside the total; the owner picked C from the mockups on 2026-10-19), and low life
+   starts at a quarter of the starting life (10 at 40).~~ Released.
 
-### Test 1.46, 1.47, 1.48 and 1.49 in an emulator (in a session on the owner's PC)
+### Test 1.46 to 1.50 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
 
 The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator

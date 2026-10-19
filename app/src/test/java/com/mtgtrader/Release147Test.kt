@@ -79,8 +79,9 @@ class Release147Test {
     }
 
     @Test
-    fun lowLifeIsBelowAQuarterOfTheStartingLife() {
-        assertFalse(LiveGames.lowLife(seat(0, 10), 40))
+    fun lowLifeIsAQuarterOfTheStartingLifeOrLess() {
+        // Since 1.50 a quarter itself counts (10 at 40); see Release150Test.
+        assertFalse(LiveGames.lowLife(seat(0, 11), 40))
         assertTrue(LiveGames.lowLife(seat(0, 9), 40))
         assertFalse(LiveGames.lowLife(seat(0, 0), 40))
         assertTrue(LiveGames.lowLife(seat(0, 4), 20))

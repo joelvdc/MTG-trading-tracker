@@ -370,7 +370,7 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
         Row(Modifier.fillMaxWidth().padding(start = 38.dp, bottom = 4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
             CardLayout.entries.forEach { l -> CardLayoutThumb(l, cardLayout == l) { s.setTrackerCardLayout(l) } }
         }
-        SettingRow(Icons.Outlined.MonitorHeart, "Low life", "Below a quarter of the starting life") {
+        SettingRow(Icons.Outlined.MonitorHeart, "Low life", "A quarter of the starting life or less") {
             Drop(lowLife, LowLifeStyle.entries.toList(), { it.label }) { s.setTrackerLowLife(it) }
         }
         SwitchSetting(Icons.Outlined.VisibilityOff, "Auto-hide menu", "Hides the middle bar until you tap the gap", autoHide) { s.setTracker("trackerAutoHide", it) }

@@ -559,9 +559,14 @@ internal fun PlayerPanel(
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (s.contrast) 0.58f else 0.36f)))
             }
         }
+        // Where to tap: − and + at the ends, with room for them beside the total.
+        val symbol = (small.value * 0.17f).coerceIn(22f, 40f).sp
+        val sideRoom = (symbol.value * 1.3f + 18f).dp
+        // A short, wide panel (at an end of the table) has the mini-grid beside the total, so the total keeps its room.
+        val beside = look.layout == CardLayout.DEFAULT && g.commanderDamage && wide && maxHeight < miniGridSize(g, s).second + 150.dp
         val low = LiveGames.lowLife(s, g.startingLife)
         if (low && look.lowLife == LowLifeStyle.EDGE) PulsingEdge(small)
-        if (low && look.lowLife == LowLifeStyle.GHOST) DriftingGhost(small, if (picture) Color.White else PanelInk)
+        if (low && look.lowLife == LowLifeStyle.GHOST) DriftingGhost(small, if (picture) Color.White else PanelInk, sideRoom, onPlusSide = !beside)
         val active = g.turnsOn && g.active == s.seat && !s.out
         if (active) Box(Modifier.fillMaxSize().border(4.dp, TurnGold, shape))
         if (highlight) Box(Modifier.fillMaxSize().border(6.dp, if (picture) Color.White else PanelInk, shape))
@@ -602,8 +607,6 @@ internal fun PlayerPanel(
                 }
             },
         )
-        // Where to tap
-        val symbol = (small.value * 0.17f).coerceIn(22f, 40f).sp
         if (!look.aboveBelow) {
             Text("−", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.CenterStart).padding(start = 14.dp))
             Text("+", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp))
@@ -612,10 +615,7 @@ internal fun PlayerPanel(
             Text("−", color = ink, fontSize = symbol, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 6.dp))
         }
         // The label, the total and the mini-grid, one above the other with room between them.
-        val sideRoom = (symbol.value * 1.3f + 18f).dp
         val panelWidth = maxWidth
-        // A short, wide panel (at an end of the table) has the mini-grid beside the total, so the total keeps its room.
-        val beside = look.layout == CardLayout.DEFAULT && g.commanderDamage && wide && maxHeight < miniGridSize(g, s).second + 150.dp
         Column(Modifier.fillMaxSize().padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             if (look.layout == CardLayout.BIG) {
                 Box(Modifier.clip(CircleShape).clickable { onSheet(false) }.padding(horizontal = 18.dp, vertical = 6.dp)) {
@@ -837,14 +837,18 @@ internal fun SeatGrid(
     }
 }
 
-/** Low life: a faint ghost drifting up through the panel, over and over. */
+/**
+ * Low life: a faint ghost drifting up through the panel, over and over. Since 1.50 it rises between the total and
+ * the + ([sideRoom] in from the edge), clear of the + and the mini-grid; where the grid sits beside the total it
+ * takes the − side instead.
+ */
 @Composable
-private fun BoxScope.DriftingGhost(small: Dp, colour: Color) {
+private fun BoxScope.DriftingGhost(small: Dp, colour: Color, sideRoom: Dp, onPlusSide: Boolean) {
     val t = rememberInfiniteTransition(label = "ghost")
     val p by t.animateFloat(0f, 1f, infiniteRepeatable(tween(4_500, easing = LinearEasing)), label = "rise")
     Ghost(
         colour = colour,
-        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp)
+        modifier = (if (onPlusSide) Modifier.align(Alignment.BottomEnd).padding(end = sideRoom) else Modifier.align(Alignment.BottomStart).padding(start = sideRoom))
             .graphicsLayer { translationY = -p * (small.toPx() * 1.1f); alpha = (if (p < 0.15f) p / 0.15f else 1f) * (1f - p) }
             .size(small * 0.26f, small * 0.34f),
     )
