@@ -897,7 +897,10 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_editing.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.47, as Lifetap since 1.48: four players, a turn running, the monarch, partners, "Dead?" and a player out, the middle bar. */
+    /**
+     * 1.47, as Lifetap since 1.48: four players, a turn running, the monarch, partners, "Dead?" and a player out, the
+     * middle bar; since 1.49 the mini-grid centred in its frame, and damage from the player's own commander.
+     */
     @Test fun lifeTracker() = tracker("life_tracker") { g -> trackerTable(g) }
 
     /** 1.48: three players, and six with one at each end. */
@@ -959,6 +962,7 @@ class ScreenshotTest {
         fun step(t: Long, f: (com.mtgtrader.data.LiveGame) -> com.mtgtrader.data.LiveGame) { g = com.mtgtrader.data.LiveGames.settle(g, f(g), t) }
         step(60_000) { com.mtgtrader.data.LiveGames.casts(it, 0, 1) }
         step(400_000) { com.mtgtrader.data.LiveGames.commanderDamage(it, 0, "1", 6) }
+        step(450_000) { com.mtgtrader.data.LiveGames.commanderDamage(it, 0, "0", 2) }
         if (players >= 3) step(700_000) { com.mtgtrader.data.LiveGames.commanderDamage(it, 0, com.mtgtrader.data.LiveGames.cmdKey(2, true), 4) }
         step(900_000) { com.mtgtrader.data.LiveGames.counter(com.mtgtrader.data.LiveGames.poison(it, 1, 3), 1, "energy", 4) }
         step(1_000_000) { com.mtgtrader.data.LiveGames.changeLife(it, 1, -13) }

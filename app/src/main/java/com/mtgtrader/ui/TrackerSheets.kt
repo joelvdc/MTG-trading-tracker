@@ -197,13 +197,13 @@ private fun CountersTab(g: LiveGame, s: LiveSeat, onFocus: (Int) -> Unit, onCust
     }
 }
 
-/** One opponent's commander damage, big, with − and +; partners split it in two. */
+/** One player's commander damage (an opponent's, or since 1.49 the player's own), big, with − and +; partners split it in two. */
 @Composable
 private fun DamageDetail(g: LiveGame, s: LiveSeat, focus: Int, onFocus: (Int?) -> Unit) {
     val c = LocalContext.current.container
     val o = g.seats.firstOrNull { it.seat == focus } ?: return
     Column(Modifier.fillMaxSize()) {
-        Text("Commander damage from ${o.name}", color = SheetInk, fontSize = 13.sp, modifier = Modifier.padding(bottom = 4.dp))
+        Text(if (o.seat == s.seat) "Commander damage from your own commander" else "Commander damage from ${o.name}", color = SheetInk, fontSize = 13.sp, modifier = Modifier.padding(bottom = 4.dp))
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             SeatGrid(g, s.seat, maxWidth, maxHeight, colourise = true, ink = SheetInk, gap = 8.dp, radius = 16.dp, focus = focus) { j ->
                 BigCell(g, s, j, focused = g.seats[j].seat == focus, onFocus = { onFocus(it) })
@@ -221,17 +221,14 @@ private fun DamageDetail(g: LiveGame, s: LiveSeat, focus: Int, onFocus: (Int?) -
 }
 
 /**
- * A box of the big grid: "me", or the damage taken from that player's commander(s). In the grid a tap adds 1 and a
- * hold opens the detail; [focused] (the detail) taps on the left take 1 off, on the right add 1.
+ * A box of the big grid: the damage taken from that player's commander(s); the player's own box counts damage from
+ * their own commander (since 1.49), say when another player controls it. In the grid a tap adds 1 and a hold opens
+ * the detail; [focused] (the detail) taps on the left take 1 off, on the right add 1.
  */
 @Composable
 private fun BoxScope.BigCell(g: LiveGame, me: LiveSeat, j: Int, focused: Boolean, onFocus: (Int) -> Unit) {
     val c = LocalContext.current.container
     val o = g.seats[j]
-    if (o.seat == me.seat) {
-        Text("me", color = SheetInk.copy(alpha = 0.4f), fontSize = 26.sp, modifier = Modifier.align(Alignment.Center))
-        return
-    }
     val parts = if (o.hasPartners) listOf(false, true) else listOf(false)
     val big = if (g.seats.size >= 5) 24.sp else 32.sp
     Row(Modifier.fillMaxSize()) {
@@ -249,8 +246,9 @@ private fun BoxScope.BigCell(g: LiveGame, me: LiveSeat, j: Int, focused: Boolean
                 },
             ) {
                 val name = if (second) o.partner ?: "Partner" else o.commander.ifBlank { o.name }
+                val who = if (o.seat == me.seat) "me" else o.name
                 Text(
-                    if (parts.size == 1 && o.commander.isNotBlank()) "${o.name} · $name" else name,
+                    if (parts.size == 1 && (o.commander.isNotBlank() || o.seat == me.seat)) "$who · $name" else name,
                     color = SheetInk.copy(alpha = 0.75f), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 5.dp, start = 4.dp, end = 4.dp),
                 )

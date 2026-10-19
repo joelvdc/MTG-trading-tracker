@@ -43,8 +43,11 @@ How to use this file:
    inside the game; players and decks can be changed during the game. The owner's choices: the pastel look (A), plain
    colours by default, keep the New game screen (shorter), more room around the life total; no camera mode, no
    one-player mode; Planechase, Archenemy and Bounty left out.~~ Released.
+11. ~~MTG Trader 1.49: the owner's comments on the tracker (2026-10-19): the random pick 2 seconds longer and slowing
+   down at the end; commander damage from your own commander; the mini-grid centred in a frame as in Lifetap, with
+   the counter badges beside it (the owner picked A from the mockups).~~ Released.
 
-### Test 1.46, 1.47 and 1.48 in an emulator (in a session on the owner's PC)
+### Test 1.46, 1.47, 1.48 and 1.49 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
 
 The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
@@ -81,6 +84,9 @@ Checklist:
   player and opponent, the quick d20 (hold the die); the mana pool; the history log; auto-hiding bar; vibration; the
   screen stays on and the system bars hide (and both switches); leaving and coming back keeps the game; End the game:
   Save and rematch, Save then new players, end without saving.
+- **Life tracker (1.49):** the random pick's run (about 3 seconds, slowing down) feels right on a phone; your own
+  commander's box on the sheet and the mini-grid; the framed mini-grid stays centred with badges beside it on every
+  layout, also with large text.
 - **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
   head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
   other phone through sync; a backup restore keeps them.

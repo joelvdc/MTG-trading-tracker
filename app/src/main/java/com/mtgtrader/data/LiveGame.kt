@@ -320,7 +320,7 @@ object LiveGames {
                 val fromSeat = e.from?.substringBefore(':')?.toIntOrNull()
                 val o = g.seats.firstOrNull { it.seat == fromSeat }
                 val commander = if (e.from?.endsWith(":2") == true) o?.partner else o?.commander?.ifBlank { null }
-                val who = commander?.let { "$it (${o?.name})" } ?: o?.name ?: "?"
+                val who = if (fromSeat == e.seat) "their own ${commander ?: "commander"}" else commander?.let { "$it (${o?.name})" } ?: o?.name ?: "?"
                 "$name: ${signed(e.by)} commander damage from $who, ${e.total} in all"
             }
             "poison" -> "$name: ${signed(e.by)} poison, ${e.total} in all"

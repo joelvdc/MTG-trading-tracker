@@ -82,6 +82,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -252,14 +253,13 @@ fun TrackerScreen(nav: NavController) {
             else -> page = null
         }
     }
-    /** A short run around the table (when animations are on) that stops on [pick], then [label] on its panel. */
+    /** A run around the table (when animations are on) that slows down and stops on [pick], then [label] on its panel. */
     fun spinTo(order: List<Int>, pick: Int, label: String) {
         scope.launch {
             if (animations && order.size > 1) {
-                val steps = order.size * 2 + order.indexOf(pick).coerceAtLeast(0) + 1
-                for (i in 0 until steps) {
+                spinDelays(spinSteps(order.size, order.indexOf(pick).coerceAtLeast(0))).forEachIndexed { i, wait ->
                     spin = order[i % order.size]
-                    delay(70L + i * 12L)
+                    delay(wait)
                 }
             }
             spin = null
@@ -337,6 +337,23 @@ fun TrackerScreen(nav: NavController) {
 }
 
 private const val DELTA_MS = 2_500L
+
+/** How long the run around the table takes (since 1.49, 2 seconds more than before). */
+internal const val SPIN_MS = 3_300L
+
+/** The steps of a run around [players] seats that ends on the seat at [pickIndex]: at least a dozen, whole laps first. */
+internal fun spinSteps(players: Int, pickIndex: Int): Int {
+    val laps = maxOf(2, (12 + players - 1) / players)
+    return laps * players + pickIndex + 1
+}
+
+/** How long each of [steps] stays lit: fast at first, slowing down like a wheel (the last ten times the first), [SPIN_MS] in all. */
+internal fun spinDelays(steps: Int): List<Long> {
+    if (steps <= 0) return emptyList()
+    val weights = List(steps) { i -> val x = if (steps == 1) 1.0 else i / (steps - 1.0); 1.0 + 9.0 * x * x * x }
+    val unit = SPIN_MS / weights.sum()
+    return weights.map { (it * unit).toLong() }
+}
 private const val BAR_SHOWN_MS = 6_000L
 
 /** The same kind of roll again: a die, the coin, or nothing for a pick. */
@@ -632,7 +649,7 @@ internal fun PlayerPanel(
                     }
                 }
             }
-            if (beside) BottomRow(s, g, look, ink, pill) { onSheet(true) }
+            if (beside) BottomRow(s, g, look, ink, pill, beside = true) { onSheet(true) }
             }
             if (look.layout == CardLayout.DEFAULT && !beside) BottomRow(s, g, look, ink, pill) { onSheet(true) }
         }
@@ -696,27 +713,33 @@ private fun miniGridSize(g: LiveGame, s: LiveSeat): Pair<Dp, Dp> {
     return if (sideways) sh to sw else sw to sh
 }
 
-/** The mini-grid and the badges of the counters in use; tap for the counters. */
+/** The space around the mini-grid inside its frame (since 1.49, as Lifetap's). */
+private val GRID_FRAME = 5.dp
+
+/**
+ * The mini-grid in its frame, centred under the total, and the badges of the counters in use hanging beside it (since
+ * 1.49; [beside]: both next to the total, on a short, wide panel). Tap either for the counters.
+ */
 @Composable
-private fun BottomRow(s: LiveSeat, g: LiveGame, look: PanelLook, ink: Color, pill: Color, onClick: () -> Unit) {
+private fun BottomRow(s: LiveSeat, g: LiveGame, look: PanelLook, ink: Color, pill: Color, beside: Boolean = false, onClick: () -> Unit) {
     val badges = buildList {
         if (s.poison > 0) add(Icons.Outlined.WaterDrop to "${s.poison}")
         if (s.casts > 0 || s.partnerCasts > 0) add(Icons.Outlined.AddCircleOutline to (if (s.hasPartners) "+${s.tax}/+${s.partnerTax}" else "+${s.tax}"))
         s.counters.filter { it.value > 0 }.toSortedMap().forEach { (k, v) -> add(counterIcon(k) to if (k == LiveGames.ASCEND) "" else "$v") }
     }
     if (!g.commanderDamage && badges.isEmpty()) return
-    Row(
-        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(2.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (g.commanderDamage) {
-            val n = g.seats.size
-            val (w, h) = miniGridSize(g, s)
+    val tap = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick)
+    val grid: @Composable () -> Unit = {
+        val n = g.seats.size
+        val (w, h) = miniGridSize(g, s)
+        Box(tap.background(pill).padding(GRID_FRAME)) {
             SeatGrid(g, s.seat, w, h, look.colourGrids, ink) { j ->
                 MiniCell(g, s, j, if (look.colourGrids && j != s.seat) PanelInk else ink, if (n >= 5) 9.sp else 11.sp)
             }
         }
-        if (badges.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+    }
+    val side: @Composable () -> Unit = {
+        if (badges.isNotEmpty()) Row(tap.padding(2.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             badges.chunked(3).forEach { column ->
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     column.forEach { (icon, v) ->
@@ -729,21 +752,50 @@ private fun BottomRow(s: LiveSeat, g: LiveGame, look: PanelLook, ink: Color, pil
             }
         }
     }
+    if (!g.commanderDamage) return side()
+    if (beside) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { grid(); side() }
+        return
+    }
+    // The grid on the panel's middle line; the badges just after it, moved in only when they'd run off the panel.
+    Layout(content = { grid(); side() }) { measurables, c ->
+        val loose = c.copy(minWidth = 0, minHeight = 0)
+        val gridP = measurables[0].measure(loose)
+        val sideP = measurables.getOrNull(1)?.measure(loose)
+        val gap = 6.dp.roundToPx()
+        val sideW = sideP?.let { it.width + gap } ?: 0
+        val width = if (c.hasBoundedWidth) c.maxWidth else gridP.width + 2 * sideW
+        val height = maxOf(gridP.height, sideP?.height ?: 0)
+        layout(width, height) {
+            val x = minOf((width - gridP.width) / 2, width - gridP.width - sideW).coerceAtLeast(0)
+            gridP.place(x, (height - gridP.height) / 2)
+            sideP?.place(x + gridP.width + gap, (height - sideP.height) / 2)
+        }
+    }
 }
 
-/** A mini-grid box: "me", or the damage taken from that player's commander ("3|0" for partners). */
+/**
+ * A mini-grid box: the damage taken from that player's commander ("3|0" for partners); on the player's own seat "me"
+ * until their own commander has dealt them damage (since 1.49).
+ */
 @Composable
 private fun BoxScope.MiniCell(g: LiveGame, me: LiveSeat, j: Int, ink: Color, font: TextUnit) {
-    val o = g.seats[j]
-    val text = when {
-        j == me.seat -> "me"
-        o.hasPartners -> "${me.cmd[LiveGames.cmdKey(o.seat)] ?: 0}|${me.cmd[LiveGames.cmdKey(o.seat, true)] ?: 0}"
-        else -> "${me.cmd[LiveGames.cmdKey(o.seat)] ?: 0}"
-    }
+    val text = miniCellText(g, me, j)
     Text(
-        text, color = if (j == me.seat) ink.copy(alpha = 0.45f) else ink, fontSize = if (text.length > 3) (font.value * 0.8f).sp else font,
-        fontWeight = if (j == me.seat) FontWeight.Normal else FontWeight.SemiBold, maxLines = 1, modifier = Modifier.align(Alignment.Center),
+        text, color = if (text == "me") ink.copy(alpha = 0.45f) else ink, fontSize = if (text.length > 3) (font.value * 0.8f).sp else font,
+        fontWeight = if (text == "me") FontWeight.Normal else FontWeight.SemiBold, maxLines = 1, modifier = Modifier.align(Alignment.Center),
     )
+}
+
+internal fun miniCellText(g: LiveGame, me: LiveSeat, j: Int): String {
+    val o = g.seats[j]
+    val first = me.cmd[LiveGames.cmdKey(o.seat)] ?: 0
+    val second = me.cmd[LiveGames.cmdKey(o.seat, true)] ?: 0
+    return when {
+        o.seat == me.seat && first == 0 && second == 0 -> "me"
+        o.hasPartners -> "$first|$second"
+        else -> "$first"
+    }
 }
 
 /**
