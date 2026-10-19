@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +52,7 @@ import androidx.compose.material.icons.outlined.Casino
 import androidx.compose.material.icons.outlined.Diamond
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Thunderstorm
 import androidx.compose.material.icons.outlined.WaterDrop
@@ -465,10 +468,7 @@ internal fun MenuBar(
     }
     Row(Modifier.fillMaxWidth().height(58.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
         BarIcon(Icons.Outlined.Replay, "End the game", onTap = onEnd)
-        Box(
-            Modifier.size(38.dp).clip(CircleShape).border(2.dp, TrackerAccent, CircleShape).clickable(onClick = onSettings),
-            contentAlignment = Alignment.Center,
-        ) { Text("${g.seats.size}", color = Color.White, fontSize = 16.sp) }
+        BarIcon(Icons.Outlined.Settings, "Game settings", onTap = onSettings)
         if (g.turnsOn || g.clock) {
             Row(
                 Modifier.clip(RoundedCornerShape(14.dp)).border(1.dp, Color(0xFF555555), RoundedCornerShape(14.dp)).clickable(onClick = onPause)
@@ -562,8 +562,9 @@ internal fun PlayerPanel(
         // Where to tap: − and + at the ends, with room for them beside the total.
         val symbol = (small.value * 0.17f).coerceIn(22f, 40f).sp
         val sideRoom = (symbol.value * 1.3f + 18f).dp
-        // A short, wide panel (at an end of the table) has the mini-grid beside the total, so the total keeps its room.
-        val beside = look.layout == CardLayout.DEFAULT && g.commanderDamage && wide && maxHeight < miniGridSize(g, s).second + 150.dp
+        // A short, wide panel (at an end of a 5–6 player table) has the mini-grid beside the total, so the total keeps
+        // its room. Since 1.51 only when it really is short: the long-side panels of a narrower phone stay centred.
+        val beside = look.layout == CardLayout.DEFAULT && g.commanderDamage && wide && maxHeight < miniGridSize(g, s).second + 110.dp
         val low = LiveGames.lowLife(s, g.startingLife)
         if (low && look.lowLife == LowLifeStyle.EDGE) PulsingEdge(small)
         if (low && look.lowLife == LowLifeStyle.GHOST) DriftingGhost(small, if (picture) Color.White else PanelInk, sideRoom, onPlusSide = !beside)
@@ -625,7 +626,9 @@ internal fun PlayerPanel(
                 NameLabel(s, g, ink, pill, panelWidth * 0.72f, roomy = small > 150.dp) { onSheet(false) }
             }
             Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = sideRoom), verticalAlignment = Alignment.CenterVertically) {
-            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+            // Beside: the total stays in the middle of the panel, the grid right after it (since 1.51; it was by the +).
+            if (beside) Spacer(Modifier.weight(1f))
+            BoxWithConstraints((if (beside) Modifier else Modifier.weight(1f)).fillMaxHeight().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                 val big = look.layout == CardLayout.BIG
                 val digits = "${s.life}".length.coerceAtLeast(2)
                 val font = minOf(maxHeight * if (big) 1f else 0.9f, maxWidth / (0.6f * digits), small * if (big) 0.62f else 0.42f).coerceAtLeast(16.dp)
@@ -644,12 +647,17 @@ internal fun PlayerPanel(
                             if (it > 0) "+$it" else "−${-it}",
                             color = if (picture) (if (it > 0) Color(0xFFB7F5C4) else Color(0xFFFFC2C2)) else (if (it > 0) Color(0xFF1E7A3A) else Color(0xFFB3261E)),
                             fontSize = (fontSp.value * 0.24f).sp, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopEnd).offset(x = font * 0.36f, y = -(font * 0.05f)),
+                            // Beside the grid it goes on the total's other side, where there's room.
+                            modifier = if (beside) Modifier.align(Alignment.TopStart).offset(x = -(font * 0.36f), y = -(font * 0.05f))
+                            else Modifier.align(Alignment.TopEnd).offset(x = font * 0.36f, y = -(font * 0.05f)),
                         )
                     }
                 }
             }
-            if (beside) BottomRow(s, g, look, ink, pill, beside = true) { onSheet(true) }
+            if (beside) Box(Modifier.weight(1f).padding(start = 16.dp), contentAlignment = Alignment.CenterStart) {
+                // Counter badges may reach a little into the room by the +, rather than being squeezed.
+                Box(Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) { BottomRow(s, g, look, ink, pill, beside = true) { onSheet(true) } }
+            }
             }
             if (look.layout == CardLayout.DEFAULT && !beside) BottomRow(s, g, look, ink, pill) { onSheet(true) }
         }

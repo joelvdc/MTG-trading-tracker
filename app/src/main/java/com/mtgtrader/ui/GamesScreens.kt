@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -100,6 +101,7 @@ import com.mtgtrader.data.Games
 import com.mtgtrader.data.HeadToHead
 import com.mtgtrader.data.LiveGames
 import com.mtgtrader.data.OutReason
+import com.mtgtrader.data.PausedGame
 import com.mtgtrader.data.Player
 import com.mtgtrader.data.PlayerResult
 import com.mtgtrader.data.WinType
@@ -126,7 +128,7 @@ internal fun gameLine(g: GameRecord): String = listOfNotNull(
     "${g.seatList.size} players",
 ).joinToString(" · ")
 
-/** The Games tab (since 1.47): a new game or a rematch, the game in progress, the last games and the stats. */
+/** The Games tab (since 1.47): a new game or a rematch, the game in progress, paused games (1.51), the last games and the stats. */
 @Composable
 fun GamesScreen(nav: NavController) {
     val c = LocalContext.current.container
@@ -134,8 +136,15 @@ fun GamesScreen(nav: NavController) {
     val scope = rememberCoroutineScope()
     val live by c.games.live.collectAsStateWithLifecycle()
     val games by c.games.games.collectAsStateWithLifecycle(emptyList())
+    val paused by c.games.pausedGames.collectAsStateWithLifecycle(emptyList())
     var menu by remember { mutableStateOf(false) }
     var confirmDrop by remember { mutableStateOf(false) }
+    var dropPaused by remember { mutableStateOf<PausedGame?>(null) }
+    var pauseFor by remember { mutableStateOf<PausedGame?>(null) }
+    fun goOn(p: PausedGame) = scope.launch {
+        if (c.games.continuePaused(p)) nav.navigate("games/play")
+        else Toast.makeText(context, "This version of the app can't read that game", Toast.LENGTH_LONG).show()
+    }
     LaunchedEffect(Unit) { c.games.refreshArt() }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) scope.launch {
@@ -191,6 +200,17 @@ fun GamesScreen(nav: NavController) {
                     }
                 }
             }
+            if (paused.isNotEmpty()) {
+                item(key = "paused_h") { Text("Paused games", style = MaterialTheme.typography.titleMedium) }
+                item(key = "paused") {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                        paused.forEachIndexed { i, p ->
+                            if (i > 0) HorizontalDivider()
+                            PausedGameRow(p, onContinue = { if (live != null) pauseFor = p else goOn(p) }, onDrop = { dropPaused = p })
+                        }
+                    }
+                }
+            }
             if (games.isEmpty()) {
                 item(key = "empty") {
                     Text(
@@ -227,6 +247,57 @@ fun GamesScreen(nav: NavController) {
             confirmButton = { TextButton(onClick = { confirmDrop = false; c.games.abandon() }) { Text("Drop it", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { confirmDrop = false }) { Text("Cancel") } },
         )
+    }
+    dropPaused?.let { p ->
+        AlertDialog(
+            onDismissRequest = { dropPaused = null },
+            title = { Text("Drop this paused game?") },
+            text = { Text("It isn't saved, and it goes from your other phone too.") },
+            confirmButton = { TextButton(onClick = { dropPaused = null; scope.launch { c.games.dropPaused(p) } }) { Text("Drop it", color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { dropPaused = null }) { Text("Cancel") } },
+        )
+    }
+    pauseFor?.let { p ->
+        AlertDialog(
+            onDismissRequest = { pauseFor = null },
+            title = { Text("Pause the game in progress?") },
+            text = { Text("It goes with the paused games, to continue later. Then the game you picked goes on.") },
+            confirmButton = {
+                TextButton(onClick = { pauseFor = null; scope.launch { c.games.pauseAndLeave(); goOn(p) } }) { Text("Pause it and continue") }
+            },
+            dismissButton = { TextButton(onClick = { pauseFor = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** A paused game (since 1.51): when it was paused, who plays and how far it got; Continue, and Drop it behind ⋮. */
+@Composable
+internal fun PausedGameRow(p: PausedGame, onContinue: () -> Unit, onDrop: () -> Unit) {
+    val g = p.live
+    var menu by remember { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(SimpleDateFormat("EEE d MMM · HH:mm", Locale.getDefault()).format(Date(p.pausedAt)), style = MaterialTheme.typography.titleSmall)
+            if (g != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    g.seats.forEach { s -> Box(Modifier.padding(end = 3.dp).size(10.dp).clip(CircleShape).background(seatBrush(s.colour))) }
+                    Text(" " + g.seats.joinToString(", ") { it.name }, style = MaterialTheme.typography.bodyMedium)
+                }
+                Text(
+                    listOfNotNull(if (g.turnsOn) "round ${g.round}" else null, Games.duration(g.elapsed(p.pausedAt))).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text("Update the app to continue this game.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Box {
+            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+            ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(text = { Text("Drop it") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menu = false; onDrop() })
+            }
+        }
+        Button(onClick = onContinue, enabled = g != null) { Text("Continue") }
     }
 }
 

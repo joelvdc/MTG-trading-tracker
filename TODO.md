@@ -49,8 +49,11 @@ How to use this file:
 12. ~~MTG Trader 1.50: the low-life ghost no longer floats over the + (it rises between the total and the +, or on
    the − side where the grid sits beside the total; the owner picked C from the mockups on 2026-10-19), and low life
    starts at a quarter of the starting life (10 at 40).~~ Released.
+13. ~~MTG Trader 1.51 (planned with mockups and approved on 2026-10-19): pausing a game to continue it on any phone,
+   the Samsung A37's table lined up again, the 6-player end seats' grid next to the total, a ⚙ settings button in
+   the middle bar.~~ Released.
 
-### Test 1.46 to 1.50 in an emulator (in a session on the owner's PC)
+### Test 1.46 to 1.51 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
 
 The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
@@ -90,6 +93,12 @@ Checklist:
 - **Life tracker (1.49):** the random pick's run (about 3 seconds, slowing down) feels right on a phone; your own
   commander's box on the sheet and the mini-grid; the framed mini-grid stays centred with badges beside it on every
   layout, also with large text.
+- **Life tracker (1.51):** a narrow emulator (about 384 dp wide, like the Samsung A37) and a wide one: name, total and
+  grid in one line on 4 and 5 players; the 6-player end seats with the grid next to the total; the ⚙ opens Game
+  settings. History → Pause game and leave: the tracker closes, the game shows under Paused games (date, players,
+  round, time); Continue on the other phone after a sync (two emulators, or one and a phone) and check it's gone from
+  the first; Continue while another game runs (asks, then pauses that one); ⋮ → Drop it; a clock stopped by hand
+  stays stopped.
 - **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
   head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
   other phone through sync; a backup restore keeps them.
@@ -137,40 +146,33 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
-### Pause a game and pick it up on another phone
-*Added 2026-10-19. MTG Trader only.*
+## Done
+
+### Pausing games, and the table on narrower phones (MTG Trader 1.51)
+*Added 2026-10-19. MTG Trader only. Planned with mockups; the owner's choices and green light on 2026-10-19.*
 
 The owner's words: "Add the hand-over button, actually just a pause button. Instead of canceling the game, it pauses
-the game and leaves, then syncs and can be picked up in another phone."
+the game and leaves, then syncs and can be picked up in another phone." … "In version 1.49 the commander damage, life
+total and player name were centered and aligned, just like the lifetap app. In 1.50 you changed that … my pixel 8 pro
+shows everything centered as it should be. But that screenshot was from my Samsung A37." … "For six player games,
+the commander damage is too close to the +, for the players at the top and bottom … place the commander damage
+closer to the life total." … "In the game menu, the button with the number of players … can you change to an actual
+settings button?"
 
-Today the game being played stays on the phone it started on (only finished games sync). The idea: a **Pause** that
-leaves the tracker without ending the game, sends the paused game through the Nextcloud sync, and lets the other
-phone carry on with it.
-
-Open questions:
-- **Where the button goes:** in the end-of-game choices (↻: "Pause and leave" next to Save and End without saving),
-  or its own button in the middle bar?
-- **On the other phone:** the Games tab shows "Paused game: continue" (and the phone that paused shows it too)?
-  Picking it up takes it off the paused list, so two phones can't play on with the same game.
-- **Several paused games** at once, or one at a time (a new pause replaces the old, or asks)?
-- **Undo:** the undo steps stay on the phone that paused (the game's history log goes along); OK?
-- The sync file gets a new part for paused games, so every phone needs the update before it syncs again (as with
-  earlier sync changes).
-
-### The mini-grid beside the total on narrower phones (fix, MTG Trader 1.51)
-*Added 2026-10-19. MTG Trader only.*
-
-The owner's words: "In version 1.49 the commander damage, life total and player name were centered and aligned, just
-like the lifetap app. In 1.50 you changed that and it is not aligned anymore. … my pixel 8 pro shows everything
-centered as it should be. But that screenshot was from my Samsung A37."
-
-What was found: 1.50 didn't change the panel layout. Since 1.48 a panel shorter than the mini-grid + 150 dp puts the
-grid beside the total (meant for the end seats of a 5–6 player table). The Samsung's screen is a little narrower
-than the Pixel's, so its 4-player panels fall just under that limit and get the side layout. The fix lowers the
-limit to the grid + 110 dp: the long-side seats stay centred on phones down to 360 dp wide, the end seats keep the
-side layout. Waiting for the owner's green light (plan given on 2026-10-19).
-
-## Done
+What was built:
+- **Pause game and leave** on the History page (A: a wide button under Undo last and Pause clock, which are two
+  equal halves of its width). The clock stops, the tracker closes, and the game is kept as a paused game (a new
+  `paused_games` table, database version 24), synced (sync file and backup format 11). The Games tab lists **Paused
+  games** (B: one list): date and time, the players with their colour dots, round and time, Continue, ⋮ → Drop it.
+  Several can be paused. Continuing deletes it, so the deletion takes it off the other phone's list; continuing while
+  a game runs asks and pauses that one first. A clock stopped by hand stays stopped. Restoring a backup leaves paused
+  games as they are. The undo steps stay behind; the log goes along.
+- **The Samsung:** 1.50 hadn't changed the layout; since 1.48 a panel shorter than the grid + 150 dp got the grid
+  beside the total, and the Samsung's 4-player panels were just under that. The limit is now the grid + 110 dp.
+- **6-player end seats** (A): the total stays in the middle of the panel and the grid sits right after it; the
+  "+3" change shows on the total's other side there.
+- **Settings button** (A): a plain ⚙ in the middle bar instead of the ring with the number of players.
+- 5 players were checked in the mockups and left as they are (the owner: "5 players is fine").
 
 ### Fixes on the deck page and the card window, and Manage categories (MTG Trader 1.47)
 *Added 2026-10-18. MTG Trader only. Reported by the owner with screenshots (phone).*

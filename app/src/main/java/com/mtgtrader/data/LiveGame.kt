@@ -107,7 +107,7 @@ data class LiveSeat(
     val maxCommanderDamage: Int get() = cmd.values.maxOrNull() ?: 0
 }
 
-/** The game being played, kept on this phone (not synced) until it ends. Since 1.47. */
+/** The game being played, kept on this phone (not synced) until it ends or is paused ([PausedGame]). Since 1.47. */
 @Serializable
 data class LiveGame(
     val uid: String,

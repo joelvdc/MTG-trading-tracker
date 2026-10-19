@@ -401,8 +401,9 @@ interface DeckDao {
         WishlistItem::class, ValueSnapshot::class, CmProduct::class, CmSetExpansions::class,
         CardInfo::class, RecCache::class, TradeSkip::class, SourcePrice::class, PurchaseOrder::class,
         WishPrice::class, CtBlueprint::class, DeckEdit::class, Player::class, FriendDeck::class, GameRecord::class,
+        PausedGame::class,
     ],
-    version = 23,
+    version = 24,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -430,11 +431,25 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 24 (app 1.51): paused games, to continue later on any phone (synced; the sync file's format went to
+         * 11 with them). A new table only, so nothing changes for the rows already there.
+         */
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `paused_games` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `pausedAt` INTEGER NOT NULL, " +
+                        "`game` TEXT NOT NULL, `clockStopped` INTEGER NOT NULL, `uid` TEXT, `updatedAt` INTEGER NOT NULL DEFAULT 0)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_paused_games_uid` ON `paused_games` (`uid`)")
+            }
+        }
 
         /**
          * Version 23 (app 1.47): the life tracker's records: players, friends' decks and finished games (all synced;

@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Animation
@@ -543,10 +544,11 @@ internal fun ManaPage(g: LiveGame, onClose: () -> Unit) {
     }
 }
 
-/** Game history (since 1.48): this game's log, with undo and pause, and the games played before. */
+/** Game history (since 1.48): this game's log, with undo, pause and (since 1.51) pause and leave, and the games played before. */
 @Composable
 internal fun HistoryPage(g: LiveGame, now: Long, canUndo: Boolean, nav: NavController, onClose: () -> Unit) {
     val c = LocalContext.current.container
+    val scope = rememberCoroutineScope()
     val games by c.games.games.collectAsStateWithLifecycle(emptyList())
     var past by rememberSaveable { mutableStateOf(false) }
     TrackerPageFrame(g, "Game history", onClose) {
@@ -576,13 +578,22 @@ internal fun HistoryPage(g: LiveGame, now: Long, canUndo: Boolean, nav: NavContr
                     Text("${g.seats.size} players · ${g.startingLife} life", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
                 }
             }
-            Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DarkButton("Undo last", icon = Icons.AutoMirrored.Outlined.Undo, enabled = canUndo, onClick = { c.games.undo() })
+            Row(Modifier.padding(top = 10.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                DarkButton("Undo last", icon = Icons.AutoMirrored.Outlined.Undo, enabled = canUndo, modifier = Modifier.weight(1f), onClick = { c.games.undo() })
                 DarkButton(
-                    if (g.paused) "Go on" else "Pause clock", icon = if (g.paused) Icons.Outlined.PlayArrow else Icons.Outlined.Pause,
+                    if (g.paused) "Go on" else "Pause clock", icon = if (g.paused) Icons.Outlined.PlayArrow else Icons.Outlined.Pause, modifier = Modifier.weight(1f),
                     onClick = { c.games.update(undoable = false) { if (it.paused) LiveGames.resume(it, System.currentTimeMillis()) else LiveGames.pause(it, System.currentTimeMillis()) } },
                 )
             }
+            // Since 1.51: the game goes with the paused games (synced), and the tracker closes.
+            DarkButton(
+                "Pause game and leave", icon = Icons.AutoMirrored.Outlined.Logout, colour = TrackerAccent, textColour = Color.Black,
+                modifier = Modifier.padding(top = 10.dp).fillMaxWidth(), onClick = { scope.launch { c.games.pauseAndLeave() } },
+            )
+            Text(
+                "Continue it later from the Games tab, on this phone or your other one.",
+                color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
+            )
             if (!g.logOn) Text("The game log is off (Game settings → Game log).", color = Muted, fontSize = 14.sp)
             else if (g.log.isEmpty()) Text("Nothing has happened yet.", color = Muted, fontSize = 14.sp)
             g.log.asReversed().forEach { e ->
