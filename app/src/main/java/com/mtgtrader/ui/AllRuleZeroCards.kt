@@ -63,6 +63,7 @@ import com.mtgtrader.data.DeckSorting
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
+import com.mtgtrader.data.WinOdds
 import kotlin.math.roundToInt
 
 /**
@@ -112,7 +113,12 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
             items(shown, key = { it.archidektId }) { deck ->
                 val data = remember(deck.saltCard) { SaltCard.decode(deck.saltCard) }
                 val onClick = { open = shown.indexOf(deck) }
-                if (kind == RuleZeroCard.BRACKET) SmallBracketCard(deck, data, onClick) else SmallPowerCard(deck, data, source, onClick)
+                if (kind == RuleZeroCard.BRACKET) {
+                    val win by rememberWinOdds(deck)
+                    SmallBracketCard(deck, data, win, onClick)
+                } else {
+                    SmallPowerCard(deck, data, source, onClick)
+                }
             }
             val unscored = own!!.filter { it !in shown }
             if (unscored.isNotEmpty()) {
@@ -131,7 +137,7 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
 }
 
 @Composable
-internal fun SmallBracketCard(deck: Deck, data: SaltCard?, onClick: () -> Unit) {
+internal fun SmallBracketCard(deck: Deck, data: SaltCard?, win: WinOdds? = null, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Box(Modifier.fillMaxWidth().height(54.dp)) {
             DeckArt(deck, Modifier.fillMaxSize())
@@ -144,9 +150,11 @@ internal fun SmallBracketCard(deck: Deck, data: SaltCard?, onClick: () -> Unit) 
                 ColorPips(deck.colorIdentity)
             }
         }
-        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             SmallBracketTile("Baseline", deck.bracketBaseline)
             SmallBracketTile("Realistic", deck.bracketRealistic)
+            // The turn the deck usually wins by (since 1.52); "…" while it's worked out.
+            if (deck.commanders.isNotBlank()) SpeedTile(win)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 if (data == null) {
                     Text("Details not loaded yet", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -162,10 +170,21 @@ internal fun SmallBracketCard(deck: Deck, data: SaltCard?, onClick: () -> Unit) 
 }
 
 @Composable
+private fun SpeedTile(win: WinOdds?) {
+    Column(
+        Modifier.width(62.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(win?.label ?: "…", fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, maxLines = 1)
+        Text("Wins by", style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
 private fun SmallBracketTile(label: String, bracket: Int?) {
     val (bg, fg) = bracketColors(bracket)
     Column(
-        Modifier.width(72.dp).clip(RoundedCornerShape(8.dp)).background(bg).padding(horizontal = 8.dp, vertical = 4.dp),
+        Modifier.width(62.dp).clip(RoundedCornerShape(8.dp)).background(bg).padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(bracket?.let { "B$it" } ?: "—", color = fg, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp)
@@ -256,7 +275,10 @@ private fun AllCardsDialog(decks: List<Deck>, start: Int, kind: RuleZeroCard, so
                     if (data == null) {
                         Text("Getting the card details from Commander Salt…", color = Color.White, modifier = Modifier.align(Alignment.CenterHorizontally))
                     } else when (kind) {
-                        RuleZeroCard.BRACKET -> BracketCardView(deck, data)
+                        RuleZeroCard.BRACKET -> {
+                            val win by rememberWinOdds(deck)
+                            BracketCardView(deck, data, win = win)
+                        }
                         RuleZeroCard.POWER -> PowerCardView(deck, data, source)
                     }
                 }

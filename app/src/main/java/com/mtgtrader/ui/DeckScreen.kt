@@ -249,6 +249,13 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         return if (row.item.gameChanger) t + BracketTag.GAME_CHANGER else t
     }
 
+    // When the deck can win (since 1.52): worked out with the commander odds, and again when the cards or combos change.
+    val win by produceState<com.mtgtrader.data.WinOdds?>(null, statCards, deck?.colorIdentity, saltCard, oddsWanted) {
+        val identity = deck?.colorIdentity
+        if (!oddsWanted || identity == null) return@produceState
+        value = null
+        value = c.winOdds.get(deckId, statCards, identity, saltCard)
+    }
     val tagged = remember(rows, saltCard) { rows.associate { it.item.id to tagsOf(it) }.filterValues { it.isNotEmpty() } }
     // Categories switched off in "Manage categories" (since 1.47): their cards go to one folded section at the bottom.
     val hiddenAll by c.settings.deckHidden.collectAsStateWithLifecycle()
@@ -668,6 +675,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 if (d.commanders.isNotBlank()) {
                     item(key = "stats_odds") {
                         if (statCards.any { it.commander }) CommanderOddsCard(odds, statCards.count { it.oracleText == null })
+                    }
+                    item(key = "stats_win") {
+                        if (statCards.any { it.commander }) WinningCard(win, statCards.count { it.oracleText == null })
                     }
                 }
             }

@@ -52,8 +52,10 @@ How to use this file:
 13. ~~MTG Trader 1.51 (planned with mockups and approved on 2026-10-19): pausing a game to continue it on any phone,
    the Samsung A37's table lined up again, the 6-player end seats' grid next to the total, a ⚙ settings button in
    the middle bar.~~ Released.
+14. ~~MTG Trader 1.52 (planned with mockups, green light on 2026-10-20): when each deck can win (Stats and the bracket
+   card), the turn badge in the name label, and the scanner list jumping to the newest card.~~ Released.
 
-### Test 1.46 to 1.51 in an emulator (in a session on the owner's PC)
+### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
 
 The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
@@ -99,6 +101,11 @@ Checklist:
   round, time); Continue on the other phone after a sync (two emulators, or one and a phone) and check it's gone from
   the first; Continue while another game runs (asks, then pauses that one); ⋮ → Drop it; a clock stopped by hand
   stays stopped.
+- **Win turn (1.52):** open a deck's Stats: "Winning the game" appears within a few seconds (time it on the phone)
+  and opening it again is instant; Bracket cards of all decks fill their T-tiles; the bracket card's Speed section,
+  also in a shared picture.
+- **Turn badge (1.52):** the gold badge at the start of the name label on every table size, tapping it passes the turn.
+- **Scanner (1.52):** scan several cards after scrolling the list down: it jumps back to the newest each time.
 - **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
   head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
   other phone through sync; a backup restore keeps them.
@@ -147,6 +154,85 @@ Open questions:
 - **Which step first,** or all three together?
 
 ## Done
+
+### When the deck can win (goldfish win turn), also on the bracket card
+*Added 2026-10-20. MTG Trader only. Planned with mockups and given the green light on 2026-10-20.*
+
+The owner's words: "Could you add an analysis for each deck for their expected turn when they can win? Simulation
+like you did for the mana with 10000 games, where you find the turn where the deck can do enough damage to everyone
+(120 damage) or win the game. I think if you pull this off, it might be worth to add the stats to the bracket card."
+
+Tried with a prototype on 2026-10-20 (the owner's decks from Archidekt, cards from Scryfall, combos from Commander
+Salt, 10,000 games of 15 turns each; the 1.46 mana simulation plus casting, attacking, tokens, drain, anthems, card
+draw and winning combos). Turn the deck usually wins by / 9 in 10 games by:
+- Auntie Plague: turn 11 / 13 (a combo wins about 1 in 4 games, from turn 4 at the earliest).
+- Taranika band: turn 11 / 15. Isshin Wide: turn 12 / 14.
+- Baba and Smasher LCP: not by turn 15 in most games, because most of their damage comes from things a general
+  simulation can't read (Vial Smasher's damage on casting, Baba's sacrifice triggers).
+So it works and is quick enough for a phone (well under a second per deck), but it's a best case "playing alone"
+and it can't understand every card; decks built around their commander's own ability come out too slow.
+
+Proposed (see the plan sent on 2026-10-20 and its mockups):
+- Deck page → Stats: a new "Winning the game" card under "Casting the commander": usually by turn X, 9 in 10 by
+  turn Y, the chance by turn as a row of tiles, how it won (combat, combo, drain) and a "How?" with what's counted.
+- Bracket card: the turn as well (mockup A: a "Speed" section; mockup B: a third tile next to Baseline and
+  Realistic), and a small "T11" tile on the all-decks list.
+- No new service: Scryfall's power and rules text (already read since 1.44) and Commander Salt's combos (since 1.46),
+  so no health check change. Nothing new stored in the database (worked out when needed, kept in a small cache file).
+
+Settled with the owner on 2026-10-20: bracket card **A** (the "Speed" section), the small "T11" tile on the
+all-decks list **yes**; only combos that **win the game on their own** count (Commander Salt's "wins the game" or
+"infinite damage", and not those that need more cards on the battlefield); decks that don't win by turn 15 show
+**"T15+" with a note**; the turn badge fix goes in the **same release**. The owner's bonus wish: "bonus points for
+you if your simulation can catch damage trigger effects like vial smasher."
+
+Prototype v2 (2026-10-20), with the owner's combo rule and damage triggers:
+- Triggers read from the rules text: casting a spell ("whenever you cast your first spell each turn / a spell / an
+  instant or sorcery / a creature spell", damage equal to the spell's mana value or a fixed number, to one opponent
+  or each opponent: Vial Smasher, The Lord of Pain…), creatures or lands entering (Purphoros, Corpse Knight,
+  landfall), drains at the start of your turn or when attacking, and tap abilities. With a "first spell each turn"
+  trigger the biggest spell goes first.
+- Smasher LCP went from "not by turn 15" to usually turn 14 (its triggers about a tenth of the damage). Others:
+  Auntie Plague turn 11 / 13, Taranika band 11 / 14, Isshin Wide 11 / 14, Baba 15+ (its sacrifice drain needs
+  three card types sacrificed at once; not read).
+- Commander Salt's "infinite life loss" label isn't counted as a win: Devoted Druid + Mikaeus carries it but needs a
+  death-trigger card to kill anyone. With the owner's rule none of these five decks has a counted combo now (Soul
+  Immolation + Tree of Perdition needs more on the battlefield).
+
+Added during the build (owner, 2026-10-20): "make sure that turn calculations work with commander damage, you can use
+my Cloud deck or my Sarge deck. One has equipments to pump and the other has a lot of pump spells." Then: "Is the win by
+turn calculation accounting for Baba's card draw and drain". Both went in: equipment, auras, pump spells (also +X/+X),
+double strike and haste on the commander, 21 commander damage per commander knocking a player out, drawing from combat
+damage (Sarge's "draw that many cards"), Food/Clue/Treasure makers, and sacrifice abilities like Baba Lysaga's (the
+cheapest permanents covering three card types; in such a deck every permanent is cast as fodder).
+
+Released in MTG Trader 1.52 (2026-10-20). Results with the owner's decks (usually by / 9 in 10 by): Sarge 8 / 10,
+Cloud 11 / 12, Auntie Plague 11 / 13, Taranika band 11 / 13, Isshin Wide 11 / 13, Smasher LCP 13 / 15+, Baba 15 / 15+.
+Kept in `win_odds.json` on the phone (not synced, not in the database). No health check change (Scryfall's power and
+rules text and Commander Salt's combos were already read).
+
+### The turn badge covers the name label
+*Added 2026-10-20. MTG Trader only.*
+
+The owner's words: "fix the turn badge to avoid overlaps."
+
+Found in 1.51's 5-player test picture (`life_tracker_5.png`): on the player whose turn it is, the gold "Turn 1:42 ▶|"
+badge sits in the panel's corner on top of the name label, hiding part of the name ("oel" for Joel). It happens
+where the panel is short and the label is long (name and deck), and it was already so before 1.51. The fix keeps
+the badge clear of the label (and of the mini-grid and counter badges) on every table size and layout.
+
+Settled with the owner on 2026-10-20 from mockups: **A**, the badge at the start of the name label (the deck name
+shortened when there's no room), with the turn time; in the big-number layout (no label) it stays in the corner.
+Released in MTG Trader 1.52 (2026-10-20).
+
+### The scanner list shows the newest card
+*Added 2026-10-20. MTG Trader only.*
+
+The owner's words: "When scanning cards, I would like that the list under the scanner scrolls automatically so that the
+last card scanner is always visible on top of the list." New cards were already put on top, but the list kept showing
+the card that was on top before. Now it jumps to the newest card each time one is added (not when a printing is
+changed). Approved for 1.52 by the owner on 2026-10-20; released in MTG Trader 1.52.
+
 
 ### Pausing games, and the table on narrower phones (MTG Trader 1.51)
 *Added 2026-10-19. MTG Trader only. Planned with mockups; the owner's choices and green light on 2026-10-19.*

@@ -46,6 +46,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -158,6 +159,10 @@ class ScanController(
     var autoAdd by mutableStateOf(true)
     var pending by mutableStateOf<Pair<Identified, String?>?>(null)
     val added = mutableStateListOf<ScannedEntry>()
+
+    /** Counts the cards added, so the list can jump to the newest one (since 1.52). */
+    var additions by mutableStateOf(0)
+        private set
     var onAdded: () -> Unit = {}
 
     private var busy = false
@@ -229,6 +234,7 @@ class ScanController(
         val result = repo.add(target, ref, f, lang, found.exactPrinting) ?: return
         val entry = ScannedEntry(ref, f, lang, result, repo.snapshot(ref, f.foil), found.exactPrinting)
         added.add(0, entry)
+        additions++
         pending = null
         status = "Added ${card.displayName} (${card.set.uppercase()})"
         onAdded()
@@ -259,6 +265,7 @@ class ScanController(
     fun addAgain(e: ScannedEntry) = scope.launch {
         val result = repo.add(target, e.card, e.finish, e.language, e.exactPrinting) ?: return@launch
         added.add(0, e.copy(result = result))
+        additions++
         onAdded()
     }
 
@@ -404,8 +411,13 @@ fun ScannerScreen(nav: NavController, target: CardTarget) {
                     }
                 }
             }
+            // The newest card goes on top; the list jumps there, else it keeps showing the card that was on top before
+            // and the new one ends up just out of sight (since 1.52). Changing a printing doesn't move the list.
+            val listState = rememberLazyListState()
+            LaunchedEffect(controller.additions) { if (controller.additions > 0) listState.animateScrollToItem(0) }
             LazyColumn(
                 Modifier.fillMaxSize(),
+                state = listState,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {

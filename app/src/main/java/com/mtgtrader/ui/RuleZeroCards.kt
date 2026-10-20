@@ -84,6 +84,7 @@ import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltEffect
 import com.mtgtrader.data.ScrollVaultReading
+import com.mtgtrader.data.WinOdds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -115,6 +116,7 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
         val data by produceState(SaltCard.decode(deck.saltCard), deck.saltCard) {
             if (value == null) value = c.decks.loadCardData(deck)
         }
+        val win by rememberWinOdds(deck)
         Column(Modifier.fillMaxSize().background(Color.Black)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TabRow(
@@ -171,7 +173,7 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
                                 drawLayer(layer)
                             }
                             when (card) {
-                                RuleZeroCard.BRACKET -> BracketCardView(deck, data!!, capture)
+                                RuleZeroCard.BRACKET -> BracketCardView(deck, data!!, capture, win)
                                 RuleZeroCard.POWER -> PowerCardView(deck, data!!, source, capture)
                             }
                         }
@@ -179,6 +181,15 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** The deck's win turn (since 1.52), kept on the phone or worked out in the background; null for decks without a commander. */
+@Composable
+internal fun rememberWinOdds(deck: Deck): androidx.compose.runtime.State<WinOdds?> {
+    val c = LocalContext.current.container
+    return produceState<WinOdds?>(null, deck.archidektId, deck.saltCard, deck.colorIdentity) {
+        if (deck.commanders.isNotBlank()) value = runCatching { c.winOdds.forDeck(deck) }.getOrNull()
     }
 }
 
@@ -204,12 +215,13 @@ internal val METER = listOf(
 ).map(::Color)
 
 @Composable
-fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier) {
+fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier, win: WinOdds? = null) {
     CardFrame(deck, "Bracket", modifier) {
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             BracketTile("Baseline · WotC rules", deck.bracketBaseline, Modifier.weight(1f))
             BracketTile("Realistic · how it plays", deck.bracketRealistic, Modifier.weight(1f))
         }
+        win?.let { SpeedSection(it) }
         Section("Bracket criteria") {
             val criteria = listOf(
                 "Two-card combos" to data.twoCardCombos.size,
@@ -248,6 +260,45 @@ fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier) {
             }
         }
         Footer("Data: Commander Salt", deck)
+    }
+}
+
+/** When the deck wins, playing alone (since 1.52): the usual turn, 9 in 10 games, and the share won by each turn. */
+@Composable
+private fun SpeedSection(win: WinOdds) {
+    Section("Speed · playing alone, ${"%,d".format(java.util.Locale.ROOT, win.games)} games") {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                win.usual?.let { "Wins usually by turn $it" } ?: "Not by turn ${win.turns} in most games",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                "  ·  " + (win.nineInTen?.let { "9 in 10 by turn $it" } ?: "${win.byTurn.last()}% by turn ${win.turns}"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            win.window.forEach { t ->
+                val v = win.byTurn[t - 1]
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier.fillMaxWidth().height(22.dp).clip(RoundedCornerShape(4.dp)).background(BAR.copy(alpha = (v / 100f).coerceIn(0.1f, 1f))),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("$v", style = MaterialTheme.typography.labelSmall, color = if (v > 55) Color.White else MaterialTheme.colorScheme.onSurface)
+                    }
+                    Text("T$t", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        Text(
+            listOf("% of games won by each turn.", winDamageNote(win), if (win.usual == null) WIN_SLOW_NOTE else "").filter { it.isNotEmpty() }.joinToString(" "),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 
