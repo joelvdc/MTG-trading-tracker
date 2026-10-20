@@ -161,6 +161,40 @@ Open questions (for the plan, with mockups):
   shorter (the deck name left out) while it's that player's turn?
 - Keep the turn time in the badge on small panels, or only "▶|" there?
 
+### When the deck can win (goldfish win turn), also on the bracket card
+*Added 2026-10-20. MTG Trader only. Planned with mockups on 2026-10-20; waiting for the green light.*
+
+The owner's words: "Could you add an analysis for each deck for their expected turn when they can win? Simulation
+like you did for the mana with 10000 games, where you find the turn where the deck can do enough damage to everyone
+(120 damage) or win the game. I think if you pull this off, it might be worth to add the stats to the bracket card."
+
+Tried with a prototype on 2026-10-20 (the owner's decks from Archidekt, cards from Scryfall, combos from Commander
+Salt, 10,000 games of 15 turns each; the 1.46 mana simulation plus casting, attacking, tokens, drain, anthems, card
+draw and winning combos). Turn the deck usually wins by / 9 in 10 games by:
+- Auntie Plague: turn 11 / 13 (a combo wins about 1 in 4 games, from turn 4 at the earliest).
+- Taranika band: turn 11 / 15. Isshin Wide: turn 12 / 14.
+- Baba and Smasher LCP: not by turn 15 in most games, because most of their damage comes from things a general
+  simulation can't read (Vial Smasher's damage on casting, Baba's sacrifice triggers).
+So it works and is quick enough for a phone (well under a second per deck), but it's a best case "playing alone"
+and it can't understand every card; decks built around their commander's own ability come out too slow.
+
+Proposed (see the plan sent on 2026-10-20 and its mockups):
+- Deck page → Stats: a new "Winning the game" card under "Casting the commander": usually by turn X, 9 in 10 by
+  turn Y, the chance by turn as a row of tiles, how it won (combat, combo, drain) and a "How?" with what's counted.
+- Bracket card: the turn as well (mockup A: a "Speed" section; mockup B: a third tile next to Baseline and
+  Realistic), and a small "T11" tile on the all-decks list.
+- No new service: Scryfall's power and rules text (already read since 1.44) and Commander Salt's combos (since 1.46),
+  so no health check change. Nothing new stored in the database (worked out when needed, kept in a small cache file).
+
+Open questions:
+- Bracket card: A (a section with the tiles per turn) or B (a third tile)? And the small "T11" tile on the
+  all-decks list, yes or no?
+- What counts as a win: all three opponents from 40 to 0 (120 damage), 21 commander damage knocking one out, a combo
+  that Commander Salt says wins (also those that need more on the battlefield?). Count tutors as finding a missing
+  combo piece?
+- Decks that don't win by turn 15 in most games: show "turn 15+" with a note that the app can't read all the deck's
+  damage, or hide the number for them?
+
 ## Done
 
 ### Pausing games, and the table on narrower phones (MTG Trader 1.51)
