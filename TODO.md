@@ -156,6 +156,28 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
+### The win turn at 4 in 10 games, and the first win highlighted
+*Added 2026-10-20. MTG Trader only. Planned with mockups on 2026-10-20; waiting for the green light.*
+
+The owner's words: "I think I want to shown the turn by which the decks win in the bracket cards with 40% or higher
+probability. In the deck page just highlight the fastest the deck can win and the turn with 40%+ probability."
+
+Proposed (plan and mockups sent on 2026-10-20):
+- Bracket cards (the small "T11" tile on the all-decks list and the full card's Speed section): the turn by which 4 in
+  10 games are won, instead of 5 in 10 ("usually").
+- Deck page → Stats → "Winning the game": the first turn the deck wins at all (1 in 100 games or more, shown as 1% or
+  more) and the 4 in 10 turn highlighted in the row of turns and the headline ("Can win from turn 6. 4 in 10 games by
+  turn 11; 9 in 10 by turn 13."); the row starts at the first win (8 to 10 turns), so early combo wins are in view.
+- Style A: coloured turns in the headline and outlined tiles (green = first win, gold = 4 in 10); style B: small
+  "first win" / "4 in 10" labels above the columns. Same style on the bracket card.
+- Nothing is played again: the saved results already have every turn's share. No health check change.
+- From the owner's 19 decks (2026-10-20): 4 in 10 instead of 5 in 10 moves the turn for 3 decks only (Taranika band
+  11→10, Turtle Power 13→12, Baba 15→14); first wins: Deep Clue Sea T5, Auntie Plague and Sarge T6 (the first two by
+  combo).
+
+Open questions: style A or B; the small tile's caption ("4 in 10 by" or keep "Wins by"); "fastest" as the first
+1-in-100 turn (proposed) or the 1-in-10 turn the card shows today.
+
 ## Done
 
 ### When the deck can win (goldfish win turn), also on the bracket card
