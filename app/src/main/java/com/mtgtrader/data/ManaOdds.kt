@@ -78,9 +78,10 @@ object ManaOddsCalc {
         return Cost(generic, pips)
     }
 
-    private enum class Kind { LAND, ROCK, CREATURE, RAMP, SPELL }
+    internal enum class Kind { LAND, ROCK, CREATURE, RAMP, SPELL }
 
-    private class Card(val kind: Kind, val colours: Set<Char>, val tapped: Boolean, val cost: Cost, val amount: Int)
+    /** What a card does for the mana: also used by the win turn ([WinOddsCalc], since 1.52). */
+    internal class Card(val kind: Kind, val colours: Set<Char>, val tapped: Boolean, val cost: Cost, val amount: Int)
 
     /** A mana source on the battlefield: what it makes, how much, and from which turn. */
     private class Source(val colours: Set<Char>, val amount: Int, val from: Int)
@@ -101,7 +102,7 @@ object ManaOddsCalc {
         val colourBy = own.associateWith { IntArray(turns + 1) }
         val allBy = IntArray(turns + 1)
         repeat(games) {
-            val (hand, rest) = keepHand(deck, random)
+            val (hand, rest) = keepHand(deck, random) { it }
             val sources = ArrayList<Source>()
             val castTurn = IntArray(goals.size)
             val seen = HashSet<Char>()
@@ -136,7 +137,7 @@ object ManaOddsCalc {
         )
     }
 
-    private fun classify(c: StatsCard, own: Set<Char>, lands: List<StatsCard>): Card {
+    internal fun classify(c: StatsCard, own: Set<Char>, lands: List<StatsCard>): Card {
         val text = c.oracleText.orEmpty()
         if (c.isLand) {
             val faces = c.landFaces.joinToString("\n") { it.second }.lowercase()
@@ -162,26 +163,29 @@ object ManaOddsCalc {
         return Card(Kind.SPELL, emptySet(), false, Cost(0, emptyList()), 0)
     }
 
-    /** Karsten's Commander mulligans: a free one, then London mulligans bottoming towards three lands. */
-    private fun keepHand(deck: List<Card>, random: Random): Pair<MutableList<Card>, List<Card>> {
-        var hand: MutableList<Card> = mutableListOf()
-        var rest: List<Card> = emptyList()
+    /**
+     * Karsten's Commander mulligans: a free one, then London mulligans bottoming towards three lands. [mana] tells
+     * what each card does for the mana (the win turn keeps more about its cards).
+     */
+    internal fun <T> keepHand(deck: List<T>, random: Random, mana: (T) -> Card): Pair<MutableList<T>, List<T>> {
+        var hand: MutableList<T> = mutableListOf()
+        var rest: List<T> = emptyList()
         for (attempt in 0..4) {
             val shuffled = deck.shuffled(random)
             hand = shuffled.take(7).toMutableList()
             rest = shuffled.drop(7)
-            val lands = hand.count { it.kind == Kind.LAND }
+            val lands = hand.count { mana(it).kind == Kind.LAND }
             if (attempt == 0 && lands in setOf(0, 1, 2, 6, 7)) continue
             if (attempt == 1 && lands in setOf(0, 1, 6, 7)) continue
             repeat((attempt - 1).coerceAtLeast(0)) {
-                val (l, s) = hand.partition { it.kind == Kind.LAND }
+                val (l, s) = hand.partition { mana(it).kind == Kind.LAND }
                 when {
-                    l.size > 3 -> hand.remove(l.minBy { it.colours.size })
+                    l.size > 3 -> hand.remove(l.minBy { mana(it).colours.size })
                     s.isNotEmpty() -> hand.remove(s.first())
-                    else -> hand.remove(l.minBy { it.colours.size })
+                    else -> hand.remove(l.minBy { mana(it).colours.size })
                 }
             }
-            val kept = hand.count { it.kind == Kind.LAND }
+            val kept = hand.count { mana(it).kind == Kind.LAND }
             if (attempt == 2 && kept in setOf(0, 1, 5, 6)) continue
             if (attempt == 3 && kept in setOf(0, 1, 5)) continue
             break
@@ -217,7 +221,9 @@ object ManaOddsCalc {
     fun canPay(sources: List<Pair<Set<Char>, Int>>, cost: Cost): Boolean = pay(sources, cost) != null
 
     /** What's left of [sources] after paying [cost], or null when it can't be paid (coloured pips first). */
-    private fun pay(sources: List<Pair<Set<Char>, Int>>, cost: Cost): List<Pair<Set<Char>, Int>>? {
+    internal fun pay(sources: List<Pair<Set<Char>, Int>>, cost: Cost): List<Pair<Set<Char>, Int>>? {
+        // Not enough mana at all: no need to try (this is called a lot by the win turn).
+        if (sources.sumOf { it.second } < cost.manaValue) return null
         val left = sources.map { it.first to it.second }.sortedBy { it.first.size }.toMutableList()
         val amounts = left.map { it.second }.toMutableList()
         val pips = cost.pips.sortedBy { it.size }

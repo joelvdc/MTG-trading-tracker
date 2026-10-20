@@ -623,7 +623,8 @@ internal fun PlayerPanel(
                     Box(Modifier.size(34.dp, 5.dp).clip(CircleShape).background(ink.copy(alpha = 0.35f)))
                 }
             } else {
-                NameLabel(s, g, ink, pill, panelWidth * 0.72f, roomy = small > 150.dp) { onSheet(false) }
+                // Whose turn it is shows at the start of the label (since 1.52; it was in the corner, over the label).
+                NameLabel(s, g, ink, pill, panelWidth * 0.72f, roomy = small > 150.dp, turn = if (active) turnText(g, now) else null, onNextTurn = onNextTurn) { onSheet(false) }
             }
             Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = sideRoom), verticalAlignment = Alignment.CenterVertically) {
             // Beside: the total stays in the middle of the panel, the grid right after it (since 1.51; it was by the +).
@@ -681,26 +682,55 @@ internal fun PlayerPanel(
                 }
             }
         }
-        if (active) {
+        // The big-number layout has no name label: there the badge stays in the corner.
+        if (active && look.layout == CardLayout.BIG) {
             Row(
                 Modifier.align(Alignment.TopStart).padding(10.dp).clip(RoundedCornerShape(10.dp)).background(TurnGold).clickable(onClick = onNextTurn)
                     .padding(horizontal = 7.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(if (g.clock) "Turn ${Games.clock(g.turnElapsed(now))}" else "Your turn", color = Color(0xFF231A00), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(if (g.clock) "Turn ${turnText(g, now)}" else "Your turn", color = Color(0xFF231A00), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Icon(Icons.Default.SkipNext, "Next turn", Modifier.size(16.dp), tint = Color(0xFF231A00))
             }
         }
     }
 }
 
-/** The name on its label (with the deck, when there's room); the monarch's crown and the initiative go before it. */
+/** The turn's time for the turn badge ("1:42"), or "Turn" without the clock. */
+private fun turnText(g: LiveGame, now: Long) = if (g.clock) Games.clock(g.turnElapsed(now)) else "Turn"
+
+/**
+ * The name on its label (with the deck, when there's room); the monarch's crown and the initiative go before it.
+ * [turn]: the gold turn badge at the start, while it's this player's turn (tap: next turn); the deck name gives way
+ * to it on small panels. Since 1.52.
+ */
 @Composable
-private fun NameLabel(s: LiveSeat, g: LiveGame, ink: Color, pill: Color, maxWidth: Dp, roomy: Boolean, onClick: () -> Unit) {
+private fun NameLabel(
+    s: LiveSeat,
+    g: LiveGame,
+    ink: Color,
+    pill: Color,
+    maxWidth: Dp,
+    roomy: Boolean,
+    turn: String? = null,
+    onNextTurn: () -> Unit = {},
+    onClick: () -> Unit,
+) {
     Row(
-        Modifier.widthIn(max = maxWidth).clip(RoundedCornerShape(14.dp)).background(pill).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 5.dp),
+        Modifier.widthIn(max = maxWidth).clip(RoundedCornerShape(14.dp)).background(pill).clickable(onClick = onClick)
+            .padding(start = if (turn != null) 5.dp else 14.dp, end = 14.dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (turn != null) {
+            Row(
+                Modifier.padding(end = 8.dp).clip(RoundedCornerShape(10.dp)).background(TurnGold).clickable(onClick = onNextTurn)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(turn, color = Color(0xFF231A00), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Icon(Icons.Default.SkipNext, "Next turn", Modifier.size(15.dp), tint = Color(0xFF231A00))
+            }
+        }
         if (g.monarch == s.seat) Icon(Icons.Default.WorkspacePremium, "Monarch", Modifier.padding(end = 4.dp).size(17.dp), tint = ink)
         if (g.initiative == s.seat) Icon(Icons.Default.Explore, "Initiative", Modifier.padding(end = 4.dp).size(17.dp), tint = ink)
         Text(s.name, color = ink, fontSize = 16.sp, fontWeight = if (s.contrast) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = maxWidth * 0.55f))

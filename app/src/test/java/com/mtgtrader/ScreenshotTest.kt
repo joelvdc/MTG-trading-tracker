@@ -842,8 +842,10 @@ class ScreenshotTest {
             MtgColors(dark = true) {
                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        com.mtgtrader.ui.SmallBracketCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card) {}
-                        com.mtgtrader.ui.SmallBracketCard(deck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9), com.mtgtrader.data.SaltCard()) {}
+                        // Since 1.52 with the turn each deck usually wins by ("…" while it's worked out).
+                        com.mtgtrader.ui.SmallBracketCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, win(cloudTurns)) {}
+                        com.mtgtrader.ui.SmallBracketCard(deck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9), com.mtgtrader.data.SaltCard(), win(babaTurns)) {}
+                        com.mtgtrader.ui.SmallBracketCard(deck(4, "Sarge", "Sergeant John Benton", "GW", 3, 3, 6.1), com.mtgtrader.data.SaltCard()) {}
                         com.mtgtrader.ui.SmallPowerCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
                         com.mtgtrader.ui.SmallPowerCard(deck(3, "Cult of Athreos (LC)", "Athreos, God of Passage", "WB", 2, 2, 4.8), null, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
                     }
@@ -851,6 +853,49 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/all_decks_cards.png", roborazziOptions = screenshotOptions)
+    }
+
+    // 1.52: win turns from the owner's decks (Cloud, Baba and Sarge on 2026-10-20, 10,000 games each), and a made-up slow deck.
+    private val cloudTurns = listOf(0, 0, 0, 0, 0, 0, 0, 1, 8, 36, 71, 90, 97, 99, 99)
+    private val babaTurns = listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 9, 19, 31, 45, 59)
+    private val slowTurns = listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7, 15, 25, 35, 47)
+    private val sargeTurns = listOf(0, 0, 0, 0, 0, 2, 23, 60, 86, 95, 98, 99, 99, 99, 99)
+    private fun win(turns: List<Int>, damage: Map<String, Int> = mapOf("combat" to 52, "commander" to 48), knockouts: Int = 79, combo: List<Int> = List(15) { 0 }) =
+        com.mtgtrader.data.WinOdds(
+            10_000, turns, combo, damage, knockouts,
+            com.mtgtrader.data.WinCounted(creatures = 19, tokenMakers = 4, triggers = 1, drains = 1, gear = 18, pumps = 1),
+        )
+
+    /** 1.52: the Stats' "Winning the game": a deck that wins (with a combo row), one the app can't read well, one being worked out. */
+    @Test fun winningTheGame() {
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.WinningCard(win(cloudTurns, combo = listOf(0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 5, 6, 7, 7, 7)), missing = 0)
+                        com.mtgtrader.ui.WinningCard(win(slowTurns, mapOf("combat" to 72, "commander" to 28), 21), missing = 2)
+                        com.mtgtrader.ui.WinningCard(null, missing = 0)
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/winning_the_game.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.52: the bracket card's Speed section (Sarge: commander damage with pump spells). */
+    @Test @Config(qualifiers = "w411dp-h1200dp-xhdpi") fun bracketCardSpeed() {
+        val deck = com.mtgtrader.data.Deck(5, "Sarge", "joelvdc", "Sergeant John Benton", null, null, "GW", 100, powerLevel = 6.1, bracketBaseline = 3, bracketRealistic = 3, saltPercent = 22.0, saltId = "s")
+        val card = com.mtgtrader.data.SaltCard(gameChangers = listOf("Smothering Tithe"), axes = mapOf("speed" to 0.55, "consistency" to 0.6))
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        com.mtgtrader.ui.BracketCardView(deck, card, win = win(sargeTurns, mapOf("combat" to 17, "commander" to 83), 100))
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/bracket_card_speed.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.46: editing a deck: waiting edits, drag handles, selected cards, the card page's controls, the Decks tab's sections. */

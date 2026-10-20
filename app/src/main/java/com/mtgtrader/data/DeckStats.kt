@@ -14,6 +14,8 @@ data class StatsCard(
     val producedMana: String?,
     val oracleText: String?,
     val tokens: String?,
+    /** Power and toughness, e.g. "2/2" (the front face's; "*" where it varies); for the win turn. Since 1.52. */
+    val powerToughness: String? = null,
 ) {
     private val faceTypes get() = (typeLine?.takeIf { it.isNotEmpty() } ?: types).split(" // ")
 

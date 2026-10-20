@@ -509,3 +509,82 @@ private fun OddsRow(labelWidth: androidx.compose.ui.unit.Dp, small: Boolean, lab
         }
     }
 }
+
+/**
+ * When the deck can win (since 1.52): the turn it usually wins by and the turn of 9 in 10 games, the share of games
+ * won by each turn (and by a combo, when it has one that wins), where the damage came from, and what was counted.
+ * [win] is null while it's worked out.
+ */
+@Composable
+internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = StatsCardBox("Winning the game") {
+    var about by rememberSaveable { mutableStateOf(false) }
+    if (win == null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Note("Playing the deck 10,000 times…")
+        }
+        return@StatsCardBox
+    }
+    Text(winHeadline(win), style = MaterialTheme.typography.bodyMedium)
+    val turns = win.window
+    val labelWidth = 72.dp
+    Row {
+        Spacer(Modifier.width(labelWidth))
+        turns.forEach {
+            Text(
+                "T$it",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+    OddsRow(labelWidth, false, { Text("Win", style = MaterialTheme.typography.bodyMedium) }, turns.map { win.byTurn[it - 1] })
+    if (win.comboShare > 0) {
+        OddsRow(labelWidth, true, { Text("by combo", style = MaterialTheme.typography.bodyMedium) }, turns.map { win.byCombo[it - 1] })
+    }
+    Note(winDamageNote(win))
+    if (win.usual == null) Note(WIN_SLOW_NOTE)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Note(
+            "% of games won by each turn, from ${"%,d".format(java.util.Locale.ROOT, win.games)} shuffles of this deck " +
+                "(playing alone against three players at 40 life, a best case).",
+            Modifier.weight(1f),
+        )
+        TextButton(onClick = { about = !about }) { Text(if (about) "Less" else "How?") }
+    }
+    if (about) {
+        val n = win.counted
+        Note(
+            "The app plays the deck alone, with the mana as for casting the commander. Each turn it casts its commander, " +
+                "creatures, token makers, equipment and auras and the cards that deal damage, the most expensive first; it puts " +
+                "the equipment and auras on its commander (or else its biggest creature), keeps pump spells for combat and " +
+                "attacks with everything that can (nobody blocks). It wins when all three opponents are at 0, a commander has " +
+                "dealt 21 damage to each, or a combo wins. Counted: ${n.creatures} creatures, ${n.tokenMakers} token makers, " +
+                "${n.triggers} damage triggers (casting spells, creatures or lands entering), ${n.drains} drain or burn cards, " +
+                "${n.gear} equipment and auras, ${n.pumps} pump spells" +
+                (if (n.combos.isEmpty()) ", and no combo that wins on its own." else ", and combos that win on their own: ${n.combos.joinToString("; ")}.") +
+                " Not counted: removal, blockers, tutors, sacrifice outlets and abilities the app can't read from the card text."
+        )
+    }
+    if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they don't count yet.")
+}
+
+/** "Usually wins by turn 11; 9 in 10 games by turn 13. Fastest 1 in 10: turn 9." */
+internal fun winHeadline(win: com.mtgtrader.data.WinOdds): String {
+    val usual = win.usual ?: return "Not by turn ${win.turns} in most games: ${win.byTurn.last()}% of games by turn ${win.turns}."
+    return "Usually wins by turn $usual" + (win.nineInTen?.let { "; 9 in 10 games by turn $it" } ?: "") + "." +
+        (win.fastest?.takeIf { it < usual }?.let { " Fastest 1 in 10: turn $it." } ?: "")
+}
+
+/** "Damage: combat 52%, commander damage 48%. A combo wins 25% of games. A commander knocked a player out in 79% of the wins." */
+internal fun winDamageNote(win: com.mtgtrader.data.WinOdds): String = buildString {
+    if (win.damageText.isNotEmpty()) append("Damage: ").append(win.damageText.replaceFirstChar(Char::lowercase))
+    if (win.comboShare > 0) append(" A combo wins ${win.comboShare}% of games.")
+    if (win.commanderKnockouts >= 5) append(" Commander damage knocked a player out in ${win.commanderKnockouts}% of the wins.")
+}.trim()
+
+internal const val WIN_SLOW_NOTE = "Much of this deck's damage may come from what the app can't read yet (sacrifice triggers, " +
+    "its commander's own ability…), so it's slower here than at the table."

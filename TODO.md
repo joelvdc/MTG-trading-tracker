@@ -52,8 +52,10 @@ How to use this file:
 13. ~~MTG Trader 1.51 (planned with mockups and approved on 2026-10-19): pausing a game to continue it on any phone,
    the Samsung A37's table lined up again, the 6-player end seats' grid next to the total, a ⚙ settings button in
    the middle bar.~~ Released.
+14. ~~MTG Trader 1.52 (planned with mockups, green light on 2026-10-20): when each deck can win (Stats and the bracket
+   card), the turn badge in the name label, and the scanner list jumping to the newest card.~~ Released.
 
-### Test 1.46 to 1.51 in an emulator (in a session on the owner's PC)
+### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
 
 The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
@@ -99,6 +101,11 @@ Checklist:
   round, time); Continue on the other phone after a sync (two emulators, or one and a phone) and check it's gone from
   the first; Continue while another game runs (asks, then pauses that one); ⋮ → Drop it; a clock stopped by hand
   stays stopped.
+- **Win turn (1.52):** open a deck's Stats: "Winning the game" appears within a few seconds (time it on the phone)
+  and opening it again is instant; Bracket cards of all decks fill their T-tiles; the bracket card's Speed section,
+  also in a shared picture.
+- **Turn badge (1.52):** the gold badge at the start of the name label on every table size, tapping it passes the turn.
+- **Scanner (1.52):** scan several cards after scrolling the list down: it jumps back to the newest each time.
 - **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
   head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
   other phone through sync; a backup restore keeps them.
@@ -146,24 +153,10 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
-### The turn badge covers the name label
-*Added 2026-10-20. MTG Trader only.*
-
-The owner's words: "fix the turn badge to avoid overlaps."
-
-Found in 1.51's 5-player test picture (`life_tracker_5.png`): on the player whose turn it is, the gold "Turn 1:42 ▶|"
-badge sits in the panel's corner on top of the name label, hiding part of the name ("oel" for Joel). It happens
-where the panel is short and the label is long (name and deck), and it was already so before 1.51. The fix keeps
-the badge clear of the label (and of the mini-grid and counter badges) on every table size and layout.
-
-Open questions (for the plan, with mockups):
-- Where the badge goes when there's no room in the corner: beside the label, under the total, or the label made
-  shorter (the deck name left out) while it's that player's turn?
-- Keep the turn time in the badge on small panels, or only "▶|" there?
+## Done
 
 ### When the deck can win (goldfish win turn), also on the bracket card
-*Added 2026-10-20. MTG Trader only. Planned with mockups on 2026-10-20; waiting for the green light. Planned as
-MTG Trader 1.52 together with the turn badge fix below.*
+*Added 2026-10-20. MTG Trader only. Planned with mockups and given the green light on 2026-10-20.*
 
 The owner's words: "Could you add an analysis for each deck for their expected turn when they can win? Simulation
 like you did for the mana with 10000 games, where you find the turn where the deck can do enough damage to everyone
@@ -206,11 +199,40 @@ Prototype v2 (2026-10-20), with the owner's combo rule and damage triggers:
   death-trigger card to kill anyone. With the owner's rule none of these five decks has a counted combo now (Soul
   Immolation + Tree of Perdition needs more on the battlefield).
 
-Open question:
-- Turn badge: A (in the name label, the deck name shortened to make room; recommended), B (the panel's other
-  corner) or C (under the label; the total gets smaller)? Mockups sent 2026-10-20.
+Added during the build (owner, 2026-10-20): "make sure that turn calculations work with commander damage, you can use
+my Cloud deck or my Sarge deck. One has equipments to pump and the other has a lot of pump spells." Then: "Is the win by
+turn calculation accounting for Baba's card draw and drain". Both went in: equipment, auras, pump spells (also +X/+X),
+double strike and haste on the commander, 21 commander damage per commander knocking a player out, drawing from combat
+damage (Sarge's "draw that many cards"), Food/Clue/Treasure makers, and sacrifice abilities like Baba Lysaga's (the
+cheapest permanents covering three card types; in such a deck every permanent is cast as fodder).
 
-## Done
+Released in MTG Trader 1.52 (2026-10-20). Results with the owner's decks (usually by / 9 in 10 by): Sarge 8 / 10,
+Cloud 11 / 12, Auntie Plague 11 / 13, Taranika band 11 / 13, Isshin Wide 11 / 13, Smasher LCP 13 / 15+, Baba 15 / 15+.
+Kept in `win_odds.json` on the phone (not synced, not in the database). No health check change (Scryfall's power and
+rules text and Commander Salt's combos were already read).
+
+### The turn badge covers the name label
+*Added 2026-10-20. MTG Trader only.*
+
+The owner's words: "fix the turn badge to avoid overlaps."
+
+Found in 1.51's 5-player test picture (`life_tracker_5.png`): on the player whose turn it is, the gold "Turn 1:42 ▶|"
+badge sits in the panel's corner on top of the name label, hiding part of the name ("oel" for Joel). It happens
+where the panel is short and the label is long (name and deck), and it was already so before 1.51. The fix keeps
+the badge clear of the label (and of the mini-grid and counter badges) on every table size and layout.
+
+Settled with the owner on 2026-10-20 from mockups: **A**, the badge at the start of the name label (the deck name
+shortened when there's no room), with the turn time; in the big-number layout (no label) it stays in the corner.
+Released in MTG Trader 1.52 (2026-10-20).
+
+### The scanner list shows the newest card
+*Added 2026-10-20. MTG Trader only.*
+
+The owner's words: "When scanning cards, I would like that the list under the scanner scrolls automatically so that the
+last card scanner is always visible on top of the list." New cards were already put on top, but the list kept showing
+the card that was on top before. Now it jumps to the newest card each time one is added (not when a printing is
+changed). Approved for 1.52 by the owner on 2026-10-20; released in MTG Trader 1.52.
+
 
 ### Pausing games, and the table on narrower phones (MTG Trader 1.51)
 *Added 2026-10-19. MTG Trader only. Planned with mockups; the owner's choices and green light on 2026-10-19.*

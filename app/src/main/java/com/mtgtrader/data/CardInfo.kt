@@ -101,11 +101,22 @@ interface CardInfoDao {
     /** The deck's own cards (not the maybeboard) with what the deck stats need. Since 1.44. */
     @Query(
         """SELECT d.name AS name, d.scryfallId AS scryfallId, d.quantity AS quantity, d.cmc AS cmc, d.types AS types, d.commander AS commander,
-                  c.typeLine AS typeLine, c.manaCost AS manaCost, c.producedMana AS producedMana, c.oracleText AS oracleText, c.tokens AS tokens
+                  c.typeLine AS typeLine, c.manaCost AS manaCost, c.producedMana AS producedMana, c.oracleText AS oracleText, c.tokens AS tokens,
+                  c.powerToughness AS powerToughness
            FROM deck_cards d LEFT JOIN card_info c ON c.scryfallId = d.scryfallId
            WHERE d.deckId = :deckId AND d.maybeboard = 0"""
     )
     fun observeDeckStats(deckId: Long): kotlinx.coroutines.flow.Flow<List<StatsCard>>
+
+    /** The same, once (for the win turn of decks not on screen). Since 1.52. */
+    @Query(
+        """SELECT d.name AS name, d.scryfallId AS scryfallId, d.quantity AS quantity, d.cmc AS cmc, d.types AS types, d.commander AS commander,
+                  c.typeLine AS typeLine, c.manaCost AS manaCost, c.producedMana AS producedMana, c.oracleText AS oracleText, c.tokens AS tokens,
+                  c.powerToughness AS powerToughness
+           FROM deck_cards d LEFT JOIN card_info c ON c.scryfallId = d.scryfallId
+           WHERE d.deckId = :deckId AND d.maybeboard = 0"""
+    )
+    suspend fun deckStats(deckId: Long): List<StatsCard>
 
     /** Each card name in a deck with its mana cost (once known), for the deck page. Since 1.43. */
     @Query(

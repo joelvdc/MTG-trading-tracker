@@ -126,6 +126,26 @@ them (they stay open or folded for every deck).
   spells costing up to 4 cast when they can be. No opponents, removal, Treasure, rituals or cost reducers, so it's a
   best case to compare decks and changes by. **How?** explains it and links to Frank Karsten's mana base article, whose
   method it follows with the deck's own cards.
+- **Winning the game** (since 1.52): the turn the deck usually wins by, the turn it has won by in 9 of 10 games, and a
+  row of the share of games won by each turn (and by a combo, when it has one that wins on its own). The app plays the
+  deck alone 10,000 times for up to 15 turns against three players at 40 life, with the mana as above: each turn it
+  casts its commander, creatures, token makers, equipment, auras and the cards that deal damage (the most expensive it
+  can pay for first), puts the equipment and auras on its commander (or its biggest creature), keeps pump spells for
+  combat, and attacks with everything that can (nobody blocks). It has won when all three are at 0, a commander has
+  dealt **21 commander damage** to each, or a combo wins (Commander Salt's combos that win the game or deal infinite
+  damage without needing more cards on the battlefield). Read from the card text: power, haste, double strike, tokens,
+  anthems, card draw, drain and burn, damage triggers on casting spells (Vial Smasher), on creatures or lands entering
+  (Purphoros, landfall), at the start of the turn or when attacking, equipment and auras (+N/+N, "for each…", double
+  strike, haste, equip costs, For Mirrodin! and living weapon), pump spells (also +X/+X), drawing cards from combat
+  damage (Sergeant John Benton), Food, Clue and Treasure makers, and sacrifice abilities like Baba Lysaga's: tapped each
+  turn it can, sacrificing the cheapest permanents that cover three card types (tokens first, then spare lands; an
+  artifact land counts as two types), for the drain and the cards. In a deck with such an ability every permanent is
+  worth casting, as fodder. Under the table: where the damage came from (combat, commander damage, triggers,
+  drain) and how often commander damage knocked a player out. Decks that don't win by turn 15 in most games show
+  **T15+** with a note: their damage likely comes from what the app can't read (sacrifice triggers, a commander's own
+  ability). No opponents, removal, blockers or tutors, so it's a best case to compare decks by. **How?** lists what was
+  counted. Worked out in the background (a few seconds) and kept on the phone until the deck, its card details or its
+  combos change.
 
 The stats use the card details the app keeps from Scryfall; decks' cards get the new ones once, the first time a deck
 page is opened online after updating to 1.44.
@@ -217,7 +237,10 @@ its combos, whether it counts, what it does, and a link to it on Commander Spell
 
 **All decks' cards** (since 1.46; Decks tab ⋮ → **Bracket cards of all decks** / **Power level cards of all decks**):
 every one of your own decks' (Archidekt and Local) bracket or power level card as a small card, in the Decks tab's order;
-tap one for the full cards and swipe from deck to deck. Decks not scored yet are listed at the bottom.
+tap one for the full cards and swipe from deck to deck. Decks not scored yet are listed at the bottom. Since 1.52 each
+small bracket card has a third tile with the turn the deck usually wins by (**T11**, or **T15+**), and the full bracket
+card has a **Speed** section under the two brackets: the usual turn, 9 in 10 games, the share won by each turn and where
+the damage came from (see Winning the game under the deck stats).
 
 **Recommendations** (deck page, or the deck's ⋮ menu): cards for the deck from **EDHREC** or **recommander.cards**
 (switch at the top; the choice is remembered). EDHREC's are in its own sections (New Cards, High Synergy, Top Cards, Game
@@ -500,8 +523,9 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   hiding the bar until tapped, dice animations; keeping the screen on and hiding the phone's bars. Changing the
   players or the starting life once the game is going asks before starting over. The choices are kept for the next
   games and follow you to your other phone.
-- **Turns:** with turns counted, the player whose turn it is has a gold frame and their turn's time; tap it to pass
-  the turn clockwise.
+- **Turns:** with turns counted, the player whose turn it is has a gold frame and a gold badge with their turn's time
+  at the start of their name label (since 1.52; it used to sit in the corner, over the name); tap the badge to pass the
+  turn clockwise. On small panels the deck name is shortened to make room.
 - **History:** the game's log (life changes, commander damage, poison, tax, counters, turns, players going out, the
   monarch), with Undo last and Pause clock; and the games played before.
 - **Pausing a game to continue later** (since 1.51): History → **Pause game and leave** stops the clock, closes the
@@ -531,7 +555,7 @@ Scan a pile of cards (or add them by name) into a waiting list, then select some
 binder**, **to a trade**, **to a deck** (added in the app only, kept when the deck is refreshed) or **discard** them.
 
 While scanning, the cards added show up in a list under the camera with their price (the price type chosen in
-Settings). When only the name was readable, the app guesses the printing and says **Choose printing**: tap the card
+Settings), the newest on top; the list jumps to it each time a card is added (since 1.52). When only the name was readable, the app guesses the printing and says **Choose printing**: tap the card
 to pick the right set from all its printings, with pictures and prices, without leaving the scanner. Normal / Foil /
 Etched at the top of that list sets the finish (also without changing the printing); printings that only exist in
 another finish say so, e.g. "Surge foil only".
