@@ -146,6 +146,21 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
+### The turn badge covers the name label
+*Added 2026-10-20. MTG Trader only.*
+
+The owner's words: "fix the turn badge to avoid overlaps."
+
+Found in 1.51's 5-player test picture (`life_tracker_5.png`): on the player whose turn it is, the gold "Turn 1:42 ▶|"
+badge sits in the panel's corner on top of the name label, hiding part of the name ("oel" for Joel). It happens
+where the panel is short and the label is long (name and deck), and it was already so before 1.51. The fix keeps
+the badge clear of the label (and of the mini-grid and counter badges) on every table size and layout.
+
+Open questions (for the plan, with mockups):
+- Where the badge goes when there's no room in the corner: beside the label, under the total, or the label made
+  shorter (the deck name left out) while it's that player's turn?
+- Keep the turn time in the badge on small panels, or only "▶|" there?
+
 ## Done
 
 ### Pausing games, and the table on narrower phones (MTG Trader 1.51)
