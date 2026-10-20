@@ -565,8 +565,12 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
                 "dealt 21 damage to each, or a combo wins. Counted: ${n.creatures} creatures, ${n.tokenMakers} token makers, " +
                 "${n.triggers} damage triggers (casting spells, creatures or lands entering), ${n.drains} drain or burn cards, " +
                 "${n.gear} equipment and auras, ${n.pumps} pump spells" +
-                (if (n.combos.isEmpty()) ", and no combo that wins on its own." else ", and combos that win on their own: ${n.combos.joinToString("; ")}.") +
-                " Not counted: removal, blockers, tutors, sacrifice outlets and abilities the app can't read from the card text."
+                (if (n.combos.isEmpty()) ", and no combo that can win." else ", and combos that can win: ${n.combos.joinToString("; ")}.") +
+                (if (n.tutors > 0) " ${n.tutors} tutor(s) fetch a missing combo piece." else "") +
+                " A combo counts when its cards are at hand with the mana, it wins outright, its loop has a card that turns it " +
+                "into life loss, or it makes endless tokens (they win the turn after); what Commander Spellbook says it needs " +
+                "first must be there too (an opponent's creature is taken as there from turn 4)." +
+                " Not counted: removal, blockers and abilities the app can't read from the card text."
         )
     }
     if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they don't count yet.")

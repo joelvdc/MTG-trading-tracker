@@ -127,13 +127,21 @@ them (they stay open or folded for every deck).
   best case to compare decks and changes by. **How?** explains it and links to Frank Karsten's mana base article, whose
   method it follows with the deck's own cards.
 - **Winning the game** (since 1.52): the turn the deck usually wins by, the turn it has won by in 9 of 10 games, and a
-  row of the share of games won by each turn (and by a combo, when it has one that wins on its own). The app plays the
+  row of the share of games won by each turn (and by a combo, when it has one that can win). The app plays the
   deck alone 10,000 times for up to 15 turns against three players at 40 life, with the mana as above: each turn it
   casts its commander, creatures, token makers, equipment, auras and the cards that deal damage (the most expensive it
   can pay for first), puts the equipment and auras on its commander (or its biggest creature), keeps pump spells for
   combat, and attacks with everything that can (nobody blocks). It has won when all three are at 0, a commander has
-  dealt **21 commander damage** to each, or a combo wins (Commander Salt's combos that win the game or deal infinite
-  damage without needing more cards on the battlefield). Read from the card text: power, haste, double strike, tokens,
+  dealt **21 commander damage** to each, or a combo wins. **Combos** (Commander Salt's, read by what they do since
+  1.53): those that win the game or deal infinite damage; endless loops of deaths, creatures entering or -1/-1
+  counters when the deck has a card that turns them into life loss (Grave Venerations, The Meathook Massacre, Blood
+  Artist for deaths; Purphoros for creatures entering; Obelisk Spider for -1/-1 counters you put); and endless tokens,
+  which attack and win the turn after. A combo is finished when its missing cards are in hand with the mana to cast
+  them (and the life-loss card, if it isn't out yet), a piece with a {T} ability (Tree of Perdition) has been out
+  since the turn before, and what Commander Spellbook lists as needed first is there: other creatures, a card of the
+  deck that can start the loop, an opponent's creature (taken as there from turn 4). Combo pieces that are instants or
+  sorceries wait in hand for the rest. **Tutors** (Demonic, Vampiric, Worldly…; not land searches) fetch the missing
+  piece of the combo closest to done, into the hand or on top of the library. Read from the card text: power, haste, double strike, tokens,
   anthems, card draw, drain and burn, damage triggers on casting spells (Vial Smasher), on creatures or lands entering
   (Purphoros, landfall), at the start of the turn or when attacking, equipment and auras (+N/+N, "for each…", double
   strike, haste, equip costs, For Mirrodin! and living weapon), pump spells (also +X/+X), drawing cards from combat
@@ -143,7 +151,7 @@ them (they stay open or folded for every deck).
   worth casting, as fodder. Under the table: where the damage came from (combat, commander damage, triggers,
   drain) and how often commander damage knocked a player out. Decks that don't win by turn 15 in most games show
   **T15+** with a note: their damage likely comes from what the app can't read (sacrifice triggers, a commander's own
-  ability). No opponents, removal, blockers or tutors, so it's a best case to compare decks by. **How?** lists what was
+  ability). No opponents, removal or blockers, so it's a best case to compare decks by. **How?** lists what was
   counted. Worked out in the background (a few seconds) and kept on the phone until the deck, its card details or its
   combos change.
 

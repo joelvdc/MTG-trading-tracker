@@ -123,11 +123,12 @@ class Release152Test {
         assertEquals(1, odds.counted.drains)
     }
 
-    @Test fun onlyCombosThatWinOnTheirOwnCount() {
-        assertTrue(WinOddsCalc.wins(SaltCombo(listOf("A", "B"), results = listOf("infinite-damage", "win-game"))))
-        assertFalse(WinOddsCalc.wins(SaltCombo(listOf("A", "B"), results = listOf("win-game"), needsBoard = true)))
-        // Commander Salt's "infinite life loss" often needs a death trigger (Devoted Druid + Mikaeus): not counted.
-        assertFalse(WinOddsCalc.wins(SaltCombo(listOf("Devoted Druid", "Mikaeus, the Unhallowed"), results = listOf("infinite-etb", "infinite-lifeloss"))))
+    @Test fun combosAreReadByWhatTheyDo() {
+        assertEquals(WinOddsCalc.ComboKind.WINS, WinOddsCalc.plan(SaltCombo(listOf("A", "B"), results = listOf("infinite-damage", "win-game")))!!.kind)
+        // Since 1.53 a loop counts too (with a card that turns it into life loss), and so do endless tokens.
+        assertEquals(setOf(WinOddsCalc.LoopEvent.ENTER, WinOddsCalc.LoopEvent.DEATH), WinOddsCalc.plan(SaltCombo(listOf("Devoted Druid", "Mikaeus, the Unhallowed"), results = listOf("infinite-etb", "infinite-ltb", "infinite-lifeloss")))!!.loops)
+        assertTrue(WinOddsCalc.plan(SaltCombo(listOf("A", "B"), results = listOf("infinite-tokens")))!!.tokens)
+        assertNull(WinOddsCalc.plan(SaltCombo(listOf("A", "B"), results = listOf("infinite-mana"))))
     }
 
     /** A 7/7 commander with haste for {R} and only lands: 21 commander damage knocks out a player every third turn. */
