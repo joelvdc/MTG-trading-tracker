@@ -54,6 +54,9 @@ How to use this file:
    the middle bar.~~ Released.
 14. ~~MTG Trader 1.52 (planned with mockups, green light on 2026-10-20): when each deck can win (Stats and the bracket
    card), the turn badge in the name label, and the scanner list jumping to the newest card.~~ Released.
+15. ~~MTG Trader 1.53 (green light on 2026-10-20): combos by what they do and tutors in the win turn.~~ Released.
+- **Since 1.53 (2026-10-20):** the weekly health check also checks Commander Salt's combo prerequisites; the full text is
+  in `docs/health-check-instructions.txt` and was given to the owner to paste.
 
 ### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
@@ -210,6 +213,23 @@ Released in MTG Trader 1.52 (2026-10-20). Results with the owner's decks (usuall
 Cloud 11 / 12, Auntie Plague 11 / 13, Taranika band 11 / 13, Isshin Wide 11 / 13, Smasher LCP 13 / 15+, Baba 15 / 15+.
 Kept in `win_odds.json` on the phone (not synced, not in the database). No health check change (Scryfall's power and
 rules text and Commander Salt's combos were already read).
+
+### Combos and tutors in the win turn (MTG Trader 1.53)
+*Added 2026-10-20. MTG Trader only.*
+
+The owner's words, after 1.52: "I think something is off. What about combo wins? Especially in auntie's deck". 1.52
+counted only combos Commander Salt marks as winning and needing nothing else on the battlefield, which left out all 8
+of Auntie Plague's, although Soul Immolation + Tree of Perdition wins outright and Devoted Druid + Mikaeus and the
+Blowfly Infestation loops win with Obelisk Spider, Grave Venerations or The Meathook Massacre. Planned and approved on
+2026-10-20 ("Green light, count token loops next turn, add tutors"):
+- combos read by what they do: outright wins; loops (deaths, creatures entering, -1/-1 counters you put) with a matching
+  life-loss card; endless tokens winning the turn after; Commander Spellbook's prerequisites (other creatures, a card
+  that can start the loop, an opponent's creature from turn 4); {T} pieces out since the turn before; instant and
+  sorcery pieces held for the combo;
+- tutors (not land searches) fetch the missing piece of the combo closest to done.
+Released in MTG Trader 1.53 (2026-10-20). Auntie Plague: about 1 in 4 games won by combo, 9% by turn 8, still
+usually turn 11. Health check: Commander Salt's combo prerequisites (complexity.*Prerequisites / preconditions lines)
+were added.
 
 ### The turn badge covers the name label
 *Added 2026-10-20. MTG Trader only.*

@@ -66,8 +66,10 @@ data class WinCounted(
     val drains: Int = 0,
     val gear: Int = 0,
     val pumps: Int = 0,
-    /** The combos that win on their own, each as "A + B". */
+    /** The combos that can win, each as "A + B", with what else they need ("with Obelisk Spider"). */
     val combos: List<String> = emptyList(),
+    /** Tutors that fetch a missing combo piece (since 1.53). */
+    val tutors: Int = 0,
 )
 
 /**
@@ -82,18 +84,20 @@ data class WinCounted(
  *   unless they have haste;
  * - counts damage triggers read from the cards' rules text: casting spells (Vial Smasher, The Lord of Pain),
  *   creatures or lands entering (Purphoros, landfall), the start of the turn, attacking, and tap abilities.
- * A combo counts when Commander Salt says it wins the game (or deals infinite damage) and it needs nothing more
- * on the battlefield (the owner's choice, 2026-10-20); its cards must be in hand, on the battlefield or in the
- * command zone, and the mana there to cast the missing ones. Nothing else is counted: no opponents, removal,
- * tutors, sacrifice outlets or abilities the text patterns don't recognise, so it's a best case to compare decks
- * by, not a promise. Since 1.52.
+ * Combos (since 1.53, see [plan]): those that win the game or deal infinite damage; endless loops of deaths,
+ * creatures entering or -1/-1 counters when the deck has a card that turns them into life loss (Obelisk Spider,
+ * Blood Artist, Purphoros); endless tokens, winning the turn after. Their cards must be in hand, on the battlefield
+ * or in the command zone with the mana to cast the missing ones, and what Commander Spellbook lists as needed
+ * first must be there (other creatures, a card that can start the loop, an opponent's creature from turn 4).
+ * Tutors fetch a missing combo piece. Nothing else is counted: no opponents, removal or abilities the text
+ * patterns don't recognise, so it's a best case to compare decks by, not a promise. Since 1.52.
  */
 object WinOddsCalc {
     const val GAMES = 10_000
     const val TURNS = 15
 
-    /** Raised when the rules change, so results kept on the phone are worked out again. */
-    const val VERSION = 1
+    /** Raised when the rules change, so results kept on the phone are worked out again. 2: combos and tutors (1.53). */
+    const val VERSION = 2
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -114,8 +118,94 @@ object WinOddsCalc {
         else -> key
     }
 
-    /** The combos the win turn counts: they win (or deal infinite damage) without needing more on the battlefield. */
-    fun wins(combo: SaltCombo) = !combo.needsBoard && combo.results.any { it == "win-game" || it == "infinite-damage" }
+    /** How a combo wins (since 1.53). */
+    enum class ComboKind {
+        /** It wins the game or deals infinite damage. */
+        WINS,
+        /** Endless deaths, creatures entering or leaving, or -1/-1 counters: it wins with a card that turns them into life loss. */
+        LOOP,
+        /** Endless tokens: they attack and win the turn after. */
+        TOKENS,
+    }
+
+    /** What an endless loop repeats, for the cards that turn it into life loss. */
+    enum class LoopEvent { DEATH, ENTER, COUNTER }
+
+    /**
+     * A combo as the win turn reads it: whether it [wins] outright, what it [loops], whether it makes endless
+     * [tokens]; and what it needs besides its cards: [creatures] other creatures on the battlefield, an opponent's
+     * creature ([opponentCreature], taken as there from turn 4), and for each "you have a way to …" another card of
+     * the deck on the battlefield whose text has one of the [enablers] words. [kind] and [payoffs] are settled per
+     * deck ([settle]).
+     */
+    class ComboPlan(
+        val names: List<String>,
+        val wins: Boolean,
+        val loops: Set<LoopEvent> = emptySet(),
+        val tokens: Boolean = false,
+        val creatures: Int = 0,
+        val opponentCreature: Boolean = false,
+        val enablers: List<List<String>> = emptyList(),
+    ) {
+        val keys = names.map(SaltCard::key).toSet()
+        var kind = if (wins) ComboKind.WINS else ComboKind.TOKENS
+        /** The deck's cards that turn this loop into life loss. */
+        var payoffs: Set<String> = emptySet()
+    }
+
+    private val loopResults = mapOf("infinite-ltb" to LoopEvent.DEATH, "infinite-etb" to LoopEvent.ENTER, "infinite-counters" to LoopEvent.COUNTER)
+    private val putsCounters = Regex("\\bput (?:a|one or more) -1/-1 counters? on", RegexOption.IGNORE_CASE)
+    private val atLeastCreatures = Regex("you control at least (\\w+) (?:other |additional )?creatures?", RegexOption.IGNORE_CASE)
+    private val wayTo = Regex("you have a way to (.*)", RegexOption.IGNORE_CASE)
+
+    /** How the win turn reads a combo of Commander Salt's (since 1.53), or null when it can't win. */
+    fun plan(combo: SaltCombo): ComboPlan? {
+        val wins = combo.results.any { it == "win-game" || it == "infinite-damage" }
+        val loops = combo.results.mapNotNull { loopResults[it] }.toSet()
+        val tokens = "infinite-tokens" in combo.results
+        if (!wins && loops.isEmpty() && !tokens) return null
+        var creatures = 0
+        var opponent = false
+        val enablers = ArrayList<List<String>>()
+        for (line in combo.prerequisites.map { it.lowercase() }) {
+            atLeastCreatures.find(line)?.let { creatures = maxOf(creatures, number(it.groupValues[1])) }
+            if ("opponent controls" in line || "opponents control" in line) opponent = true
+            wayTo.find(line)?.let { m ->
+                val what = m.groupValues[1]
+                enablers += when {
+                    "-1/-1 counter" in what -> listOf("-1/-1 counter", "blight", "wither")
+                    "+1/+1 counter" in what -> listOf("+1/+1 counter")
+                    "damage" in what -> listOf("damage")
+                    "sacrifice" in what -> listOf("sacrifice")
+                    "untap" in what -> listOf("untap")
+                    else -> listOf("")
+                }
+            }
+        }
+        return ComboPlan(combo.cards, wins, loops, tokens, creatures, opponent, enablers)
+    }
+
+    /**
+     * Settles how a combo wins in this deck: outright; as a loop when the deck has a card for what it repeats (a
+     * death, a creature entering, a -1/-1 counter you put: a loop whose pieces put -1/-1 counters also works with
+     * Obelisk Spider); else with endless tokens the turn after. False when it can't win in this deck.
+     */
+    internal fun settle(p: ComboPlan, cards: List<WinCard>): Boolean {
+        if (p.wins) return true
+        val pieces = cards.filter { it.key in p.keys }
+        // Reminder text in brackets says what others do ("They each put a -1/-1 counter…"): left out.
+        val own = pieces.any { putsCounters.containsMatchIn(it.text.replace(Regex("\\([^)]*\\)"), "")) }
+        val loops = p.loops + if (p.loops.isNotEmpty() && own) setOf(LoopEvent.COUNTER) else emptySet()
+        p.payoffs = cards.filter { c ->
+            LoopEvent.DEATH in loops && c.deathPayoff || LoopEvent.ENTER in loops && c.enterPayoff || LoopEvent.COUNTER in loops && c.counterPayoff
+        }.map { it.key }.toSet()
+        p.kind = when {
+            p.payoffs.isNotEmpty() -> ComboKind.LOOP
+            p.tokens -> ComboKind.TOKENS
+            else -> return false
+        }
+        return true
+    }
 
     private val numbers = mapOf("a" to 1, "an" to 1, "one" to 1, "two" to 2, "three" to 3, "four" to 4, "five" to 5, "six" to 6)
     private fun number(s: String?) = s?.lowercase()?.let { numbers[it] ?: it.toIntOrNull() } ?: 0
@@ -152,7 +242,15 @@ object WinOddsCalc {
         RegexOption.IGNORE_CASE,
     )
     private val artifactToken = Regex("create $N (?:tapped )?(?:food|treasure|clue|blood|map|powerstone|gold|junk|lander|incubator) tokens?", RegexOption.IGNORE_CASE)
-    private val cardTypes = listOf("Artifact", "Creature", "Enchantment", "Land", "Planeswalker", "Battle")
+    private val cardTypes = listOf("Artifact", "Creature", "Enchantment", "Land", "Planeswalker", "Battle", "Instant", "Sorcery")
+    private val deathPayoff = Regex(
+        "whenever (?:a|another|one or more)[^.]*creatures?[^.]*(?:dies|die|is put into a graveyard)[^.]*(?:each opponent loses|target (?:player|opponent) loses|deals? \\d+ damage to each opponent)",
+        RegexOption.IGNORE_CASE,
+    )
+    private val counterPayoff = Regex("whenever you put [^.]*counters? on [^.]*each opponent loses", RegexOption.IGNORE_CASE)
+    private val enterPayoff = Regex("whenever (?:a|another)[^.]*creature[^.]*enters[^.]*(?:each opponent loses|damage to each opponent)", RegexOption.IGNORE_CASE)
+    private val tutorText = Regex("search your library for (?:a|an|up to one) ((?:[a-z]+ )*?)card", RegexOption.IGNORE_CASE)
+    private val tutorTypes = listOf("creature", "artifact", "enchantment", "instant", "sorcery", "planeswalker")
     private val tapAbility = Regex("^\\{t\\}(, \\{\\d+\\})?:")
     private val combatDraw = Regex("deals combat damage to a player, [^.]*?draws? (a card|that many cards)", RegexOption.IGNORE_CASE)
 
@@ -218,6 +316,19 @@ object WinOddsCalc {
         var artifactsOnce = 0
         var artifactsTurn = 0
         var artifactsLandfall = 0
+        /** Its rules text in lower case, for a combo's "you have a way to …". */
+        var text = ""
+        /** It turns endless deaths, creatures entering or -1/-1 counters you put into life loss (Blood Artist, Purphoros, Obelisk Spider). */
+        var deathPayoff = false
+        var enterPayoff = false
+        var counterPayoff = false
+        /** A combo piece with a {T} ability other than mana (Tree of Perdition): it has to have been out since last turn. */
+        var tapPiece = false
+        /** A tutor: the card types it can find (empty: any card), and whether the card goes on top of the library. */
+        var tutor: Set<String>? = null
+        var tutorToTop = false
+        /** A tutor in a deck with combos to find pieces for. */
+        var tutorUseful = false
 
         val land get() = mana.kind == ManaOddsCalc.Kind.LAND
         val gearBonus get() = bonus > 0 || forEach != null || base != null || grantsDouble || grantsHaste
@@ -246,6 +357,20 @@ object WinOddsCalc {
         w.aura = "Aura" in type && "enchant creature" in text.lowercase()
         for (line in text.split('\n')) readLine(w, line.trim())
         if (w.equipment || w.aura) readGear(w, text)
+        w.text = text.lowercase()
+        w.deathPayoff = deathPayoff.containsMatchIn(text)
+        w.enterPayoff = enterPayoff.containsMatchIn(text) || w.enterTriggers.any { !it.land }
+        w.counterPayoff = counterPayoff.containsMatchIn(text)
+        w.tapPiece = text.split('\n').any { line -> line.trim().startsWith("{T}") && "Add {" !in line.substringBefore('.') }
+        tutorText.find(text)?.let { m ->
+            val what = m.groupValues[1].lowercase()
+            val once = !w.permanent || Regex("when [^.]*enters[^.]*search your library", RegexOption.IGNORE_CASE).containsMatchIn(text)
+            val landish = listOf("land", "basic", "plains", "island", "swamp", "mountain", "forest").any { it in what }
+            if (once && !landish && w.mana.kind != ManaOddsCalc.Kind.RAMP) {
+                w.tutor = tutorTypes.filter { it in what }.map { it.replaceFirstChar(Char::uppercase) }.toSet()
+                w.tutorToTop = "on top of your library" in text.lowercase() && "into your hand" !in text.lowercase()
+            }
+        }
         return w
     }
 
@@ -377,13 +502,15 @@ object WinOddsCalc {
      */
     private fun useful(c: WinCard, spellTriggers: Boolean, creatureTriggers: Boolean, fodder: Boolean): Boolean = when {
         c.land || c.pumpSpell -> false
+        // An instant or sorcery that's a combo piece waits for the rest of the combo.
+        c.combo && !c.permanent -> false
         spellTriggers -> true
         fodder && c.permanent -> true
         creatureTriggers && c.creature -> true
         else -> c.creature && c.power > 0 || c.tokensOnce + c.tokensTurn > 0 || c.dealsDamage || c.anthem + c.overrun > 0 ||
-            c.drawOnce + c.drawTurn > 0 || c.combo || c.castTriggers.isNotEmpty() || c.enterTriggers.isNotEmpty() ||
+            c.drawOnce + c.drawTurn > 0 || c.combo && c.permanent || c.castTriggers.isNotEmpty() || c.enterTriggers.isNotEmpty() ||
             (c.equipment || c.aura) && c.gearBonus || c.attackDouble || c.targetedBonus > 0 || c.combatDraw != 0 ||
-            c.sacrifice != null || c.artifactsOnce + c.artifactsTurn + c.artifactsLandfall > 0
+            c.sacrifice != null || c.artifactsOnce + c.artifactsTurn + c.artifactsLandfall > 0 || c.tutorUseful
     }
 
     fun calculate(
@@ -399,9 +526,8 @@ object WinOddsCalc {
         if (commanders.isEmpty() || library.sumOf { it.quantity } < 8) return null
         val own = identity.filter { it in "WUBRG" }.toSet()
         val lands = library.filter { it.isLand }
-        val winning = combos.filter(::wins)
-        val comboSets = winning.map { c -> c.cards.map(SaltCard::key).toSet() }
-        val comboKeys = comboSets.flatten().toSet()
+        val candidates = combos.mapNotNull(::plan)
+        val comboKeys = candidates.flatMap { it.keys }.toSet()
         val deck = ArrayList<WinCard>()
         val kinds = ArrayList<WinCard>()
         for (c in library) {
@@ -410,6 +536,11 @@ object WinOddsCalc {
             repeat(c.quantity.coerceAtLeast(0)) { deck += w }
         }
         val leaders = commanders.map { classify(it, own, lands, comboKeys) }
+        // A loop only counts when the deck has a card that turns it into life loss (or it makes endless tokens).
+        val plans = candidates.filter { settle(it, kinds + leaders) }
+        val payoffKeys = plans.filter { it.kind == ComboKind.LOOP }.flatMap { it.payoffs }.toSet()
+        (kinds + leaders).forEach { if (it.key in payoffKeys) it.combo = true }
+        if (plans.isNotEmpty()) (kinds + leaders).forEach { if (it.tutor != null) it.tutorUseful = true }
         val won = IntArray(turns + 1)
         val byCombo = IntArray(turns + 1)
         val dealt = LongArray(SOURCES.size)
@@ -417,7 +548,7 @@ object WinOddsCalc {
         var wins = 0
         repeat(games) {
             val (hand, rest) = ManaOddsCalc.keepHand(deck, random) { it.mana }
-            val game = Game(hand, rest, leaders, own, comboSets)
+            val game = Game(hand, rest.toMutableList(), leaders, own, plans)
             val turn = game.play(turns)
             if (turn > 0) {
                 won[turn]++
@@ -450,7 +581,16 @@ object WinOddsCalc {
                 drains = all.count { it.dealsDamage },
                 gear = all.count { (it.equipment || it.aura) && it.gearBonus },
                 pumps = all.count { it.pumpSpell },
-                combos = winning.map { it.cards.joinToString(" + ") },
+                combos = plans.map { p ->
+                    p.names.joinToString(" + ") + when (p.kind) {
+                        ComboKind.WINS -> ""
+                        ComboKind.TOKENS -> " (endless tokens: wins the turn after)"
+                        ComboKind.LOOP -> (kinds + leaders).filter { it.key in p.payoffs && it.key !in p.keys }.map { it.name }.distinct()
+                            .takeIf { it.isNotEmpty() && p.keys.none { it in p.payoffs } }
+                            ?.let { names -> " (with " + names.take(3).joinToString(" or ") + if (names.size > 3) "…)" else ")" } ?: ""
+                    }
+                },
+                tutors = all.count { it.tutorUseful },
             ),
         )
     }
@@ -479,10 +619,10 @@ object WinOddsCalc {
     /** One game, played alone turn by turn. */
     private class Game(
         val hand: MutableList<WinCard>,
-        val rest: List<WinCard>,
+        val rest: MutableList<WinCard>,
         val leaders: List<WinCard>,
         val own: Set<Char>,
-        val combos: List<Set<String>>,
+        val combos: List<ComboPlan>,
     ) {
         val command = leaders.toMutableList()
         val sources = ArrayList<Source>()
@@ -554,6 +694,7 @@ object WinOddsCalc {
             each(c.drainOnce, 3)
             one(c.oneOnce, 3)
             draw(c.drawOnce)
+            c.tutor?.takeIf { c.tutorUseful }?.let { tutor(it, c.tutorToTop) }
             if (c.permanent) {
                 val e = Entry(c, turn, c.power, c.creature, c.haste, c.double)
                 if (c.mana.kind != ManaOddsCalc.Kind.RAMP) e.source = source
@@ -619,9 +760,17 @@ object WinOddsCalc {
                     pool = left
                     cast(c)
                 }
-                if (comboReady(pool)) {
-                    byCombo = true
-                    return t
+                when (comboReady(pool)) {
+                    ComboKind.WINS, ComboKind.LOOP -> {
+                        byCombo = true
+                        return t
+                    }
+                    // Endless tokens attack and win the turn after.
+                    ComboKind.TOKENS -> {
+                        byCombo = true
+                        return if (t < turns) t + 1 else 0
+                    }
+                    null -> Unit
                 }
                 // Main phase: everything that helps, the most expensive first; the commander before the rest. The
                 // mana only goes down, so one pass is enough unless a card drew more or brought a new trigger.
@@ -768,17 +917,58 @@ object WinOddsCalc {
             board.toList().forEach { b -> b.card?.let { artifacts(it.artifactsLandfall) } }
         }
 
-        /** Whether a winning combo's missing cards are at hand and there's the mana to cast them. */
-        fun comboReady(pool: List<Pair<Set<Char>, Int>>): Boolean {
-            if (combos.isEmpty()) return false
+        /**
+         * The first combo that can be finished now: its missing cards at hand (or in the command zone) with the mana to
+         * cast them, its {T} pieces out since last turn, the creatures and enablers it needs on the battlefield, and for
+         * a loop a card that turns it into life loss (castable with it when it isn't out yet). Null when there's none.
+         */
+        fun comboReady(pool: List<Pair<Set<Char>, Int>>): ComboKind? {
+            if (combos.isEmpty()) return null
             val there = board.mapNotNull { it.card?.key }.toSet()
             val at = (hand + command).associateBy { it.key }
-            return combos.any { combo ->
-                val need = combo - there
-                if (!need.all { it in at }) return@any false
+            for (combo in combos) {
+                val need = combo.keys - there
+                if (!need.all { it in at }) continue
+                if (combo.opponentCreature && turn < OPPONENTS_HAVE_CREATURES) continue
+                if (combo.keys.any { k -> at[k]?.tapPiece == true && k !in there }) continue
+                if (board.any { e -> e.card?.let { it.key in combo.keys && it.tapPiece } == true && e.turn >= turn && !e.haste }) continue
+                if (board.count { it.creature && it.card?.key !in combo.keys } < combo.creatures) continue
+                if (combo.enablers.any { words ->
+                        board.none { e -> e.card?.let { c -> c.key !in combo.keys && !c.land && words.any { it in c.text } } == true }
+                    }
+                ) continue
+                val cast = need.map { at.getValue(it) }.toMutableList()
+                if (combo.kind == ComboKind.LOOP && combo.keys.none { it in combo.payoffs } && combo.payoffs.none { it in there }) {
+                    cast += hand.filter { it.key in combo.payoffs }.minByOrNull { it.manaValue } ?: continue
+                }
                 var p: List<Pair<Set<Char>, Int>>? = pool
-                for (k in need.sortedByDescending { at.getValue(it).manaValue }) p = p?.let { ManaOddsCalc.pay(it, at.getValue(k).cost) }
-                p != null
+                for (c in cast.sortedByDescending { it.manaValue }) p = p?.let { ManaOddsCalc.pay(it, c.cost) }
+                if (p != null) return combo.kind
+            }
+            return null
+        }
+
+        /**
+         * A tutor finds the missing piece (of the types it can find) of the combo closest to done; for a loop also the
+         * card that makes it win. Into the hand, or on top of the library for Vampiric Tutor and the like.
+         */
+        fun tutor(types: Set<String>, toTop: Boolean) {
+            val have = (board.mapNotNull { it.card } + hand + command)
+            val haveKeys = have.map { it.key }.toSet()
+            val wanted = combos.map { p ->
+                val missing = (p.keys - haveKeys).toMutableSet()
+                if (p.kind == ComboKind.LOOP && p.keys.none { it in p.payoffs } && haveKeys.none { it in p.payoffs }) missing += PAYOFF
+                p to missing
+            }.filter { it.second.isNotEmpty() }.sortedBy { it.second.size }
+            for ((plan, missing) in wanted) {
+                fun wantedPayoffs(c: WinCard) = c.key in plan.payoffs
+                val i = (drawn until rest.size).firstOrNull { i ->
+                    val c = rest[i]
+                    (c.key in missing || PAYOFF in missing && wantedPayoffs(c)) && (types.isEmpty() || c.types.any { it in types })
+                } ?: continue
+                val card = rest.removeAt(i)
+                if (toTop) rest.add(drawn, card) else hand += card
+                return
             }
         }
 
@@ -802,6 +992,10 @@ object WinOddsCalc {
         companion object {
             val RAMP_KINDS = setOf(ManaOddsCalc.Kind.ROCK, ManaOddsCalc.Kind.CREATURE, ManaOddsCalc.Kind.RAMP)
             const val LAND_TYPE = "Land"
+            /** Opponents are taken to have a creature (for combos that need one) from this turn. */
+            const val OPPONENTS_HAVE_CREATURES = 4
+            /** Stands for "a card that turns the loop into life loss" among a combo's missing cards. */
+            const val PAYOFF = "\u0000payoff"
             val LAND = setOf(LAND_TYPE)
             val CREATURE_TOKEN = setOf("Creature")
             val ARTIFACT_TOKEN = setOf("Artifact")
@@ -854,7 +1048,7 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
             val text = buildString {
                 append(WinOddsCalc.VERSION).append('|').append(identity).append('|')
                 cards.sortedWith(compareBy({ it.name }, { it.scryfallId })).forEach { append(it.toString()).append('\n') }
-                combos.forEach { append(it.cards).append(it.results).append(it.needsBoard).append('\n') }
+                combos.forEach { append(it.cards).append(it.results).append(it.needsBoard).append(it.prerequisites).append('\n') }
             }
             return MessageDigest.getInstance("MD5").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
         }

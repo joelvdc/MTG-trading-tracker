@@ -91,8 +91,11 @@ data class SaltCard(
     fun combosOf(cardName: String): List<SaltCombo> = allCombos.filter { combo -> combo.cards.any { key(it) == key(cardName) } }
 
     companion object {
-        /** 2: tutors and fast mana by name (1.16). 3: every combo, also those that don't count (1.46). */
-        const val CURRENT = 3
+        /**
+         * 2: tutors and fast mana by name (1.16). 3: every combo, also those that don't count (1.46). 4: the combos'
+         * prerequisites, for the win turn (1.53).
+         */
+        const val CURRENT = 4
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
 
         /** Cards are matched by their front face, case-insensitively ("Fable of the Mirror-Breaker // Reflection…"). */
@@ -113,6 +116,8 @@ data class SaltCombo(
     /** Needs more on the battlefield than its own cards. */
     val needsBoard: Boolean = false,
     val spellbookUri: String? = null,
+    /** What has to be true first, in Commander Spellbook's words ("you control at least two other creatures"). Since 1.53. */
+    val prerequisites: List<String> = emptyList(),
 ) {
     /** "infinite ETB, infinite life loss". */
     val resultText get() = results.joinToString(", ") { r ->
@@ -225,6 +230,10 @@ object SaltCardParser {
                 results = c.arr("categories").orEmpty().mapNotNull { (it as? JsonPrimitive)?.content },
                 needsBoard = (c.obj("complexity")?.get("requiresCardsOnBoard") as? JsonPrimitive)?.content == "true",
                 spellbookUri = c.str("spellbookUri"),
+                prerequisites = listOf("easyPrerequisites", "notablePrerequisites", "preconditions")
+                    .flatMap { c.obj("complexity")?.obj(it)?.arr("lines").orEmpty() }
+                    .mapNotNull { (it as? JsonObject)?.str("parsed")?.trim()?.takeIf(String::isNotEmpty) }
+                    .distinct(),
             )
         }.filter { it.cards.isNotEmpty() }
 
