@@ -162,7 +162,8 @@ Open questions (for the plan, with mockups):
 - Keep the turn time in the badge on small panels, or only "▶|" there?
 
 ### When the deck can win (goldfish win turn), also on the bracket card
-*Added 2026-10-20. MTG Trader only. Planned with mockups on 2026-10-20; waiting for the green light.*
+*Added 2026-10-20. MTG Trader only. Planned with mockups on 2026-10-20; waiting for the green light. Planned as
+MTG Trader 1.52 together with the turn badge fix below.*
 
 The owner's words: "Could you add an analysis for each deck for their expected turn when they can win? Simulation
 like you did for the mana with 10000 games, where you find the turn where the deck can do enough damage to everyone
@@ -186,14 +187,28 @@ Proposed (see the plan sent on 2026-10-20 and its mockups):
 - No new service: Scryfall's power and rules text (already read since 1.44) and Commander Salt's combos (since 1.46),
   so no health check change. Nothing new stored in the database (worked out when needed, kept in a small cache file).
 
-Open questions:
-- Bracket card: A (a section with the tiles per turn) or B (a third tile)? And the small "T11" tile on the
-  all-decks list, yes or no?
-- What counts as a win: all three opponents from 40 to 0 (120 damage), 21 commander damage knocking one out, a combo
-  that Commander Salt says wins (also those that need more on the battlefield?). Count tutors as finding a missing
-  combo piece?
-- Decks that don't win by turn 15 in most games: show "turn 15+" with a note that the app can't read all the deck's
-  damage, or hide the number for them?
+Settled with the owner on 2026-10-20: bracket card **A** (the "Speed" section), the small "T11" tile on the
+all-decks list **yes**; only combos that **win the game on their own** count (Commander Salt's "wins the game" or
+"infinite damage", and not those that need more cards on the battlefield); decks that don't win by turn 15 show
+**"T15+" with a note**; the turn badge fix goes in the **same release**. The owner's bonus wish: "bonus points for
+you if your simulation can catch damage trigger effects like vial smasher."
+
+Prototype v2 (2026-10-20), with the owner's combo rule and damage triggers:
+- Triggers read from the rules text: casting a spell ("whenever you cast your first spell each turn / a spell / an
+  instant or sorcery / a creature spell", damage equal to the spell's mana value or a fixed number, to one opponent
+  or each opponent: Vial Smasher, The Lord of Pain…), creatures or lands entering (Purphoros, Corpse Knight,
+  landfall), drains at the start of your turn or when attacking, and tap abilities. With a "first spell each turn"
+  trigger the biggest spell goes first.
+- Smasher LCP went from "not by turn 15" to usually turn 14 (its triggers about a tenth of the damage). Others:
+  Auntie Plague turn 11 / 13, Taranika band 11 / 14, Isshin Wide 11 / 14, Baba 15+ (its sacrifice drain needs
+  three card types sacrificed at once; not read).
+- Commander Salt's "infinite life loss" label isn't counted as a win: Devoted Druid + Mikaeus carries it but needs a
+  death-trigger card to kill anyone. With the owner's rule none of these five decks has a counted combo now (Soul
+  Immolation + Tree of Perdition needs more on the battlefield).
+
+Open question:
+- Turn badge: A (in the name label, the deck name shortened to make room; recommended), B (the panel's other
+  corner) or C (under the label; the total gets smaller)? Mockups sent 2026-10-20.
 
 ## Done
 
