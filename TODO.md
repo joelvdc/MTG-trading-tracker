@@ -156,27 +156,53 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
-### The win turn at 4 in 10 games, and the first win highlighted
-*Added 2026-10-20. MTG Trader only. Planned with mockups on 2026-10-20; waiting for the green light.*
+### The win turn at 4 in 10 games, the first win highlighted, and a better simulator (MTG Trader 1.54)
+*Added 2026-10-20. MTG Trader only. Planned with mockups and a prototype on 2026-10-20; waiting for the green light.*
 
 The owner's words: "I think I want to shown the turn by which the decks win in the bracket cards with 40% or higher
-probability. In the deck page just highlight the fastest the deck can win and the turn with 40%+ probability."
+probability. In the deck page just highlight the fastest the deck can win and the turn with 40%+ probability." Then:
+"Can you improve the simulator for decks like Baba, Smasher and Shrine Gate Win? Does maze's end is taken into account
+as a win condition for shrine gates win?" and "Scrollvault also has a prediction for the turn a deck can win by, could
+be interesting to check the differences between that and the simulator."
 
-Proposed (plan and mockups sent on 2026-10-20):
-- Bracket cards (the small "T11" tile on the all-decks list and the full card's Speed section): the turn by which 4 in
-  10 games are won, instead of 5 in 10 ("usually").
-- Deck page → Stats → "Winning the game": the first turn the deck wins at all (1 in 100 games or more, shown as 1% or
-  more) and the 4 in 10 turn highlighted in the row of turns and the headline ("Can win from turn 6. 4 in 10 games by
-  turn 11; 9 in 10 by turn 13."); the row starts at the first win (8 to 10 turns), so early combo wins are in view.
-- Style A: coloured turns in the headline and outlined tiles (green = first win, gold = 4 in 10); style B: small
-  "first win" / "4 in 10" labels above the columns. Same style on the bracket card.
-- Nothing is played again: the saved results already have every turn's share. No health check change.
-- From the owner's 19 decks (2026-10-20): 4 in 10 instead of 5 in 10 moves the turn for 3 decks only (Taranika band
-  11→10, Turtle Power 13→12, Baba 15→14); first wins: Deep Clue Sea T5, Auntie Plague and Sarge T6 (the first two by
-  combo).
+Settled with the owner on 2026-10-20:
+- Bracket cards (the small tile on the all-decks list and the full card's Speed section): the turn by which 4 in 10
+  games are won, instead of 5 in 10. The small tile keeps its caption "Wins by".
+- Deck page → Stats → "Winning the game": style **A** (coloured turns in the headline, outlined tiles: green = first
+  win, gold = 4 in 10); the first win is the first turn with 1% or more of games; the row starts at the first win (8 to
+  10 turns). The bracket card's Speed section the same way.
+- Nothing added to the Decks list.
 
-Open questions: style A or B; the small tile's caption ("4 in 10 by" or keep "Wins by"); "fastest" as the first
-1-in-100 turn (proposed) or the 1-in-10 turn the card shows today.
+The simulator (prototype on 2026-10-20, kept as a patch in that session only; redo from this description if lost):
+- Effects that count permanents: "for each Shrine/Gate/creature you control", "where X is the number of …", "equal to
+  the number of …" (damage, drain, tokens, cards drawn, +1/+1 counters, a creature's own +1/+1 for each).
+- Triggers on a kind of permanent entering: "whenever (this or) another Shrine/Gate/enchantment you control enters"
+  (drain, tokens with their types, e.g. Shrine tokens that count as Shrines, cards, counters, a basic land).
+- Cards that put a Shrine onto the battlefield (Sanctum of All each upkeep, Hei Bai once).
+- Maze's End as a way to win (10 Gates with different names): played early, used each turn when it can, Gate searches
+  (Circuitous Route, Navigation Orb, Open the Gates, Gatecreeper Vine, Sylvan Scrying for Maze's End itself) bring real
+  Gates; lands entering untapped (Amulet of Vigor, Spelunking, Gond Gate, Tiller Engine, Horizon Explorer);
+  Crackling Perimeter, Basilisk Gate, Sage of the Maze, Gatebreaker Ram. Maze's End wins shown on their own, not as
+  a combo.
+- Sacrifice decks: abilities used at once (Thousand-Year Elixir, Tyvar, Lightning Greaves/Swiftfoot Boots), extra uses
+  (Instill Energy, Nature's Chosen, Patriar's Seal, Thousand-Year Elixir, Tyvar), Marvin copying Baba, Liquimetal
+  making a permanent an artifact, payoffs (Marionette Master, Titania, Baloth Prime with its stun counters, Mazirek,
+  lands leaving tokens), fabricate.
+- X spells that drain each opponent (Exsanguinate, Jaya's Immolating Inferno): with the mana left, first when Vial
+  Smasher-like triggers make them the biggest spell, or at once when they finish the game; Double Vision copies them.
+- Fix: "if you control three or more Deserts, create…" (Hour of Promise) no longer counts without Deserts.
+- The rules version goes up, so every deck is played again once on the phone.
+
+Prototype results (4 in 10 games by, before → after): Shrine Gate Win 15 → 12 (Maze's End wins about 19% of
+games; first win 12 → 8), Baba 14 → 13 (1 in 10 by 12 → 10), Smasher LCP 13 → 13 (9 in 10 by turn 15 now). The
+other 16 decks: the same turns. Still not counted: opponents (Kaervek), free spells (Etali, Sunbird's Invocation),
+copying held for later (Dualcaster Mage, Reverberate), blockers and removal.
+
+ScrollVault: its "typical win" and "earliest" turns couldn't be read from the cloud session (its page runs in a browser,
+and the session's browser couldn't be set up to trust the network proxy). Open question: the owner sends screenshots
+of the ScrollVault line on the deck pages (or allows it on a PC session), then the two are compared.
+
+No health check change (no new service or data field).
 
 ## Done
 
