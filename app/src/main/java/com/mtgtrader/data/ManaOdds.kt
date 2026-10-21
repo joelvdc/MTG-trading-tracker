@@ -32,7 +32,9 @@ data class ManaOdds(
  *   untapped and adds a missing colour first), and mana rocks, mana creatures and land ramp spells
  *   (Cultivate, Farseek…) costing up to 4 are cast when they can be;
  * - lands that enter tapped come in tapped ("unless …" lands are counted as untapped), mana creatures can
- *   tap from the next turn, and ramp spells' lands come in tapped when the card says so.
+ *   tap from the next turn (at once with haste), and ramp spells' lands come in tapped when the card says so;
+ *   ramp spells count every land they put onto the battlefield (two for Explosive Vegetation), and Cultivate's
+ *   second land goes to the hand (since 1.55).
  * Nothing else is counted: no opponents, no removal, no Treasure, rituals or cost reducers. It's a best case
  * to compare decks and changes by, not a promise.
  */
@@ -43,11 +45,26 @@ object ManaOddsCalc {
     private const val COLOURS = "WUBRG"
     private val BASIC_TYPES = mapOf("plains" to 'W', "island" to 'U', "swamp" to 'B', "mountain" to 'R', "forest" to 'G')
     private val symbol = Regex("\\{([^}]+)\\}")
-    private val tapAdd = Regex("\\{T\\}[^:.]*: Add", RegexOption.IGNORE_CASE)
+    // At the start of a line, so a Treasure's reminder text ("{T}, Sacrifice this token: Add one mana") doesn't count (since 1.55).
+    private val tapAdd = Regex("^(?:\\{[^}]+\\}, )?\\{T\\}[^:.]*: Add", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
     private val rampSearch = Regex(
         "search your library for (up to )?(a|an|one|two)[^.]*(land|plains|island|swamp|mountain|forest) cards?[^.]*onto the battlefield",
         RegexOption.IGNORE_CASE,
     )
+    private val tapAddLine = Regex("^\\{T\\}: Add (.*)$", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
+    private val manaSymbol = Regex("\\{[WUBRGC]\\}")
+    private val hasteLine = Regex("^haste\\b", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
+
+    /** The most mana one "{T}: Add …" ability makes: {C}{C} or {R}{R} is 2, "two mana in any combination" 2. Since 1.55. */
+    private fun manaAmount(text: String): Int = tapAddLine.findAll(text).maxOfOrNull { m ->
+        val what = m.groupValues[1].substringBefore('.').substringBefore(" or ")
+        when {
+            what.startsWith("two mana", true) -> 2
+            what.startsWith("three mana", true) -> 3
+            // Only symbols written together: "{C}{C}" is two mana, "{B}, {R}, or {G}" one of three.
+            else -> Regex("^(?:\\{[WUBRGC]\\})+").find(what)?.value?.let { v -> manaSymbol.findAll(v).count() } ?: 1
+        }
+    }?.coerceAtLeast(1) ?: 1
 
     /** A mana cost as generic mana and coloured pips, each pip the colours that can pay it. */
     data class Cost(val generic: Int, val pips: List<Set<Char>>) {
@@ -80,8 +97,20 @@ object ManaOddsCalc {
 
     internal enum class Kind { LAND, ROCK, CREATURE, RAMP, SPELL }
 
-    /** What a card does for the mana: also used by the win turn ([WinOddsCalc], since 1.52). */
-    internal class Card(val kind: Kind, val colours: Set<Char>, val tapped: Boolean, val cost: Cost, val amount: Int)
+    /**
+     * What a card does for the mana: also used by the win turn ([WinOddsCalc], since 1.52). [amount]: the mana it
+     * makes, or the lands a ramp spell puts onto the battlefield; [toHand]: a ramp spell also puts a land into the hand;
+     * [haste]: a mana creature that can tap the turn it comes in (since 1.55).
+     */
+    internal class Card(
+        val kind: Kind,
+        val colours: Set<Char>,
+        val tapped: Boolean,
+        val cost: Cost,
+        val amount: Int,
+        val toHand: Boolean = false,
+        val haste: Boolean = false,
+    )
 
     /** A mana source on the battlefield: what it makes, how much, and from which turn. */
     private class Source(val colours: Set<Char>, val amount: Int, val from: Int)
@@ -151,14 +180,18 @@ object ManaOddsCalc {
         val type = c.typeLine ?: c.types
         val produced = c.producedMana.orEmpty().filter { it in own || it == 'C' }.toSet()
         if (produced.isNotEmpty() && c.cmc <= 4 && tapAdd.containsMatchIn(text) && ("Artifact" in type || "Creature" in type)) {
-            val amount = if (Regex("Add \\{C\\}\\{C\\}").containsMatchIn(text)) 2 else 1
-            return Card(if ("Creature" in type) Kind.CREATURE else Kind.ROCK, produced, false, cost(c.manaCost), amount)
+            val creature = "Creature" in type
+            val amount = if (Regex("Add \\{C\\}\\{C\\}").containsMatchIn(text)) 2 else manaAmount(text)
+            return Card(if (creature) Kind.CREATURE else Kind.ROCK, produced, false, cost(c.manaCost), amount, haste = creature && hasteLine.containsMatchIn(text))
         }
         if (c.cmc <= 4 && ("Sorcery" in type || "Instant" in type) && rampSearch.containsMatchIn(text)) {
             val what = rampSearch.find(text)!!.value.lowercase()
             val named = BASIC_TYPES.filterKeys { it in what }.values.filter { it in own }.toSet()
             val colours = named.ifEmpty { own }.ifEmpty { setOf('C') }
-            return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in text.lowercase(), cost(c.manaCost), 1)
+            // "Put one onto the battlefield tapped and the other into your hand" (Cultivate); else up to two lands.
+            val split = "put one onto the battlefield" in what
+            val lands = if (!split && rampSearch.find(text)!!.groupValues[2].lowercase() == "two") 2 else 1
+            return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in text.lowercase(), cost(c.manaCost), lands, toHand = split)
         }
         return Card(Kind.SPELL, emptySet(), false, Cost(0, emptyList()), 0)
     }
@@ -210,10 +243,13 @@ object ManaOddsCalc {
             pool.clear()
             pool += left
             hand.remove(card)
-            sources += when (card.kind) {
-                Kind.RAMP -> Source(card.colours, 1, if (card.tapped) turn + 1 else turn)
-                Kind.CREATURE -> Source(card.colours, card.amount, turn + 1)
-                else -> Source(card.colours, card.amount, turn)
+            when (card.kind) {
+                Kind.RAMP -> {
+                    repeat(card.amount) { sources += Source(card.colours, 1, if (card.tapped) turn + 1 else turn) }
+                    if (card.toHand) hand += Card(Kind.LAND, card.colours, false, Cost(0, emptyList()), 1)
+                }
+                Kind.CREATURE -> sources += Source(card.colours, card.amount, if (card.haste) turn else turn + 1)
+                else -> sources += Source(card.colours, card.amount, turn)
             }
         }
     }

@@ -122,8 +122,9 @@ them (they stay open or folded for every deck).
 - **Casting the commander** (since 1.46): a table of the chance, turn by turn (1–7), that the commander can be cast,
   and that each of the deck's colours (and all of them together) is there. The app plays the deck alone 10,000 times
   (a few seconds' work on the phone): a Commander mulligan (one free, then London), a draw each turn (also on turn 1),
-  a land each turn (tapped lands come in tapped) and the mana rocks, mana creatures (from the next turn) and land ramp
-  spells costing up to 4 cast when they can be. No opponents, removal, Treasure, rituals or cost reducers, so it's a
+  a land each turn (tapped lands come in tapped) and the mana rocks, mana creatures (from the next turn, at once with
+  haste) and land ramp spells costing up to 4 cast when they can be (since 1.55 every land they put onto the
+  battlefield counts, two for Explosive Vegetation, and Cultivate's other land goes to the hand). No opponents, removal, Treasure, rituals or cost reducers, so it's a
   best case to compare decks and changes by. **How?** explains it and links to Frank Karsten's mana base article, whose
   method it follows with the deck's own cards.
 - **Winning the game** (since 1.52): the first turn the deck can win (1% of games or more, in **green**), the turn it
@@ -160,10 +161,35 @@ them (they stay open or folded for every deck).
   a permanent an artifact, and the payoffs (Marionette Master, Titania, Baloth Prime and its stun counters, Mazirek,
   lands that leave tokens, fabricate); **X spells** draining each opponent (Exsanguinate, Jaya's Immolating Inferno)
   with the mana left, first when a "first spell each turn" trigger makes them the biggest spell, and Double Vision
-  copying the first instant or sorcery. Under the table: where the damage came from (combat, commander damage,
+  copying the first instant or sorcery. Since 1.55 also:
+  - **mana**: ramp spells' every land; **Treasures** as one-use mana (Ganax's for each Dragon, Goldspan's two, Xorn);
+    cost reducers ("Dragon spells you cast cost {2} less", affinity, improvise); Urza's and Jaheira's mana; lands and
+    rocks pay first, a mana creature only taps when its mana is needed, and a creature that taps for mana or an
+    ability (Vohar's loot, Tawnos's copies) **doesn't attack** that turn; Gilanra taps for 6-drops and draws;
+  - **pumps**: team pumps from creatures entering or attacking (End-Raze Forerunners, Jubilation), **+X/+X for each
+    creature** (Craterhoof, Moonshaker Cavalry), lords of a creature type ("Spirits you control get +1/+0"), pumps
+    paid with the mana left (Lathliss), an attacker's own pump (Ruby's +2/+2), **Haunted One** (+2/+0 for the
+    commander's creature type), haste for many (Rhythm of the Wild, Hofri, Dragon Tempest), myriad;
+  - **damage**: life loss inside longer sentences ("each opponent discards a card and loses 2 life"), "enters or
+    attacks" (Archon of Cruelty), X for the number of Dragons (Dragon Tempest, Scourge of Valkas), devotion (Gray
+    Merchant), Terror of the Peaks, landfall tokens and counters (Omnath, Avenger of Zendikar), token and death drains,
+    attack triggers only when the creature attacks (Cloud's cards and Treasures, Teval's mill);
+  - **the graveyard**: mill, looting (the discard picked by rules: in a deck that reanimates a creature it can't cast
+    soon, then spare lands), surveil; **reanimation** (the creature worth most, mass reanimation such as Living Death and
+    Patriarch's Bidding when the graveyard is worth it), casting from the graveyard (Rivaz, Chainer, flashback),
+    "whenever cards leave your graveyard" (Teval's Zombies, Quintorius's Spirits), discard payoffs, Varina;
+  - **copies and cheating**: flicker and token copies of the creature worth most on entering (Ghostly Flicker,
+    Replication Technique), Tawnos's abilities, polymorph (Jace's −3, Mass Polymorph), Sneak Attack, X token spells;
+  - **planeswalkers** (their starting loyalty from Scryfall) use one loyalty ability a turn, a − one when it pays off;
+  - **Clues and cards drawn**: Clues cracked with the mana left, "whenever you draw your second card each turn"
+    (Morska, Alandra), Tangletrove Kelp, Mechanized Production and Hellkite Tyrant as wins, the monarch;
+  - **+1/+1 counters**: Leonardo, Mutagens, Corpsejack Menace, High Score, Raphael, counters when attacking;
+  - **the opponents' draw steps**: Howling Mine and the like, so "a player draws their second card" (The Council of
+    Four), Faerie Mastermind, Scrawling Crawler count.
+  Under the table: where the damage came from (combat, commander damage,
   triggers, drain), how often a combo or Maze's End won, and how often commander damage knocked a player out. Decks
   that don't win 4 in 10 games by turn 15 show **T15+** with a note: their damage likely comes from what the app can't
-  read (a commander's own ability, opponents' spells, free spells). No opponents, removal or blockers, so it's a best case to compare decks by. **How?** lists what was
+  read (a commander's own ability, opponents' spells, free spells). The opponents only draw their cards; no removal or blockers, so it's a best case to compare decks by. **How?** lists what was
   counted. Worked out in the background (a few seconds) and kept on the phone until the deck, its card details or its
   combos change.
 

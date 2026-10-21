@@ -201,7 +201,7 @@ class Release146EditTest {
         createVersion21(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-146.db")
-            .addMigrations(AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24)
+            .addMigrations(AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

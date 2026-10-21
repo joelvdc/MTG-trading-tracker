@@ -16,6 +16,8 @@ data class StatsCard(
     val tokens: String?,
     /** Power and toughness, e.g. "2/2" (the front face's; "*" where it varies); for the win turn. Since 1.52. */
     val powerToughness: String? = null,
+    /** A planeswalker's starting loyalty ("4"), for the win turn. Since 1.55. */
+    val loyalty: String? = null,
 ) {
     private val faceTypes get() = (typeLine?.takeIf { it.isNotEmpty() } ?: types).split(" // ")
 

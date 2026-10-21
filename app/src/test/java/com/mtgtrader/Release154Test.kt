@@ -196,7 +196,8 @@ class Release154Test {
         val plain = WinOddsCalc.calculate(listOf(baba, forest, swamps, relic), "BG", emptyList(), games = 1000)!!
         val elixir = card("Thousand-Year Elixir", "Artifact", "{3}", "You may activate abilities of creatures you control as though those creatures had haste.\n{1}, {T}: Untap target creature.", quantity = 10)
         val untapped = WinOddsCalc.calculate(listOf(baba, forest, swamps, relic.copy(quantity = 29), elixir), "BG", emptyList(), games = 1000)!!
-        assertTrue("plain ${plain.byTurn}, untapped ${untapped.byTurn}", untapped.byTurn[14] > plain.byTurn[14] + 20)
+        // About 20 points apart over many games (1.55 checked it with 8,000), so the 1,000 here asks for 15.
+        assertTrue("plain ${plain.byTurn}, untapped ${untapped.byTurn}", untapped.byTurn[14] > plain.byTurn[14] + 15)
         assertTrue(untapped.counted.sacrifice > 0)
     }
 }

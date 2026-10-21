@@ -48,6 +48,11 @@ data class CardInfo(
     val tokens: String? = null,
     /** Power and toughness, e.g. "1/1" (the front face's); for naming tokens. Since 1.44. */
     val powerToughness: String? = null,
+    /**
+     * A planeswalker's starting loyalty as Scryfall writes it ("4", "X"; the front face's), empty for a planeswalker
+     * without one, null for other cards and details saved before 1.55; for the win turn. Since 1.55.
+     */
+    val loyalty: String? = null,
 ) {
     val isLand get() = "Land" in typeLine.substringBefore(" // ")
 
@@ -88,13 +93,15 @@ interface CardInfoDao {
 
     /**
      * Printings in the collection, wishlist or decks without details yet (not wishlist cards still waiting for
-     * theirs), and decks' printings whose details were saved before mana costs (1.43) or the mana they make (1.44) were.
+     * theirs), and decks' printings whose details were saved before mana costs (1.43) or the mana they make (1.44) were,
+     * or planeswalkers saved before their loyalty was (1.55).
      */
     @Query(
         """SELECT DISTINCT scryfallId FROM (
              SELECT scryfallId FROM collection UNION SELECT scryfallId FROM wishlist UNION SELECT scryfallId FROM deck_cards
            ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info) AND scryfallId NOT LIKE '00000000-0000-0000-0000-%'
-           UNION SELECT scryfallId FROM card_info WHERE (manaCost IS NULL OR producedMana IS NULL) AND scryfallId IN (SELECT scryfallId FROM deck_cards)"""
+           UNION SELECT scryfallId FROM card_info WHERE (manaCost IS NULL OR producedMana IS NULL OR (loyalty IS NULL AND typeLine LIKE '%Planeswalker%'))
+             AND scryfallId IN (SELECT scryfallId FROM deck_cards)"""
     )
     suspend fun missing(): List<String>
 
@@ -102,7 +109,7 @@ interface CardInfoDao {
     @Query(
         """SELECT d.name AS name, d.scryfallId AS scryfallId, d.quantity AS quantity, d.cmc AS cmc, d.types AS types, d.commander AS commander,
                   c.typeLine AS typeLine, c.manaCost AS manaCost, c.producedMana AS producedMana, c.oracleText AS oracleText, c.tokens AS tokens,
-                  c.powerToughness AS powerToughness
+                  c.powerToughness AS powerToughness, c.loyalty AS loyalty
            FROM deck_cards d LEFT JOIN card_info c ON c.scryfallId = d.scryfallId
            WHERE d.deckId = :deckId AND d.maybeboard = 0"""
     )
@@ -112,7 +119,7 @@ interface CardInfoDao {
     @Query(
         """SELECT d.name AS name, d.scryfallId AS scryfallId, d.quantity AS quantity, d.cmc AS cmc, d.types AS types, d.commander AS commander,
                   c.typeLine AS typeLine, c.manaCost AS manaCost, c.producedMana AS producedMana, c.oracleText AS oracleText, c.tokens AS tokens,
-                  c.powerToughness AS powerToughness
+                  c.powerToughness AS powerToughness, c.loyalty AS loyalty
            FROM deck_cards d LEFT JOIN card_info c ON c.scryfallId = d.scryfallId
            WHERE d.deckId = :deckId AND d.maybeboard = 0"""
     )
@@ -206,6 +213,7 @@ fun ScryCard.toInfo() = CardInfo(
     oracleText = oracleText ?: cardFaces?.joinToString(CardInfo.FACE_BREAK) { it.oracleText.orEmpty() },
     tokens = TokenPart.encode(TokenPart.of(this)),
     powerToughness = (power ?: cardFaces?.firstOrNull()?.power)?.let { p -> "$p/${toughness ?: cardFaces?.firstOrNull()?.toughness.orEmpty()}" },
+    loyalty = (loyalty ?: cardFaces?.firstOrNull()?.loyalty) ?: "".takeIf { "Planeswalker" in typeLine.ifEmpty { cardFaces?.firstOrNull()?.typeLine.orEmpty() } },
 )
 
 /** A card name and its mana cost. Since 1.43. */
