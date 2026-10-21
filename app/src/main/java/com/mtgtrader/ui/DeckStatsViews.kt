@@ -572,23 +572,29 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
     if (about) {
         val n = win.counted
         Note(
-            "The app plays the deck alone, with the mana as for casting the commander. Each turn it casts its commander, " +
-                "creatures, token makers, equipment and auras and the cards that deal damage, the most expensive first; it puts " +
+            "The app plays the deck alone, with the mana as for casting the commander, every land of a ramp spell and " +
+                "Treasures. Each turn it casts its commander, creatures, token makers, equipment and auras and the cards that deal " +
+                "damage, the most expensive first; uses tap and loyalty abilities, Clues and Mutagens with the mana left; it puts " +
                 "the equipment and auras on its commander (or else its biggest creature), keeps pump spells for combat and " +
-                "attacks with everything that can (nobody blocks). It wins when all three opponents are at 0, a commander has " +
-                "dealt 21 damage to each, a combo wins" + (if (n.mazeEnd) " or Maze's End finds its tenth Gate" else "") +
+                "attacks with everything that can (nobody blocks; a creature that tapped for mana or an ability stays back). " +
+                "The opponents only draw their cards (for Howling Mine and the like). It wins when all three opponents are at 0, " +
+                "a commander has dealt 21 damage to each, a combo wins" + (if (n.mazeEnd) " or Maze's End finds its tenth Gate" else "") +
                 ". Counted: ${n.creatures} creatures, ${n.tokenMakers} token makers, " +
                 "${n.triggers} damage triggers (casting spells, creatures or lands entering), ${n.drains} drain or burn cards, " +
-                "${n.gear} equipment and auras, ${n.pumps} pump spells" +
+                "${n.gear} equipment and auras, ${n.pumps} pumps" +
                 (if (n.counting > 0) ", ${n.counting} cards that count what's on the battlefield (\"for each Shrine you control\") or trigger when a kind of permanent enters" else "") +
                 (if (n.sacrifice > 0) ", ${n.sacrifice} cards that make sacrifices pay or untap the creature that sacrifices" else "") +
                 (if (n.xSpells > 0) ", ${n.xSpells} X spells (cast with the mana left)" else "") +
+                (if (n.graveyard > 0) ", ${n.graveyard} cards that fill or use the graveyard (mill, looting, reanimation, casting from it)" else "") +
+                (if (n.copies > 0) ", ${n.copies} cards that copy, flicker or cheat in creatures" else "") +
+                (if (n.planeswalkers > 0) ", ${n.planeswalkers} planeswalker(s) using a loyalty ability each turn" else "") +
+                (if (n.cascade > 0) ", ${n.cascade} cascade, discover or paradigm cards (the spells they find are cast for free)" else "") +
                 (if (n.combos.isEmpty()) ", and no combo that can win." else ", and combos that can win: ${n.combos.joinToString("; ")}.") +
                 (if (n.tutors > 0) " ${n.tutors} tutor(s) fetch a missing combo piece." else "") +
                 " A combo counts when its cards are at hand with the mana, it wins outright, its loop has a card that turns it " +
                 "into life loss, or it makes endless tokens (they win the turn after); what Commander Spellbook says it needs " +
                 "first must be there too (an opponent's creature is taken as there from turn 4)." +
-                " Not counted: removal, blockers and abilities the app can't read from the card text."
+                " Not counted: removal, blockers, what the opponents cast and abilities the app can't read from the card text."
         )
     }
     if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they don't count yet.")

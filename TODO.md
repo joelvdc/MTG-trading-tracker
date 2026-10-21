@@ -176,6 +176,53 @@ win for all decks, and look into the biggest differences (which cards one of the
 
 ## Done
 
+### The simulator reads ramp, Treasures, the graveyard, copies, planeswalkers, Clues and counters (MTG Trader 1.55)
+*Added 2026-10-21. MTG Trader only. Planned 2026-10-21; green light the same day ("A, one release, green light").*
+
+The owner's words: "For the Ruby deck is the simulator capturing the 2-4-7 ramp? … ETB effects that pump creatures and give
+trample? For quintorius deck, the commander generates tokens and can pump all the spirits. … Poly Jace deck commander's
+ability to cheat creatures into the battlefield … are etb effects accounted for? Important ones like the craterhoof in the
+Teval deck." Then: "Vohar Danse is also a deck that cheats creatures from the graveyard and has a lot of massive etb
+effects, the deck does not care about attacking with Vohar … The tawnos deck also mills while creating artifact copies and
+eventually reanimating … Is the Ganax deck accounting for the extra treasures when dragons come in and Ganax is on the
+battlefield? And also accounting for the Haunted One pump?" While it was being built the owner added (and approved:
+"You are free to work on a fix everytime you catch something that needs to be improved"): Deep Clue Sea (Morska's Clue
+and counters, "second card each turn" triggers), Gilanra as a mana creature that doesn't attack, Turtle Power
+(Leonardo's counters, "mana can be used … to pump all creatures"), Cloud (attack trigger's cards and Treasures at power
+7, free equip), Varina (attack loot, discards for mass reanimation), The Council of Four (cards drawn on the opponents'
+turns, Howling Mine), then cascade ("cascade triggers are accounted properly? Can impact Ruby's deck") and paradigm
+("Cards like improvisation capstone have paradigm, make sure that is also accounted for as it gets cast for free on
+following turns").
+
+Settled with the owner: planeswalker loyalty stored with the card details (**A**: a new card_info column, database 25,
+not synced), **one release**.
+
+What 1.55 reads (data/WinOdds.kt, data/ManaOdds.kt, from the card text): ramp spells' every land and Cultivate's land in
+hand (also in Casting the commander); Treasures as mana (Ganax, Goldspan, Xorn), cost reducers, affinity, improvise,
+Urza's and Jaheira's mana; lands and rocks pay first, a creature that taps for mana or an ability doesn't attack;
+team pumps on creatures, +X/+X per creature (Craterhoof), lords of a type, pumps with the mana left, Ruby's own pump,
+Haunted One, haste for many, myriad; life loss in longer sentences, "enters or attacks", X per Dragon, devotion, Terror
+of the Peaks, landfall tokens and counters, token and death drains, attack triggers only when attacking; a graveyard
+(mill, looting with discards picked by rules, surveil, reanimation incl. mass, casting from it, flashback, "cards leave
+your graveyard" tokens, discard payoffs); flicker, token copies, Tawnos, polymorph, Sneak Attack, X token spells;
+planeswalkers' loyalty abilities; Clues, the second card drawn each turn, Mechanized Production and Hellkite Tyrant
+wins, the monarch; +1/+1 counters (Leonardo, Mutagens, Corpsejack, High Score, Raphael); the opponents' draw steps
+(Howling Mine, Council of Four, Faerie Mastermind, Scrawling Crawler); cascade and discover (the spell found cast for
+free with its own triggers, so cascades chain; Monstrous Vortex, Maelstrom Nexus, Aurora Phoenix coming back, Sweet-Gum
+Recluse's counters), Improvisation Capstone, paradigm's free copy every turn. Rules version 4, so every deck is worked out
+again once; the 10,000 games run in four batches side by side. The How? note lists the new counts.
+
+Results with the owner's decks (4 in 10 games by, before → after; 10,000 games): Turtle Power 12 → 8, Deep Clue Sea
+12 → 9, Teval 12 → 9, Quintorius 12 → 9, Cloud 11 → 9, Zombies 11 → 9, Ruby 11 → 10 (first win turn 5: Jumbo
+Cactuar), Haunted Ganax 12 → 10, Tawnos' Army 12 → 10, Council of Four 13 → 11, Poly Jace 13 → 11, Smasher LCP
+13 → 12, Vohar Danse 11 → 11 (9 in 10 by 13 → 12); Taranika band, Auntie Plague, Baba, Cult of Athreos, Plague of
+Grismold, Omnath and Sarge the same. Cascade and paradigm on their own (added last): Ruby wins by turn 9 in 34 of 100
+games instead of 25 and by turn 10 in 66 instead of 56; Smasher gains 4–6 in 100 from turn 11; Omnath barely moves. Still not counted: opponents' spells and creatures (blockers, removal, Massacre
+Wurm, stealing), board wipes, dice, free spells other than cascade and discover (Etali), and abilities the patterns don't recognise.
+
+Health check: **changed**: Scryfall's `loyalty` (Jace, Multiverse Architect "4"; Quintorius, History Chaser "5").
+Released in MTG Trader 1.55 (2026-10-21).
+
 ### The win turn at 4 in 10 games, the first win highlighted, and a better simulator (MTG Trader 1.54)
 *Added 2026-10-20. MTG Trader only. Planned with mockups and a prototype on 2026-10-20; green light on 2026-10-21.*
 

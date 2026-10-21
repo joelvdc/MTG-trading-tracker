@@ -40,6 +40,8 @@ data class ScryFace(
     /** Since 1.44, for the deck stats. */
     val power: String? = null,
     val toughness: String? = null,
+    /** A planeswalker's starting loyalty ("4", "X"). Since 1.55, for the win turn. */
+    val loyalty: String? = null,
 )
 
 /** A card linked to another, e.g. a token it makes ("token") or a helper card like The Monarch ("combo_piece"). Since 1.44. */
@@ -105,6 +107,8 @@ data class ScryCard(
     @SerialName("all_parts") val allParts: List<ScryPart>? = null,
     val power: String? = null,
     val toughness: String? = null,
+    /** A planeswalker's starting loyalty ("4", "X"). Since 1.55, for the win turn. */
+    val loyalty: String? = null,
 ) {
     /** Rules text of every face. */
     val fullText: String get() = oracleText ?: cardFaces?.joinToString("\n") { it.oracleText.orEmpty() }.orEmpty()
