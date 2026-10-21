@@ -153,7 +153,7 @@ internal fun SmallBracketCard(deck: Deck, data: SaltCard?, win: WinOdds? = null,
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             SmallBracketTile("Baseline", deck.bracketBaseline)
             SmallBracketTile("Realistic", deck.bracketRealistic)
-            // The turn the deck usually wins by (since 1.52); "…" while it's worked out.
+            // The turn 4 in 10 games are won by (since 1.54; half the games in 1.52); "…" while it's worked out.
             if (deck.commanders.isNotBlank()) SpeedTile(win)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 if (data == null) {

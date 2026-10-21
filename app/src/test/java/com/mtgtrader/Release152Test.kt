@@ -158,14 +158,16 @@ class Release152Test {
     }
 
     @Test fun labelsAndWindow() {
-        val slow = WinOdds(10, List(15) { if (it == 14) 40 else 0 }, List(15) { 0 }, emptyMap(), 0, com.mtgtrader.data.WinCounted())
+        // Since 1.54 the label is the turn of 4 in 10 games: 39% by the last turn isn't enough.
+        val slow = WinOdds(10, List(15) { if (it == 14) 39 else 0 }, List(15) { 0 }, emptyMap(), 0, com.mtgtrader.data.WinCounted())
         assertEquals("T15+", slow.label)
         assertNull(slow.usual)
         assertEquals(8..15, slow.window)
         val fast = WinOdds(10, List(15) { t -> if (t >= 6) 100 else if (t >= 4) 60 else 0 }, List(15) { 0 }, mapOf("combat" to 70, "commander" to 30), 0, com.mtgtrader.data.WinCounted())
         assertEquals(5, fast.usual)
         assertEquals(7, fast.nineInTen)
-        assertEquals(1..8, fast.window)
+        // Since 1.54 the window starts at the first win (turn 5) and shows at least eight turns.
+        assertEquals(5..12, fast.window)
         assertEquals("Combat 70%, commander damage 30%.", fast.damageText)
     }
 

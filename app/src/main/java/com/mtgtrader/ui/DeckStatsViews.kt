@@ -2,36 +2,34 @@ package com.mtgtrader.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Style
-import androidx.compose.material3.OutlinedButton
-import com.mtgtrader.data.scryfallImage
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +37,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,11 +54,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -69,6 +72,7 @@ import com.mtgtrader.data.ColourSources
 import com.mtgtrader.data.DeckToken
 import com.mtgtrader.data.ManaCurve
 import com.mtgtrader.data.ScryCard
+import com.mtgtrader.data.scryfallImage
 import kotlin.math.roundToInt
 
 private fun colourName(c: Char) = when (c) {
@@ -489,15 +493,23 @@ internal fun CommanderOddsCard(odds: com.mtgtrader.data.ManaOdds?, missing: Int)
 }
 
 @Composable
-private fun OddsRow(labelWidth: androidx.compose.ui.unit.Dp, small: Boolean, label: @Composable () -> Unit, values: List<Int>) {
+private fun OddsRow(
+    labelWidth: androidx.compose.ui.unit.Dp,
+    small: Boolean,
+    label: @Composable () -> Unit,
+    values: List<Int>,
+    outlines: List<Color?> = emptyList(),
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(labelWidth).padding(end = 4.dp)) { label() }
         val primary = MaterialTheme.colorScheme.primary
-        values.forEach { v ->
+        values.forEachIndexed { i, v ->
             val strength = (v / 100f).coerceIn(0.08f, 1f)
+            val outline = outlines.getOrNull(i)
             Box(
                 Modifier.weight(1f).padding(1.dp).height(if (small) 24.dp else 26.dp).clip(RoundedCornerShape(4.dp))
-                    .background(primary.copy(alpha = strength * 0.85f)),
+                    .background(primary.copy(alpha = strength * 0.85f))
+                    .then(if (outline != null) Modifier.border(2.dp, outline, RoundedCornerShape(4.dp)) else Modifier),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -511,9 +523,9 @@ private fun OddsRow(labelWidth: androidx.compose.ui.unit.Dp, small: Boolean, lab
 }
 
 /**
- * When the deck can win (since 1.52): the turn it usually wins by and the turn of 9 in 10 games, the share of games
- * won by each turn (and by a combo, when it has one that wins), where the damage came from, and what was counted.
- * [win] is null while it's worked out.
+ * When the deck can win (since 1.52): the first turn it wins (green) and the turn of 4 in 10 games (gold) highlighted
+ * since 1.54, the turn of 9 in 10 games, the share of games won by each turn (and by a combo, when it has one that
+ * wins), where the damage came from, and what was counted. [win] is null while it's worked out.
  */
 @Composable
 internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = StatsCardBox("Winning the game") {
@@ -526,7 +538,8 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
         }
         return@StatsCardBox
     }
-    Text(winHeadline(win), style = MaterialTheme.typography.bodyMedium)
+    val marks = winMarks(win)
+    Text(winHeadline(win, marks), style = MaterialTheme.typography.bodyMedium)
     val turns = win.window
     val labelWidth = 72.dp
     Row {
@@ -535,18 +548,19 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
             Text(
                 "T$it",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = marks[it] ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (it in marks) FontWeight.Bold else null,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
             )
         }
     }
-    OddsRow(labelWidth, false, { Text("Win", style = MaterialTheme.typography.bodyMedium) }, turns.map { win.byTurn[it - 1] })
+    OddsRow(labelWidth, false, { Text("Win", style = MaterialTheme.typography.bodyMedium) }, turns.map { win.byTurn[it - 1] }, turns.map { marks[it] })
     if (win.comboShare > 0) {
         OddsRow(labelWidth, true, { Text("by combo", style = MaterialTheme.typography.bodyMedium) }, turns.map { win.byCombo[it - 1] })
     }
     Note(winDamageNote(win))
-    if (win.usual == null) Note(WIN_SLOW_NOTE)
+    if (win.fourInTen == null) Note(WIN_SLOW_NOTE)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Note(
             "% of games won by each turn, from ${"%,d".format(java.util.Locale.ROOT, win.games)} shuffles of this deck " +
@@ -562,9 +576,13 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
                 "creatures, token makers, equipment and auras and the cards that deal damage, the most expensive first; it puts " +
                 "the equipment and auras on its commander (or else its biggest creature), keeps pump spells for combat and " +
                 "attacks with everything that can (nobody blocks). It wins when all three opponents are at 0, a commander has " +
-                "dealt 21 damage to each, or a combo wins. Counted: ${n.creatures} creatures, ${n.tokenMakers} token makers, " +
+                "dealt 21 damage to each, a combo wins" + (if (n.mazeEnd) " or Maze's End finds its tenth Gate" else "") +
+                ". Counted: ${n.creatures} creatures, ${n.tokenMakers} token makers, " +
                 "${n.triggers} damage triggers (casting spells, creatures or lands entering), ${n.drains} drain or burn cards, " +
                 "${n.gear} equipment and auras, ${n.pumps} pump spells" +
+                (if (n.counting > 0) ", ${n.counting} cards that count what's on the battlefield (\"for each Shrine you control\") or trigger when a kind of permanent enters" else "") +
+                (if (n.sacrifice > 0) ", ${n.sacrifice} cards that make sacrifices pay or untap the creature that sacrifices" else "") +
+                (if (n.xSpells > 0) ", ${n.xSpells} X spells (cast with the mana left)" else "") +
                 (if (n.combos.isEmpty()) ", and no combo that can win." else ", and combos that can win: ${n.combos.joinToString("; ")}.") +
                 (if (n.tutors > 0) " ${n.tutors} tutor(s) fetch a missing combo piece." else "") +
                 " A combo counts when its cards are at hand with the mana, it wins outright, its loop has a card that turns it " +
@@ -576,17 +594,32 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
     if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they don't count yet.")
 }
 
-/** "Usually wins by turn 11; 9 in 10 games by turn 13. Fastest 1 in 10: turn 9." */
-internal fun winHeadline(win: com.mtgtrader.data.WinOdds): String {
-    val usual = win.usual ?: return "Not by turn ${win.turns} in most games: ${win.byTurn.last()}% of games by turn ${win.turns}."
-    return "Usually wins by turn $usual" + (win.nineInTen?.let { "; 9 in 10 games by turn $it" } ?: "") + "." +
-        (win.fastest?.takeIf { it < usual }?.let { " Fastest 1 in 10: turn $it." } ?: "")
+/** The first win's colour (green, darker on light backgrounds); 4 in 10 games take the theme's gold. Since 1.54. */
+@Composable
+internal fun firstWinColour() = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color(0xFF5DCAA5) else Color(0xFF1E7A52)
+
+/** The highlighted turns and their colours: the first win, and 4 in 10 games (gold wins when they're the same turn). */
+@Composable
+internal fun winMarks(win: com.mtgtrader.data.WinOdds): Map<Int, Color> = buildMap {
+    win.firstWin?.let { put(it, firstWinColour()) }
+    win.fourInTen?.let { put(it, MaterialTheme.colorScheme.primary) }
+}
+
+/** "Can win from turn 6. 4 in 10 games by turn 11; 9 in 10 by turn 13.", the two turns in their colours. */
+internal fun winHeadline(win: com.mtgtrader.data.WinOdds, marks: Map<Int, Color> = emptyMap()) = buildAnnotatedString {
+    fun turn(t: Int) = marks[t]?.let { c -> withStyle(SpanStyle(color = c, fontWeight = FontWeight.Bold)) { append("turn $t") } } ?: append("turn $t")
+    win.firstWin?.let { append("Can win from "); turn(it); append(". ") }
+    win.fourInTen?.let { append("4 in 10 games by "); turn(it) }
+        ?: append("Not 4 in 10 games by turn ${win.turns}: ${win.byTurn.last()}% by then")
+    win.nineInTen?.let { append("; 9 in 10 by turn $it") }
+    append(".")
 }
 
 /** "Damage: combat 52%, commander damage 48%. A combo wins 25% of games. A commander knocked a player out in 79% of the wins." */
 internal fun winDamageNote(win: com.mtgtrader.data.WinOdds): String = buildString {
     if (win.damageText.isNotEmpty()) append("Damage: ").append(win.damageText.replaceFirstChar(Char::lowercase))
     if (win.comboShare > 0) append(" A combo wins ${win.comboShare}% of games.")
+    if (win.mazeShare > 0) append(" Maze's End wins ${win.mazeShare}% of games.")
     if (win.commanderKnockouts >= 5) append(" Commander damage knocked a player out in ${win.commanderKnockouts}% of the wins.")
 }.trim()
 
