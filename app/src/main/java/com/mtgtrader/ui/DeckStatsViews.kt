@@ -588,6 +588,7 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
                 (if (n.graveyard > 0) ", ${n.graveyard} cards that fill or use the graveyard (mill, looting, reanimation, casting from it)" else "") +
                 (if (n.copies > 0) ", ${n.copies} cards that copy, flicker or cheat in creatures" else "") +
                 (if (n.planeswalkers > 0) ", ${n.planeswalkers} planeswalker(s) using a loyalty ability each turn" else "") +
+                (if (n.cascade > 0) ", ${n.cascade} cascade, discover or paradigm cards (the spells they find are cast for free)" else "") +
                 (if (n.combos.isEmpty()) ", and no combo that can win." else ", and combos that can win: ${n.combos.joinToString("; ")}.") +
                 (if (n.tutors > 0) " ${n.tutors} tutor(s) fetch a missing combo piece." else "") +
                 " A combo counts when its cards are at hand with the mana, it wins outright, its loop has a card that turns it " +

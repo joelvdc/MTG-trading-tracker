@@ -293,4 +293,43 @@ class Release155Test {
         assertEquals(7, cloud.onAttack.powerAtLeast)
         assertFalse(cloud.drawTurn > 0)
     }
+
+    @Test fun cascadeDiscoverAndParadigm() {
+        assertEquals(4, classify(card("Apex Devastator", "Creature — Chimera Hydra", "{8}{G}{G}",
+            "Cascade, cascade, cascade, cascade (When you cast this spell, exile cards from the top of your library until you exile a nonland card that costs less. You may cast it without paying its mana cost. Put the exiled cards on the bottom in a random order. Multiple instances of cascade each trigger separately.)", "10/10")).cascade)
+        val phoenix = classify(card("Aurora Phoenix", "Creature — Phoenix", "{4}{R}{R}",
+            "Flying\nCascade (When you cast this spell, exile cards from the top of your library until you exile a nonland card that costs less. You may cast it without paying its mana cost. Put the exiled cards on the bottom in a random order.)\nWhenever you cast a spell with cascade, return this card from your graveyard to your hand.", "5/3"))
+        assertEquals(1, phoenix.cascade)
+        assertTrue(phoenix.cascadeReturn)
+        assertEquals(5, classify(card("Monstrous Vortex", "Enchantment", "{2}{R}{G}",
+            "Whenever you cast a creature spell with power 5 or greater, discover X, where X is that spell's mana value. (Exile cards from the top of your library until you exile a nonland card with that mana value or less. Cast it without paying its mana cost or put it into your hand. Put the rest on the bottom in a random order.)")).discoverPower)
+        assertEquals(5, classify(card("Trumpeting Carnosaur", "Creature — Dinosaur", "{4}{R}{R}",
+            "Trample\nWhen this creature enters, discover 5.\n{2}{R}, Discard this card: It deals 3 damage to target creature or planeswalker.", "7/6")).discover)
+        assertEquals(3, classify(card("Sweet-Gum Recluse", "Creature — Spider", "{4}{G}{G}",
+            "Flash\nCascade\nReach\nWhen this creature enters, put three +1/+1 counters on each of any number of target creatures that entered this turn.", "0/3")).newCounters)
+        assertTrue(classify(card("Maelstrom Nexus", "Enchantment", "{W}{U}{B}{R}{G}",
+            "The first spell you cast each turn has cascade. (When you cast your first spell, exile cards from the top of your library until you exile a nonland card that costs less. You may cast it without paying its mana cost. Put the exiled cards on the bottom in a random order.)")).cascadeFirst)
+        val capstone = classify(card("Improvisation Capstone", "Sorcery — Lesson", "{5}{R}{R}",
+            "Exile cards from the top of your library until you exile cards with total mana value 4 or greater. You may cast any number of spells from among them without paying their mana costs.\nParadigm (Then exile this spell. After you first resolve a spell with this name, you may cast a copy of it from exile without paying its mana cost at the beginning of each of your first main phases.)"))
+        assertEquals(4, capstone.capstone)
+        assertTrue(capstone.paradigm)
+
+        // A deck of big cascade creatures wins sooner than the same deck without cascade.
+        val commander = card("Leader", "Legendary Creature — Human", "{G}", "", "1/1", commander = true)
+        val small = card("Small", "Creature — Beast", "{2}{G}", "", "3/3", quantity = 25)
+        val big = card("Big", "Creature — Beast", "{4}{G}{G}", "Cascade (When you cast this spell, exile cards from the top of your library until you exile a nonland card that costs less.)", "5/5", quantity = 25)
+        val lands = forest.copy(quantity = 49)
+        val cascading = WinOddsCalc.calculate(listOf(commander, small, big, lands), "G", emptyList(), games = 1000)!!
+        val plain = WinOddsCalc.calculate(listOf(commander, small, big.copy(oracleText = ""), lands), "G", emptyList(), games = 1000)!!
+        assertTrue("${cascading.byTurn} vs ${plain.byTurn}", cascading.byTurn[9] > plain.byTurn[9] + 5)
+
+        // Paradigm: once resolved, a free copy every turn after.
+        val lesson = card("Lesson", "Sorcery — Lesson", "{2}{B}", "Each opponent loses 4 life.\nParadigm (Then exile this spell.)", quantity = 4)
+        val swamps = card("Swamp", "Basic Land — Swamp", "", "", quantity = 45, produced = "B")
+        val vanilla = card("Vanilla", "Creature — Human", "{1}{B}", "", "2/2", quantity = 50)
+        val boss = card("Boss", "Legendary Creature — Human", "{B}", "", "1/1", commander = true)
+        val withParadigm = WinOddsCalc.calculate(listOf(boss, lesson, vanilla, swamps), "B", emptyList(), games = 1000)!!
+        val without = WinOddsCalc.calculate(listOf(boss, lesson.copy(oracleText = "Each opponent loses 4 life."), vanilla, swamps), "B", emptyList(), games = 1000)!!
+        assertTrue("${withParadigm.byTurn} vs ${without.byTurn}", withParadigm.byTurn[9] > without.byTurn[9] + 5)
+    }
 }

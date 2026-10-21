@@ -93,6 +93,8 @@ data class WinCounted(
     val copies: Int = 0,
     /** Planeswalkers, with the loyalty abilities the win turn reads (since 1.55). */
     val planeswalkers: Int = 0,
+    /** Cascade, discover and paradigm cards (since 1.55). */
+    val cascade: Int = 0,
 )
 
 /**
@@ -131,7 +133,9 @@ data class WinCounted(
  *   then spare lands), surveil; reanimation (the creature worth most, mass reanimation when it's worth it), casting
  *   from the graveyard, flashback, "whenever cards leave your graveyard" (Teval, Quintorius), discard payoffs;
  * - copies and flicker of the creature worth most on entering, Tawnos's abilities, polymorph (Jace), Sneak Attack,
- *   X spells making tokens; planeswalkers using one loyalty ability a turn.
+ *   X spells making tokens; planeswalkers using one loyalty ability a turn;
+ * - cascade and discover (the spell found cast for free, with its own triggers), Improvisation Capstone, paradigm (a
+ *   free copy every turn after).
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -284,6 +288,10 @@ object WinOddsCalc {
     )
     private val enterTrigger = Regex("^whenever (another )?(nontoken )?(creature|land)( card)? (you control )?enters(?! the battlefield under an opponent)", RegexOption.IGNORE_CASE)
     private val keywordLine = Regex("^[a-z ,'-]+$")
+    private val discoverPower = Regex("^whenever you cast a creature spell with power (\\d+) or greater, discover x, where x is that spell's mana value")
+    private val discoverEnter = Regex("^when [^,]*enters[^,]*, discover (\\d+)\\.?$")
+    private val capstone = Regex("^exile cards from the top of your library until you exile cards with total mana value (\\d+) or greater\\. you may cast any number of spells from among them")
+    private val newCounters = Regex("^when [^,]*enters, put (\\w+) \\+1/\\+1 counters on each of any number of target creatures that entered this turn")
     private val gearGets = Regex("(?:equipped|enchanted) creature gets \\+(\\d+)/\\+\\d+(?! for each)", RegexOption.IGNORE_CASE)
     private val gearForEach = Regex("(?:equipped|enchanted) creature gets \\+1/\\+\\d+ for each ([^.]*)", RegexOption.IGNORE_CASE)
     private val gearBase = Regex("(?:equipped|enchanted) creature has base power and toughness (\\d+)/\\d+", RegexOption.IGNORE_CASE)
@@ -770,6 +778,20 @@ object WinOddsCalc {
         /** Cyberdrive Awakener: noncreature artifacts become 4/4s this turn. Rise and Shine: one becomes a creature with four counters. */
         var animateArtifacts = 0
         var riseAndShine = 0
+        /**
+         * Cascade (once for each), "the first spell you cast each turn has cascade" (Maelstrom Nexus), discover when it
+         * enters, discover for a creature spell with this power or more (Monstrous Vortex), the mana value Improvisation
+         * Capstone exiles, back to the hand when a cascade spell is cast (Aurora Phoenix), and counters on each creature
+         * that entered this turn (Sweet-Gum Recluse). Paradigm: once it has resolved, a free copy each turn.
+         */
+        var cascade = 0
+        var cascadeFirst = false
+        var discover = 0
+        var discoverPower = 0
+        var capstone = 0
+        var cascadeReturn = false
+        var newCounters = 0
+        var paradigm = false
 
         val land get() = mana.kind == ManaOddsCalc.Kind.LAND
         val gearBonus get() = bonus > 0 || forEach != null || base != null || grantsDouble || grantsHaste
@@ -796,7 +818,8 @@ object WinOddsCalc {
                 extraFood || extraMutagen || investigateExtra || manaPer != null || improvise || foodMana || tapTwoDraw || drawnAnthem ||
                 combatCountersDrawn || drawDouble || endDrawIfToken || counterPlus > 0 || counterTimes || counterDamage || counterDraw ||
                 drawCounter || doubleCountered || attackersDouble || entersWithCounters > 0 || counteredHitDraw || madeOnce.isNotEmpty() ||
-                madeTurn.isNotEmpty() || madeLandfall.isNotEmpty() || truce || animateArtifacts > 0 || riseAndShine > 0 || monarch
+                madeTurn.isNotEmpty() || madeLandfall.isNotEmpty() || truce || animateArtifacts > 0 || riseAndShine > 0 || monarch ||
+                cascade > 0 || cascadeFirst || discover > 0 || discoverPower > 0 || capstone > 0 || newCounters > 0 || paradigm
         }
 
         /** Every ability it has (to freeze them once it's read). */
@@ -1187,6 +1210,8 @@ object WinOddsCalc {
             val words = low.split(", ")
             if ("haste" in words) w.haste = true
             if ("double strike" in words) w.double = true
+            w.cascade += words.count { it == "cascade" }
+            if ("paradigm" in words) w.paradigm = true
             return
         }
         if (readSpecial(w, line, low)) return
@@ -1324,6 +1349,13 @@ object WinOddsCalc {
         val short = Regex.escape(w.name.substringBefore(',').lowercase())
         val full = Regex.escape(w.name.lowercase())
         fun after(m: MatchResult, group: Int) = line.substring(m.groups[group]!!.range.first)
+        // Cascade and discover (since 1.55).
+        if ("the first spell you cast each turn has cascade" in low) { w.cascadeFirst = true; return true }
+        discoverPower.find(low)?.let { w.discoverPower = it.groupValues[1].toInt(); return true }
+        discoverEnter.find(low)?.let { w.discover = it.groupValues[1].toInt(); return true }
+        capstone.find(low)?.let { w.capstone = it.groupValues[1].toInt(); return true }
+        if ("whenever you cast a spell with cascade, return this card from your graveyard to your hand" in low) { w.cascadeReturn = true; return true }
+        newCounters.find(low)?.let { w.newCounters = number(it.groupValues[1]); return true }
         // Items 9–11 (since 1.55): the second card drawn each turn, opponents drawing, group draw, casting a kind of
         // spell, creatures entering, combat damage, Clues, counters, second main phase.
         secondDraw.find(low)?.let { m ->
@@ -1633,6 +1665,7 @@ object WinOddsCalc {
                 graveyard = all.count { it.graveyardUse },
                 copies = all.count { it.copyUse },
                 planeswalkers = all.count { it.planeswalker && it.loyalties.isNotEmpty() },
+                cascade = all.count { it.cascade > 0 || it.cascadeFirst || it.discover + it.discoverPower + it.capstone > 0 || it.paradigm },
             ),
             byMaze = if (byMaze.any { it > 0 }) cumulative(byMaze) else emptyList(),
         )
@@ -1772,6 +1805,7 @@ object WinOddsCalc {
         val sneak = cards.any { it.sneakCost != null }
         val xTokens = cards.any { it.xTokens > 0 }
         val drawDouble = cards.any { it.drawDouble }
+        val cascade = cards.any { it.cascadeFirst || it.discoverPower > 0 || it.cascadeReturn }
     }
 
     /** One game, played alone turn by turn. */
@@ -1817,6 +1851,10 @@ object WinOddsCalc {
         var equipFreeUsed = false
         /** How deep cards entering have set off more of them (a guard against loops). */
         var entering = 0
+        /** The same for cascade and discover. */
+        var cascading = 0
+        /** Paradigm spells that have resolved: a copy of each is cast for free every first main phase. */
+        val paradigms = ArrayList<WinCard>()
 
         fun mainOptions() = (command + hand).filter { useful(it, spellTriggers, creatureTriggers, fodder) && ready(it) }
             .sortedWith(compareByDescending<WinCard> { it in command }.thenByDescending { it.manaValue })
@@ -2422,8 +2460,8 @@ object WinOddsCalc {
             landEntered(e)
         }
 
-        fun cast(c: WinCard, free: Boolean = false, x: Int = 0, fromGraveyard: Boolean = false): Int {
-            if (!command.remove(c)) if (!hand.remove(c) && fromGraveyard) leftGraveyard(listOf(c))
+        fun cast(c: WinCard, free: Boolean = false, x: Int = 0, fromGraveyard: Boolean = false, copy: Boolean = false): Int {
+            if (!copy && !command.remove(c)) if (!hand.remove(c) && fromGraveyard) leftGraveyard(listOf(c))
             if (!free) for (b in board) b.card?.castTriggers?.forEach { t ->
                 if (t.firstOnly && spells > 0) return@forEach
                 if (t.filter == Filter.CREATURE && !c.creature || t.filter == Filter.NONCREATURE && c.creature) return@forEach
@@ -2436,6 +2474,12 @@ object WinOddsCalc {
                     if (spells == 2 && p.onSecondSpell.any) use(p.onSecondSpell, b)
                     for ((kind, a) in p.onCast) if (castKind(c, kind) && (!a.oncePerTurn || firedThisTurn.add(b to a))) use(a, b)
                 }
+                // Cascade and discover (since 1.55): Apex Devastator four times, Maelstrom Nexus on the first spell each turn,
+                // Monstrous Vortex on a creature spell with power 5 or more. Aurora Phoenix comes back to the hand.
+                val cascades = c.cascade + if (f.cascade && spells == 1 && board.any { it.card?.cascadeFirst == true }) 1 else 0
+                if (cascades > 0 && f.cascade) graveyard.filter { it.cascadeReturn }.takeIf { it.isNotEmpty() }?.let { back -> leftGraveyard(back); hand += back }
+                if (f.cascade && c.creature) for (b in board.toList()) if (b.card != null && b.card.discoverPower in 1..c.power) reveal(c.manaValue + x)
+                repeat(cascades) { reveal(c.manaValue + x - 1) }
             }
             // In a Maze's End deck, Gate searches bring real Gates (since 1.54).
             if (mazeDeck) {
@@ -2463,14 +2507,24 @@ object WinOddsCalc {
                 makeAll(c.madeOnce)
                 c.scaled.filter { !it.turn }.forEach { scaled(it) }
                 if (c.overrunPerCreature) overrun += board.count { it.creature }
+                // Improvisation Capstone: the cards exiled until their mana values add up; the spells among them cast for free.
+                if (c.capstone > 0 && cascading <= 6) {
+                    var total = 0
+                    val exiled = ArrayList<WinCard>()
+                    while (total < c.capstone && drawn < rest.size) rest.removeAt(drawn).let { exiled += it; total += it.manaValue }
+                    cascading++
+                    exiled.filter { !it.land }.forEach { cast(it).let { o -> overrun += o } }
+                    cascading--
+                }
                 if (c.riseAndShine > 0) board.filter { it.isA("artifact") && !it.creature && !it.isA("land") }.maxByOrNull { if (it.token) 1 else 0 }?.let {
                     it.creature = true
                     it.power = 0
                     addCounters(it, c.riseAndShine)
                 }
                 use(c.onEnter)
-                // Flashback and jump-start cards are exiled; the rest go to the graveyard.
-                if (!fromGraveyard) graveyard += c
+                // Flashback and jump-start cards are exiled; the rest go to the graveyard. Paradigm: exiled, and a copy
+                // cast every turn after (since 1.55).
+                if (c.paradigm) { if (!copy && paradigms.none { it.name == c.name }) paradigms += c } else if (!fromGraveyard && !copy) graveyard += c
                 return c.overrun
             }
             enter(c, cheated = free)
@@ -2534,8 +2588,27 @@ object WinOddsCalc {
             overrun += card.overrun
             if (card.overrunPerCreature) overrun += board.count { it.creature }
             use(card.onEnter, e)
+            if (card.newCounters > 0) board.filter { it.creature && it.turn == turn }.forEach { addCounters(it, card.newCounters) }
+            if (card.discover > 0) reveal(card.discover)
             entering--
             return e
+        }
+
+        /**
+         * Cascade and discover (since 1.55): cards from the top of the library until a nonland card with mana value
+         * [most] or less, which is cast for free; the cards passed go to the bottom.
+         */
+        fun reveal(most: Int) {
+            if (cascading > 6) return
+            val i = (drawn until rest.size).firstOrNull { !rest[it].land && rest[it].manaValue <= most } ?: return
+            val hit = rest.removeAt(i)
+            val passed = rest.subList(drawn, i)
+            val bottom = passed.toList()
+            passed.clear()
+            rest += bottom
+            cascading++
+            cast(hit).let { overrun += it }
+            cascading--
         }
 
         fun pool(): List<Pair<Set<Char>, Int>> {
@@ -2650,6 +2723,8 @@ object WinOddsCalc {
                 board.toList().forEach { b -> b.card?.let { c -> c.scaled.filter { it.turn && it.what == Effect.DRAW }.forEach { scaled(it) } } }
                 board.toList().forEach { b -> b.card?.takeIf { it.fetchTurn }?.fetchKind?.let { fetch(it) } }
                 if (f.eachTurn) board.toList().forEach { b -> b.card?.let { if (it.eachTurn.any) use(it.eachTurn, b) } }
+                // Paradigm (since 1.55): a free copy of each one that has resolved, at the beginning of the first main phase.
+                for (c in paradigms.toList()) cast(c, copy = true).let { overrun += it }
                 // Maze's End goes first, so it can come back as this turn's land.
                 // Paid again from this turn's pool once the land is down (its own {C} is gone with it).
                 var mazeSpent = 0

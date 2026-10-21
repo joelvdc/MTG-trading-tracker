@@ -181,6 +181,9 @@ them (they stay open or folded for every deck).
   - **copies and cheating**: flicker and token copies of the creature worth most on entering (Ghostly Flicker,
     Replication Technique), Tawnos's abilities, polymorph (Jace's −3, Mass Polymorph), Sneak Attack, X token spells;
   - **planeswalkers** (their starting loyalty from Scryfall) use one loyalty ability a turn, a − one when it pays off;
+  - **cascade and discover**: the spell found is cast for free and sets off its own triggers, so one cascade can lead
+    to another (Apex Devastator, Monstrous Vortex, Maelstrom Nexus, Trumpeting Carnosaur); Aurora Phoenix comes back;
+    Improvisation Capstone casts what it exiles; **paradigm** casts a free copy every turn after the first;
   - **Clues and cards drawn**: Clues cracked with the mana left, "whenever you draw your second card each turn"
     (Morska, Alandra), Tangletrove Kelp, Mechanized Production and Hellkite Tyrant as wins, the monarch;
   - **+1/+1 counters**: Leonardo, Mutagens, Corpsejack Menace, High Score, Raphael, counters when attacking;
