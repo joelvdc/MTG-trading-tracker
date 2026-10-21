@@ -126,13 +126,14 @@ them (they stay open or folded for every deck).
   spells costing up to 4 cast when they can be. No opponents, removal, Treasure, rituals or cost reducers, so it's a
   best case to compare decks and changes by. **How?** explains it and links to Frank Karsten's mana base article, whose
   method it follows with the deck's own cards.
-- **Winning the game** (since 1.52): the turn the deck usually wins by, the turn it has won by in 9 of 10 games, and a
-  row of the share of games won by each turn (and by a combo, when it has one that can win). The app plays the
+- **Winning the game** (since 1.52): the first turn the deck can win (1% of games or more, in **green**), the turn it
+  has won by in 4 of 10 games (in **gold**) and in 9 of 10 games, and a row of the share of games won by each turn,
+  starting at the first win (and by a combo, when it has one that can win). The app plays the
   deck alone 10,000 times for up to 15 turns against three players at 40 life, with the mana as above: each turn it
   casts its commander, creatures, token makers, equipment, auras and the cards that deal damage (the most expensive it
   can pay for first), puts the equipment and auras on its commander (or its biggest creature), keeps pump spells for
   combat, and attacks with everything that can (nobody blocks). It has won when all three are at 0, a commander has
-  dealt **21 commander damage** to each, or a combo wins. **Combos** (Commander Salt's, read by what they do since
+  dealt **21 commander damage** to each, a combo wins, or **Maze's End** finds its tenth Gate. **Combos** (Commander Salt's, read by what they do since
   1.53): those that win the game or deal infinite damage; endless loops of deaths, creatures entering or -1/-1
   counters when the deck has a card that turns them into life loss (Grave Venerations, The Meathook Massacre, Blood
   Artist for deaths; Purphoros for creatures entering; Obelisk Spider for -1/-1 counters you put); and endless tokens,
@@ -148,10 +149,21 @@ them (they stay open or folded for every deck).
   damage (Sergeant John Benton), Food, Clue and Treasure makers, and sacrifice abilities like Baba Lysaga's: tapped each
   turn it can, sacrificing the cheapest permanents that cover three card types (tokens first, then spare lands; an
   artifact land counts as two types), for the drain and the cards. In a deck with such an ability every permanent is
-  worth casting, as fodder. Under the table: where the damage came from (combat, commander damage, triggers,
-  drain) and how often commander damage knocked a player out. Decks that don't win by turn 15 in most games show
-  **T15+** with a note: their damage likely comes from what the app can't read (sacrifice triggers, a commander's own
-  ability). No opponents, removal or blockers, so it's a best case to compare decks by. **How?** lists what was
+  worth casting, as fodder. Since 1.54 also: effects that **count permanents** ("for each Shrine you control", "where X
+  is the number of Gates…": damage, drain, tokens, cards, +1/+1 counters, a creature's own +1/+1 for each) and
+  triggers when **a kind of permanent enters** ("whenever another Shrine you control enters"; tokens keep their types,
+  so Go-Shintai's Shrine tokens count as Shrines); cards that put a Shrine onto the battlefield (Sanctum of All, Hei
+  Bai); **Maze's End** (played early, used each turn it can; Gate searches bring real Gates, Sylvan Scrying finds Maze's
+  End, Amulet of Vigor, Spelunking and Gond Gate let lands enter untapped; Crackling Perimeter, Basilisk Gate, Sage of
+  the Maze, Gatebreaker Ram); sacrifice abilities used the turn they come in (Thousand-Year Elixir, Tyvar, Lightning
+  Greaves) and again with untaps (Instill Energy, Nature's Chosen, Patriar's Seal) or Marvin, Liquimetal Coating making
+  a permanent an artifact, and the payoffs (Marionette Master, Titania, Baloth Prime and its stun counters, Mazirek,
+  lands that leave tokens, fabricate); **X spells** draining each opponent (Exsanguinate, Jaya's Immolating Inferno)
+  with the mana left, first when a "first spell each turn" trigger makes them the biggest spell, and Double Vision
+  copying the first instant or sorcery. Under the table: where the damage came from (combat, commander damage,
+  triggers, drain), how often a combo or Maze's End won, and how often commander damage knocked a player out. Decks
+  that don't win 4 in 10 games by turn 15 show **T15+** with a note: their damage likely comes from what the app can't
+  read (a commander's own ability, opponents' spells, free spells). No opponents, removal or blockers, so it's a best case to compare decks by. **How?** lists what was
   counted. Worked out in the background (a few seconds) and kept on the phone until the deck, its card details or its
   combos change.
 
@@ -246,9 +258,10 @@ its combos, whether it counts, what it does, and a link to it on Commander Spell
 **All decks' cards** (since 1.46; Decks tab ⋮ → **Bracket cards of all decks** / **Power level cards of all decks**):
 every one of your own decks' (Archidekt and Local) bracket or power level card as a small card, in the Decks tab's order;
 tap one for the full cards and swipe from deck to deck. Decks not scored yet are listed at the bottom. Since 1.52 each
-small bracket card has a third tile with the turn the deck usually wins by (**T11**, or **T15+**), and the full bracket
-card has a **Speed** section under the two brackets: the usual turn, 9 in 10 games, the share won by each turn and where
-the damage came from (see Winning the game under the deck stats).
+small bracket card has a third tile with the turn the deck wins by in 4 of 10 games (since 1.54; **T11**, or **T15+**),
+and the full bracket card has a **Speed** section under the two brackets: that turn (gold), the first turn it can win
+(green), 9 in 10 games, the share won by each turn and where the damage came from (see Winning the game under the deck
+stats).
 
 **Recommendations** (deck page, or the deck's ⋮ menu): cards for the deck from **EDHREC** or **recommander.cards**
 (switch at the top; the choice is remembered). EDHREC's are in its own sections (New Cards, High Synergy, Top Cards, Game

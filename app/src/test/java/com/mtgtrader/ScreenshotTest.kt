@@ -842,7 +842,7 @@ class ScreenshotTest {
             MtgColors(dark = true) {
                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Since 1.52 with the turn each deck usually wins by ("…" while it's worked out).
+                        // Since 1.52 with the turn each deck wins by ("…" while it's worked out); 4 in 10 games since 1.54.
                         com.mtgtrader.ui.SmallBracketCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, win(cloudTurns)) {}
                         com.mtgtrader.ui.SmallBracketCard(deck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9), com.mtgtrader.data.SaltCard(), win(babaTurns)) {}
                         com.mtgtrader.ui.SmallBracketCard(deck(4, "Sarge", "Sergeant John Benton", "GW", 3, 3, 6.1), com.mtgtrader.data.SaltCard()) {}
@@ -860,19 +860,33 @@ class ScreenshotTest {
     private val babaTurns = listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 9, 19, 31, 45, 59)
     private val slowTurns = listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7, 15, 25, 35, 47)
     private val sargeTurns = listOf(0, 0, 0, 0, 0, 2, 23, 60, 86, 95, 98, 99, 99, 99, 99)
-    private fun win(turns: List<Int>, damage: Map<String, Int> = mapOf("combat" to 52, "commander" to 48), knockouts: Int = 79, combo: List<Int> = List(15) { 0 }) =
-        com.mtgtrader.data.WinOdds(
-            10_000, turns, combo, damage, knockouts,
-            com.mtgtrader.data.WinCounted(creatures = 19, tokenMakers = 4, triggers = 1, drains = 1, gear = 18, pumps = 1),
-        )
+    // 1.54: Auntie Plague and Shrine Gate Win on 2026-10-21 (Shrines counted, Maze's End).
+    private val auntieTurns = listOf(0, 0, 0, 0, 0, 2, 5, 9, 17, 38, 68, 87, 95, 98, 99)
+    private val auntieCombo = listOf(0, 0, 0, 0, 0, 2, 5, 9, 13, 18, 23, 26, 27, 28, 28)
+    private val shrineTurns = listOf(0, 0, 0, 0, 0, 0, 1, 6, 22, 45, 66, 82, 91, 95, 97)
+    private val shrineMaze = listOf(0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 7, 12, 16, 18, 20)
+    private fun win(
+        turns: List<Int>,
+        damage: Map<String, Int> = mapOf("combat" to 52, "commander" to 48),
+        knockouts: Int = 79,
+        combo: List<Int> = List(15) { 0 },
+        maze: List<Int> = emptyList(),
+    ) = com.mtgtrader.data.WinOdds(
+        10_000, turns, combo, damage, knockouts,
+        com.mtgtrader.data.WinCounted(creatures = 19, tokenMakers = 4, triggers = 1, drains = 1, gear = 18, pumps = 1, mazeEnd = maze.isNotEmpty()),
+        byMaze = maze,
+    )
 
-    /** 1.52: the Stats' "Winning the game": a deck that wins (with a combo row), one the app can't read well, one being worked out. */
+    /**
+     * 1.52: the Stats' "Winning the game": a deck that wins (with a combo row), one the app can't read well, one being
+     * worked out. Since 1.54 with the first win (green) and 4 in 10 games (gold) highlighted.
+     */
     @Test fun winningTheGame() {
         compose.setContent {
             MtgColors(dark = true) {
                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
                     Column(Modifier.padding(horizontal = 12.dp)) {
-                        com.mtgtrader.ui.WinningCard(win(cloudTurns, combo = listOf(0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 5, 6, 7, 7, 7)), missing = 0)
+                        com.mtgtrader.ui.WinningCard(win(auntieTurns, mapOf("combat" to 77, "commander" to 23), 20, combo = auntieCombo), missing = 0)
                         com.mtgtrader.ui.WinningCard(win(slowTurns, mapOf("combat" to 72, "commander" to 28), 21), missing = 2)
                         com.mtgtrader.ui.WinningCard(null, missing = 0)
                     }
@@ -882,7 +896,21 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/winning_the_game.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.52: the bracket card's Speed section (Sarge: commander damage with pump spells). */
+    /** 1.54: a Maze's End deck in the light theme (the green and gold highlights on a light card). */
+    @Test fun winningWithMazesEnd() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.WinningCard(win(shrineTurns, mapOf("combat" to 67, "drain" to 19, "commander" to 13), 12, maze = shrineMaze), missing = 0)
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/winning_mazes_end.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.52: the bracket card's Speed section (Sarge: commander damage with pump spells); 4 in 10 games and the first win since 1.54. */
     @Test @Config(qualifiers = "w411dp-h1200dp-xhdpi") fun bracketCardSpeed() {
         val deck = com.mtgtrader.data.Deck(5, "Sarge", "joelvdc", "Sergeant John Benton", null, null, "GW", 100, powerLevel = 6.1, bracketBaseline = 3, bracketRealistic = 3, saltPercent = 22.0, saltId = "s")
         val card = com.mtgtrader.data.SaltCard(gameChangers = listOf("Smothering Tithe"), axes = mapOf("speed" to 0.55, "consistency" to 0.6))

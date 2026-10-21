@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -263,38 +264,48 @@ fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier, w
     }
 }
 
-/** When the deck wins, playing alone (since 1.52): the usual turn, 9 in 10 games, and the share won by each turn. */
+/**
+ * When the deck wins, playing alone (since 1.52): the turn of 4 in 10 games (gold) and the first win (green), both
+ * highlighted since 1.54, 9 in 10 games, and the share won by each turn.
+ */
 @Composable
 private fun SpeedSection(win: WinOdds) {
+    val marks = winMarks(win)
     Section("Speed · playing alone, ${"%,d".format(java.util.Locale.ROOT, win.games)} games") {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                win.usual?.let { "Wins usually by turn $it" } ?: "Not by turn ${win.turns} in most games",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "  ·  " + (win.nineInTen?.let { "9 in 10 by turn $it" } ?: "${win.byTurn.last()}% by turn ${win.turns}"),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            win.fourInTen?.let { "Wins by turn $it in 4 of 10 games" } ?: "Not 4 in 10 games by turn ${win.turns}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            listOfNotNull(win.firstWin?.let { "can win from turn $it" }, win.nineInTen?.let { "9 in 10 by turn $it" } ?: "${win.byTurn.last()}% by turn ${win.turns}")
+                .joinToString("  ·  ").replaceFirstChar(Char::uppercase),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             win.window.forEach { t ->
                 val v = win.byTurn[t - 1]
+                val mark = marks[t]
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        Modifier.fillMaxWidth().height(22.dp).clip(RoundedCornerShape(4.dp)).background(BAR.copy(alpha = (v / 100f).coerceIn(0.1f, 1f))),
+                        Modifier.fillMaxWidth().height(22.dp).clip(RoundedCornerShape(4.dp)).background(BAR.copy(alpha = (v / 100f).coerceIn(0.1f, 1f)))
+                            .then(if (mark != null) Modifier.border(2.dp, mark, RoundedCornerShape(4.dp)) else Modifier),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text("$v", style = MaterialTheme.typography.labelSmall, color = if (v > 55) Color.White else MaterialTheme.colorScheme.onSurface)
                     }
-                    Text("T$t", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "T$t",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = mark ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (mark != null) FontWeight.Bold else null,
+                    )
                 }
             }
         }
         Text(
-            listOf("% of games won by each turn.", winDamageNote(win), if (win.usual == null) WIN_SLOW_NOTE else "").filter { it.isNotEmpty() }.joinToString(" "),
+            listOf("% of games won by each turn.", winDamageNote(win), if (win.fourInTen == null) WIN_SLOW_NOTE else "").filter { it.isNotEmpty() }.joinToString(" "),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),

@@ -57,6 +57,8 @@ How to use this file:
 15. ~~MTG Trader 1.53 (green light on 2026-10-20): combos by what they do and tutors in the win turn.~~ Released.
 - **Since 1.53 (2026-10-20):** the weekly health check also checks Commander Salt's combo prerequisites; the full text is
   in `docs/health-check-instructions.txt` and was given to the owner to paste.
+16. ~~MTG Trader 1.54 (green light on 2026-10-21): the win turn at 4 in 10 games, the first win highlighted, and the
+   simulator reading Shrines, Gates, Maze's End, sacrifice decks and X spells.~~ Released.
 
 ### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
@@ -107,6 +109,8 @@ Checklist:
 - **Win turn (1.52):** open a deck's Stats: "Winning the game" appears within a few seconds (time it on the phone)
   and opening it again is instant; Bracket cards of all decks fill their T-tiles; the bracket card's Speed section,
   also in a shared picture.
+- **Win turn (1.54):** open Shrine Gate Win's and Baba's Stats once (the win turn is worked out again); the green and
+  gold turns in Winning the game and on the bracket card; "Maze's End wins …" under Shrine Gate Win's table.
 - **Turn badge (1.52):** the gold badge at the start of the name label on every table size, tapping it passes the turn.
 - **Scanner (1.52):** scan several cards after scrolling the list down: it jumps back to the newest each time.
 - **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
@@ -156,7 +160,68 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
+### Compare the win turn with ScrollVault's
+*Added 2026-10-21. MTG Trader only.*
+
+The owner's words: "Scrollvault also has a prediction for the turn a deck can win by, could be interesting to check the
+differences between that and the simulator." and, with the green light for 1.54: "we will compare it with scrollvault
+later (add a todo)."
+
+What's known: ScrollVault shows a "typical win ~T8 (earliest T6)" from its own goldfish simulation; the app already
+reads it (deck page: "ScrollVault: … typical win turn X (earliest Y)", and the power level card's "At the table"). In a
+cloud session ScrollVault's page couldn't be opened (its engine runs in the browser, and the session's browser didn't
+trust the network proxy). So: either the owner sends the ScrollVault lines of the deck pages, or it's done in a session
+on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
+win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
+
 ## Done
+
+### The win turn at 4 in 10 games, the first win highlighted, and a better simulator (MTG Trader 1.54)
+*Added 2026-10-20. MTG Trader only. Planned with mockups and a prototype on 2026-10-20; green light on 2026-10-21.*
+
+The owner's words: "I think I want to shown the turn by which the decks win in the bracket cards with 40% or higher
+probability. In the deck page just highlight the fastest the deck can win and the turn with 40%+ probability." Then:
+"Can you improve the simulator for decks like Baba, Smasher and Shrine Gate Win? Does maze's end is taken into account
+as a win condition for shrine gates win?" and "Scrollvault also has a prediction for the turn a deck can win by, could
+be interesting to check the differences between that and the simulator."
+
+Settled with the owner on 2026-10-20:
+- Bracket cards (the small tile on the all-decks list and the full card's Speed section): the turn by which 4 in 10
+  games are won, instead of 5 in 10. The small tile keeps its caption "Wins by".
+- Deck page → Stats → "Winning the game": style **A** (coloured turns in the headline, outlined tiles: green = first
+  win, gold = 4 in 10); the first win is the first turn with 1% or more of games; the row starts at the first win (8 to
+  10 turns). The bracket card's Speed section the same way.
+- Nothing added to the Decks list.
+
+The simulator:
+- Effects that count permanents: "for each Shrine/Gate/creature you control", "where X is the number of …", "equal to
+  the number of …" (damage, drain, tokens, cards drawn, +1/+1 counters, a creature's own +1/+1 for each).
+- Triggers on a kind of permanent entering: "whenever (this or) another Shrine/Gate/enchantment you control enters"
+  (drain, tokens with their types, e.g. Shrine tokens that count as Shrines, cards, counters, a basic land).
+- Cards that put a Shrine onto the battlefield (Sanctum of All each upkeep, Hei Bai once).
+- Maze's End as a way to win (10 Gates with different names): played early, used each turn when it can, Gate searches
+  (Circuitous Route, Navigation Orb, Open the Gates, Gatecreeper Vine, Sylvan Scrying for Maze's End itself) bring real
+  Gates; lands entering untapped (Amulet of Vigor, Spelunking, Gond Gate, Tiller Engine, Horizon Explorer);
+  Crackling Perimeter, Basilisk Gate, Sage of the Maze, Gatebreaker Ram. Maze's End wins shown on their own, not as
+  a combo.
+- Sacrifice decks: abilities used at once (Thousand-Year Elixir, Tyvar, Lightning Greaves/Swiftfoot Boots), extra uses
+  (Instill Energy, Nature's Chosen, Patriar's Seal, Thousand-Year Elixir, Tyvar), Marvin copying Baba, Liquimetal
+  making a permanent an artifact, payoffs (Marionette Master, Titania, Baloth Prime with its stun counters, Mazirek,
+  lands leaving tokens), fabricate.
+- X spells that drain each opponent (Exsanguinate, Jaya's Immolating Inferno): with the mana left, first when Vial
+  Smasher-like triggers make them the biggest spell, or at once when they finish the game; Double Vision copies them.
+- Fix: "if you control three or more Deserts, create…" (Hour of Promise) no longer counts without Deserts.
+- The rules version goes up, so every deck is played again once on the phone.
+
+Results with the owner's decks on 2026-10-21 (4 in 10 games by, before → after): Shrine Gate Win 15 → 10 (Maze's End
+wins about 20% of games; first win 12 → 7), Baba 14 → 13 (1 in 10 by 12 → 10), Smasher LCP 13 → 13 (9 in 10 by
+turn 15 now). The other 16 decks: the same turns. Still not counted: opponents (Kaervek), free spells (Etali,
+Sunbird's Invocation), copying held for later (Dualcaster Mage, Reverberate), blockers and removal.
+
+ScrollVault's win turns are compared later (see "Compare the win turn with ScrollVault's").
+
+No health check change (no new service or data field).
+Released in MTG Trader 1.54 (2026-10-21).
 
 ### When the deck can win (goldfish win turn), also on the bracket card
 *Added 2026-10-20. MTG Trader only. Planned with mockups and given the green light on 2026-10-20.*
