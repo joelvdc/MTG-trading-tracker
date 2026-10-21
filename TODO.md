@@ -174,6 +174,112 @@ trust the network proxy). So: either the owner sends the ScrollVault lines of th
 on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
+### The simulator reads ramp, team pumps, the graveyard, copies and planeswalkers (MTG Trader 1.55)
+*Added 2026-10-21. MTG Trader only. Planned 2026-10-21, **awaiting the green light**.*
+
+The owner's words: "For the Ruby deck is the simulator capturing the 2-4-7 ramp? Ruby cast on turn 2, 4 mana spell cast
+on turn 3 and then casting 7+ mana spells turn 4 forward? What about etb effects that pump creatures and give trample?
+For quintorius deck, the commander generates tokens and can pump all the spirits. Is this accounted for properly? Poly
+Jace deck commander's ability to cheat creatures into the battlefield accounted for properly? … are etb effects
+accounted for? Important ones like the craterhoof in the Teval deck." Then: "Please draft a plan a prepare for a new
+release. Vohar Danse is also a deck that cheats creatures from the graveyard and has a lot of massive etb effects, the
+deck does not care about attacking with Vohar, the commander mainly only taps for its ability. The tawnos deck also
+mills while creating artifact copies and eventually reanimating, the deck does not care about attacking with the
+commander, only using its abilities. Is the Ganax deck accounting for the extra treasures when dragons come in and
+Ganax is on the battlefield? And also accounting for the Haunted One pump?"
+
+Checked 2026-10-21 by running the owner's Archidekt lists through the 1.54 simulator (4 in 10 games by / first win):
+Ruby T11 / T9, Quintorius (upgraded precon) T12 / T8, Teval T12 / T9, Poly Jace T13 / T9 (78% by turn 15),
+Vohar Danse T11 / T9, Tawnos' Army T12 / T8, Haunted Ganax T12 / T9. What it misses:
+- **Ruby:** ramp spells that fetch two lands count as one (Explosive Vegetation, Skyshroud Claim, Ranger's Path,
+  Migration Path, Hunting Wilds, Map the Frontier, Vastwood Surge, New Generation's Technique), so turn 4 has 6 mana,
+  not 7. Ruby's haste doesn't let it tap the turn it comes in; Ruby taps for mana *and* attacks; its +2/+2 isn't read.
+  End-Raze Forerunners, Jubilation and Decimator's +2/+2 are read and then dropped (only instants and sorceries pump).
+  Not read: Terror of the Peaks, Omnath's landfall 5/5s, Rhythm of the Wild's haste, Etali.
+- **Quintorius:** History Chaser (a planeswalker) is never cast; "whenever cards leave your graveyard, create a 3/2
+  Spirit" never happens (no graveyard); "Spirits you control get +1/+0" (Field Historian) and Hofri aren't read.
+  Loremaster's 3/2 each turn is counted.
+- **Poly Jace:** Jace is never cast; its −3, Mass Polymorph and Proteus Staff aren't read; Secure the Wastes, Martial
+  Coup and other X token spells make nothing (X counts as 0).
+- **Teval:** Teval attacks as a 4/4 flyer, but its mill, land return and Zombie Druid tokens aren't read; Craterhoof is
+  a 5/5 with haste (its +X/+X isn't read); Reanimate, Dread Return, Living Death aren't read.
+- **Vohar Danse:** Vohar's loot is counted as 1 drain every turn, but Vohar also attacks. The big creatures' life loss
+  isn't read when the sentence has more in it ("each opponent discards a card and loses 2 life": Arbiter of Woe,
+  Malboro, Dusk Mangler; Archon of Cruelty's "enters or attacks"); Gray Merchant (devotion) isn't read; all
+  reanimation, flicker (Ghostly Flicker, Displace) and copy spells (Replication Technique, See Double…) do nothing.
+- **Tawnos' Army:** Tawnos attacks as a 1/3 (12% of the damage) and its two abilities aren't read; copy spells, Emry's
+  mill and Portal to Phyrexia aren't read.
+- **Haunted Ganax:** no Treasures when Dragons enter (and Treasures never make mana in the simulator, they're only
+  sacrifice fodder); Haunted One is never cast and its +2/+0 for the Dragons isn't read; Dragon Tempest and Scourge of
+  Valkas deal 0 (their X isn't counted); Dragonspeaker Shaman and Dragonlord's Servant don't make Dragons cheaper;
+  Sneak Attack and Rivaz casting Dragons from the graveyard aren't read.
+
+Proposed for 1.55 (data/WinOdds.kt, data/ManaOdds.kt; read from the card text, as now, not by card names):
+1. **Mana.** Ramp spells count each land they fetch ("up to two basic lands", tapped or not as the card says; Cultivate
+   and Kodama's Reach one onto the battlefield and one to the hand). This also corrects "Casting the commander".
+   Mana creatures with haste tap the turn they come in. Treasures are one-use mana (Goldspan's give two), spent only
+   when they let something be cast; Xorn adds one. "Whenever Ganax or another Dragon enters, create a Treasure" and
+   the like count. Cost reducers for a kind of spell ("Dragon spells you cast cost {2} less").
+2. **Tapping instead of attacking.** Lands and rocks pay first; a mana creature only taps when its mana is needed, and
+   then it doesn't attack (Ruby attacks when its mana isn't needed). A creature whose {T} ability the simulator uses
+   (Vohar's loot, Tawnos's copies) uses it and doesn't attack.
+3. **Pumps.** Team pumps from creatures entering or being cast count that turn (End-Raze, Jubilation, Decimator).
+   +X/+X for the number of creatures you control (Craterhoof, Moonshaker Cavalry). Lords of a creature type
+   ("Spirits you control get +1/+0", Hofri's +1/+1 and haste; tokens keep their types). Pumps paid with the mana left
+   before combat ("{1}{R}: Dragons you control get +1/+0", Bladewing). An attacker's own pump ("Ruby gets +2/+2 while
+   you control a creature with power 4 or greater"). **Haunted One** is cast from the command zone, and when the
+   commander attacks it and the attackers sharing a creature type get +2/+0 (all Dragons with Ganax). Haste for many:
+   "creatures you control have haste", riot (Rhythm of the Wild), Dragon Tempest's flyers, Chainer. Trample needs
+   nothing: nobody blocks.
+4. **Damage when things enter or attack.** Life loss inside longer sentences ("each opponent discards a card and loses
+   2 life", "target opponent sacrifices…, discards a card, and loses 3 life"); "enters or attacks" counts both; X for
+   the number of Dragons (Dragon Tempest, Scourge of Valkas); devotion to black (Gray Merchant); Terror of the Peaks
+   (the entering creature's power); landfall tokens (Omnath, Locus of Rage) and counters (Avenger of Zendikar's
+   Plants); token and sacrifice drains (Mirkwood Bats, Kambal, Marionette Apprentice).
+5. **A graveyard.** Cast instants and sorceries, discarded, milled, sacrificed and dead cards go there. Filled by mill
+   (Teval's attack, Tawnos, Emry, Incarnation Technique, Breach the Multiverse), looting (Vohar, Faithless Looting,
+   Frantic Search: a deck that reanimates discards its best creature to bring back, others an extra land) and surveil.
+   Used by reanimation ("return target creature card from your graveyard to the battlefield": Reanimate, Dread Return,
+   Victimize's two, Living Death's all, Danse Macabre, Live or Die, Will of the Abzan, Metamorphosis Fanatic, Portal to
+   Phyrexia each upkeep, Bladewing for a Dragon…), bringing back the creature worth most on entering (else the
+   biggest), whose enter effects happen again; Rivaz and Chainer casting creatures from it; flashback and jump-start.
+   "Whenever one or more cards leave your graveyard" (Teval, Quintorius) makes its token each time cards leave:
+   reanimation, Teval's land, Loremaster's end-step exile, Tawnos's exile, flashback, cards returned to the hand.
+   Teval's attack mills three and puts a land from the graveyard onto the battlefield tapped.
+6. **Copies and flicker.** "Exile … creatures you control, then return them" (Ghostly Flicker, Displace) and token
+   copies of a creature you control (Replication Technique, See Double, Three Steps Ahead, Season of Weaving, Cackling
+   Counterpart, Quasiduplicate, Saheeli's Artistry, Phyrexian Metamorph, Twilight Diviner) pick the creature worth most
+   on entering, whose enter effects happen again. Tawnos: {2},{T}: copy an artifact token and mill two; and,
+   once there are two artifact tokens, exile an artifact or creature card from the graveyard for a token copy of it.
+7. **Cheating creatures in.** Polymorph effects (Jace's −3, Mass Polymorph, Proteus Staff) turn a token into the next
+   creature of the library; Sneak Attack puts a creature from the hand in with haste for {R} (it goes to the graveyard
+   at the end of the turn). X spells that make tokens use the mana left (Secure the Wastes, Martial Coup).
+8. **Planeswalkers.** Planeswalkers (commanders included) are cast and use one loyalty ability a turn: + abilities that
+   draw, loot or make tokens; − abilities when they pay off (Jace's −3 on a token, Quintorius's −4 double strike for
+   the Spirits on a turn they attack, Sarkhan the Mad's 5/5 Dragon). Nobody attacks them. Their starting loyalty comes
+   from Scryfall's `loyalty` (see the questions).
+9. The rules version goes up (4), so every deck is played again once on the phone. The "How?" note gets a few more
+   counts ("…, 12 cards that fill or use the graveyard (mill, looting, reanimation), 7 copy or flicker cards, 2
+   planeswalkers"); no other screen changes, so no mockups.
+10. Tests with the cards above; the before → after table for all 19 Ready to Play decks (and Quintorius) goes in the
+    release report, and any deck that jumps a lot is checked by hand before release.
+
+Still not counted after 1.55: opponents (blockers, removal, Massacre Wurm's life loss, stealing their creatures or
+cards: Ghouls' Night Out, Brainstealer Dragon), board wipes, dice (Danse Macabre takes one creature back unless the
+sacrificed creature's toughness is high), free spells (Etali), and abilities the text patterns don't recognise.
+
+Health check: **yes, if the loyalty column is chosen**: Scryfall's `loyalty` (a number as a string on planeswalkers, on
+card_faces for double-faced ones) becomes a field the app reads; add a check (Jace, Multiverse Architect: "4";
+Quintorius, History Chaser: "5"). Otherwise no change.
+
+Open questions:
+- **Planeswalker loyalty:** a new column in the card-details cache (database 25; on the phone only, not synced, the same
+  kind of change as 1.43/1.44; cards get it at the next details update), or no database change and loyalty guessed
+  as mana value − 1 (right for Jace, wrong for History Chaser: 3 instead of 5)? Recommended: the column.
+- **One release or two?** Recommended: one (1.55), since it's all in the simulator. Alternative: 1.55 with items 1–4
+  (mana, tapping, pumps, damage triggers: Ruby, Ganax, Craterhoof) first, then 1.56 with items 5–8 (graveyard,
+  copies, cheating, planeswalkers: Vohar, Tawnos, Teval, Quintorius, Poly Jace).
+
 ## Done
 
 ### The win turn at 4 in 10 games, the first win highlighted, and a better simulator (MTG Trader 1.54)
