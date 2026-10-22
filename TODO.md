@@ -174,6 +174,28 @@ trust the network proxy). So: either the owner sends the ScrollVault lines of th
 on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
+### Simulator: one attacker hits only one opponent (Ruby's turn-5 win)
+*Added 2026-10-22. MTG Trader only.*
+
+The owner's words: "I am also interest in understanding how the simulator is giving my Ruby deck a 1% chance of
+winning turn 5. Is there a way to find out how that game would play out?" and then "just write down what needs to be
+fixed for the simulator (related to Ruby's deck) into the todo.md, no need to draft a plan."
+
+What was found (1.55, traced games of the Ruby deck): every turn-5 win (about 1 in 100 games) is the same line: Ruby on
+turn 2, a two-land ramp spell on turn 3 (New Generation's Technique, Vastwood Surge, Skyshroud Claim or Map the
+Frontier) for 6 lands, Jumbo Cactuar on turn 4, and on turn 5 its attack trigger (+9999/+0) makes 10,000 combat damage.
+
+What needs fixing (data/WinOdds.kt, the combat step in `Game.play`): the damage of the attackers that aren't
+commanders is added up and spread over the opponents, lowest life first, so one huge creature knocks out all three.
+A creature can only attack one player: each attacker's damage should go to one opponent (still nobody blocking),
+for example the biggest attackers first, each onto the opponent it finishes or else the one with the least life.
+Then Jumbo Cactuar takes out one opponent, not three. This affects every deck a little (one big attacker, overrun
+pumps on few creatures), so the before/after numbers for all decks go in the release notes.
+
+Open questions:
+- Should the simulator also count a chump block against a single huge attacker (an opponent always has a creature
+  to block it), or keep "nobody blocks"?
+
 ## Done
 
 ### The simulator reads ramp, Treasures, the graveyard, copies, planeswalkers, Clues and counters (MTG Trader 1.55)
