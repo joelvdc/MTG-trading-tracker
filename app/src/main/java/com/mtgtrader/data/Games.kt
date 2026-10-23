@@ -210,6 +210,8 @@ enum class WinType(val key: String, val label: String) {
     COMBAT("combat", "Combat"),
     COMMANDER("commander", "Commander damage"),
     COMBO("combo", "Combo"),
+    /** Since 1.58. */
+    DRAIN("drain", "Drain / burn"),
     POISON("poison", "Poison"),
     ALTERNATIVE("alt", "Alternative win"),
     CONCEDED("conceded", "Everyone conceded");

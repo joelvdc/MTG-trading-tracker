@@ -541,12 +541,16 @@ The tracker looks and works like the Lifetap app (since 1.48): soft colours with
 middle of the table, and everything about the game (counters, settings, dice, mana, history) inside the game.
 - **New game:** 2 to 6 players, who sits where (clockwise) and which deck each plays: yours are the app's decks;
   friends are added as players with their own decks (a commander, or two partners, found on Scryfall, and optionally
-  the Archidekt link). Who starts: picked, or at random with a run around the table that slows down before it stops (about 3 seconds). **Rematch** sets up the
+  the Archidekt link). A guest (no player of their own) can pick just a commander, and a partner (since 1.58): their
+  panel gets its picture and colours, and the stats count it like a deck. Who starts: picked, or at random with a run
+  around the table that slows down before it stops (about 3 seconds); without turns counted, the player who starts
+  has a gold **1st** badge on their name label until the first change in the game (since 1.58). **Rematch** sets up the
   last table again. Starting life and the game's other settings are set in the game.
 - **The table:** the phone lies in the middle; each player's panel faces them, in a soft colour (or their commander's
   picture), with their name on a label, their life with room around it, − and + at the ends, and the **commander
   damage mini-grid**: a tiny copy of the table in a light frame, centred under the total (as in Lifetap), each box the
-  damage taken from that player's commander (partners split in two, "0|4"); their own seat says "me" until their own
+  damage taken from that player's commander (partners split in two, "0|4", by themselves when the deck or guest has
+  two commanders); their own seat says "me" until their own
   commander has dealt them damage (say when another player controls it). Counters in use show as small badges beside
   it. The name, total and grid stay in one line on narrower phones too (since 1.51); only the short seats at the ends
   of a 5–6 player table have the grid right beside the total, with the total in the middle. Tap left of the total
@@ -572,7 +576,11 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   commander pictures, coloured mini-grids, the panel layout (default, name only, big font), the low-life animation,
   hiding the bar until tapped, dice animations; keeping the screen on and hiding the phone's bars. Changing the
   players or the starting life once the game is going asks before starting over. The choices are kept for the next
-  games and follow you to your other phone.
+  games and follow you to your other phone. The settings for every game (controls, vibration, look, the phone) are
+  also in Settings → Life tracker → **Life tracker settings** (since 1.58).
+- **Vibration** (since 1.58 straight from the vibration motor, so it works in silent mode and with the phone's touch
+  vibration off): a short buzz for life, commander damage, counters and the mana pool, a longer one for dice, coins,
+  random picks and undo. Switch it off under Haptic feedback.
 - **Turns:** with turns counted, the player whose turn it is has a gold frame and a gold badge with their turn's time
   at the start of their name label (since 1.52; it used to sit in the corner, over the name); tap the badge to pass the
   turn clockwise. On small panels the deck name is shortened to make room.
@@ -583,13 +591,16 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   **Paused games** (when paused, the players, the round and the time played): **Continue** carries on, on either phone,
   and takes it off the list everywhere; ⋮ → **Drop it** removes it. Several games can be paused; continuing one while
   another is running pauses that one first. The undo steps stay behind; the game's log goes along.
-- **Ending a game:** ↻ in the bar: who won (or a draw) and how, then **Save and rematch** (same seats, a new game at
+- **Ending a game:** ↻ in the bar: who won (or a draw) and how (combat, commander damage, combo, drain / burn,
+  poison, an alternative win, or everyone conceded), then **Save and rematch** (same seats, a new game at
   once), **Save, then new players**, or end without saving. The game goes into the history (backups and the Nextcloud
-  sync too); a note can be added on the game's page. Recorded games can be changed or deleted, and a game played
+  sync too); a note can be added on the game's page. Recorded games can be changed (places, how it was won, and since 1.58 who
+  played which deck: tap a player) or deleted, and a game played
   without the tracker can be added by hand (Games ⋮ → **Add a past game**).
 - **Stats:** the Games tab shows the last games, how many you won and the average length; **Decks, players and head
   to head** has every deck's games, wins, win rate, average length and bracket (sortable), each player's results, and
-  how you did against each friend. Each deck's page has a **Games** section: won–lost, average place and length, the
+  how you did against each friend. Seats where no deck or commander was picked are together as **Anonymous** (since
+  1.58). Each deck's page has a **Games** section (above Tokens since 1.58): won–lost, average place and length, the
   turn it usually wins on, how it wins, and its bracket and power level next to the decks it played against.
   Games ⋮ → **Export game history (CSV)** saves one line per player per game.
 

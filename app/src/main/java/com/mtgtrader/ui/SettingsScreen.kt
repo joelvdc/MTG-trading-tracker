@@ -733,16 +733,19 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
     )
 }
 
-/** Settings → Life tracker (since 1.47): since 1.48 its settings are in the game itself, as in Lifetap. */
+/** Settings → Life tracker (since 1.47): since 1.48 its settings are in the game itself, as in Lifetap; since 1.58 also here. */
 @Composable
 internal fun TrackerSection(nav: NavController) {
     Text("Life tracker", style = MaterialTheme.typography.titleMedium)
     Text(
-        "The life tracker's settings are in the game: tap the circle with the number of players in the bar across the middle of the table.",
+        "Controls, look and vibration for every game. A game's own choices (players, starting life, turns) are in the game: tap ⚙ in the bar across the middle.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    TextButton(onClick = { nav.navigate("games/players") }) { Text("Players and their decks") }
+    Row {
+        TextButton(onClick = { nav.navigate("games/settings") }) { Text("Life tracker settings") }
+        TextButton(onClick = { nav.navigate("games/players") }) { Text("Players and their decks") }
+    }
 }
 
 /** Settings → Swiping cards in the collection: what a swipe to the right and to the left does. Since 1.38. */

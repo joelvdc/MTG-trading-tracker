@@ -82,7 +82,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -90,7 +89,6 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -203,7 +201,7 @@ internal data class Roll(val title: String, val value: String, val sides: Int = 
 fun TrackerScreen(nav: NavController) {
     val c = LocalContext.current.container
     val scope = rememberCoroutineScope()
-    val haptic = LocalHapticFeedback.current
+    val buzz = rememberBuzz()
     val game by c.games.live.collectAsStateWithLifecycle()
     val canUndo by c.games.canUndo.collectAsStateWithLifecycle()
     val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
@@ -212,7 +210,6 @@ fun TrackerScreen(nav: NavController) {
     val lowLife by c.settings.trackerLowLife.collectAsStateWithLifecycle()
     val cardLayout by c.settings.trackerCardLayout.collectAsStateWithLifecycle()
     val colourGrids by c.settings.trackerFlag("trackerColourGrids").collectAsStateWithLifecycle()
-    val haptics by c.settings.trackerFlag("trackerHaptics").collectAsStateWithLifecycle()
     val autoHide by c.settings.trackerFlag("trackerAutoHide").collectAsStateWithLifecycle()
     val animations by c.settings.trackerFlag("trackerAnimations").collectAsStateWithLifecycle()
     val keepAwake by c.settings.trackerFlag("trackerKeepAwake").collectAsStateWithLifecycle()
@@ -239,7 +236,7 @@ fun TrackerScreen(nav: NavController) {
         val t = System.currentTimeMillis()
         val was = deltas[seat]?.takeIf { t - it.second < DELTA_MS }?.first ?: 0
         deltas[seat] = (was + by) to t
-        if (haptics) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        buzz.tap()
         c.games.update { LiveGames.changeLife(it, seat, by) }
     }
     var sheet by remember { mutableStateOf<SheetFor?>(null) }
@@ -267,6 +264,7 @@ fun TrackerScreen(nav: NavController) {
                 }
             }
             spin = null
+            buzz.roll()
             banner = pick to label
             delay(1_800)
             banner = null
@@ -284,6 +282,7 @@ fun TrackerScreen(nav: NavController) {
         g, look, now,
         delta = { seat -> deltas[seat]?.takeIf { now - it.second < DELTA_MS }?.first },
         highlight = spin,
+        first = firstBadgeSeat(g).takeIf { spin == null },
         banner = banner,
         bar = {
             MenuBar(
@@ -294,10 +293,10 @@ fun TrackerScreen(nav: NavController) {
                 onPause = { c.games.update(undoable = false) { if (it.paused) LiveGames.resume(it, System.currentTimeMillis()) else LiveGames.pause(it, System.currentTimeMillis()) } },
                 onDayNight = { c.games.update { LiveGames.toggleDayNight(it) } },
                 onHistory = { page = TrackerPage.HISTORY },
-                onUndo = { if (c.games.undo() && haptics) haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+                onUndo = { if (c.games.undo()) buzz.roll() },
                 onMana = { page = TrackerPage.MANA },
                 onDice = { page = TrackerPage.DICE },
-                onQuickRoll = { roll = Roll("d20", "${Random.nextInt(1, 21)}", 20) },
+                onQuickRoll = { buzz.roll(); roll = Roll("d20", "${Random.nextInt(1, 21)}", 20) },
             )
         },
         onLife = ::changeLife,
@@ -316,7 +315,7 @@ fun TrackerScreen(nav: NavController) {
         TrackerPage.DICE -> DicePage(
             g,
             onClose = { page = null },
-            onRoll = { page = null; roll = it },
+            onRoll = { page = null; buzz.roll(); roll = it },
             onRandomPlayer = {
                 page = null
                 g.alive.randomOrNull()?.let { p -> spinTo(g.alive.map { it.seat }, p.seat, "${p.name}!") }
@@ -337,7 +336,7 @@ fun TrackerScreen(nav: NavController) {
         null -> {}
     }
     if (ending) EndGameDialog(g, onCancel = { ending = false }, onLeave = { leaving = true }, nav = nav, onDone = { ending = false })
-    roll?.let { RollOverlay(it, animate = animations, onAgain = { roll = it.copy(value = reroll(it)) }) { roll = null } }
+    roll?.let { RollOverlay(it, animate = animations, onAgain = { buzz.roll(); roll = it.copy(value = reroll(it)) }) { roll = null } }
 }
 
 private const val DELTA_MS = 2_500L
@@ -401,6 +400,8 @@ internal fun TrackerTable(
     now: Long,
     delta: (Int) -> Int? = { null },
     highlight: Int? = null,
+    /** The seat with the "1st" badge ([firstBadgeSeat]). */
+    first: Int? = null,
     banner: Pair<Int, String>? = null,
     bar: @Composable () -> Unit = {},
     onLife: (Int, Int) -> Unit = { _, _ -> },
@@ -424,6 +425,7 @@ internal fun TrackerTable(
                             s, g, look, now,
                             delta = delta(s.seat),
                             highlight = highlight == s.seat,
+                            first = first == s.seat,
                             banner = banner?.takeIf { it.first == s.seat }?.second,
                             holdOne = holdOne,
                             onLife = { onLife(s.seat, it) },
@@ -534,6 +536,7 @@ internal fun PlayerPanel(
     now: Long,
     delta: Int? = null,
     highlight: Boolean = false,
+    first: Boolean = false,
     banner: String? = null,
     holdOne: Boolean = false,
     onLife: (Int) -> Unit = {},
@@ -611,7 +614,7 @@ internal fun PlayerPanel(
                 }
             } else {
                 // Whose turn it is shows at the start of the label (since 1.52; it was in the corner, over the label).
-                NameLabel(s, g, ink, pill, panelWidth * 0.72f, roomy = small > 150.dp, turn = if (active) turnText(g, now) else null, onNextTurn = onNextTurn) { onSheet(false) }
+                NameLabel(s, g, ink, pill, panelWidth * 0.72f, roomy = small > 150.dp, turn = if (active) turnText(g, now) else null, first = first, onNextTurn = onNextTurn) { onSheet(false) }
             }
             Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = sideRoom), verticalAlignment = Alignment.CenterVertically) {
             // Beside: the total stays in the middle of the panel, the grid right after it (since 1.51; it was by the +).
@@ -670,6 +673,7 @@ internal fun PlayerPanel(
             }
         }
         // The big-number layout has no name label: there the badge stays in the corner.
+        if (first && look.layout == CardLayout.BIG) FirstBadge(Modifier.align(Alignment.TopStart).padding(10.dp))
         if (active && look.layout == CardLayout.BIG) {
             Row(
                 Modifier.align(Alignment.TopStart).padding(10.dp).clip(RoundedCornerShape(10.dp)).background(TurnGold).clickable(onClick = onNextTurn)
@@ -683,13 +687,26 @@ internal fun PlayerPanel(
     }
 }
 
+/**
+ * The seat that gets the "1st" badge (since 1.58, as Lifetap's): the player who starts, until the first change in the
+ * game (life, commander damage, poison, a counter, someone out). Not with turns on: the turn badge shows it there.
+ */
+internal fun firstBadgeSeat(g: LiveGame): Int? = g.firstSeat.takeIf { !g.turnsOn && g.seats.size > 1 && untouched(g) }
+
+/** The gold "1st" badge of the player who starts. */
+@Composable
+private fun FirstBadge(modifier: Modifier = Modifier) = Text(
+    "1st", color = Color(0xFF231A00), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+    modifier = modifier.clip(RoundedCornerShape(10.dp)).background(TurnGold).padding(horizontal = 7.dp, vertical = 2.dp),
+)
+
 /** The turn's time for the turn badge ("1:42"), or "Turn" without the clock. */
 private fun turnText(g: LiveGame, now: Long) = if (g.clock) Games.clock(g.turnElapsed(now)) else "Turn"
 
 /**
  * The name on its label (with the deck, when there's room); the monarch's crown and the initiative go before it.
  * [turn]: the gold turn badge at the start, while it's this player's turn (tap: next turn); the deck name gives way
- * to it on small panels. Since 1.52.
+ * to it on small panels. Since 1.52. [first]: the "1st" badge in the same place (since 1.58).
  */
 @Composable
 private fun NameLabel(
@@ -700,12 +717,13 @@ private fun NameLabel(
     maxWidth: Dp,
     roomy: Boolean,
     turn: String? = null,
+    first: Boolean = false,
     onNextTurn: () -> Unit = {},
     onClick: () -> Unit,
 ) {
     Row(
         Modifier.widthIn(max = maxWidth).clip(RoundedCornerShape(14.dp)).background(pill).clickable(onClick = onClick)
-            .padding(start = if (turn != null) 5.dp else 14.dp, end = 14.dp, top = 5.dp, bottom = 5.dp),
+            .padding(start = if (turn != null || first) 5.dp else 14.dp, end = 14.dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (turn != null) {
@@ -717,7 +735,7 @@ private fun NameLabel(
                 Text(turn, color = Color(0xFF231A00), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 Icon(Icons.Default.SkipNext, "Next turn", Modifier.size(15.dp), tint = Color(0xFF231A00))
             }
-        }
+        } else if (first) FirstBadge(Modifier.padding(end = 8.dp))
         if (g.monarch == s.seat) Icon(Icons.Default.WorkspacePremium, "Monarch", Modifier.padding(end = 4.dp).size(17.dp), tint = ink)
         if (g.initiative == s.seat) Icon(Icons.Default.Explore, "Initiative", Modifier.padding(end = 4.dp).size(17.dp), tint = ink)
         Text(s.name, color = ink, fontSize = 16.sp, fontWeight = if (s.contrast) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = maxWidth * 0.55f))

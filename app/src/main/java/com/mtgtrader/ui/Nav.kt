@@ -184,6 +184,7 @@ fun AppNav() {
             composable("games/all") { GamesListScreen(nav) }
             composable("games/stats") { GameStatsScreen(nav) }
             composable("games/players") { PlayersScreen(nav) }
+            composable("games/settings") { TrackerSettingsScreen(nav) }
             composable(
                 "games/game/{uid}?fresh={fresh}",
                 arguments = listOf(navArgument("uid") { type = NavType.StringType }, navArgument("fresh") { type = NavType.BoolType; defaultValue = false }),

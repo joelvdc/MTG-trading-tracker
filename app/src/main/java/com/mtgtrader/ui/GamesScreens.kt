@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.AlertDialog
@@ -364,9 +365,11 @@ private fun ResultsForm(
     note: String,
     onNote: (String) -> Unit,
     turnsOn: Boolean,
+    /** Tap a player to change them or their deck (since 1.58). */
+    onSeat: ((Int) -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Places", style = MaterialTheme.typography.titleSmall)
+        Text(if (onSeat != null) "Places (tap a player to change them or their deck)" else "Places", style = MaterialTheme.typography.titleSmall)
         seats.sortedBy { places[it.seat] ?: Int.MAX_VALUE }.forEach { s ->
             var open by remember { mutableStateOf(false) }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -378,6 +381,10 @@ private fun ResultsForm(
                         }
                     }
                 }
+                Row(
+                    Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).then(if (onSeat != null) Modifier.clickable { onSeat(s.seat) } else Modifier),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                 SeatPicture(GameStore.artCrop(s.scryfallId), s.seat, 36.dp)
                 Column(Modifier.weight(1f).padding(start = 10.dp)) {
                     Text(listOf(s.name, s.deckName.ifBlank { s.commander }).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodyLarge)
@@ -387,6 +394,8 @@ private fun ResultsForm(
                         s.finalLife?.takeIf { s.outReason == null }?.let { "$it life" },
                     ).joinToString(" · ")
                     if (out.isNotBlank()) Text(out, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (onSeat != null) Icon(Icons.Default.Edit, "Change", Modifier.padding(horizontal = 6.dp).size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (places[s.seat] == 1 && !draw) Icon(Icons.Default.EmojiEvents, "Won", tint = Trophy)
             }
@@ -413,6 +422,13 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
     val snackbar = remember { SnackbarHostState() }
     val games by c.games.games.collectAsStateWithLifecycle(emptyList())
     val g = games.firstOrNull { it.uid == uid }
+    val players by c.games.players.collectAsStateWithLifecycle(emptyList())
+    val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
+    val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
+    // The players and decks, changed here before saving (since 1.58).
+    var seats by remember(g?.id) { mutableStateOf(g?.seatList.orEmpty()) }
+    var picking by remember { mutableStateOf<Int?>(null) }
     var places by remember(g?.id) { mutableStateOf(g?.seatList?.associate { it.seat to it.place }.orEmpty()) }
     var draw by remember(g?.id) { mutableStateOf(g?.draw == true) }
     var winType by remember(g?.id) { mutableStateOf(WinType.fromKey(g?.winType)) }
@@ -435,7 +451,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (fresh) Text("Now say who won (place 1) and how.", style = MaterialTheme.typography.bodyMedium)
             Text(gameLine(g) + if (g.manual) " · added by hand" else "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            ResultsForm(g.seatList, places, { seat, p -> places = places + (seat to p) }, draw, { draw = it }, winType, { winType = it }, note, { note = it }, g.turnsOn || g.manual)
+            ResultsForm(seats, places, { seat, p -> places = places + (seat to p) }, draw, { draw = it }, winType, { winType = it }, note, { note = it }, g.turnsOn || g.manual, onSeat = { picking = it })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(minutes, { minutes = it.filter(Char::isDigit) }, label = { Text("Minutes") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
                 OutlinedTextField(rounds, { rounds = it.filter(Char::isDigit) }, label = { Text("Turns (rounds)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
@@ -452,7 +468,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
                 }
             }
             Button(onClick = {
-                val seats = g.seatList.map { it.copy(place = places[it.seat]) }
+                val seats = seats.map { it.copy(place = places[it.seat]) }
                 val ms = minutes.toLongOrNull()?.times(60_000) ?: g.durationMs
                 scope.launch {
                     c.games.saveGame(
@@ -467,6 +483,15 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
             }, modifier = Modifier.fillMaxWidth()) { Text("Save") }
             Spacer(Modifier.height(16.dp))
         }
+    }
+    picking?.let { seat ->
+        val old = seats.firstOrNull { it.seat == seat }
+        if (old == null) picking = null
+        else SeatPickerSheet(
+            seatIndex = seats.indexOf(old), choice = seatChoiceOf(old),
+            taken = seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
+            players = players, decks = decks, friendDecks = friendDecks, pictures = pictures, onDismiss = { picking = null }, showLook = false,
+        ) { ch -> seats = seats.map { if (it.seat == seat) changeSeat(it, ch, seatDeck(ch, decks, friendDecks)) else it } }
     }
     if (confirmDelete && g != null) {
         AlertDialog(
@@ -572,7 +597,11 @@ private fun DeckTableHead() {
 private fun DeckTableRow(d: DeckResult, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(2.6f), verticalAlignment = Alignment.CenterVertically) {
-            SeatPicture(GameStore.artCrop(d.scryfallId), 0, 28.dp)
+            if (d.anonymous) {
+                Box(Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Person, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else SeatPicture(GameStore.artCrop(d.scryfallId), 0, 28.dp)
             Spacer(Modifier.width(6.dp))
             Text(d.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }

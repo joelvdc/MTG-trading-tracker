@@ -77,7 +77,6 @@ import com.mtgtrader.data.LiveGame
 import com.mtgtrader.data.LiveGames
 import com.mtgtrader.data.LiveSeat
 import com.mtgtrader.data.OutReason
-import com.mtgtrader.data.SeatChoice
 
 internal val SheetInk = Color(0xFF15171C)
 private val SheetMuted = Color(0xFF6B7280)
@@ -156,7 +155,7 @@ internal fun ReseatPicker(g: LiveGame, seat: Int, pictures: Boolean, onDismiss: 
     val s = g.seats.firstOrNull { it.seat == seat } ?: return
     SeatPickerSheet(
         seatIndex = g.seats.indexOf(s),
-        choice = SeatChoice(s.playerUid, s.name, s.me, s.deckId, s.friendDeckUid, s.artUrl, s.colour),
+        choice = seatChoiceOf(s),
         taken = g.seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
         players = players, decks = decks, friendDecks = friendDecks, pictures = pictures, onDismiss = onDismiss, showLook = false,
     ) { choice ->
@@ -231,6 +230,7 @@ private fun DamageDetail(g: LiveGame, s: LiveSeat, focus: Int, onFocus: (Int?) -
 private fun BoxScope.BigCell(g: LiveGame, me: LiveSeat, j: Int, focused: Boolean, onFocus: (Int) -> Unit) {
     val c = LocalContext.current.container
     val holdOne by c.settings.trackerHoldOne.collectAsStateWithLifecycle()
+    val buzz = rememberBuzz()
     val o = g.seats[j]
     val parts = if (o.hasPartners) listOf(false, true) else listOf(false)
     val big = if (g.seats.size >= 5) 24.sp else 32.sp
@@ -239,7 +239,7 @@ private fun BoxScope.BigCell(g: LiveGame, me: LiveSeat, j: Int, focused: Boolean
             if (k > 0) Box(Modifier.width(1.5.dp).fillMaxHeight().padding(vertical = 6.dp).background(SheetInk.copy(alpha = 0.55f)))
             val key = LiveGames.cmdKey(o.seat, second)
             val value = me.cmd[key] ?: 0
-            fun add(by: Int) = c.games.update { LiveGames.commanderDamage(it, me.seat, key, by) }
+            fun add(by: Int) { buzz.tap(); c.games.update { LiveGames.commanderDamage(it, me.seat, key, by) } }
             Box(
                 Modifier.weight(1f).fillMaxHeight().pointerInput(key, focused, holdOne) {
                     // In the detail − and + work as on a life panel (a hold gives ±10, since 1.57).
@@ -271,7 +271,8 @@ private class Tile(val icon: ImageVector?, val drawn: String?, val label: String
 @Composable
 private fun counterTiles(g: LiveGame, s: LiveSeat, onCustom: () -> Unit, onKo: () -> Unit): List<Tile> {
     val c = LocalContext.current.container
-    fun up(f: (LiveGame) -> LiveGame) = c.games.update(change = f)
+    val buzz = rememberBuzz()
+    fun up(f: (LiveGame) -> LiveGame) { buzz.tap(); c.games.update(change = f) }
     fun count(key: String, label: String, icon: ImageVector) = Tile(
         icon, null, label, s.counters[key]?.takeIf { it > 0 }?.toString(),
         onTap = { up { LiveGames.counter(it, s.seat, key, 1) } }, onHold = { up { LiveGames.counter(it, s.seat, key, -1) } },

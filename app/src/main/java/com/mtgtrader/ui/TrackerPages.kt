@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -256,15 +257,12 @@ internal fun untouched(g: LiveGame): Boolean = g.turns.isEmpty() &&
     g.seats.all { it.life == g.startingLife && it.cmd.isEmpty() && it.poison == 0 && it.casts == 0 && it.partnerCasts == 0 && it.counters.isEmpty() && !it.out }
 
 /**
- * The game's settings (since 1.48; Lifetap's Settings): this game's players, layout, starting life and seats; how
- * it's played; the controls; how it looks; the phone. Game choices become the defaults for the next games.
+ * The tracker's settings for every game (controls, appearance, the phone): in Game settings, and since 1.58 also in
+ * Settings → Life tracker, without a game going.
  */
 @Composable
-internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
-    val c = LocalContext.current.container
-    val s = c.settings
-    val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
-    val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+internal fun ColumnScope.TrackerLookSettings() {
+    val s = LocalContext.current.container.settings
     val pictures by s.trackerPictures.collectAsStateWithLifecycle()
     val aboveBelow by s.trackerAboveBelow.collectAsStateWithLifecycle()
     val holdOne by s.trackerHoldOne.collectAsStateWithLifecycle()
@@ -276,6 +274,66 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
     val animations by s.trackerFlag("trackerAnimations").collectAsStateWithLifecycle()
     val keepAwake by s.trackerFlag("trackerKeepAwake").collectAsStateWithLifecycle()
     val hideBars by s.trackerFlag("trackerHideBars").collectAsStateWithLifecycle()
+    SectionHead("Controls")
+    SettingRow(Icons.Outlined.TouchApp, "Changing life", if (aboveBelow) "Tap above the total for +, below for −" else "Tap left of the total for −, right for +") {
+        Drop(aboveBelow, listOf(false, true), { if (it) "Above / below" else "Left / right" }) { s.setTracker("trackerAboveBelow", it) }
+    }
+    SettingRow(Icons.Outlined.PanTool, "Holding", "Keep a finger on the panel") {
+        Drop(holdOne, listOf(false, true), { if (it) "By 1, fast" else "By 10" }) { s.setTracker("trackerHoldOne", it) }
+    }
+    SwitchSetting(Icons.Outlined.Vibration, "Haptic feedback", "A short buzz for life, damage, counters, mana and dice", haptics) { s.setTracker("trackerHaptics", it) }
+    SectionHead("Appearance")
+    SettingRow(Icons.Outlined.Image, "Backgrounds", "Each player can change their own on their panel") {
+        Drop(pictures, listOf(false, true), { if (it) "Commander pictures" else "Colours" }) { s.setTracker("trackerPictures", it) }
+    }
+    SwitchSetting(Icons.Outlined.WaterDrop, "Colourise commander mini-grids", "Mini-grids show the players' colours", colourGrids) { s.setTracker("trackerColourGrids", it) }
+    SettingRow(Icons.Outlined.Dashboard, "Player card layout")
+    Row(Modifier.fillMaxWidth().padding(start = 38.dp, bottom = 4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+        CardLayout.entries.forEach { l -> CardLayoutThumb(l, cardLayout == l) { s.setTrackerCardLayout(l) } }
+    }
+    SettingRow(Icons.Outlined.MonitorHeart, "Low life", "A quarter of the starting life or less") {
+        Drop(lowLife, LowLifeStyle.entries.toList(), { it.label }) { s.setTrackerLowLife(it) }
+    }
+    SwitchSetting(Icons.Outlined.VisibilityOff, "Auto-hide menu", "Hides the middle bar until you tap the gap", autoHide) { s.setTracker("trackerAutoHide", it) }
+    SwitchSetting(Icons.Outlined.Animation, "Dice & randomiser animations", on = animations) { s.setTracker("trackerAnimations", it) }
+    SectionHead("Device")
+    SwitchSetting(Icons.Outlined.LightMode, "Keep display awake", on = keepAwake) { s.setTracker("trackerKeepAwake", it) }
+    SwitchSetting(Icons.Outlined.Fullscreen, "Hide navigation and status bars", on = hideBars) { s.setTracker("trackerHideBars", it) }
+}
+
+/** Settings → Life tracker → Life tracker settings (since 1.58): [TrackerLookSettings] outside a game, in the tracker's dark look. */
+@Composable
+fun TrackerSettingsScreen(nav: NavController) {
+    Column(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
+        Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp)) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack, "Back",
+                Modifier.align(Alignment.CenterStart).clip(CircleShape).clickable { nav.safePopBackStack() }.padding(10.dp), tint = Color.White,
+            )
+            Text("Life tracker settings", color = Color.White, fontSize = 22.sp, modifier = Modifier.align(Alignment.Center))
+        }
+        HorizontalDivider(color = Line)
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
+            TrackerLookSettings()
+            Text(
+                "These settings are for every game and follow you to your other phone. The players, starting life, turns and commander damage are chosen per game: in a game, tap ⚙ in the bar across the middle.",
+                color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
+            )
+        }
+    }
+}
+
+/**
+ * The game's settings (since 1.48; Lifetap's Settings): this game's players, layout, starting life and seats; how
+ * it's played; the controls; how it looks; the phone. Game choices become the defaults for the next games.
+ */
+@Composable
+internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
+    val c = LocalContext.current.container
+    val s = c.settings
+    val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
+    val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val pictures by s.trackerPictures.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
     var customLife by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf<Int?>(null) }
@@ -354,31 +412,7 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
         SwitchSetting(Icons.Outlined.BarChart, "Game log", "What happened, in the history (bar: the clock with an arrow)", g.logOn) { on ->
             game { it.copy(logOn = on) }; s.setTracker("trackerLog", on)
         }
-        SectionHead("Controls")
-        SettingRow(Icons.Outlined.TouchApp, "Changing life", if (aboveBelow) "Tap above the total for +, below for −" else "Tap left of the total for −, right for +") {
-            Drop(aboveBelow, listOf(false, true), { if (it) "Above / below" else "Left / right" }) { s.setTracker("trackerAboveBelow", it) }
-        }
-        SettingRow(Icons.Outlined.PanTool, "Holding", "Keep a finger on the panel") {
-            Drop(holdOne, listOf(false, true), { if (it) "By 1, fast" else "By 10" }) { s.setTracker("trackerHoldOne", it) }
-        }
-        SwitchSetting(Icons.Outlined.Vibration, "Haptic feedback", on = haptics) { s.setTracker("trackerHaptics", it) }
-        SectionHead("Appearance")
-        SettingRow(Icons.Outlined.Image, "Backgrounds", "Each player can change their own on their panel") {
-            Drop(pictures, listOf(false, true), { if (it) "Commander pictures" else "Colours" }) { s.setTracker("trackerPictures", it) }
-        }
-        SwitchSetting(Icons.Outlined.WaterDrop, "Colourise commander mini-grids", "Mini-grids show the players' colours", colourGrids) { s.setTracker("trackerColourGrids", it) }
-        SettingRow(Icons.Outlined.Dashboard, "Player card layout")
-        Row(Modifier.fillMaxWidth().padding(start = 38.dp, bottom = 4.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            CardLayout.entries.forEach { l -> CardLayoutThumb(l, cardLayout == l) { s.setTrackerCardLayout(l) } }
-        }
-        SettingRow(Icons.Outlined.MonitorHeart, "Low life", "A quarter of the starting life or less") {
-            Drop(lowLife, LowLifeStyle.entries.toList(), { it.label }) { s.setTrackerLowLife(it) }
-        }
-        SwitchSetting(Icons.Outlined.VisibilityOff, "Auto-hide menu", "Hides the middle bar until you tap the gap", autoHide) { s.setTracker("trackerAutoHide", it) }
-        SwitchSetting(Icons.Outlined.Animation, "Dice & randomiser animations", on = animations) { s.setTracker("trackerAnimations", it) }
-        SectionHead("Device")
-        SwitchSetting(Icons.Outlined.LightMode, "Keep display awake", on = keepAwake) { s.setTracker("trackerKeepAwake", it) }
-        SwitchSetting(Icons.Outlined.Fullscreen, "Hide navigation and status bars", on = hideBars) { s.setTracker("trackerHideBars", it) }
+        TrackerLookSettings()
         Text(
             "These settings follow you to your other phone. The game's own choices (players, turns, commander damage…) are kept for the next game too.",
             color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
@@ -517,7 +551,8 @@ internal fun DicePage(g: LiveGame, onClose: () -> Unit, onRoll: (Roll) -> Unit, 
 @Composable
 internal fun ManaPage(g: LiveGame, onClose: () -> Unit) {
     val c = LocalContext.current.container
-    fun pool(f: (LiveGame) -> LiveGame) = c.games.update(undoable = false, change = f)
+    val buzz = rememberBuzz()
+    fun pool(f: (LiveGame) -> LiveGame) { buzz.tap(); c.games.update(undoable = false, change = f) }
     @Composable
     fun line(v: Int, onBy: (Int) -> Unit, symbol: @Composable () -> Unit) = Row(
         Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,

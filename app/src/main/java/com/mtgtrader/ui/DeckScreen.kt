@@ -681,6 +681,15 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                 }
             }
+            // The deck's games from the life tracker (since 1.47), folded until opened; above the tokens since 1.58.
+            if (deckGames.isNotEmpty()) {
+                val gamesFolded = GAMES_OPEN !in statsOpen
+                item(key = "games_h") { StatsHeading("Games (${deckGames.size})", gamesFolded) { toggleStats(GAMES_OPEN) } }
+                if (!gamesFolded) item(key = "games_card") {
+                    val r = remember(deckGames) { com.mtgtrader.data.GameStats.decks(deckGames).firstOrNull { it.deckId == deckId } }
+                    r?.let { DeckGamesCard(it, deckGames, deckId) { g -> g.uid?.let { uid -> nav.navigate("games/game/$uid") } } }
+                }
+            }
             if (tokens.isNotEmpty()) {
                 val tokensFolded = DeckStats.TOKENS !in statsOpen
                 item(key = "tokens_h") { StatsHeading("Tokens (${tokens.size})", tokensFolded) { toggleStats(DeckStats.TOKENS) } }
@@ -694,15 +703,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             modifier = Modifier.padding(top = 6.dp),
                         )
                     }
-                }
-            }
-            // The deck's games from the life tracker (since 1.47), folded until opened.
-            if (deckGames.isNotEmpty()) {
-                val gamesFolded = GAMES_OPEN !in statsOpen
-                item(key = "games_h") { StatsHeading("Games (${deckGames.size})", gamesFolded) { toggleStats(GAMES_OPEN) } }
-                if (!gamesFolded) item(key = "games_card") {
-                    val r = remember(deckGames) { com.mtgtrader.data.GameStats.decks(deckGames).firstOrNull { it.deckId == deckId } }
-                    r?.let { DeckGamesCard(it, deckGames, deckId) { g -> g.uid?.let { uid -> nav.navigate("games/game/$uid") } } }
                 }
             }
             sections.forEach { section ->

@@ -1054,6 +1054,26 @@ class ScreenshotTest {
         com.mtgtrader.ui.GameSettingsPage(g, onClose = {})
     }
 
+    /** 1.58: the "1st" badge on the player who starts, until something happens (turns off). */
+    @Test fun trackerFirstBadge() {
+        val g0 = sampleGame()
+        val fresh = g0.copy(
+            turnsOn = false, firstSeat = 1, monarch = null, initiative = null,
+            seats = g0.seats.map { it.copy(life = g0.startingLife, cmd = emptyMap(), poison = 0, casts = 0, partnerCasts = 0, counters = emptyMap(), out = false) },
+        )
+        tracker("tracker_first_badge", fresh) { g ->
+            com.mtgtrader.ui.TrackerTable(
+                g, com.mtgtrader.ui.PanelLook(lowLife = com.mtgtrader.data.LowLifeStyle.OFF), now = 1_000,
+                first = com.mtgtrader.ui.firstBadgeSeat(g), bar = { com.mtgtrader.ui.MenuBar(g, 1_000) },
+            )
+        }
+    }
+
+    /** 1.58: Settings → Life tracker settings, without a game. */
+    @Test @Config(qualifiers = "w411dp-h1500dp-xhdpi") fun trackerSettingsOutsideAGame() = tracker("tracker_settings_outside", height = 1500) {
+        com.mtgtrader.ui.TrackerSettingsScreen(androidx.navigation.compose.rememberNavController())
+    }
+
     @Test fun trackerDice() = tracker("tracker_dice") { g -> com.mtgtrader.ui.DicePage(g, {}, {}, {}, {}) }
 
     @Test fun trackerMana() = tracker("tracker_mana") { g -> com.mtgtrader.ui.ManaPage(g) {} }

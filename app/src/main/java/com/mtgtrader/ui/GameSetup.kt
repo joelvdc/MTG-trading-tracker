@@ -80,7 +80,9 @@ import com.mtgtrader.data.Deck
 import com.mtgtrader.data.FriendDeck
 import com.mtgtrader.data.GameRecord
 import com.mtgtrader.data.GameSeat
+import com.mtgtrader.data.GameStats
 import com.mtgtrader.data.GameStore
+import com.mtgtrader.data.GuestCommander
 import com.mtgtrader.data.Games
 import com.mtgtrader.data.LiveGame
 import com.mtgtrader.data.LiveGames
@@ -115,8 +117,53 @@ internal fun seatDeck(choice: SeatChoice, decks: List<Deck>, friendDecks: List<F
         val f = friendDecks.firstOrNull { it.uid == uid } ?: return null
         return SeatDeck(f.name, f.commander, f.partner, f.scryfallId, f.colorIdentity, GameStore.artCrop(f.scryfallId), null, null)
     }
+    // A guest's commander (since 1.58): like a deck without a name.
+    choice.guest?.takeIf { choice.playerUid == null }?.let { gc ->
+        return SeatDeck("", gc.commander, gc.partner, gc.scryfallId, gc.colorIdentity, GameStore.artCrop(gc.scryfallId), null, null)
+    }
     return null
 }
+
+/** The setup's choice for a seat as it is in the game (a guest keeps their commander, since 1.58). */
+internal fun seatChoiceOf(s: LiveSeat) = SeatChoice(
+    s.playerUid, s.name, s.me, s.deckId, s.friendDeckUid, s.artUrl, s.colour,
+    guest = guestOf(s.playerUid, s.deckId, s.friendDeckUid, s.commander, s.scryfallId, s.partner, s.colorIdentity),
+)
+
+/** The commander of a guest without a deck, if they played one. */
+internal fun guestOf(playerUid: String?, deckId: Long?, friendDeckUid: String?, commander: String, scryfallId: String?, partner: String?, colorIdentity: String) =
+    if (playerUid != null || deckId != null || friendDeckUid != null || commander.isBlank()) null
+    else GuestCommander(commander, scryfallId, partner, colorIdentity)
+
+/** A recorded seat as a setup choice (since 1.58, to change a past game's player or deck). */
+internal fun seatChoiceOf(s: GameSeat): SeatChoice {
+    val names = s.commander.split(" & ")
+    return SeatChoice(
+        s.playerUid, s.name, s.me, s.deckId, s.friendDeckUid,
+        guest = guestOf(s.playerUid, s.deckId, s.friendDeckUid, names.first(), s.scryfallId, names.getOrNull(1), s.colorIdentity),
+    )
+}
+
+/**
+ * [old] with the player and deck of [ch], playing [d] (since 1.58, changing a past game): how it went stays. The
+ * same deck keeps its scores from the day; another deck brings its bracket and power level of today.
+ */
+internal fun changeSeat(old: GameSeat, ch: SeatChoice, d: SeatDeck?): GameSeat {
+    val new = gameSeatOf(old.seat, ch, d)
+    val player = old.copy(playerUid = new.playerUid, name = new.name, me = new.me)
+    return if (GameStats.deckKey(new) == GameStats.deckKey(old)) player
+    else player.copy(
+        deckId = new.deckId, friendDeckUid = new.friendDeckUid, deckName = new.deckName, commander = new.commander,
+        scryfallId = new.scryfallId, colorIdentity = new.colorIdentity, bracket = new.bracket, power = new.power,
+    )
+}
+
+/** A recorded game's seat for [ch] in seat [i], playing [d]: as a game added by hand records it, and (since 1.58) a past game changed. */
+internal fun gameSeatOf(i: Int, ch: SeatChoice, d: SeatDeck?) = GameSeat(
+    seat = i, playerUid = ch.playerUid, name = ch.name.ifBlank { "Player ${i + 1}" }, me = ch.me, deckId = ch.deckId,
+    friendDeckUid = ch.friendDeckUid, deckName = d?.name.orEmpty(), commander = listOfNotNull(d?.commander?.ifBlank { null }, d?.partner).joinToString(" & "),
+    scryfallId = d?.scryfallId, colorIdentity = d?.colorIdentity.orEmpty(), bracket = d?.bracket, power = d?.power,
+)
 
 /** A new table with [seats], the starting life of the last game and the game settings last used (since 1.48). */
 internal fun newTable(settings: com.mtgtrader.data.Settings, last: TableSetup?, seats: List<SeatChoice>) = TableSetup(
@@ -152,7 +199,7 @@ internal fun startGame(setup: TableSetup, decks: List<Deck>, friendDecks: List<F
 
 /** The table setup a game in progress stands for: its seats as they are now, and its settings (for a rematch). */
 internal fun setupOf(g: LiveGame, firstSeat: Int?): TableSetup = TableSetup(
-    seats = g.seats.map { SeatChoice(it.playerUid, it.name, it.me, it.deckId, it.friendDeckUid, it.artUrl, it.colour) },
+    seats = g.seats.map { seatChoiceOf(it) },
     startingLife = g.startingLife, commanderDamage = g.commanderDamage, turnsOn = g.turnsOn, clock = g.clock,
     counters = g.counters, firstSeat = firstSeat?.takeIf { it < g.seats.size }, cmdLifeLoss = g.cmdLifeLoss, whenDown = g.whenDown,
     ends = g.ends, logOn = g.logOn,
@@ -296,14 +343,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
                             return@Button
                         }
                         val ms = (pastMinutes.toLongOrNull() ?: 0) * 60_000
-                        val seats = s.seats.mapIndexed { i, ch ->
-                            val d = seatDeck(ch, decks, friendDecks)
-                            GameSeat(
-                                seat = i, playerUid = ch.playerUid, name = ch.name.ifBlank { "Player ${i + 1}" }, me = ch.me, deckId = ch.deckId,
-                                friendDeckUid = ch.friendDeckUid, deckName = d?.name.orEmpty(), commander = listOfNotNull(d?.commander?.ifBlank { null }, d?.partner).joinToString(" & "),
-                                scryfallId = d?.scryfallId, colorIdentity = d?.colorIdentity.orEmpty(), bracket = d?.bracket, power = d?.power,
-                            )
-                        }
+                        val seats = s.seats.mapIndexed { i, ch -> gameSeatOf(i, ch, seatDeck(ch, decks, friendDecks)) }
                         val uid = UUID.randomUUID().toString()
                         scope.launch {
                             c.games.saveGame(GameRecord(startedAt = at, endedAt = at + ms, durationMs = ms, manual = true, seats = Games.encodeSeats(seats), uid = uid))
@@ -363,6 +403,7 @@ internal fun SeatPickerSheet(
     val scope = rememberCoroutineScope()
     var newPlayer by remember { mutableStateOf(false) }
     var newDeck by remember { mutableStateOf(false) }
+    var guestCommander by remember { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.navigationBarsPadding().heightIn(max = menuMaxHeight()).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
             Text("Seat ${seatIndex + 1}", style = MaterialTheme.typography.titleLarge)
@@ -388,22 +429,29 @@ internal fun SeatPickerSheet(
             if (choice.me) {
                 decks.sortedBy { it.name.lowercase() }.forEach { d ->
                     deckRow(choice.deckId == d.archidektId, d.name, d.commanders.ifBlank { "No commander" }, GameStore.artCrop(d.commanderScryfallId) ?: d.artUrl) {
-                        onChange(choice.copy(deckId = d.archidektId, friendDeckUid = null)); onDismiss()
+                        onChange(choice.copy(deckId = d.archidektId, friendDeckUid = null, guest = null)); onDismiss()
                     }
                 }
                 if (decks.isEmpty()) Text("Your decks are the app's decks (the Decks tab).", style = MaterialTheme.typography.bodySmall)
             } else if (choice.playerUid != null) {
                 friendDecks.filter { it.playerUid == choice.playerUid }.forEach { f ->
                     deckRow(choice.friendDeckUid == f.uid, f.name, listOfNotNull(f.commander, f.partner).joinToString(" & "), GameStore.artCrop(f.scryfallId)) {
-                        onChange(choice.copy(friendDeckUid = f.uid, deckId = null)); onDismiss()
+                        onChange(choice.copy(friendDeckUid = f.uid, deckId = null, guest = null)); onDismiss()
                     }
                 }
                 TextButton(onClick = { newDeck = true }) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(4.dp)); Text("New deck for ${choice.name}") }
             } else {
-                Text("A guest plays without a deck of their own; add them as a player to keep their decks.", style = MaterialTheme.typography.bodySmall)
+                // A guest picks just a commander (since 1.58); the stats count it like a deck.
+                choice.guest?.let { gc ->
+                    deckRow(true, listOfNotNull(gc.commander, gc.partner).joinToString(" & "), "Commander", GameStore.artCrop(gc.scryfallId)) { guestCommander = true }
+                }
+                TextButton(onClick = { guestCommander = true }) {
+                    Icon(Icons.Default.Add, null); Spacer(Modifier.width(4.dp)); Text(if (choice.guest == null) "Pick a commander" else "Another commander")
+                }
+                Text("A guest plays without decks of their own; add them as a player to keep their decks.", style = MaterialTheme.typography.bodySmall)
             }
-            if (choice.deckId != null || choice.friendDeckUid != null) {
-                TextButton(onClick = { onChange(choice.copy(deckId = null, friendDeckUid = null)) }) { Text("No deck") }
+            if (choice.deckId != null || choice.friendDeckUid != null || choice.guest != null) {
+                TextButton(onClick = { onChange(choice.copy(deckId = null, friendDeckUid = null, guest = null)) }) { Text(if (choice.guest != null) "No commander" else "No deck") }
             }
             if (showLook && !pictures) {
                 Text("Colour", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
@@ -442,6 +490,15 @@ internal fun SeatPickerSheet(
             }
         }
     }
+    if (guestCommander) {
+        GuestCommanderDialog(choice.name, choice.guest, onDismiss = { guestCommander = false }) { commander, partner ->
+            guestCommander = false
+            scope.launch {
+                onChange(choice.copy(deckId = null, friendDeckUid = null, guest = c.games.guestCommander(commander, partner)))
+                onDismiss()
+            }
+        }
+    }
     if (newDeck && choice.playerUid != null) {
         FriendDeckDialog(choice.name, onDismiss = { newDeck = false }) { name, commander, partner, link ->
             newDeck = false
@@ -472,6 +529,26 @@ internal fun FriendDeckDialog(owner: String, onDismiss: () -> Unit, onSave: (nam
             }
         },
         confirmButton = { TextButton(onClick = { onSave(name, commander, partner.ifBlank { null }, link.ifBlank { null }) }, enabled = commander.isNotBlank()) { Text("Add") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/** A guest's commander and partner (since 1.58), found on Scryfall. */
+@Composable
+internal fun GuestCommanderDialog(guest: String, current: GuestCommander?, onDismiss: () -> Unit, onSave: (commander: String, partner: String?) -> Unit) {
+    var commander by rememberSaveable { mutableStateOf(current?.commander.orEmpty()) }
+    var partner by rememberSaveable { mutableStateOf(current?.partner.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${guest.ifBlank { "The guest" }}'s commander") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                CommanderField("Commander", commander) { commander = it }
+                CommanderField("Partner (if any)", partner) { partner = it }
+                Text("In the stats it counts like a deck.", style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(commander, partner.ifBlank { null }) }, enabled = commander.isNotBlank()) { Text("OK") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

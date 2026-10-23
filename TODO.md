@@ -62,64 +62,9 @@ How to use this file:
 17. ~~MTG Trader 1.56 (green light on 2026-10-23): each attacking creature hits one opponent (Ruby's Jumbo Cactuar no
    longer knocks out all three).~~ Released.
 18. ~~MTG Trader 1.57 (green light on 2026-10-23): hold − or + in the commander damage window for ±10.~~ Released.
-
-### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
-*Added 2026-10-18. MTG Trader only.*
-
-The owner's words: "add a todo for when I am on a PC to have you run the major changes in 1.46 and 1.47 in an emulator
-for testing all the functions that this cloud session could not."
-
-Cloud sessions can't run an Android emulator: 1.46 and 1.47 were checked with unit tests, screenshot tests and a
-simulated run of the screens, never on a real (or emulated) phone. In a session on the owner's PC: start an emulator
-(Android Studio's, a recent Pixel), install the debug build (`./gradlew installDebug`), drive the app with `adb`
-(taps, swipes, screenshots), and report what works and what doesn't, with screenshots. Use a spare Archidekt deck
-(not the owner's real decks) for anything that writes to Archidekt, and a spare Nextcloud folder for sync. Fixes
-found go through the usual plan → green light → release.
-
-Checklist:
-- **Deck editing (1.46):** drag a card by its handle to another category (also in the compact view and the
-  maybeboard); press and hold to select, Move to category, To maybeboard, Remove; undo each; a category's ⋮ (add a
-  card, select all, rename, delete); the card window's controls (category list from the bottom, In the deck /
-  Maybeboard, copies), also with the phone's text set larger; Auto-categorise all cards.
-- **Archidekt sending (1.46, 1.47):** edits reach Archidekt (check on archidekt.com); offline edits wait and go when
-  back online; adding, renaming and deleting a category happen on Archidekt; send a local deck to Archidekt (new deck,
-  folder, visibility); Folder and visibility.
-- **Local decks (1.46):** New deck from empty, a precon, scans, a copy, a pasted Moxfield list; detach; a local deck
-  reaches the other phone through Nextcloud sync (two emulators, or one emulator and a phone).
-- **Menus (1.47):** every long menu (deck ⋮, collection ⋮, sort menus, category lists) fits above the phone's
-  buttons, with gesture navigation and with three-button navigation, small and large screens, larger text.
-- **Manage categories (1.47):** switch categories off and on (deck page, Hidden categories section, move lists);
-  empty categories never on the deck page; rename and delete with undo.
-- **Commander odds (1.47):** open the Stats, scroll the odds away and back: they don't start over.
-- **Life tracker (1.47, redesigned in 1.48):** New game with 2 to 6 players (layouts, also one at each end for 4 and 6;
-  panels facing the right way; the middle bar in a gap), tap and hold on every panel in both tap modes, holding by 1;
-  the name label opens the player's sheet facing them; the seating grid (tap +1, hold for − and +, the partner switch);
-  every counter tile (tap and hold), K.O., custom counters; changing a player and a deck during the game; background
-  picture or colour, contrast; Dead? / out at once / nothing; low life animations; turns, clock, pause (tap the clock),
-  undo (hold History); Game settings (players and starting life restart after asking); dice, coin, custom die, random
-  player and opponent, the quick d20 (hold the die); the mana pool; the history log; auto-hiding bar; vibration; the
-  screen stays on and the system bars hide (and both switches); leaving and coming back keeps the game; End the game:
-  Save and rematch, Save then new players, end without saving.
-- **Life tracker (1.49):** the random pick's run (about 3 seconds, slowing down) feels right on a phone; your own
-  commander's box on the sheet and the mini-grid; the framed mini-grid stays centred with badges beside it on every
-  layout, also with large text.
-- **Life tracker (1.51):** a narrow emulator (about 384 dp wide, like the Samsung A37) and a wide one: name, total and
-  grid in one line on 4 and 5 players; the 6-player end seats with the grid next to the total; the ⚙ opens Game
-  settings. History → Pause game and leave: the tracker closes, the game shows under Paused games (date, players,
-  round, time); Continue on the other phone after a sync (two emulators, or one and a phone) and check it's gone from
-  the first; Continue while another game runs (asks, then pauses that one); ⋮ → Drop it; a clock stopped by hand
-  stays stopped.
-- **Win turn (1.52):** open a deck's Stats: "Winning the game" appears within a few seconds (time it on the phone)
-  and opening it again is instant; Bracket cards of all decks fill their T-tiles; the bracket card's Speed section,
-  also in a shared picture.
-- **Win turn (1.54):** open Shrine Gate Win's and Baba's Stats once (the win turn is worked out again); the green and
-  gold turns in Winning the game and on the bracket card; "Maze's End wins …" under Shrine Gate Win's table.
-- **Turn badge (1.52):** the gold badge at the start of the name label on every table size, tapping it passes the turn.
-- **Scanner (1.52):** scan several cards after scrolling the list down: it jumps back to the newest each time.
-- **Game records (1.47):** game details (change places, delete), add a past game, stats (sorting, My decks, players,
-  head to head), the deck page's Games section, export CSV, Players and their decks; games and players reach the
-  other phone through sync; a backup restore keeps them.
-- **Tab bar (1.47):** five tabs, Settings behind the gear on every tab, back from Settings.
+19. ~~MTG Trader 1.58 (green light on 2026-10-23): the owner's life tracker feedback (vibration, "1st" badge, Drain /
+   burn, changing past games' players and decks, guests' commanders, "Anonymous", tracker settings in Settings, Games
+   above Tokens).~~ Released.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
@@ -178,6 +123,25 @@ on the owner's PC. Then put ScrollVault's typical and earliest turns next to the
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
 ## Done
+
+### Life tracker feedback (MTG Trader 1.58)
+*From the owner's game on 2026-10-23, with the screenshot of Game stats. Green light the same day. The owner also
+asked on 2026-10-23 to drop the to-do "Test 1.46 to 1.52 in an emulator": they test those things themselves.*
+
+Released in MTG Trader 1.58 (2026-10-23):
+- Vibration straight from the motor (`ui/Buzz.kt`, VIBRATE permission): Compose's haptic feedback was skipped by the
+  owner's phone (silent mode / touch vibration off). Life, commander damage, counters, mana pool, dice, picks, undo.
+- The "1st" badge (`firstBadgeSeat`) while the game is untouched, turns off.
+- `WinType.DRAIN` ("Drain / burn").
+- Past games: tap a player to change player or deck (`changeSeat`; same deck keeps its scores of the day).
+- Guests: `SeatChoice.guest` (`GuestCommander`); recorded as a seat with a commander and no deck, so the stats row is
+  the commander pair. Partners then get two counts on their own.
+- The no-deck stats row is "Anonymous" (`GameStats.ANONYMOUS_KEY`).
+- Settings → Life tracker → Life tracker settings (`TrackerSettingsScreen`, route `games/settings`).
+- Deck page: Games above Tokens.
+- Open: the owner asked whether partners get two commander damage trackers automatically. They do when the deck lists
+  two commanders (Archidekt Commander category, a friend's deck with a partner, a guest's partner). If the owner finds
+  a partner deck with only one count, look at that deck.
 
 ### Hold − or + for 10 commander damage (MTG Trader 1.57)
 *Reported by the owner on 2026-10-23: "when pressing +- here for a few seconds nothing happens. I would like it to

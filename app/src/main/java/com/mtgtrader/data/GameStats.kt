@@ -35,6 +35,8 @@ data class DeckResult(
     val oppPower: Double?,
     val lastPlayed: Long,
 ) {
+    /** The seats where no deck and no commander was picked, together (since 1.58 called "Anonymous"). */
+    val anonymous get() = key == GameStats.ANONYMOUS_KEY
     val losses get() = games - wins
     val winRate get() = if (games == 0) 0.0 else wins.toDouble() / games
 }
@@ -58,7 +60,10 @@ enum class DeckOrder(val label: String) {
 }
 
 object GameStats {
-    /** One key per deck: the app's deck, a friend's deck, or else its commander and name. */
+    /** The key of the seats without a deck or commander ([deckKey]). */
+    const val ANONYMOUS_KEY = "n:|"
+
+    /** One key per deck: the app's deck, a friend's deck, or else its commander and name (a guest's commander, since 1.58). */
     fun deckKey(s: GameSeat): String = s.deckId?.let { "d:$it" } ?: s.friendDeckUid?.let { "f:$it" } ?: "n:${s.commander.lowercase()}|${s.deckName.lowercase()}"
 
     /** One key per player: their sync id, or else their name. */
@@ -77,7 +82,7 @@ object GameStats {
             val places = list.mapNotNull { it.second.place }
             DeckResult(
                 key = key,
-                name = latest.second.deckName.ifBlank { latest.second.commander },
+                name = latest.second.deckName.ifBlank { latest.second.commander }.ifBlank { "Anonymous" },
                 commander = latest.second.commander,
                 scryfallId = latest.second.scryfallId,
                 colorIdentity = latest.second.colorIdentity,

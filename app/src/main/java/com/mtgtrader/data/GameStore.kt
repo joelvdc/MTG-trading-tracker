@@ -47,7 +47,13 @@ data class SeatChoice(
     /** A picked random background, kept for the game. */
     val artUrl: String? = null,
     val colour: Int? = null,
+    /** A guest's commander (since 1.58): a guest has no decks, but can play a commander (and partner). */
+    val guest: GuestCommander? = null,
 )
+
+/** A guest's commander and partner, found on Scryfall (since 1.58). In the stats it counts as a deck of its own. */
+@Serializable
+data class GuestCommander(val commander: String, val scryfallId: String? = null, val partner: String? = null, val colorIdentity: String = "")
 
 /** A random commander's art for a panel without a commander of its own. */
 @Serializable
@@ -220,6 +226,19 @@ class GameStore(
     }
 
     /** A friend's deck from its commander's name, looked up on Scryfall (with its partner, if given). */
+    /** A guest's [commander] and [partner] as Scryfall names them, with their colours (since 1.58). */
+    suspend fun guestCommander(commander: String, partner: String?): GuestCommander {
+        val main = runCatching { scryfall.fuzzy(commander) }.getOrNull()
+        val second = partner?.takeIf { it.isNotBlank() }?.let { runCatching { scryfall.fuzzy(it) }.getOrNull() }
+        val colours = (main?.colorIdentity.orEmpty() + second?.colorIdentity.orEmpty()).toSet()
+        return GuestCommander(
+            commander = main?.name ?: commander.trim(),
+            scryfallId = main?.id,
+            partner = second?.name ?: partner?.takeIf { it.isNotBlank() }?.trim(),
+            colorIdentity = MtgColors.ORDER.filter { it.toString() in colours },
+        )
+    }
+
     suspend fun friendDeckFor(playerUid: String, name: String, commander: String, partner: String?, archidektUrl: String?): FriendDeck {
         val main = scryfall.fuzzy(commander)
         val second = partner?.takeIf { it.isNotBlank() }?.let { scryfall.fuzzy(it) }
