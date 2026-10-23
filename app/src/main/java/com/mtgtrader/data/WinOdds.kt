@@ -106,7 +106,7 @@ data class WinCounted(
  *   expensive it can pay for first (with a "first spell each turn" trigger, the biggest spell leads);
  * - puts equipment and auras on its commander (or else its biggest creature) and keeps pump spells for combat;
  * - attacks with everything that can (no blockers: it plays alone), creatures from the turn after they came in
- *   unless they have haste;
+ *   unless they have haste; each attacker hits one opponent (since 1.56);
  * - counts damage triggers read from the cards' rules text: casting spells (Vial Smasher, The Lord of Pain),
  *   creatures or lands entering (Purphoros, landfall), the start of the turn, attacking, and tap abilities.
  * Combos (since 1.53, see [plan]): those that win the game or deal infinite damage; endless loops of deaths,
@@ -146,9 +146,9 @@ object WinOddsCalc {
     /**
      * Raised when the rules change, so results kept on the phone are worked out again. 2: combos and tutors (1.53).
      * 3: counting Shrines and Gates, Maze's End, sacrifice decks and X spells (1.54). 4: ramp, Treasures, pumps, the
-     * graveyard, copies and planeswalkers (1.55).
+     * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56).
      */
-    const val VERSION = 4
+    const val VERSION = 5
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -2899,26 +2899,33 @@ object WinOddsCalc {
                 val drawnBonus = if (f.drawnBonus) live.count { it.card?.drawnAnthem == true } * drawnThisTurn else 0
                 val allDouble = f.doubles && live.any { it.card?.attackersDouble == true }
                 val counteredDouble = f.doubles && live.any { it.card?.doubleCountered == true }
-                var combat = 0
+                // Each attacker's damage, kept apart: a creature attacks one player (since 1.56).
+                val hits = ArrayList<Int>()
                 // Sage of the Maze: a land becomes a 2X/2X with haste, X the Gates (since 1.54).
-                live.firstNotNullOfOrNull { b -> b.card?.animates?.takeIf { b.turn < t && b.tapped != t } }?.let { combat += count(it.per) * it.factor }
+                live.firstNotNullOfOrNull { b -> b.card?.animates?.takeIf { b.turn < t && b.tapped != t } }?.let { hits += count(it.per) * it.factor }
                 var draws = 0
                 val fromCommanders = IntArray(leaders.size)
                 // Haunted One: a commander attacking gives it and the creatures sharing a type with it +2/+0 (since 1.55).
                 val background = if (f.doubles) live.sumOf { it.card?.background ?: 0 } else 0
                 val pumpedTypes = if (background > 0) attackers.filter { it.card in leaders }.flatMap { it.subtypes }.toSet() else emptySet()
-                val alive = life.count { it > 0 }
                 val myriadKinds = if (f.myriadFor) live.mapNotNull { it.card?.myriadFor } else emptyList()
                 for (b in fighters) {
                     val (power, double) = gearPower(b)
                     val bg = if (pumpedTypes.isNotEmpty() && b.subtypes.any { it in pumpedTypes }) background else 0
                     val ds = double || allDouble || b in doubled || doubleFor.any { k -> k == "creature" || b.isA(k) }
-                    val p = (power + overrun + bg + drawnBonus + (extra[b] ?: 0)).coerceAtLeast(0) * (if (ds) 2 else 1) *
-                        (if (counteredDouble && b.counters > 0) 2 else 1) * (if (extraCombat) 2 else 1)
+                    val once = (power + overrun + bg + drawnBonus + (extra[b] ?: 0)).coerceAtLeast(0) * (if (ds) 2 else 1) *
+                        (if (counteredDouble && b.counters > 0) 2 else 1)
+                    val p = once * (if (extraCombat) 2 else 1)
                     val myriad = b.card?.myriad == true || myriadKinds.any { b.isA(it) && b.card?.legendary != true }
                     val k = b.card?.let { leaders.indexOf(it) }?.takeIf { !b.token } ?: -1
-                    if (k >= 0) fromCommanders[k] += p else combat += p
-                    if (myriad) combat += p * (alive - 1).coerceAtLeast(0)
+                    when {
+                        k >= 0 -> fromCommanders[k] += p
+                        // Myriad: it and its copies attack each opponent once.
+                        myriad -> life.indices.filter { life[it] > 0 }.forEach { i -> life[i] -= p; dealt[0] += p.toLong() }
+                        // An extra combat: it attacks again, maybe someone else.
+                        extraCombat -> { hits += once; hits += once }
+                        else -> hits += p
+                    }
                     b.card?.combatDraw?.takeIf { it != 0 && p > 0 }?.let { draws += if (it == MANA_VALUE) p else it }
                 }
                 // Each commander keeps hitting the player it has hurt most; the rest finishes whoever is lowest.
@@ -2933,11 +2940,16 @@ object WinOddsCalc {
                         knockout = true
                     }
                 }
-                dealt[0] += combat.toLong()
-                for (i in life.indices.filter { life[it] > 0 }.sortedBy { life[it] }) {
-                    val used = minOf(combat, life[i])
-                    life[i] -= used
-                    combat -= used
+                // Until 1.56 all of it was added up and spread over the opponents, so one huge creature (Jumbo Cactuar)
+                // knocked out all three. Now the biggest go first, each onto the opponent with the most life it finishes,
+                // or else the one with the least life.
+                for (p in hits.sortedDescending()) {
+                    if (p <= 0) break
+                    val open = life.indices.filter { life[it] > 0 }
+                    if (open.isEmpty()) break
+                    val i = open.filter { life[it] <= p }.maxByOrNull { life[it] } ?: open.minBy { life[it] }
+                    life[i] -= p
+                    dealt[0] += p.toLong()
                 }
                 animated.forEach { it.creature = false; it.power = 0 }
                 if (life.all { it <= 0 }) return t

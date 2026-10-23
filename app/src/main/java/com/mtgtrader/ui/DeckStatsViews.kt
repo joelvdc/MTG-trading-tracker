@@ -576,7 +576,7 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
                 "Treasures. Each turn it casts its commander, creatures, token makers, equipment and auras and the cards that deal " +
                 "damage, the most expensive first; uses tap and loyalty abilities, Clues and Mutagens with the mana left; it puts " +
                 "the equipment and auras on its commander (or else its biggest creature), keeps pump spells for combat and " +
-                "attacks with everything that can (nobody blocks; a creature that tapped for mana or an ability stays back). " +
+                "attacks with everything that can (nobody blocks; each attacker hits one opponent; a creature that tapped for mana or an ability stays back). " +
                 "The opponents only draw their cards (for Howling Mine and the like). It wins when all three opponents are at 0, " +
                 "a commander has dealt 21 damage to each, a combo wins" + (if (n.mazeEnd) " or Maze's End finds its tenth Gate" else "") +
                 ". Counted: ${n.creatures} creatures, ${n.tokenMakers} token makers, " +

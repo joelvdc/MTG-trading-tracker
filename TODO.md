@@ -59,6 +59,8 @@ How to use this file:
   in `docs/health-check-instructions.txt` and was given to the owner to paste.
 16. ~~MTG Trader 1.54 (green light on 2026-10-21): the win turn at 4 in 10 games, the first win highlighted, and the
    simulator reading Shrines, Gates, Maze's End, sacrifice decks and X spells.~~ Released.
+17. ~~MTG Trader 1.56 (green light on 2026-10-23): each attacking creature hits one opponent (Ruby's Jumbo Cactuar no
+   longer knocks out all three).~~ Released.
 
 ### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
@@ -174,8 +176,10 @@ trust the network proxy). So: either the owner sends the ScrollVault lines of th
 on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
-### Simulator: one attacker hits only one opponent (Ruby's turn-5 win)
-*Added 2026-10-22. MTG Trader only.*
+## Done
+
+### Simulator: one attacker hits only one opponent (Ruby's turn-5 win) (MTG Trader 1.56)
+*Added 2026-10-22. MTG Trader only. Green light on 2026-10-23 ("no plan needed, go ahead and fix it").*
 
 The owner's words: "I am also interest in understanding how the simulator is giving my Ruby deck a 1% chance of
 winning turn 5. Is there a way to find out how that game would play out?" and then "just write down what needs to be
@@ -192,11 +196,13 @@ for example the biggest attackers first, each onto the opponent it finishes or e
 Then Jumbo Cactuar takes out one opponent, not three. This affects every deck a little (one big attacker, overrun
 pumps on few creatures), so the before/after numbers for all decks go in the release notes.
 
-Open questions:
-- Should the simulator also count a chump block against a single huge attacker (an opponent always has a creature
-  to block it), or keep "nobody blocks"?
+Settled 2026-10-23: keep "nobody blocks" (no chump blocks).
 
-## Done
+Released in MTG Trader 1.56 (2026-10-23): each attacker's damage goes to one opponent, the biggest first, onto the
+opponent with the most life it finishes or else the one with the least life; myriad copies hit each opponent; an extra
+combat lets a creature attack someone else. Ruby's first win turn 5 → 7 (4 in 10 still turn 10); Baba's first win
+8 → 9; 9 in 10 one turn later for Taranika band and Tawnos' Army; Grismold's 4 in 10 14 → 15; the rest unchanged.
+No health check change.
 
 ### The simulator reads ramp, Treasures, the graveyard, copies, planeswalkers, Clues and counters (MTG Trader 1.55)
 *Added 2026-10-21. MTG Trader only. Planned 2026-10-21; green light the same day ("A, one release, green light").*
