@@ -59,6 +59,8 @@ How to use this file:
   in `docs/health-check-instructions.txt` and was given to the owner to paste.
 16. ~~MTG Trader 1.54 (green light on 2026-10-21): the win turn at 4 in 10 games, the first win highlighted, and the
    simulator reading Shrines, Gates, Maze's End, sacrifice decks and X spells.~~ Released.
+17. ~~MTG Trader 1.56 (green light on 2026-10-23): each attacking creature hits one opponent (Ruby's Jumbo Cactuar no
+   longer knocks out all three).~~ Released.
 
 ### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
@@ -175,6 +177,32 @@ on the owner's PC. Then put ScrollVault's typical and earliest turns next to the
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
 ## Done
+
+### Simulator: one attacker hits only one opponent (Ruby's turn-5 win) (MTG Trader 1.56)
+*Added 2026-10-22. MTG Trader only. Green light on 2026-10-23 ("no plan needed, go ahead and fix it").*
+
+The owner's words: "I am also interest in understanding how the simulator is giving my Ruby deck a 1% chance of
+winning turn 5. Is there a way to find out how that game would play out?" and then "just write down what needs to be
+fixed for the simulator (related to Ruby's deck) into the todo.md, no need to draft a plan."
+
+What was found (1.55, traced games of the Ruby deck): every turn-5 win (about 1 in 100 games) is the same line: Ruby on
+turn 2, a two-land ramp spell on turn 3 (New Generation's Technique, Vastwood Surge, Skyshroud Claim or Map the
+Frontier) for 6 lands, Jumbo Cactuar on turn 4, and on turn 5 its attack trigger (+9999/+0) makes 10,000 combat damage.
+
+What needs fixing (data/WinOdds.kt, the combat step in `Game.play`): the damage of the attackers that aren't
+commanders is added up and spread over the opponents, lowest life first, so one huge creature knocks out all three.
+A creature can only attack one player: each attacker's damage should go to one opponent (still nobody blocking),
+for example the biggest attackers first, each onto the opponent it finishes or else the one with the least life.
+Then Jumbo Cactuar takes out one opponent, not three. This affects every deck a little (one big attacker, overrun
+pumps on few creatures), so the before/after numbers for all decks go in the release notes.
+
+Settled 2026-10-23: keep "nobody blocks" (no chump blocks).
+
+Released in MTG Trader 1.56 (2026-10-23): each attacker's damage goes to one opponent, the biggest first, onto the
+opponent with the most life it finishes or else the one with the least life; myriad copies hit each opponent; an extra
+combat lets a creature attack someone else. Ruby's first win turn 5 → 7 (4 in 10 still turn 10); Baba's first win
+8 → 9; 9 in 10 one turn later for Taranika band and Tawnos' Army; Grismold's 4 in 10 14 → 15; the rest unchanged.
+No health check change.
 
 ### The simulator reads ramp, Treasures, the graveyard, copies, planeswalkers, Clues and counters (MTG Trader 1.55)
 *Added 2026-10-21. MTG Trader only. Planned 2026-10-21; green light the same day ("A, one release, green light").*

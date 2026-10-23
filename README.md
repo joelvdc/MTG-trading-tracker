@@ -133,7 +133,7 @@ them (they stay open or folded for every deck).
   deck alone 10,000 times for up to 15 turns against three players at 40 life, with the mana as above: each turn it
   casts its commander, creatures, token makers, equipment, auras and the cards that deal damage (the most expensive it
   can pay for first), puts the equipment and auras on its commander (or its biggest creature), keeps pump spells for
-  combat, and attacks with everything that can (nobody blocks). It has won when all three are at 0, a commander has
+  combat, and attacks with everything that can (nobody blocks; each attacker hits one opponent, since 1.56). It has won when all three are at 0, a commander has
   dealt **21 commander damage** to each, a combo wins, or **Maze's End** finds its tenth Gate. **Combos** (Commander Salt's, read by what they do since
   1.53): those that win the game or deal infinite damage; endless loops of deaths, creatures entering or -1/-1
   counters when the deck has a card that turns them into life loss (Grave Venerations, The Meathook Massacre, Blood
