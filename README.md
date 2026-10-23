@@ -568,8 +568,13 @@ middle of the table, and everything about the game (counters, settings, dice, ma
 - **The middle bar:** ↻ ends the game; the ⚙ opens **Game settings**; the clock
   (round and game time, when on; tap to pause); ☀/☾ when it's day or night; the clock with an arrow opens the
   **history** (hold it to undo the last change); the coloured dots open the **mana pool** (WUBRG, colourless and a
-  storm count); the die opens **Dice & random** (random player or opponent, picked by a run around the table that slows down before it stops, a coin, a custom die, d4 to d20; hold
-  the die for a d20 at once). Rolls show twice, so both sides of the table can read them.
+  storm count); the die opens **Dice & random** (random player or opponent, picked by a run around the table that slows down before it stops, a coin, a custom die, d4 to d20,
+  drawn with Dicefont as in Lifetap since 1.59). A roll shows the die in a big box over the page (the dots for a d6,
+  the number on the others), with **Again** under it; tap outside to go back. **Random opponent** first asks who you
+  are: every panel says "I'm …", the player asking taps their own, and the pick runs among the others (since 1.59).
+  **Quick roll** (since 1.59, as Lifetap's): hold the die in the bar and a ring of dice, the coin, random opponent and
+  random player glides out around it over a darkened table; slide your finger to one (it grows and turns blue) and
+  let go to roll it on the table. A roll shows one die, as in Lifetap (until 1.58 it showed twice, once upside down).
 - **Game settings:** players, layout (for 4 and 6 players: side by side, or one at each end), starting life (20, 25,
   30, 40, 60 or your own), each seat's player and deck; commander damage, its life loss, what happens when a player is
   down, turns and clock, the game log; tapping above/below or left/right, holding by 10 or by 1, vibration; colours or

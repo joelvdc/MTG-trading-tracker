@@ -464,25 +464,9 @@ private fun DarkButton(text: String, icon: ImageVector? = null, colour: Color = 
     }
 }
 
-/** A die drawn as an outline, like Dicefont's (the number goes on top). */
-@Composable
-private fun Die(sides: Int) = Canvas(Modifier.size(62.dp)) {
-    val w = size.width
-    val st = Stroke(w * 0.05f)
-    val thin = Stroke(w * 0.03f)
-    fun poly(vararg pts: Pair<Float, Float>) = Path().apply { moveTo(pts[0].first * w, pts[0].second * w); pts.drop(1).forEach { lineTo(it.first * w, it.second * w) }; close() }
-    when (sides) {
-        4 -> drawPath(poly(0.5f to 0.08f, 0.95f to 0.88f, 0.05f to 0.88f), Color.White, style = st)
-        6 -> {
-            drawRect(Color.White, Offset(w * 0.12f, w * 0.12f), Size(w * 0.76f, w * 0.76f), style = st)
-            listOf(0.32f, 0.5f, 0.68f).forEach { y -> listOf(0.33f, 0.67f).forEach { x -> drawCircle(Color.White, w * 0.06f, Offset(x * w, y * w)) } }
-        }
-        8 -> { drawPath(poly(0.5f to 0.04f, 0.92f to 0.27f, 0.92f to 0.73f, 0.5f to 0.96f, 0.08f to 0.73f, 0.08f to 0.27f), Color.White, style = st); drawPath(poly(0.5f to 0.04f, 0.92f to 0.73f, 0.08f to 0.73f), Color.White, style = thin) }
-        10 -> { drawPath(poly(0.5f to 0.04f, 0.95f to 0.45f, 0.5f to 0.96f, 0.05f to 0.45f), Color.White, style = st); drawPath(poly(0.5f to 0.04f, 0.78f to 0.6f, 0.22f to 0.6f), Color.White, style = thin) }
-        12 -> { drawPath(poly(0.5f to 0.04f, 0.95f to 0.36f, 0.78f to 0.92f, 0.22f to 0.92f, 0.05f to 0.36f), Color.White, style = st); drawPath(poly(0.5f to 0.22f, 0.76f to 0.42f, 0.66f to 0.74f, 0.34f to 0.74f, 0.24f to 0.42f), Color.White, style = thin) }
-        else -> { drawPath(poly(0.5f to 0.04f, 0.92f to 0.27f, 0.92f to 0.73f, 0.5f to 0.96f, 0.08f to 0.73f, 0.08f to 0.27f), Color.White, style = st); drawPath(poly(0.5f to 0.18f, 0.84f to 0.72f, 0.16f to 0.72f), Color.White, style = thin) }
-    }
-}
+/** A roll of a [sides]-sided die, or the coin for 2. */
+internal fun newRoll(sides: Int): Roll =
+    if (sides == 2) Roll("Coin", if (Random.nextBoolean()) "Heads" else "Tails", 2) else Roll("d$sides", "${Random.nextInt(1, sides + 1)}", sides)
 
 @Composable
 private fun DiceButton(label: String, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) = Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -490,54 +474,51 @@ private fun DiceButton(label: String, onClick: () -> Unit, content: @Composable 
     Text(label, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
 }
 
-/** Dice & random (since 1.48): a random player or opponent, a coin, a custom die and d4 to d20. */
+/** Dice & random (since 1.48; Dicefont's dice as in Lifetap since 1.59): a random player or opponent, a coin, a custom die and d4 to d20. */
 @Composable
 internal fun DicePage(g: LiveGame, onClose: () -> Unit, onRoll: (Roll) -> Unit, onRandomPlayer: () -> Unit, onRandomOpponent: () -> Unit) {
     var custom by rememberSaveable { mutableIntStateOf(100) }
     var setting by remember { mutableStateOf(false) }
     TrackerPageFrame(g, "Dice & random", onClose) {
         Spacer(Modifier.height(10.dp))
-        listOf(
-            Triple(Icons.Outlined.Shuffle, "Random player" to "Spins around the table", onRandomPlayer),
-            Triple(Icons.Outlined.GpsFixed, "Random opponent" to (if (g.turnsOn) "For the player whose turn it is" else "One of the others, for you"), onRandomOpponent),
+        listOf<Triple<@Composable () -> Unit, Pair<String, String>, () -> Unit>>(
+            Triple({ Icon(Icons.Outlined.Shuffle, null, tint = Color.White) }, "Random player" to "Spins around the table", onRandomPlayer),
+            Triple({ CrossedSwords(32.dp) }, "Random opponent" to "Asks who you are, then picks one of the others", onRandomOpponent),
         ).forEach { (icon, text, action) ->
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = action).padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Raised), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Color.White) }
+                Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Raised), contentAlignment = Alignment.Center) { icon() }
                 Column(Modifier.padding(start = 12.dp)) { Text(text.first, color = Color.White, fontSize = 17.sp); Text(text.second, color = Muted, fontSize = 13.sp) }
             }
         }
         Text("Coins & dice", color = Color.White, fontSize = 17.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 14.dp, bottom = 10.dp))
         Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            DiceButton("Flip coin", { onRoll(Roll("Coin", if (Random.nextBoolean()) "Heads" else "Tails", 2)) }) {
-                Box(Modifier.size(50.dp).border(3.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) { Text("H", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
-            }
+            DiceButton("Flip coin", { onRoll(newRoll(2)) }) { DieGlyph(dieGlyph(2, 2)!!, 58.dp) }
             DiceButton("Custom", { onRoll(Roll("1 – $custom", "${Random.nextInt(1, custom + 1)}", custom)) }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "1 – $custom", color = Color.White, fontSize = 13.sp,
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color.Black).clickable { setting = true }.padding(horizontal = 10.dp, vertical = 3.dp),
-                    )
+                    Row(
+                        Modifier.clip(RoundedCornerShape(12.dp)).background(Color.Black).clickable { setting = true }.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Set ", color = Color.White, fontSize = 12.sp)
+                        Text("$custom", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    }
                     Text("Roll", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
         listOf(listOf(4, 6, 8), listOf(10, 12, 20)).forEach { r ->
             Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                r.forEach { d ->
-                    DiceButton("Roll d$d", { onRoll(Roll("d$d", "${Random.nextInt(1, d + 1)}", d)) }) {
-                        Die(d)
-                        if (d != 6) Text("$d", color = Color.White, fontSize = if (d >= 10) 16.sp else 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.offset(y = if (d == 4) 8.dp else 3.dp))
-                    }
-                }
+                r.forEach { d -> DiceButton("Roll d$d", { onRoll(newRoll(d)) }) { DieGlyph(dieGlyph(d, d)!!, 62.dp) } }
             }
         }
-        Row(Modifier.padding(top = 8.dp, bottom = 16.dp).fillMaxWidth().border(1.dp, Color(0xFF444444), RoundedCornerShape(14.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(top = 8.dp).fillMaxWidth().border(1.dp, Color(0xFF444444), RoundedCornerShape(14.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.Bolt, null, tint = Color.White)
             Column(Modifier.padding(start = 12.dp)) {
                 Text("Quick roll", color = Color.White, fontSize = 16.sp)
-                Text("Hold the die in the middle bar to roll a d20 without opening this page", color = Muted, fontSize = 13.sp)
+                Text("Hold the die in the middle bar, slide to a die and let go to roll it on the table", color = Muted, fontSize = 13.sp)
             }
         }
+        Text("Icons via Dicefont", color = Muted, fontSize = 13.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 10.dp, bottom = 16.dp))
     }
     if (setting) {
         TextInputDialog("Custom die", "Highest number", "$custom", "OK", onDismiss = { setting = false }) { v ->
@@ -763,14 +744,17 @@ internal fun EndGameDialog(g: LiveGame, onCancel: () -> Unit, onLeave: () -> Uni
     }
 }
 
-/** A roll, flip or pick over the table, written twice so both sides of the table can read it; tap to close. */
+/**
+ * A roll (since 1.59, as Lifetap's): one die in a big box, with the dots for a d6 and the number on the other dice,
+ * Again under it; a tap outside closes it (until 1.58 the result showed twice, once upside down).
+ */
 @Composable
 internal fun RollOverlay(roll: Roll, animate: Boolean, onAgain: () -> Unit, onDismiss: () -> Unit) {
-    var shown by remember(roll) { mutableStateOf(if (animate && roll.sides > 1) "" else roll.value) }
+    var shown by remember(roll) { mutableStateOf(if (animate && roll.sides > 1) reroll(roll) else roll.value) }
     LaunchedEffect(roll) {
         if (animate && roll.sides > 1) {
             repeat(9) { i ->
-                shown = if (roll.sides == 2) (if (i % 2 == 0) "Heads" else "Tails") else "${Random.nextInt(1, roll.sides + 1)}"
+                shown = reroll(roll)
                 delay(45L + i * 10L)
             }
             shown = roll.value
@@ -780,18 +764,34 @@ internal fun RollOverlay(roll: Roll, animate: Boolean, onAgain: () -> Unit, onDi
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
         contentAlignment = Alignment.Center,
     ) {
-        Column(
-            Modifier.widthIn(min = 220.dp, max = 320.dp).clip(RoundedCornerShape(28.dp)).background(Color(0xFF2E2F33)).pointerInput(Unit) { detectTapGestures { } }.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            val big = if (shown.length > 3) 44.sp else 72.sp
-            Text(shown, color = Color.White, fontSize = big, fontWeight = FontWeight.Bold, modifier = Modifier.rotate(180f))
-            Text(roll.title, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp))
-            Text(shown, color = Color.White, fontSize = big, fontWeight = FontWeight.Bold)
-            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (roll.sides > 1) DarkButton("Again", icon = Icons.Outlined.Replay, onClick = onAgain)
-                DarkButton("Close", icon = Icons.Outlined.HighlightOff, onClick = onDismiss)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier.clip(RoundedCornerShape(40.dp)).background(Color(0xFF2E2F33)).pointerInput(Unit) { detectTapGestures { } }
+                    .padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) { RollFace(roll, shown, 150.dp) }
+            if (roll.sides > 1) DarkButton("Again", icon = Icons.Outlined.Replay, modifier = Modifier.padding(top = 16.dp), onClick = onAgain)
+        }
+    }
+}
+
+/** One side of a roll: the die with what it shows (Dicefont), the coin's side, or a custom die's number, with its name under it. */
+@Composable
+private fun RollFace(roll: Roll, shown: String, size: Dp, modifier: Modifier = Modifier) = Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    val glyph = shown.toIntOrNull()?.let { if (roll.title.startsWith("d")) dieGlyph(roll.sides, it) else null }
+    when {
+        roll.sides == 2 -> {
+            Box(Modifier.size(size * 0.8f).border(5.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                Text(shown.take(1), color = Color.White, fontSize = (size.value * 0.4f).sp, fontWeight = FontWeight.Bold)
             }
+            Text(shown, color = Color.White, fontSize = 18.sp, modifier = Modifier.padding(top = 8.dp))
+        }
+        glyph != null -> DieGlyph(glyph, size)
+        else -> {
+            Box(Modifier.size(size * 0.8f).border(5.dp, Color.White, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
+                Text(shown, color = Color.White, fontSize = (size.value * if (shown.length > 2) 0.26f else 0.36f).sp, fontWeight = FontWeight.Bold)
+            }
+            Text(roll.title, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

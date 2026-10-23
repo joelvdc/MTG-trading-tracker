@@ -246,9 +246,13 @@ fun TrackerScreen(nav: NavController) {
     var spin by remember { mutableStateOf<Int?>(null) }
     var banner by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var barUntil by remember { mutableLongStateOf(0L) }
-    BackHandler(enabled = sheet != null || page != null || ending || roll != null) {
+    // Random opponent: asking whose opponent first (since 1.59, as Lifetap's "I'm …").
+    var asking by remember { mutableStateOf(false) }
+    val ring = remember { DieRing() }
+    BackHandler(enabled = sheet != null || page != null || ending || roll != null || asking) {
         when {
             roll != null -> roll = null
+            asking -> asking = false
             ending -> ending = false
             sheet != null -> sheet = null
             else -> page = null
@@ -277,12 +281,31 @@ fun TrackerScreen(nav: NavController) {
             spinTo(g.seats.map { it.seat }, first.seat, "${first.name} starts!")
         }
     }
+    fun randomPlayer() {
+        g.alive.randomOrNull()?.let { p -> spinTo(g.alive.map { it.seat }, p.seat, "${p.name}!") }
+    }
+    /** [me] said who they are: an opponent for them, from everyone else still in. */
+    fun randomOpponent(me: Int) {
+        asking = false
+        val pool = opponentPool(g, me).ifEmpty { return }
+        val who = g.seats.firstOrNull { it.seat == me }?.name
+        val p = pool.random()
+        spinTo(pool.map { it.seat }, p.seat, "$who's opponent: ${p.name}")
+    }
+    fun quickPick(c: RingChoice) {
+        when (c) {
+            RingChoice.PLAYER -> randomPlayer()
+            RingChoice.OPPONENT -> asking = true
+            else -> { buzz.roll(); roll = newRoll(c.sides) }
+        }
+    }
     val look = PanelLook(pictures, aboveBelow, lowLife, cardLayout, colourGrids)
     TrackerTable(
         g, look, now,
         delta = { seat -> deltas[seat]?.takeIf { now - it.second < DELTA_MS }?.first },
         highlight = spin,
-        first = firstBadgeSeat(g).takeIf { spin == null },
+        first = firstBadgeSeat(g).takeIf { spin == null && !asking },
+        whoAmI = if (asking) ::randomOpponent else null,
         banner = banner,
         bar = {
             MenuBar(
@@ -296,7 +319,9 @@ fun TrackerScreen(nav: NavController) {
                 onUndo = { if (c.games.undo()) buzz.roll() },
                 onMana = { page = TrackerPage.MANA },
                 onDice = { page = TrackerPage.DICE },
-                onQuickRoll = { buzz.roll(); roll = Roll("d20", "${Random.nextInt(1, 21)}", 20) },
+                ring = ring,
+                onRingOpen = { buzz.tap() },
+                onRing = ::quickPick,
             )
         },
         onLife = ::changeLife,
@@ -315,27 +340,17 @@ fun TrackerScreen(nav: NavController) {
         TrackerPage.DICE -> DicePage(
             g,
             onClose = { page = null },
-            onRoll = { page = null; buzz.roll(); roll = it },
-            onRandomPlayer = {
-                page = null
-                g.alive.randomOrNull()?.let { p -> spinTo(g.alive.map { it.seat }, p.seat, "${p.name}!") }
-            },
-            onRandomOpponent = {
-                page = null
-                // An opponent for the player whose turn it is (or, without turns, for the phone's owner).
-                val forSeat = if (g.turnsOn) g.active else g.seats.firstOrNull { it.me }?.seat
-                val pool = g.alive.filter { it.seat != forSeat }.ifEmpty { g.alive }
-                pool.randomOrNull()?.let { p ->
-                    val who = g.seats.firstOrNull { it.seat == forSeat }?.name
-                    spinTo(pool.map { it.seat }, p.seat, if (who != null) "$who's opponent: ${p.name}" else "${p.name}!")
-                }
-            },
+            // The roll shows over the page, which stays (since 1.59).
+            onRoll = { buzz.roll(); roll = it },
+            onRandomPlayer = { page = null; randomPlayer() },
+            onRandomOpponent = { page = null; asking = true },
         )
         TrackerPage.MANA -> ManaPage(g, onClose = { page = null })
         TrackerPage.HISTORY -> HistoryPage(g, now, canUndo, nav, onClose = { page = null })
         null -> {}
     }
     if (ending) EndGameDialog(g, onCancel = { ending = false }, onLeave = { leaving = true }, nav = nav, onDone = { ending = false })
+    DieRingOverlay(ring, buzz)
     roll?.let { RollOverlay(it, animate = animations, onAgain = { buzz.roll(); roll = it.copy(value = reroll(it)) }) { roll = null } }
 }
 
@@ -402,6 +417,8 @@ internal fun TrackerTable(
     highlight: Int? = null,
     /** The seat with the "1st" badge ([firstBadgeSeat]). */
     first: Int? = null,
+    /** Asking whose opponent to pick: each player still in taps their own "I'm …" panel (since 1.59). */
+    whoAmI: ((Int) -> Unit)? = null,
     banner: Pair<Int, String>? = null,
     bar: @Composable () -> Unit = {},
     onLife: (Int, Int) -> Unit = { _, _ -> },
@@ -426,6 +443,7 @@ internal fun TrackerTable(
                             delta = delta(s.seat),
                             highlight = highlight == s.seat,
                             first = first == s.seat,
+                            whoAmI = whoAmI?.let { f -> { f(s.seat) } },
                             banner = banner?.takeIf { it.first == s.seat }?.second,
                             holdOne = holdOne,
                             onLife = { onLife(s.seat, it) },
@@ -461,7 +479,10 @@ internal fun MenuBar(
     onUndo: () -> Unit = {},
     onMana: () -> Unit = {},
     onDice: () -> Unit = {},
-    onQuickRoll: () -> Unit = {},
+    /** Holding the die opens this ring of dice (since 1.59; before, a hold rolled a d20). */
+    ring: DieRing? = null,
+    onRingOpen: () -> Unit = {},
+    onRing: (RingChoice) -> Unit = {},
 ) {
     if (hidden) {
         Box(Modifier.fillMaxWidth().height(16.dp).clickable(onClick = onShow), contentAlignment = Alignment.Center) {
@@ -488,7 +509,12 @@ internal fun MenuBar(
         if (g.dayNight != null) BarIcon(if (g.dayNight == "night") Icons.Default.DarkMode else Icons.Default.WbSunny, "It's ${g.dayNight}: tap to change", size = 26.dp, onTap = onDayNight)
         BarIcon(Icons.Outlined.History, "History (hold: undo)", onTap = onHistory, onHold = onUndo)
         ManaDots(Modifier.clip(CircleShape).clickable(onClick = onMana))
-        BarIcon(Icons.Outlined.Casino, "Dice (hold: roll a d20)", onTap = onDice, onHold = onQuickRoll)
+        if (ring == null) BarIcon(Icons.Outlined.Casino, "Dice", onTap = onDice)
+        else Icon(
+            Icons.Outlined.Casino, "Dice (hold and slide to a die to roll it)",
+            Modifier.clip(CircleShape).dieRingGesture(ring, onTap = onDice, onOpen = onRingOpen, onPick = onRing).padding(4.dp).size(32.dp),
+            tint = Color.White,
+        )
     }
 }
 
@@ -537,6 +563,7 @@ internal fun PlayerPanel(
     delta: Int? = null,
     highlight: Boolean = false,
     first: Boolean = false,
+    whoAmI: (() -> Unit)? = null,
     banner: String? = null,
     holdOne: Boolean = false,
     onLife: (Int) -> Unit = {},
@@ -558,10 +585,24 @@ internal fun PlayerPanel(
             Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF3A3F47), Color(0xFF25282E)))))
         } else {
             Box(Modifier.fillMaxSize().background(seatBrush(s.colour)))
-            if (picture) {
+            if (picture && whoAmI == null) {
                 AsyncImage(s.artUrl, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (s.contrast) 0.58f else 0.36f)))
             }
+        }
+        // "I'm …": a plain panel to tap, for the random opponent (since 1.59, as Lifetap's).
+        if (whoAmI != null) {
+            val labelMax = maxWidth * 0.85f
+            if (!s.out) {
+                Box(Modifier.fillMaxSize().clickable(onClick = whoAmI)) {
+                    Text(
+                        "I'm ${s.name}", color = PanelInk, fontSize = 22.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.align(Alignment.Center).widthIn(max = labelMax).clip(RoundedCornerShape(14.dp))
+                            .background(Color.White.copy(alpha = 0.6f)).padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
+                }
+            }
+            return@BoxWithConstraints
         }
         // Where to tap: − and + at the ends, with room for them beside the total.
         val symbol = (small.value * 0.17f).coerceIn(22f, 40f).sp

@@ -65,6 +65,8 @@ How to use this file:
 19. ~~MTG Trader 1.58 (green light on 2026-10-23): the owner's life tracker feedback (vibration, "1st" badge, Drain /
    burn, changing past games' players and decks, guests' commanders, "Anonymous", tracker settings in Settings, Games
    above Tokens).~~ Released.
+20. ~~MTG Trader 1.59 (green light on 2026-10-24): Lifetap's dice (Dicefont), the roll box with Again, the quick-roll
+   ring, and "I'm …" for the random opponent.~~ Released.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
@@ -123,6 +125,16 @@ on the owner's PC. Then put ScrollVault's typical and earliest turns next to the
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
 ## Done
+
+### Lifetap's dice, quick-roll ring and "I'm …" (MTG Trader 1.59)
+*From the owner's Lifetap screenshots on 2026-10-23/24 (Dice & Misc page, the roll box, the ring around the held die,
+the "I'm Player N" panels). Green light on 2026-10-24.*
+
+Released in MTG Trader 1.59 (2026-10-24): Dicefont (fponticelli/dicefont, SIL OFL 1.1: `res/font/dicefont.ttf`,
+`assets/licenses/dicefont.txt`, credited on the Dice page) for the dice and results (`dieGlyph` in `ui/Dice.kt`; glyphs
+numbered by name in alphabetical order); `RollOverlay` keeps the Dice page behind it (one-sided there, two-sided over
+the table); the ring (`DieRing`, `dieRingGesture`, `DieRingOverlay`: a half circle 126 dp round the die, toward the
+middle of the screen); `whoAmI` panels and `opponentPool` for the random opponent.
 
 ### Life tracker feedback (MTG Trader 1.58)
 *From the owner's game on 2026-10-23, with the screenshot of Game stats. Green light the same day. The owner also

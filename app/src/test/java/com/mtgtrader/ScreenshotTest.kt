@@ -1092,6 +1092,54 @@ class ScreenshotTest {
         com.mtgtrader.ui.RollOverlay(com.mtgtrader.ui.Roll("d20", "17", 20), animate = false, onAgain = {}) {}
     }
 
+    /** 1.59: a d6 rolled on the Dice page, which stays behind it (dots, as Lifetap's). */
+    @Test fun trackerRollOnDicePage() = tracker("tracker_roll_d6_page") { g ->
+        com.mtgtrader.ui.DicePage(g, {}, {}, {}, {})
+        com.mtgtrader.ui.RollOverlay(com.mtgtrader.ui.Roll("d6", "2", 6), animate = false, onAgain = {}) {}
+    }
+
+    /** 1.59: the coin, over the table. */
+    @Test fun trackerRollCoin() = tracker("tracker_roll_coin") { g ->
+        trackerTable(g)
+        com.mtgtrader.ui.RollOverlay(com.mtgtrader.ui.Roll("Coin", "Tails", 2), animate = false, onAgain = {}) {}
+    }
+
+    /** 1.59: the ring of dice behind the held die, the finger on the d8. */
+    @Test fun trackerDieRing() {
+        val ring = com.mtgtrader.ui.DieRing()
+        val g = sampleGame()
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MtgColors(dark = true) {
+                Box(Modifier.width(411.dp).height(900.dp)) {
+                    com.mtgtrader.ui.TrackerTable(
+                        g, com.mtgtrader.ui.PanelLook(lowLife = com.mtgtrader.data.LowLifeStyle.OFF), now = 2_102_000,
+                        bar = { com.mtgtrader.ui.MenuBar(g, 2_102_000, ring = ring) },
+                    )
+                    com.mtgtrader.ui.DieRingOverlay(ring)
+                }
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+        val die = compose.onNode(androidx.compose.ui.test.hasContentDescription("Dice", substring = true)).fetchSemanticsNode().boundsInRoot.center
+        compose.runOnIdle { ring.centre = die }
+        compose.mainClock.advanceTimeByFrame()
+        // The d8: the fourth choice, 67.5° round from straight above, on the left of the die.
+        val r = with(compose.density) { com.mtgtrader.ui.RING_RADIUS.toPx() }
+        val a = Math.toRadians(67.5)
+        compose.runOnIdle { ring.finger = die + androidx.compose.ui.geometry.Offset(-r * kotlin.math.sin(a).toFloat(), -r * kotlin.math.cos(a).toFloat()) }
+        compose.mainClock.advanceTimeBy(500)
+        compose.onRoot().captureRoboImage("src/test/screenshots/tracker_die_ring.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.59: random opponent asks who you are; Anders is out. */
+    @Test fun trackerWhoAmI() = tracker("tracker_who_am_i") { g ->
+        com.mtgtrader.ui.TrackerTable(
+            g, com.mtgtrader.ui.PanelLook(lowLife = com.mtgtrader.data.LowLifeStyle.OFF), now = 2_102_000,
+            whoAmI = {}, bar = { com.mtgtrader.ui.MenuBar(g, 2_102_000) },
+        )
+    }
+
     /** A game in progress for the tracker's pictures: [players] at the table, things happening. */
     private fun sampleGame(players: Int = 4): com.mtgtrader.data.LiveGame {
         val names = listOf("Joel" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Kraum & Tymna", "Anders" to "Korvold", "Freja" to "Edgar Markov", "Kasper" to "Yuriko")
