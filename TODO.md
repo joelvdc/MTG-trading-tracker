@@ -61,6 +61,7 @@ How to use this file:
    simulator reading Shrines, Gates, Maze's End, sacrifice decks and X spells.~~ Released.
 17. ~~MTG Trader 1.56 (green light on 2026-10-23): each attacking creature hits one opponent (Ruby's Jumbo Cactuar no
    longer knocks out all three).~~ Released.
+18. ~~MTG Trader 1.57 (green light on 2026-10-23): hold − or + in the commander damage window for ±10.~~ Released.
 
 ### Test 1.46 to 1.52 in an emulator (in a session on the owner's PC)
 *Added 2026-10-18. MTG Trader only.*
@@ -177,6 +178,14 @@ on the owner's PC. Then put ScrollVault's typical and earliest turns next to the
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
 ## Done
+
+### Hold − or + for 10 commander damage (MTG Trader 1.57)
+*Reported by the owner on 2026-10-23: "when pressing +- here for a few seconds nothing happens. I would like it to
+assign +10 or -10 like it does for regular damage". Green light the same day.*
+
+Released in MTG Trader 1.57 (2026-10-23): the commander damage detail (hold a box on the player's sheet) uses the
+life panel's taps and holds (`tapOrHoldSteps` in `ui/Tracker.kt`): a tap ±1, a hold ±10 and again every 0.7 s, or
+±1 fast with the "By 1, fast" setting. A hint under the boxes says so.
 
 ### Simulator: one attacker hits only one opponent (Ruby's turn-5 win) (MTG Trader 1.56)
 *Added 2026-10-22. MTG Trader only. Green light on 2026-10-23 ("no plan needed, go ahead and fix it").*

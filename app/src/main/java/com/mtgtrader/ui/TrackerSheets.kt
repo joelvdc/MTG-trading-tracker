@@ -209,6 +209,8 @@ private fun DamageDetail(g: LiveGame, s: LiveSeat, focus: Int, onFocus: (Int?) -
                 BigCell(g, s, j, focused = g.seats[j].seat == focus, onFocus = { onFocus(it) })
             }
         }
+        val holdOne by c.settings.trackerHoldOne.collectAsStateWithLifecycle()
+        Text(if (holdOne) "Tap − or + for 1, hold to keep going." else "Tap − or + for 1, hold for 10.", color = SheetMuted, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
         Row(Modifier.padding(top = 6.dp).fillMaxWidth().clickable { c.games.update { LiveGames.setPartners(it, o.seat, !o.hasPartners) } }, verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.People, null, Modifier.size(22.dp), tint = SheetInk)
             Text("  Partner commanders (two counts)", color = SheetInk, fontSize = 15.sp, modifier = Modifier.weight(1f))
@@ -223,11 +225,12 @@ private fun DamageDetail(g: LiveGame, s: LiveSeat, focus: Int, onFocus: (Int?) -
 /**
  * A box of the big grid: the damage taken from that player's commander(s); the player's own box counts damage from
  * their own commander (since 1.49), say when another player controls it. In the grid a tap adds 1 and a hold opens
- * the detail; [focused] (the detail) taps on the left take 1 off, on the right add 1.
+ * the detail; [focused] (the detail) taps on the left take 1 off, on the right add 1, and holds 10 (since 1.57).
  */
 @Composable
 private fun BoxScope.BigCell(g: LiveGame, me: LiveSeat, j: Int, focused: Boolean, onFocus: (Int) -> Unit) {
     val c = LocalContext.current.container
+    val holdOne by c.settings.trackerHoldOne.collectAsStateWithLifecycle()
     val o = g.seats[j]
     val parts = if (o.hasPartners) listOf(false, true) else listOf(false)
     val big = if (g.seats.size >= 5) 24.sp else 32.sp
@@ -238,11 +241,10 @@ private fun BoxScope.BigCell(g: LiveGame, me: LiveSeat, j: Int, focused: Boolean
             val value = me.cmd[key] ?: 0
             fun add(by: Int) = c.games.update { LiveGames.commanderDamage(it, me.seat, key, by) }
             Box(
-                Modifier.weight(1f).fillMaxHeight().pointerInput(key, focused) {
-                    detectTapGestures(
-                        onTap = { at -> if (focused) add(if (at.x < size.width / 2f) -1 else 1) else add(1) },
-                        onLongPress = { onFocus(o.seat) },
-                    )
+                Modifier.weight(1f).fillMaxHeight().pointerInput(key, focused, holdOne) {
+                    // In the detail − and + work as on a life panel (a hold gives ±10, since 1.57).
+                    if (focused) tapOrHoldSteps(holdOne, plusAt = { at -> at.x >= size.width / 2f }, onStep = ::add)
+                    else detectTapGestures(onTap = { add(1) }, onLongPress = { onFocus(o.seat) })
                 },
             ) {
                 val name = if (second) o.partner ?: "Partner" else o.commander.ifBlank { o.name }

@@ -556,8 +556,8 @@ middle of the table, and everything about the game (counters, settings, dice, ma
   poison or 21 commander damage from one commander, **Dead?** asks (or the player goes out at once, or nothing
   happens, as set): yes turns the panel dark with a skull (Undo brings them back).
 - **A player's sheet** (tap their name; the mini-grid opens it on Counters), facing them: **Counters** has the
-  commander damage taken on a big seating grid, their own commander included (tap a box for +1; hold it for − and +
-  and the **Partner commanders** switch, which splits it into two counts) and tiles for poison, commander tax (one per partner), the monarch, the
+  commander damage taken on a big seating grid, their own commander included (tap a box for +1; hold it for − and +,
+  where a hold gives ±10 as on a life panel, and the **Partner commanders** switch, which splits it into two counts) and tiles for poison, commander tax (one per partner), the monarch, the
   initiative, day/night, the city's blessing, energy, experience, rad, treasure, counters you name, and K.O. (tap
   adds one, hold takes one off). **Player** changes who sits there and their deck during the game, their background
   (the commander's picture or one of six colours), stronger contrast, and conceding.

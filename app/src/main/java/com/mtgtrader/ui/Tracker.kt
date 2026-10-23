@@ -83,6 +83,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
@@ -591,21 +592,7 @@ internal fun PlayerPanel(
         // Taps and holds change life: left/right or above/below the total, as the player sees it.
         Box(
             Modifier.fillMaxSize().pointerInput(s.seat, look.aboveBelow, holdOne) {
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    val plus = if (look.aboveBelow) down.position.y < size.height / 2f else down.position.x > size.width / 2f
-                    val sign = if (plus) 1 else -1
-                    val tapped = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) { waitForUpOrCancellation() ?: Unit }
-                    if (tapped != null) {
-                        if (tapped !is Unit) onLife(sign)
-                        return@awaitEachGesture
-                    }
-                    while (true) {
-                        onLife(sign * if (holdOne) 1 else 10)
-                        val released = withTimeoutOrNull(if (holdOne) 140L else 700L) { waitForUpOrCancellation() ?: Unit }
-                        if (released != null) break
-                    }
-                }
+                tapOrHoldSteps(holdOne, plusAt = { at -> if (look.aboveBelow) at.y < size.height / 2f else at.x > size.width / 2f }, onStep = onLife)
             },
         )
         if (!look.aboveBelow) {
@@ -954,3 +941,22 @@ internal fun Skull(modifier: Modifier, colour: Color = Color.White.copy(alpha = 
     }
 }
 
+
+/**
+ * Taps and holds on a − / + area (a life panel, since 1.57 also the commander damage detail): a tap steps by 1, a hold
+ * by 10 and again every 0.7 s while the finger stays down ([holdOne]: by 1, fast). [plusAt] says if a touch is on the + side.
+ */
+suspend fun PointerInputScope.tapOrHoldSteps(holdOne: Boolean, plusAt: (Offset) -> Boolean, onStep: (Int) -> Unit) = awaitEachGesture {
+    val down = awaitFirstDown()
+    val sign = if (plusAt(down.position)) 1 else -1
+    val tapped = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) { waitForUpOrCancellation() ?: Unit }
+    if (tapped != null) {
+        if (tapped !is Unit) onStep(sign)
+        return@awaitEachGesture
+    }
+    while (true) {
+        onStep(sign * if (holdOne) 1 else 10)
+        val released = withTimeoutOrNull(if (holdOne) 140L else 700L) { waitForUpOrCancellation() ?: Unit }
+        if (released != null) break
+    }
+}

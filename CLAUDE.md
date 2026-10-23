@@ -9,9 +9,10 @@ the green light for the list; then plan all of it together, as below.
 
 ## How changes are made
 1. **Plan first.** When the owner asks for changes or improvements, draft a plan (what changes, why, which screens or
-   files) and do **not** change code yet. When a change affects how a screen looks, include mockup screenshots in the
-   plan: draw them with a temporary Roborazzi test (the app's real theme, fonts and sample cards; not committed),
-   send the pictures, and offer alternatives side by side when there's a real choice.
+   files) and do **not** change code yet. Describe visual changes in words. Send mockup screenshots only when the
+   owner asks for them or there's a real design choice for the owner to make (owner, 2026-10-23); then draw them with
+   a temporary Roborazzi test (the app's real theme, fonts and sample cards; not committed) and show the alternatives
+   side by side. Otherwise check the look yourself (the Roborazzi pictures, or the emulator in sessions on the PC).
 2. **Green light.** Once the owner approves the plan ("green light", "go ahead", "approved"), you have permission to
    carry it out all the way, without asking again:
    - make the changes on a branch and run the checks locally:
