@@ -126,6 +126,15 @@ win for all decks, and look into the biggest differences (which cards one of the
 
 ## Done
 
+### Random test failures on the owner's PC (fixed 2026-10-24, no release)
+*Asked by the owner on 2026-10-24 ("why database failures on this pc? worth fixing?"), green light the same day.*
+
+2 to 6 random tests failed per local run with `UncaughtExceptionsBeforeTest` ("Illegal connection pointer"): the
+offline pictures' watcher (`OfflineImages`, started with the app) was still reading the database when Robolectric
+reset it between tests. GitHub's faster machines never showed it. Fixed with `MtgApp.onTerminate` (only called in
+tests): the app's jobs stop and finish their current database read, then the database closes. Three full runs in a
+row passed (476 tests). Test-only effect: no app version.
+
 ### Lifetap's dice, quick-roll ring and "I'm …" (MTG Trader 1.59)
 *From the owner's Lifetap screenshots on 2026-10-23/24 (Dice & Misc page, the roll box, the ring around the held die,
 the "I'm Player N" panels). Green light on 2026-10-24.*

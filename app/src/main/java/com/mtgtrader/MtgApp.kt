@@ -31,6 +31,9 @@ import com.mtgtrader.scan.SetSymbolMatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -45,6 +48,19 @@ class MtgApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+    }
+
+    /**
+     * Never called on a phone (Android only calls it in emulated processes): the tests' end of the app. The background
+     * jobs stop, each finishing the database question it's on, and the database closes, so nothing runs on into the
+     * next test (since 1.59: before, the offline pictures' first questions sometimes failed whichever test came next,
+     * on slower PCs).
+     */
+    override fun onTerminate() {
+        // Waits for a database question already running (stopping a job doesn't interrupt one), then closes.
+        runBlocking { container.appScope.coroutineContext.job.cancelAndJoin() }
+        container.db.close()
+        super.onTerminate()
     }
 
     // Card images come from Scryfall's CDN, which rejects OkHttp's default User-Agent.
