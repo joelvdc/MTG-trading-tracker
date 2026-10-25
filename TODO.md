@@ -141,8 +141,8 @@ app shows the same one and converted at today's rate otherwise.
 Open questions:
 - Agreed prices in trades too (and what a precon cost, prices from order files)? Order files are in the shop's
   currency, so they'd keep euros (or dollars) as on the order.
-- When copies with prices in different currencies join one stack (the weighted average paid), which currency does the
-  stack get: the one typed last, or the one the app shows?
+- Decided by the owner (2026-10-25, for Poké Trader and MTG alike): when copies with prices in different currencies
+  join one stack (the weighted average paid), **the app asks which currency** the stack's price gets.
 - Totals that mix currencies (Paid and worth, Orders, stats) convert each price at today's rate: fine?
 - CSV export: the amount and a new currency column (older files read as euros)? Archidekt only takes one number: send
   euros at today's rate, as now?
