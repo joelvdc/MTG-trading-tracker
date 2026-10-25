@@ -124,6 +124,31 @@ trust the network proxy). So: either the owner sends the ScrollVault lines of th
 on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
+### Purchase prices keep the currency they were typed in
+*Added 2026-10-25. Also planned for Poké Trader (item 13 on its list).*
+
+The owner's words: "ok the mtg app should not work like that and should remember that the price was inserted in dkk
+or usd."
+
+What happens today (since 1.40): a price typed as 75 kr. is converted with the day's ECB rate and saved as €10.05;
+the currency typed isn't kept. Shown in kroner, it's converted back at today's rate, so it can drift (by a few øre
+for kroner, which is pegged to the euro; by several percent a year for dollars). Only wishlist alert levels keep their
+currency (`alertCurrency`, since 1.39).
+
+Idea: save the amount as typed together with its currency (75 kr. stays 75,00 kr.), shown in that currency when the
+app shows the same one and converted at today's rate otherwise.
+
+Open questions:
+- Agreed prices in trades too (and what a precon cost, prices from order files)? Order files are in the shop's
+  currency, so they'd keep euros (or dollars) as on the order.
+- When copies with prices in different currencies join one stack (the weighted average paid), which currency does the
+  stack get: the one typed last, or the one the app shows?
+- Totals that mix currencies (Paid and worth, Orders, stats) convert each price at today's rate: fine?
+- CSV export: the amount and a new currency column (older files read as euros)? Archidekt only takes one number: send
+  euros at today's rate, as now?
+- A new database column and a new Nextcloud sync format: older versions on the other phone must stop syncing until
+  updated (as for 1.27), so ask before building it (CLAUDE.md, "still ask first").
+
 ## Done
 
 ### Random test failures on the owner's PC (fixed 2026-10-24, no release)
