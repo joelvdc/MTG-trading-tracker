@@ -98,8 +98,10 @@ data class SyncFile(
          * 10 since 1.47: the life tracker's players, friends' decks and games, which an older version would write
          * back without.
          * 11 since 1.51: paused games, which an older version would write back without (so they'd vanish).
+         * 12 since 1.60: purchase and agreed prices as typed in kroner or dollars, which an older version would write
+         * back without.
          */
-        const val FORMAT = 11
+        const val FORMAT = 12
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

@@ -187,7 +187,7 @@ class Release129Test {
         sql.version = 12
         sql.close()
         // Room checks the result against what this version expects.
-        val db = Room.databaseBuilder(context, AppDatabase::class.java, "update-13.db").addMigrations(AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14, AppDatabase.MIGRATION_14_15, AppDatabase.MIGRATION_15_16, AppDatabase.MIGRATION_16_17, AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25).build()
+        val db = Room.databaseBuilder(context, AppDatabase::class.java, "update-13.db").addMigrations(AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14, AppDatabase.MIGRATION_14_15, AppDatabase.MIGRATION_15_16, AppDatabase.MIGRATION_16_17, AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25, AppDatabase.MIGRATION_25_26).build()
         try {
             db.sourcePriceDao().putAll(listOf(SourcePrice("bs", "tcgplayer", "NONFOIL", 2.5)))
             assertEquals(1, db.sourcePriceDao().count("tcgplayer"))

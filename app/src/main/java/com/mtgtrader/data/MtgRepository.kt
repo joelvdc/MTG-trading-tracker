@@ -342,15 +342,16 @@ class MtgRepository(
     /**
      * Moves a received wishlist card into the collection (swiped right in Received, since 1.39): [qty]
      * copies of [card] in [finish], [condition] and [language] go into [binderId] (joining the same
-     * version's stack there, whose purchase price becomes the average with [price]), and the card leaves
-     * the wishlist. Returns an undo for both.
+     * version's stack there, whose purchase price becomes the average with [price], typed as [typed], kept in
+     * [currency] when the two were typed in different ones), and the card leaves the wishlist. Returns an undo for both.
      */
     suspend fun wishToCollection(
         wishId: Long, card: CardRef, finish: Finish, condition: String, language: String, qty: Int, binderId: Long, price: Double?,
+        typed: TypedPrice? = null, currency: AppCurrency? = null,
     ): UndoAction {
         val before = wishlist.byIds(listOf(wishId))
         val undoCollection = collectionChange(setOf(card.scryfallId)) {
-            addBought(card, finish, condition, language, qty, binderId, Marks.NONE, price)
+            addBought(card, finish, condition, language, qty, binderId, Marks.NONE, price, typed, currency)
             wishlist.deleteMany(listOf(wishId))
         }
         val undoWish = wishUndo(before)
@@ -705,16 +706,21 @@ class MtgRepository(
     }
 
     /**
-     * Sets condition, language and/or purchase price (null leaves it as it is) on several stacks,
-     * merging stacks that become the same. Returns the stacks changed and an undo. Since 1.38.
+     * Sets condition, language and/or purchase price (null leaves it as it is; the price typed as [typed]) on
+     * several stacks, merging stacks that become the same. Returns the stacks changed and an undo. Since 1.38.
      */
-    suspend fun editStacks(ids: Collection<Long>, condition: String?, language: String?, purchasePrice: Double?): Pair<Int, UndoAction> {
+    suspend fun editStacks(
+        ids: Collection<Long>, condition: String?, language: String?, purchasePrice: Double?, typed: TypedPrice? = null,
+    ): Pair<Int, UndoAction> {
         val items = stacks(ids)
-        val changed = items.map { it to it.copy(condition = condition ?: it.condition, language = language ?: it.language, purchasePrice = purchasePrice ?: it.purchasePrice) }
+        fun priced(i: CollectionItem) = if (purchasePrice == null) i else i.withPaid(purchasePrice, typed)
+        val changed = items.map { it to priced(it.copy(condition = condition ?: it.condition, language = language ?: it.language)) }
             .filter { (a, b) -> a != b }
         val undo = collectionChange(changed.map { it.first.card.scryfallId }.toSet()) {
             // Read again each time: an earlier one may have merged into this stack.
-            for ((a, b) in changed) coll.byId(a.id)?.let { cur -> updateCollectionItem(cur.copy(condition = b.condition, language = b.language, purchasePrice = b.purchasePrice)) }
+            for ((a, b) in changed) coll.byId(a.id)?.let { cur ->
+                updateCollectionItem(cur.copy(condition = b.condition, language = b.language, purchasePrice = b.purchasePrice, paidTyped = b.paidTyped, paidCurrency = b.paidCurrency))
+            }
         }
         return changed.size to undo
     }
@@ -942,6 +948,9 @@ class MtgRepository(
         val iLang = col("language", "lang")
         val iBinder = col("binder name", "binder")
         val iPaid = col("purchase price", "purchase_price", "price paid")
+        // Written by the app's own export since 1.60.
+        val iTyped = col("purchase price as typed")
+        val iTypedCur = col("typed currency")
         val iNotes = col("notes", "note")
         val iSigned = col("signed")
         val iAltered = col("altered")
@@ -949,6 +958,7 @@ class MtgRepository(
         data class Line(
             val ident: JsonObject, val key: String, val qty: Int, val finish: Finish, val cond: String, val lang: String,
             val binder: String? = null, val paid: Double? = null, val notes: String? = null, val marks: Marks = Marks.NONE,
+            val typed: TypedPrice? = null,
         )
 
         val lines = rows.drop(1).mapNotNull { r ->
@@ -970,11 +980,12 @@ class MtgRepository(
             val paid = v(iPaid)?.replace(",", ".")?.toDoubleOrNull()?.takeIf { it > 0 }
             val notes = v(iNotes)
             val marks = Marks(signed = csvFlag(v(iSigned)), altered = csvFlag(v(iAltered)))
+            val typed = TypedPrice.of(v(iTyped)?.replace(",", ".")?.toDoubleOrNull(), v(iTypedCur)?.uppercase())?.takeIf { paid != null }
             when {
-                id != null -> Line(ScryfallApi.idIdentifier(id), "id:$id", qty, finish, cond, lang, binder, paid, notes, marks)
+                id != null -> Line(ScryfallApi.idIdentifier(id), "id:$id", qty, finish, cond, lang, binder, paid, notes, marks, typed)
                 set != null && num != null ->
-                    Line(ScryfallApi.setNumberIdentifier(set, num), "sn:${set.lowercase()}|${num.lowercase()}", qty, finish, cond, lang, binder, paid, notes, marks)
-                name != null -> Line(ScryfallApi.nameIdentifier(name), "n:${name.lowercase()}", qty, finish, cond, lang, binder, paid, notes, marks)
+                    Line(ScryfallApi.setNumberIdentifier(set, num), "sn:${set.lowercase()}|${num.lowercase()}", qty, finish, cond, lang, binder, paid, notes, marks, typed)
+                name != null -> Line(ScryfallApi.nameIdentifier(name), "n:${name.lowercase()}", qty, finish, cond, lang, binder, paid, notes, marks, typed)
                 else -> null
             }
         }
@@ -1004,7 +1015,8 @@ class MtgRepository(
                 val r = addToCollection(ref, ref.resolveFinish(l.finish), l.cond, l.lang, l.qty, binder, l.marks)
                 if (l.paid != null || l.notes != null) {
                     coll.byId(r.itemId)?.let { item ->
-                        coll.update(item.copy(purchasePrice = item.purchasePrice ?: l.paid, notes = item.notes ?: l.notes))
+                        val priced = if (item.purchasePrice == null && l.paid != null) item.withPaid(l.paid, l.typed) else item
+                        coll.update(priced.copy(notes = item.notes ?: l.notes))
                     }
                 }
                 imported += l.qty
@@ -1022,15 +1034,44 @@ class MtgRepository(
     /**
      * Adds copies bought at [price] each. A stack that already held copies gets the average paid,
      * weighted by copies (since 1.32; before, it kept the price it had); without a price on one side,
-     * every copy carries the other's.
+     * every copy carries the other's. [typed] is the price as typed; prices typed in two currencies are kept in
+     * [currency] (by default the stack's, see [PurchasePrices.joinedTyped]).
      */
-    private suspend fun addBought(card: CardRef, finish: Finish, condition: String, language: String, qty: Int, binderId: Long, marks: Marks, price: Double?) {
+    private suspend fun addBought(
+        card: CardRef, finish: Finish, condition: String, language: String, qty: Int, binderId: Long, marks: Marks, price: Double?,
+        typed: TypedPrice? = null, currency: AppCurrency? = null,
+    ) {
         val r = addToCollection(card, finish, condition, language, qty, binderId, marks)
         if (price == null) return
         coll.byId(r.itemId)?.let { item ->
-            val joined = PurchasePrices.joined(item.quantity - qty, item.purchasePrice, qty, price)
-            if (joined != item.purchasePrice) coll.update(item.copy(purchasePrice = joined))
+            val (eur, asTyped) = PurchasePrices.joinedTyped(item.quantity - qty, item.purchasePrice, item.typedPaid, qty, price, typed, currency)
+            val joined = item.withPaid(eur, asTyped)
+            if (joined != item) coll.update(joined)
         }
+    }
+
+    /** Copies about to be added with what was paid, to see whether they join a stack priced in another currency. Since 1.60. */
+    data class Bought(
+        val card: CardRef, val finish: Finish, val condition: String, val language: String, val marks: Marks, val price: Double?,
+        val typed: TypedPrice? = null,
+    )
+
+    /**
+     * The currencies to choose from when [bought] joins stacks in [binder] whose prices were typed in another
+     * currency (see [PurchasePrices.mixes]); empty when nothing mixes. Since 1.60.
+     */
+    suspend fun joinCurrencies(bought: List<Bought>, binder: BinderChoice): List<AppCurrency> {
+        val binderId = binder.newName?.let { binders.byName(it.trim())?.id ?: return emptyList() } ?: binder.binderId
+        val involved = sortedSetOf<AppCurrency>()
+        for (b in bought) {
+            val f = b.card.resolveFinish(b.finish)
+            val stack = coll.find(b.card.scryfallId, f.foil, f.etched, b.condition, b.language, binderId, b.marks.signed, b.marks.altered) ?: continue
+            if (PurchasePrices.mixes(stack.purchasePrice, stack.typedPaid, b.price, b.typed)) {
+                involved += stack.typedPaid?.currency ?: AppCurrency.EUR
+                involved += b.typed?.currency ?: AppCurrency.EUR
+            }
+        }
+        return involved.toList()
     }
 
     /**
@@ -1038,7 +1079,7 @@ class MtgRepository(
      * with each copy's price as its purchase price. Signed and altered copies are marked so (since
      * 1.27). Returns how many copies were added. Since 1.26.
      */
-    suspend fun importOrder(lines: List<Pair<CardRef, OrderLine>>, binder: BinderChoice): Int {
+    suspend fun importOrder(lines: List<Pair<CardRef, OrderLine>>, binder: BinderChoice, currency: AppCurrency? = null): Int {
         if (lines.isEmpty()) return 0
         beforeOrderImport?.invoke()
         val target = resolve(binder)
@@ -1046,7 +1087,7 @@ class MtgRepository(
         db.withTransaction {
             for ((card, l) in lines) {
                 val finish = card.resolveFinish(if (l.foil) Finish.FOIL else Finish.NONFOIL)
-                addBought(card, finish, l.condition, l.language, l.quantity, target, Marks(l.signed, l.altered), l.price)
+                addBought(card, finish, l.condition, l.language, l.quantity, target, Marks(l.signed, l.altered), l.price, currency = currency)
                 added += l.quantity
             }
         }
@@ -1058,12 +1099,12 @@ class MtgRepository(
      * the scanned copies that were used ([scanUse]: scan id to copies) off the scanned list. Returns how
      * many copies were added. Since 1.32.
      */
-    suspend fun addCheckedPackage(additions: List<PackageCheck.Addition>, binder: BinderChoice, scanUse: Map<Long, Int>): Int {
+    suspend fun addCheckedPackage(additions: List<PackageCheck.Addition>, binder: BinderChoice, scanUse: Map<Long, Int>, currency: AppCurrency? = null): Int {
         if (additions.isEmpty()) return 0
         beforeOrderImport?.invoke()
         val target = resolve(binder)
         db.withTransaction {
-            for (a in additions) addBought(a.card, a.finish, a.condition, a.language, a.quantity, target, a.marks, a.price)
+            for (a in additions) addBought(a.card, a.finish, a.condition, a.language, a.quantity, target, a.marks, a.price, currency = currency)
             for (scan in scans.byIds(scanUse.keys.toList())) {
                 val left = scan.quantity - scanUse.getValue(scan.id)
                 if (left > 0) scans.update(scan.copy(quantity = left)) else scans.deleteMany(listOf(scan.id))
@@ -1106,27 +1147,31 @@ class MtgRepository(
      * Adds a preconstructed deck's cards to [binder], each with its share of what the deck cost, and
      * remembers the deck as an order. Returns how many copies were added. Since 1.33.
      */
-    suspend fun addPrecon(deck: String, date: String, cards: List<Precons.PricedCard>, binder: BinderChoice): Int {
+    suspend fun addPrecon(deck: String, date: String, cards: List<Precons.PricedCard>, binder: BinderChoice, currency: AppCurrency? = null): Int {
         if (cards.isEmpty()) return 0
         beforeOrderImport?.invoke()
         val target = resolve(binder)
         db.withTransaction {
-            for (c in cards) addBought(c.card, c.finish, "NM", "EN", c.quantity, target, Marks.NONE, c.price)
+            for (c in cards) addBought(c.card, c.finish, "NM", "EN", c.quantity, target, Marks.NONE, c.price, c.typed, currency)
         }
         recordOrders(listOf(Orders.precon(deck, date, cards.map { it.ordered })))
         return cards.sumOf { it.quantity }
     }
 
-    /** Sets what was paid per copy on the stacks in [prices] (stack id to EUR). Returns how many changed. Since 1.32. */
-    suspend fun setPurchasePrices(prices: Map<Long, Double>): Int {
-        if (prices.isEmpty()) return 0
+    /**
+     * Sets what was paid per copy on the stacks of [rows] (see [PurchasePrices.Row.updated]; prices averaged into
+     * ones typed in kroner or dollars are kept in [currency]). Returns how many changed. Since 1.32.
+     */
+    suspend fun setPurchasePrices(rows: List<PurchasePrices.Row>, currency: AppCurrency? = null): Int {
+        if (rows.isEmpty()) return 0
         beforeOrderImport?.invoke()
         var changed = 0
         db.withTransaction {
-            for ((id, price) in prices) {
-                val item = coll.byId(id) ?: continue
-                if (item.purchasePrice != price) {
-                    coll.update(item.copy(purchasePrice = price))
+            for (r in rows) {
+                val item = coll.byId(r.item.id) ?: continue
+                val want = r.copy(item = item).updated(currency)
+                if (want != item) {
+                    coll.update(want)
                     changed++
                 }
             }
@@ -1189,7 +1234,7 @@ class MtgRepository(
         val binderNames = binders.all().associate { it.id to it.name }
         val priceMap = prices.pricesFor(items.mapNotNull { it.card.productFor(it.foil) })
         val sb = StringBuilder()
-        sb.appendLine(Csv.row("Binder Name", "Binder Type", "Name", "Set code", "Set name", "Collector number", "Foil", "Rarity", "Quantity", "Scryfall ID", "Condition", "Language", "Price EUR (${type.short})", "Purchase price", "Purchase price currency", "Notes", "Signed", "Altered"))
+        sb.appendLine(Csv.row("Binder Name", "Binder Type", "Name", "Set code", "Set name", "Collector number", "Foil", "Rarity", "Quantity", "Scryfall ID", "Condition", "Language", "Price EUR (${type.short})", "Purchase price", "Purchase price currency", "Notes", "Signed", "Altered", "Purchase price as typed", "Typed currency"))
         for (i in items) {
             val price = priceMap[i.card.productFor(i.foil)]?.toSet(i.foil)?.best(type) ?: i.card.fallback(i.foil)
             val binder = binderNames[i.binderId]
@@ -1200,7 +1245,7 @@ class MtgRepository(
                     manaBoxFinish(i.finish), i.card.rarity, i.quantity, i.card.scryfallId,
                     manaBoxCondition(i.condition), i.language.lowercase(), price,
                     i.purchasePrice ?: "", if (i.purchasePrice != null) "EUR" else "", i.notes ?: "",
-                    i.signed, i.altered,
+                    i.signed, i.altered, i.typedPaid?.amount ?: "", i.typedPaid?.key ?: "",
                 )
             )
         }

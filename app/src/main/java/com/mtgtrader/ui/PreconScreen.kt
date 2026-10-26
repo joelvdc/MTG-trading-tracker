@@ -50,6 +50,9 @@ import com.mtgtrader.data.Money
 import com.mtgtrader.data.Precons
 import com.mtgtrader.data.ScryfallApi
 import kotlinx.coroutines.launch
+import com.mtgtrader.data.AppCurrency
+import com.mtgtrader.data.Marks
+import com.mtgtrader.data.MtgRepository.Bought
 
 /**
  * Add a preconstructed Commander deck: pick the deck, then the binder, the price paid and the day.
@@ -173,6 +176,7 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
     val paidInput = remember { MoneyInput.of(null) }
     var date by remember { mutableStateOf(info.releaseDate?.takeIf(::isIsoDate) ?: todayIso()) }
     var adding by remember { mutableStateOf(false) }
+    var askCurrency by remember { mutableStateOf<List<AppCurrency>>(emptyList()) }
 
     LaunchedEffect(info.fileName) {
         try {
@@ -209,9 +213,9 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
                         OrderDateField(date, { date = it })
                         BinderPicker("Binder", binder, { binder = it }, suggestedName = info.name)
                         if (paid != null && paid > 0 && list.isNotEmpty()) {
-                            val top = Precons.split(paid, list).take(3)
+                            val top = Precons.split(paid, list, paidInput.typedPrice).take(3)
                             Text(
-                                "Most of it goes to " + top.joinToString(", ") { "${it.card.name} (${Fmt.money(it.price)})" } + ".",
+                                "Most of it goes to " + top.joinToString(", ") { "${it.card.name} (${Money.format(it.price, it.typed)})" } + ".",
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -225,7 +229,14 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
                 onClick = {
                     adding = true
                     scope.launch {
-                        val added = c.repo.addPrecon(info.name, date.trim(), Precons.split(paid!!, list!!), binder)
+                        val shares = Precons.split(paid!!, list!!, paidInput.typedPrice)
+                        val mixed = c.repo.joinCurrencies(shares.map { Bought(it.card, it.finish, "NM", "EN", Marks.NONE, it.price, it.typed) }, binder)
+                        if (mixed.isNotEmpty()) {
+                            askCurrency = mixed
+                            adding = false
+                            return@launch
+                        }
+                        val added = c.repo.addPrecon(info.name, date.trim(), shares, binder)
                         val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
                         onAdded("Added $added cards of ${info.name} to $where")
                     }
@@ -234,4 +245,15 @@ private fun AddPreconDialog(info: Precons.Info, onDismiss: () -> Unit, onAdded: 
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !adding) { Text("Cancel") } },
     )
+    if (askCurrency.isNotEmpty()) {
+        JoinCurrencyDialog(askCurrency, onDismiss = { askCurrency = emptyList() }) { cur ->
+            askCurrency = emptyList()
+            adding = true
+            scope.launch {
+                val added = c.repo.addPrecon(info.name, date.trim(), Precons.split(paid!!, list!!, paidInput.typedPrice), binder, cur)
+                val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
+                onAdded("Added $added cards of ${info.name} to $where")
+            }
+        }
+    }
 }

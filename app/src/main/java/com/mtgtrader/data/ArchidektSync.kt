@@ -442,7 +442,8 @@ class ArchidektSync(
                         val r = repo.addToCollection(card, c.key.finish, condFor(stack.binderId, stack.condition), lang, take, stack.binderId, c.key.marks)
                         coll.byId(r.itemId)?.let { added ->
                             if (added.notes == null && stack.notes != null || added.purchasePrice == null && stack.purchasePrice != null) {
-                                coll.update(added.copy(notes = added.notes ?: stack.notes, purchasePrice = added.purchasePrice ?: stack.purchasePrice))
+                                val priced = if (added.purchasePrice == null) added.withPaid(stack.purchasePrice, stack.typedPaid) else added
+                                coll.update(priced.copy(notes = added.notes ?: stack.notes))
                             }
                         }
                         leftFrom[from]!!.remove(stack to n)
@@ -464,7 +465,8 @@ class ArchidektSync(
 
             for (c in changes.filter { it.setAppPrice }) {
                 for (s in db.syncDao().collection().filter { CardKey.of(it) == c.key }) {
-                    if (!ArchidektPlanner.samePrice(s.purchasePrice, c.price)) coll.update(s.copy(purchasePrice = c.price))
+                    // Archidekt's prices are euros: one set from there isn't one typed in kroner or dollars any more.
+                    if (!ArchidektPlanner.samePrice(s.purchasePrice, c.price)) coll.update(s.withPaid(c.price))
                 }
                 lines += ReportLine(ReportLine.Kind.APP_PRICE, "Purchase price of ${describe(c.label, c.key)} → ${c.price?.let(::price) ?: "none"}")
             }

@@ -403,7 +403,7 @@ interface DeckDao {
         WishPrice::class, CtBlueprint::class, DeckEdit::class, Player::class, FriendDeck::class, GameRecord::class,
         PausedGame::class,
     ],
-    version = 25,
+    version = 26,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -431,11 +431,25 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 26 (app 1.60): purchase prices and agreed trade prices remember the amount and currency they were
+         * typed in, when that wasn't euros (synced; the sync file's format went to 12 with them). The prices
+         * themselves stay in euros, so older rows are unchanged.
+         */
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `collection` ADD COLUMN `paidTyped` REAL")
+                db.execSQL("ALTER TABLE `collection` ADD COLUMN `paidCurrency` TEXT")
+                db.execSQL("ALTER TABLE `trade_items` ADD COLUMN `customTyped` REAL")
+                db.execSQL("ALTER TABLE `trade_items` ADD COLUMN `customCurrency` TEXT")
+            }
+        }
 
         /**
          * Version 25 (app 1.55): planeswalkers' starting loyalty in the card details kept from Scryfall, for the win

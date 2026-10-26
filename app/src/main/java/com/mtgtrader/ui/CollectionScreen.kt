@@ -128,6 +128,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.mtgtrader.data.AppCurrency
+import com.mtgtrader.data.Marks
+import com.mtgtrader.data.MtgRepository.Bought
 
 /** A binder-bar selection: null is "All cards", [Binder.UNSORTED] is cards outside binders, [WISHLIST] the wishlist. */
 private typealias BinderSel = Long?
@@ -222,6 +225,14 @@ fun CollectionScreen(nav: NavController) {
     var exportIds by remember { mutableStateOf<Set<Long>?>(null) }
     // A received wishlist card on its way into the collection (since 1.39).
     var addingWish by remember { mutableStateOf<com.mtgtrader.data.WishlistItem?>(null) }
+    var wishCurrency by remember { mutableStateOf<Triple<com.mtgtrader.data.WishlistItem, WishToCollection, List<AppCurrency>>?>(null) }
+
+    /** Moves a received wishlist card into the collection; a joined price typed in two currencies is kept in [currency]. */
+    suspend fun addWish(w: com.mtgtrader.data.WishlistItem, v: WishToCollection, currency: AppCurrency?) {
+        val binderId = c.repo.resolve(v.binder)
+        val undo = c.repo.wishToCollection(w.id, v.card!!, v.finish, v.condition, v.language, v.quantity, binderId, v.price, v.typed, currency)
+        if (snackbar.showUndo("${v.quantity}× ${w.card.displayName} added to ${binderName(binderId, c.db.binderDao().all())}")) undo()
+    }
     // The cards on screen, for "Select all shown".
     val shownIds = remember { mutableStateOf(setOf<Long>()) }
     /** Runs a change that can be undone, then offers Undo (nothing when it changed nothing). */
@@ -914,10 +925,10 @@ fun CollectionScreen(nav: NavController) {
         }
     }
     editingMany?.let { ids ->
-        EditStacksDialog(ids.size, onDismiss = { editingMany = null }) { condition, language, price ->
+        EditStacksDialog(ids.size, onDismiss = { editingMany = null }) { condition, language, price, typed ->
             editingMany = null
             stopSelecting()
-            undoable({ "$it stack(s) changed" }) { c.repo.editStacks(ids, condition, language, price) }
+            undoable({ "$it stack(s) changed" }) { c.repo.editStacks(ids, condition, language, price, typed) }
         }
     }
     deletingMany?.let { items ->
@@ -946,10 +957,16 @@ fun CollectionScreen(nav: NavController) {
         ) { v ->
             addingWish = null
             scope.launch {
-                val binderId = c.repo.resolve(v.binder)
-                val undo = c.repo.wishToCollection(w.id, v.card!!, v.finish, v.condition, v.language, v.quantity, binderId, v.price)
-                if (snackbar.showUndo("${v.quantity}× $name added to ${binderName(binderId, c.db.binderDao().all())}")) undo()
+                // Paid in another currency than the stack it joins: which one to keep (since 1.60).
+                val mixed = c.repo.joinCurrencies(listOf(Bought(v.card!!, v.finish, v.condition, v.language, Marks.NONE, v.price, v.typed)), v.binder)
+                if (mixed.isEmpty()) addWish(w, v, null) else wishCurrency = Triple(w, v, mixed)
             }
+        }
+    }
+    wishCurrency?.let { (w, v, currencies) ->
+        JoinCurrencyDialog(currencies, onDismiss = { wishCurrency = null }) { cur ->
+            wishCurrency = null
+            scope.launch { addWish(w, v, cur) }
         }
     }
     receivingOwned?.let { got ->

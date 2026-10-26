@@ -15,8 +15,8 @@ How to use this file:
 
 1. ~~MTG Trader 1.32: sort by value change, Cardmarket orders, package check, purchase prices from orders.~~ Released.
 2. ~~MTG Trader 1.33: order history, profit and loss, add a precon, condition-adjusted values.~~ Released.
-3. **Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's
-   1.32). The owner said on 2026-10-13 to wait with this one: don't start it until they say so.
+3. ~~**Poké Trader 1.20:** sort by value change (item 1 on Poké Trader's list; the code is nearly the same as MTG's
+   1.32).~~ Released (the owner said on 2026-10-26 that Poké Trader 1.20 is out; don't update the Pokémon app yet).
 
 4. ~~MTG Trader 1.42: compact deck view, folding sections, the maybeboard (stored on the phone, as the owner chose on
    2026-10-16), adding cards from the deck page.~~ Released.
@@ -67,6 +67,8 @@ How to use this file:
    above Tokens).~~ Released.
 20. ~~MTG Trader 1.59 (green light on 2026-10-24): Lifetap's dice (Dicefont), the roll box with Again, the quick-roll
    ring, and "I'm …" for the random opponent.~~ Released.
+21. ~~MTG Trader 1.60 (green light on 2026-10-26, option B): purchase and agreed trade prices remember the currency they
+   were typed in, still kept in euros.~~ Released.
 
 ### Moxfield connection (some day, not planned)
 *Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
@@ -124,32 +126,24 @@ trust the network proxy). So: either the owner sends the ScrollVault lines of th
 on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
 win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
 
-### Purchase prices keep the currency they were typed in
-*Added 2026-10-25. Also planned for Poké Trader (item 13 on its list).*
-
-The owner's words: "ok the mtg app should not work like that and should remember that the price was inserted in dkk
-or usd."
-
-What happens today (since 1.40): a price typed as 75 kr. is converted with the day's ECB rate and saved as €10.05;
-the currency typed isn't kept. Shown in kroner, it's converted back at today's rate, so it can drift (by a few øre
-for kroner, which is pegged to the euro; by several percent a year for dollars). Only wishlist alert levels keep their
-currency (`alertCurrency`, since 1.39).
-
-Idea: save the amount as typed together with its currency (75 kr. stays 75,00 kr.), shown in that currency when the
-app shows the same one and converted at today's rate otherwise.
-
-Open questions:
-- Agreed prices in trades too (and what a precon cost, prices from order files)? Order files are in the shop's
-  currency, so they'd keep euros (or dollars) as on the order.
-- Decided by the owner (2026-10-25, for Poké Trader and MTG alike): when copies with prices in different currencies
-  join one stack (the weighted average paid), **the app asks which currency** the stack's price gets.
-- Totals that mix currencies (Paid and worth, Orders, stats) convert each price at today's rate: fine?
-- CSV export: the amount and a new currency column (older files read as euros)? Archidekt only takes one number: send
-  euros at today's rate, as now?
-- A new database column and a new Nextcloud sync format: older versions on the other phone must stop syncing until
-  updated (as for 1.27), so ask before building it (CLAUDE.md, "still ask first").
-
 ## Done
+
+### Purchase prices keep the currency they were typed in (MTG Trader 1.60)
+*Added 2026-10-25 ("ok the mtg app should not work like that and should remember that the price was inserted in dkk
+or usd"). Also on Poké Trader's list (item 13); not built there yet: the owner said on 2026-10-26 not to update the
+Pokémon app yet.*
+
+Settled with the owner on 2026-10-26: Archidekt has no currency for purchase prices (checked on the owner's public
+collection: `purchasePrice` is a bare number), so prices stay in euros in the database (option B): the euros are what
+totals, trades, CSV and Archidekt use, and the amount and currency as typed are kept next to them only to show the
+price back as typed. Also: agreed trade prices too (yes), totals at the euros kept (yes), a new sync format (12, yes:
+older phones stop syncing until updated), and when stacks with prices in different currencies join, the app asks
+which currency the average is kept in.
+
+Released in MTG Trader 1.60 (2026-10-26): `TypedPrice` (`data/Currency.kt`), `paidTyped`/`paidCurrency` on collection
+stacks and `customTyped`/`customCurrency` on trade lines (database version 26), `Money.format(eur, typed)`,
+`PurchasePrices.joinedTyped`/`mixes`, `MtgRepository.joinCurrencies` and `JoinCurrencyDialog`; precon shares split the
+typed amount too; CSV columns "Purchase price as typed" and "Typed currency".
 
 ### Random test failures on the owner's PC (fixed 2026-10-24, no release)
 *Asked by the owner on 2026-10-24 ("why database failures on this pc? worth fixing?"), green light the same day.*

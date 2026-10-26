@@ -255,9 +255,19 @@ data class CollectionItem(
     @ColumnInfo(defaultValue = "0") val signed: Boolean = false,
     /** Altered (painted, extended art…) copies are a stack of their own. Since 1.27. */
     @ColumnInfo(defaultValue = "0") val altered: Boolean = false,
+    /** [purchasePrice] as typed, when typed in another currency than euros (see [TypedPrice]). Since 1.60. */
+    val paidTyped: Double? = null,
+    val paidCurrency: String? = null,
 ) {
     val finish get() = Finish.of(foil, etched)
     val marks get() = Marks(signed, altered)
+
+    /** The purchase price as typed, when it was typed in kroner or dollars. Since 1.60. */
+    val typedPaid: TypedPrice? get() = if (purchasePrice == null) null else TypedPrice.of(paidTyped, paidCurrency)
+
+    /** With [eur] as the purchase price, typed as [typed] (null: in euros, or not typed). Since 1.60. */
+    fun withPaid(eur: Double?, typed: TypedPrice? = null) =
+        copy(purchasePrice = eur, paidTyped = typed?.takeIf { eur != null }?.amount, paidCurrency = typed?.takeIf { eur != null }?.key)
 }
 
 /** Whether copies are signed and/or altered. Since 1.27. */
@@ -420,8 +430,18 @@ data class TradeItem(
     @ColumnInfo(defaultValue = "0") val etched: Boolean = false,
     /** For given cards: the binder they were (mostly) taken from, so undoing puts them back there. Since version 1.7. */
     @ColumnInfo(defaultValue = "0") val appliedBinderId: Long = Binder.UNSORTED,
+    /** [customPrice] as typed, when typed in another currency than euros (see [TypedPrice]). Since 1.60. */
+    val customTyped: Double? = null,
+    val customCurrency: String? = null,
 ) {
     val finish get() = Finish.of(foil, etched)
+
+    /** The agreed price as typed, when it was typed in kroner or dollars. Since 1.60. */
+    val typedCustom: TypedPrice? get() = if (customPrice == null) null else TypedPrice.of(customTyped, customCurrency)
+
+    /** With [eur] as the agreed price, typed as [typed] (null: in euros, or not typed). Since 1.60. */
+    fun withCustom(eur: Double?, typed: TypedPrice? = null) =
+        copy(customPrice = eur, customTyped = typed?.takeIf { eur != null }?.amount, customCurrency = typed?.takeIf { eur != null }?.key)
 
     fun unitPrice(type: PriceType): Double? = customPrice ?: Pricing.unit(card.scryfallId, finish, condition, prices.best(type) ?: card.fallback(foil))
     fun lineTotal(type: PriceType): Double = (unitPrice(type) ?: 0.0) * quantity

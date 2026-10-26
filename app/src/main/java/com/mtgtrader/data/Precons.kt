@@ -83,8 +83,11 @@ object Precons {
         return all.filter { d -> words.all { it in d.name.lowercase() || it == d.code.lowercase() } }
     }
 
-    /** A deck card ready to add: its printing, and its share of the deck's price per copy, in EUR. */
-    data class PricedCard(val card: CardRef, val finish: Finish, val quantity: Int, val price: Double, val worth: Double) {
+    /**
+     * A deck card ready to add: its printing, and its share of the deck's price per copy, in EUR, and as typed
+     * when the price was typed in kroner or dollars ([typed], since 1.60).
+     */
+    data class PricedCard(val card: CardRef, val finish: Finish, val quantity: Int, val price: Double, val worth: Double, val typed: TypedPrice? = null) {
         val ordered get() = OrderedCard(
             name = card.name, setCode = card.setCode, number = card.collectorNumber, quantity = quantity, price = price, foil = finish.foil,
             condition = "NM", language = "EN", scryfallId = card.scryfallId,
@@ -111,6 +114,13 @@ object Precons {
         // Only a card there is one of can take odd cents without the sum drifting again.
         val taker = shares.firstOrNull { it.quantity == 1 } ?: top
         return shares.map { if (it === taker) it.copy(price = cents(maxOf(0.0, it.price + off / it.quantity))) else it }
+    }
+
+    /** [split], with each share also as typed in [typed]'s currency (split the same way, so they add up to it). Since 1.60. */
+    fun split(paid: Double, cards: List<Triple<CardRef, Card, Double?>>, typed: TypedPrice?): List<PricedCard> {
+        val shares = split(paid, cards)
+        if (typed == null) return shares
+        return shares.zip(split(typed.amount, cards)) { s, t -> s.copy(typed = TypedPrice(t.price, typed.currency)) }
     }
 }
 

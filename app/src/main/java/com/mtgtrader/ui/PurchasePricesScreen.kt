@@ -54,6 +54,7 @@ import com.mtgtrader.data.PurchasePrices.Change
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.mtgtrader.data.AppCurrency
 
 /** The order files picked in the collection's menu: several, so they don't fit in a route. */
 internal object PickedOrderFiles {
@@ -107,6 +108,28 @@ fun PurchasePricesScreen(nav: NavController) {
     val owned = stacks
     val plan = remember(lines, owned, overwrite, choices) { if (files == null || owned == null) null else PurchasePrices.plan(lines, owned, overwrite, choices) }
     val toSet = plan?.changing.orEmpty().filter { it.item.id !in skipped }
+    var askCurrency by remember { mutableStateOf<List<AppCurrency>>(emptyList()) }
+
+    /** Saves the prices; euros averaged into prices typed in kroner or dollars are kept in [currency] (asked first, since 1.60). */
+    fun save(currency: AppCurrency?) {
+        val mixed = toSet.filter { it.mixesCurrencies }.mapNotNull { it.item.typedPaid?.currency }
+        if (currency == null && mixed.isNotEmpty()) {
+            askCurrency = (mixed + AppCurrency.EUR).distinct().sorted()
+            return
+        }
+        saving = true
+        scope.launch {
+            val n = c.repo.setPurchasePrices(toSet, currency)
+            c.repo.reportImport("Purchase price set on $n card${if (n == 1) "" else "s"}")
+            nav.safePopBackStack()
+        }
+    }
+    if (askCurrency.isNotEmpty()) {
+        JoinCurrencyDialog(askCurrency, onDismiss = { askCurrency = emptyList() }) { cur ->
+            askCurrency = emptyList()
+            save(cur)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -119,14 +142,7 @@ fun PurchasePricesScreen(nav: NavController) {
             if (plan != null) {
                 Surface(tonalElevation = 3.dp) {
                     Button(
-                        onClick = {
-                            saving = true
-                            scope.launch {
-                                val n = c.repo.setPurchasePrices(toSet.associate { it.item.id to it.newPrice })
-                                c.repo.reportImport("Purchase price set on $n card${if (n == 1) "" else "s"}")
-                                nav.safePopBackStack()
-                            }
-                        },
+                        onClick = { save(null) },
                         enabled = !saving && toSet.isNotEmpty(),
                         modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
                     ) {
@@ -283,9 +299,9 @@ internal fun priceRowNote(r: PurchasePrices.Row): String {
     val bought = "Bought ${r.bought}" + if (r.purchases.size > 1 && r.purchases.map { it.price }.distinct().size > 1) " for ${Fmt.money(r.paid)} on average" else " for ${Fmt.money(r.paid)}"
     return when (r.change) {
         Change.NEW -> bought + if (r.bought < item.quantity) " · you own ${item.quantity}, all get this price" else ""
-        Change.AVERAGED -> "$bought · the other ${item.quantity - r.bought} keep${if (item.quantity - r.bought == 1) "s" else ""} ${Fmt.money(had)}, averaged"
-        Change.REPLACED -> "$bought · replaces ${Fmt.money(had)}"
-        Change.KEPT -> "$bought · has ${Fmt.money(had)} already"
+        Change.AVERAGED -> "$bought · the other ${item.quantity - r.bought} keep${if (item.quantity - r.bought == 1) "s" else ""} ${Fmt.paid(had, item.typedPaid)}, averaged"
+        Change.REPLACED -> "$bought · replaces ${Fmt.paid(had, item.typedPaid)}"
+        Change.KEPT -> "$bought · has ${Fmt.paid(had, item.typedPaid)} already"
     }
 }
 
@@ -307,7 +323,7 @@ private fun PriceRow(r: PurchasePrices.Row, binders: List<Binder>, checked: Bool
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(Fmt.money(r.newPrice), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                if (r.changes && item.purchasePrice != null) Text("was ${Fmt.money(item.purchasePrice)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (r.changes && item.purchasePrice != null) Text("was ${Fmt.paid(item.purchasePrice, item.typedPaid)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -328,7 +344,7 @@ private fun OpenRow(o: PurchasePrices.Open, binders: List<Binder>, chosen: Set<L
                 Row(Modifier.fillMaxWidth().clickable { onChoose(s.id, s.id !in chosen) }, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = s.id in chosen, onCheckedChange = { onChoose(s.id, it) })
                     Column(Modifier.weight(1f)) { StackLine(s, binders) }
-                    s.purchasePrice?.let { Text("has ${Fmt.money(it)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    s.purchasePrice?.let { Text("has ${Fmt.paid(it, s.typedPaid)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }

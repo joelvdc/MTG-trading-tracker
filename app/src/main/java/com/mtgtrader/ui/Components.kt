@@ -105,10 +105,13 @@ import java.util.Locale
 import kotlin.math.abs
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Clear
+import com.mtgtrader.data.TypedPrice
 
 object Fmt {
     /** Amounts are in euros; they're shown in the chosen currency (see [Money], since 1.28). */
     fun money(v: Double?): String = if (v == null) "—" else Money.format(v)
+    /** A price kept in euros that was typed as [typed]: as typed while the app shows that currency (since 1.60). */
+    fun paid(v: Double?, typed: TypedPrice?): String = if (v == null) "—" else Money.format(v, typed)
     fun signedMoney(v: Double): String = (if (v > 0.004) "+" else if (v < -0.004) "−" else "") + Money.format(abs(v))
     fun date(ms: Long): String = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(ms))
     /** "Oct 15" for a day this year, the full date otherwise; for short labels. Since 1.36. */
@@ -595,6 +598,9 @@ data class EditValues(
     val signed: Boolean = false,
     val altered: Boolean = false,
     val keepMarks: Int = 0,
+    /** [customPrice] and [purchasePrice] as typed, when typed in kroner or dollars (see [TypedPrice]). Since 1.60. */
+    val customTyped: TypedPrice? = null,
+    val purchaseTyped: TypedPrice? = null,
 )
 
 /** Shared editor for a trade item, collection row or scanned card. With [binders], the card can be moved between binders. */
@@ -615,11 +621,11 @@ fun EditCardDialog(
     extra: @Composable () -> Unit = {},
 ) {
     var v by remember { mutableStateOf(initial) }
-    val paid = rememberMoneyInput(initial.purchasePrice)
+    val paid = rememberMoneyInput(initial.purchasePrice, typed = initial.purchaseTyped)
     val uriHandler = LocalUriHandler.current
     // Cards saved before version 1.2 may not list the finish they were saved with.
     val finishOptions = remember(card) { (card.finishes + initial.finish).distinct() }
-    val agreed = rememberMoneyInput(initial.customPrice)
+    val agreed = rememberMoneyInput(initial.customPrice, typed = initial.customTyped)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
@@ -691,18 +697,18 @@ fun EditCardDialog(
                     MoneyField(
                         agreed, "Agreed price per copy (optional)", Modifier.fillMaxWidth(),
                         placeholder = "Uses Cardmarket price if empty", enabled = enabled,
-                    ) { v = v.copy(customPrice = agreed.eur) }
+                    ) { v = v.copy(customPrice = agreed.eur, customTyped = agreed.typedPrice) }
                 }
                 if (showNotes) {
                     MoneyField(paid, "Purchase price per copy (optional)", Modifier.fillMaxWidth(), enabled = enabled) {
-                        v = v.copy(purchasePrice = paid.eur)
+                        v = v.copy(purchasePrice = paid.eur, purchaseTyped = paid.typedPrice)
                     }
                     val paidEur = v.purchasePrice
                     val now = prices(v.finish.foil)?.get(priceType)
                     if (paidEur != null && paidEur > 0 && now != null) {
                         val diff = (now - paidEur) * v.quantity
                         Text(
-                            "Paid ${Fmt.money(paidEur * v.quantity)} · now ${Fmt.money(now * v.quantity)} · " +
+                            "Paid ${Fmt.paid(paidEur * v.quantity, v.purchaseTyped?.times(v.quantity))} · now ${Fmt.money(now * v.quantity)} · " +
                                 (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paidEur) / paidEur * 100),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (diff >= 0) TrendColors.up else TrendColors.down,

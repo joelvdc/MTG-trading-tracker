@@ -89,10 +89,10 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
     val current = rows.firstOrNull { it.item.id == currentId } ?: row.takeIf { it.item.id == currentId } ?: rows.firstOrNull() ?: row
     val item = current.item
     fun initialFor(r: CollectionRow) = r.item.let {
-        EditValues(it.quantity, it.finish, it.condition, it.language, null, it.binderId, it.quantity, it.notes, it.purchasePrice, it.signed, it.altered)
+        EditValues(it.quantity, it.finish, it.condition, it.language, null, it.binderId, it.quantity, it.notes, it.purchasePrice, it.signed, it.altered, purchaseTyped = it.typedPaid)
     }
     var v by remember(item.id) { mutableStateOf(initialFor(current)) }
-    val paidInput = rememberMoneyInput(item.purchasePrice, item.id)
+    val paidInput = rememberMoneyInput(item.purchasePrice, item.id, item.typedPaid)
     var pricesOpen by remember { mutableStateOf(false) }
     var switchTo by remember { mutableStateOf<CollectionRow?>(null) }
     val uriHandler = LocalUriHandler.current
@@ -128,9 +128,9 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
             c.repo.saveCollectionEdit(
                 item.copy(
                     quantity = values.quantity, foil = values.finish.foil, etched = values.finish.etched, condition = values.condition,
-                    language = values.language, notes = values.notes?.trim()?.ifEmpty { null }, purchasePrice = values.purchasePrice,
+                    language = values.language, notes = values.notes?.trim()?.ifEmpty { null },
                     signed = values.signed, altered = values.altered,
-                ),
+                ).withPaid(values.purchasePrice, values.purchaseTyped),
                 values.binderId,
                 values.move,
                 keepMarks = values.keepMarks,
@@ -237,7 +237,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                         CompactTextField(
                             "Paid per copy", paidInput.text, {
                                 paidInput.text = it
-                                v = v.copy(purchasePrice = paidInput.eur)
+                                v = v.copy(purchasePrice = paidInput.eur, purchaseTyped = paidInput.typedPrice)
                             },
                             Modifier.weight(0.38f), placeholder = "0.00", keyboardType = KeyboardType.Decimal,
                             note = convertedHint(paidInput),
@@ -246,7 +246,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                             CurrencyButton(paidInput.currency) { cur ->
                                 paidInput.switchTo(cur)
                                 TypedCurrency.pick(cur)
-                                v = v.copy(purchasePrice = paidInput.eur)
+                                v = v.copy(purchasePrice = paidInput.eur, purchaseTyped = paidInput.typedPrice)
                             }
                         }
                         CompactTextField("Notes", v.notes ?: "", { v = v.copy(notes = it.ifBlank { null }) }, Modifier.weight(0.62f), placeholder = "Where from, condition…", singleLine = false)
@@ -256,7 +256,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                     if (paid != null && paid > 0 && now != null) {
                         val diff = (now - paid) * v.quantity
                         Text(
-                            "Paid ${Fmt.money(paid * v.quantity)} · now ${Fmt.money(now * v.quantity)} · " +
+                            "Paid ${Fmt.paid(paid * v.quantity, v.purchaseTyped?.times(v.quantity))} · now ${Fmt.money(now * v.quantity)} · " +
                                 (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paid) / paid * 100),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (diff >= 0) TrendColors.up else TrendColors.down,

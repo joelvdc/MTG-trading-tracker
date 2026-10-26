@@ -417,7 +417,7 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
         }
         EditCardDialog(
             card = item.card,
-            initial = EditValues(item.quantity, item.finish, item.condition, item.language, item.customPrice),
+            initial = EditValues(item.quantity, item.finish, item.condition, item.language, item.customPrice, customTyped = item.typedCustom),
             prices = { f -> if (f == item.foil) item.prices else entity?.toSet(f) },
             priceType = priceType,
             allowCustomPrice = true,
@@ -429,8 +429,8 @@ fun TradeEditorScreen(nav: NavController, tradeId: Long) {
                     c.repo.updateTradeItem(
                         item.copy(
                             quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition,
-                            language = v.language, customPrice = v.customPrice,
-                        )
+                            language = v.language,
+                        ).withCustom(v.customPrice, v.customTyped)
                     )
                 }
             },
@@ -590,9 +590,9 @@ private fun TradeItemRow(item: TradeItem, priceType: PriceType, owned: Int?, wan
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(Fmt.money(item.lineTotal(priceType)), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(Fmt.paid(item.lineTotal(priceType), item.typedCustom?.times(item.quantity)), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 TrendBadge(item.prices.trendChange)
-                if (item.quantity > 1) Text("${item.quantity} × ${Fmt.money(item.unitPrice(priceType))}", style = MaterialTheme.typography.bodySmall)
+                if (item.quantity > 1) Text("${item.quantity} × ${Fmt.paid(item.unitPrice(priceType), item.typedCustom)}", style = MaterialTheme.typography.bodySmall)
                 if (item.customPrice != null) Text("agreed price", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
         }
@@ -663,7 +663,7 @@ private fun CompactTradeItem(item: TradeItem, priceType: PriceType, owned: Int?,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(Fmt.money(item.lineTotal(priceType)), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                    Text(Fmt.paid(item.lineTotal(priceType), item.typedCustom?.times(item.quantity)), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                     if (item.customPrice != null) Text(" agreed", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
                 if (wanted != null) Text("★ wishlist", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)

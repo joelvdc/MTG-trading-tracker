@@ -42,10 +42,10 @@ data class BackupFile(
          * cards marked as ordered), 5 since 1.37 (price alert levels), 6 since 1.38 (wishlist cards received),
          * 7 since 1.39 (alert level currencies, received cards' collection links), 8 since 1.42 (decks'
          * maybeboards), 9 since 1.46 (local decks, deck editing), 10 since 1.47 (the life tracker's players and
-         * games), 11 since 1.51 (paused games), like [SyncFile.FORMAT]: older versions can't restore it without
-         * losing them.
+         * games), 11 since 1.51 (paused games), 12 since 1.60 (prices as typed in kroner or dollars), like
+         * [SyncFile.FORMAT]: older versions can't restore it without losing them.
          */
-        const val FORMAT = 11
+        const val FORMAT = 12
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun encode(file: BackupFile): ByteArray {

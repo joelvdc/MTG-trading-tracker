@@ -90,7 +90,7 @@ class Release127DbTest {
         createVersion11(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-test.db")
-            .addMigrations(AppDatabase.MIGRATION_11_12, AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14, AppDatabase.MIGRATION_14_15, AppDatabase.MIGRATION_15_16, AppDatabase.MIGRATION_16_17, AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25)
+            .addMigrations(AppDatabase.MIGRATION_11_12, AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14, AppDatabase.MIGRATION_14_15, AppDatabase.MIGRATION_15_16, AppDatabase.MIGRATION_16_17, AppDatabase.MIGRATION_17_18, AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25, AppDatabase.MIGRATION_25_26)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })
@@ -187,7 +187,8 @@ class Release127DbTest {
     fun exportHasSignedAndAlteredColumns() = runBlocking {
         repo.addToCollection(ref, Finish.NONFOIL, "NM", "EN", 1, marks = Marks(signed = true))
         val lines = repo.exportCollectionCsv(PriceType.TREND).trim().lines()
-        assertTrue(lines[0].endsWith(",Notes,Signed,Altered"))
-        assertTrue(lines[1], lines[1].endsWith(",true,false"))
+        // Since 1.60 the price as typed follows them.
+        assertTrue(lines[0].endsWith(",Notes,Signed,Altered,Purchase price as typed,Typed currency"))
+        assertTrue(lines[1], lines[1].endsWith(",true,false,,"))
     }
 }

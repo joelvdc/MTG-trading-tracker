@@ -121,7 +121,7 @@ class Release151Test {
         assertEquals(merged.pausedGames, SyncMerge.merge(remote, merged, now).pausedGames)
         // Through the file and back.
         assertEquals(merged.pausedGames, SyncFile.decode(SyncFile.encode(SyncFile(data = merged))).data.pausedGames)
-        assertEquals(11, SyncFile.FORMAT)
+        assertEquals(12, SyncFile.FORMAT)
     }
 
     @Test

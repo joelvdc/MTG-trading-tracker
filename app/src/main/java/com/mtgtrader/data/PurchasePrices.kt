@@ -27,6 +27,19 @@ object PurchasePrices {
     /** A stack and what the orders say was paid for it. [newPrice] is per copy, in EUR. */
     data class Row(val item: CollectionItem, val purchases: List<OrderLine>, val bought: Int, val paid: Double, val newPrice: Double, val change: Change) {
         val changes get() = change != Change.KEPT
+
+        /** Averaging euros from the orders into a price typed in kroner or dollars. Since 1.60. */
+        val mixesCurrencies get() = change == Change.AVERAGED && item.typedPaid != null
+
+        /** The stack with its new price: from the orders in euros, or averaged, kept in [currency] (by default its own). Since 1.60. */
+        fun updated(currency: AppCurrency? = null): CollectionItem = when (change) {
+            Change.KEPT -> item
+            Change.AVERAGED -> {
+                val typed = joinedTyped(item.quantity - bought, item.purchasePrice, item.typedPaid, bought, paid, null, currency).second
+                item.withPaid(newPrice, typed)
+            }
+            else -> item.withPaid(newPrice)
+        }
     }
 
     /** A line the files don't pin to one stack: the owner ticks which of [candidates] it bought, if any. */
@@ -180,5 +193,41 @@ object PurchasePrices {
         paid == null -> hadPrice
         hadPrice == null || had <= 0 -> paid
         else -> cents((had * hadPrice + added * paid) / (had + added))
+    }
+
+    /** The currency a price was typed in: euros unless [typed] says otherwise; null without a price. */
+    private fun currencyOf(eur: Double?, typed: TypedPrice?) = if (eur == null) null else typed?.currency ?: AppCurrency.EUR
+
+    /**
+     * Whether joining copies paid [paidEur] (typed as [paidTyped]) with a stack priced [hadEur] (typed as [hadTyped])
+     * mixes two currencies, so the owner chooses which one the stack's price is kept in. Since 1.60.
+     */
+    fun mixes(hadEur: Double?, hadTyped: TypedPrice?, paidEur: Double?, paidTyped: TypedPrice?): Boolean {
+        val a = currencyOf(hadEur, hadTyped)
+        val b = currencyOf(paidEur, paidTyped)
+        return a != null && b != null && a != b
+    }
+
+    /**
+     * [joined], and the joined price as typed: the average of both sides in one currency, [currency] when they
+     * were typed in different ones (by default the stack's), each side converted at today's rate unless it was
+     * typed in it. Null as typed when that currency is euros. Since 1.60.
+     */
+    fun joinedTyped(
+        had: Int, hadEur: Double?, hadTyped: TypedPrice?, added: Int, paidEur: Double?, paidTyped: TypedPrice?, currency: AppCurrency? = null,
+    ): Pair<Double?, TypedPrice?> {
+        val eur = joined(had, hadEur, added, paidEur)
+        return when {
+            paidEur == null -> eur to hadTyped
+            hadEur == null || had <= 0 -> eur to paidTyped
+            else -> {
+                val target = if (mixes(hadEur, hadTyped, paidEur, paidTyped)) currency ?: currencyOf(hadEur, hadTyped)!! else currencyOf(hadEur, hadTyped)!!
+                if (target == AppCurrency.EUR) return eur to null
+                fun inTarget(e: Double, t: TypedPrice?) = if (t?.currency == target) t.amount else Money.amountIn(e, target)
+                val a = inTarget(hadEur, hadTyped) ?: return eur to null
+                val b = inTarget(paidEur, paidTyped) ?: return eur to null
+                eur to TypedPrice(cents((had * a + added * b) / (had + added)), target)
+            }
+        }
     }
 }

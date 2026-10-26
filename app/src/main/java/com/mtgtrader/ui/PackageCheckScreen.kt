@@ -68,6 +68,8 @@ import com.mtgtrader.data.PackageCheck.Status
 import com.mtgtrader.data.ScannedCard
 import com.mtgtrader.data.Spreadsheet
 import kotlinx.coroutines.launch
+import com.mtgtrader.data.AppCurrency
+import com.mtgtrader.data.MtgRepository.Bought
 
 /**
  * The order read for the last package check, kept while the app runs: going to the scanner and
@@ -197,6 +199,38 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
         }
     }
 
+    /** The binder, extras and date chosen, while asking which currency joined prices are kept in (since 1.60). */
+    var askCurrency by remember { mutableStateOf<Pair<List<AppCurrency>, Triple<BinderChoice, Boolean, String>>?>(null) }
+
+    /** Adds the package's cards; [currency] null asks first when prices typed in two currencies would join. */
+    fun addPackage(result: PackageCheck.Result, binder: BinderChoice, extras: Boolean, date: String, currency: AppCurrency?) {
+        adding = true
+        scope.launch {
+            val additions = PackageCheck.additions(result, extras)
+            if (currency == null) {
+                val mixed = c.repo.joinCurrencies(additions.map { Bought(it.card, it.finish, it.condition, it.language, it.marks, it.price) }, binder)
+                if (mixed.isNotEmpty()) {
+                    askCurrency = mixed to Triple(binder, extras, date)
+                    adding = false
+                    return@launch
+                }
+            }
+            val used = HashMap<Long, Int>()
+            for (l in result.lines) for (p in l.parts) p.scan?.let { used.merge(it.id, p.quantity, Int::plus) }
+            if (extras) for ((scan, n) in result.extras) used.merge(scan.id, n, Int::plus)
+            val added = c.repo.addCheckedPackage(additions, binder, used, currency)
+            loaded?.let { o -> c.repo.recordOrders(Orders.fromFile(o.file, date) { i, _ -> o.candidates.firstOrNull { it.index == i }?.card }) }
+            val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
+            val missing = result.count(Status.MISSING)
+            // Cards of the package on the wishlist (since 1.39): asked about next.
+            wishMatches = c.repo.wishMatches(additions.map { com.mtgtrader.data.WishOrders.Bought(it.card, it.finish.foil, it.quantity) })
+            wishLabel = com.mtgtrader.data.WishOrders.label(shop.label, loaded?.file?.lines?.map { it.order }.orEmpty())
+            adding = false
+            done = "Added $added card${if (added == 1) "" else "s"} to $where, with what the order says was paid." +
+                if (missing > 0) " $missing ordered card${if (missing == 1) " is" else "s are"} missing." else ""
+        }
+    }
+
     if (confirming && result != null) {
         AddCheckedDialog(
             result = result,
@@ -205,25 +239,15 @@ fun PackageCheckScreen(nav: NavController, uri: Uri) {
             onDismiss = { confirming = false },
             onConfirm = { binder, extras, date ->
                 confirming = false
-                adding = true
-                scope.launch {
-                    val additions = PackageCheck.additions(result, extras)
-                    val used = HashMap<Long, Int>()
-                    for (l in result.lines) for (p in l.parts) p.scan?.let { used.merge(it.id, p.quantity, Int::plus) }
-                    if (extras) for ((scan, n) in result.extras) used.merge(scan.id, n, Int::plus)
-                    val added = c.repo.addCheckedPackage(additions, binder, used)
-                    loaded?.let { o -> c.repo.recordOrders(Orders.fromFile(o.file, date) { i, _ -> o.candidates.firstOrNull { it.index == i }?.card }) }
-                    val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
-                    val missing = result.count(Status.MISSING)
-                    // Cards of the package on the wishlist (since 1.39): asked about next.
-                    wishMatches = c.repo.wishMatches(additions.map { com.mtgtrader.data.WishOrders.Bought(it.card, it.finish.foil, it.quantity) })
-                    wishLabel = com.mtgtrader.data.WishOrders.label(shop.label, loaded?.file?.lines?.map { it.order }.orEmpty())
-                    adding = false
-                    done = "Added $added card${if (added == 1) "" else "s"} to $where, with what the order says was paid." +
-                        if (missing > 0) " $missing ordered card${if (missing == 1) " is" else "s are"} missing." else ""
-                }
+                addPackage(result, binder, extras, date, null)
             },
         )
+    }
+    askCurrency?.let { (currencies, choice) ->
+        JoinCurrencyDialog(currencies, onDismiss = { askCurrency = null }) { cur ->
+            askCurrency = null
+            result?.let { addPackage(it, choice.first, choice.second, choice.third, cur) }
+        }
     }
 
     wishMatches.takeIf { it.isNotEmpty() && done != null }?.let { matches ->

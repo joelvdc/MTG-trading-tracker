@@ -68,6 +68,7 @@ import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.Money
 import com.mtgtrader.data.SwipeAction
 import com.mtgtrader.data.WishlistItem
+import com.mtgtrader.data.TypedPrice
 
 // Swiping and selecting cards in the collection and on the wishlist. Since 1.38.
 
@@ -254,7 +255,7 @@ fun GiveInTradeDialog(title: String, maxCopies: Int, onDismiss: () -> Unit, onAd
 
 /** Sets condition, language and/or purchase price on the selected stacks; what's left as "Keep" stays. */
 @Composable
-fun EditStacksDialog(count: Int, onDismiss: () -> Unit, onSave: (condition: String?, language: String?, purchasePrice: Double?) -> Unit) {
+fun EditStacksDialog(count: Int, onDismiss: () -> Unit, onSave: (condition: String?, language: String?, purchasePrice: Double?, typed: TypedPrice?) -> Unit) {
     var condition by remember { mutableStateOf<String?>(null) }
     var language by remember { mutableStateOf<String?>(null) }
     val priceInput = remember { MoneyInput.of(null) }
@@ -271,7 +272,7 @@ fun EditStacksDialog(count: Int, onDismiss: () -> Unit, onSave: (condition: Stri
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(condition, language, price) }, enabled = condition != null || language != null || price != null) { Text("Save") }
+            TextButton(onClick = { onSave(condition, language, price, priceInput.typedPrice) }, enabled = condition != null || language != null || price != null) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

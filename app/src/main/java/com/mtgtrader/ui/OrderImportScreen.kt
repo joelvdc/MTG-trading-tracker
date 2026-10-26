@@ -69,6 +69,9 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.mtgtrader.data.AppCurrency
+import com.mtgtrader.data.Marks
+import com.mtgtrader.data.MtgRepository.Bought
 
 /** An order file read and its cards found on Scryfall. */
 class LoadedOrder(val file: OrderFile, val candidates: List<OrderCandidate>)
@@ -156,6 +159,38 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
     val list = candidates
     val shop = order?.shop
     val chosen = list.orEmpty().filter { it.index in checked && it.card != null }
+    var askCurrency by remember { mutableStateOf<List<AppCurrency>>(emptyList()) }
+
+    /** Adds the chosen cards; prices joining ones typed in another currency are kept in [currency] (asked first, since 1.60). */
+    suspend fun addChosen(currency: AppCurrency?) {
+        val all = list ?: return
+        if (currency == null) {
+            val mixed = c.repo.joinCurrencies(
+                chosen.map { Bought(it.card!!, if (it.line.foil) Finish.FOIL else Finish.NONFOIL, it.line.condition, it.line.language, Marks(it.line.signed, it.line.altered), it.line.price) },
+                binder,
+            )
+            if (mixed.isNotEmpty()) {
+                askCurrency = mixed
+                importing = false
+                return
+            }
+        }
+        val added = c.repo.importOrder(chosen.map { it.card!! to it.line }, binder, currency)
+        order?.let { file -> c.repo.recordOrders(Orders.fromFile(file, date.trim()) { i, _ -> all.firstOrNull { it.index == i }?.card }) }
+        val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
+        c.repo.reportImport(importSummary(added, where, all, checked))
+        // Cards of the order on the wishlist (since 1.39): asked about before leaving.
+        val matches = c.repo.wishMatches(chosen.map { com.mtgtrader.data.WishOrders.Bought(it.card!!, it.line.foil, it.line.quantity) })
+        if (matches.isEmpty()) nav.safePopBackStack()
+        else wishCheck = matches to com.mtgtrader.data.WishOrders.label((shop ?: OrderShop.CARDTRADER).label, chosen.map { it.line.order })
+    }
+    if (askCurrency.isNotEmpty()) {
+        JoinCurrencyDialog(askCurrency, onDismiss = { askCurrency = emptyList() }) { cur ->
+            askCurrency = emptyList()
+            importing = true
+            scope.launch { addChosen(cur) }
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -177,16 +212,7 @@ fun OrderImportScreen(nav: NavController, uri: Uri) {
                         Button(
                             onClick = {
                                 importing = true
-                                scope.launch {
-                                    val added = c.repo.importOrder(chosen.map { it.card!! to it.line }, binder)
-                                    order?.let { file -> c.repo.recordOrders(Orders.fromFile(file, date.trim()) { i, _ -> list.firstOrNull { it.index == i }?.card }) }
-                                    val where = binder.newName?.trim() ?: binderName(binder.binderId, binders)
-                                    c.repo.reportImport(importSummary(added, where, list, checked))
-                                    // Cards of the order on the wishlist (since 1.39): asked about before leaving.
-                                    val matches = c.repo.wishMatches(chosen.map { com.mtgtrader.data.WishOrders.Bought(it.card!!, it.line.foil, it.line.quantity) })
-                                    if (matches.isEmpty()) nav.safePopBackStack()
-                                    else wishCheck = matches to com.mtgtrader.data.WishOrders.label((shop ?: OrderShop.CARDTRADER).label, chosen.map { it.line.order })
-                                }
+                                scope.launch { addChosen(null) }
                             },
                             enabled = !importing && chosen.isNotEmpty() && binder.isValid && isIsoDate(date),
                             modifier = Modifier.fillMaxWidth(),

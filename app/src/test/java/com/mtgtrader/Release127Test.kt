@@ -134,8 +134,8 @@ class Release127Test {
         // 3 since 1.33 (remembered orders), 4 since 1.35 (wishlist cards marked as ordered), 5 since 1.37 (price alerts),
         // 6 since 1.38 (wishlist cards received), 7 since 1.39 (alert level currencies, received cards' links),
         // 8 since 1.42 (decks' maybeboards), 9 since 1.46 (local decks, deck editing), 10 since 1.47 (games),
-        // 11 since 1.51 (paused games).
-        assertEquals(11, BackupFile.FORMAT)
+        // 11 since 1.51 (paused games), 12 since 1.60 (prices as typed).
+        assertEquals(12, BackupFile.FORMAT)
     }
 
     @Test

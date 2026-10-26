@@ -70,8 +70,16 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   small **€ ▾ / kr. ▾ / $ ▾** button: type the amount as paid, e.g. 10 in euros while the app shows kroner, and the
   field says what it comes to ("≈ 74,61 kr."). Picking another currency for an amount already there converts it, so
   it keeps its value (since 1.41): 300 kr. becomes 40,21 €, and back again exactly 300,00 kr. The app converts it with the day's rate and keeps it in euros (also
-  what CSV files and Archidekt get); alert levels keep the currency typed. A new price field starts on the currency
+  what totals, Archidekt and CSV files get); alert levels keep the currency typed. A new price field starts on the currency
   you chose last (kept per phone), or the one the app shows.
+- **Prices remember the currency they were typed in** (since 1.60): a purchase price or agreed trade price typed in
+  kroner or dollars also keeps the amount as typed, so 75 kr. shows as 75,00 kr. (on the card's page, in the card
+  window, the trade and Purchase prices from orders) whatever the day's rate, and the field opens on 75,00 kr. again.
+  While the app shows another currency, the euros kept are converted as usual. When copies paid in one currency join a
+  stack whose price was typed in another (a received wishlist card, an order, a package check, a precon, purchase
+  prices from orders), the app asks which currency the stack's average price is kept in. The CSV export adds the
+  columns "Purchase price as typed" and "Typed currency", and reads them back. Archidekt only takes one number, so it
+  gets euros as before; a price changed on Archidekt comes back in euros.
 - **Cardmarket's product list** (~20 MB, once a week): Scryfall links almost every printing to its Cardmarket product,
   but not all. With this list the app finds the missing ones itself (The List reprints such as Urza's Saga, some surge
   foils, older promos) and the separate foil products of special foils such as The Lord of the Rings' silver-foil scrolls.
@@ -480,7 +488,8 @@ the Received section with the date ("✓ received Oct 20"), as a record: it no l
 no price alerts, not in the total or the shared list). Swiped right in Received, it goes into the collection: a window
 asks the printing (to confirm for "any printing" cards, to pick for cards added offline; the list needs internet),
 finish, condition, language, copies, binder and, if you like, what you paid. Copies of a version you already have in
-that binder join its stack, whose purchase price becomes the average of all copies. The card then leaves the
+that binder join its stack, whose purchase price becomes the average of all copies (when the two prices were typed in
+different currencies, the app asks which one to keep it in). The card then leaves the
 wishlist. When its copies are in the collection already (it came with an imported order, or was added when received),
 swiping right just takes it off the wishlist; and when the app sees you got a copy since adding it, the window warns
 and offers **Just take it off the wishlist**. **Swipe left** to delete a card. A swipe counts once it's gone 40% of the

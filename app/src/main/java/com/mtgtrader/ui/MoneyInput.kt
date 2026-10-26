@@ -18,8 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.AlertDialog
 import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.Money
+import com.mtgtrader.data.TypedPrice
 
 // Typing a price in the currency it was paid in, whatever currency the app shows. Since 1.40.
 
@@ -73,6 +78,9 @@ class MoneyInput(text: String, currency: AppCurrency) {
     /** In euros (how the app keeps prices) at today's rate; null when empty or the rate isn't known. */
     val eur: Double? get() = exactEur ?: typed?.let { Money.eurOf(it, currency.name) }
 
+    /** The price as typed, to keep with [eur] when it's in kroner or dollars (see [TypedPrice]). Since 1.60. */
+    val typedPrice: TypedPrice? get() = typed?.takeIf { currency != AppCurrency.EUR && eur != null }?.let { TypedPrice(TypedPrice.cents(it), currency) }
+
     /**
      * Shows the price in [c] instead, converted at today's rate, so it keeps its value: 300 kr. becomes
      * 40,12 €, and back again 300,00 kr. (not 299,99). An empty field, or one whose rate isn't known, only
@@ -91,20 +99,45 @@ class MoneyInput(text: String, currency: AppCurrency) {
 
     companion object {
         /**
-         * For a price kept in euros ([savedEur]): one already saved shows in the display currency; an empty
-         * field starts on the currency last chosen.
+         * For a price kept in euros ([savedEur]): one already saved shows as it was typed ([typed], since 1.60),
+         * else in the display currency; an empty field starts on the currency last chosen.
          */
-        fun of(savedEur: Double?): MoneyInput =
-            if (savedEur != null) {
-                MoneyInput(Money.input(savedEur), Money.display.currency).also { it.exactEur = savedEur }
-            } else {
-                MoneyInput("", TypedCurrency.start)
-            }
+        fun of(savedEur: Double?, typed: TypedPrice? = null): MoneyInput = when {
+            savedEur != null && typed != null -> MoneyInput("%.2f".format(typed.amount), typed.currency).also { it.exactEur = savedEur }
+            savedEur != null -> MoneyInput(Money.input(savedEur), Money.display.currency).also { it.exactEur = savedEur }
+            else -> MoneyInput("", TypedCurrency.start)
+        }
     }
 }
 
 @Composable
-fun rememberMoneyInput(savedEur: Double?, key: Any? = Unit): MoneyInput = remember(key) { MoneyInput.of(savedEur) }
+fun rememberMoneyInput(savedEur: Double?, key: Any? = Unit, typed: TypedPrice? = null): MoneyInput = remember(key) { MoneyInput.of(savedEur, typed) }
+
+/**
+ * Asks which currency a stack's purchase price is kept in, when copies paid in one currency join copies whose
+ * price was typed in another ([currencies]; see [com.mtgtrader.data.PurchasePrices.mixes]). Since 1.60.
+ */
+@Composable
+fun JoinCurrencyDialog(currencies: List<AppCurrency>, onDismiss: () -> Unit, onPick: (AppCurrency) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Which currency?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "Some of these copies join copies you already have, whose purchase price was typed in another currency. " +
+                        "The stack gets the average price, kept in:",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                currencies.forEach { cur ->
+                    TextButton(onClick = { onPick(cur) }, modifier = Modifier.fillMaxWidth()) { Text(cur.label) }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
 
 /** The small "€ ▾" button at the end of a price field, choosing the currency typed in. */
 @Composable

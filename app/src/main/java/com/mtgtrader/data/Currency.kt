@@ -57,6 +57,30 @@ data class ExchangeRates(val date: String, val perEuro: Map<String, Double>) {
     }
 }
 
+/**
+ * A price as it was typed, in another currency than euros: 75 kr. stays 75 kr. Prices are still kept
+ * (and summed, and sent to Archidekt) in euros; this is only to show the price back as typed while
+ * the app shows that currency. Since 1.60.
+ */
+data class TypedPrice(val amount: Double, val currency: AppCurrency) {
+    /** The currency's name to save ("DKK"). */
+    val key get() = currency.name
+
+    /** For [n] copies. */
+    fun times(n: Int) = copy(amount = amount * n)
+
+    companion object {
+        /** From saved fields; null for none, or for euros (which are kept as typed anyway). */
+        fun of(amount: Double?, currency: String?): TypedPrice? {
+            val c = AppCurrency.entries.firstOrNull { it.name == currency } ?: return null
+            return if (amount == null || c == AppCurrency.EUR) null else TypedPrice(amount, c)
+        }
+
+        /** Rounded to cents. */
+        fun cents(v: Double) = Math.round(v * 100) / 100.0
+    }
+}
+
 /** What prices are shown in: [currency], and how many of it one euro buys. */
 data class DisplayCurrency(val currency: AppCurrency = AppCurrency.EUR, val perEuro: Double = 1.0) {
     companion object {
@@ -116,10 +140,19 @@ object Money {
 
     /** With the currency's sign the way it's usually written: "€3.50" (as the phone writes euros), "$3.50", "3,50 kr.". */
     /** [decimals] is 2 or 0. */
-    fun format(eur: Double, decimals: Int = 2): String {
-        val v = toDisplay(eur)
+    fun format(eur: Double, decimals: Int = 2): String = formatIn(toDisplay(eur), display.currency, decimals)
+
+    /**
+     * A price kept in euros ([eur]) that was typed as [typed]: shown as typed while the app shows that
+     * currency, so 75 kr. stays 75,00 kr.; otherwise converted like any other. Since 1.60.
+     */
+    fun format(eur: Double, typed: TypedPrice?): String =
+        if (typed != null && typed.currency == display.currency) formatIn(typed.amount, typed.currency) else format(eur)
+
+    /** [v], an amount in [currency], written as that currency is written. */
+    fun formatIn(v: Double, currency: AppCurrency, decimals: Int = 2): String {
         val sign = if (v < 0) "-" else ""
-        return when (display.currency) {
+        return when (currency) {
             AppCurrency.EUR -> (if (decimals == 0) eur0 else eur2).format(v)
             AppCurrency.USD -> "$sign$" + number(abs(v), decimals, Locale.US)
             AppCurrency.DKK -> sign + number(abs(v), decimals, DANISH) + " kr."

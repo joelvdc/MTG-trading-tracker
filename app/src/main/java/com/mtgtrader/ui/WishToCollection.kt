@@ -48,6 +48,7 @@ import com.mtgtrader.data.LANGUAGES
 import com.mtgtrader.data.Money
 import com.mtgtrader.data.WishOrders
 import com.mtgtrader.data.WishlistItem
+import com.mtgtrader.data.TypedPrice
 
 // A received wishlist card into the collection, and an imported order against the wishlist. Since 1.39.
 
@@ -60,6 +61,8 @@ data class WishToCollection(
     val quantity: Int,
     val binder: BinderChoice = BinderChoice(),
     val price: Double? = null,
+    /** [price] as typed, when typed in kroner or dollars. Since 1.60. */
+    val typed: TypedPrice? = null,
 ) {
     companion object {
         /** From the wishlist card: its printing (none for a card added offline), finish and the copies wanted. */
@@ -148,7 +151,7 @@ fun AddWishToCollectionDialog(
                     QuantityStepper(v.quantity, { v = v.copy(quantity = it) })
                 }
                 BinderPicker("Put it in", v.binder, { v = v.copy(binder = it) })
-                MoneyField(priceInput, "Paid per copy (optional)", Modifier.fillMaxWidth()) { v = v.copy(price = priceInput.eur?.takeIf { p -> p >= 0 }) }
+                MoneyField(priceInput, "Paid per copy (optional)", Modifier.fillMaxWidth()) { v = v.copy(price = priceInput.eur?.takeIf { p -> p >= 0 }, typed = priceInput.typedPrice) }
                 joiningStack(collection, v, v.binder.takeIf { it.newName == null }?.binderId)?.let { s ->
                     Text(
                         "You have ${s.quantity} of this version in ${binderName(s.binderId, binders)} already: these join that stack" +
