@@ -112,21 +112,56 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
-### Compare the win turn with ScrollVault's
-*Added 2026-10-21. MTG Trader only.*
-
-The owner's words: "Scrollvault also has a prediction for the turn a deck can win by, could be interesting to check the
-differences between that and the simulator." and, with the green light for 1.54: "we will compare it with scrollvault
-later (add a todo)."
-
-What's known: ScrollVault shows a "typical win ~T8 (earliest T6)" from its own goldfish simulation; the app already
-reads it (deck page: "ScrollVault: … typical win turn X (earliest Y)", and the power level card's "At the table"). In a
-cloud session ScrollVault's page couldn't be opened (its engine runs in the browser, and the session's browser didn't
-trust the network proxy). So: either the owner sends the ScrollVault lines of the deck pages, or it's done in a session
-on the owner's PC. Then put ScrollVault's typical and earliest turns next to the app's 4 in 10 (or 5 in 10) and first
-win for all decks, and look into the biggest differences (which cards one of them reads and the other doesn't).
-
 ## Done
+
+### Compare the win turn with ScrollVault's (done 2026-10-26, a report, no app change)
+*Added 2026-10-21 ("Scrollvault also has a prediction for the turn a deck can win by, could be interesting to check the
+differences between that and the simulator"). Done on the owner's PC on 2026-10-26, for the 19 decks in the Archidekt
+folder "01. Ready to Play" only (the owner's choice).*
+
+ScrollVault's page was run in the desktop app's browser; the app's numbers come from its own simulator (1.60, the same
+cards, card details and Commander Salt combos the app reads; worked out by a temporary test, not committed).
+
+| Deck | ScrollVault typical (earliest) | App 4 in 10 / 5 in 10 (first win) | Difference |
+|---|---|---|---|
+| Baba | T9 (T7) | T12 / T13 (T8) | app +3 |
+| Auntie Plague | T8 (T7) | T11 / T11 (T6) | app +3 |
+| Cult of Athreos (LC) | T8 (T7) | T11 / T11 (T9) | app +3 |
+| Smasher LCP | T10 (T8) | T12 / T12 (T9) | app +2 |
+| Poly Jace | T9 (T8) | T11 / T11 (T8) | app +2 |
+| Taranika band | T8 (T7) | T10 / T11 (T8) | app +2 |
+| Sarge | T10 (T8) | T8 / T8 (T6) | app −2 |
+| Haunted Ganax | T9 (T7) | T10 / T10 (T7) | app +1 |
+| Vohar Danse | T10 (T8) | T11 / T11 (T8) | app +1 |
+| The Council of Four | T10 (T8) | T11 / T11 (T8) | app +1 |
+| Cloud for Mirrodin! | T8 (T6) | T9 / T10 (T7) | app +1 |
+| Zombies | T8 (T6) | T9 / T10 (T8) | app +1 |
+| Teval | T8 (T7) | T9 / T10 (T7) | app +1 |
+| Tawnos' Army | T9 (T8) | T10 / T11 (T7) | app +1 |
+| Quintorius (upgraded precon) | T9 (T7) | T9 / T9 (T6) | same |
+| Deep Clue Sea upgrade 2.0 | T9 (T7) | T9 / T9 (T6) | same |
+| Shrine Gate Win | T10 (T8) | T10 / T10 (T7) | same |
+| Ruby | T10 (T8) | T10 / T10 (T7) | same |
+| Turtle Power! (TMNT upgrade) | T8 (T7) | T8 / T8 (T6) | same |
+
+In short: the app's 4 in 10 is on average one turn later than ScrollVault's "typical win" (same for 5 decks, later
+for 13, earlier for 1); the earliest wins agree within a turn on average. What explains the biggest differences:
+- **Combat in go-wide decks (Baba, Cult of Athreos, Taranika band, Poly Jace):** ScrollVault's typical turn is its
+  combat line, which it marks "rate not measured" (an estimate, not counted per game). The app plays each game out
+  against three opponents at 40 life, each attacker hitting one of them (since 1.56), so a wide board has to finish
+  all three; that takes it 2–3 turns longer. ScrollVault's own commander-damage line lands turn 11–13 for these decks,
+  close to the app's.
+- **Equipment (Sarge, the one deck where the app is earlier):** ScrollVault says its simulation never casts equipment
+  (nor removal, counterspells or wipes). Sarge wins by suited-up commander damage in the app (93% of the damage; gear
+  and pumps counted), so the app sees T8 where ScrollVault, without the equipment, sees T10.
+- **Combos (Auntie Plague, Smasher):** both read the same combos. ScrollVault has Auntie Plague's combos landing on T10
+  in 25% of hands, the app 34% by T11; ScrollVault's T8 again comes from its combat estimate. Smasher's Dualcaster Mage
+  + Necromantic Selection comes up in ~4% (ScrollVault) and ~1% (app) of games, so it barely moves either number.
+- ScrollVault counts 101 cards for most of these decks (100 for Haunted Ganax); the app counts 100 without the
+  maybeboard. One card doesn't change the turn.
+
+Possible follow-ups, only if the owner wants them (not planned): show ScrollVault's commander-damage and combo turns
+next to its typical win on the deck page, or explain on the Stats page that the app finishes all three opponents.
 
 ### Purchase prices keep the currency they were typed in (MTG Trader 1.60)
 *Added 2026-10-25 ("ok the mtg app should not work like that and should remember that the price was inserted in dkk
