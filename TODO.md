@@ -160,8 +160,8 @@ for 13, earlier for 1); the earliest wins agree within a turn on average. What e
 - ScrollVault counts 101 cards for most of these decks (100 for Haunted Ganax); the app counts 100 without the
   maybeboard. One card doesn't change the turn.
 
-Possible follow-ups, only if the owner wants them (not planned): show ScrollVault's commander-damage and combo turns
-next to its typical win on the deck page, or explain on the Stats page that the app finishes all three opponents.
+Possible follow-ups were offered (ScrollVault's commander-damage and combo turns on the deck page, or a note on the
+Stats page that the app finishes all three opponents); the owner said on 2026-10-26 not to do anything about it.
 
 ### Purchase prices keep the currency they were typed in (MTG Trader 1.60)
 *Added 2026-10-25 ("ok the mtg app should not work like that and should remember that the price was inserted in dkk
