@@ -45,7 +45,8 @@ instead (bigger, runs on any device). Either way, a new version installs over th
 - **Other price sources** (since 1.29): **TCGplayer**'s market prices (in US dollars, they come with Scryfall's card
   data: refreshed daily for the cards you have, and whenever Scryfall sends a card, e.g. in a search) and
   **Card Kingdom**'s public price list (~10 MB a day: its selling price per condition and its buylist). Each source
-  downloads once a day (a failed try waits a few hours before the next), with a progress bar above the tabs. Card
+  downloads once a day (a failed try waits a few hours before the next), with a progress bar above the tabs; since 1.61
+  Card Kingdom's list is downloaded first and saved after, so the collection stays open meanwhile. Card
   Kingdom refuses some phones (HTTP 403, e.g. in Denmark); then the app uses a copy that a daily GitHub job
   (`.github/workflows/card-kingdom.yml`, `scripts/card_kingdom_prices.py`) keeps on this repository's
   `card-kingdom-prices` branch (~5 MB). Settings →
@@ -197,6 +198,16 @@ them (they stay open or folded for every deck).
   - **+1/+1 counters**: Leonardo, Mutagens, Corpsejack Menace, High Score, Raphael, counters when attacking;
   - **the opponents' draw steps**: Howling Mine and the like, so "a player draws their second card" (The Council of
     Four), Faerie Mastermind, Scrawling Crawler count.
+  Since 1.61 also:
+  - **sacrifice payoffs**: with Mirkwood Bats, Marionette Master or Marionette Apprentice out, the Treasures left after
+    casting are sacrificed (their mana can still crack Clues), Food ({2}) and Maps ({1}) are cracked with the mana left,
+    and Sai sacrifices spare artifact tokens to draw; Nuka-Cola Vending Machine's Treasures, Worldwalker Helm's Maps;
+    Tawnos's sacrifice sets them off too; creature tokens are kept to attack;
+  - "whenever **a** creature you control enters" damage (Impact Tremors); **populate** and Nesting Dovehawk's counters;
+  - a card making several tokens makes them one by one (Whirler Rogue's two Thopters each count for Mirkwood Bats and
+    lords); token copies count as tokens made; Tawnos's copies are artifacts, and copy a card token with its abilities;
+  - lords that need the **city's blessing** (Illustrious Wanderglyph: ten permanents); creatures without power
+    (Ornithopter) are cast when a lord pumps them; **Urza, Prince of Kroog**'s {6} artifact copies.
   Under the table: where the damage came from (combat, commander damage,
   triggers, drain), how often a combo or Maze's End won, and how often commander damage knocked a player out. Decks
   that don't win 4 in 10 games by turn 15 show **T15+** with a note: their damage likely comes from what the app can't

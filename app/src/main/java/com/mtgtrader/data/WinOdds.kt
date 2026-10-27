@@ -136,6 +136,13 @@ data class WinCounted(
  *   X spells making tokens; planeswalkers using one loyalty ability a turn;
  * - cascade and discover (the spell found cast for free, with its own triggers), Improvisation Capstone, paradigm (a
  *   free copy every turn after).
+ * Since 1.61 also:
+ * - with Mirkwood Bats or Marionette Master out, leftover Treasures, Food and Maps are sacrificed (Sai's draw too),
+ *   and Nuka-Cola Vending Machine's Treasures; Worldwalker Helm's Maps;
+ * - "whenever a creature you control enters" damage (Impact Tremors); populate and Nesting Dovehawk's counters;
+ * - a card making several tokens makes them one by one (Whirler Rogue's two Thopters); token copies count as tokens made;
+ * - lords that need the city's blessing (Illustrious Wanderglyph); creatures without power cast when a lord pumps
+ *   them; Urza, Prince of Kroog's artifact copies.
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -146,9 +153,10 @@ object WinOddsCalc {
     /**
      * Raised when the rules change, so results kept on the phone are worked out again. 2: combos and tutors (1.53).
      * 3: counting Shrines and Gates, Maze's End, sacrifice decks and X spells (1.54). 4: ramp, Treasures, pumps, the
-     * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56).
+     * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56). 6: sacrifice payoffs,
+     * populate, tokens one by one, ascend, Urza (1.61).
      */
-    const val VERSION = 5
+    const val VERSION = 6
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -286,7 +294,8 @@ object WinOddsCalc {
         "whenever (you|a player) casts? (your first spell each turn|their first spell each turn|a spell|an instant or sorcery spell|a noncreature spell|a creature spell)",
         RegexOption.IGNORE_CASE,
     )
-    private val enterTrigger = Regex("^whenever (another )?(nontoken )?(creature|land)( card)? (you control )?enters(?! the battlefield under an opponent)", RegexOption.IGNORE_CASE)
+    // "Whenever a creature you control enters" (Impact Tremors) since 1.61, when it deals damage.
+    private val enterTrigger = Regex("^whenever (another |a )?(nontoken )?(creature|land)( card)? (you control )?enters(?! the battlefield under an opponent)", RegexOption.IGNORE_CASE)
     private val keywordLine = Regex("^[a-z ,'-]+$")
     private val discoverPower = Regex("^whenever you cast a creature spell with power (\\d+) or greater, discover x, where x is that spell's mana value")
     private val discoverEnter = Regex("^when [^,]*enters[^,]*, discover (\\d+)\\.?$")
@@ -432,8 +441,11 @@ object WinOddsCalc {
      */
     data class SacrificeAbility(val count: Int, val types: Int, val drain: Int, val draw: Int)
 
-    /** Damage when a creature or land of the deck enters: [amount], or the creature's power ([POWER], since 1.55). */
-    data class EnterTrigger(val land: Boolean, val another: Boolean, val each: Boolean, val amount: Int)
+    /**
+     * Damage when a creature or land of the deck enters: [amount], or the creature's power ([POWER], since 1.55).
+     * [nontoken]: tokens don't set it off (since 1.61).
+     */
+    data class EnterTrigger(val land: Boolean, val another: Boolean, val each: Boolean, val amount: Int, val nontoken: Boolean = false)
 
     /**
      * A token's card types and subtypes ("Shrine enchantment creature"), so it counts as a Shrine. Since 1.54. Since 1.55
@@ -473,8 +485,11 @@ object WinOddsCalc {
         val oncePerTurn: Boolean = false,
     )
 
-    /** "Other Zombies you control get +1/+1": [kind] null for all creatures, "a|b" for either. Since 1.55. */
-    data class Lord(val kind: String?, val amount: Int, val other: Boolean)
+    /**
+     * "Other Zombies you control get +1/+1": [kind] null for all creatures, "a|b" for either. Since 1.55. [ascend]: only
+     * with the city's blessing, ten permanents (Illustrious Wanderglyph; since 1.61).
+     */
+    data class Lord(val kind: String?, val amount: Int, val other: Boolean, val ascend: Boolean = false)
 
     /** "{1}{R}: Dragons you control get +1/+0 until end of turn" ([kind]), or the creature itself ([kind] null). Since 1.55. */
     data class ActivatedPump(val cost: ManaOddsCalc.Cost, val kind: String?, val amount: Int)
@@ -544,9 +559,14 @@ object WinOddsCalc {
         var copyFromGraveyard = false
         /** "Create X tokens, where X is the number of Soldiers you control" (Myrel). */
         var tokensPer: String? = null
+        // Since 1.61.
+        /** Urza, Prince of Kroog: a token copy of an artifact, as a 1/1 creature. */
+        var copyArtifact = false
+        /** Populate: a copy of a creature token (Nesting Dovehawk). */
+        var populate = 0
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
-        val copying get() = copies + polymorph > 0 || copyArtifactToken || copyExiled || copyFromGraveyard
+        val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
         /** Set once the card is read ([freeze]), as [any] is asked a lot during the games. */
         private var frozen: Boolean? = null
         fun freeze() { frozen = null; frozen = any }
@@ -554,7 +574,7 @@ object WinOddsCalc {
         private fun anything() = draw + drainEach + drainOne + tokens + artifacts + treasures + selfPump + teamPump + landRamp + sacrificeForToken > 0 ||
                 graveyard || copying || doubleStrikeFor != null || drawPerEquipped || toBottom > 0 || made.isNotEmpty() ||
                 selfCounters + countersAll + countersTarget + countersHit + eachPlayerDraws + oppDraws > 0 || doubleCounters || tokensPer != null ||
-                drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard
+                drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0
     }
 
     /** What a card does in the game, read once per card from its type, power and rules text. */
@@ -567,8 +587,11 @@ object WinOddsCalc {
         var power = 0
         var haste = false
         var double = false
+        /** The power of the tokens it makes once or each turn, all together; since 1.61 also how many ([tokensOnceCount]). */
         var tokensOnce = 0
         var tokensTurn = 0
+        var tokensOnceCount = 0
+        var tokensTurnCount = 0
         var drainOnce = 0
         var drainTurn = 0
         var oneOnce = 0
@@ -792,6 +815,18 @@ object WinOddsCalc {
         var cascadeReturn = false
         var newCounters = 0
         var paradigm = false
+        /** Nesting Dovehawk: a +1/+1 counter on it when a creature token of ours enters. Since 1.61. */
+        var tokenEnterCounter = false
+        /** Worldwalker Helm: a Map too whenever artifact tokens are made. Since 1.61. */
+        var extraMap = false
+        /** Nuka-Cola Vending Machine: a tapped Treasure for each Food sacrificed. Since 1.61. */
+        var foodTreasure = false
+        /** Sai: "{1}{U}, Sacrifice two artifacts: Draw a card" (its cost and how many). Since 1.61. */
+        var sacArtifactsDraw: Pair<ManaOddsCalc.Cost, Int>? = null
+        /** A creature without power that a lord in the deck pumps (Ornithopter with Urza, Prince of Kroog): cast too. Since 1.61. */
+        var pumpable = false
+        /** Mirkwood Bats, Marionette Master and Apprentice: sacrificing artifacts or tokens drains (since 1.61). */
+        val sacrificePayoff get() = artifactDrain || dieDrain > 0 || tokenDrain > 0
 
         val land get() = mana.kind == ManaOddsCalc.Kind.LAND
         val gearBonus get() = bonus > 0 || forEach != null || base != null || grantsDouble || grantsHaste
@@ -1119,6 +1154,8 @@ object WinOddsCalc {
             if ("from a graveyard" !in low && "an opponent controls" !in low.substring(m.range.first).substringBefore('.')) a.copies += number(m.groupValues[1]) * (if (w.demonstrate) 2 else 1)
         }
         if (copyArtifactToken.containsMatchIn(low)) a.copyArtifactToken = true
+        if (Regex("create a token that's a copy of target artifact you control, except it's a 1/1").containsMatchIn(low)) a.copyArtifact = true
+        if (Regex("\\bpopulate\\b").containsMatchIn(low)) a.populate += 1
         if (copyExiled.containsMatchIn(low) && "artifact token" in low) a.copyExiled = true
         polymorph.find(low)?.let { m -> if ("onto the battlefield" in low) a.polymorph = if ("that many" in m.value) ALL else 1 }
         doubleStrikeFor.find(low)?.let { a.doubleStrikeFor = it.groupValues[1] }
@@ -1148,7 +1185,7 @@ object WinOddsCalc {
         if ("draw a card for each equipped attacking creature" in low) { a.drawPerEquipped = true; a.draw = 0 }
         if (a.lootDrain == 0) eachOpponent.find(low)?.let { a.drainEach += number(it.groupValues[1].ifEmpty { it.groupValues[2] }) }
         if (a.drainEach == 0) oneOpponent.find(low)?.let { a.drainOne += number(it.groupValues[1].ifEmpty { it.groupValues[2] }) }
-        if (a.copies == 0 && !a.copyArtifactToken && !a.copyExiled && !a.copySelf && !a.copyFromGraveyard) create.find(low)?.let { m ->
+        if (a.copies == 0 && !a.copyArtifactToken && !a.copyExiled && !a.copySelf && !a.copyFromGraveyard && !a.copyArtifact) create.find(low)?.let { m ->
             a.tokens += if ("for each opponent, create" in low) OPPONENTS else number(m.groupValues[1])
             a.token = tokenKind(text.substring(m.range.first))
             if (m.groupValues[1].equals("x", true)) perKindX.find(low)?.let { a.tokensPer = it.groupValues[1] }
@@ -1247,16 +1284,20 @@ object WinOddsCalc {
             }
             return
         }
-        val enters = enterTrigger.find(line)
+        // "Whenever a creature you control enters" is read here only when it deals damage (the rest as before 1.61).
+        val enters = enterTrigger.find(line)?.takeIf { m ->
+            !m.groupValues[1].equals("a ", true) || eachOpponent.containsMatchIn(line) || oneOpponent.containsMatchIn(line) || powerDamage.containsMatchIn(line)
+        }
         if (enters != null || low.startsWith("landfall")) {
             val head = low.substringBefore(',')
             val land = enters?.groupValues?.get(3)?.lowercase() == "land" || low.startsWith("landfall")
+            val nontoken = enters?.groupValues?.get(2)?.isNotEmpty() == true
             val e = eachOpponent.find(line)
             val o = oneOpponent.find(line)
             when {
-                e != null -> number(e.groupValues[1].ifEmpty { e.groupValues[2] }).takeIf { it > 0 }?.let { w.enterTriggers += EnterTrigger(land, "another" in head, true, it) }
-                o != null -> number(o.groupValues[1].ifEmpty { o.groupValues[2] }).takeIf { it > 0 }?.let { w.enterTriggers += EnterTrigger(land, "another" in head, false, it) }
-                !land && powerDamage.containsMatchIn(line) -> w.enterTriggers += EnterTrigger(false, "another" in head, "each opponent" in low, POWER)
+                e != null -> number(e.groupValues[1].ifEmpty { e.groupValues[2] }).takeIf { it > 0 }?.let { w.enterTriggers += EnterTrigger(land, "another" in head, true, it, nontoken) }
+                o != null -> number(o.groupValues[1].ifEmpty { o.groupValues[2] }).takeIf { it > 0 }?.let { w.enterTriggers += EnterTrigger(land, "another" in head, false, it, nontoken) }
+                !land && powerDamage.containsMatchIn(line) -> w.enterTriggers += EnterTrigger(false, "another" in head, "each opponent" in low, POWER, nontoken)
             }
             // Landfall tokens (Omnath, Locus of Rage) and counters (Avenger of Zendikar's Plants), since 1.55.
             if (land) {
@@ -1285,7 +1326,8 @@ object WinOddsCalc {
             // A 0/0 that grows ("for each artifact you control") counts as power 1 so it's made (since 1.55).
             val per = tokenKind(line.substring(m.range.first))?.per != null
             val p = number(m.groupValues[1]) * ((m.groupValues[2].toIntOrNull() ?: 0).takeIf { it > 0 || !per } ?: 1)
-            if (recurring || tap) w.tokensTurn += p else if (once) w.tokensOnce += p
+            val n = number(m.groupValues[1])
+            if (recurring || tap) { w.tokensTurn += p; w.tokensTurnCount += n } else if (once) { w.tokensOnce += p; w.tokensOnceCount += n }
             // Quintorius, Loremaster: only with such a card in the graveyard to exile.
             endStepExile.find(line)?.let { w.tokensNeed = it.groupValues[1] }
         }
@@ -1335,7 +1377,7 @@ object WinOddsCalc {
             noun != "creatures" -> noun.removeSuffix("s")
             else -> words.lastOrNull()
         }
-        w.lords += Lord(kind, n, m.groupValues[1].isNotEmpty())
+        w.lords += Lord(kind, n, m.groupValues[1].isNotEmpty(), ascend = "as long as you have the city's blessing" in low)
         w.anthem += n
         if (kind != null && Regex("and have [^.]*haste").containsMatchIn(low)) w.hasteFor = kind
         return true
@@ -1439,6 +1481,14 @@ object WinOddsCalc {
         Regex("each noncreature artifact you control becomes a (\\d+)/\\d+ artifact creature until end of turn").find(low)?.let { w.animateArtifacts = it.groupValues[1].toInt(); return true }
         if ("noncreature artifact you control becomes a 0/0 artifact creature" in low) { w.riseAndShine = 4; return true }
         tokenDrain.find(low)?.let { w.tokenDrain = it.groupValues[1].toInt(); return true }
+        // Since 1.61: Nesting Dovehawk, Worldwalker Helm, Nuka-Cola Vending Machine, Sai.
+        if (Regex("^whenever a creature token you control enters, put a \\+1/\\+1 counter on (?:this creature|$short|$full)").containsMatchIn(low)) { w.tokenEnterCounter = true; return true }
+        if ("if you would create one or more artifact tokens, instead create those tokens plus an additional map token" in low) { w.extraMap = true; return true }
+        if (Regex("^whenever you sacrifice a food, create a (?:tapped )?treasure token").containsMatchIn(low)) { w.foodTreasure = true; return true }
+        Regex("^((?:\\{[^}]+\\})+), sacrifice (two|three|an?) artifacts?: draw a card\\.?$").find(low)?.let { m ->
+            w.sacArtifactsDraw = ManaOddsCalc.cost(m.groupValues[1]) to number(m.groupValues[2])
+            return true
+        }
         tokenBatchDrain.find(low)?.let { w.tokenBatchDrain = it.groupValues[1].toInt(); return true }
         dieDrain.find(low)?.let { w.dieDrain = it.groupValues[1].toInt(); return true }
         leaveToken.find(low)?.let { m -> w.leaveToken = tokenKind(line) ?: TokenKind(m.groupValues[1].toInt(), CREATURE_TYPES, emptySet()); return true }
@@ -1482,7 +1532,7 @@ object WinOddsCalc {
                 w.drainOnce += a.drainEach
                 w.oneOnce += a.drainOne
                 w.drawOnce += a.draw
-                if (a.tokens > 0) { w.tokensOnce += a.tokens * maxOf(1, a.token?.power ?: 1); if (w.token == null) w.token = a.token }
+                if (a.tokens > 0) { w.tokensOnce += a.tokens * maxOf(1, a.token?.power ?: 1); w.tokensOnceCount += a.tokens; if (w.token == null) w.token = a.token }
                 a.made.forEach { (k, n) -> w.madeOnce[k] = (w.madeOnce[k] ?: 0) + n; w.artifactsOnce += n }
                 if (a.treasures > 0) { w.madeOnce["treasure"] = (w.madeOnce["treasure"] ?: 0) + a.treasures; w.artifactsOnce += a.treasures; w.treasuresOnce += a.treasures }
             }
@@ -1555,7 +1605,7 @@ object WinOddsCalc {
         spellTriggers -> true
         fodder && c.permanent -> true
         creatureTriggers && c.creature -> true
-        else -> c.creature && c.power > 0 || c.tokensOnce + c.tokensTurn > 0 || c.dealsDamage || c.anthem + c.overrun > 0 ||
+        else -> c.creature && (c.power > 0 || c.pumpable) || c.tokensOnce + c.tokensTurn > 0 || c.dealsDamage || c.anthem + c.overrun > 0 ||
             c.drawOnce + c.drawTurn > 0 || c.combo && c.permanent || c.castTriggers.isNotEmpty() || c.enterTriggers.isNotEmpty() ||
             (c.equipment || c.aura) && c.gearBonus || c.attackDouble || c.targetedBonus > 0 || c.combatDraw != 0 ||
             c.sacrifice != null || c.artifactsOnce + c.artifactsTurn + c.artifactsLandfall > 0 || c.tutorUseful || c.newUse || c.use55 ||
@@ -1585,6 +1635,13 @@ object WinOddsCalc {
             repeat(c.quantity.coerceAtLeast(0)) { deck += w }
         }
         val leaders = commanders.map { classify(it, own, lands, comboKeys) }
+        // Creatures without power are cast when one of the deck's lords pumps them (since 1.61).
+        val lords = (kinds + leaders).flatMap { l -> l.lords.map { l to it } }
+        for (c in kinds + leaders) if (c.creature && c.power <= 0) c.pumpable = lords.any { (l, lord) ->
+            l !== c && lord.amount > 0 && (lord.kind == null || lord.kind.split('|').any { k ->
+                c.types.any { it.equals(k, true) } || c.subtypes.any { it.equals(k, true) }
+            })
+        }
         // A loop only counts when the deck has a card that turns it into life loss (or it makes endless tokens).
         val plans = candidates.filter { settle(it, kinds + leaders) }
         val payoffKeys = plans.filter { it.kind == ComboKind.LOOP }.flatMap { it.payoffs }.toSet()
@@ -1642,7 +1699,9 @@ object WinOddsCalc {
             commanderKnockouts = if (wins == 0) 0 else Math.round(100.0 * knockouts / wins).toInt(),
             counted = WinCounted(
                 creatures = deck.count { it.creature && it.power > 0 } + leaders.count { it.creature && it.power > 0 },
-                tokenMakers = all.count { it.tokensOnce + it.tokensTurn + it.landfallTokens + it.xTokens > 0 || it.leaveToken != null },
+                tokenMakers = all.count {
+                    it.tokensOnce + it.tokensTurn + it.landfallTokens + it.xTokens + it.eachUpkeep.tokens + it.eachTurn.tokens > 0 || it.leaveToken != null
+                },
                 triggers = all.count { it.castTriggers.isNotEmpty() || it.enterTriggers.isNotEmpty() },
                 drains = all.count { it.dealsDamage },
                 gear = all.count { (it.equipment || it.aura) && it.gearBonus },
@@ -1769,7 +1828,10 @@ object WinOddsCalc {
         val hasteFor = cards.any { it.hasteFor != null }
         val drawTriggers = cards.any { it.drawCounter || it.onSecondDraw.any }
         val counterMods = cards.any { it.counterPlus > 0 || it.counterTimes || it.counterDamage || it.counterDraw }
-        val tokenTriggers = cards.any { it.tokenDrain + it.tokenBatchDrain > 0 || it.extraFood || it.extraMutagen }
+        val tokenTriggers = cards.any { it.tokenDrain + it.tokenBatchDrain > 0 || it.extraFood || it.extraMutagen || it.extraMap }
+        /** Since 1.61. */
+        val tokenCounters = cards.any { it.tokenEnterCounter }
+        val sacrificePayoffs = cards.any { it.sacrificePayoff }
         val opponentTurns = cards.any { it.onOppSecondDraw.any || it.oppDrawDrain > 0 || it.oppDrawTreasure || it.eachDrawStep > 0 || it.eachUpkeepDraws || it.eachUpkeep.any || it.truce }
         val castTriggers55 = cards.any { it.onSecondSpell.any || it.onCast.isNotEmpty() }
         val creatureEnter = cards.any { it.onCreatureEnter.any }
@@ -1955,7 +2017,13 @@ object WinOddsCalc {
                 board += e
                 arrived(e)
             }
-            tokenMade(count * kinds.size)
+            tokenMade(count * kinds.size, artifact = true)
+        }
+
+        /** A creature token of ours entered: Nesting Dovehawk's counter (since 1.61). */
+        fun creatureTokenEntered(e: Entry) {
+            if (!f.tokenCounters) return
+            for (b in board) if (b !== e && b.card?.tokenEnterCounter == true) addCounters(b, 1)
         }
 
         fun makeAll(kinds: Map<String, Int>) = kinds.forEach { (k, n) -> make(k, n) }
@@ -1975,7 +2043,7 @@ object WinOddsCalc {
         fun entered(self: Entry?, land: Boolean) {
             if (!f.enterTriggers) return
             for (b in board.toList()) b.card?.enterTriggers?.forEach { t ->
-                if (t.land == land && !(t.another && b === self)) {
+                if (t.land == land && !(t.another && b === self) && !(t.nontoken && self?.token == true)) {
                     val n = if (t.amount == POWER) self?.let { (it.power + it.counters).coerceAtLeast(0) } ?: 0 else t.amount
                     if (t.each) each(n, 2) else one(n, 2)
                 }
@@ -1987,14 +2055,26 @@ object WinOddsCalc {
                 it.flying = kind?.flying == true
                 it.per = kind?.per
                 board += it
-                tokenMade(1)
+                tokenMade(1, artifact = "Artifact" in it.types)
+                creatureTokenEntered(it)
                 entered(it, false)
                 creatureEntered(it)
                 arrived(it)
             }
 
+        /**
+         * [n] tokens with [total] power between them (Whirler Rogue's two Thopters); before 1.61 one token with all the
+         * power, so Mirkwood Bats and lords counted it once.
+         */
+        fun tokens(n: Int, total: Int, kind: TokenKind?) {
+            if (total <= 0 && n <= 0) return
+            val count = n.coerceIn(1, 30)
+            // A 0/0 that grows (Urza's Construct) was counted as power 1 to be made; it's 0 plus what it grows by.
+            repeat(count) { i -> token(if (kind?.per != null) 0 else total / count + if (i < total % count) 1 else 0, kind) }
+        }
+
         /** Tokens just made: Mirkwood Bats and Kambal; Donatello's Mutagen and Peregrin Took's Food (since 1.55). */
-        fun tokenMade(n: Int) {
+        fun tokenMade(n: Int, artifact: Boolean = false) {
             if (n <= 0) return
             tokensThisTurn = true
             if (!f.tokenTriggers) return
@@ -2006,6 +2086,7 @@ object WinOddsCalc {
                 extraGuard = true
                 if (board.any { it.card?.extraMutagen == true }) make("mutagen", 1)
                 if (board.any { it.card?.extraFood == true }) make("food", 1)
+                if (artifact && board.any { it.card?.extraMap == true }) make("map", 1)
                 extraGuard = false
             }
         }
@@ -2152,7 +2233,7 @@ object WinOddsCalc {
 
         /** Treasures as mana (Goldspan's make two), for checking what can be paid. */
         /** Treasures, and Foods with Ninja Pizza: one-use mana. */
-        fun manaToken(e: Entry) = e.treasure || f.foodMana && e.art == "food" && board.any { it.card?.foodMana == true }
+        fun manaToken(e: Entry) = (e.treasure || f.foodMana && e.art == "food" && board.any { it.card?.foodMana == true }) && e.tapped != turn
 
         fun treasurePool(): List<Pair<Set<Char>, Int>> {
             if (!f.manaTokens) return emptyList()
@@ -2407,10 +2488,17 @@ object WinOddsCalc {
             }
             repeat(a.flicker) { flickerBest() }
             repeat(a.copies) { copyBest() }
-            if (a.copyArtifactToken) board.filter { it.token && "Artifact" in it.types }.maxByOrNull { if (it.creature) 10 + it.power else if (it.treasure) 1 else 0 }?.let { t ->
-                if (t.creature) token(t.power, TokenKind(t.power, t.types, t.subtypes, t.flying, t.per))
-                else make(t.art ?: "other", 1)
-            }
+            if (a.copyArtifact) copyArtifact()
+            repeat(a.populate) { populate() }
+            if (a.copyArtifactToken) board.filter { it.token && "Artifact" in it.types }
+                .maxByOrNull { if (it.card != null) 10 + worth(it.card) else if (it.creature) 10 + it.power else if (it.treasure) 1 else 0 }?.let { t ->
+                    when {
+                        // A token copy of a card (Tawnos's own) is copied with the card's abilities, an artifact still (since 1.61).
+                        t.card != null -> enter(t.card, cheated = true, token = true, extraTypes = t.types - t.card.types)
+                        t.creature -> token(t.power, TokenKind(t.power, t.types, t.subtypes, t.flying, t.per))
+                        else -> make(t.art ?: "other", 1)
+                    }
+                }
             if (a.copyExiled) {
                 val tokens = board.filter { it.token && "Artifact" in it.types && !it.creature }.take(2).ifEmpty { null }
                     ?: board.filter { it.token && "Artifact" in it.types }.sortedBy { it.power }.take(2)
@@ -2418,7 +2506,8 @@ object WinOddsCalc {
                 if (tokens.size == 2 && target != null) {
                     tokens.forEach { board.remove(it); left(it, artifact = true) }
                     leftGraveyard(listOf(target))
-                    enter(target, cheated = true, token = true)
+                    // "Except it's an artifact in addition to its other types": Urza's and Wanderglyph's lords, myriad (since 1.61).
+                    enter(target, cheated = true, token = true, extraTypes = setOf("Artifact"))
                 }
             }
             if (a.polymorph > 0) {
@@ -2443,6 +2532,31 @@ object WinOddsCalc {
             e.source?.let { sources.remove(it) }
             board.filter { it.on === e }.forEach { g -> g.on = null; if (g.card?.aura == true) board.remove(g) }
             enter(e.card!!, cheated = true)
+        }
+
+        /** What a token copy of an artifact card is worth: what it does on entering, its mana (since 1.61). */
+        fun artifactCopyWorth(c: WinCard): Int = enterWorth(c) + (if (c.mana.kind == ManaOddsCalc.Kind.ROCK) 2 * c.mana.amount else 0) +
+            (if (c.sacrificePayoff || c.lords.isNotEmpty()) 4 else 0) + 1
+
+        /**
+         * Urza, Prince of Kroog: a token copy of the artifact worth most that's a 1/1 creature too (a Sol Ring that taps for
+         * mana and attacks); a plain 1/1 artifact creature when there's only artifact tokens. Since 1.61.
+         */
+        fun copyArtifact() {
+            val e = board.filter { it.card != null && it.isA("artifact") && !it.isA("land") && !it.card.equipment && !it.card.legendary }
+                .maxByOrNull { artifactCopyWorth(it.card!!) }
+            if (e == null) {
+                token(1, TokenKind(1, setOf("Artifact", "Creature"), setOf("Soldier")))
+                return
+            }
+            enter(e.card!!, cheated = true, token = true).also { it.creature = true; it.power = 1 }
+        }
+
+        /** Populate: a copy of the creature token worth most (Nesting Dovehawk). Since 1.61. */
+        fun populate() {
+            val e = board.filter { it.token && it.creature }.maxByOrNull { (it.card?.let { c -> worth(c) } ?: 0) + gearPower(it).first } ?: return
+            if (e.card != null) enter(e.card, cheated = true, token = true)
+            else token(e.power, TokenKind(e.power, e.types, e.subtypes, e.flying, e.per))
         }
 
         /** A token copy of the creature worth most (not legendary if there's another). */
@@ -2502,7 +2616,7 @@ object WinOddsCalc {
                 }
                 draw(c.drawOnce)
                 c.tutor?.takeIf { c.tutorUseful }?.let { tutor(it, c.tutorToTop) }
-                if (c.tokensOnce > 0) token(c.tokensOnce, c.token)
+                tokens(c.tokensOnceCount, c.tokensOnce, c.token)
                 if (c.xTokens > 0) repeat(minOf(x, 30)) { token(c.xTokens, c.xToken) }
                 makeAll(c.madeOnce)
                 c.scaled.filter { !it.turn }.forEach { scaled(it) }
@@ -2535,7 +2649,7 @@ object WinOddsCalc {
          * A permanent coming onto the battlefield (cast, reanimated, flickered, copied or cheated in): its mana, its
          * enter effects and the triggers it sets off. Since 1.55 (before, part of [cast]).
          */
-        fun enter(c: WinCard, cheated: Boolean, token: Boolean = false, haste: Boolean = false): Entry {
+        fun enter(c: WinCard, cheated: Boolean, token: Boolean = false, haste: Boolean = false, extraTypes: Set<String> = emptySet()): Entry {
             // Phyrexian Metamorph and Auton Soldier come in as a copy of the creature worth most.
             val target = if (c.entersAsCopy && !token) board.filter { it.creature && it.card != null }.maxByOrNull { worth(it.card!!) - if (it.card.legendary) 4 else 0 }?.card else null
             val card = target ?: c
@@ -2545,7 +2659,7 @@ object WinOddsCalc {
                 else -> null
             }
             source?.let { sources += it }
-            val e = Entry(card, turn, card.power, card.creature, card.haste, card.double)
+            val e = Entry(card, turn, card.power, card.creature, card.haste, card.double, card.types + extraTypes)
             e.token = token
             e.self = c
             e.cheated = cheated
@@ -2560,6 +2674,9 @@ object WinOddsCalc {
             if (card.enterTriggers.any { !it.land }) creatureTriggers = true
             if (entering > 6) return e
             entering++
+            // A token copy is a token made too (Mirkwood Bats, Kambal; since 1.61).
+            if (token) tokenMade(1, artifact = "Artifact" in card.types)
+            if (token && card.creature) creatureTokenEntered(e)
             if (card.creature) { entered(e, false); creatureEntered(e) }
             arrived(e)
             card.fetchKind?.takeIf { !card.fetchTurn }?.let { fetch(it) }
@@ -2582,7 +2699,7 @@ object WinOddsCalc {
             card.devotion?.let { colour -> each(board.sumOf { b -> b.card?.cost?.pips?.count { colour in it } ?: 0 }, 3) }
             draw(card.drawOnce)
             card.tutor?.takeIf { card.tutorUseful }?.let { tutor(it, card.tutorToTop) }
-            if (card.tokensOnce > 0) token(card.tokensOnce, card.token)
+            tokens(card.tokensOnceCount, card.tokensOnce, card.token)
             makeAll(card.madeOnce)
             card.scaled.filter { !it.turn }.forEach { scaled(it) }
             overrun += card.overrun
@@ -2674,8 +2791,16 @@ object WinOddsCalc {
         fun lordBonus(b: Entry): Int = if (!f.lords) 0 else board.sumOf { l ->
             l.card?.lords?.sumOf { lord ->
                 val fits = lord.kind == null || lord.kind.split('|').any { k -> if (k == "token") b.token else if (k == "commander") b.card in leaders && !b.token else b.isA(k) }
-                if (fits && !(lord.other && l === b)) lord.amount else 0
+                if (fits && !(lord.other && l === b) && (!lord.ascend || blessed())) lord.amount else 0
             } ?: 0
+        }
+
+        /** The city's blessing: ten permanents once, kept for the rest of the game (since 1.61). */
+        var blessing = false
+
+        fun blessed(): Boolean {
+            if (!blessing && board.size >= ASCEND) blessing = true
+            return blessing
         }
 
         /** Haste from the creature, its gear, or another card ("creatures you control have haste", riot, Chainer…). */
@@ -2829,7 +2954,7 @@ object WinOddsCalc {
                     if (c.tokensTurn > 0 && (need == null || graveyard.any { g -> g.permanent.not() || (!g.creature && !g.land) }.also { ok ->
                             if (ok) leftGraveyard(listOf(graveyard.first { g -> !g.creature && !g.land }))
                         })
-                    ) token(c.tokensTurn, c.token)
+                    ) tokens(c.tokensTurnCount, c.tokensTurn, c.token)
                     makeAll(c.madeTurn)
                     c.scaled.filter { it.turn && it.what != Effect.DRAW }.forEach { scaled(it) }
                 }
@@ -2839,6 +2964,8 @@ object WinOddsCalc {
                     each(n, 2)
                     pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(n, emptyList())) ?: pool
                 }
+                // With Mirkwood Bats or Marionette Master: Treasures, Food and Maps sacrificed (since 1.61).
+                if (f.sacrificePayoffs) pool = sacrificeForPayoffs(pool)
                 // Mutagens and Clues with the mana left, Shimmer Dragon's draws (since 1.55).
                 if (f.mutagens) pool = useMutagens(pool)
                 if (f.clues) pool = crackClues(pool)
@@ -2983,6 +3110,48 @@ object WinOddsCalc {
             return 0
         }
 
+        /**
+         * With Mirkwood Bats, Marionette Master or Marionette Apprentice on the battlefield, artifacts are worth sacrificing
+         * (since 1.61): the Treasures left after the spells (their mana stays in the pool), spare artifact tokens to Sai's
+         * draw, then Food ({2}; Nuka-Cola Vending Machine makes a tapped Treasure for each) and Maps ({1}) with the mana
+         * left. Clues follow as before. Creature tokens are kept to attack.
+         */
+        fun sacrificeForPayoffs(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+            var pool = start
+            if (board.none { it.card?.sacrificePayoff == true }) return pool
+            val two = board.any { it.card?.treasureDouble == true }
+            for (e in board.filter { it.treasure && it.tapped != turn }) {
+                board.remove(e)
+                left(e, artifact = true)
+                pool = pool + (own.ifEmpty { setOf('C') } to if (two) 2 else 1)
+            }
+            // Sai: the tokens that do least on their own first (Food, Maps…), Clues last.
+            for (b in board.toList()) {
+                val (cost, n) = b.card?.sacArtifactsDraw ?: continue
+                repeat(10) {
+                    val spare = board.filter { it.token && !it.creature && it.art != null && !it.treasure }.sortedBy { if (it.art == "clue") 1 else 0 }.take(n)
+                    if (spare.size < n) return@repeat
+                    pool = ManaOddsCalc.pay(pool, cost) ?: return@repeat
+                    spare.forEach { board.remove(it); left(it, artifact = true) }
+                    draw(1)
+                }
+            }
+            for (e in board.filter { it.art == "food" && !manaToken(it) }) {
+                pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(2, emptyList())) ?: break
+                board.remove(e)
+                left(e, artifact = true)
+                val before = board.toHashSet()
+                treasures(board.count { it.card?.foodTreasure == true })
+                board.filter { it.treasure && it !in before }.forEach { it.tapped = turn }
+            }
+            for (e in board.filter { it.art == "map" }) {
+                pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(1, emptyList())) ?: break
+                board.remove(e)
+                left(e, artifact = true)
+            }
+            return pool
+        }
+
         /** Mutagens: {1}, {T}, sacrifice: a +1/+1 counter on the creature that attacks best (Mutagen Man: free). Since 1.55. */
         fun useMutagens(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
             var pool = start
@@ -3063,6 +3232,7 @@ object WinOddsCalc {
             a.sacrificeForToken > 0 -> board.any { it.creature && it.card !in leaders && it.power < a.sacrificeForToken }
             a.flicker > 0 -> board.any { it.creature && !it.token && it.card?.let { c -> enterWorth(c) > 0 } == true }
             a.copies > 0 -> board.any { it.creature }
+            a.copyArtifact -> board.any { it.isA("artifact") && !it.isA("land") }
             else -> a.any
         }
 
@@ -3072,7 +3242,9 @@ object WinOddsCalc {
             (if (a.copyExiled) graveyard.filter { it.creature || "Artifact" in it.types }.maxOfOrNull { worth(it) } ?: 0 else 0) +
             (if (a.copyArtifactToken) 2 else 0) + (if (a.polymorph > 0) 6 else 0) + a.copies * 4 + a.flicker * 3 +
             (if (a.doubleStrikeFor != null) board.filter { it.creature && it.isA(a.doubleStrikeFor!!) }.sumOf { gearPower(it).first } else 0) +
-            (if (a.sacrificeForToken > 0) a.sacrificeForToken - 1 else 0) + a.exileGraveyard * (if (board.any { it.card?.leaveToken != null }) 2 else 0)
+            (if (a.sacrificeForToken > 0) a.sacrificeForToken - 1 else 0) + a.exileGraveyard * (if (board.any { it.card?.leaveToken != null }) 2 else 0) +
+            (if (a.copyArtifact) 2 + (board.filter { it.card != null && it.isA("artifact") }.maxOfOrNull { artifactCopyWorth(it.card!!) } ?: 0) else 0) +
+            a.populate * 2
 
         /**
          * Tap abilities and abilities paid with mana (since 1.55): each permanent uses its best one when it pays; a
@@ -3344,6 +3516,7 @@ object WinOddsCalc {
             /** Opponents are taken to have a creature (for combos that need one) from this turn. */
             const val OPPONENTS_HAVE_CREATURES = 4
             const val MAZE_GATES = 10
+            const val ASCEND = 10
             /** Stands for "a card that turns the loop into life loss" among a combo's missing cards. */
             const val PAYOFF = "\u0000payoff"
             val LAND = setOf(LAND_TYPE)

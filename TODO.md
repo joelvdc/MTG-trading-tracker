@@ -163,6 +163,26 @@ for 13, earlier for 1); the earliest wins agree within a turn on average. What e
 Possible follow-ups were offered (ScrollVault's commander-damage and combo turns on the deck page, or a note on the
 Stats page that the app finishes all three opponents); the owner said on 2026-10-26 not to do anything about it.
 
+### Loading circle during Card Kingdom downloads; win turn sacrifice payoffs and token fixes (MTG Trader 1.61)
+*Asked 2026-10-27: "sometimes the mtg app shows loading circle when on the collection page while downloading the card
+prices from cardkingdom", and whether the win turn counts the Tawnos deck's cards (Illustrious Wanderglyph, Whirler
+Rogue, Urza, Nesting Dovehawk, Cybermen Squadron, Mirkwood Bats, Cyberdrive Awakener, Marionette Master, Academy
+Manufactor, Tawnos's two abilities).*
+
+Released in MTG Trader 1.61 (2026-10-27):
+- Card Kingdom's list is downloaded to a cache file first, then saved (before, the database transaction stayed open for
+  the whole download and the collection's query waited).
+- `WinOddsCalc.VERSION` 6: `sacrificeForPayoffs` (Treasures left over, Sai's `sacArtifactsDraw`, Food with
+  `foodTreasure`, Maps from `extraMap`) when a `sacrificePayoff` card is out; "whenever a creature you control enters"
+  damage (with a `nontoken` flag); `populate` and `tokenEnterCounter`; `tokensOnceCount`/`tokensTurnCount` so tokens
+  are made one by one; token copies call `tokenMade`; `Lord.ascend` (city's blessing at ten permanents); `pumpable`
+  0-power creatures; Urza's `copyArtifact`; Tawnos's copies get `extraTypes` (artifact) and copy card tokens with the card.
+- Already counted before 1.61 (checked): Cybermen Squadron's myriad, Cyberdrive Awakener's 4/4 artifacts, Academy
+  Manufactor, Clues setting off Marionette Master, Tawnos's two abilities.
+- The owner's Tawnos' Army (Archidekt 6292366), 10,000 games: T10 before and after (4 in 10 games); won by turn 10 in
+  50% → 54% of games; drains 6% → 7% of the damage.
+- Not counted still: Fabricate always takes the counters; Map's explore and Food's life do nothing; blockers and removal.
+
 ### Purchase prices keep the currency they were typed in (MTG Trader 1.60)
 *Added 2026-10-25 ("ok the mtg app should not work like that and should remember that the price was inserted in dkk
 or usd"). Also on Poké Trader's list (item 13); not built there yet: the owner said on 2026-10-26 not to update the

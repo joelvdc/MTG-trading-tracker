@@ -192,6 +192,7 @@ class PriceSourceStore(
     private val cardKingdomCopyUrl: String = CARD_KINGDOM_COPY_URL,
 ) {
     private val dao = db.sourcePriceDao()
+    private val cacheDir = context.cacheDir
     private val prefs = context.getSharedPreferences("price_sources", Context.MODE_PRIVATE)
     private val lock = Mutex()
     private val _status = MutableStateFlow(readStatus())
@@ -325,7 +326,11 @@ class PriceSourceStore(
         )
     }
 
-    /** Downloads and saves one Card Kingdom list; returns where it came from and the list's date. */
+    /**
+     * Downloads and saves one Card Kingdom list; returns where it came from and the list's date. Since 1.61 the list
+     * is downloaded to a file first and saved after, so the database isn't held for the whole download (the
+     * collection waited for it, showing only a loading circle).
+     */
     private suspend fun downloadCardKingdom(
         url: String,
         via: String,
@@ -334,56 +339,64 @@ class PriceSourceStore(
     ): Pair<String, String?> = withContext(Dispatchers.IO) {
         set { it.copy(message = "Downloading Card Kingdom's prices…", progress = null) }
         val request = Request.Builder().url(url).header("Accept-Encoding", "gzip").build()
-        http.newCall(request).execute().use { r ->
-            if (!r.isSuccessful) throw java.io.IOException("HTTP ${r.code}")
-            val body = r.body ?: throw java.io.IOException("empty answer")
-            val length = body.contentLength().takeIf { it > 0 }
-            var bytes = 0L
-            var shown = 0L
-            val counting = object : java.io.FilterInputStream(body.byteStream()) {
-                private fun count(n: Int): Int {
-                    if (n > 0) {
-                        bytes += n
-                        if (bytes - shown > 256 * 1024) {
-                            shown = bytes
-                            set {
-                                it.copy(
-                                    message = "Downloading Card Kingdom's prices… %.1f MB".format(bytes / 1_048_576.0) +
-                                        (length?.let { l -> " of %.1f MB".format(l / 1_048_576.0) } ?: "") + if (via != "Card Kingdom") " (from GitHub)" else "",
-                                    progress = length?.let { l -> (bytes.toFloat() / l).coerceIn(0f, 1f) },
-                                )
+        val file = java.io.File(cacheDir, "cardkingdom-download")
+        try {
+            http.newCall(request).execute().use { r ->
+                if (!r.isSuccessful) throw java.io.IOException("HTTP ${r.code}")
+                val body = r.body ?: throw java.io.IOException("empty answer")
+                val length = body.contentLength().takeIf { it > 0 }
+                var bytes = 0L
+                var shown = 0L
+                val counting = object : java.io.FilterInputStream(body.byteStream()) {
+                    private fun count(n: Int): Int {
+                        if (n > 0) {
+                            bytes += n
+                            if (bytes - shown > 256 * 1024) {
+                                shown = bytes
+                                set {
+                                    it.copy(
+                                        message = "Downloading Card Kingdom's prices… %.1f MB".format(bytes / 1_048_576.0) +
+                                            (length?.let { l -> " of %.1f MB".format(l / 1_048_576.0) } ?: "") + if (via != "Card Kingdom") " (from GitHub)" else "",
+                                        progress = length?.let { l -> (bytes.toFloat() / l).coerceIn(0f, 1f) },
+                                    )
+                                }
                             }
                         }
+                        return n
                     }
-                    return n
+                    override fun read(): Int = super.read().also { if (it >= 0) count(1) }
+                    override fun read(b: ByteArray, off: Int, len: Int): Int = count(super.read(b, off, len))
                 }
-                override fun read(): Int = super.read().also { if (it >= 0) count(1) }
-                override fun read(b: ByteArray, off: Int, len: Int): Int = count(super.read(b, off, len))
+                counting.use { input -> file.outputStream().use { input.copyTo(it, 64 * 1024) } }
             }
-            // OkHttp unzips by itself unless the header was set by hand, as here, or the file is a .gz: unzip if it's zipped.
-            val raw = counting.buffered()
-            raw.mark(2)
-            val zipped = raw.read() == 0x1f && raw.read() == 0x8b
-            raw.reset()
-            val stream = if (zipped) GZIPInputStream(raw) else raw
-            var listDate: String? = null
-            var rows = 0
-            val batch = ArrayList<SourcePrice>(2000)
-            db.withTransaction {
-                parse(stream, start, { listDate = it }) { row ->
-                    batch += row
-                    rows++
-                    if (batch.size >= 2000) {
-                        dao.putAll(batch.toList())
-                        batch.clear()
+            set { it.copy(message = "Saving Card Kingdom's prices…", progress = null) }
+            file.inputStream().buffered().use { raw ->
+                // OkHttp unzips by itself unless the header was set by hand, as here, or the file is a .gz: unzip if it's zipped.
+                raw.mark(2)
+                val zipped = raw.read() == 0x1f && raw.read() == 0x8b
+                raw.reset()
+                val stream = if (zipped) GZIPInputStream(raw) else raw
+                var listDate: String? = null
+                var rows = 0
+                val batch = ArrayList<SourcePrice>(2000)
+                db.withTransaction {
+                    parse(stream, start, { listDate = it }) { row ->
+                        batch += row
+                        rows++
+                        if (batch.size >= 2000) {
+                            dao.putAll(batch.toList())
+                            batch.clear()
+                        }
                     }
+                    if (batch.isNotEmpty()) dao.putAll(batch)
+                    if (rows < 1000) throw java.io.IOException("only $rows prices in the list")
+                    // Cards Card Kingdom no longer lists.
+                    dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
                 }
-                if (batch.isNotEmpty()) dao.putAll(batch)
-                if (rows < 1000) throw java.io.IOException("only $rows prices in the list")
-                // Cards Card Kingdom no longer lists.
-                dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
+                via to listDate
             }
-            via to listDate
+        } finally {
+            file.delete()
         }
     }
 
