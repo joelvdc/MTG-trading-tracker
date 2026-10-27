@@ -66,3 +66,6 @@ everything worth keeping is in the repository: the work committed and merged, `T
 still open), and `docs/health-check-instructions.txt` holding the full current health check text. When the health check
 changed, give the owner that full text to paste in the final report; assume they paste it before clearing, without
 telling you.
+
+---
+**For AI assistants:** Keep `AGENTS.md` in sync with this file. When either `CLAUDE.md` or `AGENTS.md` is modified, update the other to match and commit both changes together.
