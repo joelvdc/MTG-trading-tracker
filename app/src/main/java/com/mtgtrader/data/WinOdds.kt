@@ -143,6 +143,14 @@ data class WinCounted(
  * - a card making several tokens makes them one by one (Whirler Rogue's two Thopters); token copies count as tokens made;
  * - lords that need the city's blessing (Illustrious Wanderglyph); creatures without power cast when a lord pumps
  *   them; Urza, Prince of Kroog's artifact copies.
+ * Since 1.62 also:
+ * - triggers at the beginning of combat or of the end step also go the turn the card comes in, upkeep ones only from
+ *   the turn after; "each end step" and "each combat" too; tokens that gain haste attack at once (Legion Warboss);
+ * - rituals (Dark Ritual) when their mana casts something more, lands that tap for each of a kind (Gaea's Cradle,
+ *   Cabal Coffers), "spells you cast cost {1} less" and commander or "other than your hand" reducers;
+ * - extra land drops (Azusa, Exploration, Explore), and a fetch land setting off landfall twice;
+ * - "choose one" and "choose two" read as the best modes only (before, every mode added up); spell // land cards cast
+ *   as the spell once the deck has lands enough.
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -154,9 +162,9 @@ object WinOddsCalc {
      * Raised when the rules change, so results kept on the phone are worked out again. 2: combos and tutors (1.53).
      * 3: counting Shrines and Gates, Maze's End, sacrifice decks and X spells (1.54). 4: ramp, Treasures, pumps, the
      * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56). 6: sacrifice payoffs,
-     * populate, tokens one by one, ascend, Urza (1.61).
+     * populate, tokens one by one, ascend, Urza (1.61). 7: trigger timing, rituals, land drops, modes, spell // land (1.62).
      */
-    const val VERSION = 6
+    const val VERSION = 7
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -167,6 +175,9 @@ object WinOddsCalc {
     /** Every one (Living Death, Mass Polymorph, Zombie Apocalypse). Since 1.55. */
     const val ALL = 99
     private const val MAX_COMBAT_DRAW = 10
+    /** Cost reducers for spells cast from anywhere other than the hand, and from the graveyard (since 1.62). */
+    private const val NOT_FROM_HAND = "\u0000not from hand"
+    private const val FROM_GRAVEYARD = "\u0000graveyard"
 
     const val COMBAT = "combat"
     const val COMMANDER = "commander"
@@ -352,7 +363,11 @@ object WinOddsCalc {
         "commander creatures you own have \"whenever this creature becomes tapped, it and other creatures you control that share a creature type with it each get \\+(\\d+)/",
         I,
     )
-    private val reducer = Regex("^((?:[a-z]+ (?:and |and/or ))*[a-z]+) spells you cast cost \\{(\\d+)\\} less to cast", I)
+    // The kind of spell is optional since 1.62 ("Spells you cast cost {1} less"), and so is where they're cast from.
+    private val reducer = Regex(
+        "^(?:((?:[a-z]+ (?:and |and/or ))*[a-z]+) )?spells you cast( from anywhere other than your hand| from your graveyard| from exile)? cost \\{(\\d+)\\} less to cast",
+        I,
+    )
     private val affinity = Regex("affinity for ([a-z]+?)s?\\b|this spell costs \\{1\\} less to cast for each ([a-z ]+?) you control", I)
     private val manaDraw = Regex("when you spend this mana to cast a spell with mana value (\\d+) or greater, draw a card", I)
     private val tokenDrain = Regex("^whenever you create or sacrifice a token, each opponent loses (\\d+) life", I)
@@ -426,6 +441,13 @@ object WinOddsCalc {
     private val anyHit = Regex("^whenever one or more (?:([a-z, /]+?) )?(?:creatures )?you control deal combat damage to a player, (.*)$", I)
     private val clueSac = Regex("^whenever you sacrifice a clue, (.*)$", I)
     private val entersWith = Regex("enters with (a|an|one|two|three|four|five) \\+1/\\+1 counters? on it", I)
+    // Since 1.62.
+    private val lateTriggerText = Regex("^at the beginning of (?:combat on your turn|each combat|your end step|each end step|the end step|your postcombat main phase)", I)
+    private val ritualText = Regex("^add ((?:\\{[wubrgc]\\})+)(?:\\.|,|$)", I)
+    private val ritualAny = Regex("^add (two|three|four|five) mana (?:of any one color|in any combination of colors)", I)
+    private val extraLandText = Regex("you may play (an|two|three) additional lands? (on each of your turns|this turn)", I)
+    private val landManaPer = Regex("^(?:((?:\\{\\d+\\})+), )?\\{t\\}: add \\{([wubrgc])\\} for each ([a-z]+?)s? (?:you control|on the battlefield)", I)
+    private val modeHeader = Regex("(?:^|, )choose (one|two) —$", I)
     private val secondMain = Regex("^at the beginning of your second main phase, (if you attacked this turn, )?(.*)$", I)
     private val eachUpkeepLine = Regex("^at the beginning of each upkeep, (.*)$", I)
 
@@ -451,7 +473,15 @@ object WinOddsCalc {
      * A token's card types and subtypes ("Shrine enchantment creature"), so it counts as a Shrine. Since 1.54. Since 1.55
      * also whether it flies, and what it gets +1/+1 for ("for each artifact you control": Urza's Construct).
      */
-    data class TokenKind(val power: Int, val types: Set<String>, val subtypes: Set<String>, val flying: Boolean = false, val per: String? = null)
+    data class TokenKind(
+        val power: Int,
+        val types: Set<String>,
+        val subtypes: Set<String>,
+        val flying: Boolean = false,
+        val per: String? = null,
+        /** It has or gains haste (Legion Warboss's Goblin attacks the turn it's made). Since 1.62. */
+        val haste: Boolean = false,
+    )
 
     enum class Effect { DRAIN, TOKENS, DRAW, COUNTERS, PUMP }
 
@@ -825,6 +855,28 @@ object WinOddsCalc {
         var sacArtifactsDraw: Pair<ManaOddsCalc.Cost, Int>? = null
         /** A creature without power that a lord in the deck pumps (Ornithopter with Urza, Prince of Kroog): cast too. Since 1.61. */
         var pumpable = false
+        // Since 1.62.
+        /**
+         * Its "at the beginning of …" triggers: in the upkeep, draw step or first main phase ([earlyTrigger]: not the
+         * turn it comes in), or at the beginning of combat or the end step ([lateTrigger]: that turn too), and the cards
+         * the late ones draw. [tapTurn]: a {T} ability counted with them, usable at once.
+         */
+        var earlyTrigger = false
+        var lateTrigger = false
+        var tapTurn = false
+        var drawLate = 0
+        /** A ritual's mana (Dark Ritual: {B}{B}{B}), by colours. */
+        var ritual: List<Pair<Set<Char>, Int>> = emptyList()
+        val ritualMana get() = ritual.sumOf { it.second }
+        /** Extra land drops: each turn while it's out (Azusa: 2), or this turn (Explore). */
+        var extraLands = 0
+        var extraLandsNow = 0
+        /** A fetch land: it and the land it finds set off landfall. */
+        var fetchLand = false
+        /** What a mana-per-kind ability costs besides {T} (Cabal Coffers: {2}). */
+        var manaPerCost = 0
+        /** A spell // land card's spell face (Malakir Rebirth), cast instead once the deck has lands enough. */
+        var spellSide: WinCard? = null
         /** Mirkwood Bats, Marionette Master and Apprentice: sacrificing artifacts or tokens drains (since 1.61). */
         val sacrificePayoff get() = artifactDrain || dieDrain > 0 || tokenDrain > 0
 
@@ -887,11 +939,32 @@ object WinOddsCalc {
             else -> 0
         }
         if (w.land) {
+            // A spell // land card is read by its land face (since 1.62; before, by the spell's text).
+            val landText = if (spellFace(c)) c.landFaces.firstOrNull()?.second.orEmpty() else front
+            val landLower = landText.lowercase()
             // A land's own abilities can still make tokens to sacrifice (Treasure Vault aside).
-            front.split('\n').forEach { readArtifacts(w, it.trim()) }
-            w.mazeEnd = "gates with different names, you win the game" in lower
-            w.leavesToken = leavesTokenText.find(lower)?.groupValues?.get(1)?.toInt() ?: 0
-            w.gatePump = Regex("target creature gets \\+x/\\+x[^.]*where x is the number of gates you control").containsMatchIn(lower)
+            landText.split('\n').forEach { readArtifacts(w, it.trim()) }
+            w.mazeEnd = "gates with different names, you win the game" in landLower
+            w.leavesToken = leavesTokenText.find(landLower)?.groupValues?.get(1)?.toInt() ?: 0
+            w.gatePump = Regex("target creature gets \\+x/\\+x[^.]*where x is the number of gates you control").containsMatchIn(landLower)
+            // Since 1.62: fetch lands, Gaea's Cradle and Cabal Coffers, and the spell face of a spell // land card.
+            w.fetchLand = Regex("sacrifice[^:]*: search your library for [^.]*?card[^.]*?put (?:it|them) onto the battlefield").containsMatchIn(landLower)
+            for (line in landLower.split('\n')) landManaPer.find(line.trim())?.let { m ->
+                w.manaPer = m.groupValues[3] to m.groupValues[2].uppercase()[0]
+                w.manaPerCost = ManaOddsCalc.cost(m.groupValues[1]).manaValue
+            }
+            if (spellFace(c)) {
+                val type0 = (c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types).substringBefore(" // ")
+                val spell = c.copy(
+                    typeLine = type0, types = c.types.substringBefore(" // "), manaCost = c.manaCost?.substringBefore(" // "),
+                    producedMana = "", oracleText = front,
+                )
+                w.spellSide = classify(spell, own, lands, comboKeys)
+                // On the battlefield it's the land.
+                val landType = c.landFaces.first().first
+                w.types = cardTypes.filter { it in landType.substringBefore(" — ").split(' ') }.toSet()
+                w.subtypes = landType.substringAfter(" — ", "").split(' ').filter { it.isNotBlank() }.toSet()
+            }
             return w
         }
         w.permanent = "Instant" !in type && "Sorcery" !in type
@@ -902,7 +975,8 @@ object WinOddsCalc {
         w.equipment = "Equipment" in type
         w.power = c.powerToughness?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
         if (w.planeswalker) w.loyalty = c.loyalty?.toIntOrNull() ?: (w.manaValue - 1).coerceAtLeast(1)
-        val text = c.oracleText.orEmpty().split(CardInfo.FACE_BREAK).first()
+        // "Choose one" and "choose two": only the best modes (since 1.62; before, all of them added up).
+        val text = chooseModes(c, own, lands, comboKeys, front)
         w.aura = "Aura" in type && "enchant creature" in text.lowercase()
         w.text = text.lowercase()
         // The modes under a trigger ("At the beginning of your first main phase, choose one or more — • …") are read with
@@ -951,9 +1025,62 @@ object WinOddsCalc {
             }
         }
         read55(w, text)
+        read62(w, text, own)
         w.abilities().forEach { it.freeze() }
         return w
     }
+
+    /** Rituals and extra land drops (since 1.62). */
+    private fun read62(w: WinCard, text: String, own: Set<Char>) {
+        if (!w.permanent) for (raw in text.split('\n')) {
+            val line = raw.trim().replace(reminder, "")
+            ritualText.find(line)?.let { m ->
+                w.ritual = Regex("\\{([wubrgc])\\}", I).findAll(m.groupValues[1]).map { it.groupValues[1].uppercase()[0] }
+                    .groupingBy { it }.eachCount().map { (colour, n) -> setOf(colour) to n }
+            }
+            ritualAny.find(line)?.let { m -> w.ritual = listOf(own.ifEmpty { setOf('C') } to number(m.groupValues[1])) }
+            if (w.ritual.isNotEmpty()) break
+        }
+        extraLandText.find(text)?.let { m ->
+            val n = number(m.groupValues[1])
+            if ("each of your turns" in m.groupValues[2].lowercase()) w.extraLands = n else w.extraLandsNow = n
+        }
+    }
+
+    /** A spell // land card (Malakir Rebirth): a land on its back face only. Since 1.62. */
+    private fun spellFace(c: StatsCard): Boolean {
+        val type = c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types
+        return " // " in type && "Land" !in type.substringBefore(" // ").substringBefore(" — ").split(' ')
+    }
+
+    /**
+     * The text with only the best of a "choose one" or "choose two" block's modes (since 1.62): each mode is read on its
+     * own and scored by what it does ([modeScore]). "Choose one or more" keeps them all.
+     */
+    private fun chooseModes(c: StatsCard, own: Set<Char>, lands: List<StatsCard>, comboKeys: Set<String>, text: String): String {
+        val lines = text.split('\n')
+        val i = lines.indexOfFirst { modeHeader.containsMatchIn(it.trim()) }
+        if (i < 0) return text
+        var end = i + 1
+        while (end < lines.size && lines[end].trim().startsWith("•")) end++
+        val modes = lines.subList(i + 1, end)
+        val picks = if (modeHeader.find(lines[i].trim())!!.groupValues[1].equals("two", true)) 2 else 1
+        if (modes.size <= picks) return text
+        fun with(kept: List<String>) = (lines.subList(0, i + 1) + kept + lines.subList(end, lines.size)).joinToString("\n")
+        val best = modes.sortedByDescending { m -> modeScore(classify(c.copy(oracleText = with(listOf(m))), own, lands, comboKeys)) }.take(picks).toSet()
+        return with(modes.filter { it in best })
+    }
+
+    /** What a card (one mode of it) does, roughly, to pick the best modes. Since 1.62. */
+    private fun modeScore(w: WinCard): Int = 3 * (w.drainOnce + w.drainTurn) + w.oneOnce + w.oneTurn + w.tokensOnce + 2 * w.tokensTurn +
+        2 * (w.drawOnce + w.drawTurn) + 3 * (w.overrun + w.anthem) + w.pump + (if (w.pumpDouble) 3 else 0) + (if (w.pumpX) 3 else 0) +
+        // A token that grows (Urza's Command's Construct) is worth more than its 0 power.
+        (if (w.token?.per != null) 3 * w.tokensOnceCount else 0) + w.artifactsOnce + 2 * w.artifactsTurn + w.treasuresOnce + 3 * (w.scaled.size + w.castTriggers.size + w.enterTriggers.size) +
+        (if (w.mana.kind == ManaOddsCalc.Kind.RAMP) 2 else 0) + w.ritualMana + 2 * (w.extraLands + w.extraLandsNow) +
+        w.abilities().sumOf { a ->
+            2 * a.draw + 3 * a.drainEach + a.drainOne + a.tokens * maxOf(1, a.token?.power ?: 1) + a.treasures + a.artifacts +
+                4 * a.reanimate.coerceAtMost(3) + 4 * a.copies + 3 * a.flicker + 2 * a.toHand + 2 * a.landRamp + a.made.values.sum()
+        }
 
     private val leavesTokenText = Regex("when (?:this \\w+|[^,.]+) is put into a graveyard from the battlefield, create (?:a|an) (?:tapped )?(\\d+)/\\d+")
 
@@ -1031,7 +1158,8 @@ object WinOddsCalc {
             .map { w -> w.replaceFirstChar(Char::uppercase) }.toSet()
         val after = line.substring(m.range.last + 1).substringBefore('.').lowercase()
         val per = Regex("gets \\+1/\\+1 for each ([a-z]+?)s? you control").find(line.substring(m.range.first).substringBefore("\n"))?.groupValues?.get(1)
-        return TokenKind(m.groupValues[1].toIntOrNull() ?: 0, types, subtypes, flying = "with flying" in after || "flying" in after.substringBefore(" and ").take(20), per = per)
+        val haste = Regex("^[^\"]*\\bhaste\\b").containsMatchIn(after) || Regex("\\. (?:that token|those tokens|it) gains? haste", I).containsMatchIn(line.substring(m.range.first))
+        return TokenKind(m.groupValues[1].toIntOrNull() ?: 0, types, subtypes, flying = "with flying" in after || "flying" in after.substringBefore(" and ").take(20), per = per, haste = haste)
     }
 
     /** An effect that counts permanents ([per]); false when the line isn't one the win turn reads. Since 1.54. */
@@ -1252,8 +1380,14 @@ object WinOddsCalc {
             return
         }
         if (readSpecial(w, line, low)) return
-        val recurring = low.startsWith("at the beginning of your") || low.startsWith("at the beginning of combat on your")
+        // Since 1.62: combat and end step triggers also go the turn the card comes in, and "each end step" counts (once a
+        // turn: ours) unless it has a condition ("if …", "for each opponent who drew two or more cards this turn").
+        val late = lateTriggerText.containsMatchIn(low) &&
+            !(Regex("^at the beginning of (?:each|the) end step, ").containsMatchIn(low) && (", if" in low || "this turn" in low))
+        val recurring = low.startsWith("at the beginning of your") || low.startsWith("at the beginning of combat on your") || late
         val tap = tapAbility.containsMatchIn(low) && "sacrifice" !in low.substringBefore(':')
+        if (recurring) { if (late) w.lateTrigger = true else w.earlyTrigger = true }
+        if (tap && "add {" !in low) w.tapTurn = true
         val once = !w.permanent || (low.startsWith("when ") && "enters" in low)
         val plain = line.replace(abilityWord, "")
         if (readKindTrigger(w, plain, plain.lowercase())) return
@@ -1334,6 +1468,7 @@ object WinOddsCalc {
         drawCards.find(line)?.let { m ->
             if ("opponent" in low.substring(0, m.range.first) || "each player" in low || lootText.containsMatchIn(low) || discardThenDraw.containsMatchIn(low)) return@let
             val n = number(m.groupValues[1])
+            if (late && !tap) w.drawLate += n
             when {
                 recurring || tap -> w.drawTurn += n
                 low.startsWith("whenever") -> w.drawTurn += minOf(n, 1)
@@ -1451,7 +1586,7 @@ object WinOddsCalc {
         if ("if you would create a clue, food, or treasure token, instead create one of each" in low) { w.manufactor = true; return true }
         if ("those tokens plus an additional food token are created instead" in low) { w.extraFood = true; return true }
         if ("those tokens plus a mutagen token are created instead" in low) { w.extraMutagen = true; return true }
-        Regex("^\\{t\\}: add \\{([wubrg])\\} for each ([a-z]+?)s? you control").find(low)?.let { w.manaPer = it.groupValues[2] to it.groupValues[1].uppercase()[0]; return true }
+        Regex("^\\{t\\}: add \\{([wubrg])\\} for each ([a-z]+?)s? (?:you control|on the battlefield)").find(low)?.let { w.manaPer = it.groupValues[2] to it.groupValues[1].uppercase()[0]; return true }
         Regex("^tokens you control have \"\\{t\\}: add \\{([wubrg])\\}").find(low)?.let { w.manaPer = "token" to it.groupValues[1].uppercase()[0]; return true }
         Regex("^tap an untapped artifact you control: add \\{([wubrg])\\}").find(low)?.let { w.manaPer = "artifact" to it.groupValues[1].uppercase()[0]; return true }
         if ("nonartifact spells you cast have improvise" in low) { w.improvise = true; return true }
@@ -1495,7 +1630,15 @@ object WinOddsCalc {
         if (leaveDraw.containsMatchIn(low)) { w.leaveDraw = true; return true }
         discardCreatureToken.find(low)?.let { w.discardToken = it.groupValues[1].toInt(); return true }
         reducer.find(low)?.let { m ->
-            w.reducers = m.groupValues[1].split(Regex(" and/or | and ")).map { it.trim() to m.groupValues[2].toInt() }
+            val n = m.groupValues[3].toInt()
+            w.reducers = when {
+                "other than your hand" in m.groupValues[2] -> listOf(NOT_FROM_HAND to n)
+                "graveyard" in m.groupValues[2] -> listOf(FROM_GRAVEYARD to n)
+                // From exile: only cascade and the like cast from there here, for free anyway.
+                m.groupValues[2].isNotEmpty() -> emptyList()
+                m.groupValues[1].isEmpty() -> listOf("spell" to n)
+                else -> m.groupValues[1].split(Regex(" and/or | and ")).map { it.trim() to n }
+            }
             return true
         }
         sneak.find(low)?.let { w.sneakCost = ManaOddsCalc.cost(it.groupValues[1]); return true }
@@ -1599,7 +1742,8 @@ object WinOddsCalc {
      * spell helps; with a sacrifice ability (Baba Lysaga) every permanent is something to sacrifice.
      */
     private fun useful(c: WinCard, spellTriggers: Boolean, creatureTriggers: Boolean, fodder: Boolean): Boolean = when {
-        c.land || c.pumpSpell || c.xEach || c.xTokens > 0 -> false
+        // Rituals are cast when their mana pays for something more (since 1.62).
+        c.land || c.pumpSpell || c.xEach || c.xTokens > 0 || c.ritual.isNotEmpty() -> false
         // An instant or sorcery that's a combo piece waits for the rest of the combo.
         c.combo && !c.permanent -> false
         spellTriggers -> true
@@ -1609,7 +1753,7 @@ object WinOddsCalc {
             c.drawOnce + c.drawTurn > 0 || c.combo && c.permanent || c.castTriggers.isNotEmpty() || c.enterTriggers.isNotEmpty() ||
             (c.equipment || c.aura) && c.gearBonus || c.attackDouble || c.targetedBonus > 0 || c.combatDraw != 0 ||
             c.sacrifice != null || c.artifactsOnce + c.artifactsTurn + c.artifactsLandfall > 0 || c.tutorUseful || c.newUse || c.use55 ||
-            c.creature && c.mana.kind == ManaOddsCalc.Kind.CREATURE
+            c.creature && c.mana.kind == ManaOddsCalc.Kind.CREATURE || c.extraLands + c.extraLandsNow > 0
     }
 
     fun calculate(
@@ -1653,7 +1797,7 @@ object WinOddsCalc {
         val dealt = LongArray(SOURCES.size)
         var knockouts = 0
         var wins = 0
-        val features = Features((kinds + leaders).toSet())
+        val features = Features((kinds + leaders + kinds.mapNotNull { it.spellSide }).toSet())
         // The games are played in [BATCHES] batches side by side (on phones with more cores), each with its own seed
         // from [random], so the results don't depend on the phone. Since 1.55.
         val batches = minOf(BATCHES, games)
@@ -1868,6 +2012,9 @@ object WinOddsCalc {
         val xTokens = cards.any { it.xTokens > 0 }
         val drawDouble = cards.any { it.drawDouble }
         val cascade = cards.any { it.cascadeFirst || it.discoverPower > 0 || it.cascadeReturn }
+        /** Since 1.62. */
+        val rituals = cards.any { it.ritual.isNotEmpty() }
+        val spellLands = cards.any { it.spellSide != null }
     }
 
     /** One game, played alone turn by turn. */
@@ -2054,6 +2201,7 @@ object WinOddsCalc {
             Entry(null, turn, power, true, false, false, kind?.types ?: CREATURE_TOKEN, kind?.subtypes.orEmpty()).also {
                 it.flying = kind?.flying == true
                 it.per = kind?.per
+                it.hasteNow = kind?.haste == true
                 board += it
                 tokenMade(1, artifact = "Artifact" in it.types)
                 creatureTokenEntered(it)
@@ -2218,13 +2366,23 @@ object WinOddsCalc {
         fun carrier(): Entry? = board.filter { it.creature && it.card in leaders }.maxByOrNull { it.power }
             ?: board.filter { it.creature }.maxByOrNull { it.power + it.gear.size }
 
-        /** A card's cost with Dragonspeaker Shaman and the like, and affinity (since 1.55). */
-        fun costOf(c: WinCard): ManaOddsCalc.Cost {
+        /**
+         * A card's cost with Dragonspeaker Shaman and the like, and affinity (since 1.55). Since 1.62 also all spells,
+         * commander spells, and spells cast from the command zone or the graveyard ("from anywhere other than your hand").
+         */
+        fun costOf(c: WinCard, fromGraveyard: Boolean = false): ManaOddsCalc.Cost {
             if (!f.costChanges) return c.cost
             var less = 0
             for (b in board) b.card?.reducers?.forEach { (kind, n) ->
                 val colour = COLOUR_WORDS[kind]
-                if (kind == "spell" || colour != null && c.cost.pips.any { colour in it } || c.subtypes.any { it.equals(kind, true) } || c.types.any { it.equals(kind, true) }) less += n
+                val fits = when (kind) {
+                    "spell" -> true
+                    "commander" -> c in leaders
+                    NOT_FROM_HAND -> fromGraveyard || c in command
+                    FROM_GRAVEYARD -> fromGraveyard
+                    else -> colour != null && c.cost.pips.any { colour in it } || c.subtypes.any { it.equals(kind, true) } || c.types.any { it.equals(kind, true) }
+                }
+                if (fits) less += n
             }
             c.affinityFor?.let { k -> less += if (k == "token") board.count { it.token } else count(k) }
             if (less == 0) return c.cost
@@ -2576,6 +2734,7 @@ object WinOddsCalc {
 
         fun cast(c: WinCard, free: Boolean = false, x: Int = 0, fromGraveyard: Boolean = false, copy: Boolean = false): Int {
             if (!copy && !command.remove(c)) if (!hand.remove(c) && fromGraveyard) leftGraveyard(listOf(c))
+            landDrops += c.extraLands + c.extraLandsNow
             if (!free) for (b in board) b.card?.castTriggers?.forEach { t ->
                 if (t.firstOnly && spells > 0) return@forEach
                 if (t.filter == Filter.CREATURE && !c.creature || t.filter == Filter.NONCREATURE && c.creature) return@forEach
@@ -2737,11 +2896,17 @@ object WinOddsCalc {
                 val c = b.card ?: continue
                 val (kind, colour) = c.manaPer ?: continue
                 if (b.turn >= turn && c.mana.kind == ManaOddsCalc.Kind.ROCK) continue
+                // Since 1.62: a mana creature (Elvish Archdruid) once it can tap, the rest of what it makes besides the
+                // one it taps for as a mana creature; a land (Gaea's Cradle, Cabal Coffers) once it's untapped, less what
+                // the ability costs.
+                val dork = c.mana.kind == ManaOddsCalc.Kind.CREATURE && b.creature
+                if (dork && b.turn >= turn && !hasHaste(b)) continue
+                if (c.land && (b.source?.from ?: Int.MAX_VALUE) > turn) continue
                 val n = when (kind) {
                     "token" -> board.count { it.token && !it.creature && !manaToken(it) }
                     "artifact" -> spareArtifacts()
                     else -> board.count { it.isA(kind) }
-                } - (if (c.mana.kind == ManaOddsCalc.Kind.ROCK) c.mana.amount else 0)
+                } - (if (c.mana.kind == ManaOddsCalc.Kind.ROCK || c.land || dork) c.mana.amount else 0) - c.manaPerCost
                 if (n > 0) base += setOf(colour) to n
             }
             if (board.any { it.card?.improvise == true }) spareArtifacts().takeIf { it > 0 }?.let { base += setOf('C') to it }
@@ -2855,7 +3020,9 @@ object WinOddsCalc {
                 var mazeSpent = 0
                 if (mazeDeck) maze(pool())?.let { mazeSpent = 3 }
                 if (byMaze) return t
+                landDrops = 1 + board.sumOf { it.card?.extraLands ?: 0 }
                 playLand()
+                extraLands(emptyList())
                 var pool = pool()
                 if (mazeSpent > 0) pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(mazeSpent, emptyList())) ?: emptyList()
                 // With Amulet of Vigor and the like it comes in untapped and can go again.
@@ -2910,11 +3077,17 @@ object WinOddsCalc {
                 }
                 // Main phase: everything that helps, the most expensive first; the commander before the rest. The
                 // mana only goes down, so one pass is enough unless a card drew more or brought a new trigger.
+                if (f.spellLands) spellSides(pool)
                 var options = mainOptions()
                 var i = 0
                 while (i < options.size) {
                     val c = options[i]
-                    val left = if (c in hand || c in command) spend(pool, costOf(c), c.manaValue) else null
+                    var left = if (c in hand || c in command) spend(pool, costOf(c), c.manaValue) else null
+                    // A ritual when its mana pays for it (since 1.62).
+                    if (left == null && f.rituals && (c in hand || c in command)) ritualFor(pool, c)?.let { p ->
+                        pool = p
+                        left = spend(p, costOf(c), c.manaValue)
+                    }
                     if (left == null) {
                         i++
                         continue
@@ -2923,6 +3096,7 @@ object WinOddsCalc {
                     val before = hand.size
                     val triggers = spellTriggers to creatureTriggers
                     cast(c).let { overrun += it }
+                    pool = extraLands(pool)
                     if (hand.size >= before || triggers != (spellTriggers to creatureTriggers)) {
                         options = mainOptions()
                         i = 0
@@ -2931,6 +3105,12 @@ object WinOddsCalc {
                     }
                 }
                 if (f.graveyardCasts) pool = fromGraveyard(pool)
+                // With spell triggers, rituals left are cast for them; their mana goes on to what follows (since 1.62).
+                if (f.rituals && spellTriggers) for (r in hand.filter { it.ritual.isNotEmpty() && it.ritualMana >= it.manaValue }.toList()) {
+                    pool = (spend(pool, costOf(r), r.manaValue) ?: continue) + r.ritual
+                    cast(r)
+                }
+                pool = extraLands(pool)
                 // What's left of the mana goes into an X spell (since 1.54), or one making tokens (since 1.55).
                 for (tokens in if (f.xTokens) listOf(false, true) else listOf(false)) xSpell(pool, tokens)?.takeIf { it.second >= (if (tokens) 2 else 3) }?.let { (c, x) ->
                     board.filter { manaToken(it) }.forEach { board.remove(it); left(it, artifact = true) }
@@ -2947,6 +3127,13 @@ object WinOddsCalc {
                 val live = board.filter { it.card != null && !it.card.land }
                 for (b in live) {
                     val c = b.card ?: continue
+                    // Since 1.62: upkeep triggers of a card that came in this turn wait for the next upkeep; combat and end
+                    // step ones go this turn, with what they do besides damage and tokens.
+                    if (b.turn == t && c.earlyTrigger && !c.lateTrigger && !c.tapTurn) continue
+                    if (b.turn == t && c.lateTrigger && !c.earlyTrigger) {
+                        if (c.eachTurn.any) use(c.eachTurn, b)
+                        draw(c.drawLate)
+                    }
                     each(c.drainTurn, 3)
                     one(c.oneTurn, 3)
                     // Quintorius, Loremaster: its token needs such a card in the graveyard to exile.
@@ -3192,7 +3379,7 @@ object WinOddsCalc {
                 val self = c.selfFromGraveyard?.let { k -> board.any { it.isA(k) } } == true
                 val flash = c.flashbackCost
                 val cost = when {
-                    viaPermission || self -> costOf(c)
+                    viaPermission || self -> costOf(c, fromGraveyard = true)
                     flash != null && ready(c) && useful(c, spellTriggers, creatureTriggers, fodder) -> flash
                     else -> continue
                 }
@@ -3411,24 +3598,74 @@ object WinOddsCalc {
             if (!e.token) e.self?.let { if (it in leaders) command += it else graveyard += it }
         }
 
-        fun playLand() {
+        /** The lands still to play this turn: one, and more with Azusa, Exploration or Explore (since 1.62). */
+        var landDrops = 0
+
+        /** Plays the extra land drops left, with the mana of those that come in untapped added to [start]. Since 1.62. */
+        fun extraLands(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+            var pool = start
+            while (landDrops > 0 && (hand.any { it.land } || board.any { it.card?.crucible == true } && graveyard.any { it.land })) {
+                val s = playLand() ?: break
+                if (s.from <= turn) pool = pool + (s.colours to s.amount)
+            }
+            return pool
+        }
+
+        /**
+         * Casts the ritual that makes [c] payable (Dark Ritual for a {4}{B} with three lands); the mana left with the
+         * ritual's added, or null when no ritual does it. Since 1.62.
+         */
+        fun ritualFor(pool: List<Pair<Set<Char>, Int>>, c: WinCard): List<Pair<Set<Char>, Int>>? {
+            for (r in hand.filter { it.ritual.isNotEmpty() && it !== c && it.ritualMana > it.manaValue }.sortedBy { it.manaValue }) {
+                val test = ManaOddsCalc.pay(potential(pool), costOf(r)) ?: continue
+                if (ManaOddsCalc.pay(test + r.ritual, costOf(c)) == null) continue
+                val left = spend(pool, costOf(r), r.manaValue) ?: continue
+                cast(r)
+                return left + r.ritual
+            }
+            return null
+        }
+
+        /**
+         * Spell // land cards in hand become their spell (Malakir Rebirth) when the deck has lands enough: three on the
+         * battlefield and five counting the other lands in hand, and the spell is worth casting now. Since 1.62.
+         */
+        fun spellSides(pool: List<Pair<Set<Char>, Int>>) {
+            val onBoard = board.count { it.isA("land") }
+            if (onBoard < 3) return
+            for (l in hand.filter { it.spellSide != null }.toList()) {
+                val side = l.spellSide!!
+                if (onBoard + hand.count { it.land && it.spellSide == null } < 5) return
+                if (!useful(side, spellTriggers, creatureTriggers, fodder) || !ready(side) || !canSpend(pool, costOf(side))) continue
+                hand.remove(l)
+                hand += side
+            }
+        }
+
+        fun playLand(): Source? {
             // An untapped land first, then the one adding the most missing colours (as for the commander odds).
             val have = HashSet<Char>()
             sources.forEach { have += it.colours }
+            // Spell // land cards last: they may be cast as spells later (since 1.62).
             val lands = hand.filter { it.land }
             val names = if (mazeDeck) gateNames() else emptySet()
             // A Maze's End deck plays Maze's End, then Gates with new names (since 1.54). With Crucible of Worlds a land
             // can come from the graveyard (since 1.55).
             val fromYard = if (lands.isEmpty() && board.any { it.card?.crucible == true }) graveyard.firstOrNull { it.land } else null
             val land = (if (mazeDeck) lands.firstOrNull { it.mazeEnd } ?: lands.firstOrNull { "Gate" in it.subtypes && it.name !in names } else null)
-                ?: lands.minByOrNull { l -> (if (l.mana.tapped) 10 else 0) - l.mana.colours.count { it !in have } } ?: fromYard ?: return
+                ?: lands.minByOrNull { l -> (if (l.mana.tapped) 10 else 0) + (if (l.spellSide != null) 5 else 0) - l.mana.colours.count { it !in have } }
+                ?: fromYard ?: return null
             if (land === fromYard) leftGraveyard(listOf(land)) else hand.remove(land)
+            landDrops--
             val source = Source(land.mana.colours, 1, if (untapped(land)) turn else turn + 1)
             sources += source
             val e = Entry(land, turn, 0, false, false, false).also { it.source = source }
             board += e
             makeAll(land.madeOnce)
             landEntered(e)
+            // A fetch land and the land it finds both set off landfall (since 1.62).
+            if (land.fetchLand) landEntered(e)
+            return source
         }
 
         /**

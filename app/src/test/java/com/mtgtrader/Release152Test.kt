@@ -54,7 +54,8 @@ class Release152Test {
         assertTrue(landfall.enterTriggers.single().land)
         val charm = classify(card("Boros Charm", "Instant", "{R}{W}", "Choose one —\n• Boros Charm deals 4 damage to target player or planeswalker.\n• Permanents you control gain indestructible until end of turn.\n• Target creature gains double strike until end of turn."))
         assertEquals(4, charm.oneOnce)
-        assertTrue(charm.pumpDouble)
+        // Since 1.62 only the best mode: the damage, not the double strike too.
+        assertFalse(charm.pumpDouble)
     }
 
     @Test fun readsEquipmentAurasAndPumps() {

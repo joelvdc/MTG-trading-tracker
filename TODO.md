@@ -114,6 +114,32 @@ Open questions:
 
 ## Done
 
+### Win turn: trigger timing, mana, land drops, modes (MTG Trader 1.62)
+*Asked 2026-10-27: a list of simulator gaps to check (turn structure, tokens, equipment and auras, planeswalkers, land
+drops, card value heuristics, missing card types, mana); green light for the fixes the same day.*
+
+Released in MTG Trader 1.62 (2026-10-27), `WinOddsCalc.VERSION` 7:
+- Timing: `earlyTrigger`/`lateTrigger`/`tapTurn`/`drawLate` on cards; upkeep-only cards skip the turn they come in,
+  combat and end step ones also go that turn (with `eachTurn` and their draws); "each end step"/"each combat" count once
+  a turn unless the line has ", if" or "this turn" (Smuggler's Share); `TokenKind.haste` (Legion Warboss).
+- Mana: `ritual` (cast by `ritualFor` when it makes a card payable, or for spell triggers); lands with `manaPer` and
+  `manaPerCost` (Gaea's Cradle, Cabal Coffers), "on the battlefield" (Priest of Titania); a mana creature's `manaPer`
+  only once it can tap, less the one it taps for; reducers for all spells, commander spells, `NOT_FROM_HAND` and
+  `FROM_GRAVEYARD`.
+- Lands: `landDrops` with `extraLands`/`extraLandsNow` (played at once, not held back for landfall later); `fetchLand`
+  sets off landfall twice.
+- Modes: `chooseModes` keeps the best "choose one/two" modes by `modeScore` (a growing token counts extra); "one or
+  more" keeps all. Spell // land: `spellSide`, cast by `spellSides` with three lands out and five counting the hand; on
+  the battlefield the card has its land face's types. Transforming cards with a land back (Thousand Moons Smithy) are
+  read the same way.
+- Checked, already right or left as is: equip costs are paid and gear goes to the commander or the biggest creature
+  (no blockers here, so that's the best carrier); one loyalty ability per planeswalker a turn is the rule; token copies
+  were already counted (1.61). Not counted still: battles, proliferate on planeswalkers, ultimates (−6 or more),
+  abilities in quotes on tokens, Nykthos, Skullclamp's draw, lands from the top of the library.
+- The owner's 19 "Ready to Play" decks (4,000 games each, without Commander Salt's combos): the same turn (4 in 10
+  games) and first win turn for all of them; the share won by a turn moved at most 5 points (Baba up, Deep Clue Sea
+  down 3).
+
 ### Compare the win turn with ScrollVault's (done 2026-10-26, a report, no app change)
 *Added 2026-10-21 ("Scrollvault also has a prediction for the turn a deck can win by, could be interesting to check the
 differences between that and the simulator"). Done on the owner's PC on 2026-10-26, for the 19 decks in the Archidekt

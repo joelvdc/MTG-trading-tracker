@@ -208,6 +208,17 @@ them (they stay open or folded for every deck).
     lords); token copies count as tokens made; Tawnos's copies are artifacts, and copy a card token with its abilities;
   - lords that need the **city's blessing** (Illustrious Wanderglyph: ten permanents); creatures without power
     (Ornithopter) are cast when a lord pumps them; **Urza, Prince of Kroog**'s {6} artifact copies.
+  Since 1.62 also:
+  - **when triggers go**: "at the beginning of combat" and "of your end step" triggers also go the turn the card comes
+    in, upkeep ones only from the next upkeep; "each end step" and "each combat" count (once a turn, and not with an
+    "if" condition); tokens that have or gain haste attack the turn they're made (Legion Warboss);
+  - **mana**: rituals (Dark Ritual, Seething Song) when their mana casts something more, or for spell triggers;
+    lands and creatures that tap for each of a kind (Gaea's Cradle, Cabal Coffers, Priest of Titania); "spells you
+    cast cost {1} less", commander spells, and spells cast from anywhere other than the hand;
+  - **lands**: extra land drops (Azusa, Exploration, Explore), played at once; a fetch land sets off landfall twice;
+  - **modes**: "choose one" and "choose two" count only the best modes (before, all of them added up); "choose one or
+    more" still counts them all; spell // land cards (Malakir Rebirth) are played as lands, and cast as the spell once
+    there are three lands out and five counting the hand.
   Under the table: where the damage came from (combat, commander damage,
   triggers, drain), how often a combo or Maze's End won, and how often commander damage knocked a player out. Decks
   that don't win 4 in 10 games by turn 15 show **T15+** with a note: their damage likely comes from what the app can't
