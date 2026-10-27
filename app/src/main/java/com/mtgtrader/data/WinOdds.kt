@@ -156,6 +156,16 @@ data class WinCounted(
  *   value X or less, X the mana left); they're never attacked to flip them;
  * - planeswalker ultimates when they do something here (Elspeth's emblem, Lord Windgrace's Cats, Vraska's poison);
  * - proliferate: loyalty, +1/+1 counters and poison counters; ten poison counters knock a player out.
+ * Since 1.64 also:
+ * - creatures dying: "whenever a creature (you control) dies" drains and draws (Blood Artist, The Meathook Massacre,
+ *   Midnight Reaper), and free sacrifice outlets (Ashnod's Altar, Carrion Feeder, Yawgmoth) used after combat when
+ *   the deaths are worth more than the creatures;
+ * - -1/-1 counters: put on our creatures (blight, Channeler Initiate, Harbinger of Night), with toughness, so they can
+ *   die, or on an opponent's creature (taken as there from turn 4, as for the combos), and their payoffs (Nest of
+ *   Scarabs, Hapatra, Obelisk Spider, Flourishing Defenses, Auntie Ool, Blowfly Infestation, The Scorpion God);
+ *   All Will Be One's damage for every counter put;
+ * - Animate Dead and the like; "for each Shrine you control" in tap abilities; amass (Dreadhorde Invasion); Mana
+ *   Geyser (half the opponents' lands taken as tapped); Sunbird's Invocation; Approach of the Second Sun.
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -168,9 +178,9 @@ object WinOddsCalc {
      * 3: counting Shrines and Gates, Maze's End, sacrifice decks and X spells (1.54). 4: ramp, Treasures, pumps, the
      * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56). 6: sacrifice payoffs,
      * populate, tokens one by one, ascend, Urza (1.61). 7: trigger timing, rituals, land drops, modes, spell // land (1.62).
-     * 8: battles, planeswalker ultimates, proliferate and poison (1.63).
+     * 8: battles, planeswalker ultimates, proliferate and poison (1.63). 9: deaths, sacrifice outlets, -1/-1 counters (1.64).
      */
-    const val VERSION = 8
+    const val VERSION = 9
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -462,6 +472,16 @@ object WinOddsCalc {
     private val modeHeader = Regex("(?:^|, )choose (one|two) —$", I)
     private val secondMain = Regex("^at the beginning of your second main phase, (if you attacked this turn, )?(.*)$", I)
     private val eachUpkeepLine = Regex("^at the beginning of each upkeep, (.*)$", I)
+    // Since 1.64: deaths, sacrifice outlets, -1/-1 counters and the rest of the 1.64 cards.
+    private val deathLine = Regex("^whenever (this creature or |[^,]{1,40}? or )?(another |a |an )(nontoken |nonland )?(?:([a-z]+) )?(creature|[a-z]+?)( you control)? dies, (.*)$", I)
+    private val freeSacText = Regex("^(?:pay (\\d+) life, )?sacrifice (another|a) creature: (.*)$", I)
+    private val minusOwnText = Regex("put (a|one|two|three|four|x) -1/-1 counters? on (?:up to one )?target creature you control|\\bblight (\\d+|x)\\b", I)
+    private val minusTargetText = Regex("put (a|one|two|three|four|x) -1/-1 counters? on (?:up to one |each of up to (two|three) )?(?:another )?target creatures?", I)
+    private val minusEachText = Regex("put (a|one|two|three|x) -1/-1 counters? on each (?:other )?creature(?! your opponents)(?! an opponent)", I)
+    private val minusOppText = Regex("put (a|one|two) -1/-1 counters? on each creature (?:your opponents control|an opponent controls)", I)
+    private val entersMinus = Regex("enters with (a|one|two|three) -1/-1 counters? on it", I)
+    private val amassText = Regex("\\bamass (?:[a-z]+ )?(\\d+|x)\\b", I)
+    private val drainPerText = Regex("loses (\\d+) life for each ([a-z]+?)s? you control", I)
 
     enum class Filter { ANY, CREATURE, NONCREATURE }
     enum class ForEach { COLOURS, HAND, ARTIFACTS_ENCHANTMENTS, ENCHANTMENTS, ONE }
@@ -493,6 +513,8 @@ object WinOddsCalc {
         val per: String? = null,
         /** It has or gains haste (Legion Warboss's Goblin attacks the turn it's made). Since 1.62. */
         val haste: Boolean = false,
+        /** Its toughness (-1: as its power, at least 1), for -1/-1 counters. Since 1.64. */
+        val toughness: Int = -1,
     )
 
     enum class Effect { DRAIN, TOKENS, DRAW, COUNTERS, PUMP }
@@ -535,6 +557,12 @@ object WinOddsCalc {
 
     /** "{1}{R}: Dragons you control get +1/+0 until end of turn" ([kind]), or the creature itself ([kind] null). Since 1.55. */
     data class ActivatedPump(val cost: ManaOddsCalc.Cost, val kind: String?, val amount: Int)
+
+    /**
+     * "Whenever (this creature or) another [kind] (you control) dies": [amount] life lost by each opponent ([each]) or
+     * one, and cards drawn ([draw]). [self]: its own death counts too; [nontoken]: tokens don't. Since 1.64.
+     */
+    data class DeathDrain(val each: Boolean, val amount: Int, val draw: Int, val self: Boolean, val another: Boolean, val nontoken: Boolean, val kind: String?)
 
     /**
      * What a spell, a trigger or an ability does with the graveyard, copies and cheating, and for abilities (tap,
@@ -613,6 +641,16 @@ object WinOddsCalc {
         var poisonTo = 0
         /** An emblem: creatures you control get +N/+N for the rest of the game (Elspeth, Sun's Champion's −7). */
         var emblemAnthem = 0
+        // Since 1.64.
+        /** -1/-1 counters: on a creature of ours (blight; [minusMay]: "you may"), on a target creature (an opponent's when
+         *  there is one), on each creature; amass; a drain for each permanent of a kind ("for each Shrine you control"). */
+        var minusOwn = 0
+        var minusMay = false
+        var minusTarget = 0
+        var minusEach = 0
+        var minusOpp = 0
+        var amass = 0
+        var drainPer: String? = null
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
         val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
@@ -624,7 +662,7 @@ object WinOddsCalc {
                 graveyard || copying || doubleStrikeFor != null || drawPerEquipped || toBottom > 0 || made.isNotEmpty() ||
                 selfCounters + countersAll + countersTarget + countersHit + eachPlayerDraws + oppDraws > 0 || doubleCounters || tokensPer != null ||
                 drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0 ||
-                proliferate + poison + poisonTo + emblemAnthem > 0
+                proliferate + poison + poisonTo + emblemAnthem > 0 || minusOwn + minusTarget + minusEach + minusOpp + amass > 0
     }
 
     /** What a card does in the game, read once per card from its type, power and rules text. */
@@ -906,13 +944,41 @@ object WinOddsCalc {
          */
         var xCreature: String? = null
         var xCreatureGraveyard = false
+        // Since 1.64.
+        var toughness = 0
+        val deathDrains = ArrayList<DeathDrain>()
+        /** A sacrifice outlet costing no mana ("Sacrifice a creature: …", Yawgmoth's "Pay 1 life, …"): what it does. */
+        var freeSac: Ability? = null
+        var freeSacAnother = false
+        /**
+         * -1/-1 counter payoffs: tokens for each counter you put (Nest of Scarabs), a token each time (Hapatra), a drain each
+         * time (Obelisk Spider), a token for every counter put on any creature (Flourishing Defenses), Auntie Ool's draw or
+         * life loss; when a creature with one dies, another counter (Blowfly Infestation) or a card (The Scorpion God).
+         */
+        var minusTokens: TokenKind? = null
+        var minusToken: TokenKind? = null
+        var minusDrain = 0
+        var minusEveryToken: TokenKind? = null
+        var minusDraw = false
+        var minusDeathSpread = false
+        var minusDeathDraw = false
+        /** It enters with -1/-1 counters (Carnifex Demon). */
+        var entersMinus = 0
+        /** All Will Be One: whenever you put counters on a permanent or player, that much damage to an opponent. */
+        var counterBurn = false
+        var sunbird = false
+        var approach = false
+        /** Mana Geyser: {R} for each tapped land the opponents have. */
+        var ritualOppLands = false
+        val minusPayoff get() = minusTokens != null || minusToken != null || minusDrain > 0 || minusEveryToken != null || minusDraw || counterBurn
         /** Mirkwood Bats, Marionette Master and Apprentice: sacrificing artifacts or tokens drains (since 1.61). */
         val sacrificePayoff get() = artifactDrain || dieDrain > 0 || tokenDrain > 0
 
         val land get() = mana.kind == ManaOddsCalc.Kind.LAND
         val gearBonus get() = bonus > 0 || forEach != null || base != null || grantsDouble || grantsHaste
         val pumpSpell get() = !permanent && (pump > 0 || pumpX || pumpDouble)
-        val dealsDamage get() = drainOnce + drainTurn + oneOnce + oneTurn > 0 || sacrifice != null || xEach || artifactDrain || devotion != null || dieDrain + tokenDrain + tokenBatchDrain > 0
+        val dealsDamage get() = drainOnce + drainTurn + oneOnce + oneTurn > 0 || sacrifice != null || xEach || artifactDrain || devotion != null || dieDrain + tokenDrain + tokenBatchDrain > 0 ||
+            deathDrains.any { it.amount > 0 } || minusDrain > 0 || counterBurn
 
         /** It does one of the things the win turn reads since 1.54, so it's worth casting. */
         val newUse by lazy { scaled.isNotEmpty() || kindTriggers.any { it.drainEach + it.drainOne + it.tokens + it.draw + it.counters + it.treasures > 0 || it.land || it.perOne != null || it.perEach != null } ||
@@ -935,12 +1001,14 @@ object WinOddsCalc {
                 combatCountersDrawn || drawDouble || endDrawIfToken || counterPlus > 0 || counterTimes || counterDamage || counterDraw ||
                 drawCounter || doubleCountered || attackersDouble || entersWithCounters > 0 || counteredHitDraw || madeOnce.isNotEmpty() ||
                 madeTurn.isNotEmpty() || madeLandfall.isNotEmpty() || truce || animateArtifacts > 0 || riseAndShine > 0 || monarch ||
-                cascade > 0 || cascadeFirst || discover > 0 || discoverPower > 0 || capstone > 0 || newCounters > 0 || paradigm
+                cascade > 0 || cascadeFirst || discover > 0 || discoverPower > 0 || capstone > 0 || newCounters > 0 || paradigm ||
+                deathDrains.isNotEmpty() || freeSac != null || minusPayoff || minusDeathSpread || minusDeathDraw || sunbird || approach
         }
 
         /** Every ability it has (to freeze them once it's read). */
         fun abilities(): List<Ability> = listOf(onEnter, eachTurn, onAttack, onYouAttack, onKindAttack, onHit, onSecondDraw, onOppSecondDraw,
-            eachUpkeep, onSecondSpell, onCreatureEnter, onAnyHit, onClueSac, postCombat) + taps + activated + loyalties.map { it.second } + onCast.map { it.second }
+            eachUpkeep, onSecondSpell, onCreatureEnter, onAnyHit, onClueSac, postCombat) + taps + activated + loyalties.map { it.second } + onCast.map { it.second } +
+            listOfNotNull(freeSac)
 
         /** Fills or uses the graveyard (for the "How?"). */
         val graveyardUse
@@ -1003,10 +1071,12 @@ object WinOddsCalc {
         w.artifactOrEnchantment = w.permanent && !w.creature && ("Artifact" in type || "Enchantment" in type)
         w.equipment = "Equipment" in type
         w.power = c.powerToughness?.substringBefore('/')?.trim()?.toIntOrNull() ?: 0
+        w.toughness = c.powerToughness?.substringAfter('/', "")?.trim()?.toIntOrNull() ?: maxOf(1, w.power)
         if (w.planeswalker) w.loyalty = c.loyalty?.toIntOrNull() ?: (w.manaValue - 1).coerceAtLeast(1)
         // "Choose one" and "choose two": only the best modes (since 1.62; before, all of them added up).
         val text = chooseModes(c, own, lands, comboKeys, front)
-        w.aura = "Aura" in type && "enchant creature" in text.lowercase()
+        // Animate Dead's "enchant creature card in a graveyard" brings a creature back: no gear (since 1.64).
+        w.aura = "Aura" in type && "enchant creature" in text.lowercase() && "enchant creature card in a graveyard" !in text.lowercase()
         w.text = text.lowercase()
         // The modes under a trigger ("At the beginning of your first main phase, choose one or more — • …") are read with
         // the trigger; a Class's later levels aren't counted (they cost more). Since 1.55.
@@ -1068,6 +1138,11 @@ object WinOddsCalc {
                     .groupingBy { it }.eachCount().map { (colour, n) -> setOf(colour) to n }
             }
             ritualAny.find(line)?.let { m -> w.ritual = listOf(own.ifEmpty { setOf('C') } to number(m.groupValues[1])) }
+            // Mana Geyser (since 1.64): the mana is worked out in the game.
+            Regex("^add \\{([wubrgc])\\} for each tapped land your opponents control", I).find(line)?.let { m ->
+                w.ritual = listOf(setOf(m.groupValues[1].uppercase()[0]) to 0)
+                w.ritualOppLands = true
+            }
             if (w.ritual.isNotEmpty()) break
         }
         // Since 1.63: Invasion of Ikoria.
@@ -1193,7 +1268,10 @@ object WinOddsCalc {
         val after = line.substring(m.range.last + 1).substringBefore('.').lowercase()
         val per = Regex("gets \\+1/\\+1 for each ([a-z]+?)s? you control").find(line.substring(m.range.first).substringBefore("\n"))?.groupValues?.get(1)
         val haste = Regex("^[^\"]*\\bhaste\\b").containsMatchIn(after) || Regex("\\. (?:that token|those tokens|it) gains? haste", I).containsMatchIn(line.substring(m.range.first))
-        return TokenKind(m.groupValues[1].toIntOrNull() ?: 0, types, subtypes, flying = "with flying" in after || "flying" in after.substringBefore(" and ").take(20), per = per, haste = haste)
+        return TokenKind(
+            m.groupValues[1].toIntOrNull() ?: 0, types, subtypes, flying = "with flying" in after || "flying" in after.substringBefore(" and ").take(20), per = per, haste = haste,
+            toughness = m.groupValues[2].toIntOrNull() ?: -1,
+        )
     }
 
     /** An effect that counts permanents ([per]); false when the line isn't one the win turn reads. Since 1.54. */
@@ -1342,6 +1420,19 @@ object WinOddsCalc {
         if (Regex("fewer than nine poison counters, they get a number of poison counters equal to the difference").containsMatchIn(low)) a.poisonTo = 9
         Regex("(?:target player|target opponent|each opponent) gets? (\\w+) poison counters?").find(low)?.let { a.poison += number(it.groupValues[1]) }
         Regex("you get an emblem with \"creatures you control get \\+(\\d+)/\\+\\d+").find(low)?.let { a.emblemAnthem = it.groupValues[1].toInt() }
+        // Since 1.64: Animate Dead, -1/-1 counters, amass.
+        if (a.reanimate == 0 && Regex("(?:return|put) enchanted creature card (?:to|onto) the battlefield").containsMatchIn(low)) a.reanimate = 1
+        minusOwnText.find(low)?.let { m ->
+            a.minusOwn += number(m.groupValues[1].ifEmpty { m.groupValues[2] }).coerceAtLeast(1)
+            a.minusMay = "you may blight" in low
+        }
+        minusTargetText.findAll(low).firstOrNull { !low.startsWith(" you control", it.range.last + 1) }?.let { m ->
+            a.minusTarget += number(m.groupValues[1]).coerceAtLeast(1) * (m.groupValues[2].takeIf { it.isNotEmpty() }?.let(::number) ?: 1)
+        }
+        // On each creature: kept to permanents (Soul Snuffers, Harbinger of Night); a sweeper (Black Sun's Zenith) isn't cast.
+        if (w.permanent) minusEachText.find(low)?.let { a.minusEach += number(it.groupValues[1]).coerceAtLeast(1) }
+        minusOppText.find(low)?.let { a.minusOpp += number(it.groupValues[1]) }
+        amassText.find(low)?.let { a.amass += number(it.groupValues[1]).coerceAtLeast(1) }
         if (!full) return
         val eachPlayer = Regex("each player (?:may )?draws? a card").containsMatchIn(low)
         if (eachPlayer) a.eachPlayerDraws = 1
@@ -1352,6 +1443,8 @@ object WinOddsCalc {
         if ("draw a card for each equipped attacking creature" in low) { a.drawPerEquipped = true; a.draw = 0 }
         if (a.lootDrain == 0) eachOpponent.find(low)?.let { a.drainEach += number(it.groupValues[1].ifEmpty { it.groupValues[2] }) }
         if (a.drainEach == 0) oneOpponent.find(low)?.let { a.drainOne += number(it.groupValues[1].ifEmpty { it.groupValues[2] }) }
+        // "Each opponent loses 1 life for each Shrine you control" (since 1.64; before, 1).
+        drainPerText.find(low)?.let { a.drainPer = it.groupValues[2] }
         if (a.copies == 0 && !a.copyArtifactToken && !a.copyExiled && !a.copySelf && !a.copyFromGraveyard && !a.copyArtifact) create.find(low)?.let { m ->
             a.tokens += if ("for each opponent, create" in low) OPPONENTS else number(m.groupValues[1])
             a.token = tokenKind(text.substring(m.range.first))
@@ -1574,6 +1667,7 @@ object WinOddsCalc {
         capstone.find(low)?.let { w.capstone = it.groupValues[1].toInt(); return true }
         if ("whenever you cast a spell with cascade, return this card from your graveyard to your hand" in low) { w.cascadeReturn = true; return true }
         newCounters.find(low)?.let { w.newCounters = number(it.groupValues[1]); return true }
+        if (read64(w, line, low)) return true
         // Items 9–11 (since 1.55): the second card drawn each turn, opponents drawing, group draw, casting a kind of
         // spell, creatures entering, combat damage, Clues, counters, second main phase.
         secondDraw.find(low)?.let { m ->
@@ -1736,6 +1830,50 @@ object WinOddsCalc {
             w.overrun += m.groupValues[5].toInt()
             return true
         }
+        return false
+    }
+
+    /** Deaths, sacrifice outlets, -1/-1 counters, Sunbird's Invocation and Approach of the Second Sun (since 1.64). */
+    private fun read64(w: WinCard, line: String, low: String): Boolean {
+        deathLine.find(low)?.let { m ->
+            val qualifier = m.groupValues[4]
+            if (qualifier == "attacking" || qualifier == "blocking") return@let
+            val rest = m.groupValues[7]
+            val e = eachOpponent.find(rest)
+            val o = if (e == null) oneOpponent.find(rest) else null
+            val d = drawCards.find(rest)?.takeIf { "opponent" !in rest.substring(0, it.range.first) && "each player" !in rest }
+            val amount = e?.let { number(it.groupValues[1].ifEmpty { it.groupValues[2] }) } ?: o?.let { number(it.groupValues[1].ifEmpty { it.groupValues[2] }) } ?: 0
+            val draw = d?.let { number(it.groupValues[1]) } ?: 0
+            if (amount <= 0 && draw <= 0) return@let
+            val kind = qualifier.ifEmpty { m.groupValues[5].lowercase() }.takeIf { it != "creature" }
+            w.deathDrains += DeathDrain(e != null, amount, draw, m.groupValues[1].isNotEmpty(), m.groupValues[2] == "another ", m.groupValues[3] == "nontoken ", kind)
+            return true
+        }
+        freeSacText.find(low)?.let { m ->
+            val a = Ability()
+            readAbility(a, line.substring(m.groups[3]!!.range.first), w, full = true)
+            w.freeSac = a
+            w.freeSacAnother = m.groupValues[2] == "another"
+            return true
+        }
+        val put = "^whenever you put one or more -1/-1 counters on a creature, "
+        Regex("${put}create that many ", I).find(low)?.let { w.minusTokens = tokenKind(line) ?: TokenKind(1, CREATURE_TYPES, emptySet()); return true }
+        Regex("${put}create an? ", I).find(low)?.let { w.minusToken = tokenKind(line) ?: TokenKind(1, CREATURE_TYPES, emptySet()); return true }
+        Regex("${put}each opponent loses (\\d+) life", I).find(low)?.let { w.minusDrain = it.groupValues[1].toInt(); return true }
+        if (Regex("^whenever a -1/-1 counter is put on a creature, (?:you may )?create an? ").containsMatchIn(low)) {
+            w.minusEveryToken = tokenKind(line) ?: TokenKind(1, CREATURE_TYPES, emptySet())
+            return true
+        }
+        if (Regex("^whenever one or more -1/-1 counters are put on a creature, draw a card if you control that creature").containsMatchIn(low)) { w.minusDraw = true; return true }
+        if (Regex("^whenever a creature dies, if it had a -1/-1 counter on it, put a -1/-1 counter on target creature").containsMatchIn(low)) { w.minusDeathSpread = true; return true }
+        if (Regex("^whenever a creature with a -1/-1 counter on it dies, draw a card").containsMatchIn(low)) { w.minusDeathDraw = true; return true }
+        if (Regex("^whenever you put one or more counters on a permanent or player, [^,]* deals that much damage to target opponent").containsMatchIn(low)) { w.counterBurn = true; return true }
+        entersMinus.find(low)?.let { w.entersMinus = number(it.groupValues[1]); return true }
+        if (Regex("^whenever you cast a spell from your hand, reveal the top x cards of your library, where x is that spell's mana value\\. you may cast a spell with mana value x or less").containsMatchIn(low)) {
+            w.sunbird = true
+            return true
+        }
+        if ("you've cast another spell named" in low && "you win the game" in low && "seventh from the top" in low) { w.approach = true; return true }
         return false
     }
 
@@ -2005,6 +2143,9 @@ object WinOddsCalc {
         var loyalty = card?.loyalty ?: 0
         /** The card that goes to the graveyard (a Phyrexian Metamorph copying something stays a Metamorph). */
         var self: WinCard? = card
+        /** Its toughness without counters, and the -1/-1 counters on it (since 1.64). */
+        var toughness = card?.let { if (it.creature) it.toughness else null } ?: maxOf(1, power)
+        var minus = 0
     }
 
     /** What the deck's cards can do at all, so a game skips the checks for the rest (they'd scan the battlefield). Since 1.55. */
@@ -2060,6 +2201,12 @@ object WinOddsCalc {
         /** Since 1.63. */
         val xCreature = cards.any { it.xCreature != null }
         val proliferate = cards.any { c -> c.landfallProliferate > 0 || c.abilities().any { it.proliferate > 0 } }
+        /** Since 1.64. */
+        val deaths = cards.any { it.deathDrains.isNotEmpty() || it.minusDeathSpread || it.minusDeathDraw }
+        val freeSac = cards.any { it.freeSac != null }
+        val minusPayoffs = cards.any { it.minusPayoff }
+        val counterBurn = cards.any { it.counterBurn }
+        val sunbird = cards.any { it.sunbird }
     }
 
     /** One game, played alone turn by turn. */
@@ -2185,6 +2332,7 @@ object WinOddsCalc {
         /** +1/+1 counters on a creature of ours: High Score, Michelangelo, Corpsejack Menace; Casey Jones, Mikey & Leo. */
         fun addCounters(e: Entry, n: Int) {
             if (n <= 0) return
+            if (f.counterBurn) countersPut(n)
             if (!f.counterMods) { e.counters += n; return }
             var k = n + board.sumOf { it.card?.counterPlus ?: 0 }
             repeat(board.count { it.card?.counterTimes == true }) { k *= 2 }
@@ -2250,6 +2398,7 @@ object WinOddsCalc {
                 it.flying = kind?.flying == true
                 it.per = kind?.per
                 it.hasteNow = kind?.haste == true
+                it.toughness = kind?.toughness?.takeIf { t -> t >= 0 } ?: maxOf(1, power)
                 board += it
                 tokenMade(1, artifact = "Artifact" in it.types)
                 creatureTokenEntered(it)
@@ -2501,10 +2650,14 @@ object WinOddsCalc {
 
         /** Whether a card is worth casting now (since 1.55: reanimation needs something to bring back, and so on). */
         fun ready(c: WinCard): Boolean {
+            // Animate Dead and Necromancy wait for a creature worth bringing back (since 1.64).
+            if (c.permanent && !c.creature && c.enchantment && c.onEnter.reanimate in 1 until ALL && c.onEnter.reanimateKind == null && !c.combo &&
+                !c.dealsDamage && c.deathDrains.isEmpty()
+            ) return spellTriggers || reanimationWorth(c.onEnter) >= 5
             if (c.permanent) return true
             val a = c.onEnter
             val other = c.drainOnce + c.oneOnce + c.tokensOnce + c.drawOnce + c.artifactsOnce + c.overrun > 0 || c.dealsDamage ||
-                c.scaled.isNotEmpty() || c.tutorUseful || c.combo || c.mana.kind == ManaOddsCalc.Kind.RAMP || spellTriggers
+                c.scaled.isNotEmpty() || c.tutorUseful || c.combo || c.mana.kind == ManaOddsCalc.Kind.RAMP || spellTriggers || c.approach
             if (other || !c.use55) return true
             return a.reanimate > 0 && a.reanimateKind == "land" && graveyard.any { it.land } ||
                 a.reanimate > 0 && reanimationWorth(a) >= (if (a.reanimate == ALL) 12 else 5) &&
@@ -2648,8 +2801,10 @@ object WinOddsCalc {
         fun use(a: Ability, user: Entry? = null, attackers: List<Entry> = emptyList()) {
             if (!a.any) return
             draw(a.draw)
-            each(a.drainEach, 3)
-            one(a.drainOne, 3)
+            // "For each Shrine you control" (since 1.64).
+            val per = a.drainPer?.let { count(it) } ?: 1
+            each(a.drainEach * per, 3)
+            one(a.drainOne * per, 3)
             a.tokensPer?.let { k -> repeat(minOf(count(k), 20)) { token(a.token?.power ?: 1, a.token) } }
             if (a.tokens > 0) repeat(a.tokens) { token(a.token?.power ?: 1, a.token).also { t -> if (a.attackingTokens) { t.joins = turn; t.hasteNow = true } } }
             makeAll(a.made)
@@ -2735,7 +2890,17 @@ object WinOddsCalc {
                 if (poison[i] >= POISON) life[i] = 0
             }
             emblemAnthem += a.emblemAnthem
+            countersPut(a.poison + a.poisonTo)
             proliferate(a.proliferate)
+            // -1/-1 counters and amass (since 1.64).
+            if (a.minusOwn > 0) minusOwnTarget(a.minusOwn, a.minusMay)?.let { minus(it, a.minusOwn) }
+            if (a.minusTarget > 0) minusTarget(a.minusTarget)
+            if (a.minusEach > 0) {
+                board.filter { it.creature }.forEach { minus(it, a.minusEach) }
+                if (opponentCreature) minus(null, a.minusEach)
+            }
+            if (a.minusOpp > 0 && opponentCreature) minus(null, a.minusOpp)
+            if (a.amass > 0) amass(a.amass)
             if (a.sacrificeForToken > 0) sacrificeWorst()?.let { token(a.sacrificeForToken, TokenKind(a.sacrificeForToken, CREATURE_TOKEN, setOf("Dragon"), flying = true)) }
             if (a.teamPump > 0) overrun += a.teamPump
         }
@@ -2745,13 +2910,152 @@ object WinOddsCalc {
          * that has some, and a poison counter on each opponent who has some (ten knock them out).
          */
         fun proliferate(n: Int) = repeat(n) {
-            board.filter { it.card?.planeswalker == true }.forEach { it.loyalty++ }
+            board.filter { it.card?.planeswalker == true }.forEach { it.loyalty++; countersPut(1) }
             board.filter { it.creature && it.counters > 0 }.forEach { addCounters(it, 1) }
             for (i in life.indices) if (life[i] > 0 && poison[i] > 0) {
                 poison[i]++
+                countersPut(1)
                 if (poison[i] >= POISON) life[i] = 0
             }
         }
+
+        // Since 1.64: -1/-1 counters, deaths and sacrifice outlets.
+        /** Whether an opponent has a creature to put -1/-1 counters on: from turn 4, as for the combos. */
+        val opponentCreature get() = turn >= 4
+
+        /** All Will Be One: [n] counters put on a permanent or player deal that much damage to an opponent. */
+        fun countersPut(n: Int) {
+            if (n <= 0 || !f.counterBurn) return
+            for (b in board.toList()) if (b.card?.counterBurn == true) one(n, 3)
+        }
+
+        /** How deep -1/-1 counters have set off more of them (Blowfly Infestation and Nest of Scarabs loop). */
+        var minusDepth = 0
+
+        /**
+         * [n] -1/-1 counters on [target], or on an opponent's creature (null): the payoffs first, then the creature dies
+         * when its toughness is gone (a +1/+1 counter and a -1/-1 counter cancel out).
+         */
+        fun minus(target: Entry?, n: Int) {
+            if (n <= 0 || minusDepth > 4) return
+            minusDepth++
+            if (f.minusPayoffs) for (b in board.toList()) b.card?.let { c ->
+                c.minusTokens?.let { k -> repeat(minOf(n, 10)) { token(k.power, k) } }
+                c.minusToken?.let { k -> token(k.power, k) }
+                c.minusEveryToken?.let { k -> repeat(minOf(n, 10)) { token(k.power, k) } }
+                each(c.minusDrain, 3)
+                // Auntie Ool: a card when it's our creature, else its controller loses 1 life.
+                if (c.minusDraw) { if (target != null) draw(1) else one(1, 3) }
+            }
+            countersPut(n)
+            if (target != null && target in board) {
+                repeat(n) { if (target.counters > 0) target.counters-- else { target.power--; target.toughness--; target.minus++ } }
+                if (target.creature && target.toughness + target.counters <= 0) died(target)
+            }
+            minusDepth--
+        }
+
+        /** A creature of ours dies (to -1/-1 counters or a sacrifice outlet): off the battlefield with its gear and mana. */
+        fun died(e: Entry) {
+            board.remove(e)
+            e.source?.let { sources.remove(it) }
+            board.filter { it.on === e }.forEach { g -> g.on = null; if (g.card?.aura == true) board.remove(g) }
+            left(e, artifact = "Artifact" in e.types)
+        }
+
+        /** Whether the deck has something on the battlefield that pays for -1/-1 counters or deaths. */
+        fun minusWorth() = board.any { it.card?.let { c -> c.minusPayoff || c.minusDeathSpread || c.minusDeathDraw || c.deathDrains.isNotEmpty() } == true }
+
+        /**
+         * The creature of ours that takes [n] -1/-1 counters (blight, Channeler Initiate): one that lives and loses least
+         * power (the commander last), else a token, which dies; for a "you may" ([may]) only when there's a payoff.
+         */
+        fun minusOwnTarget(n: Int, may: Boolean): Entry? {
+            if (may && !minusWorth()) return null
+            fun lost(e: Entry) = minOf(n, (e.power + e.counters).coerceAtLeast(0)) * (if (e.card in leaders) 3 else 1)
+            return board.filter { it.creature && it.toughness + it.counters > n }.minByOrNull { lost(it) * 10 - it.toughness }
+                ?: board.filter { it.creature && it.token }.minByOrNull { it.power + it.counters }
+                ?: if (may) null else board.filter { it.creature && it.card !in leaders }.minByOrNull { it.power + it.counters }
+        }
+
+        /** "Put a -1/-1 counter on target creature": an opponent's, else ours when that pays. */
+        fun minusTarget(n: Int) {
+            if (opponentCreature) minus(null, n) else minusOwnTarget(n, may = true)?.let { minus(it, n) }
+        }
+
+        /** Amass: +1/+1 counters on our Army, made first as a 0/0 Zombie Army token. */
+        fun amass(n: Int) {
+            val army = board.firstOrNull { it.creature && it.isA("army") } ?: token(0, TokenKind(0, CREATURE_TOKEN, setOf("Zombie", "Army"), toughness = 0))
+            addCounters(army, n)
+        }
+
+        /** What a creature is worth keeping, against what its death sets off. */
+        fun keepWorth(e: Entry): Int = (e.power + e.counters).coerceAtLeast(0) + 2 * e.gear.size + (e.card?.let { c ->
+            if (c.deathDrains.isNotEmpty() || c.minusPayoff || c.freeSac != null || c.castTriggers.isNotEmpty() || c.enterTriggers.isNotEmpty() ||
+                c.lords.isNotEmpty() || c.anthem > 0 || c.taps.isNotEmpty() || c.eachTurn.any || c.tokensTurn + c.drawTurn + c.drainTurn > 0 || c.kindTriggers.isNotEmpty()
+            ) 5 else 0
+        } ?: 0)
+
+        /** The life [e]'s death costs each opponent ([each]) or one, and the cards it draws, by the cards on the battlefield. */
+        fun deathDrains(e: Entry, each: Boolean?): Int = board.sumOf { b ->
+            b.card?.deathDrains?.sumOf { d ->
+                val fires = !(b === e && d.another && !d.self) && !(d.nontoken && e.token) && (d.kind == null || e.isA(d.kind))
+                when {
+                    !fires -> 0
+                    each == null -> 2 * d.draw
+                    d.each == each -> d.amount
+                    else -> 0
+                }
+            } ?: 0
+        }
+
+        /**
+         * Free sacrifice outlets (Ashnod's Altar, Carrion Feeder, Yawgmoth) after combat (since 1.64): a creature goes when
+         * what its death sets off (drains, cards, the outlet's own effect) is worth more than keeping it, or all of them
+         * when their drains finish the opponents.
+         */
+        fun sacrificeForDeaths() {
+            repeat(30) {
+                val outlet = board.firstOrNull { it.card?.freeSac != null } ?: return
+                val a = outlet.card!!.freeSac!!
+                val alive = life.count { it > 0 }
+                if (alive == 0) return
+                val candidates = board.filter { it.creature && it !== outlet && it.card !in leaders && it.on == null }
+                if (candidates.isEmpty()) return
+                val outletWorth = 2 * a.draw + a.treasures + a.selfCounters + (if (a.minusTarget > 0 && f.minusPayoffs) 3 else 0)
+                fun deathWorth(e: Entry) = alive * deathDrains(e, true) + deathDrains(e, false) + deathDrains(e, null) + outletWorth +
+                    (if (e.minus > 0) 2 * board.count { it.card?.minusDeathDraw == true || it.card?.minusDeathSpread == true } else 0)
+                val finish = candidates.sumOf { deathDrains(it, true) } >= (life.filter { it > 0 }.maxOrNull() ?: 0)
+                val (pick, gain) = candidates.map { it to deathWorth(it) - keepWorth(it) }.maxByOrNull { it.second } ?: return
+                if (gain <= 0 && !finish) return
+                died(pick)
+                use(a, outlet)
+            }
+        }
+
+        /** Sunbird's Invocation: the best spell with mana value [x] or less among the top [x] cards, cast for free; the rest go to the bottom. */
+        fun sunbird(x: Int) {
+            if (x <= 0 || cascading > 6) return
+            val end = minOf(rest.size, drawn + x)
+            val i = (drawn until end).filter { !rest[it].land && rest[it].manaValue <= x && useful(rest[it], spellTriggers, creatureTriggers, fodder) }
+                .maxByOrNull { rest[it].manaValue }
+            val hit = i?.let { rest[it] }
+            val revealed = (drawn until end).filter { it != i }.map { rest[it] }
+            repeat(end - drawn) { rest.removeAt(drawn) }
+            rest += revealed
+            if (hit != null) {
+                cascading++
+                cast(hit).let { overrun += it }
+                cascading--
+            }
+        }
+
+        /** Approach of the Second Sun was cast (it went back into the library seventh from the top). */
+        var approached = false
+
+        /** A ritual's mana: Mana Geyser's from half the opponents' lands (since 1.64). */
+        fun ritualOf(r: WinCard): List<Pair<Set<Char>, Int>> =
+            if (r.ritualOppLands) listOf(r.ritual.first().first to life.count { it > 0 } * (turn - 1) / 2) else r.ritual
 
         /** What a proliferate is worth now, to pick abilities and spells (since 1.63). */
         fun proliferateWorth() = board.count { it.card?.planeswalker == true } + board.count { it.creature && it.counters > 0 } +
@@ -2821,6 +3125,7 @@ object WinOddsCalc {
         }
 
         fun cast(c: WinCard, free: Boolean = false, x: Int = 0, fromGraveyard: Boolean = false, copy: Boolean = false): Int {
+            val fromHand = !copy && !fromGraveyard && c !in command && c in hand
             if (!copy && !command.remove(c)) if (!hand.remove(c) && fromGraveyard) leftGraveyard(listOf(c))
             landDrops += c.extraLands + c.extraLandsNow
             if (!free) for (b in board) b.card?.castTriggers?.forEach { t ->
@@ -2841,6 +3146,17 @@ object WinOddsCalc {
                 if (cascades > 0 && f.cascade) graveyard.filter { it.cascadeReturn }.takeIf { it.isNotEmpty() }?.let { back -> leftGraveyard(back); hand += back }
                 if (f.cascade && c.creature) for (b in board.toList()) if (b.card != null && b.card.discoverPower in 1..c.power) reveal(c.manaValue + x)
                 repeat(cascades) { reveal(c.manaValue + x - 1) }
+                // Sunbird's Invocation (since 1.64).
+                if (f.sunbird && fromHand) repeat(board.count { it.card?.sunbird == true }) { sunbird(c.manaValue + x) }
+            }
+            // Approach of the Second Sun (since 1.64): the second one cast from the hand wins; the first goes back into
+            // the library seventh from the top.
+            if (c.approach && !copy) {
+                if (approached && fromHand) life.fill(0) else {
+                    approached = true
+                    rest.add(minOf(drawn + 6, rest.size), c)
+                }
+                return 0
             }
             // In a Maze's End deck, Gate searches bring real Gates (since 1.54).
             if (mazeDeck) {
@@ -2953,6 +3269,7 @@ object WinOddsCalc {
             if (card.overrunPerCreature) overrun += board.count { it.creature }
             use(card.onEnter, e)
             if (card.newCounters > 0) board.filter { it.creature && it.turn == turn }.forEach { addCounters(it, card.newCounters) }
+            if (card.entersMinus > 0) minus(e, card.entersMinus)
             if (card.discover > 0) reveal(card.discover)
             entering--
             return e
@@ -3194,8 +3511,8 @@ object WinOddsCalc {
                 }
                 if (f.graveyardCasts) pool = fromGraveyard(pool)
                 // With spell triggers, rituals left are cast for them; their mana goes on to what follows (since 1.62).
-                if (f.rituals && spellTriggers) for (r in hand.filter { it.ritual.isNotEmpty() && it.ritualMana >= it.manaValue }.toList()) {
-                    pool = (spend(pool, costOf(r), r.manaValue) ?: continue) + r.ritual
+                if (f.rituals && spellTriggers) for (r in hand.filter { it.ritual.isNotEmpty() && ritualOf(it).sumOf { m -> m.second } >= it.manaValue }.toList()) {
+                    pool = (spend(pool, costOf(r), r.manaValue) ?: continue) + ritualOf(r)
                     cast(r)
                 }
                 pool = extraLands(pool)
@@ -3388,6 +3705,7 @@ object WinOddsCalc {
                     if (tokensThisTurn) draw(live.count { it.card?.endDrawIfToken == true })
                     if (live.any { it.card?.monarch == true }) draw(1)
                 }
+                if (f.freeSac) sacrificeForDeaths()
                 if (life.all { it <= 0 }) return t
                 // The opponents' turns: their draw steps with Howling Mine and the like, and what that sets off.
                 if (t < turns) opponentTurns()
@@ -3698,6 +4016,20 @@ object WinOddsCalc {
                 if ((e.creature || artifact) && b !== e) each(c.dieDrain, 3)
             }
             e.card?.leavesToken?.takeIf { it > 0 }?.let { token(it) }
+            // A creature dying (since 1.64): Blood Artist and the like, its own "this creature or another"; one with a -1/-1
+            // counter: Blowfly Infestation, The Scorpion God.
+            if (f.deaths && e.creature) {
+                if (life.any { it > 0 }) {
+                    each(deathDrains(e, true), 3)
+                    one(deathDrains(e, false), 3)
+                    draw(deathDrains(e, null) / 2)
+                    e.card?.deathDrains?.forEach { d -> if (d.self || !d.another) { if (d.each) each(d.amount, 3) else one(d.amount, 3); draw(d.draw) } }
+                }
+                if (e.minus > 0) for (b in board.toList()) b.card?.let { c ->
+                    if (c.minusDeathDraw) draw(1)
+                    if (c.minusDeathSpread) minusTarget(1)
+                }
+            }
             if (!e.token) e.self?.let { if (it in leaders) command += it else graveyard += it }
         }
 
@@ -3719,12 +4051,13 @@ object WinOddsCalc {
          * ritual's added, or null when no ritual does it. Since 1.62.
          */
         fun ritualFor(pool: List<Pair<Set<Char>, Int>>, c: WinCard): List<Pair<Set<Char>, Int>>? {
-            for (r in hand.filter { it.ritual.isNotEmpty() && it !== c && it.ritualMana > it.manaValue }.sortedBy { it.manaValue }) {
+            for (r in hand.filter { it.ritual.isNotEmpty() && it !== c && ritualOf(it).sumOf { m -> m.second } > it.manaValue }.sortedBy { it.manaValue }) {
+                val mana = ritualOf(r)
                 val test = ManaOddsCalc.pay(potential(pool), costOf(r)) ?: continue
-                if (ManaOddsCalc.pay(test + r.ritual, costOf(c)) == null) continue
+                if (ManaOddsCalc.pay(test + mana, costOf(c)) == null) continue
                 val left = spend(pool, costOf(r), r.manaValue) ?: continue
                 cast(r)
-                return left + r.ritual
+                return left + mana
             }
             return null
         }

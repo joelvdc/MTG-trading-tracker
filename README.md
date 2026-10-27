@@ -227,6 +227,19 @@ them (they stay open or folded for every deck).
   - **proliferate** (Vraska, Evolution Sage, Contagion Clasp, Grim Affliction…): a loyalty counter on each
     planeswalker, a +1/+1 counter on each creature with counters, a poison counter on each poisoned opponent;
     **ten poison counters** knock a player out.
+  Since 1.64 also:
+  - **creatures dying**: "whenever a creature (you control) dies" drains and draws (Blood Artist, The Meathook
+    Massacre, Midnight Reaper; before, a death draw counted as a card every turn), and **free sacrifice outlets**
+    (Ashnod's Altar, Carrion Feeder, Warren Soultrader, Yawgmoth) used after combat when the deaths are worth more
+    than the creatures, or finish the opponents;
+  - **-1/-1 counters**: blight and "target creature you control" (Channeler Initiate), each creature (Harbinger of
+    Night, Soul Snuffers), creatures entering with them, and on a target creature: an opponent's from turn 4 (as for
+    the combos). Creatures have toughness and can die to them. Payoffs: Nest of Scarabs, Hapatra, Obelisk Spider,
+    Flourishing Defenses, Auntie Ool (a card for our creatures, 1 life for theirs; before, a card every turn), Blowfly
+    Infestation, The Scorpion God; **All Will Be One** deals damage for every counter put;
+  - **Animate Dead** (before, read as an aura), "for each Shrine you control" in tap abilities, **amass** (Dreadhorde
+    Invasion), **Mana Geyser** (half the opponents' lands taken as tapped), **Sunbird's Invocation**, and **Approach
+    of the Second Sun** (the second one cast from the hand wins).
   Under the table: where the damage came from (combat, commander damage,
   triggers, drain), how often a combo or Maze's End won, and how often commander damage knocked a player out. Decks
   that don't win 4 in 10 games by turn 15 show **T15+** with a note: their damage likely comes from what the app can't

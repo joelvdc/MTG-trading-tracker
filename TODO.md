@@ -114,6 +114,31 @@ Open questions:
 
 ## Done
 
+### Win turn: deaths, sacrifice outlets, -1/-1 counters (MTG Trader 1.64)
+*Asked 2026-10-27: the owner had GLM 5.3 review the simulator and asked whether to act on it. Plan agreed and green
+light the same day.*
+
+Released in MTG Trader 1.64 (2026-10-28), `WinOddsCalc.VERSION` 9:
+- The review's points checked against the code first: Animate Dead (read as gear; Necromancy was already fine), death
+  drains (only `dieDrain`'s wording; `deathPayoff` only in combo loops), -1/-1 counters (nothing), Mana Geyser (the
+  review said "untapped", the card says **tapped**), Sunbird's Invocation, Approach, Dreadhorde Invasion: all real.
+  Not real: the Go-Shintai cycle was already read per Shrine (`Scaled`); the general gap was `{2}, {T}: … loses 1 life
+  for each X you control` read as 1 (now `Ability.drainPer`). Vial Smasher casting everything: left as is (plan item 6).
+- Found while checking: "whenever … dies, draw a card" (Midnight Reaper, Grim Haruspex, Liliana) and Auntie Ool's
+  draw counted as `drawTurn` (a card every turn). Now `DeathDrain.draw` and `minusDraw`.
+- New: `DeathDrain` (read in `read64`), `freeSac` outlets used by `sacrificeForDeaths` after combat (deaths worth more
+  than `keepWorth`, or the drains finish everyone), Entry `toughness`/`minus`, `minus()` with payoffs, `died()`,
+  `minusOwnTarget` (survivor losing least power, else a token; a "you may" blight only with a payoff out),
+  `minusTarget` (an opponent's creature from turn 4), `countersPut` (All Will Be One), `amass`, `sunbird`, Approach
+  (`approached`, back 7th from the top), Mana Geyser (`ritualOf`: alive opponents × (turn − 1) / 2). Sweepers that put
+  counters on each creature (Black Sun's Zenith, Darkness Descends) aren't cast.
+- The owner's 19 "Ready to Play" decks, 2,000 games each without combos, 1.63 → 1.64: Council of Four T11 → T10
+  (Approach); Smasher LCP, Baba, Poly Jace a few points sooner; Auntie Plague by T11 64% → 48% and Cult of Athreos by
+  T10 31% → 23%, but against 1.63 without the every-turn draws (Ool; Reaper, Haruspex, Erebos, Hunter, Tallyman,
+  Liliana) they're faster (Auntie Plague by T11 41% → 48%, Cult 21% → 23% by T10). The rest within 2 points.
+- Not counted still: combat deaths (no blockers), opponents' creatures dying, wither/infect, persist, "each opponent
+  blights", Sephiroth's sacrifices, Kardur, sac outlets costing mana (Erebos), Ashnod's Altar's mana.
+
 ### Win turn: battles, planeswalker ultimates, proliferate and poison (MTG Trader 1.63)
 *Asked 2026-10-27, after 1.62: "Ruby deck has a battle, which is a tutor and can get a strong creature for example. For
 planeswalkers, proliferate is quite important even though my decks do not really play that, and ultimates can end the
