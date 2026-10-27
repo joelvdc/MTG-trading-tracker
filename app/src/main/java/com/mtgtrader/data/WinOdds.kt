@@ -151,6 +151,11 @@ data class WinCounted(
  * - extra land drops (Azusa, Exploration, Explore), and a fetch land setting off landfall twice;
  * - "choose one" and "choose two" read as the best modes only (before, every mode added up); spell // land cards cast
  *   as the spell once the deck has lands enough.
+ * Since 1.63 also:
+ * - battles: what a Siege does when it enters (Invasion of Zendikar's two lands; Invasion of Ikoria's creature with mana
+ *   value X or less, X the mana left); they're never attacked to flip them;
+ * - planeswalker ultimates when they do something here (Elspeth's emblem, Lord Windgrace's Cats, Vraska's poison);
+ * - proliferate: loyalty, +1/+1 counters and poison counters; ten poison counters knock a player out.
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -163,8 +168,9 @@ object WinOddsCalc {
      * 3: counting Shrines and Gates, Maze's End, sacrifice decks and X spells (1.54). 4: ramp, Treasures, pumps, the
      * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56). 6: sacrifice payoffs,
      * populate, tokens one by one, ascend, Urza (1.61). 7: trigger timing, rituals, land drops, modes, spell // land (1.62).
+     * 8: battles, planeswalker ultimates, proliferate and poison (1.63).
      */
-    const val VERSION = 7
+    const val VERSION = 8
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -176,6 +182,8 @@ object WinOddsCalc {
     const val ALL = 99
     private const val MAX_COMBAT_DRAW = 10
     /** Cost reducers for spells cast from anywhere other than the hand, and from the graveyard (since 1.62). */
+    /** Poison counters that knock a player out (since 1.63). */
+    private const val POISON = 10
     private const val NOT_FROM_HAND = "\u0000not from hand"
     private const val FROM_GRAVEYARD = "\u0000graveyard"
 
@@ -447,6 +455,10 @@ object WinOddsCalc {
     private val ritualAny = Regex("^add (two|three|four|five) mana (?:of any one color|in any combination of colors)", I)
     private val extraLandText = Regex("you may play (an|two|three) additional lands? (on each of your turns|this turn)", I)
     private val landManaPer = Regex("^(?:((?:\\{\\d+\\})+), )?\\{t\\}: add \\{([wubrgc])\\} for each ([a-z]+?)s? (?:you control|on the battlefield)", I)
+    private val proliferateText = Regex("\\bproliferate(?: (twice))?\\b", I)
+    private val xCreatureText = Regex(
+        "search your library( and/or graveyard)? for an? ((?:non-?)?[a-z]+ )?creature card with mana value x or less and put it onto the battlefield", I,
+    )
     private val modeHeader = Regex("(?:^|, )choose (one|two) —$", I)
     private val secondMain = Regex("^at the beginning of your second main phase, (if you attacked this turn, )?(.*)$", I)
     private val eachUpkeepLine = Regex("^at the beginning of each upkeep, (.*)$", I)
@@ -594,6 +606,13 @@ object WinOddsCalc {
         var copyArtifact = false
         /** Populate: a copy of a creature token (Nesting Dovehawk). */
         var populate = 0
+        // Since 1.63.
+        /** Proliferate (twice: 2); poison counters to one opponent, or up to [poisonTo] (Vraska's −9). */
+        var proliferate = 0
+        var poison = 0
+        var poisonTo = 0
+        /** An emblem: creatures you control get +N/+N for the rest of the game (Elspeth, Sun's Champion's −7). */
+        var emblemAnthem = 0
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
         val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
@@ -604,7 +623,8 @@ object WinOddsCalc {
         private fun anything() = draw + drainEach + drainOne + tokens + artifacts + treasures + selfPump + teamPump + landRamp + sacrificeForToken > 0 ||
                 graveyard || copying || doubleStrikeFor != null || drawPerEquipped || toBottom > 0 || made.isNotEmpty() ||
                 selfCounters + countersAll + countersTarget + countersHit + eachPlayerDraws + oppDraws > 0 || doubleCounters || tokensPer != null ||
-                drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0
+                drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0 ||
+                proliferate + poison + poisonTo + emblemAnthem > 0
     }
 
     /** What a card does in the game, read once per card from its type, power and rules text. */
@@ -877,6 +897,15 @@ object WinOddsCalc {
         var manaPerCost = 0
         /** A spell // land card's spell face (Malakir Rebirth), cast instead once the deck has lands enough. */
         var spellSide: WinCard? = null
+        // Since 1.63.
+        /** Proliferate for each land entering (Evolution Sage). */
+        var landfallProliferate = 0
+        /**
+         * A Siege putting a creature card with mana value X or less onto the battlefield (Invasion of Ikoria): the kind
+         * ("" for any creature, "non-human"), and whether it can come from the graveyard too.
+         */
+        var xCreature: String? = null
+        var xCreatureGraveyard = false
         /** Mirkwood Bats, Marionette Master and Apprentice: sacrificing artifacts or tokens drains (since 1.61). */
         val sacrificePayoff get() = artifactDrain || dieDrain > 0 || tokenDrain > 0
 
@@ -1041,6 +1070,11 @@ object WinOddsCalc {
             ritualAny.find(line)?.let { m -> w.ritual = listOf(own.ifEmpty { setOf('C') } to number(m.groupValues[1])) }
             if (w.ritual.isNotEmpty()) break
         }
+        // Since 1.63: Invasion of Ikoria.
+        xCreatureText.find(text)?.let { m ->
+            w.xCreature = m.groupValues[2].trim().lowercase()
+            w.xCreatureGraveyard = m.groupValues[1].isNotEmpty()
+        }
         extraLandText.find(text)?.let { m ->
             val n = number(m.groupValues[1])
             if ("each of your turns" in m.groupValues[2].lowercase()) w.extraLands = n else w.extraLandsNow = n
@@ -1079,7 +1113,7 @@ object WinOddsCalc {
         (if (w.mana.kind == ManaOddsCalc.Kind.RAMP) 2 else 0) + w.ritualMana + 2 * (w.extraLands + w.extraLandsNow) +
         w.abilities().sumOf { a ->
             2 * a.draw + 3 * a.drainEach + a.drainOne + a.tokens * maxOf(1, a.token?.power ?: 1) + a.treasures + a.artifacts +
-                4 * a.reanimate.coerceAtMost(3) + 4 * a.copies + 3 * a.flicker + 2 * a.toHand + 2 * a.landRamp + a.made.values.sum()
+                4 * a.reanimate.coerceAtMost(3) + 4 * a.copies + 3 * a.flicker + 2 * a.toHand + 2 * a.landRamp + a.made.values.sum() + a.proliferate
         }
 
     private val leavesTokenText = Regex("when (?:this \\w+|[^,.]+) is put into a graveyard from the battlefield, create (?:a|an) (?:tapped )?(\\d+)/\\d+")
@@ -1303,6 +1337,11 @@ object WinOddsCalc {
         if ("only once each turn" in low) a.oncePerTurn = true
         if ("there is an additional combat phase" in low) a.extraCombat = true
         artifactToken.findAll(low).forEach { m -> if (m.groupValues[2] != "treasure") a.made[m.groupValues[2]] = (a.made[m.groupValues[2]] ?: 0) + number(m.groupValues[1]) }
+        // Since 1.63: proliferate (the first mention: "proliferate twice. (to proliferate, …)" is two), poison, emblems.
+        proliferateText.find(low)?.let { a.proliferate += if (it.groupValues[1].isNotEmpty()) 2 else 1 }
+        if (Regex("fewer than nine poison counters, they get a number of poison counters equal to the difference").containsMatchIn(low)) a.poisonTo = 9
+        Regex("(?:target player|target opponent|each opponent) gets? (\\w+) poison counters?").find(low)?.let { a.poison += number(it.groupValues[1]) }
+        Regex("you get an emblem with \"creatures you control get \\+(\\d+)/\\+\\d+").find(low)?.let { a.emblemAnthem = it.groupValues[1].toInt() }
         if (!full) return
         val eachPlayer = Regex("each player (?:may )?draws? a card").containsMatchIn(low)
         if (eachPlayer) a.eachPlayerDraws = 1
@@ -1362,7 +1401,7 @@ object WinOddsCalc {
             val cost = m.groupValues[2].toInt() * if (m.groupValues[1] == "+" || m.groupValues[1].isEmpty() && m.groupValues[2] == "0") 1 else -1
             val a = Ability()
             readAbility(a, m.groupValues[3], w, full = true)
-            if (cost <= -6 && a.doubleStrikeFor == null) return
+            // Ultimates are kept since 1.63 (used when they do something here and the loyalty is there).
             w.loyalties += cost to a
             return
         }
@@ -1433,8 +1472,10 @@ object WinOddsCalc {
                 o != null -> number(o.groupValues[1].ifEmpty { o.groupValues[2] }).takeIf { it > 0 }?.let { w.enterTriggers += EnterTrigger(land, "another" in head, false, it, nontoken) }
                 !land && powerDamage.containsMatchIn(line) -> w.enterTriggers += EnterTrigger(false, "another" in head, "each opponent" in low, POWER, nontoken)
             }
-            // Landfall tokens (Omnath, Locus of Rage) and counters (Avenger of Zendikar's Plants), since 1.55.
+            // Landfall tokens (Omnath, Locus of Rage) and counters (Avenger of Zendikar's Plants), since 1.55; proliferate
+            // (Evolution Sage) since 1.63.
             if (land) {
+                if (proliferateText.containsMatchIn(low)) w.landfallProliferate += 1
                 create.find(line)?.let { m ->
                     w.landfallTokens += number(m.groupValues[1])
                     w.landfallToken = tokenKind(line.substring(m.range.first))
@@ -1678,6 +1719,7 @@ object WinOddsCalc {
                 if (a.tokens > 0) { w.tokensOnce += a.tokens * maxOf(1, a.token?.power ?: 1); w.tokensOnceCount += a.tokens; if (w.token == null) w.token = a.token }
                 a.made.forEach { (k, n) -> w.madeOnce[k] = (w.madeOnce[k] ?: 0) + n; w.artifactsOnce += n }
                 if (a.treasures > 0) { w.madeOnce["treasure"] = (w.madeOnce["treasure"] ?: 0) + a.treasures; w.artifactsOnce += a.treasures; w.treasuresOnce += a.treasures }
+                w.onEnter.proliferate += a.proliferate
             }
             return true
         }
@@ -1743,7 +1785,7 @@ object WinOddsCalc {
      */
     private fun useful(c: WinCard, spellTriggers: Boolean, creatureTriggers: Boolean, fodder: Boolean): Boolean = when {
         // Rituals are cast when their mana pays for something more (since 1.62).
-        c.land || c.pumpSpell || c.xEach || c.xTokens > 0 || c.ritual.isNotEmpty() -> false
+        c.land || c.pumpSpell || c.xEach || c.xTokens > 0 || c.ritual.isNotEmpty() || c.xCreature != null -> false
         // An instant or sorcery that's a combo piece waits for the rest of the combo.
         c.combo && !c.permanent -> false
         spellTriggers -> true
@@ -2015,6 +2057,9 @@ object WinOddsCalc {
         /** Since 1.62. */
         val rituals = cards.any { it.ritual.isNotEmpty() }
         val spellLands = cards.any { it.spellSide != null }
+        /** Since 1.63. */
+        val xCreature = cards.any { it.xCreature != null }
+        val proliferate = cards.any { c -> c.landfallProliferate > 0 || c.abilities().any { it.proliferate > 0 } }
     }
 
     /** One game, played alone turn by turn. */
@@ -2030,6 +2075,9 @@ object WinOddsCalc {
         val sources = ArrayList<Source>()
         val board = ArrayList<Entry>()
         val life = IntArray(OPPONENTS) { LIFE }
+        /** Poison counters on each opponent, and the +N/+N an emblem gives our creatures (since 1.63). */
+        val poison = IntArray(OPPONENTS)
+        var emblemAnthem = 0
         val commanderDamage = Array(leaders.size) { IntArray(OPPONENTS) }
         val dealt = LongArray(SOURCES.size)
         var drawn = 0
@@ -2317,6 +2365,7 @@ object WinOddsCalc {
                 makeAll(c.madeLandfall)
                 repeat(c.landfallTokens) { token(c.landfallToken?.power ?: 1, c.landfallToken) }
                 c.landfallCounters?.let { k -> board.filter { it.creature && it.isA(k) }.forEach { addCounters(it, 1) } }
+                proliferate(c.landfallProliferate)
             }
         }
 
@@ -2464,7 +2513,8 @@ object WinOddsCalc {
                 a.copies > 0 && board.any { e -> e.creature && e.card?.let { worth(it) >= 4 } == true } ||
                 a.polymorph > 0 && board.count { it.creature && it.token } >= (if (a.polymorph == ALL) 2 else 1) ||
                 a.toHand > 0 && graveyard.any { toHandOk(it, a.toHandKind) } ||
-                a.lootDraw + a.mill + a.surveil > 0 || a.sacrificeForToken > 0
+                a.lootDraw + a.mill + a.surveil > 0 || a.sacrificeForToken > 0 ||
+                a.proliferate > 0 && proliferateWorth() > 0 || a.poison + a.poisonTo + a.emblemAnthem > 0
         }
 
         fun toHandOk(c: WinCard, kind: String?) = when (kind) {
@@ -2679,8 +2729,46 @@ object WinOddsCalc {
                 }
             }
             a.doubleStrikeFor?.let { doubleFor += it }
+            // Since 1.63: poison onto the opponent with the most life (Vraska's −9), emblems, proliferate.
+            if (a.poison + a.poisonTo > 0) life.indices.filter { life[it] > 0 && poison[it] < POISON }.maxByOrNull { life[it] }?.let { i ->
+                poison[i] = maxOf(poison[i] + a.poison, a.poisonTo)
+                if (poison[i] >= POISON) life[i] = 0
+            }
+            emblemAnthem += a.emblemAnthem
+            proliferate(a.proliferate)
             if (a.sacrificeForToken > 0) sacrificeWorst()?.let { token(a.sacrificeForToken, TokenKind(a.sacrificeForToken, CREATURE_TOKEN, setOf("Dragon"), flying = true)) }
             if (a.teamPump > 0) overrun += a.teamPump
+        }
+
+        /**
+         * Proliferate [n] times (since 1.63): a loyalty counter on each planeswalker, a +1/+1 counter on each creature
+         * that has some, and a poison counter on each opponent who has some (ten knock them out).
+         */
+        fun proliferate(n: Int) = repeat(n) {
+            board.filter { it.card?.planeswalker == true }.forEach { it.loyalty++ }
+            board.filter { it.creature && it.counters > 0 }.forEach { addCounters(it, 1) }
+            for (i in life.indices) if (life[i] > 0 && poison[i] > 0) {
+                poison[i]++
+                if (poison[i] >= POISON) life[i] = 0
+            }
+        }
+
+        /** What a proliferate is worth now, to pick abilities and spells (since 1.63). */
+        fun proliferateWorth() = board.count { it.card?.planeswalker == true } + board.count { it.creature && it.counters > 0 } +
+            6 * life.indices.count { life[it] > 0 && poison[it] > 0 }
+
+        /**
+         * Invasion of Ikoria (since 1.63): the creature worth most with mana value [x] or less, from the library (and the
+         * graveyard when the card says so), of the kind it asks for ("non-human").
+         */
+        fun xCreatureTarget(c: WinCard, x: Int): WinCard? {
+            val kind = c.xCreature ?: return null
+            fun ok(t: WinCard) = t.creature && t.manaValue <= x && when {
+                kind.isEmpty() -> true
+                kind.startsWith("non") -> !t.isKind(kind.removePrefix("non").removePrefix("-"))
+                else -> t.isKind(kind)
+            }
+            return ((drawn until rest.size).map { rest[it] } + (if (c.xCreatureGraveyard) graveyard else emptyList())).filter(::ok).maxByOrNull { worth(it) }
         }
 
         /** Exiles and returns the nontoken creature worth most on entering: its enter effects happen again. */
@@ -2949,7 +3037,7 @@ object WinOddsCalc {
                 }
                 double = double || g.grantsDouble
             }
-            return base + plus + lordBonus(b) to double
+            return base + plus + lordBonus(b) + emblemAnthem to double
         }
 
         /** What the lords on the battlefield give this creature (since 1.55). */
@@ -3111,6 +3199,17 @@ object WinOddsCalc {
                     cast(r)
                 }
                 pool = extraLands(pool)
+                // A Siege bringing out a creature with mana value X or less, X the mana left (Invasion of Ikoria; since 1.63).
+                if (f.xCreature) hand.firstOrNull { it.xCreature != null }?.let { c ->
+                    val left = ManaOddsCalc.pay(pool + treasurePool(), costOf(c)) ?: return@let
+                    val x = left.sumOf { it.second }
+                    val found = xCreatureTarget(c, x)?.takeIf { worth(it) >= 4 } ?: return@let
+                    board.filter { manaToken(it) }.forEach { board.remove(it); left(it, artifact = true) }
+                    cast(c, x = x)
+                    pool = emptyList()
+                    if (found in graveyard) leftGraveyard(listOf(found)) else rest.removeAt((drawn until rest.size).first { rest[it] === found })
+                    enter(found, cheated = true)
+                }
                 // What's left of the mana goes into an X spell (since 1.54), or one making tokens (since 1.55).
                 for (tokens in if (f.xTokens) listOf(false, true) else listOf(false)) xSpell(pool, tokens)?.takeIf { it.second >= (if (tokens) 2 else 3) }?.let { (c, x) ->
                     board.filter { manaToken(it) }.forEach { board.remove(it); left(it, artifact = true) }
@@ -3399,7 +3498,8 @@ object WinOddsCalc {
             for (pw in board.filter { it.card?.planeswalker == true && it.card.loyalties.isNotEmpty() }.toList()) {
                 val options = pw.card!!.loyalties.filter { (cost, a) -> pw.loyalty + cost >= 0 && abilityReady(a, pw) }
                 val plus = options.filter { it.first >= 0 }.maxByOrNull { value(it.second) }
-                val minus = options.filter { it.first < 0 && (pw.loyalty + it.first > 0 || it.second.doubleStrikeFor != null) }.maxByOrNull { value(it.second) }
+                // An ultimate (−6 or more) may use the last loyalty (since 1.63).
+                val minus = options.filter { it.first < 0 && (pw.loyalty + it.first > 0 || it.second.doubleStrikeFor != null || it.first <= -6) }.maxByOrNull { value(it.second) }
                 val pick = if (minus != null && (plus == null || value(minus.second) >= value(plus.second) + 3)) minus else plus ?: continue
                 pw.loyalty += pick.first
                 use(pick.second, pw)
@@ -3431,7 +3531,10 @@ object WinOddsCalc {
             (if (a.doubleStrikeFor != null) board.filter { it.creature && it.isA(a.doubleStrikeFor!!) }.sumOf { gearPower(it).first } else 0) +
             (if (a.sacrificeForToken > 0) a.sacrificeForToken - 1 else 0) + a.exileGraveyard * (if (board.any { it.card?.leaveToken != null }) 2 else 0) +
             (if (a.copyArtifact) 2 + (board.filter { it.card != null && it.isA("artifact") }.maxOfOrNull { artifactCopyWorth(it.card!!) } ?: 0) else 0) +
-            a.populate * 2
+            a.populate * 2 +
+            // Since 1.63: proliferate, poison (a sure knockout with proliferate to follow), an emblem for every creature.
+            a.proliferate * proliferateWorth() + (if (a.poison + a.poisonTo > 0) (if (f.proliferate) 15 else 3) else 0) +
+            a.emblemAnthem * 2 * board.count { it.creature }
 
         /**
          * Tap abilities and abilities paid with mana (since 1.55): each permanent uses its best one when it pays; a

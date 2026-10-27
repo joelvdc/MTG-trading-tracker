@@ -219,6 +219,14 @@ them (they stay open or folded for every deck).
   - **modes**: "choose one" and "choose two" count only the best modes (before, all of them added up); "choose one or
     more" still counts them all; spell // land cards (Malakir Rebirth) are played as lands, and cast as the spell once
     there are three lands out and five counting the hand.
+  Since 1.63 also:
+  - **battles**: what a Siege does when it enters (Invasion of Zendikar's two lands, Invasion of Ikoria's non-Human
+    creature with mana value X or less, X the mana left); battles aren't attacked to flip them;
+  - **planeswalker ultimates** when they have the loyalty and do something here (Elspeth's +2/+2 emblem, Lord
+    Windgrace's six Cat Warriors, Vraska's poison); ultimates that only remove opponents' creatures aren't used;
+  - **proliferate** (Vraska, Evolution Sage, Contagion Clasp, Grim Affliction…): a loyalty counter on each
+    planeswalker, a +1/+1 counter on each creature with counters, a poison counter on each poisoned opponent;
+    **ten poison counters** knock a player out.
   Under the table: where the damage came from (combat, commander damage,
   triggers, drain), how often a combo or Maze's End won, and how often commander damage knocked a player out. Decks
   that don't win 4 in 10 games by turn 15 show **T15+** with a note: their damage likely comes from what the app can't

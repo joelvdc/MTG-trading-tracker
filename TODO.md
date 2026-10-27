@@ -114,6 +114,28 @@ Open questions:
 
 ## Done
 
+### Win turn: battles, planeswalker ultimates, proliferate and poison (MTG Trader 1.63)
+*Asked 2026-10-27, after 1.62: "Ruby deck has a battle, which is a tutor and can get a strong creature for example. For
+planeswalkers, proliferate is quite important even though my decks do not really play that, and ultimates can end the
+game, for example in my Quintorius deck." Green light the same day.*
+
+Released in MTG Trader 1.63 (2026-10-27), `WinOddsCalc.VERSION` 8:
+- Battles in the owner's decks: Ruby's Invasion of Zendikar (two basic lands; `ManaOddsCalc.classify` now reads the
+  face a card is cast as, so its creature back no longer makes it a mana creature, and a Siege's land search is RAMP),
+  Baba's Invasion of Ikoria (`xCreature`/`xCreatureGraveyard`, cast with the mana left after the main phase when the
+  creature found is worth 4 or more), Teval's Invasion of Amonkhet (already read). The creature tutor the owner
+  mentioned is Baba's Ikoria; Ruby's battle finds lands. Battles are never attacked to flip them.
+- Ultimates: loyalty abilities of −6 or more are kept (dropped before 1.63) and may use the last loyalty; `emblemAnthem`
+  (Elspeth), Windgrace's tokens, `poisonTo` (Vraska). Ultimates that only remove creatures (Liliana, Aminatou) read as
+  nothing and aren't used. Quintorius's −4 (Spirits double strike) was already counted since 1.55.
+- Proliferate (`Ability.proliferate`, `landfallProliferate`): loyalty, +1/+1 counters, poison; `Game.poison`, ten
+  knock a player out; `proliferateWorth` values it.
+- The owner's 19 "Ready to Play" decks, 4,000 games each without combos, 1.62 → 1.63: the same turn for all; Auntie
+  Plague won by turn 10 in 17% → 22% of games, Poly Jace 25% → 28%, Taranika band 45% → 48%; the rest within 1 point
+  (Ruby's change couldn't be compared this way: the old copy shared the new mana reading).
+- Not counted still: flipping battles, Tezzeret's −6 emblem, Cankerbloom's and High Perfect Morcant's proliferate (a
+  sacrifice or tapping three Elves as the cost), toxic and infect.
+
 ### Win turn: trigger timing, mana, land drops, modes (MTG Trader 1.62)
 *Asked 2026-10-27: a list of simulator gaps to check (turn structure, tokens, equipment and auras, planeswalkers, land
 drops, card value heuristics, missing card types, mana); green light for the fixes the same day.*

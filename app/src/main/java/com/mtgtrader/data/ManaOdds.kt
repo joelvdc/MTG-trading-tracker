@@ -177,21 +177,24 @@ object ManaOddsCalc {
             else ("enters tapped" in faces || "enters the battlefield tapped" in faces) && "unless" !in faces
             return Card(Kind.LAND, colours.ifEmpty { setOf('C') }, tapped, Cost(0, emptyList()), 1)
         }
-        val type = c.typeLine ?: c.types
+        // The face it's cast as (since 1.63: a battle's creature back, Invasion of Zendikar's, isn't a mana creature).
+        val type = (c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types).substringBefore(" // ")
+        val face = text.split(CardInfo.FACE_BREAK).first()
         val produced = c.producedMana.orEmpty().filter { it in own || it == 'C' }.toSet()
-        if (produced.isNotEmpty() && c.cmc <= 4 && tapAdd.containsMatchIn(text) && ("Artifact" in type || "Creature" in type)) {
+        if (produced.isNotEmpty() && c.cmc <= 4 && tapAdd.containsMatchIn(face) && ("Artifact" in type || "Creature" in type)) {
             val creature = "Creature" in type
-            val amount = if (Regex("Add \\{C\\}\\{C\\}").containsMatchIn(text)) 2 else manaAmount(text)
-            return Card(if (creature) Kind.CREATURE else Kind.ROCK, produced, false, cost(c.manaCost), amount, haste = creature && hasteLine.containsMatchIn(text))
+            val amount = if (Regex("Add \\{C\\}\\{C\\}").containsMatchIn(face)) 2 else manaAmount(face)
+            return Card(if (creature) Kind.CREATURE else Kind.ROCK, produced, false, cost(c.manaCost), amount, haste = creature && hasteLine.containsMatchIn(face))
         }
-        if (c.cmc <= 4 && ("Sorcery" in type || "Instant" in type) && rampSearch.containsMatchIn(text)) {
-            val what = rampSearch.find(text)!!.value.lowercase()
+        // A Siege's lands when it enters count as a ramp spell's (since 1.63).
+        if (c.cmc <= 4 && ("Sorcery" in type || "Instant" in type || "Battle" in type) && rampSearch.containsMatchIn(face)) {
+            val what = rampSearch.find(face)!!.value.lowercase()
             val named = BASIC_TYPES.filterKeys { it in what }.values.filter { it in own }.toSet()
             val colours = named.ifEmpty { own }.ifEmpty { setOf('C') }
             // "Put one onto the battlefield tapped and the other into your hand" (Cultivate); else up to two lands.
             val split = "put one onto the battlefield" in what
-            val lands = if (!split && rampSearch.find(text)!!.groupValues[2].lowercase() == "two") 2 else 1
-            return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in text.lowercase(), cost(c.manaCost), lands, toHand = split)
+            val lands = if (!split && rampSearch.find(face)!!.groupValues[2].lowercase() == "two") 2 else 1
+            return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in face.lowercase(), cost(c.manaCost), lands, toHand = split)
         }
         return Card(Kind.SPELL, emptySet(), false, Cost(0, emptyList()), 0)
     }
