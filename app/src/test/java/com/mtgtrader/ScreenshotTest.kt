@@ -18,6 +18,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import androidx.compose.ui.graphics.asImageBitmap
 import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardRef
@@ -1207,5 +1208,83 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_games.png", roborazziOptions = screenshotOptions)
+    }
+
+    // 1.65: the cards as an A4 PDF to print and cut (Magic card size), the choices and the preview.
+    private fun printDeck(id: Long, name: String, cmd: String, colours: String, base: Int, real: Int, power: Double, salt: Double) =
+        com.mtgtrader.data.Deck(
+            id, name, "joelvdc", cmd, null, null, colours, 100, powerLevel = power, bracketBaseline = base, bracketRealistic = real,
+            saltPercent = salt, saltId = "s", scoredAt = 1_793_000_000_000L,
+        )
+
+    private val printCards = listOf(
+        Triple(printDeck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4, 31.0), com.mtgtrader.data.SaltCard(
+            gameChangers = listOf("Rhystic Study", "Demonic Tutor", "Jeska's Will"), twoCardCombos = listOf(listOf("Exquisite Blood", "Sanguine Bond")),
+            playStyle = "Focused", saltIntensity = "Mild", saltDriver = "Board wipes", manaFixing = 86, onCurve = 74,
+            effects = mapOf("spotRemoval" to 9, "boardWipes" to 4, "tutors" to 5, "fastmana" to 3, "counters" to 0),
+            wincons = listOf("Commander damage", "Drain", "Wide tokens", "Aristocrats"),
+        ), auntieTurns),
+        Triple(printDeck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9, 18.0), com.mtgtrader.data.SaltCard(
+            playStyle = "Casual", manaFixing = 78, onCurve = 70, effects = mapOf("spotRemoval" to 7, "boardWipes" to 2, "tutors" to 1),
+            wincons = listOf("Sacrifice drain", "Combat"),
+        ), babaTurns),
+        Triple(printDeck(3, "Sarge", "Sergeant John Benton", "GW", 3, 3, 6.1, 22.0), com.mtgtrader.data.SaltCard(
+            gameChangers = listOf("Smothering Tithe"), playStyle = "Focused", manaFixing = 91, onCurve = 80,
+            effects = mapOf("spotRemoval" to 6, "boardWipes" to 3, "grouphug" to 1), wincons = listOf("Commander damage", "Equipment voltron"),
+        ), sargeTurns),
+        Triple(printDeck(4, "Elves", "Lathril, Blade of the Elves", "BG", 4, 4, 7.6, 34.0), com.mtgtrader.data.SaltCard(
+            gameChangers = listOf("Survival of the Fittest", "Gaea's Cradle", "Seedborn Muse", "Vampiric Tutor"),
+            twoCardCombos = listOf(listOf("Ashaya, Soul of the Wild", "Quirion Ranger"), listOf("Priest of Titania", "Umbral Mantle"), listOf("Devoted Druid", "Vizier of Remedies")),
+            playStyle = "Optimized", manaFixing = 83, effects = mapOf("tutors" to 7, "fastmana" to 6, "spotRemoval" to 5, "boardWipes" to 1),
+            wincons = listOf("Craterhoof", "Drain"),
+        ), listOf(0, 0, 0, 3, 11, 27, 48, 69, 84, 92, 96, 98, 99, 99, 99)),
+        Triple(printDeck(5, "Shrine Gate Win", "Go-Shintai of Life's Origin", "WUBRG", 3, 2, 5.2, 15.0), com.mtgtrader.data.SaltCard(
+            gameChangers = listOf("Cyclonic Rift"), playStyle = "Casual", manaFixing = 95, effects = mapOf("spotRemoval" to 4, "boardWipes" to 3),
+            wincons = listOf("Maze's End", "Shrine drain"),
+        ), shrineTurns),
+        Triple(printDeck(6, "Kenrith brew", "Kenrith, the Returned King", "WUBRG", 2, 2, 5.0, 9.0), null, slowTurns),
+    )
+
+    private fun printSheet(kind: com.mtgtrader.data.RuleZeroCard, inkSaver: Boolean, perMm: Float = 6f): android.graphics.Bitmap {
+        val cards = printCards.map { (deck, data, turns) ->
+            com.mtgtrader.ui.PrintCard(kind, deck, data, win(turns), com.mtgtrader.data.PowerSource.COMMANDER_SALT)
+        }
+        val bitmap = android.graphics.Bitmap.createBitmap((210 * perMm).toInt(), (297 * perMm).toInt(), android.graphics.Bitmap.Config.ARGB_8888)
+        com.mtgtrader.ui.CardSheets.drawPage(android.graphics.Canvas(bitmap), perMm, cards, com.mtgtrader.ui.CardSheets.footer(cards, 0, 2), inkSaver)
+        return bitmap
+    }
+
+    @Test fun printSheetBracket() =
+        printSheet(com.mtgtrader.data.RuleZeroCard.BRACKET, inkSaver = false).captureRoboImage("src/test/screenshots/print_bracket_sheet.png", roborazziOptions = screenshotOptions)
+
+    @Test fun printSheetPowerInkSaver() =
+        printSheet(com.mtgtrader.data.RuleZeroCard.POWER, inkSaver = true).captureRoboImage("src/test/screenshots/print_power_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
+
+    @Test fun printChoices() {
+        val decks = printCards.map { it.first }
+        compose.setContent {
+            MtgColors(dark = true) {
+                com.mtgtrader.ui.PrintPicker(
+                    decks = decks, source = com.mtgtrader.data.PowerSource.COMMANDER_SALT, choice = com.mtgtrader.ui.PrintChoice.BOTH, onChoice = {},
+                    inkSaver = true, onInkSaver = {}, unticked = setOf(2L), onUnticked = {}, busy = false, error = null,
+                    onBack = {}, onPreview = {}, onPrint = {}, onShare = {},
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/print_choices.png", roborazziOptions = screenshotOptions)
+    }
+
+    @Test fun printPreview() {
+        compose.setContent {
+            MtgColors(dark = true) {
+                com.mtgtrader.ui.PdfPreview(
+                    pageCount = 2,
+                    render = { _, width -> printSheet(com.mtgtrader.data.RuleZeroCard.BRACKET, inkSaver = true, perMm = width / 210f).asImageBitmap() },
+                    onBack = {}, onPrint = {}, onShare = {},
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("src/test/screenshots/print_preview.png", roborazziOptions = screenshotOptions)
     }
 }

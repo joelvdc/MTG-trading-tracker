@@ -206,6 +206,7 @@ fun AppNav() {
             }
             composable("decks/shared") { SharedCardsScreen(nav) }
             composable("decks/recs") { AllDeckRecommendationsScreen(nav) }
+            composable("decks/print") { PrintCardsScreen(nav) }
             composable("decks/cards/{kind}", arguments = listOf(navArgument("kind") { type = NavType.StringType })) {
                 AllRuleZeroCardsScreen(nav, com.mtgtrader.data.RuleZeroCard.entries.firstOrNull { k -> k.name == it.arguments?.getString("kind") } ?: com.mtgtrader.data.RuleZeroCard.BRACKET)
             }

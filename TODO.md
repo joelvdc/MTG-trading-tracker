@@ -114,6 +114,23 @@ Open questions:
 
 ## Done
 
+### Print the bracket and power level cards as PDF (MTG Trader 1.65)
+*Asked 2026-10-27 ("generate a PDF with bracket or power cards for the decks… same size as MTG cards, so that they can
+be cut. PDF in A4 format… select which decks to include… sent to my notes to self on my molly/signal"). Mockups shown;
+the owner chose layout B (bracket cards first, then power), an ink saver switch, the app's speed bars instead of the
+"can win from turn x" line, a preview, and Preview, Print and Share both on the choices screen and Print and Share in
+the preview. Green light on 2026-10-28.*
+
+Released in MTG Trader 1.65:
+- `CardSheets` draws the A4 pages on a canvas (sharp text in the PDF; the same drawing makes the screenshot pictures
+  `print_bracket_sheet.png` and `print_power_sheet_ink_saver.png`). 3 × 3 cards of 63 × 88 mm, touching, 10.5 mm side
+  and 16.5 mm top and bottom margins, 6.5 mm cut marks. `PrintCardsScreen` (route `decks/print`, 🖨 on the all-decks
+  card screens): Bracket / Power level / Both, Ink saver, decks; Preview (Android's `PdfRenderer`), Print
+  (`PrintManager`), Share (`application/pdf` through the existing file provider). Choice and ink saver per phone.
+- Android's PDF writer can't run in the unit tests (Robolectric), so the PDF file itself is only checked on a phone.
+  The owner tries it on the phone (preview, print, share to Molly) and reports anything odd.
+
+
 ### Win turn: deaths, sacrifice outlets, -1/-1 counters (MTG Trader 1.64)
 *Asked 2026-10-27: the owner had GLM 5.3 review the simulator and asked whether to act on it. Plan agreed and green
 light the same day.*

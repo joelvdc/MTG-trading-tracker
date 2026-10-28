@@ -281,6 +281,15 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("deckSortReversed", false)
         set(v) = prefs.edit().putBoolean("deckSortReversed", v).stamp().apply()
 
+    /** Printing the rule-zero cards (per phone): which cards ("BRACKET", "POWER" or "BOTH") and ink saver. Since 1.65. */
+    var printCards: String
+        get() = prefs.getString("printCards", null) ?: "BOTH"
+        set(v) = prefs.edit().putString("printCards", v).apply()
+
+    var printInkSaver: Boolean
+        get() = prefs.getBoolean("printInkSaver", false)
+        set(v) = prefs.edit().putBoolean("printInkSaver", v).apply()
+
     /** Update prices by themselves (on opening the app and in the background). Since 1.11. */
     private val _autoUpdate = MutableStateFlow(prefs.getBoolean("autoUpdate", true))
     val autoUpdate: StateFlow<Boolean> = _autoUpdate
