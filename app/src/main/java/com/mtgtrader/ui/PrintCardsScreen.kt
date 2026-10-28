@@ -101,6 +101,7 @@ import com.mtgtrader.data.DeckSorting
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -192,7 +193,7 @@ fun PrintCardsScreen(nav: NavController) {
     val pdf = made
     if (preview && pdf != null) {
         BackHandler { preview = false }
-        val pages = remember(pdf.file) { PdfPages(pdf.file) }
+        val pages = remember(pdf) { PdfPages(pdf.file) }
         DisposableEffect(pages) { onDispose { pages.close() } }
         PdfPreview(
             pageCount = pdf.pages,
@@ -524,7 +525,8 @@ private class PdfPages(file: File) : Closeable {
     }
 
     override fun close() {
-        // After a page being drawn, if any.
-        kotlinx.coroutines.runBlocking { mutex.withLock { closed = true; renderer.close(); fd.close() } }
+        // In the background, after the page being drawn (if any): that page finishes on the main thread, so waiting
+        // for it here would freeze the screen.
+        CoroutineScope(Dispatchers.IO).launch { mutex.withLock { closed = true; renderer.close(); fd.close() } }
     }
 }
