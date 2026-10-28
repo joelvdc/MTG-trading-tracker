@@ -343,6 +343,17 @@ and the full bracket card has a **Speed** section under the two brackets: that t
 (green), 9 in 10 games, the share won by each turn and where the damage came from (see Winning the game under the deck
 stats).
 
+**Print the cards** (since 1.65; the 🖨 button at the top of either all-decks screen): the bracket and power level
+cards as an A4 PDF, to print and cut out at the size of a Magic card (63 × 88 mm). Choose **Bracket**, **Power level**
+or **Both** (bracket cards first, then power level cards, each starting a new page), tick the decks (all your own scored
+decks at first), and switch on **Ink saver** for light headers without the commander art. Nine cards fit on a page,
+touching, with cut marks in the margins: print at 100% ("actual size"). Then **Preview** (swipe between the pages, pinch
+to zoom, then Print or Share from there), **Print** (Android's print screen) or **Share** (for example to Signal or
+Molly's Note to Self). The print cards are shorter versions of the cards in the app: the brackets, the turn the deck
+wins by and the speed bars (% of games won by each turn), the bracket criteria, game changers and combos; or the power
+level and its meter, saltiness, manabase, the main interaction and effects and the win conditions. Power level cards
+are left out for decks the chosen power level site hasn't rated yet. The choice of cards and Ink saver are remembered.
+
 **Recommendations** (deck page, or the deck's ⋮ menu): cards for the deck from **EDHREC** or **recommander.cards**
 (switch at the top; the choice is remembered). EDHREC's are in its own sections (New Cards, High Synergy, Top Cards, Game
 Changers, Creatures, Instants…), each card with how many of the commander's decks play it and its synergy; its New Cards

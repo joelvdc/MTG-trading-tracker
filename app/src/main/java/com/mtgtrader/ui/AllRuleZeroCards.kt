@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -95,6 +96,8 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
             TopAppBar(
                 title = { Text(if (kind == RuleZeroCard.BRACKET) "Bracket cards of all decks" else "Power level cards of all decks", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                // The cards as an A4 PDF to print and cut out (since 1.65).
+                actions = { IconButton(onClick = { nav.navigate("decks/print") }) { Icon(Icons.Default.Print, "Print cards as PDF") } },
             )
         },
     ) { pad ->
