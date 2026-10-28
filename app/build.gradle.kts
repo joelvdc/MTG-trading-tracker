@@ -23,8 +23,8 @@ android {
         applicationId = "com.mtgtrader"
         minSdk = 26
         targetSdk = 35
-        versionCode = 73
-        versionName = "1.66"
+        versionCode = 74
+        versionName = "1.67"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

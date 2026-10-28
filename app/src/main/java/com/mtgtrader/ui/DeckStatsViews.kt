@@ -611,12 +611,12 @@ internal fun winMarks(win: com.mtgtrader.data.WinOdds): Map<Int, Color> = buildM
     win.fourInTen?.let { put(it, MaterialTheme.colorScheme.primary) }
 }
 
-/** "Can win from turn 6. 4 in 10 games by turn 11; 9 in 10 by turn 13.", the two turns in their colours. */
+/** "Can win from turn 6. Wins by turn 11; 9 in 10 by turn 13.", the two turns in their colours (no "4 in 10 games" since 1.67). */
 internal fun winHeadline(win: com.mtgtrader.data.WinOdds, marks: Map<Int, Color> = emptyMap()) = buildAnnotatedString {
     fun turn(t: Int) = marks[t]?.let { c -> withStyle(SpanStyle(color = c, fontWeight = FontWeight.Bold)) { append("turn $t") } } ?: append("turn $t")
     win.firstWin?.let { append("Can win from "); turn(it); append(". ") }
-    win.fourInTen?.let { append("4 in 10 games by "); turn(it) }
-        ?: append("Not 4 in 10 games by turn ${win.turns}: ${win.byTurn.last()}% by then")
+    win.fourInTen?.let { append("Wins by "); turn(it) }
+        ?: append("${win.byTurn.last()}% of games won by turn ${win.turns}")
     win.nineInTen?.let { append("; 9 in 10 by turn $it") }
     append(".")
 }

@@ -1220,7 +1220,7 @@ class ScreenshotTest {
     private val printCards = listOf(
         Triple(printDeck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4, 31.0), com.mtgtrader.data.SaltCard(
             gameChangers = listOf("Rhystic Study", "Demonic Tutor", "Jeska's Will"), twoCardCombos = listOf(listOf("Exquisite Blood", "Sanguine Bond")),
-            playStyle = "Focused", saltIntensity = "Mild", saltDriver = "Board wipes", manaFixing = 86, onCurve = 74,
+            playStyle = "Focused", saltIntensity = "Mild", saltDriver = "Community Salt Ratings", manaFixing = 86, onCurve = 74,
             effects = mapOf("spotRemoval" to 9, "boardWipes" to 4, "tutors" to 5, "fastmana" to 3, "counters" to 0),
             wincons = listOf("Commander damage", "Drain", "Wide tokens", "Aristocrats"),
         ), auntieTurns),
@@ -1245,9 +1245,13 @@ class ScreenshotTest {
         Triple(printDeck(6, "Kenrith brew", "Kenrith, the Returned King", "WUBRG", 2, 2, 5.0, 9.0), null, slowTurns),
     )
 
-    private fun printSheet(kind: com.mtgtrader.data.RuleZeroCard, inkSaver: Boolean, perMm: Float = 6f): android.graphics.Bitmap {
+    /** With [source] ScrollVault the power cards' footer takes two lines (since 1.67). */
+    private fun printSheet(
+        kind: com.mtgtrader.data.RuleZeroCard, inkSaver: Boolean, perMm: Float = 6f,
+        source: com.mtgtrader.data.PowerSource = com.mtgtrader.data.PowerSource.COMMANDER_SALT,
+    ): android.graphics.Bitmap {
         val cards = printCards.map { (deck, data, turns) ->
-            com.mtgtrader.ui.PrintCard(kind, deck, data, win(turns), com.mtgtrader.data.PowerSource.COMMANDER_SALT)
+            com.mtgtrader.ui.PrintCard(kind, deck.copy(svPowerLevel = deck.powerLevel), data, win(turns), source)
         }
         val bitmap = android.graphics.Bitmap.createBitmap((210 * perMm).toInt(), (297 * perMm).toInt(), android.graphics.Bitmap.Config.ARGB_8888)
         com.mtgtrader.ui.CardSheets.drawPage(android.graphics.Canvas(bitmap), perMm, cards, com.mtgtrader.ui.CardSheets.footer(cards, 0, 2), inkSaver)
@@ -1258,7 +1262,7 @@ class ScreenshotTest {
         printSheet(com.mtgtrader.data.RuleZeroCard.BRACKET, inkSaver = false).captureRoboImage("src/test/screenshots/print_bracket_sheet.png", roborazziOptions = screenshotOptions)
 
     @Test fun printSheetPowerInkSaver() =
-        printSheet(com.mtgtrader.data.RuleZeroCard.POWER, inkSaver = true).captureRoboImage("src/test/screenshots/print_power_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
+        printSheet(com.mtgtrader.data.RuleZeroCard.POWER, inkSaver = true, source = com.mtgtrader.data.PowerSource.SCROLLVAULT).captureRoboImage("src/test/screenshots/print_power_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
 
     @Test fun printChoices() {
         val decks = printCards.map { it.first }

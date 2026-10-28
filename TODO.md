@@ -114,6 +114,20 @@ Open questions:
 
 ## Done
 
+### Tidier bracket and power level cards (MTG Trader 1.67)
+*Asked 2026-10-28, with notes on an exported PDF: remove "4 in 10 games" from all bracket cards (and everywhere else
+in the app: "it is self explanatory from the github readme"), "Bracket data: Commander Salt", the power card's
+saltiness line and footer didn't fit; then "remove the 'core' and 'upgraded' text from the bracket cards" (after a
+mockup: only on the printed cards, the in-app bracket card stays as it was).*
+
+Released in MTG Trader 1.67 (2026-10-28):
+- No "4 in 10 games" on the printed bracket card, the in-app card's Speed section ("Wins by turn 8") or the deck
+  page's Winning the game headline; the README's rule-zero section says what the turn means.
+- Footers: "Bracket data: Commander Salt"; power card on two lines, "Power level: MTG Trader app" (or the site) and
+  "Data: Commander Salt".
+- The printed power card's "mostly community salt ratings" wraps onto a second line.
+- The printed bracket card's Baseline and Realistic tiles show only the number.
+
 ### The app's own power level; loading circle during price downloads (MTG Trader 1.66)
 *Asked 2026-10-28: "a new way to the app to calculate the power level based on the win-turn simulator. An option in
 settings to use the calculated power level, instead of using the external sources", using the turn scale of

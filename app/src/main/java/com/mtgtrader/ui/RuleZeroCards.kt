@@ -260,7 +260,7 @@ fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier, w
                 }
             }
         }
-        Footer("Data: Commander Salt", deck)
+        Footer("Bracket data: Commander Salt", deck)
     }
 }
 
@@ -273,7 +273,7 @@ private fun SpeedSection(win: WinOdds) {
     val marks = winMarks(win)
     Section("Speed · playing alone, ${"%,d".format(java.util.Locale.ROOT, win.games)} games") {
         Text(
-            win.fourInTen?.let { "Wins by turn $it in 4 of 10 games" } ?: "Not 4 in 10 games by turn ${win.turns}",
+            win.fourInTen?.let { "Wins by turn $it" } ?: "Wins by turn ${win.turns}+",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -394,10 +394,7 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
                 }
             }
         }
-        Footer(
-            if (source == PowerSource.COMMANDER_SALT) "Data: Commander Salt" else "Power level: ${source.site} · data: Commander Salt",
-            deck,
-        )
+        Footer(powerCredit(source).joinToString("\n"), deck)
     }
 }
 
@@ -558,6 +555,16 @@ private fun Footer(credit: String, deck: Deck) {
         Text(by, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
+/** The power level card's credit, a line each (since 1.67): "Power level: MTG Trader app", "Data: Commander Salt". */
+internal fun powerCredit(source: PowerSource): List<String> = listOfNotNull(
+    when (source) {
+        PowerSource.COMMANDER_SALT -> null
+        PowerSource.APP -> "Power level: MTG Trader app"
+        else -> "Power level: ${source.site}"
+    },
+    "Data: Commander Salt",
+)
 
 // ---- Commander Salt's own images --------------------------------------------------------------
 

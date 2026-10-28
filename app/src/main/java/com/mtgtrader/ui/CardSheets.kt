@@ -259,6 +259,7 @@ object CardSheets {
     private const val BODY_PT = 6.2f
     private const val BODY_LH = 7.1f
     private const val LABEL_PT = 5.2f
+    private const val CREDIT_LH = 2.1f
 
     private val PIP_COLOURS = mapOf(
         'W' to 0xFFF8F1D6.toInt(), 'U' to 0xFF3F8FD2.toInt(), 'B' to 0xFF3B3434.toInt(),
@@ -272,7 +273,8 @@ object CardSheets {
 
         abstract val title: String
         abstract fun body(data: SaltCard)
-        abstract val credit: String
+        /** Where the card's data comes from, a line each. */
+        abstract val credit: List<String>
 
         fun draw() {
             p.fill(0f, 0f, CARD_W, CARD_H, WHITE)
@@ -327,13 +329,16 @@ object CardSheets {
 
         private fun footer() {
             val base = CARD_H - 1.8f
-            p.text(credit, PAD, base, 4.8f, GREY, maxWidth = INNER * 0.6f)
+            // The credit's lines go up from the bottom one, next to the owner and date.
+            credit.asReversed().forEachIndexed { i, line ->
+                p.text(line, PAD, base - i * CREDIT_LH, 4.8f, GREY, maxWidth = INNER * 0.6f)
+            }
             val by = listOfNotNull(deck.owner.takeIf { it.isNotBlank() }, deck.scoredAt?.let(Fmt::date)).joinToString(" · ")
             p.text(by, CARD_W - PAD, base, 4.8f, GREY, align = Paint.Align.RIGHT)
         }
 
         /** The room left above the footer, in mm. */
-        val room get() = CARD_H - 4.5f - y
+        val room get() = CARD_H - 4.5f - (credit.size - 1) * CREDIT_LH - y
 
         fun rule() {
             y += 0.9f
@@ -359,7 +364,7 @@ object CardSheets {
 
     private class BracketPrint(p: Painter, card: PrintCard, ink: Boolean) : CardPrint(p, card, ink) {
         override val title = "Bracket"
-        override val credit = "Data: Commander Salt"
+        override val credit = listOf("Bracket data: Commander Salt")
 
         override fun body(data: SaltCard) {
             tiles()
@@ -397,10 +402,10 @@ object CardSheets {
             }
             listOf("Baseline" to deck.bracketBaseline, "Realistic" to deck.bracketRealistic).forEachIndexed { i, (label, b) ->
                 val (bg, fg) = bracketColors(b)
-                tile(i, bg.toArgb(), fg.toArgb(), label, b?.toString() ?: "—", Brackets.name(b) ?: "")
+                tile(i, bg.toArgb(), fg.toArgb(), label, b?.toString() ?: "—", "")
             }
-            // The turn 4 in 10 games are won by, in gold like its bar below.
-            tile(2, 0xFFF1EFF6.toInt(), GREY, "Wins by", card.win?.label ?: "—", "4 in 10 games", GOLD)
+            // The turn 4 in 10 games are won by, in gold like its bar below (without saying so since 1.67).
+            tile(2, 0xFFF1EFF6.toInt(), GREY, "Wins by", card.win?.label ?: "—", "", GOLD)
             y += h
         }
 
@@ -454,7 +459,7 @@ object CardSheets {
 
     private class PowerPrint(p: Painter, card: PrintCard, ink: Boolean) : CardPrint(p, card, ink) {
         override val title = "Power level"
-        override val credit = if (card.source == PowerSource.COMMANDER_SALT) "Data: Commander Salt" else "Power level: ${card.source.site} · data: Commander Salt"
+        override val credit = powerCredit(card.source)
 
         override fun body(data: SaltCard) {
             val power = deck.power(card.source)
@@ -497,7 +502,8 @@ object CardSheets {
             label("Saltiness")
             bodyLine(listOfNotNull(deck.saltPercent?.let { "${it.roundToInt()}%" }, data.saltIntensity?.lowercase()).joinToString(" ").ifEmpty { "—" }, width = half - 1f, weight = Weight.MEDIUM)
             newLine()
-            data.saltDriver?.let { bodyLine("mostly ${it.lowercase()}", width = half - 1f, colour = GREY); newLine() }
+            // Wrapped since 1.67: "mostly community salt ratings" doesn't fit on one line of half the card.
+            data.saltDriver?.let { y += p.wrapped("mostly ${it.lowercase()}", PAD, y, half - 1f, BODY_PT, GREY, 2, BODY_LH) }
             val left = y
             y = top
             y += p.lineHeight(6.4f)

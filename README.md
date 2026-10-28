@@ -199,7 +199,8 @@ the Decks tab, sorting, the deck page, the power card and the printed cards. Bra
 ### Rule-zero cards
 The **bracket** and **power level cards**, drawn by the app from Commander Salt's analysis: the brackets and their
 criteria (game changers, combos, extra turns, land denial), the speed (the win turn), how the deck plays, saltiness,
-mana base, interaction and win conditions. They show full screen to show your table, can be shared as pictures and
+mana base, interaction and win conditions. "Wins by T10" on a bracket card is the turn the deck has won by in 4 of 10
+games (see **Winning the game** above). They show full screen to show your table, can be shared as pictures and
 work offline. Decks tab ⋮ → **Bracket cards of all decks** / **Power level cards of all decks** shows every deck's card;
 the 🖨 button there prints them as an **A4 PDF** at the size of a Magic card (nine per page, with cut marks, and an
 ink saver option).
