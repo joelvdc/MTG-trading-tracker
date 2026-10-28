@@ -53,9 +53,9 @@ class Release152Test {
         val landfall = classify(card("Rumbling Ruin", "Creature — Elemental", "{3}{R}", "Landfall — Whenever a land you control enters, this creature deals 1 damage to each opponent.", "3/3"))
         assertTrue(landfall.enterTriggers.single().land)
         val charm = classify(card("Boros Charm", "Instant", "{R}{W}", "Choose one —\n• Boros Charm deals 4 damage to target player or planeswalker.\n• Permanents you control gain indestructible until end of turn.\n• Target creature gains double strike until end of turn."))
-        assertEquals(4, charm.oneOnce)
-        // Since 1.62 only the best mode: the damage, not the double strike too.
-        assertFalse(charm.pumpDouble)
+        // Since 1.62 only the best mode; since 1.69 that's the double strike, not the damage.
+        assertTrue(charm.pumpDouble)
+        assertEquals(0, charm.oneOnce)
     }
 
     @Test fun readsEquipmentAurasAndPumps() {

@@ -166,6 +166,14 @@ data class WinCounted(
  *   All Will Be One's damage for every counter put;
  * - Animate Dead and the like; "for each Shrine you control" in tap abilities; amass (Dreadhorde Invasion); Mana
  *   Geyser (half the opponents' lands taken as tapped); Sunbird's Invocation; Approach of the Second Sun.
+ * Since 1.69 also:
+ * - lands making more than one mana (Lotus Field, sacrificing two lands; the depletion lands' two for two turns; Crypt of
+ *   Agadeem's black creature cards in the graveyard);
+ * - abilities that cost a sacrifice, blight or a counter (Cauldron of Essence, Alquist Proft's X draws, Fain, Dawnhand
+ *   Dissident), used when what they do is worth more than what they cost;
+ * - Akroma's Will's double strike for every attacker, Jeska's Will (an opponent's hand taken as five cards), Soul
+ *   Immolation's blight X for X damage to each opponent, Mizzix's Mastery; Storm of Souls bringing creatures back as 1/1s;
+ * - Saga chapters (Maximum Carnage, Urza's Saga), Vehicles crewed, toxic, Twenty-Toed Toad's win.
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -179,8 +187,9 @@ object WinOddsCalc {
      * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56). 6: sacrifice payoffs,
      * populate, tokens one by one, ascend, Urza (1.61). 7: trigger timing, rituals, land drops, modes, spell // land (1.62).
      * 8: battles, planeswalker ultimates, proliferate and poison (1.63). 9: deaths, sacrifice outlets, -1/-1 counters (1.64).
+     * 10: lands making more mana, ability costs, finishers, Sagas, Vehicles, toxic (1.69).
      */
-    const val VERSION = 9
+    const val VERSION = 10
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -196,6 +205,9 @@ object WinOddsCalc {
     private const val POISON = 10
     private const val NOT_FROM_HAND = "\u0000not from hand"
     private const val FROM_GRAVEYARD = "\u0000graveyard"
+    /** A mana-per-kind ability counting creature cards of a colour in the graveyard (Crypt of Agadeem; since 1.69). */
+    private const val GRAVEYARD_KIND = "\u0000graveyard "
+    private val COLOUR_LETTERS = mapOf("white" to 'W', "blue" to 'U', "black" to 'B', "red" to 'R', "green" to 'G')
 
     const val COMBAT = "combat"
     const val COMMANDER = "commander"
@@ -303,7 +315,7 @@ object WinOddsCalc {
         "a" to 1, "an" to 1, "one" to 1, "two" to 2, "three" to 3, "four" to 4, "five" to 5, "six" to 6, "seven" to 7,
         "eight" to 8, "nine" to 9, "ten" to 10,
     )
-    private fun number(s: String?) = s?.lowercase()?.let { numbers[it] ?: it.toIntOrNull() } ?: 0
+    internal fun number(s: String?) = s?.lowercase()?.let { numbers[it] ?: it.toIntOrNull() } ?: 0
 
     private const val N = "(\\d+|x|a|an|one|two|three|four|five|six)"
     private val I = RegexOption.IGNORE_CASE
@@ -465,7 +477,13 @@ object WinOddsCalc {
     private val ritualAny = Regex("^add (two|three|four|five) mana (?:of any one color|in any combination of colors)", I)
     private val extraLandText = Regex("you may play (an|two|three) additional lands? (on each of your turns|this turn)", I)
     private val landManaPer = Regex("^(?:((?:\\{\\d+\\})+), )?\\{t\\}: add \\{([wubrgc])\\} for each ([a-z]+?)s? (?:you control|on the battlefield)", I)
+    private val landManaGraveyard = Regex("^((?:\\{\\d+\\})+), \\{t\\}: add \\{([wubrgc])\\} for each (white|blue|black|red|green) creature card in your graveyard", I)
     private val proliferateText = Regex("\\bproliferate(?: (twice))?\\b", I)
+    private val chapterLine = Regex("^((?:I|II|III|IV|V|VI)(?:, (?:I|II|III|IV|V|VI))*) — (.*)$")
+    private val romans = mapOf("I" to 1, "II" to 2, "III" to 3, "IV" to 4, "V" to 5, "VI" to 6)
+    /** The opponents' hand size taken for Jeska's Will (since 1.69). */
+    private const val OPPONENT_HAND = 5
+    private val sacrificeCostText = Regex("sacrifice (a|an|another) (creature|artifact|clue|food|treasure)\\b", I)
     private val xCreatureText = Regex(
         "search your library( and/or graveyard)? for an? ((?:non-?)?[a-z]+ )?creature card with mana value x or less and put it onto the battlefield", I,
     )
@@ -515,6 +533,8 @@ object WinOddsCalc {
         val haste: Boolean = false,
         /** Its toughness (-1: as its power, at least 1), for -1/-1 counters. Since 1.64. */
         val toughness: Int = -1,
+        /** Toxic (Phyrexian Mites). Since 1.69. */
+        val toxic: Int = 0,
     )
 
     enum class Effect { DRAIN, TOKENS, DRAW, COUNTERS, PUMP }
@@ -591,6 +611,8 @@ object WinOddsCalc {
         var reanimateKind: String? = null
         var reanimateSacrifice = false
         var reanimateEverything = false
+        /** Storm of Souls: each comes back as a 1/1 (since 1.69). */
+        var reanimateAsOne = false
         var toHand = 0
         var toHandKind: String? = null
         var flicker = 0
@@ -651,6 +673,22 @@ object WinOddsCalc {
         var minusOpp = 0
         var amass = 0
         var drainPer: String? = null
+        // Since 1.69: an activated ability's costs besides mana and {T}.
+        /** "Sacrifice a creature / an artifact / a Clue": the kind; [sacrificeAnother]: not the permanent using it. */
+        var sacrificeCost: String? = null
+        var sacrificeAnother = false
+        /** Blight N: N -1/-1 counters on a creature of ours (Dawnhand Dissident). */
+        var blightCost = 0
+        /** "Remove a counter from a creature you control" (Fain). */
+        var counterCost = 0
+        /** "{X}…: draw X cards" (Alquist Proft): X is the mana left. */
+        var drawX = false
+        /** Mana it adds (a Saga's "Add {R}{R}{R}"), for this turn. */
+        var addMana: List<Pair<Set<Char>, Int>> = emptyList()
+        /** An ability a Saga chapter grants ("{2}, {T}: Create a Construct"): used once that turn, paid with [cost] and the Saga's tap. */
+        var granted = false
+        /** Urza's Saga: an artifact with mana cost {0} or {1} from the library onto the battlefield. */
+        var cheapArtifact = false
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
         val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
@@ -662,7 +700,8 @@ object WinOddsCalc {
                 graveyard || copying || doubleStrikeFor != null || drawPerEquipped || toBottom > 0 || made.isNotEmpty() ||
                 selfCounters + countersAll + countersTarget + countersHit + eachPlayerDraws + oppDraws > 0 || doubleCounters || tokensPer != null ||
                 drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0 ||
-                proliferate + poison + poisonTo + emblemAnthem > 0 || minusOwn + minusTarget + minusEach + minusOpp + amass > 0
+                proliferate + poison + poisonTo + emblemAnthem > 0 || minusOwn + minusTarget + minusEach + minusOpp + amass > 0 || drawX ||
+                addMana.isNotEmpty() || cheapArtifact
     }
 
     /** What a card does in the game, read once per card from its type, power and rules text. */
@@ -970,13 +1009,30 @@ object WinOddsCalc {
         var approach = false
         /** Mana Geyser: {R} for each tapped land the opponents have. */
         var ritualOppLands = false
+        // Since 1.69.
+        /** "Creatures you control gain … double strike until end of turn" (Akroma's Will): a pump spell for every attacker. */
+        var teamDouble = false
+        /** Soul Immolation: blight X as an extra cost, X damage to each opponent (X up to our greatest toughness). */
+        var blightX = false
+        /** Mizzix's Mastery: free copies of instants and sorceries from the graveyard; all of them for [overload]. */
+        var mizzix = false
+        var overload: ManaOddsCalc.Cost? = null
+        /** A Saga's chapters, one ability each (I first); a chapter that grants an ability waits for the mana ([Ability.granted]). */
+        var chapters: List<Ability> = emptyList()
+        /** A Vehicle's crew cost. */
+        var crew: Int? = null
+        /** Toxic: poison counters for a player it deals combat damage to; [gearToxic] on the creature it's attached to. */
+        var toxic = 0
+        var gearToxic = 0
+        /** Twenty-Toed Toad: attacking with twenty cards in hand or twenty counters on it wins. */
+        var toadWin = false
         val minusPayoff get() = minusTokens != null || minusToken != null || minusDrain > 0 || minusEveryToken != null || minusDraw || counterBurn
         /** Mirkwood Bats, Marionette Master and Apprentice: sacrificing artifacts or tokens drains (since 1.61). */
         val sacrificePayoff get() = artifactDrain || dieDrain > 0 || tokenDrain > 0
 
         val land get() = mana.kind == ManaOddsCalc.Kind.LAND
-        val gearBonus get() = bonus > 0 || forEach != null || base != null || grantsDouble || grantsHaste
-        val pumpSpell get() = !permanent && (pump > 0 || pumpX || pumpDouble)
+        val gearBonus get() = bonus > 0 || forEach != null || base != null || grantsDouble || grantsHaste || gearToxic > 0
+        val pumpSpell get() = !permanent && (pump > 0 || pumpX || pumpDouble || teamDouble)
         val dealsDamage get() = drainOnce + drainTurn + oneOnce + oneTurn > 0 || sacrifice != null || xEach || artifactDrain || devotion != null || dieDrain + tokenDrain + tokenBatchDrain > 0 ||
             deathDrains.any { it.amount > 0 } || minusDrain > 0 || counterBurn
 
@@ -1050,6 +1106,12 @@ object WinOddsCalc {
                 w.manaPer = m.groupValues[3] to m.groupValues[2].uppercase()[0]
                 w.manaPerCost = ManaOddsCalc.cost(m.groupValues[1]).manaValue
             }
+            // Crypt of Agadeem (since 1.69): "for each black creature card in your graveyard".
+            for (line in landLower.split('\n')) landManaGraveyard.find(line.trim())?.let { m ->
+                w.manaPer = "$GRAVEYARD_KIND${COLOUR_LETTERS.getValue(m.groupValues[3].lowercase())}" to m.groupValues[2].uppercase()[0]
+                w.manaPerCost = ManaOddsCalc.cost(m.groupValues[1]).manaValue
+            }
+            if ("Saga" in w.subtypes) w.chapters = readChapters(w, landText)
             if (spellFace(c)) {
                 val type0 = (c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types).substringBefore(" // ")
                 val spell = c.copy(
@@ -1081,6 +1143,7 @@ object WinOddsCalc {
         // The modes under a trigger ("At the beginning of your first main phase, choose one or more — • …") are read with
         // the trigger; a Class's later levels aren't counted (they cost more). Since 1.55.
         var prefix = ""
+        val saga = "Saga" in w.subtypes
         for (raw in text.split('\n')) {
             val line = raw.trim()
             if ("Class" in w.subtypes && Regex("^(?:\\{[^}]+\\})+: level \\d", I).containsMatchIn(line)) break
@@ -1088,9 +1151,13 @@ object WinOddsCalc {
                 readLine(w, prefix + line.removePrefix("•").trim().replace(Regex("^[^—:{]{1,40} — "), ""))
                 continue
             }
+            // A Saga's chapters are read apart (since 1.69).
+            if (saga && chapterLine.containsMatchIn(line)) continue
             prefix = Regex("^((?:when|whenever|at the beginning of)[^,]*, )choose (?:one|two|one or more) —$", I).find(line)?.groupValues?.get(1) ?: ""
-            readLine(w, line)
+            // An instant's or sorcery's modes are read without their bullet (since 1.69: Akroma's Will, Jeska's Will).
+            readLine(w, if (w.permanent) line else line.removePrefix("•").trim())
         }
+        read69(w, text)
         if (w.equipment || w.aura) readGear(w, text)
         w.deathPayoff = deathPayoff.containsMatchIn(text)
         w.enterPayoff = enterPayoff.containsMatchIn(text) || w.enterTriggers.any { !it.land }
@@ -1125,6 +1192,8 @@ object WinOddsCalc {
         }
         read55(w, text)
         read62(w, text, own)
+        // Soul Immolation's blight is its cost, paid in the game (since 1.69).
+        if (w.blightX) w.onEnter.minusOwn = 0
         w.abilities().forEach { it.freeze() }
         return w
     }
@@ -1132,12 +1201,16 @@ object WinOddsCalc {
     /** Rituals and extra land drops (since 1.62). */
     private fun read62(w: WinCard, text: String, own: Set<Char>) {
         if (!w.permanent) for (raw in text.split('\n')) {
-            val line = raw.trim().replace(reminder, "")
+            val line = raw.trim().removePrefix("•").trim().replace(reminder, "")
             ritualText.find(line)?.let { m ->
                 w.ritual = Regex("\\{([wubrgc])\\}", I).findAll(m.groupValues[1]).map { it.groupValues[1].uppercase()[0] }
                     .groupingBy { it }.eachCount().map { (colour, n) -> setOf(colour) to n }
             }
             ritualAny.find(line)?.let { m -> w.ritual = listOf(own.ifEmpty { setOf('C') } to number(m.groupValues[1])) }
+            // Jeska's Will (since 1.69).
+            Regex("^add \\{([wubrgc])\\} for each card in target opponent's hand", I).find(line)?.let { m ->
+                w.ritual = listOf(setOf(m.groupValues[1].uppercase()[0]) to OPPONENT_HAND)
+            }
             // Mana Geyser (since 1.64): the mana is worked out in the game.
             Regex("^add \\{([wubrgc])\\} for each tapped land your opponents control", I).find(line)?.let { m ->
                 w.ritual = listOf(setOf(m.groupValues[1].uppercase()[0]) to 0)
@@ -1154,6 +1227,62 @@ object WinOddsCalc {
             val n = number(m.groupValues[1])
             if ("each of your turns" in m.groupValues[2].lowercase()) w.extraLands = n else w.extraLandsNow = n
         }
+    }
+
+    /**
+     * Since 1.69: team double strike (Akroma's Will), Soul Immolation, Mizzix's Mastery, cards played from the top of the
+     * library this turn (Jeska's Will; one fewer than exiled, as a land can't always be played), Sagas, Vehicles, toxic,
+     * Twenty-Toed Toad.
+     */
+    private fun read69(w: WinCard, text: String) {
+        val low = text.replace(reminder, "").lowercase()
+        if (!w.permanent) {
+            if (Regex("creatures you control gain [^.]*double strike until end of turn").containsMatchIn(low)) w.teamDouble = true
+            if (Regex("as an additional cost to cast this spell, blight x\\b").containsMatchIn(low) && "deals x damage to each opponent" in low) {
+                w.blightX = true
+            }
+            if ("instant or sorcery from your graveyard" in low && "copy it, and you may cast the copy without paying its mana cost" in low) {
+                w.mizzix = true
+                Regex("overload ((?:\\{[^}]+\\})+)").find(low)?.let { w.overload = ManaOddsCalc.cost(it.groupValues[1]) }
+            }
+            Regex("exile the top (\\w+) cards of your library\\. (?:until end of turn, )?you may play (?:them|those cards) this turn").find(low)?.let {
+                w.drawOnce += (number(it.groupValues[1]) - 1).coerceAtLeast(0)
+            }
+        }
+        if ("Saga" in w.subtypes) w.chapters = readChapters(w, text)
+        if ("Vehicle" in w.subtypes) Regex("^crew (\\d+)", RegexOption.MULTILINE).find(low)?.let { w.crew = it.groupValues[1].toInt() }
+        Regex("^toxic (\\d+)", RegexOption.MULTILINE).find(low)?.let { w.toxic = it.groupValues[1].toInt() }
+        Regex("(?:enchanted|equipped) creature [^.]*has toxic (\\d+)").find(low)?.let { w.gearToxic = it.groupValues[1].toInt() }
+        if ("you win the game if there are twenty or more counters on it or you have twenty or more cards in hand" in low) w.toadWin = true
+    }
+
+    /**
+     * A Saga's chapters (since 1.69), I first, each read as an ability: mana it adds (Maximum Carnage's {R}{R}{R}), an
+     * ability it grants (Urza's Saga's Construct; its "{T}: Add {C}" is the land's own mana), Urza's Saga's search.
+     */
+    private fun readChapters(w: WinCard, text: String): List<Ability> {
+        val byChapter = HashMap<Int, Ability>()
+        for (raw in text.split('\n')) {
+            val m = chapterLine.find(raw.trim()) ?: continue
+            val effect = m.groupValues[2].replace(reminder, "").trim()
+            val a = Ability()
+            val grant = Regex("gains \"([^\"]*)\"", I).find(effect)?.groupValues?.get(1)
+            when {
+                grant != null -> {
+                    if (Regex("^\\{T\\}: Add", I).containsMatchIn(grant)) continue
+                    readAbility(a, grant.substringAfter(':'), w, full = true)
+                    a.cost = ManaOddsCalc.cost(grant.substringBefore(':'))
+                    a.granted = true
+                }
+                ritualText.find(effect) != null -> a.addMana = Regex("\\{([wubrgc])\\}", I).findAll(ritualText.find(effect)!!.groupValues[1])
+                    .map { it.groupValues[1].uppercase()[0] }.groupingBy { it }.eachCount().map { (colour, n) -> setOf(colour) to n }
+                "search your library for an artifact card with mana cost {0} or {1}" in effect.lowercase() -> a.cheapArtifact = true
+                else -> readAbility(a, effect, w, full = true)
+            }
+            m.groupValues[1].split(", ").forEach { byChapter[romans.getValue(it)] = a }
+        }
+        val last = byChapter.keys.maxOrNull() ?: return emptyList()
+        return (1..last).map { byChapter[it] ?: Ability() }
     }
 
     /** A spell // land card (Malakir Rebirth): a land on its back face only. Since 1.62. */
@@ -1182,7 +1311,7 @@ object WinOddsCalc {
 
     /** What a card (one mode of it) does, roughly, to pick the best modes. Since 1.62. */
     private fun modeScore(w: WinCard): Int = 3 * (w.drainOnce + w.drainTurn) + w.oneOnce + w.oneTurn + w.tokensOnce + 2 * w.tokensTurn +
-        2 * (w.drawOnce + w.drawTurn) + 3 * (w.overrun + w.anthem) + w.pump + (if (w.pumpDouble) 3 else 0) + (if (w.pumpX) 3 else 0) +
+        2 * (w.drawOnce + w.drawTurn) + 3 * (w.overrun + w.anthem) + w.pump + (if (w.pumpDouble) 6 else 0) + (if (w.teamDouble) 8 else 0) + (if (w.pumpX) 3 else 0) +
         // A token that grows (Urza's Command's Construct) is worth more than its 0 power.
         (if (w.token?.per != null) 3 * w.tokensOnceCount else 0) + w.artifactsOnce + 2 * w.artifactsTurn + w.treasuresOnce + 3 * (w.scaled.size + w.castTriggers.size + w.enterTriggers.size) +
         (if (w.mana.kind == ManaOddsCalc.Kind.RAMP) 2 else 0) + w.ritualMana + 2 * (w.extraLands + w.extraLandsNow) +
@@ -1271,6 +1400,7 @@ object WinOddsCalc {
         return TokenKind(
             m.groupValues[1].toIntOrNull() ?: 0, types, subtypes, flying = "with flying" in after || "flying" in after.substringBefore(" and ").take(20), per = per, haste = haste,
             toughness = m.groupValues[2].toIntOrNull() ?: -1,
+            toxic = Regex("with toxic (\\d+)").find(line.substring(m.range.first).lowercase())?.groupValues?.get(1)?.toInt() ?: 0,
         )
     }
 
@@ -1384,6 +1514,7 @@ object WinOddsCalc {
                 else -> m.groupValues[1].ifEmpty { null }
             }
             a.reanimateEverything = m.groupValues[3].isNotEmpty()
+            if ("each of them is a 1/1" in low) a.reanimateAsOne = true
         }
         toHandText.find(low)?.let { m ->
             a.toHand += m.groupValues[1].let { if (it.isEmpty()) 1 else number(it) }
@@ -1472,6 +1603,15 @@ object WinOddsCalc {
         if ("exile an artifact or creature card from your graveyard" in low) rest = rest.replace("exile an artifact or creature card from your graveyard", "")
         Regex("exile (\\w+) cards? from your graveyard").find(low)?.let { a.exileGraveyard = number(it.groupValues[1]); rest = rest.replace(it.value, "") }
         if ("discard a card" in low) { a.discardCost = 1; rest = rest.replace("discard a card", "") }
+        // Since 1.69: sacrificing another permanent, blight, removing a counter; life isn't counted.
+        sacrificeCostText.find(low)?.let { m ->
+            a.sacrificeCost = m.groupValues[2]
+            a.sacrificeAnother = m.groupValues[1] == "another"
+            rest = rest.replace(m.value, "")
+        }
+        Regex("blight (\\w+)").find(low)?.let { a.blightCost = number(it.groupValues[1]); rest = rest.replace(it.value, "") }
+        Regex("remove an? (?:\\+1/\\+1 )?counter from a creature you control").find(low)?.let { a.counterCost = 1; rest = rest.replace(it.value, "") }
+        Regex("pay (\\w+) life").find(low)?.let { rest = rest.replace(it.value, "") }
         if (rest.replace(Regex("\\s+"), "").isNotEmpty()) return null
         a.cost = ManaOddsCalc.cost(head)
         return "{t}" in low
@@ -1885,6 +2025,7 @@ object WinOddsCalc {
         val taps = abilityCost(head, a) ?: return false
         val effect = line.substringAfter(':')
         readAbility(a, effect, w, full = true)
+        if ("{x}" in head.lowercase() && Regex("\\bdraws? x cards").containsMatchIn(effect.lowercase())) a.drawX = true
         if (copyExiled.containsMatchIn(effect.lowercase()) && "sacrifice two artifact tokens" in head.lowercase()) a.copyExiled = true
         if (!a.any) return false
         if (taps) w.taps += a else w.activated += a
@@ -1933,7 +2074,9 @@ object WinOddsCalc {
             c.drawOnce + c.drawTurn > 0 || c.combo && c.permanent || c.castTriggers.isNotEmpty() || c.enterTriggers.isNotEmpty() ||
             (c.equipment || c.aura) && c.gearBonus || c.attackDouble || c.targetedBonus > 0 || c.combatDraw != 0 ||
             c.sacrifice != null || c.artifactsOnce + c.artifactsTurn + c.artifactsLandfall > 0 || c.tutorUseful || c.newUse || c.use55 ||
-            c.creature && c.mana.kind == ManaOddsCalc.Kind.CREATURE || c.extraLands + c.extraLandsNow > 0
+            c.creature && c.mana.kind == ManaOddsCalc.Kind.CREATURE || c.extraLands + c.extraLandsNow > 0 ||
+            // Since 1.69.
+            c.crew != null && c.power > 0 || c.chapters.isNotEmpty() || c.toadWin
     }
 
     fun calculate(
@@ -2096,7 +2239,8 @@ object WinOddsCalc {
         var knockouts = 0
     }
 
-    private class Source(val colours: Set<Char>, val amount: Int, val from: Int, val creature: Boolean = false)
+    /** A mana source; [until]: the last turn it makes mana (a depletion land's; since 1.69). */
+    private class Source(val colours: Set<Char>, val amount: Int, val from: Int, val creature: Boolean = false, var until: Int = Int.MAX_VALUE)
 
     /** A creature, token or other permanent on the battlefield; [gear] are the equipment and auras on it. */
     private class Entry(
@@ -2115,6 +2259,8 @@ object WinOddsCalc {
         /** Stun counters, and the turn the last one came off (it stays tapped that turn). */
         var stun = card?.stun ?: 0
         var stunTurn = 0
+        /** Toxic (since 1.69). */
+        var toxic = card?.toxic ?: 0
 
         fun isA(kind: String) = kind == "token" && token || subtypes.any { it.equals(kind, true) } || types.any { it.equals(kind, true) } ||
             art != null && art == kind
@@ -2231,6 +2377,9 @@ object WinOddsCalc {
         var turn = 0
         var spells = 0
         var byCombo = false
+        /** Since 1.69: mana a Saga chapter adds this turn, and the abilities chapters grant, paid once the mana is there. */
+        val chapterMana = ArrayList<Pair<Set<Char>, Int>>()
+        val granted = ArrayList<Pair<Ability, Entry>>()
         var knockout = false
         var spellTriggers = false
         var creatureTriggers = false
@@ -2399,6 +2548,7 @@ object WinOddsCalc {
                 it.per = kind?.per
                 it.hasteNow = kind?.haste == true
                 it.toughness = kind?.toughness?.takeIf { t -> t >= 0 } ?: maxOf(1, power)
+                it.toxic = kind?.toxic ?: 0
                 board += it
                 tokenMade(1, artifact = "Artifact" in it.types)
                 creatureTokenEntered(it)
@@ -2786,7 +2936,91 @@ object WinOddsCalc {
             if (a.reanimateEverything) board.filter { it.creature && it.card !in leaders }.forEach { e -> board.remove(e); left(e, artifact = "Artifact" in e.types) }
             leftGraveyard(ok)
             val back = ok.map { enter(it, cheated = true) }
+            if (a.reanimateAsOne) back.forEach { it.power = 1; it.toughness = 1 }
             if (back.isNotEmpty() && board.any { it.card?.copyReanimated == true }) back.maxByOrNull { e -> e.card?.let { worth(it) } ?: 0 }?.card?.let { enter(it, cheated = true, token = true) }
+        }
+
+        /** An attacker's toxic, its own and its gear's (since 1.69). */
+        fun toxic(b: Entry) = b.toxic + b.gear.sumOf { it.gearToxic }
+
+        /**
+         * Vehicles (since 1.69): crewed by creatures that can't attack this turn first, then by the weakest attackers when
+         * the Vehicle hits harder than they would; it attacks as a creature this turn (the list, to turn back after combat).
+         */
+        fun crew(t: Int): List<Entry> {
+            val vehicles = board.filter { v -> v.card?.crew != null && !v.creature && (v.turn < t || hasHaste(v)) }
+            if (vehicles.isEmpty()) return emptyList()
+            val crewed = ArrayList<Entry>()
+            for (v in vehicles.sortedByDescending { it.power }) {
+                val need = v.card!!.crew!!
+                fun canAttack(e: Entry) = e.turn < t || hasHaste(e)
+                val free = board.filter { it.creature && it !in crewed && it.tapped != t && it.power > 0 && it.card !in leaders }
+                    .sortedWith(compareBy<Entry> { canAttack(it) }.thenBy { it.power })
+                var sum = 0
+                var lost = 0
+                val crew = ArrayList<Entry>()
+                for (c in free) {
+                    if (sum >= need) break
+                    crew += c
+                    sum += c.power
+                    if (canAttack(c)) lost += gearPower(c).first
+                }
+                if (sum < need || lost >= v.power) continue
+                crew.forEach { it.tapped = t }
+                v.creature = true
+                crewed += v
+            }
+            return crewed
+        }
+
+        /** A Saga's chapter [k] (0: I): what it does, then the Saga goes after its last one (since 1.69). */
+        fun chapter(e: Entry, k: Int) {
+            val chapters = e.card?.chapters ?: return
+            if (k >= chapters.size) return
+            val a = chapters[k]
+            when {
+                a.granted -> granted += a to e
+                a.addMana.isNotEmpty() -> chapterMana += a.addMana
+                else -> use(a, e)
+            }
+            if (k == chapters.size - 1) died(e)
+        }
+
+        /**
+         * Soul Immolation (since 1.69): blight X on our toughest creature for X damage to each opponent, when that finishes
+         * them or X is 8 or more; a combo piece waits for its combo while the rest of it is at hand.
+         */
+        fun blightX(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+            val c = hand.firstOrNull { it.blightX } ?: return start
+            val target = board.filter { it.creature }.maxByOrNull { it.toughness + it.counters } ?: return start
+            val x = target.toughness + target.counters
+            val lethal = life.filter { it > 0 }.all { it <= x }
+            val there = (board.mapNotNull { it.card?.key } + hand.map { it.key } + command.map { it.key }).toSet()
+            val waiting = c.combo && combos.any { p -> c.key in p.keys && p.keys.all { it in there } }
+            if (!lethal && (x < 8 || waiting)) return start
+            val pool = spend(start, costOf(c)) ?: return start
+            cast(c)
+            minus(target, x)
+            each(x, 3)
+            return pool
+        }
+
+        /**
+         * Mizzix's Mastery (since 1.69): free copies of the instants and sorceries in the graveyard worth casting (not X
+         * spells, whose X would be 0); all of them with overload when there are two or more, else the best one.
+         */
+        fun mizzix(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+            val m = hand.firstOrNull { it.mizzix } ?: return start
+            val spells = graveyard.filter { !it.permanent && !it.land && !it.mizzix && !it.xEach && it.xTokens == 0 && worth(it) >= 2 }.sortedByDescending { worth(it) }
+            if (spells.isEmpty()) return start
+            val overload = m.overload?.takeIf { spells.size >= 2 }?.let { spend(start, it) }
+            val pool = overload ?: spells.first().takeIf { worth(it) >= 4 }?.let { spend(start, costOf(m)) } ?: return start
+            cast(m)
+            graveyard.remove(m)
+            val copies = if (overload != null) spells else spells.take(1)
+            leftGraveyard(copies)
+            copies.forEach { cast(it, copy = true).let { o -> overrun += o } }
+            return pool
         }
 
         /** Sacrifices the creature worth least (a token first); null when there's none. */
@@ -2901,6 +3135,9 @@ object WinOddsCalc {
             }
             if (a.minusOpp > 0 && opponentCreature) minus(null, a.minusOpp)
             if (a.amass > 0) amass(a.amass)
+            // Urza's Saga (since 1.69): a mana rock first, else the artifact worth most.
+            if (a.cheapArtifact) (drawn until rest.size).filter { rest[it].isKind("artifact") && !rest[it].land && rest[it].manaValue <= 1 }
+                .maxByOrNull { rest[it].mana.amount * 10 + worth(rest[it]) }?.let { enter(rest.removeAt(it), cheated = true) }
             if (a.sacrificeForToken > 0) sacrificeWorst()?.let { token(a.sacrificeForToken, TokenKind(a.sacrificeForToken, CREATURE_TOKEN, setOf("Dragon"), flying = true)) }
             if (a.teamPump > 0) overrun += a.teamPump
         }
@@ -3271,6 +3508,7 @@ object WinOddsCalc {
             if (card.newCounters > 0) board.filter { it.creature && it.turn == turn }.forEach { addCounters(it, card.newCounters) }
             if (card.entersMinus > 0) minus(e, card.entersMinus)
             if (card.discover > 0) reveal(card.discover)
+            if (card.chapters.isNotEmpty()) chapter(e, 0)
             entering--
             return e
         }
@@ -3293,7 +3531,7 @@ object WinOddsCalc {
         }
 
         fun pool(): List<Pair<Set<Char>, Int>> {
-            val base = sources.filter { it.from <= turn && !it.creature }.map { it.colours to it.amount }.toMutableList()
+            val base = sources.filter { it.from <= turn && turn <= it.until && !it.creature }.map { it.colours to it.amount }.toMutableList()
             // Five Hundred Year Diary ({U} for each Clue), Jaheira (tokens tap for {G}), Urza (artifacts tap for {U}),
             // Inspiring Statuary (artifacts pay generic mana). Since 1.55.
             if (!f.pool55) return base
@@ -3307,9 +3545,10 @@ object WinOddsCalc {
                 val dork = c.mana.kind == ManaOddsCalc.Kind.CREATURE && b.creature
                 if (dork && b.turn >= turn && !hasHaste(b)) continue
                 if (c.land && (b.source?.from ?: Int.MAX_VALUE) > turn) continue
-                val n = when (kind) {
-                    "token" -> board.count { it.token && !it.creature && !manaToken(it) }
-                    "artifact" -> spareArtifacts()
+                val n = when {
+                    kind.startsWith(GRAVEYARD_KIND) -> graveyard.count { g -> g.creature && g.cost.pips.any { kind.last() in it } }
+                    kind == "token" -> board.count { it.token && !it.creature && !manaToken(it) }
+                    kind == "artifact" -> spareArtifacts()
                     else -> board.count { it.isA(kind) }
                 } - (if (c.mana.kind == ManaOddsCalc.Kind.ROCK || c.land || dork) c.mana.amount else 0) - c.manaPerCost
                 if (n > 0) base += setOf(colour) to n
@@ -3330,7 +3569,7 @@ object WinOddsCalc {
 
         /** A land from the hand or the graveyard onto the battlefield (On the Trail), with landfall. */
         fun landOnto(l: WinCard, tapped: Boolean) {
-            val source = Source(l.mana.colours, 1, if (tapped && board.none { it.card?.untapsLands == 1 }) turn + 1 else turn)
+            val source = Source(l.mana.colours, l.mana.amount, if (tapped && board.none { it.card?.untapsLands == 1 }) turn + 1 else turn)
             sources += source
             val e = Entry(l, turn, 0, false, false, false).also { it.source = source }
             board += e
@@ -3399,6 +3638,8 @@ object WinOddsCalc {
                 extraCombat = false
                 animateNow = 0
                 newTurn()
+                // Depletion lands without counters left, and the lands sacrificed to Lotus Field, go (since 1.69).
+                board.filter { e -> e.source?.let { it.until < t } == true }.forEach { died(it) }
                 // A stun counter comes off instead of untapping (Baloth Prime).
                 board.filter { it.stun > 0 && it.turn < t }.forEach { it.stun--; it.stunTurn = t }
                 // The upkeep (since 1.55): Mechanized Production and Hellkite Tyrant win; Walking Archive; "each upkeep".
@@ -3417,6 +3658,8 @@ object WinOddsCalc {
                 firstOfDrawStep = false
                 board.toList().forEach { b -> b.card?.let { c -> c.scaled.filter { it.turn && it.what == Effect.DRAW }.forEach { scaled(it) } } }
                 board.toList().forEach { b -> b.card?.takeIf { it.fetchTurn }?.fetchKind?.let { fetch(it) } }
+                // Sagas get a lore counter after the draw step (since 1.69).
+                for (e in board.filter { it.card?.chapters?.isNotEmpty() == true && it.turn < t }.toList()) chapter(e, t - e.turn)
                 if (f.eachTurn) board.toList().forEach { b -> b.card?.let { if (it.eachTurn.any) use(it.eachTurn, b) } }
                 // Paradigm (since 1.55): a free copy of each one that has resolved, at the beginning of the first main phase.
                 for (c in paradigms.toList()) cast(c, copy = true).let { overrun += it }
@@ -3428,7 +3671,11 @@ object WinOddsCalc {
                 landDrops = 1 + board.sumOf { it.card?.extraLands ?: 0 }
                 playLand()
                 extraLands(emptyList())
-                var pool = pool()
+                var pool = pool() + chapterMana
+                chapterMana.clear()
+                // An ability a chapter grants (Urza's Saga's Construct): its cost and the Saga's own mana for its {T}.
+                for ((a, e) in granted) if (e in board) ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(a.cost.generic + 1, a.cost.pips))?.let { pool = it; use(a, e) }
+                granted.clear()
                 if (mazeSpent > 0) pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(mazeSpent, emptyList())) ?: emptyList()
                 // With Amulet of Vigor and the like it comes in untapped and can go again.
                 if (mazeDeck && mazeSpent > 0) maze(pool)?.let { pool = it }
@@ -3510,6 +3757,11 @@ object WinOddsCalc {
                     }
                 }
                 if (f.graveyardCasts) pool = fromGraveyard(pool)
+                // Since 1.69: Soul Immolation, Mizzix's Mastery.
+                pool = blightX(pool)
+                if (life.all { it <= 0 }) return t
+                pool = mizzix(pool)
+                if (life.all { it <= 0 }) return t
                 // With spell triggers, rituals left are cast for them; their mana goes on to what follows (since 1.62).
                 if (f.rituals && spellTriggers) for (r in hand.filter { it.ritual.isNotEmpty() && ritualOf(it).sumOf { m -> m.second } >= it.manaValue }.toList()) {
                     pool = (spend(pool, costOf(r), r.manaValue) ?: continue) + ritualOf(r)
@@ -3580,8 +3832,14 @@ object WinOddsCalc {
                     !e.creature && e.isA("artifact") && !e.isA("land") && e.turn < t && (kelp > 0 && e.art == "clue" || animateNow > 0 && e.source == null && !manaToken(e))
                 }
                 animated.forEach { it.creature = true; it.power = if (kelp > 0 && it.art == "clue") kelp else animateNow }
+                val crewed = crew(t)
                 val attackers = board.filter { b ->
                     b.creature && b.tapped != t && b.stun == 0 && b.stunTurn != t && (b.turn < t || hasHaste(b))
+                }
+                // Twenty-Toed Toad (since 1.69).
+                if (attackers.any { b -> b.card?.toadWin == true && b.counters >= 20 } || hand.size >= 20 && attackers.any { it.card?.toadWin == true }) {
+                    life.fill(0)
+                    return t
                 }
                 val extra = HashMap<Entry, Int>()
                 val doubled = HashSet<Entry>()
@@ -3596,12 +3854,15 @@ object WinOddsCalc {
                         extra[hit] = (extra[hit] ?: 0) + count("gate")
                     }
                     for (c in hand.filter { it.pumpSpell }.sortedWith(compareByDescending<WinCard> { it.pumpDouble }.thenByDescending { it.pump })) {
+                        // Akroma's Will (since 1.69): when the attackers hit hard enough.
+                        if (c.teamDouble && (doubleFor.contains("creature") || attackers.sumOf { gearPower(it).first } < 6)) continue
                         var left = spend(pool, costOf(c)) ?: continue
                         val x = if (c.pumpX) left.sumOf { it.second }.also { left = emptyList() } else 0
                         pool = left
                         cast(c)
                         extra[hit] = (extra[hit] ?: 0) + c.pump + x + targeted
                         if (c.pumpDouble) doubled += hit
+                        if (c.teamDouble) doubleFor += "creature"
                     }
                     // Pumps paid with the mana left (Lathliss, Bladewing, firebreathing), since 1.55.
                     if (f.pumps) pool = activatedPumps(pool, attackers, extra)
@@ -3630,9 +3891,10 @@ object WinOddsCalc {
                 val allDouble = f.doubles && live.any { it.card?.attackersDouble == true }
                 val counteredDouble = f.doubles && live.any { it.card?.doubleCountered == true }
                 // Each attacker's damage, kept apart: a creature attacks one player (since 1.56).
-                val hits = ArrayList<Int>()
+                // Each hit with its toxic (since 1.69).
+                val hits = ArrayList<Pair<Int, Int>>()
                 // Sage of the Maze: a land becomes a 2X/2X with haste, X the Gates (since 1.54).
-                live.firstNotNullOfOrNull { b -> b.card?.animates?.takeIf { b.turn < t && b.tapped != t } }?.let { hits += count(it.per) * it.factor }
+                live.firstNotNullOfOrNull { b -> b.card?.animates?.takeIf { b.turn < t && b.tapped != t } }?.let { hits += count(it.per) * it.factor to 0 }
                 var draws = 0
                 val fromCommanders = IntArray(leaders.size)
                 // Haunted One: a commander attacking gives it and the creatures sharing a type with it +2/+0 (since 1.55).
@@ -3653,8 +3915,8 @@ object WinOddsCalc {
                         // Myriad: it and its copies attack each opponent once.
                         myriad -> life.indices.filter { life[it] > 0 }.forEach { i -> life[i] -= p; dealt[0] += p.toLong() }
                         // An extra combat: it attacks again, maybe someone else.
-                        extraCombat -> { hits += once; hits += once }
-                        else -> hits += p
+                        extraCombat -> { hits += once to toxic(b); hits += once to toxic(b) }
+                        else -> hits += p to toxic(b)
                     }
                     b.card?.combatDraw?.takeIf { it != 0 && p > 0 }?.let { draws += if (it == MANA_VALUE) p else it }
                 }
@@ -3673,15 +3935,20 @@ object WinOddsCalc {
                 // Until 1.56 all of it was added up and spread over the opponents, so one huge creature (Jumbo Cactuar)
                 // knocked out all three. Now the biggest go first, each onto the opponent with the most life it finishes,
                 // or else the one with the least life.
-                for (p in hits.sortedDescending()) {
+                for ((p, toxic) in hits.sortedByDescending { it.first }) {
                     if (p <= 0) break
                     val open = life.indices.filter { life[it] > 0 }
                     if (open.isEmpty()) break
                     val i = open.filter { life[it] <= p }.maxByOrNull { life[it] } ?: open.minBy { life[it] }
                     life[i] -= p
                     dealt[0] += p.toLong()
+                    if (toxic > 0 && life[i] > 0) {
+                        poison[i] += toxic
+                        if (poison[i] >= POISON) life[i] = 0
+                    }
                 }
                 animated.forEach { it.creature = false; it.power = 0 }
+                crewed.forEach { it.creature = false }
                 if (life.all { it <= 0 }) return t
                 // "Whenever one or more creatures you control deal combat damage to a player" (Professional Face-Breaker,
                 // Ongoing Investigation, Heroes in a Half Shell), Ray Fillet (since 1.55).
@@ -3852,7 +4119,9 @@ object WinOddsCalc {
             a.populate * 2 +
             // Since 1.63: proliferate, poison (a sure knockout with proliferate to follow), an emblem for every creature.
             a.proliferate * proliferateWorth() + (if (a.poison + a.poisonTo > 0) (if (f.proliferate) 15 else 3) else 0) +
-            a.emblemAnthem * 2 * board.count { it.creature }
+            a.emblemAnthem * 2 * board.count { it.creature } +
+            // Since 1.69: Alquist Proft's X draws.
+            (if (a.drawX) 6 else 0)
 
         /**
          * Tap abilities and abilities paid with mana (since 1.55): each permanent uses its best one when it pays; a
@@ -3867,26 +4136,78 @@ object WinOddsCalc {
                 if (b !in board || c.taps.isEmpty() || b.tapped == turn) continue
                 if (b.creature && b.turn >= turn && !hasHaste(b) && !hasteAbilities) continue
                 val attack = if (b.creature) gearPower(b).first else 0
-                val pick = c.taps.filter { abilityReady(it, b) && (it.discardCost == 0 || spareCard() != null) && canSpend(pool, it.cost) }.maxByOrNull { value(it) } ?: continue
+                val pick = c.taps.filter { abilityReady(it, b) && (it.discardCost == 0 || spareCard() != null) && canSpend(pool, it.cost) && costPaid(it, b, pay = false) &&
+                    (!it.drawX || pool.sumOf { m -> m.second } - it.cost.manaValue >= 2) }
+                    .maxByOrNull { value(it) } ?: continue
                 if (b.creature && attack > 2 && value(pick) < attack) continue
                 pool = spend(pool, pick.cost) ?: continue
                 if (pick.discardCost > 0) discard(pick.discardCost)
+                costPaid(pick, b, pay = true)
                 b.tapped = turn
+                pool = drawX(pick, pool)
                 use(pick, b)
             }
             for (b in board.toList()) {
                 val c = b.card ?: continue
                 for (a in c.activated) repeat(3) {
-                    if (!abilityReady(a, b) || a.discardCost > 0 && spareCard() == null) return@repeat
+                    if (b !in board || !abilityReady(a, b) || a.discardCost > 0 && spareCard() == null) return@repeat
                     if (a.exileGraveyard > 0 && graveyard.size < a.exileGraveyard) return@repeat
+                    if (!canSpend(pool, a.cost) || !costPaid(a, b, pay = false)) return@repeat
                     pool = spend(pool, a.cost) ?: return@repeat
                     if (a.discardCost > 0) discard(a.discardCost)
+                    costPaid(a, b, pay = true)
                     if (a.exileGraveyard > 0) leftGraveyard(graveyard.sortedBy { if (it.creature) worth(it) + 10 else 0 }.take(a.exileGraveyard))
                     val copy = Ability().also { x -> x.tokens = a.tokens; x.token = a.token; x.draw = a.draw; x.drainEach = a.drainEach; x.drainOne = a.drainOne; x.treasures = a.treasures; x.artifacts = a.artifacts }
                     use(if (a.exileGraveyard > 0) copy else a, b)
                 }
             }
             return pool
+        }
+
+        /**
+         * An ability's sacrifice, blight or counter cost (since 1.69): whether something can pay it and the ability is worth
+         * what it costs, and with [pay] paying it. Sacrificed: what's worth least (tokens, then the creatures whose death
+         * sets off most); blight: the creature [minusOwnTarget] picks.
+         */
+        fun costPaid(a: Ability, user: Entry, pay: Boolean): Boolean {
+            val gain = value(a)
+            a.sacrificeCost?.let { kind ->
+                val victim = board.filter { e -> e !== user && e.card !in leaders && sacrificeKind(e, kind) }.minByOrNull { sacrificeLoss(it) } ?: return false
+                if (sacrificeLoss(victim) >= gain) return false
+                if (pay) died(victim)
+            }
+            if (a.blightCost > 0) {
+                val target = minusOwnTarget(a.blightCost, may = false) ?: return false
+                val loss = minOf(a.blightCost, (target.power + target.counters).coerceAtLeast(0)) - (if (minusWorth()) 2 * a.blightCost else 0)
+                if (loss >= gain) return false
+                if (pay) minus(target, a.blightCost)
+            }
+            if (a.counterCost > 0) {
+                val from = board.filter { it.creature && it.counters > 0 }.minByOrNull { if (it.card in leaders) 1 else 0 } ?: return false
+                if (pay) from.counters--
+            }
+            return true
+        }
+
+        fun sacrificeKind(e: Entry, kind: String) = when (kind) {
+            "creature" -> e.creature
+            "artifact" -> e.isA("artifact") && !e.isA("land") && !e.creature && e.on == null
+            else -> e.art == kind
+        }
+
+        /** What sacrificing [e] to an ability loses: a creature's worth, a spare token next to nothing, a mana rock its mana. */
+        fun sacrificeLoss(e: Entry): Int = when {
+            e.creature -> keepWorth(e) - (if (deathDrains(e, true) > 0) 2 else 0)
+            e.token -> if (manaToken(e) || e.art == "clue") 1 else 0
+            else -> 3 + 2 * (e.source?.amount ?: 0)
+        }
+
+        /** "{X}…: draw X cards" (Alquist Proft, since 1.69): X is the mana left, up to five. */
+        fun drawX(a: Ability, pool: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+            if (!a.drawX) return pool
+            val x = minOf(5, pool.sumOf { it.second })
+            draw(x)
+            return ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(x, emptyList())) ?: emptyList()
         }
 
         /** Sneak Attack: a creature from the hand that couldn't be cast comes in with haste and goes at the end of the turn. */
@@ -4083,7 +4404,8 @@ object WinOddsCalc {
             val have = HashSet<Char>()
             sources.forEach { have += it.colours }
             // Spell // land cards last: they may be cast as spells later (since 1.62).
-            val lands = hand.filter { it.land }
+            // Lotus Field waits until there are lands to sacrifice to it (since 1.69).
+            val lands = hand.filter { it.land && board.count { e -> e.isA("land") && (e.source?.until ?: 0) > turn } >= it.mana.sacrificesLands }
             val names = if (mazeDeck) gateNames() else emptySet()
             // A Maze's End deck plays Maze's End, then Gates with new names (since 1.54). With Crucible of Worlds a land
             // can come from the graveyard (since 1.55).
@@ -4093,12 +4415,19 @@ object WinOddsCalc {
                 ?: fromYard ?: return null
             if (land === fromYard) leftGraveyard(listOf(land)) else hand.remove(land)
             landDrops--
-            val source = Source(land.mana.colours, 1, if (untapped(land)) turn else turn + 1)
+            // Since 1.69: lands making more than one mana (Lotus Field), for as long as their depletion counters last.
+            // Lotus Field: the lands sacrificed to it are tapped for mana first, and gone next turn.
+            repeat(land.mana.sacrificesLands) {
+                board.filter { it.isA("land") && (it.source?.until ?: 0) > turn }.minByOrNull { it.source!!.colours.size * 10 + it.source!!.amount }?.let { it.source!!.until = turn }
+            }
+            val from = if (untapped(land)) turn else turn + 1
+            val source = Source(land.mana.colours, land.mana.amount, from, until = if (land.mana.uses > 0) from + land.mana.uses - 1 else Int.MAX_VALUE)
             sources += source
             val e = Entry(land, turn, 0, false, false, false).also { it.source = source }
             board += e
             makeAll(land.madeOnce)
             landEntered(e)
+            if (land.chapters.isNotEmpty()) chapter(e, 0)
             // A fetch land and the land it finds both set off landfall (since 1.62).
             if (land.fetchLand) landEntered(e)
             return source

@@ -174,13 +174,14 @@ Folding **Stats** and **Tokens** sections on the deck page:
 - **Tokens** the deck makes, with the printing of your choice.
 - **Casting the commander:** the chance per turn (1–7) that the commander can be cast and each colour is there, from
   10,000 games played alone (Frank Karsten's method with the deck's own cards: Commander mulligans, a land a turn, mana
-  rocks, mana creatures and ramp).
+  rocks, mana creatures and ramp; lands like Lotus Field or Ancient Tomb make what they tap for).
 - **Winning the game:** the first turn the deck wins (green), the turn it has won by in 4 of 10 games (gold) and in 9
   of 10, and the share of games won each turn. The app plays the deck alone 10,000 times for up to 15 turns against
   three players at 40 life, nobody blocking: it casts its cards (most expensive first), attacks with everything, and
   reads from the cards' text what they do: damage, drain, tokens, pumps, counters, equipment, card draw, ramp,
-  Treasures, the graveyard, reanimation, copies, polymorph, cascade, planeswalkers, sacrifice payoffs, poison and
-  Commander Salt's **combos** (with tutors fetching a missing piece). It wins when all three opponents are out (life,
+  Treasures, the graveyard, reanimation, copies, polymorph, cascade, planeswalkers, sacrifice payoffs, abilities that
+  cost a sacrifice or blight, Sagas, Vehicles, poison and toxic, and Commander Salt's **combos** (with tutors fetching
+  a missing piece). It wins when all three opponents are out (life,
   21 commander damage, poison, a combo, Maze's End). **How?** in the app lists what was counted. No removal or blockers,
   so it's a best case to compare decks by. Worked out in the background and kept until the deck changes.
 

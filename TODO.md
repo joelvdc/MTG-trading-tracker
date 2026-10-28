@@ -114,6 +114,29 @@ Open questions:
 
 ## Done
 
+### Win turn: lands, ability costs, finishers, Sagas, Vehicles, toxic (MTG Trader 1.69)
+*Asked 2026-10-28: the owner had Mistral Large audit the simulator; its claims were checked by reading 34 of the named
+cards through `classify`, and the owner gave the green light for items 1–5 of the checked list.*
+
+Released in MTG Trader 1.69 (2026-10-28), `WinOddsCalc.VERSION` 10:
+- Audit claims that were wrong: loot spells (Faithless Looting, Frantic Search) were read; Great Train Heist's extra
+  combat and Treasure, Oketra's Monument's cast trigger, Caretaker's Talent's draw were read; Mechanized Production's
+  count includes the enchanted Clue; filter lands only fix colours (left at one mana). Lotus Field isn't faster than a
+  basic land on its own (three mana for three lands' worth), so Quintorius moved 1 point slower.
+- New: land `amount`/`uses`/`sacrificesLands` (ManaOdds too; `Source.until`), Crypt of Agadeem (`GRAVEYARD_KIND`),
+  ability costs `sacrificeCost`/`blightCost`/`counterCost`/`drawX` (`costPaid`, `sacrificeLoss`), `teamDouble`,
+  Jeska's Will (`OPPONENT_HAND` = 5), `blightX`, `mizzix`, `reanimateAsOne`, Saga `chapters` (`chapter()`, `granted`,
+  `addMana`, `cheapArtifact`), Vehicles `crew()`, `toxic`/`gearToxic`/`TokenKind.toxic`, `toadWin`. Spell modes are
+  read without their "•"; `modeScore` values double strike 6 (Boros Charm had flipped to 4 damage).
+- The owner's 19 "Ready to Play" decks, 10,000 games with Commander Salt's combos, 1.68 → 1.69 (share won by a turn):
+  Council of Four by T9 25% → 33%, by T10 50% → 59%; Tawnos' Army by T9 31% → 36%, by T10 54% → 60%; Cult of Athreos
+  by T10 22% → 25%; Haunted Ganax and Cloud by T10 69% → 71% (4 in 10 by T9 instead of T10); Vohar, Ruby, Poly
+  Jace, Teval, Smasher +1–2 points; Auntie Plague's combo share 35% → 38%; Quintorius, Deep Clue Sea, Turtle Power
+  within 1 point either way; Baba, Taranika, Shrine Gate Win, Zombies unchanged. No first-win turn changed.
+- Rivaz of the Claw's "spend this mana only" two mana stays two: only lands with a condition count as one.
+- Not counted still: spree (Great Train Heist, Three Steps Ahead), "when this dies" triggers, Athreos's recursion,
+  "untap all" (Wilderness Reclamation), Frantic Search's untap, Mirrex's Mites, Smasher's X spells copied by Mizzix.
+
 ### Neater tiles on the printed bracket cards (MTG Trader 1.68)
 *Asked 2026-10-28: after 1.67 the tiles had "empty space under the bracket/turn numbers"; of three mockups the owner
 chose "something between now and A": tiles 9.8 mm instead of 11 mm, same text sizes, label and number centred.*

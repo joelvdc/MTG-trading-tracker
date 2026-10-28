@@ -34,7 +34,9 @@ data class ManaOdds(
  * - lands that enter tapped come in tapped ("unless …" lands are counted as untapped), mana creatures can
  *   tap from the next turn (at once with haste), and ramp spells' lands come in tapped when the card says so;
  *   ramp spells count every land they put onto the battlefield (two for Explosive Vegetation), and Cultivate's
- *   second land goes to the hand (since 1.55).
+ *   second land goes to the hand (since 1.55);
+ * - lands make what they tap for (since 1.69): Lotus Field three mana (once two lands are there to sacrifice to it), the
+ *   depletion lands two for two turns, Ancient Tomb two; lands with a condition on their mana one.
  * Nothing else is counted: no opponents, no removal, no Treasure, rituals or cost reducers. It's a best case
  * to compare decks and changes by, not a promise.
  */
@@ -54,9 +56,16 @@ object ManaOddsCalc {
     private val tapAddLine = Regex("^\\{T\\}: Add (.*)$", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
     private val manaSymbol = Regex("\\{[WUBRGC]\\}")
     private val hasteLine = Regex("^haste\\b", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
+    // A land's own mana abilities, also with a cost besides {T} ("{T}, Remove a depletion counter…"); since 1.69.
+    private val landTapAddLine = Regex("^\\{T\\}(?:, [^:]*)?: Add (.*)$", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
+    private val depletion = Regex("enters tapped with (\\w+) depletion counters", RegexOption.IGNORE_CASE)
+    private val sacrificeLands = Regex("when this land enters, sacrifice (\\w+) (?:untapped )?lands", RegexOption.IGNORE_CASE)
+    private val conditional = Regex("activate only if|spend this mana only", RegexOption.IGNORE_CASE)
 
     /** The most mana one "{T}: Add …" ability makes: {C}{C} or {R}{R} is 2, "two mana in any combination" 2. Since 1.55. */
-    private fun manaAmount(text: String): Int = tapAddLine.findAll(text).maxOfOrNull { m ->
+    private fun manaAmount(text: String, line: Regex = tapAddLine): Int = line.findAll(text).maxOfOrNull { m ->
+        // A land's mana with a condition (Temple of the False God, Eldrazi Temple) is taken as one.
+        if (line === landTapAddLine && conditional.containsMatchIn(m.groupValues[1])) return@maxOfOrNull 1
         val what = m.groupValues[1].substringBefore('.').substringBefore(" or ")
         when {
             what.startsWith("two mana", true) -> 2
@@ -100,7 +109,9 @@ object ManaOddsCalc {
     /**
      * What a card does for the mana: also used by the win turn ([WinOddsCalc], since 1.52). [amount]: the mana it
      * makes, or the lands a ramp spell puts onto the battlefield; [toHand]: a ramp spell also puts a land into the hand;
-     * [haste]: a mana creature that can tap the turn it comes in (since 1.55).
+     * [haste]: a mana creature that can tap the turn it comes in (since 1.55). Since 1.69 a land can make more than one
+     * mana (Lotus Field, the depletion lands); [uses]: the turns a land lasts (two depletion counters: 2; 0 for ever);
+     * [sacrificesLands]: the lands it sacrifices when it enters (Lotus Field).
      */
     internal class Card(
         val kind: Kind,
@@ -110,10 +121,12 @@ object ManaOddsCalc {
         val amount: Int,
         val toHand: Boolean = false,
         val haste: Boolean = false,
+        val uses: Int = 0,
+        val sacrificesLands: Int = 0,
     )
 
-    /** A mana source on the battlefield: what it makes, how much, and from which turn. */
-    private class Source(val colours: Set<Char>, val amount: Int, val from: Int)
+    /** A mana source on the battlefield: what it makes, how much, and from which turn (until which, since 1.69). */
+    private class Source(val colours: Set<Char>, val amount: Int, val from: Int, var until: Int = Int.MAX_VALUE, val land: Boolean = false)
 
     fun calculate(cards: List<StatsCard>, identity: String, games: Int = GAMES, turns: Int = TURNS, random: Random = Random(46)): ManaOdds? {
         val commanders = cards.filter { it.commander }
@@ -139,7 +152,7 @@ object ManaOddsCalc {
             for (turn in 1..turns) {
                 if (draw < rest.size) hand += rest[draw++]
                 playLand(hand, sources, turn)
-                val ready = sources.filter { it.from <= turn }
+                val ready = sources.filter { it.from <= turn && turn <= it.until }
                 ready.forEach { seen += it.colours }
                 for (colour in own) if (colour in seen) colourBy.getValue(colour)[turn]++
                 if (own.isNotEmpty() && seen.containsAll(own)) allBy[turn]++
@@ -175,7 +188,12 @@ object ManaOddsCalc {
             if (fetch) colours = DeckStats.fetches(c, lands).keys.filter { it in own }.toSet()
             val tapped = if (fetch) "tapped" in faces
             else ("enters tapped" in faces || "enters the battlefield tapped" in faces) && "unless" !in faces
-            return Card(Kind.LAND, colours.ifEmpty { setOf('C') }, tapped, Cost(0, emptyList()), 1)
+            val own0 = c.landFaces.firstOrNull()?.second.orEmpty()
+            return Card(
+                Kind.LAND, colours.ifEmpty { setOf('C') }, tapped, Cost(0, emptyList()), manaAmount(own0, landTapAddLine),
+                uses = depletion.find(own0)?.let { WinOddsCalc.number(it.groupValues[1]) } ?: 0,
+                sacrificesLands = sacrificeLands.find(own0)?.let { WinOddsCalc.number(it.groupValues[1]) } ?: 0,
+            )
         }
         // The face it's cast as (since 1.63: a battle's creature back, Invasion of Zendikar's, isn't a mana creature).
         val type = (c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types).substringBefore(" // ")
@@ -230,12 +248,16 @@ object ManaOddsCalc {
     }
 
     private fun playLand(hand: MutableList<Card>, sources: MutableList<Source>, turn: Int) {
-        val lands = hand.filter { it.kind == Kind.LAND }
+        // Lotus Field waits until there are lands to sacrifice to it (since 1.69).
+        val lands = hand.filter { it.kind == Kind.LAND && sources.count { s -> s.land && turn < s.until } >= it.sacrificesLands }
         if (lands.isEmpty()) return
         val have = sources.flatMap { it.colours }.toSet()
         val land = lands.sortedWith(compareBy<Card> { it.tapped }.thenByDescending { (it.colours - have).size }).first()
         hand.remove(land)
-        sources += Source(land.colours, 1, if (land.tapped) turn + 1 else turn)
+        // The lands sacrificed to it are tapped for mana first.
+        repeat(land.sacrificesLands) { sources.filter { it.land && turn < it.until }.minByOrNull { it.colours.size }?.until = turn }
+        val from = if (land.tapped) turn + 1 else turn
+        sources += Source(land.colours, land.amount, from, if (land.uses > 0) from + land.uses - 1 else Int.MAX_VALUE, land = true)
     }
 
     /** Casts the cheapest mana makers that can be paid for with what's left this turn. */
