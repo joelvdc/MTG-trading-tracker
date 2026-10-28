@@ -112,7 +112,7 @@ class AppContainer(context: Context) {
     val cardTrader = com.mtgtrader.data.CardTrader(context, http, db)
     val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader) { exchangeRates.rates.value }
     private val browser = HiddenBrowser(context)
-    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope, winOdds)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
     val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
     val offlineImages = com.mtgtrader.data.OfflineImages(context, db, settings, network, appScope)

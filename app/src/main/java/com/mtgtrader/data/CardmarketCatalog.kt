@@ -38,6 +38,12 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rows: List<CmProduct>)
 
+    @Query("SELECT idProduct FROM cm_products")
+    suspend fun allIds(): List<Int>
+
+    @Query("DELETE FROM cm_products WHERE idProduct IN (:ids)")
+    suspend fun deleteIds(ids: List<Int>)
+
     @Query("SELECT * FROM cm_products WHERE idProduct IN (:ids)")
     suspend fun getMany(ids: List<Int>): List<CmProduct>
 
@@ -164,26 +170,31 @@ class CardmarketCatalog(
         }
     }
 
+    /**
+     * Replaces the product list with the file's. Since 1.66 in batches, each in a transaction of its own, removing
+     * the products no longer listed at the end: one transaction for the whole list held the database meanwhile.
+     */
     private suspend fun import(file: File) {
-        db.withTransaction {
-            dao.clear()
-            dao.clearSetExpansions()
-            JsonReader(InputStreamReader(file.inputStream().buffered(), Charsets.UTF_8)).use { reader ->
-                reader.beginObject()
+        val listed = HashSet<Int>()
+        JsonReader(InputStreamReader(file.inputStream().buffered(), Charsets.UTF_8)).use { reader ->
+            reader.beginObject()
+            while (reader.hasNext()) {
+                if (reader.nextName() != "products") { reader.skipValue(); continue }
+                val batch = ArrayList<CmProduct>(5000)
+                reader.beginArray()
                 while (reader.hasNext()) {
-                    if (reader.nextName() != "products") { reader.skipValue(); continue }
-                    val batch = ArrayList<CmProduct>(2000)
-                    reader.beginArray()
-                    while (reader.hasNext()) {
-                        readProduct(reader)?.let { batch += it }
-                        if (batch.size >= 2000) { dao.insertAll(batch); batch.clear() }
-                    }
-                    reader.endArray()
-                    if (batch.isNotEmpty()) dao.insertAll(batch)
+                    readProduct(reader)?.let { batch += it; listed += it.idProduct }
+                    if (batch.size >= 5000) { dao.insertAll(batch); batch.clear() }
                 }
-                reader.endObject()
+                reader.endArray()
+                if (batch.isNotEmpty()) dao.insertAll(batch)
             }
+            reader.endObject()
         }
+        if (listed.isEmpty()) throw IOException("The product list was empty")
+        dao.allIds().filter { it !in listed }.chunked(900).forEach { dao.deleteIds(it) }
+        // Worked out again from the new list when needed.
+        dao.clearSetExpansions()
     }
 
     private fun readProduct(r: JsonReader): CmProduct? {

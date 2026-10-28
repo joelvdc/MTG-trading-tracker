@@ -46,7 +46,8 @@ instead (bigger, runs on any device). Either way, a new version installs over th
   data: refreshed daily for the cards you have, and whenever Scryfall sends a card, e.g. in a search) and
   **Card Kingdom**'s public price list (~10 MB a day: its selling price per condition and its buylist). Each source
   downloads once a day (a failed try waits a few hours before the next), with a progress bar above the tabs; since 1.61
-  Card Kingdom's list is downloaded first and saved after, so the collection stays open meanwhile. Card
+  Card Kingdom's list is downloaded first and saved after, and since 1.66 it and Cardmarket's price guide and product
+  list are saved in batches, so the collection stays open meanwhile. Card
   Kingdom refuses some phones (HTTP 403, e.g. in Denmark); then the app uses a copy that a daily GitHub job
   (`.github/workflows/card-kingdom.yml`, `scripts/card_kingdom_prices.py`) keeps on this repository's
   `card-kingdom-prices` branch (~5 MB). Settings →
@@ -316,8 +317,23 @@ Commander Salt gives:
   brightness) to show your table, shareable as images, and work without a connection. Commander Salt's own card
   images are still one tap away (⋮ → "Show Commander Salt's original").
 
-**Power level source** (Settings): Commander Salt, [EDH Power Level](https://edhpowerlevel.com/) or
-[ScrollVault](https://scrollvault.net/tools/commander-bracket/). The other two sites have no API, so the app opens their
+**Power level source** (Settings): Commander Salt, [EDH Power Level](https://edhpowerlevel.com/),
+[ScrollVault](https://scrollvault.net/tools/commander-bracket/) or **This app** (since 1.66). The app's own power level
+is a whole number from 1 to 10, worked out on the phone from the deck's win turn ("Winning the game" on the deck page) and Commander Salt's
+ratings:
+- **Speed:** the turn by which half the simulated games are won, between whole turns (38% by turn 8 and 62% by turn 9
+  is turn 8.5), on the turn scale of the r/EDH "Guide to Power Levels in EDH" (2020), slid between its points: turn 1 is
+  10, turn 3 is 9, turn 6 is 8, turn 8 is 7, turn 10.5 is 6, turn 13 is 5, turn 15 is 4.5. Decks winning under half
+  their games by turn 15 get 4 (35% or more), 3 (15% or more), 2 (any) or 1 (none).
+- **What the win turn can't see** (it plays alone): Commander Salt's interaction, consistency, efficiency and mana
+  base ratings (0–1), each against the middle of a casual pod's decks: (interaction − 0.25) × 2 + (consistency − 0.45)
+  + (efficiency − 0.30) × 1.5 + (mana base − 0.90), at most one point either way; nothing when Commander Salt hasn't
+  scored the deck.
+- The sum is rounded to a whole number. The deck page shows how it came about ("half the games won by turn 8.6 (6.8),
+  Commander Salt's ratings +0.2"). The win turns are worked out in the background (a few seconds per deck the first
+  time) and kept on the phone, so each phone works them out itself, with the same result.
+
+EDH Power Level and ScrollVault have no API, so the app opens their
 calculator out of sight and reads the result (a few seconds per deck; on ScrollVault's page the ads and trackers aren't
 loaded). The chosen power level is used everywhere, including the power card and sorting; brackets and everything else
 stay Commander Salt's. With ScrollVault, the power level comes with its margin (e.g. 6.2 ±0.5), and the power card and

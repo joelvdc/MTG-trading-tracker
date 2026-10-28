@@ -86,6 +86,7 @@ data class Deck(
         PowerSource.COMMANDER_SALT -> powerLevel
         PowerSource.EDH_POWER_LEVEL -> edhPowerLevel
         PowerSource.SCROLLVAULT -> svPowerLevel
+        PowerSource.APP -> AppPower.of(archidektId)?.power?.toDouble()
     }
 
     /** When the chosen source last rated the deck, and why it failed (if it did). */
@@ -93,12 +94,14 @@ data class Deck(
         PowerSource.COMMANDER_SALT -> scoredAt
         PowerSource.EDH_POWER_LEVEL -> edhPowerAt
         PowerSource.SCROLLVAULT -> svAt
+        PowerSource.APP -> null
     }
 
     fun powerError(source: PowerSource): String? = when (source) {
         PowerSource.COMMANDER_SALT -> scoreError
         PowerSource.EDH_POWER_LEVEL -> edhPowerError
         PowerSource.SCROLLVAULT -> svError
+        PowerSource.APP -> if (AppPower.known(archidektId) && AppPower.of(archidektId) == null) "no win turn without a commander" else null
     }
 
     /** ScrollVault's extra findings (win turns, its bracket verdict, the line for your pod). */
@@ -128,10 +131,15 @@ enum class DeckGroup(val title: String) {
 enum class PowerSource(val label: String, val site: String) {
     COMMANDER_SALT("Commander Salt", "commandersalt.com"),
     EDH_POWER_LEVEL("EDH Power Level", "edhpowerlevel.com"),
-    SCROLLVAULT("ScrollVault", "scrollvault.net");
+    SCROLLVAULT("ScrollVault", "scrollvault.net"),
+    /** Worked out on the phone from the win turn and Commander Salt's ratings ([AppPowerLevel]). Since 1.66. */
+    APP("This app", "the app's win turn");
 
     /** Rated by another site after Commander Salt has scored the deck. */
-    val external get() = this != COMMANDER_SALT
+    val external get() = this == EDH_POWER_LEVEL || this == SCROLLVAULT
+
+    /** Not Commander Salt's own power level: the deck's pages say where it comes from. */
+    val separate get() = this != COMMANDER_SALT
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT

@@ -4216,24 +4216,53 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
     private val serializer = MapSerializer(String.serializer(), Saved.serializer())
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** The win turn of these cards, worked out in the background unless kept from before; null for decks without a commander. */
+    /**
+     * The win turn of these cards, worked out in the background unless kept from before; null for decks without a
+     * commander. The app's power level for the deck ([AppPower]) follows it (since 1.66).
+     */
     suspend fun get(deckId: Long, cards: List<StatsCard>, identity: String, salt: SaltCard?): WinOdds? {
-        if (cards.none { it.commander }) return null
-        val combos = salt?.allCombos.orEmpty()
-        val key = fingerprint(cards, identity, combos)
-        load()[deckId.toString()]?.takeIf { it.key == key }?.let { return it.odds }
-        val odds = withContext(Dispatchers.Default) { WinOddsCalc.calculate(cards, identity, combos) } ?: return null
-        mutex.withLock {
-            val all = saved ?: mutableMapOf()
-            all[deckId.toString()] = Saved(key, odds)
-            withContext(Dispatchers.IO) { runCatching { file.writeText(json.encodeToString(serializer, all)) } }
+        if (cards.none { it.commander }) {
+            if (cards.isNotEmpty()) AppPower.put(deckId, null)
+            return null
         }
+        val odds = kept(deckId, cards, identity, salt) ?: withContext(Dispatchers.Default) {
+            WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty())
+        }?.also { odds ->
+            mutex.withLock {
+                val all = saved ?: mutableMapOf()
+                all[deckId.toString()] = Saved(fingerprint(cards, identity, salt?.allCombos.orEmpty()), odds)
+                withContext(Dispatchers.IO) { runCatching { file.writeText(json.encodeToString(serializer, all)) } }
+            }
+        }
+        AppPower.put(deckId, odds?.let { AppPowerLevel.of(it, salt) })
         return odds
+    }
+
+    /** The win turn kept from before for exactly these cards, without working it out. */
+    private suspend fun kept(deckId: Long, cards: List<StatsCard>, identity: String, salt: SaltCard?): WinOdds? {
+        val key = fingerprint(cards, identity, salt?.allCombos.orEmpty())
+        return load()[deckId.toString()]?.takeIf { it.key == key }?.odds
     }
 
     /** The same for a deck that isn't on screen (the bracket cards), reading its cards from the database. */
     suspend fun forDeck(deck: Deck): WinOdds? =
         get(deck.archidektId, db.cardInfoDao().deckStats(deck.archidektId), deck.colorIdentity, SaltCard.decode(deck.saltCard))
+
+    /**
+     * Fills in the app's power level of [deck] when its win turn is kept from before (quick); false when it would have
+     * to be worked out. Since 1.66.
+     */
+    suspend fun fillKept(deck: Deck): Boolean {
+        val cards = db.cardInfoDao().deckStats(deck.archidektId)
+        if (cards.none { it.commander }) {
+            if (cards.isNotEmpty()) AppPower.put(deck.archidektId, null)
+            return cards.isNotEmpty()
+        }
+        val salt = SaltCard.decode(deck.saltCard)
+        val odds = kept(deck.archidektId, cards, deck.colorIdentity, salt) ?: return false
+        AppPower.put(deck.archidektId, AppPowerLevel.of(odds, salt))
+        return true
+    }
 
     private suspend fun load(): Map<String, Saved> = mutex.withLock {
         saved ?: withContext(Dispatchers.IO) {

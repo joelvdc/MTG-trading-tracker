@@ -3,7 +3,6 @@ package com.mtgtrader.data
 import android.content.Context
 import android.util.JsonReader
 import android.util.JsonToken
-import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +35,8 @@ class PriceGuideRepository(
     companion object {
         const val URL = "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json"
         private const val MAX_AGE_MS = 20L * 60 * 60 * 1000
+        /** Prices saved per transaction while importing (see [import]). */
+        private const val BATCH = 5000
     }
 
     private val dao = db.priceDao()
@@ -114,35 +115,41 @@ class PriceGuideRepository(
         }
     }
 
-    /** Replaces the price table with the file's contents in one transaction. Returns the guide's createdAt. */
+    /**
+     * Replaces the price table with the file's contents. Returns the guide's createdAt. Since 1.66 the prices are
+     * saved in batches, each in a transaction of its own, and the products no longer listed are removed at the end:
+     * one transaction for the whole guide held the database, and the collection, opened meanwhile, showed only a
+     * loading circle until it was done.
+     */
     private suspend fun import(file: File): String? {
         var createdAt: String? = null
-        db.withTransaction {
-            dao.clear()
-            JsonReader(InputStreamReader(file.inputStream().buffered(), Charsets.UTF_8)).use { reader ->
-                reader.beginObject()
-                while (reader.hasNext()) {
-                    when (reader.nextName()) {
-                        "createdAt" -> createdAt = reader.nextString()
-                        "priceGuides" -> {
-                            val batch = ArrayList<PriceEntity>(2000)
-                            reader.beginArray()
-                            while (reader.hasNext()) {
-                                readEntry(reader)?.let { batch += it }
-                                if (batch.size >= 2000) {
-                                    dao.insertAll(batch)
-                                    batch.clear()
-                                }
+        val listed = HashSet<Int>()
+        JsonReader(InputStreamReader(file.inputStream().buffered(), Charsets.UTF_8)).use { reader ->
+            reader.beginObject()
+            while (reader.hasNext()) {
+                when (reader.nextName()) {
+                    "createdAt" -> createdAt = reader.nextString()
+                    "priceGuides" -> {
+                        val batch = ArrayList<PriceEntity>(BATCH)
+                        reader.beginArray()
+                        while (reader.hasNext()) {
+                            readEntry(reader)?.let { batch += it; listed += it.idProduct }
+                            if (batch.size >= BATCH) {
+                                dao.insertAll(batch)
+                                batch.clear()
                             }
-                            reader.endArray()
-                            if (batch.isNotEmpty()) dao.insertAll(batch)
                         }
-                        else -> reader.skipValue()
+                        reader.endArray()
+                        if (batch.isNotEmpty()) dao.insertAll(batch)
                     }
+                    else -> reader.skipValue()
                 }
-                reader.endObject()
             }
+            reader.endObject()
         }
+        // An empty guide would leave no prices at all: keep the old ones instead.
+        if (listed.isEmpty()) throw IOException("The price guide was empty")
+        dao.allIds().filter { it !in listed }.chunked(900).forEach { dao.deleteIds(it) }
         return createdAt
     }
 

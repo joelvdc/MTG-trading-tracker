@@ -335,9 +335,10 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Meter(power ?: 0.0, Modifier.padding(top = 8.dp))
-            if (power == null && source.external) {
+            if (power == null && source.separate) {
                 Text(
-                    deck.powerError(source)?.let { "${source.site} couldn't rate this deck: $it" } ?: "Not rated by ${source.site} yet.",
+                    deck.powerError(source)?.let { "${source.site.replaceFirstChar(Char::uppercase)} couldn't rate this deck: $it" }
+                        ?: if (source == PowerSource.APP) "Not worked out yet." else "Not rated by ${source.site} yet.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 6.dp),
@@ -613,7 +614,7 @@ private fun shareCard(context: Context, file: File, deck: Deck, card: RuleZeroCa
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
     val credit = when {
         original -> "commandersalt.com"
-        card == RuleZeroCard.POWER && source.external -> "${source.site}, commandersalt.com"
+        card == RuleZeroCard.POWER && source.separate -> "${source.site}, commandersalt.com"
         else -> "commandersalt.com"
     }
     val send = Intent(Intent.ACTION_SEND)

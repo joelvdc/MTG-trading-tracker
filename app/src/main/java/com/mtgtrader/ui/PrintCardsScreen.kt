@@ -152,7 +152,7 @@ fun PrintCardsScreen(nav: NavController) {
     // Decks scored before their card details were kept get them now.
     LaunchedEffect(Unit) { c.decks.fillMissingCardData() }
     val decks = all?.let { list ->
-        remember(list, owner, source) {
+        remember(list, owner, source, com.mtgtrader.data.AppPower.readings) {
             DeckSorting.sort(list, c.settings.deckSort, c.settings.deckSortReversed, source)
                 .filter { DeckGroup.of(it, owner) != DeckGroup.OTHERS && it.scored }
         }

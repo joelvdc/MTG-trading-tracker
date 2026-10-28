@@ -84,7 +84,7 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
     // Decks scored before their card details were kept get them now.
     LaunchedEffect(Unit) { c.decks.fillMissingCardData() }
     val own = decks?.let { list ->
-        remember(list, owner, source) {
+        remember(list, owner, source, com.mtgtrader.data.AppPower.readings) {
             DeckSorting.sort(list, c.settings.deckSort, c.settings.deckSortReversed, source)
                 .filter { DeckGroup.of(it, owner) != DeckGroup.OTHERS }
         }
@@ -127,8 +127,10 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
             if (unscored.isNotEmpty()) {
                 item(key = "unscored") {
                     Text(
-                        "${unscored.size} deck(s) not scored by " + (if (kind == RuleZeroCard.POWER && source.external) source.site else "Commander Salt") +
-                            " yet: " + unscored.joinToString(", ") { it.name } + ".",
+                        when {
+                            kind == RuleZeroCard.POWER && source == PowerSource.APP -> "${unscored.size} deck(s) without a power level yet: "
+                            else -> "${unscored.size} deck(s) not scored by " + (if (kind == RuleZeroCard.POWER && source.external) source.site else "Commander Salt") + " yet: "
+                        } + unscored.joinToString(", ") { it.name } + ".",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

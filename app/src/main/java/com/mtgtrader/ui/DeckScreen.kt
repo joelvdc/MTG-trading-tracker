@@ -138,6 +138,7 @@ import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.PowerSource
+import java.util.Locale
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
@@ -1022,6 +1023,15 @@ private fun DeckHeader(deck: Deck, cardCount: Int, value: Double, priceType: Pri
     }
 }
 
+/** How the app's power level came about: "Power level from the app's win turn: half the games won by turn 8.6 (6.8), Commander Salt's ratings +0.2." */
+internal fun appPowerText(r: com.mtgtrader.data.AppPowerReading): String {
+    val speed = String.format(Locale.getDefault(), "%.1f", r.speed)
+    val turn = r.turn?.let { "half the games won by turn " + String.format(Locale.getDefault(), "%.1f", it) + " ($speed)" }
+        ?: "under half the games won by the last turn, ${r.wonByEnd}% ($speed)"
+    val salt = r.adjust?.let { ", Commander Salt's ratings " + String.format(Locale.getDefault(), "%+.1f", it) } ?: ", no Commander Salt ratings"
+    return "Power level from the app's win turn: $turn$salt."
+}
+
 @Composable
 private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: () -> Unit, onRescore: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
@@ -1050,7 +1060,17 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (source.external) {
+            if (source == PowerSource.APP) {
+                val other = deck.powerLevel?.let { " (Commander Salt: ${Scores.power(it)})" } ?: ""
+                val error = deck.powerError(source)
+                Text(
+                    com.mtgtrader.data.AppPower.of(deck.archidektId)?.let { appPowerText(it) + other }
+                        ?: error?.let { "The app has no power level for this deck: $it.$other" }
+                        ?: "Working out the power level from the win turn…$other",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else if (source.external) {
                 val power = deck.power(source)
                 val error = deck.powerError(source)
                 val sv = deck.scrollVaultReading.takeIf { source == PowerSource.SCROLLVAULT && power != null }

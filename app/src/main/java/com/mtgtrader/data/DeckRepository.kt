@@ -48,6 +48,7 @@ class DeckRepository(
     private val edh: EdhPowerLevelApi,
     private val scrollVault: ScrollVaultApi,
     private val scope: CoroutineScope,
+    private val winOdds: WinOddsStore,
 ) {
     private val dao = db.deckDao()
     private val cardDir = File(context.filesDir, "rulezero")
@@ -63,6 +64,9 @@ class DeckRepository(
 
     @Volatile
     private var powerStopped = false
+
+    /** Decks whose app power level was worked out (or tried) since the app started, so they aren't tried over and over. */
+    private val appPowerTried = java.util.Collections.synchronizedSet(HashSet<Long>())
 
     /**
      * Set by [DeckEditor] (since 1.46): reads a deck with the Archidekt login, so the user's private decks load
@@ -297,6 +301,8 @@ class DeckRepository(
             try {
                 val result = scoreSalt(d)
                 if (result.scoreError == null) scored++ else unscored += d.name
+                // The app's power level uses Commander Salt's ratings too.
+                if (settings.powerSource.value == PowerSource.APP) rateApp(result) {}
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -488,6 +494,20 @@ class DeckRepository(
         PowerSource.COMMANDER_SALT -> deck
         PowerSource.EDH_POWER_LEVEL -> rateEdh(deck, step)
         PowerSource.SCROLLVAULT -> rateScrollVault(deck, step)
+        PowerSource.APP -> deck.also { rateApp(it, step) }
+    }
+
+    /** The app's power level ([AppPower]): the deck's win turn, worked out unless kept from before. Since 1.66. */
+    private suspend fun rateApp(deck: Deck, step: (String) -> Unit) {
+        appPowerTried += deck.archidektId
+        step("Working out the win turn…")
+        try {
+            winOdds.forDeck(dao.get(deck.archidektId) ?: deck)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Left without one; the deck page works the win turn out again when it's opened.
+        }
     }
 
     private suspend fun rateScrollVault(deck: Deck, step: (String) -> Unit): Deck {
@@ -526,6 +546,7 @@ class DeckRepository(
      */
     fun rateMissingPower(): Boolean {
         val source = settings.powerSource.value
+        if (source == PowerSource.APP) return rateMissingApp()
         if (!source.external) return false
         return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
             powerStopped = false
@@ -548,9 +569,32 @@ class DeckRepository(
         }
     }
 
-    /** Whether some decks still need the chosen site's power level. */
+    /**
+     * Works out the app's power level for the decks without one (local decks too): their win turns, the slow part,
+     * unless kept from before. Since 1.66.
+     */
+    private fun rateMissingApp(): Boolean = start(DeckJob(null, "Working out power levels…", canStop = true)) {
+        powerStopped = false
+        val decks = dao.all().filter { !AppPower.known(it.archidektId) && it.archidektId !in appPowerTried }
+        var done = 0
+        for ((i, d) in decks.withIndex()) {
+            if (stopRequested) break
+            val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
+            rateApp(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
+            if (AppPower.of(d.archidektId) != null) done++
+        }
+        if (stopRequested) powerStopped = true
+        DeckJobResult(null, "Worked out $done power level" + (if (done == 1) "" else "s") + if (stopRequested) " · stopped" else "")
+    }
+
+    /** Whether some decks still need the chosen site's power level (or the app's, which fills in the kept ones first). */
     suspend fun powerMissing(): Boolean {
         val source = settings.powerSource.value
+        if (source == PowerSource.APP) {
+            if (powerStopped) return false
+            val waiting = dao.all().filter { !AppPower.known(it.archidektId) && it.archidektId !in appPowerTried }
+            return waiting.count { d -> runCatching { !winOdds.fillKept(d) }.getOrDefault(true) } > 0
+        }
         return !powerStopped && source.external && dao.all().any { !it.local && it.power(source) == null && it.powerError(source) == null }
     }
 

@@ -299,7 +299,7 @@ fun SettingsScreen(nav: NavController) {
                 val pick = {
                     if (src != powerSource) {
                         c.settings.setPowerSource(src)
-                        if (src.external) c.decks.rateMissingPower()
+                        if (src.separate) c.decks.rateMissingPower()
                     }
                 }
                 Row(
@@ -315,6 +315,9 @@ fun SettingsScreen(nav: NavController) {
                                 PowerSource.EDH_POWER_LEVEL -> "The app has edhpowerlevel.com work out each deck's power level (a few seconds per deck)."
                                 PowerSource.SCROLLVAULT -> "The app has ScrollVault's bracket calculator analyse each deck (about 10 seconds per deck). " +
                                     "Its power level comes with a margin, a typical winning turn and a line to tell your pod."
+                                PowerSource.APP -> "Worked out on this phone from the win turn: the turn by which the deck wins half its games, " +
+                                    "on the turn scale of the r/EDH power level guide, plus Commander Salt's interaction, consistency, " +
+                                    "efficiency and mana base ratings (up to a point either way). A whole number from 1 to 10."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

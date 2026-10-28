@@ -23,6 +23,12 @@ interface PriceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rows: List<PriceEntity>)
 
+    @Query("SELECT idProduct FROM prices")
+    suspend fun allIds(): List<Int>
+
+    @Query("DELETE FROM prices WHERE idProduct IN (:ids)")
+    suspend fun deleteIds(ids: List<Int>)
+
     @Query("SELECT * FROM prices WHERE idProduct = :id")
     suspend fun get(id: Int): PriceEntity?
 

@@ -247,7 +247,7 @@ fun DecksScreen(nav: NavController) {
             )
         },
     ) { pad ->
-        val list = decks?.let { remember(it, sort, reversed, source) { DeckSorting.sort(it, sort, reversed, source) } }
+        val list = decks?.let { remember(it, sort, reversed, source, com.mtgtrader.data.AppPower.readings) { DeckSorting.sort(it, sort, reversed, source) } }
         if (list == null) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
@@ -445,9 +445,16 @@ fun ColorPips(identity: String, size: Int = 12) {
 }
 
 object Scores {
-    /** Power level as its source shows it: "4.4" (Commander Salt, ScrollVault) or "6.70" (edhpowerlevel.com). */
-    fun power(v: Double, source: PowerSource = PowerSource.COMMANDER_SALT): String =
-        String.format(Locale.getDefault(), if (source == PowerSource.EDH_POWER_LEVEL) "%.2f" else "%.1f", v)
+    /** Power level as its source shows it: "4.4" (Commander Salt, ScrollVault), "6.70" (edhpowerlevel.com) or "6" (the app's). */
+    fun power(v: Double, source: PowerSource = PowerSource.COMMANDER_SALT): String = String.format(
+        Locale.getDefault(),
+        when (source) {
+            PowerSource.EDH_POWER_LEVEL -> "%.2f"
+            PowerSource.APP -> "%.0f"
+            else -> "%.1f"
+        },
+        v,
+    )
 }
 
 @Composable

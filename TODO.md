@@ -114,6 +114,34 @@ Open questions:
 
 ## Done
 
+### The app's own power level; loading circle during price downloads (MTG Trader 1.66)
+*Asked 2026-10-28: "a new way to the app to calculate the power level based on the win-turn simulator. An option in
+settings to use the calculated power level, instead of using the external sources", using the turn scale of
+https://imgur.com/guide-to-power-levels-edh-OcMdyUH; and "the app still shows loading while download prices" (also
+while downloading, not only while saving).*
+
+Released in MTG Trader 1.66 (2026-10-28):
+- Settings → Commander deck power level → **This app**: speed from the turn by which half the games are won (with
+  decimals) on the guide's turn scale, plus Commander Salt's interaction, consistency, efficiency and mana base ratings
+  (±1 at most), rounded to a whole number (the owner's choice: "refined version without table", no decimals).
+- Card Kingdom's prices and Cardmarket's price guide and product list are saved in batches (each its own transaction).
+  The cause: a long transaction kept the database's writer busy, and the collection, opened meanwhile, couldn't start
+  watching its tables (Room sets up its change triggers with a short write), so it showed the loading circle. The
+  Cardmarket saves run during Card Kingdom's download, which is why it also happened while downloading.
+
+How the method was chosen (the owner's 19 Ready to Play decks, 2026-10-28; whole table in the conversation):
+- The guide has no data behind its turn column; its author meant the turn a deck "establishes dominance", and the
+  r/EDH thread moved cEDH to turns 2–4. playgroup.gg's logged games: the median 4-player game lasts about 9 rounds.
+- Compared: speed at 40% and 50% of games (differ 0.1–0.3), speed with a "table" correction (+1 turn × commander
+  damage share, +0.5 × other combat; left out by the owner), the refined versions, Disciple of the Vault's formula
+  (2/avg MV + draw/4 + tutors/2 + cheap ramp/4 + interaction/20: swings 5.1–12.3, mostly card draw counts) and
+  Commander Salt (about 1.5 lower). The refined version without the table put the decks at 5.7–7.2.
+- Checked on the way: Turtle Power wins early (T7.7 for half the games) because both commanders grow every turn
+  (66% commander damage); Leonardo is castable by turn 4 in 61% of games, coloured pips are paid only by sources of
+  that colour, mulligans follow Karsten's model (lands only). Poly Jace's polymorph cards and Ruby's cascade are read.
+- Haunted Ganax had no Commander Salt analysis (its stored deck was marked invalid and the import kept answering
+  "Deck URL invalid"); checked again later the same morning, Commander Salt had it (power level 4.1).
+
 ### Print the bracket and power level cards as PDF (MTG Trader 1.65)
 *Asked 2026-10-27 ("generate a PDF with bracket or power cards for the decks… same size as MTG cards, so that they can
 be cut. PDF in A4 format… select which decks to include… sent to my notes to self on my molly/signal"). Mockups shown;

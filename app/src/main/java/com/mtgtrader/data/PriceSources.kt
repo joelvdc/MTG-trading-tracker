@@ -11,7 +11,6 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -378,21 +377,21 @@ class PriceSourceStore(
                 val stream = if (zipped) GZIPInputStream(raw) else raw
                 var listDate: String? = null
                 var rows = 0
-                val batch = ArrayList<SourcePrice>(2000)
-                db.withTransaction {
-                    parse(stream, start, { listDate = it }) { row ->
-                        batch += row
-                        rows++
-                        if (batch.size >= 2000) {
-                            dao.putAll(batch.toList())
-                            batch.clear()
-                        }
+                val batch = ArrayList<SourcePrice>(5000)
+                // Each batch in a transaction of its own (since 1.66): one for the whole list held the database, and
+                // the collection, opened meanwhile, showed only a loading circle until it was saved.
+                parse(stream, start, { listDate = it }) { row ->
+                    batch += row
+                    rows++
+                    if (batch.size >= 5000) {
+                        dao.putAll(batch.toList())
+                        batch.clear()
                     }
-                    if (batch.isNotEmpty()) dao.putAll(batch)
-                    if (rows < 1000) throw java.io.IOException("only $rows prices in the list")
-                    // Cards Card Kingdom no longer lists.
-                    dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
                 }
+                if (batch.isNotEmpty()) dao.putAll(batch)
+                if (rows < 1000) throw java.io.IOException("only $rows prices in the list")
+                // Cards Card Kingdom no longer lists.
+                dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
                 via to listDate
             }
         } finally {
