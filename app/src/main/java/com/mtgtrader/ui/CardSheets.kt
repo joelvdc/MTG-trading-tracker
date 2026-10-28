@@ -12,7 +12,6 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import androidx.compose.ui.graphics.toArgb
-import com.mtgtrader.data.Brackets
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
@@ -391,21 +390,21 @@ object CardSheets {
         private fun tiles() {
             val gap = 1.5f
             val w = (INNER - 2 * gap) / 3
-            val h = 11f
-            fun tile(i: Int, bg: Int, fg: Int, label: String, big: String, small: String, bigColour: Int = fg) {
+            // No line under the number since 1.67: shorter tiles (since 1.68), the label and number centred.
+            val h = 9.8f
+            fun tile(i: Int, bg: Int, fg: Int, label: String, big: String, bigColour: Int = fg) {
                 val x = PAD + i * (w + gap)
                 p.fill(x, y, w, h, bg, 1.5f)
                 val cx = x + w / 2
-                p.text(label, cx, y + 2.6f, 5f, fg, align = Paint.Align.CENTER)
-                p.text(big, cx, y + 7.6f, 13f, bigColour, Weight.BOLD, align = Paint.Align.CENTER)
-                p.text(small, cx, y + 10f, 4.6f, fg, align = Paint.Align.CENTER, maxWidth = w - 1f)
+                p.text(label, cx, y + 2.9f, 5f, fg, align = Paint.Align.CENTER)
+                p.text(big, cx, y + 8.15f, 13f, bigColour, Weight.BOLD, align = Paint.Align.CENTER)
             }
             listOf("Baseline" to deck.bracketBaseline, "Realistic" to deck.bracketRealistic).forEachIndexed { i, (label, b) ->
                 val (bg, fg) = bracketColors(b)
-                tile(i, bg.toArgb(), fg.toArgb(), label, b?.toString() ?: "—", "")
+                tile(i, bg.toArgb(), fg.toArgb(), label, b?.toString() ?: "—")
             }
             // The turn 4 in 10 games are won by, in gold like its bar below (without saying so since 1.67).
-            tile(2, 0xFFF1EFF6.toInt(), GREY, "Wins by", card.win?.label ?: "—", "", GOLD)
+            tile(2, 0xFFF1EFF6.toInt(), GREY, "Wins by", card.win?.label ?: "—", GOLD)
             y += h
         }
 

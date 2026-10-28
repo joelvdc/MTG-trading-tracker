@@ -114,6 +114,12 @@ Open questions:
 
 ## Done
 
+### Neater tiles on the printed bracket cards (MTG Trader 1.68)
+*Asked 2026-10-28: after 1.67 the tiles had "empty space under the bracket/turn numbers"; of three mockups the owner
+chose "something between now and A": tiles 9.8 mm instead of 11 mm, same text sizes, label and number centred.*
+
+Released in MTG Trader 1.68 (2026-10-28).
+
 ### Tidier bracket and power level cards (MTG Trader 1.67)
 *Asked 2026-10-28, with notes on an exported PDF: remove "4 in 10 games" from all bracket cards (and everywhere else
 in the app: "it is self explanatory from the github readme"), "Bracket data: Commander Salt", the power card's
