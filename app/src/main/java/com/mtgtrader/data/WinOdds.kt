@@ -174,6 +174,13 @@ data class WinCounted(
  * - Akroma's Will's double strike for every attacker, Jeska's Will (an opponent's hand taken as five cards), Soul
  *   Immolation's blight X for X damage to each opponent, Mizzix's Mastery; Storm of Souls bringing creatures back as 1/1s;
  * - Saga chapters (Maximum Carnage, Urza's Saga), Vehicles crewed, toxic, Twenty-Toed Toad's win.
+ * Since 1.70 also:
+ * - Currency Converter's Rogues and Treasures only for the cards exiled with it (discarded ones); Renewed Solidarity copying
+ *   the tokens of the chosen type (the one the deck's tokens share most) that entered this turn, and their +1/+0;
+ * - spree: the modes worth their extra mana, paid for; "when this creature dies" (the best mode of a "choose one"), token
+ *   copies of dying creatures (Vaultborn Tyrant), Wilhelt's decayed Zombies (sacrificed after they attack);
+ * - Wilderness Reclamation's lands untapping at the end step for Clues and abilities without {T}; lands' token abilities
+ *   (Mirrex, Castle Ardenvale).
  * Nothing else is counted: no opponents, removal or abilities the text patterns don't recognise, so it's a best case
  * to compare decks by, not a promise. Since 1.52.
  */
@@ -187,9 +194,10 @@ object WinOddsCalc {
      * graveyard, copies and planeswalkers (1.55). 5: each attacker hits one opponent (1.56). 6: sacrifice payoffs,
      * populate, tokens one by one, ascend, Urza (1.61). 7: trigger timing, rituals, land drops, modes, spell // land (1.62).
      * 8: battles, planeswalker ultimates, proliferate and poison (1.63). 9: deaths, sacrifice outlets, -1/-1 counters (1.64).
-     * 10: lands making more mana, ability costs, finishers, Sagas, Vehicles, toxic (1.69).
+     * 10: lands making more mana, ability costs, finishers, Sagas, Vehicles, toxic (1.69). 11: Currency Converter, Renewed
+     * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70).
      */
-    const val VERSION = 10
+    const val VERSION = 11
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -689,6 +697,8 @@ object WinOddsCalc {
         var granted = false
         /** Urza's Saga: an artifact with mana cost {0} or {1} from the library onto the battlefield. */
         var cheapArtifact = false
+        /** Currency Converter's "put a card exiled with this into its owner's graveyard": a Treasure or a Rogue (since 1.70). */
+        var fromExiled = false
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
         val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
@@ -1026,6 +1036,22 @@ object WinOddsCalc {
         var gearToxic = 0
         /** Twenty-Toed Toad: attacking with twenty cards in hand or twenty counters on it wins. */
         var toadWin = false
+        // Since 1.70.
+        /** Currency Converter: discarded cards are exiled with it, for its "put a card exiled with this" ability. */
+        var exilesDiscards = false
+        /** Renewed Solidarity: at the end step a copy of each token of the chosen type that entered this turn; +[chosenPump]/+0. */
+        var copyNewTokens = false
+        var chosenPump = 0
+        /** "When this creature dies" (the best mode of a "choose one"); [deathCopy]: a token copy of it unless it was one. */
+        var onDeath = Ability()
+        var deathCopy = false
+        /** "Whenever another Zombie you control dies, … create" (Wilhelt): the kind that has to die, and the token. */
+        var deathToken: Pair<String?, TokenKind>? = null
+        var deathTokenDecayed = false
+        /** A land's "{3}, {T}: Create …" (Mirrex, Castle Ardenvale): paid with its own mana and the cost. */
+        val landTaps = ArrayList<Ability>()
+        /** Wilderness Reclamation: the lands untap at the end step, for what can be done then. */
+        var untapLandsEnd = false
         val minusPayoff get() = minusTokens != null || minusToken != null || minusDrain > 0 || minusEveryToken != null || minusDraw || counterBurn
         /** Mirkwood Bats, Marionette Master and Apprentice: sacrificing artifacts or tokens drains (since 1.61). */
         val sacrificePayoff get() = artifactDrain || dieDrain > 0 || tokenDrain > 0
@@ -1063,8 +1089,8 @@ object WinOddsCalc {
 
         /** Every ability it has (to freeze them once it's read). */
         fun abilities(): List<Ability> = listOf(onEnter, eachTurn, onAttack, onYouAttack, onKindAttack, onHit, onSecondDraw, onOppSecondDraw,
-            eachUpkeep, onSecondSpell, onCreatureEnter, onAnyHit, onClueSac, postCombat) + taps + activated + loyalties.map { it.second } + onCast.map { it.second } +
-            listOfNotNull(freeSac)
+            eachUpkeep, onSecondSpell, onCreatureEnter, onAnyHit, onClueSac, postCombat, onDeath) + taps + activated + loyalties.map { it.second } + onCast.map { it.second } +
+            listOfNotNull(freeSac) + landTaps
 
         /** Fills or uses the graveyard (for the "How?"). */
         val graveyardUse
@@ -1076,6 +1102,8 @@ object WinOddsCalc {
     }
 
     internal fun classify(c: StatsCard, own: Set<Char>, lands: List<StatsCard>, comboKeys: Set<String>): WinCard {
+        // Spree (since 1.70): read as one spell with the modes worth their extra cost, and those costs added.
+        spree(c, own, lands, comboKeys)?.let { return classify(it, own, lands, comboKeys) }
         val mana = ManaOddsCalc.classify(c, own, lands)
         val w = WinCard(c.name, mana, ManaOddsCalc.cost(c.manaCost), c.cmc.toInt())
         w.combo = w.key in comboKeys
@@ -1112,6 +1140,15 @@ object WinOddsCalc {
                 w.manaPerCost = ManaOddsCalc.cost(m.groupValues[1]).manaValue
             }
             if ("Saga" in w.subtypes) w.chapters = readChapters(w, landText)
+            // A land's token ability (Mirrex, Castle Ardenvale; since 1.70).
+            for (line in landText.split('\n')) landTapText.find(line.trim())?.let { m ->
+                val a = Ability()
+                readAbility(a, "Create " + m.groupValues[2], w, full = true)
+                if (a.tokens == 0) a.tokens = 1
+                if (a.token == null) a.token = tokenKind(line)
+                a.cost = ManaOddsCalc.cost(m.groupValues[1])
+                w.landTaps += a
+            }
             if (spellFace(c)) {
                 val type0 = (c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types).substringBefore(" // ")
                 val spell = c.copy(
@@ -1285,6 +1322,31 @@ object WinOddsCalc {
         return (1..last).map { byChapter[it] ?: Ability() }
     }
 
+    private val spreeMode = Regex("^\\+ ((?:\\{[^}]+\\})+) — (.*)$")
+    private val landTapText = Regex("^((?:\\{[^}]+\\})+), \\{T\\}: Create (.*)$", I)
+
+    /**
+     * A spree card (since 1.70) as the spell with the modes worth at least their extra mana (by [modeScore]; else the best
+     * one), and their costs added to its own; null when the card has no spree.
+     */
+    private fun spree(c: StatsCard, own: Set<Char>, lands: List<StatsCard>, comboKeys: Set<String>): StatsCard? {
+        val lines = c.oracleText?.split('\n') ?: return null
+        if (lines.none { it.trim().startsWith("Spree") }) return null
+        val modes = lines.mapNotNull { spreeMode.find(it.trim()) }
+        if (modes.isEmpty()) return null
+        val base = lines.filter { !it.trim().startsWith("Spree") && spreeMode.find(it.trim()) == null }
+        fun with(kept: List<MatchResult>) = c.copy(
+            oracleText = (base + kept.map { it.groupValues[2] }).joinToString("\n"),
+            manaCost = c.manaCost.orEmpty() + kept.joinToString("") { it.groupValues[1] },
+            cmc = c.cmc + kept.sumOf { ManaOddsCalc.cost(it.groupValues[1]).manaValue },
+        )
+        val plain = modeScore(classify(with(emptyList()), own, lands, comboKeys))
+        val scores = modes.associateWith { m -> modeScore(classify(with(listOf(m)), own, lands, comboKeys)) - plain }
+        val kept = modes.filter { m -> scores.getValue(m) > 0 && scores.getValue(m) >= ManaOddsCalc.cost(m.groupValues[1]).manaValue }
+            .ifEmpty { listOfNotNull(modes.maxByOrNull { scores.getValue(it) }) }
+        return with(kept)
+    }
+
     /** A spell // land card (Malakir Rebirth): a land on its back face only. Since 1.62. */
     private fun spellFace(c: StatsCard): Boolean {
         val type = c.typeLine?.takeIf { it.isNotEmpty() } ?: c.types
@@ -1317,7 +1379,9 @@ object WinOddsCalc {
         (if (w.mana.kind == ManaOddsCalc.Kind.RAMP) 2 else 0) + w.ritualMana + 2 * (w.extraLands + w.extraLandsNow) +
         w.abilities().sumOf { a ->
             2 * a.draw + 3 * a.drainEach + a.drainOne + a.tokens * maxOf(1, a.token?.power ?: 1) + a.treasures + a.artifacts +
-                4 * a.reanimate.coerceAtMost(3) + 4 * a.copies + 3 * a.flicker + 2 * a.toHand + 2 * a.landRamp + a.made.values.sum() + a.proliferate
+                4 * a.reanimate.coerceAtMost(3) + 4 * a.copies + 3 * a.flicker + 2 * a.toHand + 2 * a.landRamp + a.made.values.sum() + a.proliferate +
+                // Since 1.70: spree and "dies" modes.
+                (if (a.extraCombat) 6 else 0) + a.lootDraw + 2 * a.countersAll
         }
 
     private val leavesTokenText = Regex("when (?:this \\w+|[^,.]+) is put into a graveyard from the battlefield, create (?:a|an) (?:tapped )?(\\d+)/\\d+")
@@ -1651,6 +1715,7 @@ object WinOddsCalc {
             if ("paradigm" in words) w.paradigm = true
             return
         }
+        if (read70(w, line, low)) return
         if (readSpecial(w, line, low)) return
         // Since 1.62: combat and end step triggers also go the turn the card comes in, and "each end step" counts (once a
         // turn: ours) unless it has a condition ("if …", "for each opponent who drew two or more cards this turn").
@@ -1796,6 +1861,39 @@ object WinOddsCalc {
      * Lines read whole since 1.55: attack triggers, damage-on-hit triggers, team pumps, lords' haste, drains on tokens
      * and deaths, Sneak Attack, cost reducers, abilities paid with mana. True when the line was read.
      */
+    /**
+     * Since 1.70: Currency Converter's exile, Renewed Solidarity, "when this creature dies" (the best mode of a "choose
+     * one"), "whenever another Zombie you control dies, create" (Wilhelt), Wilderness Reclamation.
+     */
+    private fun read70(w: WinCard, line: String, low: String): Boolean {
+        if (low.startsWith("whenever you discard a card, you may exile that card from your graveyard")) { w.exilesDiscards = true; return true }
+        if (Regex("^at the beginning of your end step, for each token you control of the chosen type that entered this turn, create a token that's a copy of it").containsMatchIn(low)) {
+            w.copyNewTokens = true
+            return true
+        }
+        Regex("^creatures you control of the chosen type get \\+(\\d+)/\\+0").find(low)?.let { w.chosenPump = it.groupValues[1].toInt(); return true }
+        if (low.startsWith("at the beginning of your end step, untap all lands you control")) { w.untapLandsEnd = true; return true }
+        val dies = Regex("^when (?:this creature|[^,]{1,30}) dies, (.*)").find(low)
+        if (dies != null) {
+            if ("create a token that's a copy of it" in dies.groupValues[1]) { w.deathCopy = true; return true }
+            val a = Ability()
+            readAbility(a, line.substring(dies.groups[1]!!.range.first), w, full = true)
+            if (a.tokens == 0 && a.treasures + a.artifacts == 0 && a.made.isEmpty()) Regex("^create (a|an|one|two|three) ").find(dies.groupValues[1])?.let { a.tokens = number(it.groupValues[1]) }
+            if (a.tokens > 0 && a.token == null) a.token = tokenKind(line)
+            if (a.any && deathScore(a) > deathScore(w.onDeath)) w.onDeath = a
+            return true
+        }
+        Regex("^whenever another ([a-z]+) you control dies, (?:if it didn't have decayed, )?create ").find(low)?.let { m ->
+            val kind = tokenKind(line) ?: return@let
+            w.deathToken = m.groupValues[1].takeIf { it != "creature" } to kind
+            w.deathTokenDecayed = "with decayed" in low
+            return true
+        }
+        return false
+    }
+
+    private fun deathScore(a: Ability): Int = 2 * a.draw + a.tokens * maxOf(1, a.token?.power ?: 1) + a.treasures + 2 * a.countersAll + 3 * a.drainEach + a.drainOne + a.artifacts
+
     private fun readSpecial(w: WinCard, line: String, low: String): Boolean {
         val short = Regex.escape(w.name.substringBefore(',').lowercase())
         val full = Regex.escape(w.name.lowercase())
@@ -2026,6 +2124,11 @@ object WinOddsCalc {
         val effect = line.substringAfter(':')
         readAbility(a, effect, w, full = true)
         if ("{x}" in head.lowercase() && Regex("\\bdraws? x cards").containsMatchIn(effect.lowercase())) a.drawX = true
+        // Currency Converter (since 1.70): a Treasure or a Rogue for a card exiled with it.
+        if ("put a card exiled with this" in effect.lowercase()) {
+            a.fromExiled = true
+            a.treasures = 0
+        }
         if (copyExiled.containsMatchIn(effect.lowercase()) && "sacrifice two artifact tokens" in head.lowercase()) a.copyExiled = true
         if (!a.any) return false
         if (taps) w.taps += a else w.activated += a
@@ -2076,7 +2179,8 @@ object WinOddsCalc {
             c.sacrifice != null || c.artifactsOnce + c.artifactsTurn + c.artifactsLandfall > 0 || c.tutorUseful || c.newUse || c.use55 ||
             c.creature && c.mana.kind == ManaOddsCalc.Kind.CREATURE || c.extraLands + c.extraLandsNow > 0 ||
             // Since 1.69.
-            c.crew != null && c.power > 0 || c.chapters.isNotEmpty() || c.toadWin
+            c.crew != null && c.power > 0 || c.chapters.isNotEmpty() || c.toadWin ||
+            c.copyNewTokens || c.chosenPump > 0 || c.untapLandsEnd || c.exilesDiscards || c.deathToken != null
     }
 
     fun calculate(
@@ -2261,6 +2365,9 @@ object WinOddsCalc {
         var stunTurn = 0
         /** Toxic (since 1.69). */
         var toxic = card?.toxic ?: 0
+        /** Since 1.70: cards exiled with it (Currency Converter); decayed (sacrificed after it attacks). */
+        val exiled = ArrayList<WinCard>()
+        var decayed = false
 
         fun isA(kind: String) = kind == "token" && token || subtypes.any { it.equals(kind, true) } || types.any { it.equals(kind, true) } ||
             art != null && art == kind
@@ -2336,7 +2443,7 @@ object WinOddsCalc {
         val doubles = cards.any { it.attackersDouble || it.doubleCountered || it.background > 0 || it.attackDouble || it.targetedBonus > 0 }
         val graveyardCasts = cards.any { it.castFromGraveyard != null || it.selfFromGraveyard != null || it.flashbackCost != null }
         val planeswalkers = cards.any { it.planeswalker && it.loyalties.isNotEmpty() }
-        val abilities = cards.any { it.taps.isNotEmpty() || it.activated.isNotEmpty() }
+        val abilities = cards.any { it.taps.isNotEmpty() || it.activated.isNotEmpty() || it.landTaps.isNotEmpty() }
         val sneak = cards.any { it.sneakCost != null }
         val xTokens = cards.any { it.xTokens > 0 }
         val drawDouble = cards.any { it.drawDouble }
@@ -2348,7 +2455,7 @@ object WinOddsCalc {
         val xCreature = cards.any { it.xCreature != null }
         val proliferate = cards.any { c -> c.landfallProliferate > 0 || c.abilities().any { it.proliferate > 0 } }
         /** Since 1.64. */
-        val deaths = cards.any { it.deathDrains.isNotEmpty() || it.minusDeathSpread || it.minusDeathDraw }
+        val deaths = cards.any { it.deathDrains.isNotEmpty() || it.minusDeathSpread || it.minusDeathDraw || it.onDeath.any || it.deathCopy || it.deathToken != null }
         val freeSac = cards.any { it.freeSac != null }
         val minusPayoffs = cards.any { it.minusPayoff }
         val counterBurn = cards.any { it.counterBurn }
@@ -2909,6 +3016,13 @@ object WinOddsCalc {
         /** Discard payoffs: Monument to Endurance, Bone Miser (since 1.55). */
         fun discarded(c: WinCard) {
             discardsThisTurn++
+            // Currency Converter (since 1.70): the card leaves the graveyard, exiled with it.
+            board.firstOrNull { it.card?.exilesDiscards == true }?.let { conv ->
+                if (c in graveyard) {
+                    leftGraveyard(listOf(c))
+                    conv.exiled += c
+                }
+            }
             for (b in board.toList()) b.card?.let { p ->
                 if (p.monument) when (discardsThisTurn) {
                     1 -> each(3, 3)
@@ -3034,6 +3148,13 @@ object WinOddsCalc {
         /** What an ability, spell or trigger does (since 1.55); [user] is the permanent using it, [attackers] for "that many". */
         fun use(a: Ability, user: Entry? = null, attackers: List<Entry> = emptyList()) {
             if (!a.any) return
+            // Currency Converter (since 1.70): a card exiled with it back to the graveyard, a Treasure for a land, else a Rogue.
+            if (a.fromExiled) {
+                val c = user?.exiled?.removeFirstOrNull() ?: return
+                graveyard += c
+                if (c.land) treasures(1) else token(a.token?.power ?: 2, a.token)
+                return
+            }
             draw(a.draw)
             // "For each Shrine you control" (since 1.64).
             val per = a.drainPer?.let { count(it) } ?: 1
@@ -3597,11 +3718,34 @@ object WinOddsCalc {
         }
 
         /** What the lords on the battlefield give this creature (since 1.55). */
-        fun lordBonus(b: Entry): Int = if (!f.lords) 0 else board.sumOf { l ->
+        fun lordBonus(b: Entry): Int = chosenBonus(b) + if (!f.lords) 0 else board.sumOf { l ->
             l.card?.lords?.sumOf { lord ->
                 val fits = lord.kind == null || lord.kind.split('|').any { k -> if (k == "token") b.token else if (k == "commander") b.card in leaders && !b.token else b.isA(k) }
                 if (fits && !(lord.other && l === b) && (!lord.ascend || blessed())) lord.amount else 0
             } ?: 0
+        }
+
+        /**
+         * Renewed Solidarity (since 1.70): the creature type chosen is the one the deck's tokens share most; its creatures get
+         * +1/+0, and at the end step each token of it that entered this turn is copied.
+         */
+        val chosenType: String? by lazy {
+            (hand + rest + leaders).flatMap { c -> listOfNotNull(c.token, c.xToken) + c.abilities().mapNotNull { it.token } }
+                .flatMap { it.subtypes }.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+        }
+
+        fun chosenBonus(b: Entry): Int {
+            val kind = chosenType ?: return 0
+            return if (b.creature && b.isA(kind)) board.sumOf { it.card?.chosenPump ?: 0 } else 0
+        }
+
+        fun copyNewTokens(t: Int) {
+            val kind = chosenType ?: return
+            repeat(board.count { it.card?.copyNewTokens == true }) {
+                for (e in board.filter { it.token && it.creature && it.turn == t && it.isA(kind) }.toList()) {
+                    token(e.power, TokenKind(e.power, e.types, e.subtypes, e.flying, e.per, toughness = e.toughness, toxic = e.toxic)).also { it.decayed = e.decayed }
+                }
+            }
         }
 
         /** The city's blessing: ten permanents once, kept for the rest of the game (since 1.61). */
@@ -3949,6 +4093,8 @@ object WinOddsCalc {
                 }
                 animated.forEach { it.creature = false; it.power = 0 }
                 crewed.forEach { it.creature = false }
+                // Decayed tokens are sacrificed after they attack (since 1.70).
+                fighters.filter { it.decayed && it in board }.forEach { died(it) }
                 if (life.all { it <= 0 }) return t
                 // "Whenever one or more creatures you control deal combat damage to a player" (Professional Face-Breaker,
                 // Ongoing Investigation, Heroes in a Half Shell), Ray Fillet (since 1.55).
@@ -3971,6 +4117,15 @@ object WinOddsCalc {
                     board.filter { it.sacrificeAtEnd }.forEach { e -> board.remove(e); e.source?.let { sources.remove(it) }; left(e, artifact = "Artifact" in e.types) }
                     if (tokensThisTurn) draw(live.count { it.card?.endDrawIfToken == true })
                     if (live.any { it.card?.monarch == true }) draw(1)
+                }
+                // The end step (since 1.70): Renewed Solidarity's copies; with Wilderness Reclamation the lands untap for Clues
+                // and abilities without {T}.
+                if (board.any { it.card?.copyNewTokens == true }) copyNewTokens(t)
+                if (board.any { it.card?.untapLandsEnd == true }) {
+                    var lands: List<Pair<Set<Char>, Int>> = board.filter { it.isA("land") }.mapNotNull { e -> e.source?.takeIf { it.from <= t && t <= it.until } }
+                        .map { it.colours to it.amount }
+                    if (f.clues) lands = crackClues(lands)
+                    if (f.abilities) abilities(lands, taps = false)
                 }
                 if (f.freeSac) sacrificeForDeaths()
                 if (life.all { it <= 0 }) return t
@@ -4100,6 +4255,7 @@ object WinOddsCalc {
             a.copyExiled -> board.count { it.token && "Artifact" in it.types } >= 2 && graveyard.any { it.creature || "Artifact" in it.types }
             a.copyArtifactToken -> board.any { it.token && "Artifact" in it.types }
             a.doubleStrikeFor != null -> board.filter { it.creature && it.isA(a.doubleStrikeFor!!) && (it.turn < turn || hasHaste(it)) }.sumOf { gearPower(it).first } >= 6
+            a.fromExiled -> user.exiled.isNotEmpty()
             a.exileGraveyard > 0 && !a.copyExiled -> graveyard.size >= a.exileGraveyard && (board.any { it.card?.leaveToken != null || it.card?.leaveDraw == true } || a.tokens > 0)
             a.sacrificeForToken > 0 -> board.any { it.creature && it.card !in leaders && it.power < a.sacrificeForToken }
             a.flicker > 0 -> board.any { it.creature && !it.token && it.card?.let { c -> enterWorth(c) > 0 } == true }
@@ -4128,10 +4284,17 @@ object WinOddsCalc {
          * creature that does doesn't attack (unless the ability is worth less than its power). Abilities without {T}
          * (Varina's Zombies) go again while the mana lasts.
          */
-        fun abilities(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+        fun abilities(start: List<Pair<Set<Char>, Int>>, taps: Boolean = true): List<Pair<Set<Char>, Int>> {
             var pool = start
             val hasteAbilities = board.any { it.card?.abilityHaste == true }
-            for (b in board.toList()) {
+            // A land's token ability (Mirrex, Castle Ardenvale; since 1.70): its cost and the land's own mana for its {T}.
+            if (taps) for (b in board.filter { it.card?.landTaps?.isNotEmpty() == true && it.tapped != turn && (it.source?.from ?: Int.MAX_VALUE) <= turn }) {
+                val a = b.card!!.landTaps.maxBy { value(it) }
+                pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(a.cost.generic + 1, a.cost.pips)) ?: continue
+                b.tapped = turn
+                use(a, b)
+            }
+            if (taps) for (b in board.toList()) {
                 val c = b.card ?: continue
                 if (b !in board || c.taps.isEmpty() || b.tapped == turn) continue
                 if (b.creature && b.turn >= turn && !hasHaste(b) && !hasteAbilities) continue
@@ -4340,6 +4503,14 @@ object WinOddsCalc {
             // A creature dying (since 1.64): Blood Artist and the like, its own "this creature or another"; one with a -1/-1
             // counter: Blowfly Infestation, The Scorpion God.
             if (f.deaths && e.creature) {
+                // Since 1.70: "when this creature dies" (Doomed Traveler, Atsushi), a token copy (Vaultborn Tyrant), Wilhelt.
+                e.card?.let { c ->
+                    if (c.onDeath.any) use(c.onDeath, e)
+                    if (c.deathCopy && !e.token) enter(c, cheated = true, token = true)
+                }
+                if (!e.decayed) for (b in board.toList()) b.card?.deathToken?.let { (kind, k) ->
+                    if (b !== e && (kind == null || e.isA(kind))) token(k.power, k).also { it.decayed = b.card.deathTokenDecayed }
+                }
                 if (life.any { it > 0 }) {
                     each(deathDrains(e, true), 3)
                     one(deathDrains(e, false), 3)

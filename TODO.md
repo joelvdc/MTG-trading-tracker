@@ -114,6 +114,24 @@ Open questions:
 
 ## Done
 
+### Win turn: Currency Converter, Renewed Solidarity, spree, death triggers (MTG Trader 1.70)
+*Asked 2026-10-28: the owner asked how Quintorius won on turn 6. A turn-by-turn trace showed Currency Converter making a
+Rogue every turn without exiled cards and Renewed Solidarity read as "a 1/1 for every token you control" each end step
+(3, 10, 27, 50 tokens), with Moonshaker Cavalry (read correctly) finishing. Green light for items 1–6 of the plan;
+Athreos left out (the opponent chooses).*
+
+Released in MTG Trader 1.70 (2026-10-28), `WinOddsCalc.VERSION` 11:
+- New: `exilesDiscards`/`Entry.exiled`/`Ability.fromExiled` (Converter), `copyNewTokens`/`chosenPump`/`chosenType` (the
+  subtype the deck's tokens share most), `spree()` (modes with `modeScore` ≥ their extra mana, else the best one; costs
+  added), `onDeath` (best mode by `deathScore`), `deathCopy`, `deathToken` + `Entry.decayed`, `untapLandsEnd` (Clues and
+  abilities without {T} at the end step), `landTaps` (cost + 1 for the land's own mana).
+- The 19 "Ready to Play" decks, 10,000 games, 1.69 → 1.70 (share won by a turn): Poly Jace by T10 30% → 22% (it plays
+  Currency Converter; first win T7 → T8); Vohar by T10 32% → 28% (Three Steps Ahead now paid for); Quintorius first win
+  T6 → T7, by T9 54% → 57% (its own Spirit engine; traced, looks right); Haunted Ganax 4 in 10 T9 → T10 (Great Train
+  Heist paid for); the rest within 1 point.
+- Not counted still: Athreos's recursion, Ao's death modes, Eumidian Hatchery, Wilhelt's end-step sacrifice (read as a
+  card each turn), the Treasures of Great Train Heist's third mode (one Treasure).
+
 ### Win turn: lands, ability costs, finishers, Sagas, Vehicles, toxic (MTG Trader 1.69)
 *Asked 2026-10-28: the owner had Mistral Large audit the simulator; its claims were checked by reading 34 of the named
 cards through `classify`, and the owner gave the green light for items 1–5 of the checked list.*

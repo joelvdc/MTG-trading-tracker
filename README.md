@@ -180,7 +180,7 @@ Folding **Stats** and **Tokens** sections on the deck page:
   three players at 40 life, nobody blocking: it casts its cards (most expensive first), attacks with everything, and
   reads from the cards' text what they do: damage, drain, tokens, pumps, counters, equipment, card draw, ramp,
   Treasures, the graveyard, reanimation, copies, polymorph, cascade, planeswalkers, sacrifice payoffs, abilities that
-  cost a sacrifice or blight, Sagas, Vehicles, poison and toxic, and Commander Salt's **combos** (with tutors fetching
+  cost a sacrifice or blight, death triggers, spree, Sagas, Vehicles, poison and toxic, and Commander Salt's **combos** (with tutors fetching
   a missing piece). It wins when all three opponents are out (life,
   21 commander damage, poison, a combo, Maze's End). **How?** in the app lists what was counted. No removal or blockers,
   so it's a best case to compare decks by. Worked out in the background and kept until the deck changes.
