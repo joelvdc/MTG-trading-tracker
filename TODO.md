@@ -114,6 +114,25 @@ Open questions:
 
 ## Done
 
+### Land drops in the commander and win-turn odds (MTG Trader 1.71)
+*Asked 2026-10-29: the app gave Ruby, Daring Tracker 66% on turn 2 where a hand-played simulation gave 86%. The app counted
+{C} as a missing colour (Kessig Wolf Run, Bonders' Enclave played early) and always played an untapped land first. Green
+light 2026-10-29 for all five plan items, with the owner's addition: a tapped land on any turn when the untapped mana
+wouldn't be used; old-vs-new checked on Ruby only.*
+
+Released in MTG Trader 1.71 (2026-10-29), `WinOddsCalc.VERSION` 12:
+- Shared `ManaOddsCalc.chooseLand` (both calculations): {C} isn't a missing colour; untapped only when `spend` (greedy
+  over commanders not cast yet + ramp in hand; for the win turn, hand + command zone) uses its mana this turn; tapped
+  lands that have an `Untap` condition wait behind always-tapped ones.
+- `Untap` conditions read by `untapCondition`: slow (min other lands), fast and Den of the Bugbear (max), battle lands
+  (basics), check lands (land types out), Game Trail (reveal from hand). "You may pay N life" lands are untapped; other
+  "unless" conditions (Spire Garden, Bleeding Woods, Mines of Moria) still count as met. Ramp basics are now `land`
+  sources with basic types (they count for these conditions).
+- Ruby (Archidekt 11823327) before → after: commander by turn [0, 66, 88, 93…] → [0, 90, 94, 95…]; all colours on
+  turn 1 48% → 15% (tapped duals first); win share by T10 25% → 27%, by T12 54% → 56%.
+- Not done: X spells and activated abilities don't count as using the untapped mana; legendary-creature lands (Mines
+  of Moria, The Shire) are always untapped.
+
 ### Win turn: Currency Converter, Renewed Solidarity, spree, death triggers (MTG Trader 1.70)
 *Asked 2026-10-28: the owner asked how Quintorius won on turn 6. A turn-by-turn trace showed Currency Converter making a
 Rogue every turn without exiled cards and Renewed Solidarity read as "a 1/1 for every token you control" each end step

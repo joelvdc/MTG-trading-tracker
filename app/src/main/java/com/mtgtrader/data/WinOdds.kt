@@ -195,9 +195,10 @@ object WinOddsCalc {
      * populate, tokens one by one, ascend, Urza (1.61). 7: trigger timing, rituals, land drops, modes, spell // land (1.62).
      * 8: battles, planeswalker ultimates, proliferate and poison (1.63). 9: deaths, sacrifice outlets, -1/-1 counters (1.64).
      * 10: lands making more mana, ability costs, finishers, Sagas, Vehicles, toxic (1.69). 11: Currency Converter, Renewed
-     * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70).
+     * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70). 12: which land is played,
+     * "enters tapped unless …" conditions (1.71).
      */
-    const val VERSION = 11
+    const val VERSION = 12
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -2747,9 +2748,23 @@ object WinOddsCalc {
             }
         }
 
-        /** Whether a land coming in now is untapped: its own text, or Amulet of Vigor, Spelunking, Gond Gate… */
-        fun untapped(land: WinCard?) = land?.mana?.tapped != true ||
+        /**
+         * Whether a land coming in now is untapped: its own text (since 1.71 with its condition, from [hand] without it:
+         * slow, check and battle lands, Game Trail), or Amulet of Vigor, Spelunking, Gond Gate…
+         */
+        fun untapped(land: WinCard?, hand: List<WinCard> = this.hand) = land == null ||
+            ManaOddsCalc.entersUntapped(land.mana, landsOut(), hand.map { it.mana }) ||
             board.any { b -> b.card?.untapsLands?.let { it == 1 || it == 2 && land.subtypes.contains("Gate") } == true }
+
+        /** The lands on the battlefield as an "enters tapped unless …" land sees them (a ramp spell's are basics). Since 1.71. */
+        fun landsOut(): ManaOddsCalc.LandsOut {
+            val lands = board.filter { it.isA("land") }
+            return ManaOddsCalc.LandsOut(
+                lands.size,
+                lands.count { it.card?.mana?.basic ?: true },
+                lands.flatMap { e -> e.card?.mana?.types ?: ManaOddsCalc.basicTypes(e.source?.colours.orEmpty()) }.toSet(),
+            )
+        }
 
         /** A Gate with a new name from the library onto the battlefield (Maze's End, Circuitous Route). */
         fun putGate() {
@@ -4571,7 +4586,8 @@ object WinOddsCalc {
         }
 
         fun playLand(): Source? {
-            // An untapped land first, then the one adding the most missing colours (as for the commander odds).
+            // As for the commander odds (since 1.71): the one adding the most missing colours ({C} isn't one), untapped
+            // when its mana would be used this turn, else one that enters tapped.
             val have = HashSet<Char>()
             sources.forEach { have += it.colours }
             // Spell // land cards last: they may be cast as spells later (since 1.62).
@@ -4582,8 +4598,15 @@ object WinOddsCalc {
             // can come from the graveyard (since 1.55).
             val fromYard = if (lands.isEmpty() && board.any { it.card?.crucible == true }) graveyard.firstOrNull { it.land } else null
             val land = (if (mazeDeck) lands.firstOrNull { it.mazeEnd } ?: lands.firstOrNull { "Gate" in it.subtypes && it.name !in names } else null)
-                ?: lands.minByOrNull { l -> (if (l.mana.tapped) 10 else 0) + (if (l.spellSide != null) 5 else 0) - l.mana.colours.count { it !in have } }
+                ?: lands.takeIf { it.isNotEmpty() }?.let { l ->
+                    val costs = (hand.filter { !it.land } + command).map { it.cost }
+                    ManaOddsCalc.chooseLand(
+                        l, { it.mana }, { untapped(it, hand.toMutableList().also { h -> h.remove(it) }) }, have, pool(), costs,
+                        last = { it.spellSide != null },
+                    )
+                }
                 ?: fromYard ?: return null
+            val up = untapped(land, hand.toMutableList().also { it.remove(land) })
             if (land === fromYard) leftGraveyard(listOf(land)) else hand.remove(land)
             landDrops--
             // Since 1.69: lands making more than one mana (Lotus Field), for as long as their depletion counters last.
@@ -4591,7 +4614,7 @@ object WinOddsCalc {
             repeat(land.mana.sacrificesLands) {
                 board.filter { it.isA("land") && (it.source?.until ?: 0) > turn }.minByOrNull { it.source!!.colours.size * 10 + it.source!!.amount }?.let { it.source!!.until = turn }
             }
-            val from = if (untapped(land)) turn else turn + 1
+            val from = if (up) turn else turn + 1
             val source = Source(land.mana.colours, land.mana.amount, from, until = if (land.mana.uses > 0) from + land.mana.uses - 1 else Int.MAX_VALUE)
             sources += source
             val e = Entry(land, turn, 0, false, false, false).also { it.source = source }

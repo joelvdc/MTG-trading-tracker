@@ -481,7 +481,8 @@ internal fun CommanderOddsCard(odds: com.mtgtrader.data.ManaOdds?, missing: Int)
             "The app plays the deck alone: it draws (also on turn 1), keeps a hand like Commander players do (a free " +
                 "mulligan, then London mulligans), plays a land each turn and casts mana makers when it can. Counted: " +
                 "${odds.lands} lands, ${odds.rocks} mana rocks, ${odds.creatures} mana creatures (from the turn after) and " +
-                "${odds.ramp} land ramp spells, all costing up to 4. Lands that enter tapped come in tapped. Not counted: " +
+                "${odds.ramp} land ramp spells, all costing up to 4. Lands that enter tapped come in tapped (\"unless …\" lands check their condition), " +
+                "and a tapped land is played first when an untapped one's mana wouldn't be used that turn. Not counted: " +
                 "opponents, removal, Treasure, rituals and cost reducers. The method follows Frank Karsten's mana base " +
                 "articles, with this deck's own cards instead of his tables."
         )

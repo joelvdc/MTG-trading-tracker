@@ -138,8 +138,9 @@ class Release146OddsTest {
         assertEquals(4, auntie.manaValue)
         assertEquals(0, auntie.byTurn[1])
         assertTrue("turn 3: ${auntie.byTurn[2]}", abs(auntie.byTurn[2] - 39) <= 5)
-        assertTrue("turn 4: ${auntie.byTurn[3]}", abs(auntie.byTurn[3] - 79) <= 4)
-        assertTrue("turn 5: ${auntie.byTurn[4]}", abs(auntie.byTurn[4] - 91) <= 3)
+        // 1.71: better land drops (tapped lands when the mana isn't used, {C} no colour) raised turn 4 from 79 to 87.
+        assertTrue("turn 4: ${auntie.byTurn[3]}", abs(auntie.byTurn[3] - 87) <= 4)
+        assertTrue("turn 5: ${auntie.byTurn[4]}", auntie.byTurn[4] >= 88)
         assertEquals(listOf('B', 'R', 'G'), odds.colours.map { it.first })
         assertTrue(odds.allColours!![3] in 85..95)
         assertEquals(38, odds.lands)

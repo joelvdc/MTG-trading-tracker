@@ -28,11 +28,14 @@ data class ManaOdds(
  * the way mana bases are judged (Frank Karsten's method, with the deck's own cards instead of a table):
  * - the 99 are shuffled and a hand is kept the way Karsten models Commander: a free mulligan, then the
  *   London mulligan, keeping hands of two to five lands and bottoming towards three lands;
- * - each turn a card is drawn (also on turn 1, as in multiplayer games), a land is played (one that enters
- *   untapped and adds a missing colour first), and mana rocks, mana creatures and land ramp spells
- *   (Cultivate, Farseek…) costing up to 4 are cast when they can be;
- * - lands that enter tapped come in tapped ("unless …" lands are counted as untapped), mana creatures can
- *   tap from the next turn (at once with haste), and ramp spells' lands come in tapped when the card says so;
+ * - each turn a card is drawn (also on turn 1, as in multiplayer games), a land is played, and mana rocks,
+ *   mana creatures and land ramp spells (Cultivate, Farseek…) costing up to 4 are cast when they can be;
+ * - the land played adds a missing colour first ({C} isn't one, since 1.71); since 1.71 a land that enters
+ *   tapped goes first when an untapped one's mana wouldn't be used this turn (turn 1, mostly);
+ * - lands that enter tapped come in tapped; since 1.71 "unless …" lands check their condition (slow, fast,
+ *   check and battle lands, Game Trail's reveal), lands that cost life come in untapped, and other conditions
+ *   count as met; mana creatures can tap from the next turn (at once with haste), and ramp spells' lands come
+ *   in tapped when the card says so;
  *   ramp spells count every land they put onto the battlefield (two for Explosive Vegetation), and Cultivate's
  *   second land goes to the hand (since 1.55);
  * - lands make what they tap for (since 1.69): Lotus Field three mana (once two lands are there to sacrifice to it), the
@@ -61,6 +64,15 @@ object ManaOddsCalc {
     private val depletion = Regex("enters tapped with (\\w+) depletion counters", RegexOption.IGNORE_CASE)
     private val sacrificeLands = Regex("when this land enters, sacrifice (\\w+) (?:untapped )?lands", RegexOption.IGNORE_CASE)
     private val conditional = Regex("activate only if|spend this mana only", RegexOption.IGNORE_CASE)
+    // When a land that enters tapped comes in untapped (since 1.71), read from its lowercased text.
+    private const val BASICS = "plains|island|swamp|mountain|forest"
+    private val slowLand = Regex("enters (?:the battlefield )?tapped unless you control (\\w+) or more other lands")
+    private val fastLand = Regex("enters (?:the battlefield )?tapped unless you control (\\w+) or fewer other lands")
+    private val bugbear = Regex("if you control (\\w+) or more other lands, this land enters (?:the battlefield )?tapped")
+    private val battleLand = Regex("enters (?:the battlefield )?tapped unless you control (\\w+) or more basic lands")
+    private val checkLand = Regex("enters (?:the battlefield )?tapped unless you control an? ($BASICS)(?:,? or (?:an? )?($BASICS))?\\b")
+    private val revealLand = Regex("you may reveal an? ($BASICS)(?: or (?:an? )?($BASICS))? card from your hand")
+    private val payLife = Regex("you may pay \\d+ life\\. if you don't, it enters (?:the battlefield )?tapped")
 
     /** The most mana one "{T}: Add …" ability makes: {C}{C} or {R}{R} is 2, "two mana in any combination" 2. Since 1.55. */
     private fun manaAmount(text: String, line: Regex = tapAddLine): Int = line.findAll(text).maxOfOrNull { m ->
@@ -111,7 +123,8 @@ object ManaOddsCalc {
      * makes, or the lands a ramp spell puts onto the battlefield; [toHand]: a ramp spell also puts a land into the hand;
      * [haste]: a mana creature that can tap the turn it comes in (since 1.55). Since 1.69 a land can make more than one
      * mana (Lotus Field, the depletion lands); [uses]: the turns a land lasts (two depletion counters: 2; 0 for ever);
-     * [sacrificesLands]: the lands it sacrifices when it enters (Lotus Field).
+     * [sacrificesLands]: the lands it sacrifices when it enters (Lotus Field). Since 1.71 a land that enters [tapped]
+     * comes in untapped when [untap] is met; [types] are its land types (lowercase), [basic] whether it's a basic land.
      */
     internal class Card(
         val kind: Kind,
@@ -123,10 +136,29 @@ object ManaOddsCalc {
         val haste: Boolean = false,
         val uses: Int = 0,
         val sacrificesLands: Int = 0,
+        val untap: Untap? = null,
+        val types: Set<String> = emptySet(),
+        val basic: Boolean = false,
     )
 
+    /**
+     * When a land that enters tapped comes in untapped (since 1.71): with [min] to [max] other lands (slow and fast
+     * lands, Den of the Bugbear), [basics] basic lands (battle lands), or a land of one of [types] on the battlefield
+     * (check lands) or, with [reveal], in the hand (Game Trail).
+     */
+    internal data class Untap(val min: Int = 0, val max: Int = Int.MAX_VALUE, val basics: Int = 0, val types: Set<String> = emptySet(), val reveal: Boolean = false)
+
+    /** The lands on the battlefield as an "enters tapped unless …" land sees them. Since 1.71. */
+    internal class LandsOut(val count: Int, val basics: Int, val types: Set<String>)
+
+    /** The basic land types a land of these colours has (a ramp spell's basics). */
+    internal fun basicTypes(colours: Set<Char>) = BASIC_TYPES.filterValues { it in colours }.keys
+
     /** A mana source on the battlefield: what it makes, how much, and from which turn (until which, since 1.69). */
-    private class Source(val colours: Set<Char>, val amount: Int, val from: Int, var until: Int = Int.MAX_VALUE, val land: Boolean = false)
+    private class Source(
+        val colours: Set<Char>, val amount: Int, val from: Int, var until: Int = Int.MAX_VALUE, val land: Boolean = false,
+        val types: Set<String> = emptySet(), val basic: Boolean = false,
+    )
 
     fun calculate(cards: List<StatsCard>, identity: String, games: Int = GAMES, turns: Int = TURNS, random: Random = Random(46)): ManaOdds? {
         val commanders = cards.filter { it.commander }
@@ -151,7 +183,7 @@ object ManaOddsCalc {
             var draw = 0
             for (turn in 1..turns) {
                 if (draw < rest.size) hand += rest[draw++]
-                playLand(hand, sources, turn)
+                playLand(hand, sources, turn, goals.filterIndexed { i, _ -> castTurn[i] == 0 }.map { it.second })
                 val ready = sources.filter { it.from <= turn && turn <= it.until }
                 ready.forEach { seen += it.colours }
                 for (colour in own) if (colour in seen) colourBy.getValue(colour)[turn]++
@@ -186,13 +218,18 @@ object ManaOddsCalc {
             var colours = c.producedMana.orEmpty().filter { it in own || it == 'C' }.toSet()
             val fetch = colours.isEmpty() && "search your library" in faces
             if (fetch) colours = DeckStats.fetches(c, lands).keys.filter { it in own }.toSet()
+            val untap = if (fetch) null else untapCondition(faces)
+            // "Unless …" conditions that aren't read count as met (Spire Garden's two opponents); lands that cost life
+            // (shock lands) come in untapped.
             val tapped = if (fetch) "tapped" in faces
-            else ("enters tapped" in faces || "enters the battlefield tapped" in faces) && "unless" !in faces
+            else ("enters tapped" in faces || "enters the battlefield tapped" in faces) && ("unless" !in faces || untap != null) &&
+                !payLife.containsMatchIn(faces)
             val own0 = c.landFaces.firstOrNull()?.second.orEmpty()
             return Card(
                 Kind.LAND, colours.ifEmpty { setOf('C') }, tapped, Cost(0, emptyList()), manaAmount(own0, landTapAddLine),
                 uses = depletion.find(own0)?.let { WinOddsCalc.number(it.groupValues[1]) } ?: 0,
                 sacrificesLands = sacrificeLands.find(own0)?.let { WinOddsCalc.number(it.groupValues[1]) } ?: 0,
+                untap = untap, types = c.landTypes.map { it.lowercase() }.toSet(), basic = c.isBasic,
             )
         }
         // The face it's cast as (since 1.63: a battle's creature back, Invasion of Zendikar's, isn't a mana creature).
@@ -215,6 +252,60 @@ object ManaOddsCalc {
             return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in face.lowercase(), cost(c.manaCost), lands, toHand = split)
         }
         return Card(Kind.SPELL, emptySet(), false, Cost(0, emptyList()), 0)
+    }
+
+    /** When a land that enters tapped comes in untapped, from its lowercased text; null when it doesn't say. Since 1.71. */
+    internal fun untapCondition(text: String): Untap? {
+        fun n(m: MatchResult) = WinOddsCalc.number(m.groupValues[1])
+        fun types(m: MatchResult) = m.groupValues.drop(1).filter { it.isNotEmpty() }.toSet()
+        slowLand.find(text)?.let { return Untap(min = n(it)) }
+        fastLand.find(text)?.let { return Untap(max = n(it)) }
+        bugbear.find(text)?.let { return Untap(max = n(it) - 1) }
+        battleLand.find(text)?.let { return Untap(basics = n(it)) }
+        checkLand.find(text)?.let { return Untap(types = types(it)) }
+        revealLand.find(text)?.let { return Untap(types = types(it), reveal = true) }
+        return null
+    }
+
+    /** Whether [land] comes in untapped now, with [out] on the battlefield and [hand] (without it) to reveal from. Since 1.71. */
+    internal fun entersUntapped(land: Card, out: LandsOut, hand: List<Card>): Boolean {
+        if (!land.tapped) return true
+        val u = land.untap ?: return false
+        if (out.count < u.min || out.count > u.max || out.basics < u.basics) return false
+        if (u.types.isEmpty()) return true
+        return if (u.reveal) hand.any { it.kind == Kind.LAND && it.types.any { t -> t in u.types } } else out.types.any { it in u.types }
+    }
+
+    /** The mana a turn spends from [pool] on [costs], dearest first: whether a land's mana would be used now. Since 1.71. */
+    internal fun spend(pool: List<Pair<Set<Char>, Int>>, costs: List<Cost>): Int {
+        var left = pool
+        var spent = 0
+        for (c in costs.sortedByDescending { it.manaValue }) {
+            left = pay(left, c) ?: continue
+            spent += c.manaValue
+        }
+        return spent
+    }
+
+    /**
+     * The land to play from [lands] (since 1.71): one that adds a missing colour ({C} isn't one), untapped when its mana
+     * would be used this turn on [costs] from [pool], else one that enters tapped (always-tapped lands before those that
+     * could come in untapped later). [untapped] tells whether a land would come in untapped now.
+     */
+    internal fun <T> chooseLand(
+        lands: List<T>, mana: (T) -> Card, untapped: (T) -> Boolean, have: Set<Char>,
+        pool: List<Pair<Set<Char>, Int>>, costs: List<Cost>, last: (T) -> Boolean = { false },
+    ): T {
+        val up = lands.associateWith(untapped)
+        val now = spend(pool, costs)
+        val needed = lands.any { l -> up.getValue(l) && spend(pool + (mana(l).colours to mana(l).amount), costs) > now }
+        return lands.sortedWith(
+            compareBy<T> { if (needed) !up.getValue(it) else up.getValue(it) }
+                .thenBy(last)
+                .thenBy { !up.getValue(it) && mana(it).untap != null }
+                .thenByDescending { (mana(it).colours - have - 'C').size }
+                .thenByDescending { (mana(it).colours - 'C').size },
+        ).first()
     }
 
     /**
@@ -247,17 +338,24 @@ object ManaOddsCalc {
         return hand to rest
     }
 
-    private fun playLand(hand: MutableList<Card>, sources: MutableList<Source>, turn: Int) {
+    /** Plays a land; [waiting] are the costs of the commanders not cast yet (whether an untapped land's mana is used). */
+    private fun playLand(hand: MutableList<Card>, sources: MutableList<Source>, turn: Int, waiting: List<Cost>) {
         // Lotus Field waits until there are lands to sacrifice to it (since 1.69).
         val lands = hand.filter { it.kind == Kind.LAND && sources.count { s -> s.land && turn < s.until } >= it.sacrificesLands }
         if (lands.isEmpty()) return
         val have = sources.flatMap { it.colours }.toSet()
-        val land = lands.sortedWith(compareBy<Card> { it.tapped }.thenByDescending { (it.colours - have).size }).first()
+        val out = sources.filter { it.land && turn <= it.until }
+            .let { l -> LandsOut(l.size, l.count { it.basic }, l.flatMap { it.types }.toSet()) }
+        fun untapped(l: Card) = entersUntapped(l, out, hand.toMutableList().also { it.remove(l) })
+        val pool = sources.filter { it.from <= turn && turn <= it.until }.map { it.colours to it.amount }
+        val costs = waiting + hand.filter { it.kind == Kind.ROCK || it.kind == Kind.CREATURE || it.kind == Kind.RAMP }.map { it.cost }
+        val land = chooseLand(lands, { it }, ::untapped, have, pool, costs)
+        val up = untapped(land)
         hand.remove(land)
         // The lands sacrificed to it are tapped for mana first.
         repeat(land.sacrificesLands) { sources.filter { it.land && turn < it.until }.minByOrNull { it.colours.size }?.until = turn }
-        val from = if (land.tapped) turn + 1 else turn
-        sources += Source(land.colours, land.amount, from, if (land.uses > 0) from + land.uses - 1 else Int.MAX_VALUE, land = true)
+        val from = if (up) turn else turn + 1
+        sources += Source(land.colours, land.amount, from, if (land.uses > 0) from + land.uses - 1 else Int.MAX_VALUE, land = true, types = land.types, basic = land.basic)
     }
 
     /** Casts the cheapest mana makers that can be paid for with what's left this turn. */
@@ -270,8 +368,10 @@ object ManaOddsCalc {
             hand.remove(card)
             when (card.kind) {
                 Kind.RAMP -> {
-                    repeat(card.amount) { sources += Source(card.colours, 1, if (card.tapped) turn + 1 else turn) }
-                    if (card.toHand) hand += Card(Kind.LAND, card.colours, false, Cost(0, emptyList()), 1)
+                    // Basic lands (since 1.71 they count for "unless you control …" lands).
+                    val types = basicTypes(card.colours)
+                    repeat(card.amount) { sources += Source(card.colours, 1, if (card.tapped) turn + 1 else turn, land = true, types = types, basic = true) }
+                    if (card.toHand) hand += Card(Kind.LAND, card.colours, false, Cost(0, emptyList()), 1, types = types, basic = true)
                 }
                 Kind.CREATURE -> sources += Source(card.colours, card.amount, if (card.haste) turn else turn + 1)
                 else -> sources += Source(card.colours, card.amount, turn)

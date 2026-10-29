@@ -174,7 +174,9 @@ Folding **Stats** and **Tokens** sections on the deck page:
 - **Tokens** the deck makes, with the printing of your choice.
 - **Casting the commander:** the chance per turn (1–7) that the commander can be cast and each colour is there, from
   10,000 games played alone (Frank Karsten's method with the deck's own cards: Commander mulligans, a land a turn, mana
-  rocks, mana creatures and ramp; lands like Lotus Field or Ancient Tomb make what they tap for).
+  rocks, mana creatures and ramp; lands like Lotus Field or Ancient Tomb make what they tap for). The land played is the
+  one adding a missing colour, and a tapped land goes down when an untapped one's mana wouldn't be used that turn;
+  "enters tapped unless …" lands (slow, fast, check and battle lands, Game Trail) check their condition.
 - **Winning the game:** the first turn the deck wins (green), the turn it has won by in 4 of 10 games (gold) and in 9
   of 10, and the share of games won each turn. The app plays the deck alone 10,000 times for up to 15 turns against
   three players at 40 life, nobody blocking: it casts its cards (most expensive first), attacks with everything, and
