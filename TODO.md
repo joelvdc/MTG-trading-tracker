@@ -112,6 +112,29 @@ Open questions:
   Moxfield; the app shows a card under its first category today.
 - **Which step first,** or all three together?
 
+### Land drops: what 1.71 left out
+*Added 2026-10-29, after 1.71. Not asked for yet; found while building 1.71.*
+
+- **X spells and activated abilities** (Kessig Wolf Run, Bonders' Enclave, equip costs) don't count as using an
+  untapped land's mana, so the odds may play a tapped land on a turn where a player would use the mana for them.
+- **Lands that need a legendary creature** (Mines of Moria, The Shire) always count as untapped; they could check
+  whether the commander is out. Other "unless" conditions still count as met too (Bleeding Woods' 13 life, Konstrari
+  Annex's planeswalker, Dwarven Mine's three Mountains).
+- **Ramp spells' basics** count as having the types of every colour they could fetch (an Explosive Vegetation basic in a
+  red-green deck counts as a Mountain and a Forest for check lands), which is a little generous.
+
+### Ruby deck changes (the owner's own deck, not an app change)
+*Added 2026-10-29. The owner's plan for the Ruby, Daring Tracker deck on Archidekt (11823327), from the 2-4-7 ramp
+odds worked out in chat. Not done in the app; for the owner to change on Archidekt.*
+
+- Drumhunter out, **Planar Engineering** in (a 12th ramp spell that ends with five lands on turn 3).
+- Artisan of Kozilek out, **Spire Garden** in, borrowed from the Turtle Power deck (take it out of Turtle Power on
+  Archidekt too). Keep Sheltered Thicket and Scavenger Grounds (the owner's choice: the only graveyard hate).
+- Odds with both changes (free mulligan, draw on turn 1): Ruby on turn 2 about 87%, Ruby + 5 lands on turn 4 about 59%,
+  and also a land to play about 52%.
+- The app said one card in the deck was still waiting for its Scryfall details; it should fill in when the phone is
+  online. If it stays, check which card it is.
+
 ## Done
 
 ### Land drops in the commander and win-turn odds (MTG Trader 1.71)
