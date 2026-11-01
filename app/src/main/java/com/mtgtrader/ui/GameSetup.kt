@@ -25,15 +25,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -240,6 +236,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
     val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
+    val tableView by c.settings.trackerTableView.collectAsStateWithLifecycle()
     var setupText by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         c.games.refreshArt()
@@ -281,31 +278,29 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
                     }, SegmentedButtonDefaults.itemShape(n - 2, 5), icon = {}) { Text("$n") }
                 }
             }
-            Label("Seats (clockwise)")
-            s.seats.forEachIndexed { i, ch ->
-                val d = seatDeck(ch, decks, friendDecks)
-                Card(onClick = { picking = i }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                    Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${i + 1}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(20.dp))
-                        SeatPicture(d?.artUrl ?: ch.artUrl, ch.colour ?: i, 44.dp)
-                        Column(Modifier.weight(1f).padding(start = 10.dp)) {
-                            Text(ch.name.ifBlank { "Player ${i + 1}" } + if (ch.me) " (you)" else "", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                d?.let { listOf(it.name, listOfNotNull(it.commander, it.partner).joinToString(" & ")).filter { x -> x.isNotBlank() }.distinct().joinToString(" · ") } ?: "No deck picked",
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        if (s.firstSeat == i) Icon(Icons.Default.PlayArrow, "Starts", tint = MaterialTheme.colorScheme.primary)
-                        if (i > 0) IconButton(onClick = {
-                            change { t ->
-                                val l = t.seats.toMutableList()
-                                l.add(i - 1, l.removeAt(i))
-                                t.copy(seats = l, firstSeat = t.firstSeat?.let { f -> when (f) { i -> i - 1; i - 1 -> i; else -> f } })
-                            }
-                        }) { Icon(Icons.Default.ArrowUpward, "Move up a seat") }
-                    }
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Label("Seats", Modifier.weight(1f))
+                TableViewButton(tableView, MaterialTheme.colorScheme.onSurfaceVariant) { c.settings.setTrackerTableView(it) }
             }
+            SeatTable(
+                seats = s.seats.mapIndexed { i, ch ->
+                    val d = seatDeck(ch, decks, friendDecks)
+                    TableSeat(
+                        name = ch.name.ifBlank { "Player ${i + 1}" } + if (ch.me) " (you)" else "",
+                        deck = d?.let { listOf(it.name, listOfNotNull(it.commander, it.partner).joinToString(" & ")).filter { x -> x.isNotBlank() }.distinct().joinToString(" · ") } ?: "No deck picked",
+                        artUrl = d?.artUrl ?: ch.artUrl,
+                        colour = ch.colour ?: i,
+                    )
+                },
+                ends = s.ends,
+                view = tableView,
+                onTap = { picking = it },
+                onSwap = { a, b -> change { swapSeats(it, a, b) } },
+            )
+            Text(
+                "Tap a seat to pick the player and deck. Hold a seat and drag it onto another to swap them.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (!addPast) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Who starts", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
@@ -381,7 +376,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
 }
 
 @Composable
-private fun Label(text: String) = Text(text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+private fun Label(text: String, modifier: Modifier = Modifier) = Text(text, style = MaterialTheme.typography.titleSmall, modifier = modifier.padding(top = 4.dp))
 
 /** A seat's picture: the commander's art, or the panel's colour. */
 @Composable

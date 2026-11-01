@@ -59,6 +59,11 @@ import com.mtgtrader.data.WishlistItem
 import com.mtgtrader.data.WishlistOwned
 import com.mtgtrader.data.WishlistRow
 import com.mtgtrader.ui.CardTile
+import com.mtgtrader.ui.SeatTable
+import com.mtgtrader.ui.TableSeat
+import com.mtgtrader.ui.TableViewButton
+import com.mtgtrader.data.TableView
+import androidx.compose.ui.graphics.Color
 import com.mtgtrader.ui.CollectionRowView
 import com.mtgtrader.ui.CompactRow
 import com.mtgtrader.ui.ConditionSection
@@ -1291,4 +1296,35 @@ class ScreenshotTest {
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/print_preview.png", roborazziOptions = screenshotOptions)
     }
+
+    /** 1.72: the New game screen's table drawing: [players] seats as they sit around the phone in [view]. */
+    private fun seatTable(file: String, players: Int, view: TableView, ends: Boolean = false, dark: Boolean = false) {
+        val sample = listOf("Joel (you)" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Edgar Markov", "Player 4" to "No deck picked", "Anders" to "Korvold", "Player 6" to "No deck picked")
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = if (dark) Color.Black else MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Seats", style = MaterialTheme.typography.titleSmall, color = if (dark) Color.White else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                            TableViewButton(view, if (dark) Color(0xFF8C8C8C) else MaterialTheme.colorScheme.onSurfaceVariant) {}
+                        }
+                        SeatTable(sample.take(players).mapIndexed { i, (n, d) -> TableSeat(n, d, null, i) }, ends, view, dark, onTap = {}, onSwap = { _, _ -> })
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/$file.png", roborazziOptions = screenshotOptions)
+    }
+
+    @Test fun seatTableLeft() = seatTable("seat_table_left", 4, TableView.LEFT)
+
+    @Test fun seatTableRight() = seatTable("seat_table_right", 4, TableView.RIGHT)
+
+    @Test fun seatTableUpright() = seatTable("seat_table_upright", 4, TableView.UPRIGHT)
+
+    @Test fun seatTableThree() = seatTable("seat_table_3", 3, TableView.LEFT)
+
+    @Test fun seatTableSixWithEnds() = seatTable("seat_table_6_ends", 6, TableView.LEFT, ends = true)
+
+    @Test fun seatTableDark() = seatTable("seat_table_dark", 4, TableView.LEFT, dark = true)
 }
