@@ -28,8 +28,6 @@ How to use this file:
    planned with the owner on 2026-10-17.~~ Released.
 8. ~~MTG Trader 1.45: choosing which printing of a token a deck shows (an "Other printings" button on the token,
    remembered per deck and synced), asked for and approved by the owner on 2026-10-17.~~ Released.
-- **Open since 1.46 (2026-10-18):** the owner tries the Archidekt editing on a spare deck first and reports what
-  happens.
 - **Since 1.47 (2026-10-18):** the weekly health check's full new text (Scryfall's random commanders, Archidekt's
   category addresses, and a new part C for the Commander rules) is in `docs/health-check-instructions.txt`; it was
   given to the owner to paste, and the owner pastes it before clearing the conversation.
@@ -70,48 +68,6 @@ How to use this file:
 21. ~~MTG Trader 1.60 (green light on 2026-10-26, option B): purchase and agreed trade prices remember the currency they
    were typed in, still kept in euros.~~ Released.
 
-### Moxfield connection (some day, not planned)
-*Added 2026-10-17. MTG Trader only. The owner said on 2026-10-17: keep it for the future, not planned for a release;
-the idea and its open questions can be picked up again when wished.*
-
-The owner's words: "I would also be interest in a moxfield connection to the app. Connecting decks and collection to
-moxfield. Syncing between app, archidekt and moxfield, if both are logged in and connected to the app. The deck
-categories work differently on moxfield, I think it uses tags instead and has no automatic categories or tags. But
-if we do this I would still be interested in using the archidekt auto categories for moxfield decks."
-
-What was found (2026-10-17):
-- Moxfield has **no official API** for other apps. Its website uses a private one (`api2.moxfield.com`), which sits
-  behind Cloudflare's bot check: from a cloud session every address answered 403, the website itself too. Moxfield
-  support can put an app's name (its "user agent") on an allow-list; one developer reported that even then logging in
-  through it was blocked by a captcha (github.com/moxfield/moxfield-public issue 143). So the first step is the owner
-  asking Moxfield support for access for MTG Trader, and nothing can be promised before their answer.
-- Moxfield sorts a deck into boards (main, sideboard, maybeboard, "considering") and the owner's own tags per card;
-  it groups by card type by default. Archidekt's auto categories (from 1.46) can be given as Moxfield tags.
-
-Draft plan, in steps (each its own release):
-1. **Moxfield decks, read only:** add a deck by its Moxfield link or from the logged-in account's list; it shows like
-   an Archidekt deck (cards, maybeboard, stats, tokens, value, what the collection is missing). Scores: Commander Salt
-   also reads Moxfield links (to check when building).
-2. **Moxfield collection sync:** the same two-way sync the app has with Archidekt's collection (quantities, finish,
-   condition, language, purchase price), for the logged-in Moxfield account.
-3. **Changing Moxfield decks:** the 1.46 editing (quantities, boards, moving cards, tags as categories, auto
-   categories as tags), sending a local deck to Moxfield as a new deck.
-- Health check: each step adds Moxfield addresses to the weekly health check.
-
-Open questions:
-- **Asking Moxfield for access:** OK for the owner to write to Moxfield support (Claude drafts the message)?
-- **How the owner logs in to Moxfield:** email and password, or Google / Apple? The app can only log in with a
-  password; Google/Apple sign-in would need a password set on the Moxfield account first.
-- **One deck on both sites:** should a deck be able to live on Archidekt and Moxfield at the same time and be kept
-  equal (every change sent to both), or does each deck have one home site (recommended: much simpler, no
-  conflicts), with "copy this deck to Moxfield / Archidekt" as a one-off?
-- **Collections:** keep the app, Archidekt and Moxfield collections all equal (the app in the middle), or is one site
-  enough for the collection?
-- **Categories on Moxfield decks:** Archidekt's auto category as one tag per card. Also keep Moxfield's own tags as
-  the deck's categories in the app (they then show like Archidekt's categories)? A card can have several tags on
-  Moxfield; the app shows a card under its first category today.
-- **Which step first,** or all three together?
-
 ### Land drops: what 1.71 left out
 *Added 2026-10-29, after 1.71. Not asked for yet; found while building 1.71.*
 
@@ -123,17 +79,14 @@ Open questions:
 - **Ramp spells' basics** count as having the types of every colour they could fetch (an Explosive Vegetation basic in a
   red-green deck counts as a Mountain and a Forest for check lands), which is a little generous.
 
-### Ruby deck changes (the owner's own deck, not an app change)
-*Added 2026-10-29. The owner's plan for the Ruby, Daring Tracker deck on Archidekt (11823327), from the 2-4-7 ramp
-odds worked out in chat. Not done in the app; for the owner to change on Archidekt.*
+### Mistral helper: vibe-app-server.exe (check later)
+*Added 2026-11-01. Not an app change; the PC's set-up for `/delegate-mistral`.*
 
-- Drumhunter out, **Planar Engineering** in (a 12th ramp spell that ends with five lands on turn 3).
-- Artisan of Kozilek out, **Spire Garden** in, borrowed from the Turtle Power deck (take it out of Turtle Power on
-  Archidekt too). Keep Sheltered Thicket and Scavenger Grounds (the owner's choice: the only graveyard hate).
-- Odds with both changes (free mulligan, draw on turn 1): Ruby on turn 2 about 87%, Ruby + 5 lands on turn 4 about 59%,
-  and also a land to play about 52%.
-- The app said one card in the deck was still waiting for its Scryfall details; it should fill in when the phone is
-  online. If it stays, check which card it is.
+Heimdal now lets `vibe.exe`, `vibe-acp.exe` and `vibe-rs.exe` start, but running a job without the chat window starts
+`vibe-app-server.exe`, which is still refused ("Access is denied") in `C:\Users\JC\.local\bin` and
+`%APPDATA%\uv\tools\mistral-vibe\Scripts`. The owner asks work IT to approve it too. Then: rerun the one-word test
+(`--max-turns 2 --max-price 0.05`) and, if it passes, switch `/delegate-mistral` to `vibe --prompt-file` (step and price
+limits, cost shown), keeping the Python route as a backup.
 
 ## Done
 
@@ -893,7 +846,7 @@ read-only apart from "Added in app"):
 How big: about as much work as the four 1.42 items together. The app already logs in to Archidekt (collection sync),
 but Archidekt has no official API for changing decks: the app would use the one Archidekt's own website uses
 (`PATCH /api/decks/<id>/modifyCards/`, now `.../modifyCards/v2/`, which answered "please log in" when checked on 2026-10-16). It can't be tested
-from a cloud session, so the owner tries it on a spare deck first.
+from a cloud session, so the owner tries it on a spare deck first (the owner said on 2026-11-01 it works fine).
 
 Answered by the owner on 2026-10-17:
 - **Where edits are saved:** asked whether saving to Archidekt and reloading would slow the app down. Claude's answer:
@@ -944,7 +897,7 @@ Settled with the owner on 2026-10-17:
 
 Added by the owner on 2026-10-17, for 1.46: "When creating a new deck in the app, I would like to be able to import
 a decklist from moxfield too."
-- Moxfield has no connection the app can use (see "Moxfield connection" below), so not by link. Instead the decklist
+- Moxfield has no connection the app can use (no official API; its website's own one sits behind a bot check), so not by link. Instead the decklist
   as text: Moxfield's Export gives the list as plain text ("1 Sol Ring (CMR) 263", foils marked "*F*", sections such
   as SIDEBOARD/MAYBEBOARD). The app reads that pasted text or a .txt file into a new local deck, with the exact
   printings where the text has set and number, and auto categories for the cards. The same reader takes most other
