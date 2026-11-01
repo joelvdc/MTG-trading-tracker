@@ -472,6 +472,15 @@ class Settings(context: Context) {
         prefs.edit().putString("trackerCardLayout", v.key).stamp().apply()
     }
 
+    private val _trackerTableView = MutableStateFlow(TableView.fromKey(prefs.getString("trackerTableView", null)))
+    /** How the seats are drawn on New game and in Game settings: as seen with the phone tilted left, right or upright (since 1.72). */
+    val trackerTableView: StateFlow<TableView> = _trackerTableView
+
+    fun setTrackerTableView(v: TableView) {
+        _trackerTableView.value = v
+        prefs.edit().putString("trackerTableView", v.key).stamp().apply()
+    }
+
     fun setTrackerWhenDown(v: WhenDown) {
         _trackerWhenDown.value = v
         prefs.edit().putString("trackerWhenDown", v.key).stamp().apply()
@@ -560,6 +569,7 @@ class Settings(context: Context) {
             put("trackerLowLife", trackerLowLife.value.key)
             put("trackerCardLayout", trackerCardLayout.value.key)
             put("trackerWhenDown", trackerWhenDown.value.key)
+            put("trackerTableView", trackerTableView.value.key)
         },
     )
 
@@ -597,6 +607,7 @@ class Settings(context: Context) {
         v["trackerLowLife"]?.let { _trackerLowLife.value = LowLifeStyle.fromKey(it); e.putString("trackerLowLife", it) }
         v["trackerCardLayout"]?.let { _trackerCardLayout.value = CardLayout.fromKey(it); e.putString("trackerCardLayout", it) }
         v["trackerWhenDown"]?.let { _trackerWhenDown.value = WhenDown.fromKey(it); e.putString("trackerWhenDown", it) }
+        v["trackerTableView"]?.let { _trackerTableView.value = TableView.fromKey(it); e.putString("trackerTableView", it) }
         e.putLong(PREFS_UPDATED_AT, p.updatedAt).apply()
     }
 

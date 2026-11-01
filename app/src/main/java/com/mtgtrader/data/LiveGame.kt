@@ -38,6 +38,23 @@ enum class WhenDown(val key: String, val label: String) {
 }
 
 /**
+ * How the New game screen and Game settings draw the table (since 1.72): as seen from your chair with the phone lying
+ * tilted left (its top to your left) or right, or upright as the phone shows the tracker.
+ */
+enum class TableView(val key: String, val label: String) {
+    LEFT("left", "Phone tilted left"),
+    RIGHT("right", "Phone tilted right"),
+    UPRIGHT("upright", "Upright");
+
+    /** The next view, for the turn button. */
+    val next: TableView get() = entries[(ordinal + 1) % entries.size]
+
+    companion object {
+        fun fromKey(k: String?) = entries.firstOrNull { it.key == k } ?: LEFT
+    }
+}
+
+/**
  * A line of the game's log (since 1.48), at game time [at]: what changed for [seat] ([kind]: life, cmd, poison, tax,
  * counter, out, back, turn, monarch, initiative, day, start), by how much and to what. Changes in a row to the same
  * thing are merged into one line.
