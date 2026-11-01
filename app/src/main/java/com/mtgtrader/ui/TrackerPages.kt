@@ -37,7 +37,6 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Animation
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.EventSeat
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -334,6 +333,7 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
     val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val pictures by s.trackerPictures.collectAsStateWithLifecycle()
+    val tableView by s.trackerTableView.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
     var customLife by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf<Int?>(null) }
@@ -385,13 +385,25 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
                 )
             }
         }
-        g.seats.forEach { p ->
-            SettingRow(
-                Icons.Outlined.EventSeat, p.name + if (p.me) " (you)" else "",
-                listOfNotNull(p.deckName.ifBlank { null }, listOfNotNull(p.commander.ifBlank { null }, p.partner).joinToString(" & ").ifBlank { null }).distinct().joinToString(" · ").ifBlank { "No deck" },
-                onClick = { picking = p.seat },
-            ) { Icon(Icons.Outlined.ChevronRight, null, tint = Muted) }
-        }
+        // The seats as they lie on the table (since 1.72): tap to change the player or deck, drag one onto another to swap.
+        SettingRow(Icons.Outlined.EventSeat, "Seats") { TableViewButton(tableView, Muted) { s.setTrackerTableView(it) } }
+        SeatTable(
+            seats = g.seats.map { p ->
+                TableSeat(
+                    name = p.name + if (p.me) " (you)" else "",
+                    deck = listOfNotNull(p.deckName.ifBlank { null }, listOfNotNull(p.commander.ifBlank { null }, p.partner).joinToString(" & ").ifBlank { null }).distinct().joinToString(" · ").ifBlank { "No deck" },
+                    artUrl = p.artUrl.takeIf { p.picture ?: pictures },
+                    colour = p.colour,
+                )
+            },
+            ends = g.ends, view = tableView, dark = true,
+            onTap = { picking = it },
+            onSwap = { a, b -> c.games.swapSeats(a, b) },
+        )
+        Text(
+            "Tap a seat to change the player or deck. Hold a seat and drag it onto another to swap them: life, damage and counters move with the player.",
+            color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
+        )
         SectionHead("Gameplay")
         SwitchSetting(Icons.Outlined.Shield, "Commander damage", "The mini-grids on the panels", g.commanderDamage) { on ->
             game { it.copy(commanderDamage = on) }; s.setTracker("trackerCommanderDamage", on)

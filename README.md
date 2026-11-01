@@ -224,7 +224,9 @@ changes. Importing a deck adds it to commandersalt.com.
 ## Games: life tracker and game records
 The **Games** tab keeps score in Commander games and remembers them. The tracker looks and works like the Lifetap app.
 - **New game:** 2 to 6 players, their seats and decks (yours, friends' with a commander from Scryfall, or a guest's
-  commander), and who starts (picked or at random). **Rematch** sets up the last table again.
+  commander), and who starts (picked or at random). The seats are drawn as a little table, as you see it with the phone
+  tilted left, tilted right or upright: tap a seat to pick the player and deck, hold one and drag it onto another to
+  swap them. **Rematch** sets up the last table again.
 - **The table:** each player's panel faces them, in a colour or their commander's picture, with life, − and +, and a
   **commander damage mini-grid** (partners split in two). Tap for ±1, hold for ±10. At 0 life, 10 poison or 21
   commander damage the app asks **Dead?**. A player's sheet has commander damage, poison, commander tax, the monarch,
@@ -235,6 +237,8 @@ The **Games** tab keeps score in Commander games and remembers them. The tracker
 - **Ending a game:** who won and how, then save and rematch. **Stats:** wins, win rates and lengths per deck and
   player, head to head, and a **Games** section on each deck page. Games can be edited, added by hand and exported as
   CSV.
+- **Seats during a game:** Game settings show the same table; swapping seats during a game moves everything with the player (life,
+  damage, counters, the turn, the monarch), and undo puts them back.
 - **Game settings** (starting life, layout, commander damage, controls, vibration, look) are kept for the next games
   and sync between phones.
 

@@ -137,6 +137,13 @@ odds worked out in chat. Not done in the app; for the owner to change on Archide
 
 ## Done
 
+### Arrange the table by dragging seats (MTG Trader 1.72)
+*Asked for and approved on 2026-11-01 (mockups; the owner picked A, swap, and left/right/upright).* The New game
+screen and Game settings draw the seats as a table (`SeatTable`, `tableColumns`), as seen with the phone tilted left
+(default), right or upright (`TableView`, synced setting `trackerTableView`). Hold and drag a seat onto another to swap
+(`swapSeats` for a setup, `LiveGames.swapSeats` / `GameStore.swapSeats` during a game: everything moves with the player,
+undoable, not logged). No "1st" badge on the table. Built with Sonnet for the table and New game screen.
+
 ### Land drops in the commander and win-turn odds (MTG Trader 1.71)
 *Asked 2026-10-29: the app gave Ruby, Daring Tracker 66% on turn 2 where a hand-played simulation gave 86%. The app counted
 {C} as a missing colour (Kessig Wolf Run, Bonders' Enclave played early) and always played an untapped land first. Green

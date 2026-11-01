@@ -107,6 +107,21 @@ class GameStore(
         save(next)
     }
 
+    /**
+     * Seats [a] and [b] trade places (since 1.72, from Game settings): undoable, but not settled, as the players only
+     * move and nothing happened to them (the log would see their totals change seats). The rematch's starter moves too.
+     */
+    fun swapSeats(a: Int, b: Int) {
+        val g = _live.value ?: return
+        val next = LiveGames.swapSeats(g, a, b)
+        if (next == g) return
+        undo.addLast(g)
+        while (undo.size > UNDO_STEPS) undo.removeFirst()
+        _canUndo.value = true
+        save(next)
+        lastTable?.takeIf { a in it.seats.indices && b in it.seats.indices }?.let { t -> lastTable = t.copy(seats = t.seats.indices.map { t.seats[when (it) { a -> b; b -> a; else -> it }] }, firstSeat = t.firstSeat?.let { when (it) { a -> b; b -> a; else -> it } }) }
+    }
+
     fun undo(): Boolean {
         val prev = undo.removeLastOrNull() ?: return false
         _canUndo.value = undo.isNotEmpty()
