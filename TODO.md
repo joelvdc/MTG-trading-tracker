@@ -90,6 +90,12 @@ limits, cost shown), keeping the Python route as a backup.
 
 ## Done
 
+### Who starts is picked after Game settings (MTG Trader 1.73)
+*Reported 2026-11-01 after testing 1.72: changing the number of players in Game settings started the "who starts" pick
+behind the settings page. Green light the same day; built by Mistral Large 4 (`/delegate-mistral`, Python route).*
+The new game still starts at once; `pickFirstNow` holds the pick while Game settings is open and runs it once when it
+closes (`startedInSettings`, `picked` kept with `rememberSaveable`), instead of only within 4 s of the start.
+
 ### Arrange the table by dragging seats (MTG Trader 1.72)
 *Asked for and approved on 2026-11-01 (mockups; the owner picked A, swap, and left/right/upright).* The New game
 screen and Game settings draw the seats as a table (`SeatTable`, `tableColumns`), as seen with the phone tilted left

@@ -240,7 +240,8 @@ The **Games** tab keeps score in Commander games and remembers them. The tracker
 - **Seats during a game:** Game settings show the same table; swapping seats during a game moves everything with the player (life,
   damage, counters, the turn, the monarch), and undo puts them back.
 - **Game settings** (starting life, layout, commander damage, controls, vibration, look) are kept for the next games
-  and sync between phones.
+  and sync between phones. A new number of players there starts a new game; who starts is picked once you close
+  Game settings.
 
 ## Sync between phones
 Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans, games and preferences
