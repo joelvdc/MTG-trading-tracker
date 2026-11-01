@@ -173,6 +173,14 @@ internal fun newTable(settings: com.mtgtrader.data.Settings, last: TableSetup?, 
     ends = settings.trackerFlag("trackerEnds").value, logOn = settings.trackerFlag("trackerLog").value,
 )
 
+/** Seats [a] and [b] of a table setup trade places (since 1.72); the player picked to start keeps starting. */
+internal fun swapSeats(t: TableSetup, a: Int, b: Int): TableSetup {
+    if (a == b || a !in t.seats.indices || b !in t.seats.indices) return t
+    val l = t.seats.toMutableList()
+    l[a] = t.seats[b]; l[b] = t.seats[a]
+    return t.copy(seats = l, firstSeat = t.firstSeat?.let { when (it) { a -> b; b -> a; else -> it } })
+}
+
 /** The game that starts from a table setup: everyone at the starting life, a background and colour each, the first player. */
 internal fun startGame(setup: TableSetup, decks: List<Deck>, friendDecks: List<FriendDeck>, randomArt: List<String>, now: Long, first: Int): LiveGame {
     var spare = randomArt

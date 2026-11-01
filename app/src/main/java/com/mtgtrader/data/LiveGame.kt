@@ -395,6 +395,23 @@ object LiveGames {
     fun pause(g: LiveGame, now: Long): LiveGame = if (g.paused) g else g.copy(pausedAt = now)
     fun resume(g: LiveGame, now: Long): LiveGame = g.pausedAt?.let { g.copy(pausedAt = null, pausedMs = g.pausedMs + (now - it)) } ?: g
 
+    /**
+     * Seats [a] and [b] trade places during the game (since 1.72): each player takes everything with them (life,
+     * commander damage taken and dealt, counters, colour), and so do the turn, the first player, the monarch, the
+     * initiative, the turn times and the log.
+     */
+    fun swapSeats(g: LiveGame, a: Int, b: Int): LiveGame {
+        if (a == b || g.seats.none { it.seat == a } || g.seats.none { it.seat == b }) return g
+        fun to(i: Int) = when (i) { a -> b; b -> a; else -> i }
+        fun key(k: String) = k.substringBefore(':').toIntOrNull()?.let { "${to(it)}" + k.drop(k.substringBefore(':').length) } ?: k
+        val seats = g.seats.map { s -> s.copy(seat = to(s.seat), cmd = s.cmd.mapKeys { key(it.key) }) }.sortedBy { it.seat }
+        return g.copy(
+            seats = seats, firstSeat = to(g.firstSeat), active = to(g.active), monarch = g.monarch?.let(::to), initiative = g.initiative?.let(::to),
+            turns = g.turns.map { it.copy(seat = to(it.seat)) },
+            log = g.log.map { e -> e.copy(seat = e.seat?.let(::to), from = e.from?.let(::key)) },
+        )
+    }
+
     fun setMonarch(g: LiveGame, seat: Int?): LiveGame = g.copy(monarch = seat)
     fun setInitiative(g: LiveGame, seat: Int?): LiveGame = g.copy(initiative = seat)
     fun toggleDayNight(g: LiveGame): LiveGame = g.copy(dayNight = when (g.dayNight) { null -> "day"; "day" -> "night"; else -> "day" })
