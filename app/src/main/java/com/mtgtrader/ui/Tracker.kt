@@ -244,6 +244,8 @@ fun TrackerScreen(nav: NavController) {
     var page by remember { mutableStateOf<TrackerPage?>(null) }
     var picked by rememberSaveable { mutableStateOf<String?>(null) }
     var startedInSettings by rememberSaveable { mutableStateOf<String?>(null) }
+    var openedSeats by rememberSaveable { mutableStateOf<Int?>(null) }
+    var openedFirst by rememberSaveable { mutableStateOf<Int?>(null) }
     var ending by remember { mutableStateOf(false) }
     var roll by remember { mutableStateOf<Roll?>(null) }
     var spin by remember { mutableStateOf<Int?>(null) }
@@ -279,9 +281,14 @@ fun TrackerScreen(nav: NavController) {
     }
     val inSettings = page == TrackerPage.SETTINGS
     LaunchedEffect(g.uid) { if (inSettings) startedInSettings = g.uid }
+    LaunchedEffect(inSettings) { if (inSettings) { openedSeats = g.seats.size; openedFirst = g.firstSeat } }
     // Who starts, picked at random: the run around the table stops on the first player; held while Game settings is open (since 1.73).
     LaunchedEffect(g.uid, inSettings) {
-        if (pickFirstNow(g, System.currentTimeMillis(), inSettings, picked, startedInSettings)) {
+        if (!inSettings && picked != g.uid && keepsStarter(g, startedInSettings, openedSeats)) {
+            // Back to the number of players it had (since 1.74): the same player starts, without a pick.
+            picked = g.uid
+            openedFirst?.let { f -> c.games.update(undoable = false) { it.copy(firstSeat = f, active = if (it.turns.isEmpty()) f else it.active) } }
+        } else if (pickFirstNow(g, System.currentTimeMillis(), inSettings, picked, startedInSettings)) {
             val first = g.seats.firstOrNull { it.seat == g.firstSeat } ?: return@LaunchedEffect
             picked = g.uid
             spinTo(g.seats.map { it.seat }, first.seat, "${first.name} starts!")
@@ -747,6 +754,10 @@ internal fun firstBadgeSeat(g: LiveGame): Int? = g.firstSeat.takeIf { !g.turnsOn
 internal fun pickFirstNow(g: LiveGame, nowMs: Long, inSettings: Boolean, picked: String?, startedInSettings: String?): Boolean =
     !inSettings && picked != g.uid && g.turns.isEmpty() && g.round == 1 && g.seats.size > 1 &&
         (g.elapsed(nowMs) < 4_000 || startedInSettings == g.uid)
+
+/** A game started in Game settings that has as many players as when settings opened ([openedSeats]) keeps its starter (since 1.74). */
+internal fun keepsStarter(g: LiveGame, startedInSettings: String?, openedSeats: Int?): Boolean =
+    startedInSettings == g.uid && g.seats.size == openedSeats
 
 /** The gold "1st" badge of the player who starts. */
 @Composable

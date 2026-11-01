@@ -90,6 +90,12 @@ limits, cost shown), keeping the Python route as a backup.
 
 ## Done
 
+### The same starter after 4 → 5 → 4 players in Game settings (MTG Trader 1.74)
+*Reported 2026-11-01 after 1.73: changing the number of players and back still picked a new first player. Green light the
+same day.* Opening Game settings notes the number of players and the starter (`openedSeats`, `openedFirst`); a game
+started there with the same number gets the old starter back (`firstSeat`, and `active` before any turn) and no pick
+(`keepsStarter`).
+
 ### Who starts is picked after Game settings (MTG Trader 1.73)
 *Reported 2026-11-01 after testing 1.72: changing the number of players in Game settings started the "who starts" pick
 behind the settings page. Green light the same day; built by Mistral Large 4 (`/delegate-mistral`, Python route).*
