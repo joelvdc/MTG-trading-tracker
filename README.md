@@ -5,17 +5,13 @@ Keep your Commander decks at hand too, with their power level, brackets and rule
 binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own
 Nextcloud. Your collection can also be kept the same as your Archidekt collection, both ways.
 
-| Trade | Search | Collection | Compact view |
+| Trade | Collection | Scan tab | Commander decks |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/trade.png" width="200" alt="A trade with the value of both sides compared"> | <img src="docs/screenshots/search.png" width="200" alt="Search results listing every printing with Cardmarket prices"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection as a list with binder filters"> | <img src="docs/screenshots/compact.png" width="200" alt="The collection as one text line per card"> |
+| <img src="docs/screenshots/trade.png" width="200" alt="A fair trade with the value of both sides compared"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection sorted by value, with binder filters and price trends"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Commander decks with power level and brackets"> |
 
-| Scan tab | Commander decks | Deck page | Settings |
+| Games | Life tracker | Bracket card | Collection stats |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Imported Commander decks with power level and brackets"> | <img src="docs/screenshots/deck.png" width="200" alt="A deck's power level, brackets and the Refresh bracket and power level button"> | <img src="docs/screenshots/settings.png" width="200" alt="Choosing the power level source and connecting to Nextcloud"> |
-
-| Bracket card | Power card | Card page | Collection stats |
-|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/power.png" width="200" alt="The app's power level card with ScrollVault's power level, win turns and line for the pod"> | <img src="docs/screenshots/card.png" width="200" alt="A card's page: price, quantity, finish, binder, condition, language, paid price and notes, and the other copies you own"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: totals, value and the color pie"> |
+| <img src="docs/screenshots/games.png" width="200" alt="The Games tab: last games, who won and stats"> | <img src="docs/screenshots/lifetracker.png" width="200" alt="The life tracker for four players, each panel facing its player"> | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: the color pie and color identities"> |
 
 ## Contents
 - [Install](#install)
