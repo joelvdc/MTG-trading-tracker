@@ -416,7 +416,7 @@ class Settings(context: Context) {
         "trackerPictures" to false,
         // Life changes by tapping above (+) / below (−) the total; off: left (−) / right (+).
         "trackerAboveBelow" to false,
-        // Holding counts by 1 (repeating); off: by 10, as Lifetap does.
+        // Holding counts by 1 (repeating); off: by 10.
         "trackerHoldOne" to false,
         // The defaults for new games, changed when the game's settings change (since 1.48 for most of them).
         "trackerTurns" to false,

@@ -41,6 +41,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
+/**
+ * How the app introduces itself to every site (since 1.75: its version and where to find it, so a site can see who's
+ * calling and reach the owner; before, "MTGTraderAndroid/1.0"). Scryfall rejects OkHttp's default.
+ */
+const val USER_AGENT = "MTGTraderAndroid/${BuildConfig.VERSION_NAME} (+https://github.com/joelvdc/MTG-trading-tracker)"
+
 class MtgApp : Application(), ImageLoaderFactory {
     lateinit var container: AppContainer
         private set
@@ -89,7 +95,7 @@ class AppContainer(context: Context) {
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(90, TimeUnit.SECONDS)
         .addInterceptor { chain ->
-            chain.proceed(chain.request().newBuilder().header("User-Agent", "MTGTraderAndroid/1.0").build())
+            chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build())
         }
         .build()
     val db = AppDatabase.build(context)

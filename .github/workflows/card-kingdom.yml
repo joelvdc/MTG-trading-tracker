@@ -1,4 +1,4 @@
-# Card Kingdom refuses some visitors (HTTP 403, e.g. phones in Denmark), so once a day GitHub's servers
+# Card Kingdom refuses some visitors (HTTP 403, e.g. phones in some countries), so once a day GitHub's servers
 # download its public price list, slim it down (scripts/card_kingdom_prices.py) and keep it on the
 # "card-kingdom-prices" branch, which only ever holds the latest copy. The app reads it from there when
 # Card Kingdom refuses it. Since 1.30. Uses no secrets; it only writes that one branch.

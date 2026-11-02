@@ -20,7 +20,7 @@ class Release172Test {
     private val game = LiveGame(
         uid = "g", startedAt = 0, turnsOn = true,
         seats = listOf(
-            seat(0, "Joel", 33, cmd = mapOf("1" to 7, "3:2" to 2)),
+            seat(0, "Robin", 33, cmd = mapOf("1" to 7, "3:2" to 2)),
             seat(1, "Mads", 40, cmd = mapOf("0" to 4)),
             seat(2, "Sofie", 28, poison = 3, counters = mapOf("energy" to 2)),
             seat(3, "Anders", 40, cmd = mapOf("1" to 5)),
@@ -32,7 +32,7 @@ class Release172Test {
 
     @Test fun playersTakeEverythingWithThem() {
         val g = LiveGames.swapSeats(game, 1, 3)
-        assertEquals(listOf("Joel", "Anders", "Sofie", "Mads"), g.seats.map { it.name })
+        assertEquals(listOf("Robin", "Anders", "Sofie", "Mads"), g.seats.map { it.name })
         assertEquals(listOf(0, 1, 2, 3), g.seats.map { it.seat })
         val mads = g.seats[3]
         assertEquals(40, mads.life); assertEquals(1, mads.colour); assertEquals(1, mads.casts)
@@ -56,8 +56,8 @@ class Release172Test {
 
     @Test fun theTurnStillGoesClockwiseFromTheNewSeats() {
         val g = LiveGames.nextTurn(LiveGames.swapSeats(game, 2, 3), 1_000_000)
-        // Sofie (now seat 3) had the turn: next clockwise is Joel at seat 0.
-        assertEquals("Joel", g.seats[g.active].name)
+        // Sofie (now seat 3) had the turn: next clockwise is Robin at seat 0.
+        assertEquals("Robin", g.seats[g.active].name)
     }
 
     @Test fun setupSwapKeepsTheStarter() {

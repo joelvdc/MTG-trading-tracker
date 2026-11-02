@@ -160,7 +160,7 @@ class Release147Test {
     )
 
     private fun me(place: Int, deck: Long = 1, started: Boolean = false, bracket: Int? = 3) =
-        GameSeat(0, "me", "Joel", me = true, deckId = deck, deckName = "Auntie Plague", commander = "Auntie Ool", place = place, started = started, bracket = bracket, power = 6.4)
+        GameSeat(0, "me", "Robin", me = true, deckId = deck, deckName = "Auntie Plague", commander = "Auntie Ool", place = place, started = started, bracket = bracket, power = 6.4)
 
     private fun mads(place: Int) = GameSeat(1, "mads", "Mads", friendDeckUid = "atraxa", deckName = "Atraxa", commander = "Atraxa", place = place, bracket = 4, power = 8.0)
     private fun sofie(place: Int) = GameSeat(2, "sofie", "Sofie", deckName = "Ruby", commander = "Ruby", place = place)
@@ -196,7 +196,7 @@ class Release147Test {
     @Test
     fun playersAndHeadToHead() {
         val players = GameStats.players(history)
-        assertEquals("Joel", players.first().name)
+        assertEquals("Robin", players.first().name)
         assertEquals(2, players.first().wins)
         val h2h = GameStats.headToHead(history).associateBy { it.name }
         assertEquals(3, h2h.getValue("Mads").ahead)
@@ -212,7 +212,7 @@ class Release147Test {
         val csv = GameStats.csv(history).trim().lines()
         assertEquals(1 + 12, csv.size)
         assertTrue(csv[0].startsWith("Date,Game,Minutes"))
-        assertTrue(csv[1].contains("Joel,Auntie Plague,Auntie Ool,1,yes,yes"))
+        assertTrue(csv[1].contains("Robin,Auntie Plague,Auntie Ool,1,yes,yes"))
     }
 
     // ---- Sync and backups --------------------------------------------------------------------------
@@ -220,7 +220,7 @@ class Release147Test {
     @Test
     fun gamesSyncLikeOtherItemsAndTheOwnerIsKeptOnce() {
         val mine = Player(name = "Me", me = true, createdAt = 5, uid = "me1", updatedAt = 5)
-        val theirs = Player(name = "Joel", me = true, createdAt = 9, uid = "me2", updatedAt = 9)
+        val theirs = Player(name = "Robin", me = true, createdAt = 9, uid = "me2", updatedAt = 9)
         val local = SyncData(players = listOf(mine), games = listOf(history[0].copy(updatedAt = 10)))
         val remote = SyncData(
             players = listOf(theirs, Player(name = "Mads", uid = "mads", updatedAt = 3)),

@@ -1,6 +1,7 @@
 package com.mtgtrader.data
 
 import android.content.Context
+import com.mtgtrader.USER_AGENT
 import android.util.JsonReader
 import android.util.JsonToken
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +89,7 @@ class PriceGuideRepository(
 
     private fun download(target: File) {
         _state.value = PriceUpdateState.Running("Downloading Cardmarket prices…")
-        val req = Request.Builder().url(URL).header("User-Agent", "MTGTraderAndroid/1.0").build()
+        val req = Request.Builder().url(URL).header("User-Agent", USER_AGENT).build()
         http.newCall(req).execute().use { r ->
             if (!r.isSuccessful) throw IOException("HTTP ${r.code}")
             val body = r.body ?: throw IOException("Empty response")

@@ -116,7 +116,7 @@ private val Trophy = Color(0xFFE0A526)
 
 private fun gameDate(ms: Long) = SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(Date(ms))
 
-/** "Joel won with Auntie Plague", "A draw". */
+/** "Robin won with Auntie Plague", "A draw". */
 internal fun gameTitle(g: GameRecord): String {
     val w = g.winner ?: return if (g.draw) "A draw" else "No winner told yet"
     return (if (w.me) "You won" else "${w.name} won") + (w.deckName.ifBlank { w.commander }.takeIf { it.isNotBlank() }?.let { " with $it" } ?: "")

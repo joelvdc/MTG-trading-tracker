@@ -65,9 +65,12 @@ Everything is looked up live, so new sets show up without an app update.
 - **Recommendations:** [EDHREC](https://edhrec.com/) and [recommander.cards](https://recommander.cards/).
 - **Preconstructed decks:** [MTGJSON](https://mtgjson.com/). **Exchange rates:** the European Central Bank.
 
+The app introduces itself to the sites it calls directly (not the power level calculators it opens out of sight) as `MTGTraderAndroid/<version>` with a link to this page, so they can see
+who's calling.
+
 Prices download once a day when the app opens and in the background (Settings can limit this to Wi-Fi or turn it off;
 "Update prices now" always runs), with a progress bar above the tabs. The collection stays usable meanwhile. Card
-Kingdom refuses some phones (HTTP 403, e.g. in Denmark); then the app uses a copy that a daily GitHub job
+Kingdom refuses phones in some countries (HTTP 403); then the app uses a copy that a daily GitHub job
 (`.github/workflows/card-kingdom.yml`) keeps on this repository's `card-kingdom-prices` branch.
 
 ## Prices and currencies
@@ -222,7 +225,7 @@ Commander Salt has no official API: the app makes the same requests as its websi
 changes. Importing a deck adds it to commandersalt.com.
 
 ## Games: life tracker and game records
-The **Games** tab keeps score in Commander games and remembers them. The tracker looks and works like the Lifetap app.
+The **Games** tab keeps score in Commander games and remembers them. The tracker's layout is inspired by the Lifetap app.
 - **New game:** 2 to 6 players, their seats and decks (yours, friends' with a commander from Scryfall, or a guest's
   commander), and who starts (picked or at random). The seats are drawn as a little table, as you see it with the phone
   tilted left, tilted right or upright: tap a seat to pick the player and deck, hold one and drag it onto another to
@@ -289,15 +292,17 @@ Settings → **Backups** keeps restore points of everything the app syncs.
 Settings → **Appearance**: same as the phone, light or dark.
 
 ## Rebuilding
-Requires JDK 17+ and the Android SDK (installed at `%USERPROFILE%\Android\sdk`, see `local.properties`).
+Requires JDK 17 or 18 (newer JDKs are too new for this Gradle version) and the Android SDK (point `sdk.dir` in
+`local.properties` at it).
 ```
-set JAVA_HOME=C:\Program Files\Java\jdk-18.0.2
-gradlew assembleRelease
+gradlew assembleDebug
 ```
-APKs land in `%LOCALAPPDATA%\mtgtrader-build\app\outputs\apk\release\` (kept out of OneDrive on purpose).
+The build output goes to `mtgtrader-build` in your local app data folder (`%LOCALAPPDATA%` on Windows, see the root
+`build.gradle.kts`), outside the project, so synced folders don't fill up with build files.
 
-**Keep `keystore/` and `keystore.properties` safe and private.** Android only installs an update over the existing app
-if it is signed with the same key; losing it means uninstalling (and losing app data) to install a new version.
+**Release builds** are signed with a private key in `keystore/` and `keystore.properties`, which aren't in this
+repository. Android only installs an update over the existing app if it's signed with the same key, so an APK you build
+yourself can't be installed over the official app: you'd have to uninstall it first, which deletes the app's data.
 
 - **Tests:** `gradlew testDebugUnitTest` (logic) and `gradlew connectedDebugAndroidTest` (scanner, needs a device).
 - **Screenshot tests:** `ScreenshotTest.kt` draws parts of screens with sample data (Robolectric and Roborazzi) and

@@ -86,7 +86,7 @@ class Release158Test {
 
     @Test fun aGuestsCommanderPlaysLikeADeck() {
         val guest = GuestCommander("Thrasios, Triton Hero", "t-id", "Tymna the Weaver", "WUBG")
-        val setup = TableSetup(seats = listOf(SeatChoice(name = "Joel", me = true), SeatChoice(name = "Player 2", guest = guest)))
+        val setup = TableSetup(seats = listOf(SeatChoice(name = "Robin", me = true), SeatChoice(name = "Player 2", guest = guest)))
         val g = startGame(setup, emptyList(), emptyList(), emptyList(), 0, first = 0)
         val s = g.seats[1]
         assertEquals("Thrasios, Triton Hero", s.commander)

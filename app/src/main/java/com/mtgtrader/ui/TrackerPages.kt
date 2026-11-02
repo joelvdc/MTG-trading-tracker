@@ -122,7 +122,7 @@ private val Line = Color(0xFF2A2A2A)
 private val Raised = Color(0xFF2B2B2B)
 
 /**
- * A page from the middle bar (since 1.48), as Lifetap's: black, upright, with the edges of the panels peeking in at
+ * A page from the middle bar (since 1.48): black, upright, with the edges of the panels peeking in at
  * the top and the bottom; back closes it.
  */
 @Composable
@@ -323,7 +323,7 @@ fun TrackerSettingsScreen(nav: NavController) {
 }
 
 /**
- * The game's settings (since 1.48; Lifetap's Settings): this game's players, layout, starting life and seats; how
+ * The game's settings (since 1.48): this game's players, layout, starting life and seats; how
  * it's played; the controls; how it looks; the phone. Game choices become the defaults for the next games.
  */
 @Composable
@@ -486,7 +486,7 @@ private fun DiceButton(label: String, onClick: () -> Unit, content: @Composable 
     Text(label, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
 }
 
-/** Dice & random (since 1.48; Dicefont's dice as in Lifetap since 1.59): a random player or opponent, a coin, a custom die and d4 to d20. */
+/** Dice & random (since 1.48; Dicefont's dice since 1.59): a random player or opponent, a coin, a custom die and d4 to d20. */
 @Composable
 internal fun DicePage(g: LiveGame, onClose: () -> Unit, onRoll: (Roll) -> Unit, onRandomPlayer: () -> Unit, onRandomOpponent: () -> Unit) {
     var custom by rememberSaveable { mutableIntStateOf(100) }
@@ -757,7 +757,7 @@ internal fun EndGameDialog(g: LiveGame, onCancel: () -> Unit, onLeave: () -> Uni
 }
 
 /**
- * A roll (since 1.59, as Lifetap's): one die in a big box, with the dots for a d6 and the number on the other dice,
+ * A roll (since 1.59): one die in a big box, with the dots for a d6 and the number on the other dice,
  * Again under it; a tap outside closes it (until 1.58 the result showed twice, once upside down).
  */
 @Composable

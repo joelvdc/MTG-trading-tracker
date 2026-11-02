@@ -977,7 +977,7 @@ class ScreenshotTest {
     }
 
     /**
-     * 1.47, as Lifetap since 1.48: four players, a turn running, the monarch, partners, "Dead?" and a player out, the
+     * 1.47, laid out anew in 1.48: four players, a turn running, the monarch, partners, "Dead?" and a player out, the
      * middle bar; since 1.49 the mini-grid centred in its frame, and damage from the player's own commander.
      */
     @Test fun lifeTracker() = tracker("life_tracker") { g -> trackerTable(g) }
@@ -1098,7 +1098,7 @@ class ScreenshotTest {
         com.mtgtrader.ui.RollOverlay(com.mtgtrader.ui.Roll("d20", "17", 20), animate = false, onAgain = {}) {}
     }
 
-    /** 1.59: a d6 rolled on the Dice page, which stays behind it (dots, as Lifetap's). */
+    /** 1.59: a d6 rolled on the Dice page, which stays behind it (dots). */
     @Test fun trackerRollOnDicePage() = tracker("tracker_roll_d6_page") { g ->
         com.mtgtrader.ui.DicePage(g, {}, {}, {}, {})
         com.mtgtrader.ui.RollOverlay(com.mtgtrader.ui.Roll("d6", "2", 6), animate = false, onAgain = {}) {}
@@ -1148,7 +1148,7 @@ class ScreenshotTest {
 
     /** A game in progress for the tracker's pictures: [players] at the table, things happening. */
     private fun sampleGame(players: Int = 4): com.mtgtrader.data.LiveGame {
-        val names = listOf("Joel" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Kraum & Tymna", "Anders" to "Korvold", "Freja" to "Edgar Markov", "Kasper" to "Yuriko")
+        val names = listOf("Robin" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Kraum & Tymna", "Anders" to "Korvold", "Freja" to "Edgar Markov", "Kasper" to "Yuriko")
         fun seat(i: Int) = com.mtgtrader.data.LiveSeat(
             seat = i, name = names[i].first, deckName = names[i].second, me = i == 0, life = 40, colour = i,
             commander = if (i == 2) "Kraum, Ludevic's Opus" else names[i].second, partner = if (i == 2) "Tymna the Weaver" else null,
@@ -1196,7 +1196,7 @@ class ScreenshotTest {
         fun seat(place: Int, deck: Long?, name: String, rounds: Int?) = com.mtgtrader.data.GameSeat(0, "me", name, me = deck != null, deckId = deck, deckName = "Auntie Plague", place = place, bracket = 3, power = 6.4, started = place == 1)
         fun rec(at: Long, minutes: Long, rounds: Int?, place: Int, win: com.mtgtrader.data.WinType?) = com.mtgtrader.data.GameRecord(
             startedAt = at, endedAt = at, durationMs = minutes * 60_000, turnsOn = rounds != null, rounds = rounds, winType = win?.key,
-            seats = com.mtgtrader.data.Games.encodeSeats(listOf(seat(place, 1, "Joel", rounds), com.mtgtrader.data.GameSeat(1, "mads", "Mads", deckName = "Atraxa", place = if (place == 1) 2 else 1, bracket = 4, power = 7.5))),
+            seats = com.mtgtrader.data.Games.encodeSeats(listOf(seat(place, 1, "Robin", rounds), com.mtgtrader.data.GameSeat(1, "mads", "Mads", deckName = "Atraxa", place = if (place == 1) 2 else 1, bracket = 4, power = 7.5))),
             uid = "u$at",
         )
         val games = listOf(
@@ -1299,7 +1299,7 @@ class ScreenshotTest {
 
     /** 1.72: the New game screen's table drawing: [players] seats as they sit around the phone in [view]. */
     private fun seatTable(file: String, players: Int, view: TableView, ends: Boolean = false, dark: Boolean = false) {
-        val sample = listOf("Joel (you)" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Edgar Markov", "Player 4" to "No deck picked", "Anders" to "Korvold", "Player 6" to "No deck picked")
+        val sample = listOf("Robin (you)" to "Auntie Plague", "Mads" to "Atraxa", "Sofie" to "Edgar Markov", "Player 4" to "No deck picked", "Anders" to "Korvold", "Player 6" to "No deck picked")
         compose.setContent {
             MtgColors(dark = true) {
                 Surface(Modifier.fillMaxWidth(), color = if (dark) Color.Black else MaterialTheme.colorScheme.background) {

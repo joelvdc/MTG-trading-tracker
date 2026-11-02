@@ -178,7 +178,7 @@ object Pricing {
  *
  * Since 1.30 each source has its own daily schedule, and a failed download waits [RETRY_MS] before
  * the next automatic try (before, a source that kept failing made both download on every app start).
- * Card Kingdom refuses some visitors (HTTP 403, e.g. phones in Denmark): then the copy a daily GitHub
+ * Card Kingdom refuses some visitors (HTTP 403, e.g. phones in some countries): then the copy a daily GitHub
  * job keeps in this app's repository ([CARD_KINGDOM_COPY_URL]) is used instead.
  */
 class PriceSourceStore(

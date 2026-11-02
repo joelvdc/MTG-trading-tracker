@@ -22,7 +22,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.48: the life tracker as Lifetap: the log, partners, out at once, the mana pool, layouts and changes during a game. */
+/** 1.48: the life tracker's new layout: the log, partners, out at once, the mana pool, layouts and changes during a game. */
 class Release148Test {
     private fun seat(i: Int, life: Int = 40, partner: String? = null) =
         LiveSeat(seat = i, name = "P$i", life = life, colour = i, commander = "C$i", partner = partner)
@@ -148,7 +148,7 @@ class Release148Test {
     @Test
     fun aNewGameStartsWithItsSettingsAndALogLine() {
         val setup = TableSetup(
-            seats = listOf(SeatChoice(name = "Joel", me = true), SeatChoice(name = "Mads"), SeatChoice(name = "Sofie"), SeatChoice(name = "Anders")),
+            seats = listOf(SeatChoice(name = "Robin", me = true), SeatChoice(name = "Mads"), SeatChoice(name = "Sofie"), SeatChoice(name = "Anders")),
             startingLife = 30, cmdLifeLoss = false, whenDown = WhenDown.AUTO.key, ends = true, counters = listOf("energy", LiveGames.CUSTOM + "Rings"),
         )
         val g = startGame(setup, emptyList(), emptyList(), emptyList(), 0, first = 2)
@@ -174,9 +174,9 @@ class Release148Test {
         var g = LiveGames.commanderDamage(game(), 1, LiveGames.cmdKey(0), 4)
         g = LiveGames.setPartners(g, 0, true)
         val deck = SeatDeck("Auntie Plague", "Auntie Blyte", null, "abc", "B", "https://x/art.jpg", 3, 6.5)
-        g = reseat(g, 0, SeatChoice("uid-joel", "Joel", me = true, deckId = 7), deck)
+        g = reseat(g, 0, SeatChoice("uid-robin", "Robin", me = true, deckId = 7), deck)
         val s = g.seats[0]
-        assertEquals("Joel", s.name)
+        assertEquals("Robin", s.name)
         assertEquals("Auntie Plague", s.deckName)
         assertEquals("Auntie Blyte", s.commander)
         assertEquals("https://x/art.jpg", s.artUrl)

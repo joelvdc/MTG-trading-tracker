@@ -178,7 +178,7 @@ object LiveGames {
     fun decode(s: String?): LiveGame? = s?.let { runCatching { json.decodeFromString(LiveGame.serializer(), it) }.getOrNull() }
 
     /**
-     * Six soft colours that go together and stay apart, with dark text on them, as Lifetap's (since 1.48): each
+     * Six soft colours that go together and stay apart, with dark text on them (since 1.48): each
      * panel fades from [PALETTE] to [PALETTE_END].
      */
     val PALETTE = listOf(0xFFC4D4F8, 0xFFF8D3C2, 0xFFC8EDD9, 0xFFDDCCF3, 0xFFF3E4B5, 0xFFF3C9D7)
@@ -326,7 +326,7 @@ object LiveGames {
 
     private val MERGED = setOf("life", "cmd", "poison", "tax", "counter")
 
-    /** A log line in words: "Joel −3 (37 → 34)", "Mads: 6 commander damage from Atraxa (6 in all)". */
+    /** A log line in words: "Robin −3 (37 → 34)", "Mads: 6 commander damage from Atraxa (6 in all)". */
     fun logText(e: LogEntry, g: LiveGame): String {
         val s = g.seats.firstOrNull { it.seat == e.seat }
         val name = s?.name ?: "?"

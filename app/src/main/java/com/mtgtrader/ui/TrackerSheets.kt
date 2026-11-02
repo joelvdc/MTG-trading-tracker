@@ -83,7 +83,7 @@ private val SheetMuted = Color(0xFF6B7280)
 private val SheetBrush = Brush.linearGradient(listOf(Color(0xFFEAEEF8), Color(0xFFD3D9E8)))
 
 /**
- * A player's sheet (since 1.48), facing them, as Lifetap's: Counters (commander damage taken on a seating grid,
+ * A player's sheet (since 1.48), facing them: Counters (commander damage taken on a seating grid,
  * and tiles for the other counters) and Player (who they are, their deck, their background).
  */
 @Composable

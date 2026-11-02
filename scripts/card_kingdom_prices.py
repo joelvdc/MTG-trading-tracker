@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Slims Card Kingdom's public price list down to what MTG Trader reads (since 1.30).
 
-Card Kingdom refuses some visitors (HTTP 403, e.g. phones in Denmark), so a daily GitHub job
+Card Kingdom refuses some visitors (HTTP 403, e.g. phones in some countries), so a daily GitHub job
 (.github/workflows/card-kingdom.yml) downloads the list from GitHub's servers, runs this script and
 keeps the result on the "card-kingdom-prices" branch, where the app can always reach it.
 

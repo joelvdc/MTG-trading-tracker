@@ -1,6 +1,7 @@
 package com.mtgtrader.data
 
 import android.os.SystemClock
+import com.mtgtrader.USER_AGENT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -213,7 +214,7 @@ class ScryfallApi(private val http: OkHttpClient) {
         while (true) {
             throttle.waitTurn()
             val builder = Request.Builder().url(url)
-                .header("User-Agent", "MTGTraderAndroid/1.0")
+                .header("User-Agent", USER_AGENT)
                 .header("Accept", "application/json")
             if (postJson != null) builder.post(postJson.toRequestBody("application/json".toMediaType()))
             val (code, body, retryAfter) = withContext(Dispatchers.IO) {

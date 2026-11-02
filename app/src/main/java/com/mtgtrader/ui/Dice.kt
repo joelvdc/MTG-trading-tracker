@@ -61,7 +61,7 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/** Dicefont by Franco Ponticelli (SIL Open Font License; see assets/licenses/dicefont.txt), as Lifetap's dice. Since 1.59. */
+/** Dicefont by Franco Ponticelli (SIL Open Font License; see assets/licenses/dicefont.txt). Since 1.59. */
 private val DiceFont = FontFamily(Font(R.font.dicefont))
 
 /** The dice Dicefont draws with their numbers on (d4, d6 with dots, d8, d10, d12, d20) and the coin (a d2). */
@@ -99,7 +99,7 @@ internal fun DieGlyph(glyph: String, size: Dp, modifier: Modifier = Modifier, co
     )
 }
 
-/** Two crossed swords: the random opponent, as in Lifetap. */
+/** Two crossed swords: the random opponent. */
 @Composable
 internal fun CrossedSwords(size: Dp, modifier: Modifier = Modifier, colour: Color = Color.White) = Canvas(modifier.size(size)) {
     val w = this.size.width
@@ -121,13 +121,13 @@ internal fun CrossedSwords(size: Dp, modifier: Modifier = Modifier, colour: Colo
     }
 }
 
-/** The quick roll's choices around the die in the middle bar (since 1.59, as Lifetap's), from the top round to the bottom. */
+/** The quick roll's choices around the die in the middle bar (since 1.59), from the top round to the bottom. */
 internal enum class RingChoice(val sides: Int, val label: String) {
     D20(20, "d20"), D12(12, "d12"), D10(10, "d10"), D8(8, "d8"), D6(6, "d6"), D4(4, "d4"), COIN(2, "Coin"),
     OPPONENT(0, "Random opponent"), PLAYER(0, "Random player"),
 }
 
-/** The choices' light grey, as in Lifetap (the held die stays white). */
+/** The choices' light grey (the held die stays white). */
 private val RingGrey = Color(0xFFC8CBD0)
 
 /** How far the choices are from the die, and how near the finger must be to one. */
@@ -210,7 +210,7 @@ internal fun DieRingOverlay(ring: DieRing, buzz: Buzz = Buzz.OFF) {
         val positions = ring.positions()
         if (positions.isEmpty()) return@Box
         val from = (ring.centre ?: return@Box) - ring.origin
-        // The held die stays bright above the darkened table, as in Lifetap.
+        // The held die stays bright above the darkened table.
         val dieHalf = with(density) { 20.dp.toPx() }
         Icon(
             Icons.Outlined.Casino, null,
@@ -238,7 +238,7 @@ internal fun DieRingOverlay(ring: DieRing, buzz: Buzz = Buzz.OFF) {
 internal fun opponentPool(g: LiveGame, me: Int): List<LiveSeat> = g.alive.filter { it.seat != me }
 
 /**
- * The die button's taps and holds (since 1.59, as Lifetap's): a tap [onTap]; a hold opens the [ring] around the button
+ * The die button's taps and holds (since 1.59): a tap [onTap]; a hold opens the [ring] around the button
  * ([onOpen]), sliding lights up the choice under the finger, and letting go on one picks it ([onPick]); letting go
  * anywhere else does nothing.
  */

@@ -1,5 +1,6 @@
 package com.mtgtrader.data
 
+import com.mtgtrader.USER_AGENT
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -130,7 +131,7 @@ class PreconStore(private val http: OkHttpClient, private val listUrl: String = 
     private var decks: List<Precons.Info>? = null
 
     private suspend fun get(url: String): String = withContext(Dispatchers.IO) {
-        http.newCall(Request.Builder().url(url).header("User-Agent", "MTGTraderAndroid/1.0").build()).execute().use { r ->
+        http.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).execute().use { r ->
             if (!r.isSuccessful) throw IOException("MTGJSON answered ${r.code}")
             r.body?.string() ?: throw IOException("MTGJSON sent nothing")
         }

@@ -122,7 +122,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 internal val TurnGold = Color(0xFFFFC94D)
-/** The tracker's own highlight colour, as Lifetap's (since 1.48). */
+/** The tracker's own highlight colour (since 1.48). */
 internal val TrackerAccent = Color(0xFF6DD3FF)
 /** Text on the soft panel colours. */
 internal val PanelInk = Color(0xFF111111)
@@ -197,7 +197,7 @@ internal enum class TrackerPage { SETTINGS, DICE, MANA, HISTORY }
 /** A die roll, coin flip or pick shown over the table. */
 internal data class Roll(val title: String, val value: String, val sides: Int = 0)
 
-/** The life tracker (since 1.47; laid out as Lifetap since 1.48): one panel per player, a menu bar across the middle. */
+/** The life tracker (since 1.47; laid out anew in 1.48): one panel per player, a menu bar across the middle. */
 @Composable
 fun TrackerScreen(nav: NavController) {
     val c = LocalContext.current.container
@@ -251,7 +251,7 @@ fun TrackerScreen(nav: NavController) {
     var spin by remember { mutableStateOf<Int?>(null) }
     var banner by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var barUntil by remember { mutableLongStateOf(0L) }
-    // Random opponent: asking whose opponent first (since 1.59, as Lifetap's "I'm …").
+    // Random opponent: asking whose opponent first (since 1.59, "I'm …").
     var asking by remember { mutableStateOf(false) }
     val ring = remember { DieRing() }
     BackHandler(enabled = sheet != null || page != null || ending || roll != null || asking) {
@@ -540,7 +540,7 @@ private fun BarIcon(icon: ImageVector, label: String, size: Dp = 32.dp, onTap: (
     )
 }
 
-/** Five coloured dots, as Lifetap's mana button. */
+/** Five coloured dots: the mana button. */
 @Composable
 private fun ManaDots(modifier: Modifier) = Canvas(modifier.size(40.dp).padding(2.dp)) {
     val r = size.width * 0.11f
@@ -563,7 +563,7 @@ internal fun counterIcon(key: String): ImageVector = when (key) {
 }
 
 /**
- * A player's panel (as Lifetap's since 1.48): their name on a label (tap: their sheet), the life total with room
+ * A player's panel (since 1.48): their name on a label (tap: their sheet), the life total with room
  * around it (tap and hold to change), − and + at the ends, the commander damage mini-grid (tap: their counters) and
  * badges for counters in use; "Dead?", the turn and low life on top.
  */
@@ -603,7 +603,7 @@ internal fun PlayerPanel(
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (s.contrast) 0.58f else 0.36f)))
             }
         }
-        // "I'm …": a plain panel to tap, for the random opponent (since 1.59, as Lifetap's).
+        // "I'm …": a plain panel to tap, for the random opponent (since 1.59).
         if (whoAmI != null) {
             val labelMax = maxWidth * 0.85f
             if (!s.out) {
@@ -742,7 +742,7 @@ internal fun PlayerPanel(
 }
 
 /**
- * The seat that gets the "1st" badge (since 1.58, as Lifetap's): the player who starts, until the first change in the
+ * The seat that gets the "1st" badge (since 1.58): the player who starts, until the first change in the
  * game (life, commander damage, poison, a counter, someone out). Not with turns on: the turn badge shows it there.
  */
 internal fun firstBadgeSeat(g: LiveGame): Int? = g.firstSeat.takeIf { !g.turnsOn && g.seats.size > 1 && untouched(g) }
@@ -822,7 +822,7 @@ private fun miniGridSize(g: LiveGame, s: LiveSeat): Pair<Dp, Dp> {
     return if (sideways) sh to sw else sw to sh
 }
 
-/** The space around the mini-grid inside its frame (since 1.49, as Lifetap's). */
+/** The space around the mini-grid inside its frame (since 1.49). */
 private val GRID_FRAME = 5.dp
 
 /**

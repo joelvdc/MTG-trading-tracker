@@ -13,7 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.container
 
 /**
- * The life tracker's vibration (since 1.58): a short buzz straight from the vibration motor, as Lifetap does. Until
+ * The life tracker's vibration (since 1.58): a short buzz straight from the vibration motor, as dedicated life tracker apps do. Until
  * 1.57 the tracker asked for the view's touch feedback, which many phones skip in silent mode or with touch vibration
  * switched off in the system settings, and which is very faint on others.
  */

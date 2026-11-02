@@ -736,7 +736,7 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
     )
 }
 
-/** Settings → Life tracker (since 1.47): since 1.48 its settings are in the game itself, as in Lifetap; since 1.58 also here. */
+/** Settings → Life tracker (since 1.47): since 1.48 its settings are in the game itself; since 1.58 also here. */
 @Composable
 internal fun TrackerSection(nav: NavController) {
     Text("Life tracker", style = MaterialTheme.typography.titleMedium)
