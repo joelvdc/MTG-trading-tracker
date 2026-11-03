@@ -91,12 +91,16 @@ class MtgApp : Application(), ImageLoaderFactory {
 /** Hand-rolled dependency container; one instance for the whole app. */
 class AppContainer(context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /** Switches the owner can flip on GitHub to turn Archidekt features off everywhere (since 1.76). */
+    val switches = com.mtgtrader.data.RemoteSwitches(context)
     val http: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(90, TimeUnit.SECONDS)
         .addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build())
         }
+        // Archidekt: requests 1.5 seconds apart, and none while switched off (since 1.76).
+        .addInterceptor(com.mtgtrader.data.ArchidektGuard({ switches.current }))
         .build()
     val db = AppDatabase.build(context)
     val settings = Settings(context)
@@ -132,7 +136,7 @@ class AppContainer(context: Context) {
             context.getSharedPreferences("archidekt", Context.MODE_PRIVATE).getString("server", null) ?: com.mtgtrader.data.ArchidektCollectionClient.DEFAULT_BASE
         },
         backups, network, appScope,
-    )
+    ) { switches.current }
 
     /** The life tracker's games and players (since 1.47). */
     val games = com.mtgtrader.data.GameStore(context, db, scryfall, appScope)

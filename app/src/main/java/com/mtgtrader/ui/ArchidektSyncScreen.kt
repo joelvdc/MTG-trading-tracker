@@ -80,6 +80,7 @@ fun ArchidektSyncScreen(nav: NavController) {
     val c = LocalContext.current.container
     val s by c.archidekt.status.collectAsStateWithLifecycle()
     val nextcloud by c.sync.status.collectAsStateWithLifecycle()
+    val switches by c.switches.switches.collectAsStateWithLifecycle()
     var login by remember { mutableStateOf(false) }
     var history by remember { mutableStateOf<List<SyncReport>?>(null) }
     var cardByCard by remember { mutableStateOf<Plan?>(null) }
@@ -108,8 +109,16 @@ fun ArchidektSyncScreen(nav: NavController) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            if (!switches.archidektAccount) {
+                Text(
+                    com.mtgtrader.data.RemoteSwitches.offText(switches, "Logging in to Archidekt") +
+                        " Nothing is sent to or read from your Archidekt account until it's switched back on; your cards stay in the app.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             if (!s.connected) {
-                Button(onClick = { login = true }) { Text("Log in to Archidekt") }
+                Button(onClick = { login = true }, enabled = switches.archidektAccount) { Text("Log in to Archidekt") }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Logged in as ${s.username}", Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
@@ -493,7 +502,12 @@ private fun LoginDialog(onDone: () -> Unit) {
                     OutlinedTextField(server, { server = it }, label = { Text("Server (debug builds)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
                 Text(
-                    "The password is only used to log in and isn't stored: the app keeps Archidekt's login token, encrypted on this phone. " +
+                    "Archidekt has no official API: logging in lets this app use your Archidekt account through the website's own " +
+                        "connection, to sync your collection and edit your decks. It's unofficial, may stop working, and is at your own risk.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Text(
+                    "Your password goes only to Archidekt and isn't stored: the app keeps Archidekt's login token, encrypted on this phone. " +
                         "Logging in with Google or another account? Set a password in your Archidekt account settings first.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -94,6 +94,8 @@ class ArchidektSync(
     private val backups: Backups,
     private val network: NetworkMonitor,
     private val scope: CoroutineScope,
+    /** The remote switches (since 1.76): with logging in switched off, nothing syncs. */
+    private val switches: () -> Switches = { Switches() },
 ) {
     private val prefs = context.getSharedPreferences("archidekt", Context.MODE_PRIVATE)
     private val mutex = Mutex()
@@ -198,7 +200,8 @@ class ArchidektSync(
 
     private fun autoAllowed(): Boolean {
         val s = _status.value
-        return s.connected && s.ready && s.auto && s.review == null && (!s.wifiOnly || network.onUnmeteredNetwork())
+        return s.connected && s.ready && s.auto && s.review == null && (!s.wifiOnly || network.onUnmeteredNetwork()) &&
+            switches().archidektAccount
     }
 
     /** On opening the app: sync if the last one was a while ago. */
@@ -234,6 +237,12 @@ class ArchidektSync(
      */
     suspend fun sync(decisions: Map<CardKey, Decision> = emptyMap(), approved: Pair<Int, Int>? = null): Boolean = mutex.withLock {
         var auth = login() ?: return false
+        switches().takeIf { !it.archidektAccount }?.let { sw ->
+            val off = RemoteSwitches.offText(sw, "Logging in to Archidekt")
+            prefs.edit().putString(K_ERROR, off).apply()
+            set { it.copy(lastError = off) }
+            return false
+        }
         set { it.copy(running = true, progress = "Starting…", lastError = null, review = null) }
         var report: SyncReport? = null
         val error = try {
@@ -635,7 +644,7 @@ class ArchidektSync(
         val progress = Mutex()
         suspend fun step(n: Int = 1) = progress.withLock {
             done += n
-            if (done % 10 == 0 || done == total) set { it.copy(progress = "Updating Archidekt… $done of $total") }
+            if (done % 10 == 0 || done == total) set { it.copy(progress = "Updating Archidekt… $done of $total" + timeLeft(total - done)) }
         }
         val failedLines = java.util.Collections.synchronizedList(mutableListOf<ReportLine>())
         val failedKeys = java.util.Collections.synchronizedSet(HashSet<CardKey>())
@@ -814,10 +823,21 @@ class ArchidektSync(
         private const val HISTORY = 20
         /** Requests sent to Archidekt at the same time. */
         private const val PARALLEL = 4
-        private const val AUTO_EVERY_MS = 60L * 60 * 1000
+        /** Automatic sync on opening the app: at most every 6 hours (hourly until 1.75). */
+        private const val AUTO_EVERY_MS = 6L * 60 * 60 * 1000
         private const val LOCK_STALE_MS = 6L * 60 * 60 * 1000
 
         private fun price(v: Double) = String.format(java.util.Locale.US, "%.2f", v)
+
+        /** " (about 25 min left)" for [left] requests at Archidekt's pace (since 1.76); nothing under a minute. */
+        fun timeLeft(left: Int): String {
+            val minutes = left * ArchidektGuard.GAP_MS / 60_000
+            return when {
+                minutes < 1 -> ""
+                minutes < 90 -> " (about $minutes min left)"
+                else -> " (about ${(minutes + 30) / 60} h left)"
+            }
+        }
 
         fun describe(label: CardLabel, key: CardKey): String {
             val finish = when (key.finish) { Finish.FOIL -> " foil"; Finish.ETCHED -> " etched"; Finish.NONFOIL -> "" }

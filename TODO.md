@@ -34,6 +34,7 @@ switch `/delegate-mistral` to `vibe --prompt-file` (step and price limits, cost 
 backup.
 
 ## Done
+- 1.76: Archidekt requests at a safe pace, automatic sync every 6 hours, a clearer login notice, remote switches.
 - 1.75: the app tells every site its version and GitHub page; README and code tidied for sharing.
 - 1.74: the same starter after 4 → 5 → 4 players in Game settings.
 - 1.73: who starts is picked after Game settings is closed.
