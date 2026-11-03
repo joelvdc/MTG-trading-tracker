@@ -13,6 +13,9 @@ data class ValuePoint(val day: LocalDate, val value: Double, val cards: Int)
 /** A card whose price moved: Cardmarket's trend vs its 30-day average, times the copies you own. */
 data class PriceMove(val row: CollectionRow, val change: Double, val pct: Double)
 
+/** One set's line in the value screen's "Value by set" list. Since 1.77. */
+data class SetValue(val setCode: String, val name: String, val cards: Int, val value: Double, val change: Double?)
+
 /**
  * The collection's value over time: once a day (when the app opens and after each price update)
  * the total is worked out for every price type and kept, so switching the price type keeps the
@@ -109,5 +112,23 @@ class ValueHistory(private val db: AppDatabase) {
                 .filter { if (up) it.change > 0 else it.change < 0 }
                 .sortedBy { if (up) -it.change else it.change }
                 .take(count)
+
+        /**
+         * The collection's sets by value, most valuable first (ties by name): each set's copies and value
+         * at [source] — the same price [sourceTotal] uses, so the sets add up to the big total — and the sum
+         * of its rows' lately changes over all copies (null when none of them has one). The set key is the
+         * lower-case set code, the same one the stats screen's "Top sets" filter uses. Since 1.77.
+         */
+        fun bySet(rows: List<CollectionRow>, source: PriceSource, type: PriceType): List<SetValue> =
+            rows.groupBy { it.item.card.setCode.lowercase() }.map { (code, rs) ->
+                val changes = rs.mapNotNull { r -> r.change?.money?.times(r.item.quantity) }
+                SetValue(
+                    setCode = code,
+                    name = rs.first().item.card.setName.ifEmpty { code.uppercase() },
+                    cards = rs.sumOf { it.item.quantity },
+                    value = rs.sumOf { r -> (r.priceAt(source, type) ?: Pricing.fallback(r.item.condition, r.cardmarketPrice(type)) ?: 0.0) * r.item.quantity },
+                    change = changes.takeIf { it.isNotEmpty() }?.sum(),
+                )
+            }.sortedWith(compareByDescending<SetValue> { it.value }.thenBy { it.name })
     }
 }

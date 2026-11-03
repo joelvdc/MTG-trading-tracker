@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,8 +47,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.mtgtrader.CollectionJump
 import com.mtgtrader.container
 import com.mtgtrader.data.Binder
+import com.mtgtrader.data.CollectionFilter
 import com.mtgtrader.data.CollectionRow
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.SnackbarHost
@@ -60,6 +63,7 @@ import com.mtgtrader.data.PriceSource
 import com.mtgtrader.data.Pricing
 import com.mtgtrader.data.ValueHistory
 import com.mtgtrader.data.ValuePoint
+import com.mtgtrader.data.SetValue
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -92,6 +96,7 @@ fun ValueScreen(nav: NavController) {
     val profit = remember(rows, priceType, pricing) { ProfitLoss.of(rows, priceType) }
     val risers = remember(rows) { ValueHistory.biggestMoves(rows, up = true) }
     val fallers = remember(rows) { ValueHistory.biggestMoves(rows, up = false) }
+    val setValues = remember(rows, priceType, source, pricing) { ValueHistory.bySet(rows, source, priceType) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var opened by remember { mutableStateOf<CollectionRow?>(null) }
@@ -167,6 +172,16 @@ fun ValueScreen(nav: NavController) {
                     ValueChart(points)
                 }
             }
+            if (setValues.isNotEmpty()) {
+                item(key = "sets") { MovesHeader("Value by set") }
+                item(key = "setValues") {
+                    ValueBySetList(setValues, now) { s ->
+                        // Like the stats screen: the collection filtered to this set, in the binder shown.
+                        c.collectionJump.value = CollectionJump(CollectionFilter(sets = setOf(s.setCode)), binder)
+                        nav.safePopBackStack()
+                    }
+                }
+            }
             if (profit.counted > 0) item(key = "profit") { ProfitCard(profit) }
             if (profit.best.isNotEmpty()) {
                 item(key = "best") { MovesHeader("Best buys") }
@@ -227,6 +242,49 @@ private fun MoveRow(m: PriceMove, onClick: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text("%+.0f%%".format(m.pct), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * The collection's sets by value, most valuable first: the top ten, and "Show all sets (N)" below them
+ * ("Show fewer" folds them again). Tapping a line opens the collection filtered to that set. Since 1.77.
+ */
+@Composable
+internal fun ValueBySetList(sets: List<SetValue>, total: Double, onPick: (SetValue) -> Unit) {
+    var all by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        (if (all) sets else sets.take(10)).forEach { s -> SetValueRow(s, total) { onPick(s) } }
+        if (sets.size > 10) {
+            TextButton(onClick = { all = !all }) { Text(if (all) "Show fewer" else "Show all sets (${sets.size})") }
+        }
+    }
+}
+
+/** One set's line: symbol and name, copies and share of the total, value, and its lately change. Since 1.77. */
+@Composable
+private fun SetValueRow(s: SetValue, total: Double, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        SetSymbol(s.setCode, "")
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(s.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                "${s.cards} cards · ${"%.0f%%".format(if (total > 0) s.value / total * 100 else 0.0)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(Fmt.money(s.value), fontWeight = FontWeight.SemiBold)
+            // Left out without change data, or when it rounds to zero (the same 0.004 as Fmt.signedMoney).
+            if (s.change != null && abs(s.change) > 0.004) {
+                Text(
+                    (if (s.change >= 0) "+" else "−") + Fmt.money(abs(s.change)),
+                    color = if (s.change >= 0) TrendColors.up else TrendColors.down,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
         }
     }
 }
