@@ -51,6 +51,7 @@ import com.mtgtrader.data.ProfitLoss
 import com.mtgtrader.data.PurchaseOrder
 import com.mtgtrader.data.PurchasePrices
 import com.mtgtrader.data.ScannedCard
+import com.mtgtrader.data.SetValue
 import com.mtgtrader.data.Settings
 import com.mtgtrader.data.SourcePrice
 import com.mtgtrader.data.StatEntry
@@ -85,6 +86,7 @@ import com.mtgtrader.ui.SourceStatusStrip
 import com.mtgtrader.ui.asCollectionRow
 import com.mtgtrader.ui.priceGaps
 import com.mtgtrader.ui.sourceTotals
+import com.mtgtrader.ui.ValueBySetList
 import com.mtgtrader.ui.wishLabel
 import com.mtgtrader.ui.wishTotalLine
 import org.junit.Rule
@@ -142,6 +144,32 @@ class ScreenshotTest {
 
     // Phones set to bigger text.
     @Test @Config(fontScale = 1.3f) fun pieByValueBigText() = shoot(colors(scale = 10.0), StatMode.VALUE, "pie_value_big_text")
+
+    /** 1.77: the value screen's "Value by set" list: the top ten, and "Show all sets (12)" under them. */
+    @Test fun valueBySet() {
+        val sets = listOf(
+            SetValue("ltr", "The Lord of the Rings: Tales of Middle-earth", 412, 3120.55, 12.40),
+            SetValue("mh3", "Modern Horizons 3", 388, 2841.10, 8.75),
+            SetValue("dmu", "Dominaria United", 301, 1902.33, -3.20),
+            SetValue("lci", "The Lost Caverns of Ixalan", 355, 1755.02, null),
+            SetValue("woe", "Wilds of Eldraine", 298, 1401.44, 0.02),
+            SetValue("otj", "Outlaws of Thunder Junction", 276, 1188.90, -1.10),
+            SetValue("blb", "Bloomburrow", 244, 1022.17, 4.20),
+            SetValue("mkm", "Murders at Karlov Manor", 231, 980.55, null),
+            SetValue("rvr", "Ravnica Remastered", 210, 874.20, 2.05),
+            SetValue("one", "Phyrexia: All Will Be One", 198, 760.31, 0.004), // rounds to zero: no change shown
+            SetValue("mom", "March of the Machine", 187, 655.80, null),
+            SetValue("bro", "The Brothers' War", 176, 512.09, 1.30),
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Box(Modifier.padding(16.dp)) { ValueBySetList(sets, sets.sumOf { it.value }) {} }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/value_by_set.png", roborazziOptions = screenshotOptions)
+    }
 
     private fun ref(name: String, set: String, number: String, rarity: String = "common") =
         CardRef(set + number, name, set, set.uppercase(), number, rarity, null, null, 1.0, 2.0, true, true)
