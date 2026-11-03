@@ -1,10 +1,12 @@
 package com.mtgtrader.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +34,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mtgtrader.data.AlertEvent
+import com.mtgtrader.data.AlertHistory
 import com.mtgtrader.data.CardTrader
 import com.mtgtrader.data.CardTraderParse
 import com.mtgtrader.data.CollectionItem
@@ -286,6 +290,8 @@ data class WishAlertInfo(
     val ctFilter: CtFilter? = null,
     /** CardTrader is switched on, but there's no token yet. */
     val ctNeedsToken: Boolean = false,
+    /** This card's reached alerts on this phone, newest first (since 1.77). */
+    val history: List<AlertEvent> = emptyList(),
 )
 
 /** The card window's "Price alert" part: the level, and the prices it's compared with. Since 1.37. */
@@ -316,5 +322,53 @@ internal fun PriceAlertFields(item: WishlistItem, level: MoneyInput, alerts: Wis
         }
         if (alerts.ctNeedsToken) Text("CardTrader is switched on, but needs your API token (Settings → Wishlist price alerts).", style = small, color = muted)
         wp?.checkedAt?.takeIf { it > 0 }?.let { Text("Checked ${Fmt.dateTime(it)}", style = small, color = muted) }
+
+        // Since 1.77: this card's last three reached alerts, as this phone wrote them down.
+        alerts.history.take(3).forEach { e ->
+            Text(AlertHistory.line(e, { Fmt.shortDate(it) }, { Fmt.money(it) }), style = small, color = muted)
+        }
+    }
+}
+
+/**
+ * The wishlist's "Alert history" dialog: every line this phone wrote down, newest first. Tapping a
+ * line opens its card on the wishlist, the way an alert's notification does, when the card is still
+ * on the wishlist. Since 1.77.
+ */
+@Composable
+fun AlertHistoryDialog(
+    events: List<AlertEvent>,
+    wishIds: Set<Long>,
+    onDismiss: () -> Unit,
+    onOpen: (Long) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Alert history") },
+        text = { AlertHistoryList(events, wishIds, onOpen) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
+
+/** The history dialog's list: the card name, and under it the "Reached … · your level … · where" line. Since 1.77. */
+@Composable
+internal fun AlertHistoryList(events: List<AlertEvent>, wishIds: Set<Long>, onOpen: (Long) -> Unit) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+        if (events.isEmpty()) {
+            Text("No price alert has been reached on this phone yet.", style = MaterialTheme.typography.bodyMedium, color = muted)
+        }
+        for (e in events) {
+            Column(
+                Modifier.fillMaxWidth().clickable(enabled = e.wishId in wishIds) { onOpen(e.wishId) }.padding(vertical = 6.dp),
+            ) {
+                Text(e.cardName, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    AlertHistory.line(e, { Fmt.shortDate(it) }, { Fmt.money(it) }),
+                    style = MaterialTheme.typography.bodySmall, color = muted,
+                )
+            }
+        }
+        Text("Kept on this phone for a year.", style = MaterialTheme.typography.bodySmall, color = muted, modifier = Modifier.padding(top = 8.dp))
     }
 }

@@ -120,7 +120,9 @@ class AppContainer(context: Context) {
     val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)
     val updater = DataUpdater(context, settings, prices, network, catalog, history, cardDetails, priceSources)
     val cardTrader = com.mtgtrader.data.CardTrader(context, http, db)
-    val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader) { exchangeRates.rates.value }
+    /** The price alerts reached on this phone, as a history kept on the phone only (since 1.77). */
+    val alertHistory = com.mtgtrader.data.AlertHistory(context)
+    val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader, alertHistory) { exchangeRates.rates.value }
     private val browser = HiddenBrowser(context)
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope, winOdds)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)

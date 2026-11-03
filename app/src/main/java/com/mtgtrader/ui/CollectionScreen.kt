@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Style
@@ -163,6 +164,9 @@ fun CollectionScreen(nav: NavController) {
     // Wishlist price alerts (since 1.37): the prices found for each card, and what they're compared with.
     val wishPrices by remember { c.db.wishPriceDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val wishPriceById = remember(wishPrices) { wishPrices.associateBy { it.wishId } }
+    // The price alerts reached on this phone (since 1.77).
+    val alertEvents by c.alertHistory.events.collectAsStateWithLifecycle()
+    var alertHistoryOpen by remember { mutableStateOf(false) }
     val alertSource by c.settings.priceSource.collectAsStateWithLifecycle()
     val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
     val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
@@ -455,6 +459,12 @@ fun CollectionScreen(nav: NavController) {
                                     menu = false
                                     shareText(context, "MTG wishlist", wishShareText(wishRows))
                                 },
+                            )
+                            // Since 1.77: the alerts this phone has seen reached.
+                            DropdownMenuItem(
+                                text = { Text("Alert history") },
+                                leadingIcon = { Icon(Icons.Default.History, null) },
+                                onClick = { menu = false; alertHistoryOpen = true },
                             )
                             HorizontalDivider()
                         }
@@ -864,7 +874,7 @@ fun CollectionScreen(nav: NavController) {
     editingWish?.let { row ->
         WishlistDialog(
             row, wishOwned[row.item.id], priceType,
-            WishAlertInfo(wishPriceById[row.item.id], alertBasis, ctFilter, ctNeedsToken = ctOn && !ctStatus.hasToken),
+            WishAlertInfo(wishPriceById[row.item.id], alertBasis, ctFilter, ctNeedsToken = ctOn && !ctStatus.hasToken, history = alertEvents.filter { it.wishId == row.item.id }),
             onDismiss = { editingWish = null },
             onSave = { updated ->
                 editingWish = null
@@ -888,6 +898,19 @@ fun CollectionScreen(nav: NavController) {
                     c.repo.deleteWishlistItem(row.item.id)
                     if (snackbar.showUndo("${row.item.card.displayName} taken off the wishlist")) c.repo.restoreWishlistItem(row.item)
                 }
+            },
+        )
+    }
+
+    // The wishlist's "Alert history" (since 1.77): tapping a line opens its card, like an alert's notification.
+    if (alertHistoryOpen) {
+        AlertHistoryDialog(
+            alertEvents,
+            wishRows.map { it.item.id }.toSet(),
+            onDismiss = { alertHistoryOpen = false },
+            onOpen = { id ->
+                alertHistoryOpen = false
+                c.openWish.value = id
             },
         )
     }

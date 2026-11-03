@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import androidx.compose.ui.graphics.asImageBitmap
+import com.mtgtrader.data.AlertEvent
 import com.mtgtrader.data.AppCurrency
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.CardRef
@@ -486,6 +487,26 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/wishlist_alerts.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.77: the wishlist's "Alert history" list, newest first. */
+    @Test fun alertHistory() {
+
+        val events = listOf(
+            AlertEvent(1, "Ragavan, Nimble Pilferer", 1_792_065_600_000L, 38.5, 40.0, onCardTrader = true, ctSetCode = "2x2", ctCondition = "Slightly Played", ctLanguage = "en"),
+            AlertEvent(2, "Smothering Tithe", 1_791_979_200_000L, 11.9, 12.0, basis = "cardmarket:low", setCode = "rna"),
+            AlertEvent(3, "Arcane Signet", 1_791_500_000_000L, 0.55, 0.6, basis = "cardmarket:low"),
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp)) {
+                        com.mtgtrader.ui.AlertHistoryList(events, setOf(1L, 2L, 3L)) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/alert_history.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.37: Settings → Wishlist price alerts with CardTrader on, and the price menu's explanations. */

@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.mtgtrader.data.AlertHistory
 import com.mtgtrader.data.AppDatabase
 import com.mtgtrader.data.BackupFile
 import com.mtgtrader.data.CardRef
@@ -429,7 +430,7 @@ class Release137Test {
         shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         val http = OkHttpClient()
         val scryfall = ScryfallApi(http)
-        val watch = WishlistWatch(context, db, Settings(context), scryfall, PriceSourceStore(context, http, db, scryfall), CardTrader(context, http, db)) { null }
+        val watch = WishlistWatch(context, db, Settings(context), scryfall, PriceSourceStore(context, http, db, scryfall), CardTrader(context, http, db), AlertHistory(context)) { null }
         fun price(low: Double) = runBlocking { db.priceDao().insertAll(listOf(PriceEntity(100, null, low, 9.0, null, null, null, null, null, null, null, null, null))) }
         val id = db.wishlistDao().insert(WishlistItem(card = ref("Bolas's Citadel", cm = 100), anyPrinting = false, alertBelow = 5.0))
         // No level on this one: looked at, never notified.

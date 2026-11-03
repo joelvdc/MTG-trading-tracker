@@ -196,6 +196,7 @@ class WishlistWatch(
     private val scryfall: ScryfallApi,
     private val priceSources: PriceSourceStore,
     private val cardTrader: CardTrader,
+    private val history: AlertHistory,
     private val rates: () -> ExchangeRates?,
 ) {
     private val lock = Mutex()
@@ -301,7 +302,17 @@ class WishlistWatch(
 
             val best = PriceAlerts.best(row, basis, key)
             val step = PriceAlerts.step(item.levelEur, best?.first, row.alertedLevel, key = item.alertBelow)
-            if (step.notify && notify && best != null) notifier.show(item, best.first, best.second, row, basis)
+            if (step.notify && best != null) {
+                // The level was reached: a line in this phone's history, also when no notification goes out (since 1.77).
+                history.add(
+                    AlertEvent(
+                        wishId = item.id, cardName = item.card.displayName, at = now, price = best.first, level = item.levelEur ?: best.first,
+                        onCardTrader = best.second, ctSetCode = row.ctSetCode, ctCondition = row.ctCondition, ctLanguage = row.ctLanguage,
+                        basis = basis, setCode = row.setCode?.takeIf { item.anyPrinting },
+                    )
+                )
+                if (notify) notifier.show(item, best.first, best.second, row, basis)
+            }
             row = row.copy(alertedLevel = step.alertedLevel, checkedAt = now)
             dao.put(row)
         }
