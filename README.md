@@ -271,10 +271,22 @@ both ways. Archidekt holds the whole collection (it has no binders or wishlist).
   "Altered". Conditions are matched by grade (NM, LP, MP, HP, Damaged).
 - **Several phones:** with Nextcloud sync on, every phone can sync with Archidekt (one at a time); without it, use one
   phone.
-- **Automatic sync** (optional): when you open the app (at most once an hour) and after you leave it.
+- **Automatic sync** (optional, off by default): when you open the app (at most every 6 hours) and, when cards
+  changed, after you leave it.
 
-This uses the same connection as Archidekt's website, which isn't an official interface: if Archidekt changes it,
-syncing may stop until the app is updated.
+This uses the same connection as Archidekt's website, which isn't an official interface: logging in lets the app use
+your Archidekt account that way, unofficially and at your own risk, and if Archidekt changes it, syncing may stop
+until the app is updated. Your password goes only to Archidekt.
+
+**Going easy on Archidekt:** every request to Archidekt (decks, collection, edits) waits until 1.5 seconds after the
+previous one, so the app never sends more than 40 a minute; it names itself and backs off when Archidekt asks. A first
+sync of thousands of cards therefore takes a while (about 25 minutes per 1,000 changed cards; the progress shows the
+time left).
+
+**Switches:** the app reads [`remote-switches.json`](remote-switches.json) from this repository once a day.
+`"archidektAccount": false` stops logging in, the collection sync and sending deck edits on every installed copy
+(edits wait on the phone); `"archidektDecks": false` stops reading public decks; `"message"` is shown in the app.
+Anything missing or unreadable counts as on.
 
 ## Backups and restore points
 Settings → **Backups** keeps restore points of everything the app syncs.

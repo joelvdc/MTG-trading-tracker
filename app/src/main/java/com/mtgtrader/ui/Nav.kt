@@ -92,6 +92,7 @@ fun AppNav() {
         c.updater.schedule()
         c.appScope.launch { c.updater.autoUpdate() }
         c.sync.onAppStart()
+        c.appScope.launch { c.switches.refreshIfDue(c.http) }
         c.archidekt.onAppStart()
         c.appScope.launch { c.gameChangers.load() }
         c.appScope.launch { c.backups.dailyIfDue() }
