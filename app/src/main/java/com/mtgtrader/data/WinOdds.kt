@@ -196,9 +196,10 @@ object WinOddsCalc {
      * 8: battles, planeswalker ultimates, proliferate and poison (1.63). 9: deaths, sacrifice outlets, -1/-1 counters (1.64).
      * 10: lands making more mana, ability costs, finishers, Sagas, Vehicles, toxic (1.69). 11: Currency Converter, Renewed
      * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70). 12: which land is played,
-     * "enters tapped unless …" conditions (1.71).
+     * "enters tapped unless …" conditions (1.71). 13: mana sinks when picking the land, more "unless …" conditions, a ramp
+     * spell's basic of one colour (1.77).
      */
-    const val VERSION = 12
+    const val VERSION = 13
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -2756,14 +2757,32 @@ object WinOddsCalc {
             ManaOddsCalc.entersUntapped(land.mana, landsOut(), hand.map { it.mana }) ||
             board.any { b -> b.card?.untapsLands?.let { it == 1 || it == 2 && land.subtypes.contains("Gate") } == true }
 
-        /** The lands on the battlefield as an "enters tapped unless …" land sees them (a ramp spell's are basics). Since 1.71. */
+        /**
+         * The lands on the battlefield as an "enters tapped unless …" land sees them (a ramp spell's are basics). Since 1.71;
+         * since 1.77 with a legendary creature or planeswalker out and the opponents' life.
+         */
         fun landsOut(): ManaOddsCalc.LandsOut {
             val lands = board.filter { it.isA("land") }
+            val types = lands.flatMap { e -> e.card?.mana?.types ?: ManaOddsCalc.basicTypes(e.source?.colours.orEmpty()) }
             return ManaOddsCalc.LandsOut(
                 lands.size,
                 lands.count { it.card?.mana?.basic ?: true },
-                lands.flatMap { e -> e.card?.mana?.types ?: ManaOddsCalc.basicTypes(e.source?.colours.orEmpty()) }.toSet(),
+                types.toSet(),
+                types.groupingBy { it }.eachCount(),
+                legendary = board.any { it.creature && it.card?.legendary == true },
+                planeswalker = board.any { it.card?.planeswalker == true },
+                lowestLife = minOf(LIFE, life.min()),
             )
+        }
+
+        /**
+         * Whether this turn has a use for any extra mana (since 1.77): an X spell in hand, or something on the battlefield
+         * with an ability that costs mana (pumps, Kessig Wolf Run, Bonders' Enclave, equip with a creature out).
+         */
+        fun manaSink(): Boolean = hand.any { it.xEach || it.xTokens > 0 } || board.any { e ->
+            val c = e.card ?: return@any false
+            c.pumps.isNotEmpty() || (c.activated + c.taps + c.landTaps).any { it.cost.manaValue > 0 } ||
+                c.equip != null && board.any { it.creature }
         }
 
         /** A Gate with a new name from the library onto the battlefield (Maze's End, Circuitous Route). */
@@ -3490,7 +3509,8 @@ object WinOddsCalc {
 
         /** A basic land from a ramp effect (tapped or not), with landfall. */
         fun rampLand(colours: Set<Char>, tapped: Boolean) {
-            val s = Source(colours, 1, if (tapped && !board.any { it.card?.untapsLands == 1 }) turn + 1 else turn)
+            // A basic of one colour, the one the deck lacks most (since 1.77).
+            val s = Source(ManaOddsCalc.rampColour(colours, sources.map { it.colours }), 1, if (tapped && !board.any { it.card?.untapsLands == 1 }) turn + 1 else turn)
             sources += s
             val e = Entry(null, turn, 0, false, false, false, LAND).apply { source = s; token = false }
             board += e
@@ -4602,7 +4622,7 @@ object WinOddsCalc {
                     val costs = (hand.filter { !it.land } + command).map { it.cost }
                     ManaOddsCalc.chooseLand(
                         l, { it.mana }, { untapped(it, hand.toMutableList().also { h -> h.remove(it) }) }, have, pool(), costs,
-                        last = { it.spellSide != null },
+                        last = { it.spellSide != null }, sink = manaSink(),
                     )
                 }
                 ?: fromYard ?: return null
