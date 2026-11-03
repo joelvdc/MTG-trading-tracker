@@ -101,8 +101,12 @@ binder for the received ones. Trades can be shared as text, and an agreed price 
 - **Card page:** picture, price and trend, quantity, finish, binder, condition, language, **purchase price**, notes,
   **Signed** and **Altered**, the decks it's in and the other copies you own. Tap a picture to see it full screen;
   double-faced cards flip.
-- **Value over time:** tap the total above the list for a chart per day (per binder too), the biggest risers and
-  fallers, and **Paid and worth** (what you paid against today's value).
+- **Value over time:** tap the total above the list for a chart per day (per binder too), the **value by set** (with
+  each set's recent change; tap one to see its cards), the biggest risers and fallers, and **Paid and worth** (what
+  you paid against today's value).
+- **Home-screen widgets:** "Collection value" shows the total and the change over 7 days, and with a wider widget a
+  7-day chart and the biggest movers; "Wishlist" shows the cards closest to their alert price. They refresh whenever
+  the app updates prices.
 - **Stats:** totals, the colour pie, colour identities, rarity, types, mana curve, sets, release years, finish,
   condition, language, value per binder, your most valuable and most played cards and your Game Changers. Tap a slice
   to see those cards.
@@ -135,7 +139,8 @@ sections, **To buy**, **Ordered** and **Received**.
   automatically after 1–12 months).
 - **Price alerts:** set "Notify me at or below" on a card; you get a notification when it costs that much or less, once
   per drop. Compares the chosen price source and, with your own CardTrader API token, CardTrader's cheapest offer
-  (optionally CardTrader Zero only).
+  (optionally CardTrader Zero only). Each phone keeps a year's **alert history** (when, at what price and where):
+  the last ones in the card's window, all of them under ⋮ → Alert history.
 - **Offline:** "Add card" suggests names from Cardmarket's list on the phone; the details follow once online.
 
 ## Scan tab
@@ -175,7 +180,8 @@ Folding **Stats** and **Tokens** sections on the deck page:
   10,000 games played alone (Frank Karsten's method with the deck's own cards: Commander mulligans, a land a turn, mana
   rocks, mana creatures and ramp; lands like Lotus Field or Ancient Tomb make what they tap for). The land played is the
   one adding a missing colour, and a tapped land goes down when an untapped one's mana wouldn't be used that turn;
-  "enters tapped unless …" lands (slow, fast, check and battle lands, Game Trail) check their condition.
+  "enters tapped unless …" lands (slow, fast, check and battle lands, Game Trail, Dwarven Mine, Mines of Moria once
+  the commander is out) check their condition. A ramp spell's basic counts as the one colour the deck lacks most.
 - **Winning the game:** the first turn the deck wins (green), the turn it has won by in 4 of 10 games (gold) and in 9
   of 10, and the share of games won each turn. The app plays the deck alone 10,000 times for up to 15 turns against
   three players at 40 life, nobody blocking: it casts its cards (most expensive first), attacks with everything, and

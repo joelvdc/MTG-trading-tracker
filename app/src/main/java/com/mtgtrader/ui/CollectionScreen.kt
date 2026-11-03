@@ -198,6 +198,13 @@ fun CollectionScreen(nav: NavController) {
         selected = WISHLIST
         editingWish = row
     }
+    // The "Wishlist" home-screen widget (since 1.77).
+    val openScreen by c.openScreen.collectAsStateWithLifecycle()
+    LaunchedEffect(openScreen) {
+        if (openScreen != "wishlist") return@LaunchedEffect
+        c.openScreen.value = null
+        selected = WISHLIST
+    }
     var viewMenu by remember { mutableStateOf(false) }
     val view by c.settings.collectionView.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf(false) }

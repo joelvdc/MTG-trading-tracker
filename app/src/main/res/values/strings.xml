@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">MTG Trader</string>
+    <string name="widget_value">Collection value</string>
+    <string name="widget_value_description">Your collection\'s value and its change over 7 days; wider, a chart and the biggest movers</string>
+    <string name="widget_wishlist">Wishlist</string>
+    <string name="widget_wishlist_description">The wishlist cards closest to their alert price</string>
 </resources>

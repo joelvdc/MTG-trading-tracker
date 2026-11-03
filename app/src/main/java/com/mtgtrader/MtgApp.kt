@@ -91,6 +91,8 @@ class MtgApp : Application(), ImageLoaderFactory {
 /** Hand-rolled dependency container; one instance for the whole app. */
 class AppContainer(context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /** The application, for work started outside a screen (the home-screen widgets, since 1.77). */
+    val appContext: Context = context.applicationContext
     /** Switches the owner can flip on GitHub to turn Archidekt features off everywhere (since 1.76). */
     val switches = com.mtgtrader.data.RemoteSwitches(context)
     val http: OkHttpClient = OkHttpClient.Builder()
@@ -219,6 +221,9 @@ class AppContainer(context: Context) {
 
     /** A wishlist card to open (from a price alert's notification), until the collection screen shows it. Since 1.37. */
     val openWish = MutableStateFlow<Long?>(null)
+
+    /** A screen a home-screen widget asked for ("value" or "wishlist"), until it's shown. Since 1.77. */
+    val openScreen = MutableStateFlow<String?>(null)
 
     /** Text shared to the app (e.g. a deck link from Archidekt), waiting for the screens to handle it. */
     val sharedText = MutableStateFlow<String?>(null)

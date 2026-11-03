@@ -43,6 +43,10 @@ private val Light = lightColorScheme(
     onSecondaryContainer = Color(0xFF22005D),
 )
 
+/** The light and dark colours for the home-screen widgets (since 1.77). */
+internal val widgetLightColors get() = Light
+internal val widgetDarkColors get() = Dark
+
 /** Colours for the fairness verdict; readable on both schemes. */
 object VerdictColors {
     val fair = Color(0xFF2E9E5B)

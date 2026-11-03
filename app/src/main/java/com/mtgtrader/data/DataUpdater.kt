@@ -56,6 +56,8 @@ class DataUpdater(
         runCatching { cardDetails.fillMissing() }
         // Since 1.37.
         runCatching { onPrices(online) }
+        // The home-screen widgets, after the value and the alerts (since 1.77).
+        runCatching { com.mtgtrader.widget.MtgWidgets.refresh(context) }
     }
 
     /** The wishlist's price alerts; see [WishlistWatch]. Set by the app container. */

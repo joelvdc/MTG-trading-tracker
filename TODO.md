@@ -13,17 +13,6 @@ How to use this file:
 
 ## Collecting
 
-### Land drops: what 1.71 left out
-*Added 2026-10-29, after 1.71. Not asked for yet; found while building 1.71.*
-
-- **X spells and activated abilities** (Kessig Wolf Run, Bonders' Enclave, equip costs) don't count as using an
-  untapped land's mana, so the odds may play a tapped land on a turn where a player would use the mana for them.
-- **Lands that need a legendary creature** (Mines of Moria, The Shire) always count as untapped; they could check
-  whether the commander is out. Other "unless" conditions still count as met too (Bleeding Woods' 13 life, Konstrari
-  Annex's planeswalker, Dwarven Mine's three Mountains).
-- **Ramp spells' basics** count as having the types of every colour they could fetch (an Explosive Vegetation basic in a
-  red-green deck counts as a Mountain and a Forest for check lands), which is a little generous.
-
 ### Mistral helper: vibe-app-server.exe (check later)
 *Added 2026-11-01. Not an app change; the PC's set-up for `/delegate-mistral`.*
 
@@ -34,6 +23,7 @@ switch `/delegate-mistral` to `vibe --prompt-file` (step and price limits, cost 
 backup.
 
 ## Done
+- 1.77: home-screen widgets, value by set, price alert history, land drops (mana sinks, more "unless" lands, ramp basics).
 - 1.76: Archidekt requests at a safe pace, automatic sync every 6 hours, a clearer login notice, remote switches.
 - 1.75: the app tells every site its version and GitHub page; README and code tidied for sharing.
 - 1.74: the same starter after 4 → 5 → 4 players in Game settings.

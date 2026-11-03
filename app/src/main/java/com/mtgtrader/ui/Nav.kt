@@ -102,6 +102,8 @@ fun AppNav() {
             c.exchangeRates.rates.value?.perEuro?.get("USD")?.let { com.mtgtrader.data.Pricing.usdPerEuro = it }
             // With the dollar rate known, today's value includes TCGplayer's and Card Kingdom's (since 1.29).
             runCatching { c.priceSources.loadOwned(); c.history.record() }
+            // The home-screen widgets, with today's value (since 1.77).
+            runCatching { com.mtgtrader.widget.MtgWidgets.refresh(c.appContext) }
         }
         c.appScope.launch {
             if (c.settings.cardDetailsVersion < 1 && c.repo.backfillFinishDetails()) c.settings.cardDetailsVersion = 1
@@ -128,6 +130,18 @@ fun AppNav() {
     // A price alert's notification: the Collection tab, where the wishlist opens the card (since 1.37).
     val openWish by c.openWish.collectAsStateWithLifecycle()
     LaunchedEffect(openWish) { if (openWish != null) nav.openTab("collection") }
+    // A home-screen widget (since 1.77): the Value screen, or the wishlist (which the collection screen opens).
+    val openScreen by c.openScreen.collectAsStateWithLifecycle()
+    LaunchedEffect(openScreen) {
+        when (openScreen) {
+            "value" -> {
+                c.openScreen.value = null
+                nav.openTab("collection")
+                nav.navigate("value")
+            }
+            "wishlist" -> nav.openTab("collection")
+        }
+    }
     OlderPhoneDialog()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route

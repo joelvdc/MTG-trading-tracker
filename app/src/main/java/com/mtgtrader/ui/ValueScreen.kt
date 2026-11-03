@@ -275,6 +275,7 @@ private fun SetValueRow(s: SetValue, total: Double, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
             Text(Fmt.money(s.value), fontWeight = FontWeight.SemiBold)
             // Left out without change data, or when it rounds to zero (the same 0.004 as Fmt.signedMoney).

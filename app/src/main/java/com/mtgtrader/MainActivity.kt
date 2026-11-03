@@ -38,9 +38,13 @@ class MainActivity : ComponentActivity() {
 
     /**
      * A deck link shared from Archidekt (or a browser) is imported on the Decks tab; a price alert's
-     * notification opens its card on the wishlist (since 1.37).
+     * notification opens its card on the wishlist (since 1.37); a home-screen widget opens its screen (since 1.77).
      */
     private fun handleShare(intent: Intent?) {
+        if (intent?.action == com.mtgtrader.widget.MtgWidgets.ACTION_OPEN_SCREEN) {
+            container.openScreen.value = intent.getStringExtra(com.mtgtrader.widget.MtgWidgets.EXTRA_SCREEN)
+            return
+        }
         if (intent?.action == com.mtgtrader.data.AlertNotifier.ACTION_OPEN_WISH) {
             intent.getLongExtra(com.mtgtrader.data.AlertNotifier.EXTRA_WISH_ID, 0L).takeIf { it > 0 }?.let { container.openWish.value = it }
             return
