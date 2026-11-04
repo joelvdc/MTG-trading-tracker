@@ -13,16 +13,8 @@ How to use this file:
 
 ## Collecting
 
-### Mistral helper: vibe-app-server.exe (check later)
-*Added 2026-11-01. Not an app change; the PC's set-up for `/delegate-mistral`.*
-
-The PC's security software lets `vibe.exe`, `vibe-acp.exe` and `vibe-rs.exe` start, but `vibe-app-server.exe` (started
-when Vibe runs a job without its chat window) is still refused ("Access is denied", checked again 2026-11-02, also as
-administrator). Once it's allowed: rerun the one-word test (`--max-turns 2 --max-price 0.05`) and, if it passes,
-switch `/delegate-mistral` to `vibe --prompt-file` (step and price limits, cost shown), keeping the Python route as a
-backup.
-
 ## Done
+- 2026-11-03: /delegate-mistral runs `vibe --prompt-file` with step and size limits (VIBE_APP_SERVER_CMD works around the blocked vibe-app-server.exe; no IT change needed).
 - 1.77: home-screen widgets, value by set, price alert history, land drops (mana sinks, more "unless" lands, ramp basics).
 - 1.76: Archidekt requests at a safe pace, automatic sync every 6 hours, a clearer login notice, remote switches.
 - 1.75: the app tells every site its version and GitHub page; README and code tidied for sharing.
