@@ -1,4 +1,5 @@
 // The daily price file in Vercel Blob (private): made by the cron job, read by the pages.
+import { gunzipSync, gzipSync } from "node:zlib";
 import { get, put } from "@vercel/blob";
 import { CARDMARKET_URL, compactGuide, ECB_URL, FALLBACK_RATES, parseEcb, PRICE_BLOB, type PriceFile } from "./prices";
 import { USER_AGENT } from "./config";
@@ -12,7 +13,8 @@ export async function loadPrices(): Promise<PriceFile | null> {
   try {
     const res = await get(PRICE_BLOB, { access: "private", useCache: false });
     if (!res || !res.stream) return cache?.file ?? null;
-    const file = JSON.parse(await new Response(res.stream).text()) as PriceFile;
+    const gz = Buffer.from(await new Response(res.stream).arrayBuffer());
+    const file = JSON.parse(gunzipSync(gz).toString("utf8")) as PriceFile;
     cache = { file, at: Date.now() };
     return file;
   } catch {
@@ -35,8 +37,8 @@ export async function buildPrices(): Promise<{ products: number; bytes: number; 
     rates = (await loadPrices())?.rates ?? FALLBACK_RATES;
   }
   const file: PriceFile = { createdAt, madeAt: Date.now(), rates, products };
-  const body = JSON.stringify(file);
-  await put(PRICE_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/json" });
+  const body = gzipSync(Buffer.from(JSON.stringify(file), "utf8"));
+  await put(PRICE_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
   cache = { file, at: Date.now() };
   return { products: Object.keys(products).length, bytes: body.length, createdAt, ratesDate: rates.date };
 }

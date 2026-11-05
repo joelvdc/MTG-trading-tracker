@@ -4,7 +4,7 @@ import type { CardRef } from "./syncfile";
 
 export const CARDMARKET_URL = "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json";
 export const ECB_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
-export const PRICE_BLOB = "prices/latest.json";
+export const PRICE_BLOB = "prices/latest.json.gz";
 
 /** The app's PriceType keys, in the order they're stored per finish. */
 export const PRICE_TYPES = ["trend", "avg", "low", "avg1", "avg7", "avg30"] as const;
