@@ -22,8 +22,7 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   first write in a session. Login = Nextcloud Login Flow v2 (the website stores no passwords). Prices: a daily Vercel job
   makes a price file from the phone's sources. The website never contacts Archidekt. Code in `web/` in this repository.
 - **Order (decided): 1 → 3 → 2 → 4 → 5.**
-  1. Wishlist on the website (plus the foundation above). Health check gains: website up, login, price file fresh,
-     website knows the current sync format.
+  1. ~~Wishlist on the website~~ **Done 2026-11-05** (see Done).
   3. App release: break free from Archidekt. Last collection sync and pending deck edits first; then remove the
      Archidekt login, collection sync, sending deck edits and "send to Archidekt"; own Archidekt decks become read-only
      (edit on archidekt.com, then "Reload decklist"); public deck import, Commander Salt and ScrollVault stay; new
@@ -38,7 +37,8 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
 - Open questions:
   - Web address (decided 2026-11-05): mtgtrader.vercel.app (mtgtracker and mtg-trader were taken). Vercel account:
     Hobby plan, user jnccola-7915, no projects yet.
-  - Can Vercel's servers reach the owner's Nextcloud over the internet? (Check at the start of phase 1.)
+  - ~~Can Vercel's servers reach the owner's Nextcloud?~~ Yes, after Cloudflare changes on nocar.me (Bot Fight Mode
+    off, a skip rule and a Geo filter exception for the website's pass header; details in `web/README.md`).
   - ~~Phase 3: does Archidekt read the app's CSV?~~ Decided 2026-11-05: CSV export (app in phase 3, website in phase
     2) asks for the format: the app's full format, or **"ManaBox – single folder"** as Archidekt's importer expects it
     (owner's screenshot: 18 columns; 1 name, 2 set code, 3 set name, 4 collector number, 5 foil/variant, 7 quantity,
@@ -67,6 +67,7 @@ onedrive?"
   is only reshaped once.
 
 ## Done
+- 2026-11-05: website phase 1: the wishlist at mtgtrader.vercel.app (`web/`), editing the Nextcloud sync file as one more device; health check covers it.
 - 2026-11-03: /delegate-mistral runs `vibe --prompt-file` with step and size limits (VIBE_APP_SERVER_CMD works around the blocked vibe-app-server.exe; no IT change needed).
 - 1.77: home-screen widgets, value by set, price alert history, land drops (mana sinks, more "unless" lands, ramp basics).
 - 1.76: Archidekt requests at a safe pace, automatic sync every 6 hours, a clearer login notice, remote switches.

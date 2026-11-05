@@ -52,6 +52,17 @@ Published on GitHub (Obtainium installs them on the owner's phones) as `MTG-Trad
 - Never edit source files with PowerShell `Get-Content | Set-Content`: it garbles ·, —, €. Use an editor tool or
   Python with UTF-8.
 
+## Website
+`web/` is the website at mtgtrader.vercel.app (Next.js on Vercel; see `web/README.md`). It edits the app's Nextcloud
+sync file as one more device.
+- When the app's sync format (`Sync.FORMAT`) or its synced fields change, update `web/` in the same release and refresh
+  the shared sample files (how: `web/README.md`). Changes to `web/` also run `npm test` and `npm run typecheck` there.
+- Website-only changes need no app version or release: commit to `main` (or merge the pull request) and Vercel
+  deploys `web/` by itself; then check `https://mtgtrader.vercel.app/api/health`. Mention website changes in the next
+  app release notes only when they matter to the app.
+- Vercel's secrets (`SESSION_SECRET`, `NEXTCLOUD_PASS`, `CRON_SECRET`) and the owner's Cloudflare rules: don't print or
+  change them without asking, like the signing secrets.
+
 ## Delegated work
 If you're working from a brief given by another session (a helper such as Sonnet or Mistral), follow the brief: work
 only in your own copy of the code; don't commit, merge, release, change versions or touch signing. The session that

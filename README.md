@@ -29,6 +29,7 @@ Nextcloud. Your collection can also be kept the same as your Archidekt collectio
   - [Editing decks and local decks](#editing-decks-and-local-decks)
 - [Games: life tracker and game records](#games-life-tracker-and-game-records)
 - [Sync between phones](#sync-between-phones)
+- [Website](#website)
 - [Archidekt collection sync](#archidekt-collection-sync)
 - [Backups and restore points](#backups-and-restore-points)
 - [Rebuilding](#rebuilding)
@@ -261,6 +262,20 @@ the same on all your phones, through a file (`sync.json.gz`) in a folder of your
   lost.
 
 The password is stored encrypted with a key kept in the phone's keystore.
+
+## Website
+[mtgtrader.vercel.app](https://mtgtrader.vercel.app) shows and edits the **wishlist** from a computer. It joins the
+Nextcloud sync as one more device, so its changes reach the phones at their next sync, and the other way round.
+- **Log in** with your Nextcloud (the website gets its own app password; logging out removes it). Then pick the sync
+  folder under **Settings**, the same one the app uses; **Change folder** switches it later.
+- **What it does:** add cards (any printing or a specific one, foil or not), change quantity, notes and price alerts,
+  tick *Ordered*, remove cards. Received cards are changed in the app. Prices are Cardmarket's (updated daily), shown
+  in the app's currency and price type.
+- **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
+  folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync
+  file format is newer than the website knows it only shows the data.
+- Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in. The code is in `web/`
+  (Next.js on Vercel); see `web/README.md`.
 
 ## Archidekt collection sync
 Settings → **Archidekt collection** keeps your [Archidekt](https://archidekt.com/) collection the same as the app's,
