@@ -78,7 +78,7 @@ export function WishTable({
                 const received = r.receivedAt != null;
                 const open = () => {
                   hide();
-                  if (!received && !disabled) onOpen(r);
+                  if (!disabled) onOpen(r);
                 };
                 const sub = [
                   r.gotSince > 0 ? `Got ${r.gotSince} since adding` : null,
@@ -88,7 +88,7 @@ export function WishTable({
                 return (
                   <tr
                     key={r.uid}
-                    className={["wish-row", received ? "received" : "clickable", r.alertHit ? "hit" : ""].filter(Boolean).join(" ")}
+                    className={["wish-row", received ? "received clickable" : "clickable", r.alertHit ? "hit" : ""].filter(Boolean).join(" ")}
                     onClick={open}
                     onMouseEnter={follow(r.card.imageUrl)}
                     onMouseMove={follow(r.card.imageUrl)}

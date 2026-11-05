@@ -274,7 +274,10 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
 - **Log in** with your Nextcloud (the website gets its own app password; logging out removes it). Then pick the sync
   folder under **Settings**, the same one the app uses; **Change folder** switches it later.
 - **What it does:** add cards (any printing or a specific one, foil or not), change the printing, quantity, notes and
-  price alerts, tick *Ordered*, remove cards. Received cards are changed in the app. Prices are Cardmarket's (updated daily), shown
+  price alerts, tick *Ordered*, remove cards. **Mark received** (adding the copies to the collection when the app's
+  setting says so); a received card can go into the collection with the details you pick, back on the wishlist, or be
+  removed. **More…** marks all ordered cards or the cards you now own as received, clears received cards, or copies the
+  cards to buy as a list. Prices are Cardmarket's (updated daily), shown
   in the app's currency and price type.
 - **Wishlist:** it sits in the collection, as the **★ Wishlist** chip in the binder bar (the binders follow the app's
   order).

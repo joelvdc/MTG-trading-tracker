@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddDialog, type AddRequest } from "@/components/AddDialog";
 import { api, formatDate } from "@/components/api";
 import { EditDialog } from "@/components/EditDialog";
+import { ReceivedDialog } from "@/components/ReceivedDialog";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
 import { WishGrid } from "@/components/WishGrid";
 import { type Section, WishTable } from "@/components/WishTable";
 import { compareRows, firstDirection, type Sort, SORT_KEY, SORT_LABELS, type SortKey } from "@/components/wishText";
 import { format } from "@/lib/money";
 import type { WishRow, WishView } from "@/lib/view";
+import type { ReceivedEdit } from "@/lib/received";
 import type { WishEdit } from "@/lib/wishlist";
 
 const DEFAULT_SORT: Sort = { key: "name", desc: false };
@@ -39,6 +41,7 @@ export function WishlistPanel({
   const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
   const [editing, setEditing] = useState<WishRow | null>(null);
   const [adding, setAdding] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -76,7 +79,7 @@ export function WishlistPanel({
   }
 
   /** Sends one edit; returns true when it worked. The old view stays on an error. */
-  async function edit(e: WishEdit): Promise<boolean> {
+  async function edit(e: WishEdit | ReceivedEdit): Promise<boolean> {
     setBusy(true);
     setMessage(null);
     const r = await api<WishView>("/api/wishlist", { edit: e });
@@ -101,9 +104,10 @@ export function WishlistPanel({
       (r) => !q || [r.card.name, r.card.flavorName ?? "", r.card.setCode, r.card.setName].some((t) => t.toLowerCase().includes(q)),
     );
     const cmp = compareRows(sort);
+    const own = view.wishSections;
     const out: Section[] = [
-      { title: "To buy", rows: rows.filter((r) => r.receivedAt == null && r.orderedAt == null).sort(cmp) },
-      { title: "Ordered", rows: rows.filter((r) => r.receivedAt == null && r.orderedAt != null).sort(cmp) },
+      { title: own ? "To buy" : "Wanted", rows: rows.filter((r) => r.receivedAt == null && (!own || r.orderedAt == null)).sort(cmp) },
+      { title: "Ordered", rows: own ? rows.filter((r) => r.receivedAt == null && r.orderedAt != null).sort(cmp) : [] },
       { title: "Received", rows: rows.filter((r) => r.receivedAt != null).sort((a, b) => b.receivedAt! - a.receivedAt!) },
     ];
     return out;
@@ -129,6 +133,28 @@ export function WishlistPanel({
   const orderedCount = open.filter((r) => r.orderedAt != null).reduce((n, r) => n + r.quantity, 0);
   const toBuyEur = open.filter((r) => r.orderedAt == null).reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
   const locked = view.readOnly || busy;
+  const anyOrdered = open.some((r) => r.orderedAt != null);
+  const anyOwned = open.some((r) => r.gotSince > 0);
+  const anyReceived = view.rows.some((r) => r.receivedAt != null);
+  const toBuy = open.filter((r) => r.orderedAt == null);
+
+  /** The wishlist's menu (the app's ⋮ on the wishlist). */
+  async function more(action: string) {
+    if (action === "ordered") await edit({ type: "receiveOrdered" });
+    else if (action === "owned") await edit({ type: "receiveOwned" });
+    else if (action === "clear") await edit({ type: "clearReceived" });
+    else if (action === "share") {
+      // The app's wishShareText: what's still to buy, "2 Sol Ring" per line.
+      const text = toBuy.map((r) => `${r.quantity} ${r.card.name}`).join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        setMessage(null);
+        setNote(`Copied ${toBuy.length} card${toBuy.length === 1 ? "" : "s"} to buy as a list.`);
+      } catch {
+        setMessage("The browser didn't allow copying.");
+      }
+    }
+  }
 
   return (
     <>
@@ -137,6 +163,14 @@ export function WishlistPanel({
           {message}
           <button className="link" onClick={() => setMessage(null)}>
             Dismiss
+          </button>
+        </div>
+      )}
+      {note && (
+        <div className="bar" role="status">
+          {note}
+          <button className="link" onClick={() => setNote(null)}>
+            OK
           </button>
         </div>
       )}
@@ -178,6 +212,30 @@ export function WishlistPanel({
           </select>
         )}
         <ViewSwitch layout={layout} onLayout={onLayout} hover={hover} onHover={onHover} />
+        <select
+          aria-label="More"
+          value=""
+          disabled={busy}
+          onChange={(e) => {
+            const v = e.target.value;
+            e.target.value = "";
+            if (v) more(v);
+          }}
+        >
+          <option value="">More…</option>
+          <option value="ordered" disabled={view.readOnly || !anyOrdered}>
+            Mark all ordered cards as received
+          </option>
+          <option value="owned" disabled={view.readOnly || !anyOwned}>
+            Mark the cards I now own as received
+          </option>
+          <option value="clear" disabled={view.readOnly || !anyReceived}>
+            Clear received cards
+          </option>
+          <option value="share" disabled={toBuy.length === 0}>
+            Copy the cards to buy as a list
+          </option>
+        </select>
         <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
           Add card
         </button>
@@ -201,7 +259,22 @@ export function WishlistPanel({
       {view.rows.length === 0 && <p className="muted center">The wishlist is empty.</p>}
       {view.rows.length > 0 && sections.every((x) => x.rows.length === 0) && <p className="muted center">No cards match your search.</p>}
 
-      {editing && (
+      {editing && editing.receivedAt != null && (
+        <ReceivedDialog
+          row={editing}
+          binders={view.binders}
+          currency={view.currency}
+          busy={busy}
+          onClose={() => setEditing(null)}
+          onEdit={async (e) => {
+            if (await edit(e)) setEditing(null);
+          }}
+          onRemove={async (uid) => {
+            if (await edit({ type: "remove", uid })) setEditing(null);
+          }}
+        />
+      )}
+      {editing && editing.receivedAt == null && (
         <EditDialog
           row={editing}
           viewCurrency={view.currency}
@@ -213,6 +286,9 @@ export function WishlistPanel({
           }}
           onRemove={async (uid) => {
             if (await edit({ type: "remove", uid })) setEditing(null);
+          }}
+          onReceive={async () => {
+            if (await edit({ type: "receive", uids: [editing.uid] })) setEditing(null);
           }}
         />
       )}

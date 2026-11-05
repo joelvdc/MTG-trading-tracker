@@ -62,13 +62,9 @@ export function WishGrid({
                 );
                 return (
                   <li key={r.uid} className={classes}>
-                    {received ? (
-                      <div className="tile-in">{body}</div>
-                    ) : (
-                      <button className="tile-in" disabled={disabled} onClick={() => onOpen(r)}>
-                        {body}
-                      </button>
-                    )}
+                    <button className="tile-in" disabled={disabled} onClick={() => onOpen(r)}>
+                      {body}
+                    </button>
                   </li>
                 );
               })}

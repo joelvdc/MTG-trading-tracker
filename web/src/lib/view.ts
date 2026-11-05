@@ -1,7 +1,7 @@
 // What the wishlist page shows, worked out on the server from the sync file and the price file.
 import { currency, rate, toEur, type Currency } from "./money";
 import { priceOf, priceType, PRICE_TYPE_LABELS, type PriceFile } from "./prices";
-import { canWrite, prefs, type CardRef, type SyncFile, wishlist } from "./syncfile";
+import { binders, canWrite, prefs, type CardRef, type SyncFile, wishlist } from "./syncfile";
 import { ownedFor } from "./wishlist";
 
 export interface WishRow {
@@ -41,6 +41,12 @@ export interface WishView {
   format: number;
   writtenAt: number;
   writtenBy: string;
+  /** The app's "add received cards to the collection" setting. */
+  receivedToCollection: boolean;
+  /** The app's "ordered cards in their own section" setting (on unless switched off). */
+  wishSections: boolean;
+  /** Binders by name, for moving a received card into the collection. */
+  binders: { uid: string; name: string }[];
 }
 
 export function wishView(file: SyncFile, prices: PriceFile | null): WishView {
@@ -85,5 +91,11 @@ export function wishView(file: SyncFile, prices: PriceFile | null): WishView {
     format: file.format,
     writtenAt: file.writtenAt,
     writtenBy: file.writtenBy,
+    receivedToCollection: p.receivedToCollection === "true",
+    wishSections: p.wishSections !== "false",
+    binders: binders(file)
+      .filter((b) => b.uid)
+      .map((b) => ({ uid: b.uid!, name: b.name }))
+      .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())),
   };
 }

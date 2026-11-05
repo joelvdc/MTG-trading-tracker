@@ -18,6 +18,7 @@ export function EditDialog({
   busy,
   onSave,
   onRemove,
+  onReceive,
   onClose,
 }: {
   row: WishRow;
@@ -26,6 +27,8 @@ export function EditDialog({
   busy: boolean;
   onSave: (edit: Update) => void;
   onRemove: (uid: string) => void;
+  /** "Mark received" (the app's tick in the wishlist). */
+  onReceive: () => void;
   onClose: () => void;
 }) {
   const [quantity, setQuantity] = useState(String(row.quantity));
@@ -220,6 +223,9 @@ export function EditDialog({
               Remove from wishlist
             </button>
             <span className="spacer" />
+            <button className="btn" disabled={busy} onClick={onReceive}>
+              Mark received
+            </button>
             <button className="btn" disabled={busy} onClick={onClose}>
               Cancel
             </button>
