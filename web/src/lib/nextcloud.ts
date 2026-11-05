@@ -11,6 +11,24 @@ export class NextcloudError extends Error {
 }
 
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
+  const r = await send(url, init);
+  if (r.status !== 403 || !(r.headers.has("cf-ray") || r.headers.get("server")?.toLowerCase() === "cloudflare")) return r;
+  // A 403 that Cloudflare (in front of Nextcloud) made itself, not Nextcloud: say so, and log which kind.
+  const body = await r.text().catch(() => "");
+  const title = /<title>([^<]*)<\/title>/i.exec(body)?.[1]?.trim() ?? "";
+  if (!r.headers.has("cf-mitigated") && !/attention required|just a moment|cloudflare/i.test(title)) {
+    return new Response(body, { status: r.status, statusText: r.statusText, headers: r.headers });
+  }
+  console.warn(
+    `Cloudflare blocked ${init.method ?? "GET"} ${new URL(url).pathname}: cf-mitigated=${r.headers.get("cf-mitigated")}, cf-ray=${r.headers.get("cf-ray")}, title="${title}"`,
+  );
+  throw new NextcloudError(
+    `Cloudflare (in front of your Nextcloud) blocked the website${title ? ` (${title})` : ""}. Check its security rules let the website through.`,
+    403,
+  );
+}
+
+async function send(url: string, init: RequestInit): Promise<Response> {
   try {
     return await fetch(url, {
       ...init,
@@ -39,23 +57,8 @@ export interface LoginStart {
 
 export async function startLogin(server: string): Promise<LoginStart> {
   const r = await call(`${server}/index.php/login/v2`, { method: "POST" });
-  if (!r.ok) {
-    const body = await r.text().catch(() => "");
-    const title = /<title>([^<]*)<\/title>/i.exec(body)?.[1]?.trim() ?? "";
-    const cloudflare = r.headers.get("server")?.toLowerCase() === "cloudflare" || r.headers.has("cf-ray");
-    const blockedByCloudflare = cloudflare && (r.headers.has("cf-mitigated") || /cloudflare|attention required|just a moment/i.test(title + body.slice(0, 2000)));
-    console.warn(
-      `Login start: HTTP ${r.status}, server=${r.headers.get("server")}, cf-mitigated=${r.headers.get("cf-mitigated")}, cf-ray=${r.headers.get("cf-ray")}, title="${title}"`,
-    );
-    if (blockedByCloudflare) {
-      throw new NextcloudError(
-        `Cloudflare (in front of your Nextcloud) blocked the website (HTTP ${r.status}${title ? `: ${title}` : ""}). It needs a rule that lets the website through.`,
-        r.status,
-      );
-    }
-    throw new NextcloudError(`Nextcloud refused to start a login (HTTP ${r.status}).`, r.status);
-  }
-  const j =(await r.json()) as { poll?: { token?: string; endpoint?: string }; login?: string };
+  if (!r.ok) throw new NextcloudError(`Nextcloud refused to start a login (HTTP ${r.status}).`, r.status);
+  const j = (await r.json()) as { poll?: { token?: string; endpoint?: string }; login?: string };
   const start = { loginUrl: j.login ?? "", pollToken: j.poll?.token ?? "", pollEndpoint: j.poll?.endpoint ?? "" };
   // Only ever talk to the server we asked (the answer names the addresses to use).
   if (!sameOrigin(start.loginUrl, server) || !sameOrigin(start.pollEndpoint, server) || !start.pollToken) {
