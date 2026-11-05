@@ -36,11 +36,26 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   5. Games on the website: log, stats, head to head, per deck; edit and add games by hand. Life tracker stays on the
      phone.
 - Open questions:
-  - Web address: the owner chose mtgtracker.vercel.app, but it's taken by someone else's site (and mtg-trader too);
-    mtgtrader.vercel.app was free on 2026-11-05.
+  - Web address (decided 2026-11-05): mtgtrader.vercel.app (mtgtracker and mtg-trader were taken). Vercel account:
+    Hobby plan, user jnccola-7915, no projects yet.
   - Can Vercel's servers reach the owner's Nextcloud over the internet? (Check at the start of phase 1.)
-  - Phase 3: does Archidekt's collection importer read the app's ManaBox-style CSV as is, or does "Export for
-    Archidekt" need its own columns? Test with a small file.
+  - ~~Phase 3: does Archidekt read the app's CSV?~~ Decided 2026-11-05: CSV export (app in phase 3, website in phase
+    2) asks for the format: the app's full format, or **"ManaBox – single folder"** as Archidekt's importer expects it
+    (owner's screenshot: 18 columns; 1 name, 2 set code, 3 set name, 4 collector number, 5 foil/variant, 7 quantity,
+    9 Scryfall ID, 14 condition, 15 language; the rest ignored; first line skipped). The app's current file is
+    ManaBox's *whole collection* layout minus the ManaBox ID column, so its Scryfall ID sits one column early. The
+    owner checks the first file with a small import on archidekt.com.
+  - Phase 3 (decided 2026-11-05): Archidekt decklists are only ever read when the owner taps a refresh button
+    ("Reload decklist", "Update all decks"); nothing automatic. Today the only automatic Archidekt calls are the
+    collection sync (goes away) and `fillMissingUpdateDates` on opening the Decks tab (make it part of "Update all").
+  - Commander Salt scores for local decks (owner's idea 2026-11-05: a copy of the decklist on a site Commander Salt
+    accepts). Commander Salt takes links from Moxfield, Archidekt, TappedOut, ManaBox, MTGGoldfish, Scryfall,
+    TopDecked, TopDeck.gg, Hareruya, CommanderView, MythicHub, untap.in and EDHREC deck previews. All of them need an
+    account to create a deck, and none has an open way for an app to do it, so an automatic copy would mean the app
+    logging in somewhere again. Proposed instead: a half-manual "Score on Commander Salt" for local decks: the app
+    copies the list and opens Archidekt's new-deck page, the owner pastes and saves, then pastes the link back; the
+    app keeps it as that local deck's scoring link (the local deck stays the main copy; after edits, "Copy list
+    again"). Maybe also ask Commander Salt whether it could take a pasted list. Decide in phase 3 or 4.
   - Phase 4: porting the win-turn simulation is the largest single piece; plan it as its own step with the app's own
     test decks as the check that both give the same numbers.
 
