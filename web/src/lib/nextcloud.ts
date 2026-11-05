@@ -10,7 +10,24 @@ export class NextcloudError extends Error {
   }
 }
 
+/** Waits before trying again after a Cloudflare block (Vercel's next request often leaves from another address). */
+const CLOUDFLARE_RETRY_MS = [400, 1200];
+
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await callOnce(url, init);
+    } catch (e) {
+      const wait = CLOUDFLARE_RETRY_MS[attempt];
+      if (!(e instanceof CloudflareBlock) || wait === undefined) throw e;
+      await new Promise((done) => setTimeout(done, wait));
+    }
+  }
+}
+
+class CloudflareBlock extends NextcloudError {}
+
+async function callOnce(url: string, init: RequestInit): Promise<Response> {
   const r = await send(url, init);
   if (r.status !== 403 || !(r.headers.has("cf-ray") || r.headers.get("server")?.toLowerCase() === "cloudflare")) return r;
   // A 403 that Cloudflare (in front of Nextcloud) made itself, not Nextcloud: say so, and log which kind.
@@ -22,7 +39,7 @@ async function call(url: string, init: RequestInit = {}): Promise<Response> {
   console.warn(
     `Cloudflare blocked ${init.method ?? "GET"} ${new URL(url).pathname}: cf-mitigated=${r.headers.get("cf-mitigated")}, cf-ray=${r.headers.get("cf-ray")}, title="${title}"`,
   );
-  throw new NextcloudError(
+  throw new CloudflareBlock(
     `Cloudflare (in front of your Nextcloud) blocked the website${title ? ` (${title})` : ""}. Check its security rules let the website through.`,
     403,
   );
