@@ -5,7 +5,7 @@ import { CURRENCIES, type Currency } from "@/lib/money";
 import type { WishRow } from "@/lib/view";
 import type { WishEdit } from "@/lib/wishlist";
 import { Dialog } from "./Dialog";
-import { cardTitle, setLine } from "./WishRowItem";
+import { cardmarketUrl, cardTitle, cardtraderUrl, finishLabel, setLine } from "./wishText";
 
 type Update = Extract<WishEdit, { type: "update" }>;
 
@@ -71,8 +71,18 @@ export function EditDialog({
           // eslint-disable-next-line @next/next/no-img-element
           <img className="big-img" src={row.card.imageUrl} alt={row.card.name} />
         )}
-        <div className="muted">
-          {row.card.setName} · {setLine(row)}
+        <div className="dialog-info">
+          <div className="muted">
+            {row.card.setName} · {setLine(row)} · {finishLabel(row)}
+          </div>
+          <div className="shop-links">
+            <a className="btn small-btn" href={cardmarketUrl(row)} target="_blank" rel="noreferrer">
+              Cardmarket ↗
+            </a>
+            <a className="btn small-btn" href={cardtraderUrl(row)} target="_blank" rel="noreferrer">
+              CardTrader ↗
+            </a>
+          </div>
         </div>
       </div>
       <div className="stack">

@@ -4,39 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddDialog, type AddRequest } from "@/components/AddDialog";
 import { api, formatDate } from "@/components/api";
 import { EditDialog } from "@/components/EditDialog";
-import { WishRowItem } from "@/components/WishRowItem";
+import { WishGrid } from "@/components/WishGrid";
+import { type Section, WishTable } from "@/components/WishTable";
+import {
+  compareRows,
+  firstDirection,
+  type Sort,
+  SORT_KEY,
+  SORT_LABELS,
+  type SortKey,
+  VIEW_KEY,
+} from "@/components/wishText";
 import { format } from "@/lib/money";
 import type { WishRow, WishView } from "@/lib/view";
 import type { WishEdit } from "@/lib/wishlist";
 
-type Sort = "name" | "value" | "added" | "set";
-const SORT_KEY = "mtgtrader.wishlist.sort";
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "name", label: "Name" },
-  { value: "value", label: "Value (high first)" },
-  { value: "added", label: "Date added (newest first)" },
-  { value: "set", label: "Set" },
-];
-
-function byName(a: WishRow, b: WishRow) {
-  return a.card.name.localeCompare(b.card.name, "en", { sensitivity: "base" });
-}
-
-function sorter(sort: Sort): (a: WishRow, b: WishRow) => number {
-  switch (sort) {
-    case "value":
-      return (a, b) => (b.unitEur ?? -1) * b.quantity - (a.unitEur ?? -1) * a.quantity || byName(a, b);
-    case "added":
-      return (a, b) => b.addedAt - a.addedAt || byName(a, b);
-    case "set":
-      return (a, b) =>
-        a.card.setCode.localeCompare(b.card.setCode) ||
-        a.card.collectorNumber.localeCompare(b.card.collectorNumber, "en", { numeric: true }) ||
-        byName(a, b);
-    default:
-      return byName;
-  }
-}
+type Layout = "list" | "images";
+const DEFAULT_SORT: Sort = { key: "name", desc: false };
 
 export default function WishlistPage() {
   const [view, setView] = useState<WishView | null>(null);
@@ -45,16 +29,18 @@ export default function WishlistPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<Sort>("name");
+  const [sort, setSort] = useState<Sort>(DEFAULT_SORT);
+  const [layout, setLayout] = useState<Layout>("list");
   const [editing, setEditing] = useState<WishRow | null>(null);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(SORT_KEY);
-      if (SORTS.some((s) => s.value === saved)) setSort(saved as Sort);
+      const saved = JSON.parse(localStorage.getItem(SORT_KEY) ?? "null") as Sort | null;
+      if (saved && saved.key in SORT_LABELS && typeof saved.desc === "boolean") setSort(saved);
+      if (localStorage.getItem(VIEW_KEY) === "images") setLayout("images");
     } catch {
-      // Storage may be unavailable; the default sort is fine.
+      // Storage may be unavailable; the list view sorted by name is fine.
     }
   }, []);
 
@@ -77,13 +63,27 @@ export default function WishlistPage() {
     load();
   }, [load]);
 
-  function changeSort(s: Sort) {
-    setSort(s);
+  function remember(key: string, value: string) {
     try {
-      localStorage.setItem(SORT_KEY, s);
+      localStorage.setItem(key, value);
     } catch {
       // Not remembered; fine.
     }
+  }
+
+  function changeSort(next: Sort) {
+    setSort(next);
+    remember(SORT_KEY, JSON.stringify(next));
+  }
+
+  /** A column title: the same column turns the order round, another one starts in its usual direction. */
+  function sortBy(key: SortKey) {
+    changeSort(key === sort.key ? { key, desc: !sort.desc } : { key, desc: firstDirection(key) });
+  }
+
+  function changeLayout(next: Layout) {
+    setLayout(next);
+    remember(VIEW_KEY, next);
   }
 
   /** Sends one edit; returns true when it worked. The old view stays on an error. */
@@ -117,12 +117,13 @@ export default function WishlistPage() {
         !q ||
         [r.card.name, r.card.flavorName ?? "", r.card.setCode, r.card.setName].some((t) => t.toLowerCase().includes(q)),
     );
-    const cmp = sorter(sort);
-    return {
-      toBuy: rows.filter((r) => r.receivedAt == null && r.orderedAt == null).sort(cmp),
-      ordered: rows.filter((r) => r.receivedAt == null && r.orderedAt != null).sort(cmp),
-      received: rows.filter((r) => r.receivedAt != null).sort((a, b) => b.receivedAt! - a.receivedAt!),
-    };
+    const cmp = compareRows(sort);
+    const out: Section[] = [
+      { title: "To buy", rows: rows.filter((r) => r.receivedAt == null && r.orderedAt == null).sort(cmp) },
+      { title: "Ordered", rows: rows.filter((r) => r.receivedAt == null && r.orderedAt != null).sort(cmp) },
+      { title: "Received", rows: rows.filter((r) => r.receivedAt != null).sort((a, b) => b.receivedAt! - a.receivedAt!) },
+    ];
+    return out;
   }, [view, search, sort]);
 
   if (!view || !sections) {
@@ -155,28 +156,6 @@ export default function WishlistPage() {
   const orderedCount = open.filter((r) => r.orderedAt != null).reduce((n, r) => n + r.quantity, 0);
   const toBuyEur = open.filter((r) => r.orderedAt == null).reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
   const locked = view.readOnly || busy;
-
-  const list = (title: string, rows: WishRow[]) =>
-    rows.length === 0 ? null : (
-      <section>
-        <h2 className="section-head">
-          {title} <span className="muted">({rows.reduce((n, r) => n + r.quantity, 0)})</span>
-        </h2>
-        <ul className="rows">
-          {rows.map((r) => (
-            <WishRowItem
-              key={r.uid}
-              row={r}
-              currency={view.currency}
-              perEuro={view.perEuro}
-              disabled={locked}
-              onOpen={setEditing}
-              onToggleOrdered={(row, ordered) => edit({ type: "update", uid: row.uid, ordered })}
-            />
-          ))}
-        </ul>
-      </section>
-    );
 
   return (
     <>
@@ -226,24 +205,58 @@ export default function WishlistPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select aria-label="Sort" value={sort} onChange={(e) => changeSort(e.target.value as Sort)}>
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          <div className="seg" role="group" aria-label="View">
+            <button className={layout === "list" ? "on" : undefined} aria-pressed={layout === "list"} onClick={() => changeLayout("list")}>
+              List
+            </button>
+            <button
+              className={layout === "images" ? "on" : undefined}
+              aria-pressed={layout === "images"}
+              onClick={() => changeLayout("images")}
+            >
+              Images
+            </button>
+          </div>
+          {layout === "images" && (
+            <select
+              aria-label="Sort"
+              value={`${sort.key}:${sort.desc ? "desc" : "asc"}`}
+              onChange={(e) => {
+                const [key, dir] = e.target.value.split(":");
+                changeSort({ key: key as SortKey, desc: dir === "desc" });
+              }}
+            >
+              {(Object.keys(SORT_LABELS) as SortKey[]).flatMap((key) =>
+                [firstDirection(key), !firstDirection(key)].map((desc) => (
+                  <option key={`${key}:${desc}`} value={`${key}:${desc ? "desc" : "asc"}`}>
+                    {SORT_LABELS[key]} {desc ? "↓" : "↑"}
+                  </option>
+                )),
+              )}
+            </select>
+          )}
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
         </div>
 
-        {list("To buy", sections.toBuy)}
-        {list("Ordered", sections.ordered)}
-        {list("Received", sections.received)}
+        {layout === "list" ? (
+          <WishTable
+            sections={sections}
+            currency={view.currency}
+            perEuro={view.perEuro}
+            disabled={locked}
+            sort={sort}
+            onSort={sortBy}
+            onOpen={setEditing}
+            onToggleOrdered={(row, ordered) => edit({ type: "update", uid: row.uid, ordered })}
+          />
+        ) : (
+          <WishGrid sections={sections} currency={view.currency} perEuro={view.perEuro} disabled={locked} onOpen={setEditing} />
+        )}
         {view.rows.length === 0 && <p className="muted center">The wishlist is empty.</p>}
         {view.rows.length > 0 &&
-          sections.toBuy.length + sections.ordered.length + sections.received.length === 0 && (
+          sections.every((x) => x.rows.length === 0) && (
             <p className="muted center">No cards match your search.</p>
           )}
       </main>

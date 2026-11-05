@@ -24,6 +24,8 @@ export interface WishRow {
   gotSince: number;
   /** The price is at or under the alert level. */
   alertHit: boolean;
+  /** The alert level in euros (null without an alert, or when its currency's rate is unknown). */
+  alertEur: number | null;
 }
 
 export interface WishView {
@@ -69,6 +71,7 @@ export function wishView(file: SyncFile, prices: PriceFile | null): WishView {
         trendPct: price.trendPct,
         gotSince: Math.max(0, owned - w.ownedAtAdd),
         alertHit: level != null && price.eur != null && price.eur <= level + 0.0001,
+        alertEur: level,
       };
     });
   return {
