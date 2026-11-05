@@ -28,7 +28,7 @@ export function finishLabel(row: WishRow): string {
 }
 
 /**
- * The card on Cardmarket: this printing's page (as the app links it), asking for foil offers for a foil card;
+ * The card on Cardmarket: this printing's page (as the app links it; foil is a filter there, so it isn't asked for);
  * a name search for "any printing" cards or when Cardmarket's product number is unknown.
  */
 export function cardmarketUrl(row: WishRow): string {
@@ -36,7 +36,7 @@ export function cardmarketUrl(row: WishRow): string {
   if (row.anyPrinting || id == null) {
     return "https://www.cardmarket.com/en/Magic/Products/Search?searchString=" + encodeURIComponent(row.card.name);
   }
-  return `https://www.cardmarket.com/en/Magic/Products?idProduct=${id}${row.foil ? "&isFoil=Y" : ""}`;
+  return `https://www.cardmarket.com/en/Magic/Products?idProduct=${id}`;
 }
 
 /** A CardTrader search for the card's name (an exact printing needs the owner's CardTrader key, kept on the phone). */

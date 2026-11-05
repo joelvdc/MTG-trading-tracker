@@ -59,9 +59,9 @@ describe("wishlist texts", () => {
 
   it("links the printing on Cardmarket, or searches the name", () => {
     expect(cardmarketUrl(row())).toBe("https://www.cardmarket.com/en/Magic/Products?idProduct=470000");
-    expect(cardmarketUrl(row({ foil: true }))).toBe("https://www.cardmarket.com/en/Magic/Products?idProduct=470000&isFoil=Y");
+    expect(cardmarketUrl(row({ foil: true }))).toBe("https://www.cardmarket.com/en/Magic/Products?idProduct=470000");
     expect(cardmarketUrl(row({ foil: true, card: { cardmarketFoilId: 470001 } }))).toBe(
-      "https://www.cardmarket.com/en/Magic/Products?idProduct=470001&isFoil=Y",
+      "https://www.cardmarket.com/en/Magic/Products?idProduct=470001",
     );
     expect(cardmarketUrl(row({ anyPrinting: true }))).toBe(
       "https://www.cardmarket.com/en/Magic/Products/Search?searchString=Lightning%20Bolt",
