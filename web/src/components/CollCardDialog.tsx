@@ -49,6 +49,8 @@ export function CollCardDialog({
   const [notes, setNotes] = useState(row.notes ?? "");
   const [signed, setSigned] = useState(row.signed);
   const [altered, setAltered] = useState(row.altered);
+  // Marks changed on several copies: how many get the new marks (the app's "How many are signed?").
+  const [marked, setMarked] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [prices, setPrices] = useState<CardPrices | null>(null);
   const [picking, setPicking] = useState(false);
@@ -74,6 +76,10 @@ export function CollCardDialog({
   const paidText = paid.trim().replace(",", ".");
   const paidNum = paidText === "" ? null : Number(paidText);
   const paidOk = paidNum === null || (Number.isFinite(paidNum) && paidNum >= 0);
+  const marksChanged = signed !== row.signed || altered !== row.altered;
+  const askMarks = marksChanged && q > 1;
+  const k = marked.trim() === "" ? q : Number(marked);
+  const kOk = !askMarks || (Number.isInteger(k) && k >= 1 && k <= q);
   const finishes = finishesOf(row.card);
   if (!finishes.includes(row.finish)) finishes.push(row.finish);
   const readOnly = view.readOnly;
@@ -108,6 +114,11 @@ export function CollCardDialog({
     if (moving) {
       e.binder = binder || null;
       if (m < q) e.move = m;
+    }
+    if (askMarks && k < q) {
+      // Only some copies get the new marks: the rest stay as they were, in a pile of their own.
+      e.keepMarks = q - k;
+      delete e.move;
     }
     if (Object.keys(e).length === 2) return onClose();
     onSave(e);
@@ -267,6 +278,14 @@ export function CollCardDialog({
             <span>Altered</span>
           </label>
         </div>
+        {askMarks && (
+          <label className="field">
+            <span>
+              How many of the {q} copies are {[signed !== row.signed && (signed ? "signed" : "not signed"), altered !== row.altered && (altered ? "altered" : "not altered")].filter(Boolean).join(" and ")}?
+            </span>
+            <input type="number" min={1} max={q} placeholder={`All ${q}`} value={marked} disabled={readOnly} onChange={(e) => setMarked(e.target.value)} />
+          </label>
+        )}
         <label className="field">
           <span>Notes</span>
           <textarea rows={2} maxLength={1000} value={notes} disabled={readOnly} onChange={(e) => setNotes(e.target.value)} />
@@ -372,7 +391,7 @@ export function CollCardDialog({
             <button className="btn" disabled={busy} onClick={onClose}>
               Cancel
             </button>
-            <button className="btn primary" disabled={busy || readOnly || !qOk || !mOk || !paidOk} onClick={() => save()}>
+            <button className="btn primary" disabled={busy || readOnly || !qOk || !mOk || !kOk || !paidOk} onClick={() => save()}>
               Save
             </button>
           </>

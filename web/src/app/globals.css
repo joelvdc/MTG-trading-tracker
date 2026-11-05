@@ -1276,3 +1276,39 @@ main h2 {
     display: none;
   }
 }
+
+/* Collection tools: sort levels, arranging binders */
+.stack.tight {
+  gap: 6px;
+}
+
+.warn-text {
+  color: var(--red);
+}
+
+.sort-level {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sort-level select {
+  flex: 1;
+  min-width: 0;
+}
+
+.arrange-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.arrange-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid #2c2836;
+}

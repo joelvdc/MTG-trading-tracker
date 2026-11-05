@@ -140,6 +140,59 @@ describe("collection edits", () => {
     expect(binders(f).find((b) => b.uid === uid)?.name).toBe("Trades");
     expect(() => applyCollectionEdit(f, { type: "renameBinder", uid: uid!, name: "Main" }, NOW, null, uids)).toThrow(EditError);
   });
+
+  it("merges a binder into another, joining equal piles, and deletes it if asked", () => {
+    const f = appFile();
+    const other = applyCollectionEdit(f, { type: "addBinder", name: "Spare" }, NOW, null, uids).uid!;
+    const a = applyCollectionEdit(f, { type: "add", card: bolt, quantity: 2, binder: other }, NOW, null, uids).uid!;
+    const b = applyCollectionEdit(f, { type: "add", card: bolt, quantity: 1, binder: MAIN }, NOW, null, uids).uid!;
+    applyCollectionEdit(f, { type: "mergeBinder", from: other, into: MAIN, deleteSource: true }, NOW + 5, null, uids);
+    expect(stack(f, b).item.quantity).toBe(3);
+    expect(collection(f).some((s) => s.item.uid === a)).toBe(false);
+    expect(binders(f).some((x) => x.uid === other)).toBe(false);
+    expect(deletions(f).map((d) => d.uid)).toEqual(expect.arrayContaining([a, other]));
+    // Everything in Unsorted into a binder; Unsorted stays.
+    const c = applyCollectionEdit(f, { type: "add", card: bolt2, quantity: 1, binder: null }, NOW, null, uids).uid!;
+    applyCollectionEdit(f, { type: "mergeBinder", from: null, into: MAIN, deleteSource: true }, NOW + 6, null, uids);
+    expect(stack(f, c).binder).toBe(MAIN);
+    expect(() => applyCollectionEdit(f, { type: "mergeBinder", from: MAIN, into: MAIN, deleteSource: false }, NOW, null, uids)).toThrow(EditError);
+  });
+
+  it("deletes a binder, its cards going to Unsorted or out of the collection", () => {
+    const f = appFile();
+    const x = applyCollectionEdit(f, { type: "addBinder", name: "X" }, NOW, null, uids).uid!;
+    const a = applyCollectionEdit(f, { type: "add", card: bolt, quantity: 1, binder: x }, NOW, null, uids).uid!;
+    applyCollectionEdit(f, { type: "deleteBinder", uid: x, deleteCards: false }, NOW + 1, null, uids);
+    expect(stack(f, a).binder).toBeNull();
+    const y = applyCollectionEdit(f, { type: "addBinder", name: "Y" }, NOW, null, uids).uid!;
+    const b = applyCollectionEdit(f, { type: "add", card: bolt2, quantity: 1, binder: y }, NOW, null, uids).uid!;
+    applyCollectionEdit(f, { type: "deleteBinder", uid: y, deleteCards: true }, NOW + 2, null, uids);
+    expect(collection(f).some((s) => s.item.uid === b)).toBe(false);
+    expect(deletions(f).map((d) => d.uid)).toEqual(expect.arrayContaining([b, x, y]));
+    expect(() => applyCollectionEdit(f, { type: "deleteBinder", uid: y, deleteCards: false }, NOW, null, uids)).toThrow(EditError);
+  });
+
+  it("saves the binder bar's order as the app's synced setting", () => {
+    const f = appFile();
+    applyCollectionEdit(f, { type: "binderOrder", keys: [`b:${MAIN}`, "wishlist", "b:gone", "wishlist"] }, NOW, null, uids);
+    const p = f.data.prefs as { updatedAt: number; values: Record<string, string> };
+    expect(p.values.binderOrder).toBe(`b:${MAIN},wishlist`);
+    expect(p.updatedAt).toBeGreaterThanOrEqual(NOW);
+  });
+
+  it("splits a pile when only some copies get signed, and sets a purchase price on several piles", () => {
+    const f = appFile();
+    const a = applyCollectionEdit(f, { type: "add", card: bolt, quantity: 3, binder: null, paid: { amount: 2, currency: "EUR" } }, NOW, null, uids).uid!;
+    const signed = applyCollectionEdit(f, { type: "update", uid: a, signed: true, keepMarks: 2 }, NOW + 1, null, uids).uid!;
+    expect(signed).not.toBe(a);
+    expect(stack(f, a).item).toMatchObject({ quantity: 2, signed: false });
+    expect(stack(f, signed).item).toMatchObject({ quantity: 1, signed: true, purchasePrice: 2 });
+    expect(() => applyCollectionEdit(f, { type: "update", uid: a, altered: true, keepMarks: 2 }, NOW, null, uids)).toThrow(EditError);
+    applyCollectionEdit(f, { type: "bulk", uids: [a, signed], paid: { amount: 0.5, currency: "EUR" } }, NOW + 2, null, uids);
+    expect(stack(f, a).item.purchasePrice).toBe(0.5);
+    expect(stack(f, signed).item.purchasePrice).toBe(0.5);
+    expect(() => applyCollectionEdit(f, { type: "bulk", uids: [a], paid: { amount: -1, currency: "EUR" } }, NOW, null, uids)).toThrow(EditError);
+  });
 });
 
 const prices: PriceFile = {

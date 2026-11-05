@@ -9,6 +9,8 @@ import {
   binders as bindersOf,
   bump,
   collection,
+  prefs,
+  setPref,
   compareUid,
   type Binder,
   type CardRef,
@@ -48,11 +50,22 @@ export type CollectionEdit =
       card?: CardRef;
       /** With a new [binder]: how many copies go there (the rest stay); all of them when left out. */
       move?: number;
+      /**
+       * With changed signed/altered marks on several copies: how many copies keep the old marks (the app's keepMarks);
+       * the others become a pile of their own with the new marks.
+       */
+      keepMarks?: number;
     } & StackFields)
   | { type: "remove"; uid: string }
-  | { type: "bulk"; uids: string[]; binder?: string | null; condition?: string; language?: string; remove?: boolean }
+  | { type: "bulk"; uids: string[]; binder?: string | null; condition?: string; language?: string; paid?: Paid; remove?: boolean }
   | { type: "addBinder"; name: string }
-  | { type: "renameBinder"; uid: string; name: string };
+  | { type: "renameBinder"; uid: string; name: string }
+  /** Every card of [from] (null: Unsorted) into [into], then [from] deleted if [deleteSource] (the app's mergeBinder). */
+  | { type: "mergeBinder"; from: string | null; into: string | null; deleteSource: boolean }
+  /** Deletes a binder; its cards go to Unsorted, or with [deleteCards] out of the collection (the app's deleteBinder). */
+  | { type: "deleteBinder"; uid: string; deleteCards: boolean }
+  /** The binder bar's order ("unsorted", "wishlist", "b:<uid>"), the app's "Arrange binders"; empty: the usual order. */
+  | { type: "binderOrder"; keys: string[] };
 
 export interface EditResult {
   /** The stack the edit ended in (after merging), or the new binder's uid. */
@@ -187,6 +200,16 @@ function removeStack(file: SyncFile, stacks: SyncStack[], uid: string, now: numb
   addDeletion(file, uid, bump(gone.item.updatedAt, now));
 }
 
+/** Takes a binder out of the list and records the deletion, so every phone deletes it too. */
+function deleteBinder(file: SyncFile, uid: string, now: number): void {
+  const list = bindersOf(file);
+  const i = list.findIndex((b) => b.uid === uid);
+  if (i < 0) return;
+  const [gone] = list.splice(i, 1);
+  file.data.binders = list as unknown as Json;
+  addDeletion(file, uid, bump(gone.updatedAt, now));
+}
+
 function checkBinderName(file: SyncFile, name: unknown, except?: string): string {
   const n = typeof name === "string" ? name.trim().replace(/\s+/g, " ") : "";
   if (!n || n.length > 60) throw new EditError("A binder name needs 1 to 60 characters.");
@@ -236,6 +259,7 @@ export function applyCollectionEdit(
       const s = stacks.find((x) => x.item.uid === edit.uid);
       if (!s) throw new EditError("Those cards aren't in the collection any more (changed on a phone?).");
       const it = s.item;
+      const before = { signed: it.signed, altered: it.altered };
       if (edit.card !== undefined) {
         const card = checkCard(edit.card);
         if (!sameName(card.name, it.card.name)) throw new EditError("That's another card, not a printing of this one.");
@@ -261,6 +285,22 @@ export function applyCollectionEdit(
       }
       if (edit.paid !== undefined) setPaid(it, edit.paid, rates);
       it.updatedAt = bump(it.updatedAt, now);
+      if (edit.keepMarks !== undefined && (it.signed !== before.signed || it.altered !== before.altered)) {
+        // Only some copies are signed/altered: this pile keeps the old marks, the others become a pile of their own
+        // (the app's saveCollectionEdit with keepMarks). A binder change moves both.
+        const keep = checkQuantity(edit.keepMarks);
+        if (keep >= it.quantity) throw new EditError("At least one copy has to get the new marks.");
+        if (edit.binder !== undefined) s.binder = checkBinder(file, edit.binder);
+        const marked: SyncStack = { item: { ...it, uid: makeUid(), quantity: it.quantity - keep, updatedAt: now }, binder: s.binder };
+        it.signed = before.signed;
+        it.altered = before.altered;
+        it.quantity = keep;
+        stacks.push(marked);
+        mergeIfSame(file, stacks, s, now);
+        const there = mergeIfSame(file, stacks, marked, now);
+        setList(file, stacks);
+        return { uid: there.item.uid };
+      }
       if (edit.binder !== undefined) {
         const to = checkBinder(file, edit.binder);
         const n = edit.move === undefined ? it.quantity : checkQuantity(edit.move);
@@ -293,6 +333,8 @@ export function applyCollectionEdit(
       const to = edit.binder !== undefined ? checkBinder(file, edit.binder) : undefined;
       const cond = edit.condition !== undefined ? checkCondition(edit.condition) : undefined;
       const lang = edit.language !== undefined ? checkLanguage(edit.language) : undefined;
+      // A wrong price stops the whole change before any pile is touched.
+      if (edit.paid !== undefined) setPaid({} as CollectionItem, edit.paid, rates);
       for (const uid of new Set(edit.uids)) {
         if (edit.remove) {
           removeStack(file, stacks, uid, now);
@@ -303,6 +345,7 @@ export function applyCollectionEdit(
         if (to !== undefined) s.binder = to;
         if (cond !== undefined) s.item.condition = cond;
         if (lang !== undefined) s.item.language = lang;
+        if (edit.paid !== undefined) setPaid(s.item, edit.paid, rates);
         s.item.updatedAt = bump(s.item.updatedAt, now);
         mergeIfSame(file, stacks, s, now);
       }
@@ -326,6 +369,42 @@ export function applyCollectionEdit(
       b.updatedAt = bump(b.updatedAt, now);
       file.data.binders = list as unknown as Json;
       return { uid: b.uid };
+    }
+    case "mergeBinder": {
+      const from = checkBinder(file, edit.from);
+      const into = checkBinder(file, edit.into);
+      if (from === into) throw new EditError("Pick another binder to move the cards to.");
+      for (const s of stacks.filter((x) => x.binder === from)) {
+        s.binder = into;
+        s.item.updatedAt = bump(s.item.updatedAt, now);
+        mergeIfSame(file, stacks, s, now);
+      }
+      setList(file, stacks);
+      if (edit.deleteSource && from !== null) deleteBinder(file, from, now);
+      return { uid: into };
+    }
+    case "deleteBinder": {
+      const uid = checkBinder(file, edit.uid);
+      if (uid === null) throw new EditError("Unsorted can't be deleted.");
+      for (const s of stacks.filter((x) => x.binder === uid)) {
+        if (edit.deleteCards) {
+          removeStack(file, stacks, s.item.uid!, now);
+          continue;
+        }
+        s.binder = null;
+        s.item.updatedAt = bump(s.item.updatedAt, now);
+        mergeIfSame(file, stacks, s, now);
+      }
+      setList(file, stacks);
+      deleteBinder(file, uid, now);
+      return { uid: null };
+    }
+    case "binderOrder": {
+      if (!Array.isArray(edit.keys) || edit.keys.length > 1000) throw new EditError("That order doesn't fit.");
+      const known = new Set(["unsorted", "wishlist", ...bindersOf(file).map((b) => `b:${b.uid}`)]);
+      const keys = [...new Set(edit.keys.filter((k) => typeof k === "string" && known.has(k)))];
+      if ((prefs(file).binderOrder ?? "") !== keys.join(",")) setPref(file, "binderOrder", keys.join(","), now);
+      return { uid: null };
     }
   }
   throw new EditError("Unknown change.");

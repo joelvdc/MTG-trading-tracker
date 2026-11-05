@@ -283,10 +283,12 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   switches that off and on. A card's window links to the card on Cardmarket (that printing) and CardTrader (a name search).
 - **Collection:** the same cards, prices and values as the app (its price source, price type, currency and condition
   adjustment). Pick a binder at the top; search, filter (colors, type, rarity, set, finish, condition, language, price,
-  decks, signed/altered) and sort. The list shows 25, 50 or 100 rows per page. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
-  notes, signed/altered and the printing, shows every price source and the decks it's in, and deletes it. Tick several
-  cards to move them, set their condition or language, or delete them. **Add card**, new binders and renaming them are
-  there too; deleting, merging and arranging binders stays in the app.
+  decks, signed/altered) and sort, in up to three levels ("Color, then name"). The list shows 25, 50 or 100 rows per
+  page. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
+  notes, signed/altered (for some of the copies too) and the printing, shows every price source and the decks it's in,
+  and deletes it. Tick several cards to move them, set their condition, language or purchase price, or delete them.
+  **Add card** is there too, and the binders: new, rename, merge into another, delete (keeping the cards in Unsorted or
+  not), move all Unsorted cards, and **Arrange** the binder bar (the phones get that order too).
 - **Stats:** all of the app's collection stats (colors, identity, rarity, types, mana curve, finish, condition,
   language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
   worth; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt.

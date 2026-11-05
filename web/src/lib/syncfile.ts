@@ -177,6 +177,16 @@ export function addDeletion(file: SyncFile, uid: string, now: number): void {
   file.data.deletions = list as unknown as Json;
 }
 
+/**
+ * Changes one of the app's synced settings. The phones take the newest settings as a whole (SyncPrefs.updatedAt), so
+ * the time stamp moves on with it.
+ */
+export function setPref(file: SyncFile, key: string, value: string, now: number): void {
+  const p = (file.data.prefs as { updatedAt?: number; values?: Record<string, string> } | undefined) ?? {};
+  const out = { ...p, updatedAt: bump(p.updatedAt ?? 0, now), values: { ...(p.values ?? {}), [key]: value } };
+  file.data.prefs = out as unknown as Json;
+}
+
 /** Kotlin's String.compareTo for the ASCII ids used here. */
 export function compareUid(a: string | null, b: string | null): number {
   if (a === b) return 0;

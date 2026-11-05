@@ -6,6 +6,7 @@ import { CollAddDialog } from "@/components/CollAddDialog";
 import { CollCardDialog } from "@/components/CollCardDialog";
 import { CollGrid } from "@/components/CollGrid";
 import { CollTable } from "@/components/CollTable";
+import { ArrangeDialog, DeleteBinderDialog, MergeDialog, PaidDialog, SortDialog, sortText } from "@/components/CollectionDialogs";
 import { Dialog } from "@/components/Dialog";
 import { ExportDialog } from "@/components/ExportDialog";
 import { FilterDialog } from "@/components/FilterDialog";
@@ -15,7 +16,7 @@ import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
 import { WishlistPanel } from "@/components/WishlistPanel";
 import { CONDITIONS, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit } from "@/lib/collection";
-import { BAR_UNSORTED, BAR_WISHLIST, type CollectionView, type CollRow } from "@/lib/collview";
+import { BAR_UNSORTED, BAR_WISHLIST, barKeys, type CollectionView, type CollRow } from "@/lib/collview";
 import {
   comparator,
   deckCardNames,
@@ -25,7 +26,6 @@ import {
   matchesText,
   SORT_FIELDS,
   type Filter,
-  type SortField,
   type SortLevel,
 } from "@/lib/colquery";
 import { format } from "@/lib/money";
@@ -38,7 +38,9 @@ const PER_PAGE = [25, 50, 100];
 const DEFAULT_SORT: SortLevel = { field: "NAME", reversed: false };
 
 interface Saved {
+  /** One level (before sorting in levels); read when [sorts] isn't there. */
   sort?: SortLevel;
+  sorts?: SortLevel[];
   layout?: Layout;
   binder?: BinderPick;
   filter?: Filter;
@@ -80,7 +82,7 @@ export default function CollectionPage() {
   const [busy, setBusy] = useState(false);
   const [lookup, setLookup] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortLevel>(DEFAULT_SORT);
+  const [sorts, setSorts] = useState<SortLevel[]>([DEFAULT_SORT]);
   const [layout, setLayout] = useState<Layout>("list");
   const [hover, setHover] = useHoverSetting();
   const [binder, setBinder] = useState<BinderPick>("");
@@ -94,11 +96,18 @@ export default function CollectionPage() {
   const [exporting, setExporting] = useState(false);
   const [naming, setNaming] = useState<{ uid: string | null; name: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [sorting, setSorting] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const [deletingBinder, setDeletingBinder] = useState(false);
+  const [arranging, setArranging] = useState(false);
+  const [pricing, setPricing] = useState(false);
   const lookedUp = useRef(false);
 
   useEffect(() => {
     const s = readSaved();
-    if (s.sort && SORT_FIELDS.some((f) => f.field === s.sort!.field)) setSort(s.sort);
+    const known = (l: SortLevel | undefined) => !!l && SORT_FIELDS.some((f) => f.field === l.field);
+    if (Array.isArray(s.sorts) && s.sorts.length > 0 && s.sorts.length <= 3 && s.sorts.every(known)) setSorts(s.sorts);
+    else if (known(s.sort)) setSorts([s.sort!]);
     if (s.layout === "images") setLayout("images");
     if (s.perPage && PER_PAGE.includes(s.perPage)) setPerPage(s.perPage);
     const params = new URLSearchParams(window.location.search);
@@ -182,10 +191,10 @@ export default function CollectionPage() {
     if (c.ok && Array.isArray(c.data.rows)) setView(c.data);
   }, []);
 
-  function changeSort(next: SortLevel) {
-    setSort(next);
+  function changeSort(next: SortLevel[]) {
+    setSorts(next);
     setPage(0);
-    writeSaved({ sort: next });
+    writeSaved({ sorts: next });
   }
   function changeLayout(next: Layout) {
     setLayout(next);
@@ -225,8 +234,8 @@ export default function CollectionPage() {
   const rows = useMemo(() => {
     const words = search.trim();
     const out = inBinder.filter((r) => (!words || matchesText(r, words)) && matchesFilter(filter, r, deckNames));
-    return out.sort(comparator([sort]));
-  }, [inBinder, search, filter, deckNames, sort]);
+    return out.sort(comparator(sorts));
+  }, [inBinder, search, filter, deckNames, sorts]);
 
   // A selection only holds piles that are still there and still shown.
   const shownUids = useMemo(() => new Set(rows.map((r) => r.uid)), [rows]);
@@ -279,7 +288,7 @@ export default function CollectionPage() {
   const value = rows.reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
   const locked = view.readOnly || busy;
   const nFilter = filterCount(filter);
-  const sortInfo = SORT_FIELDS.find((f) => f.field === sort.field) ?? SORT_FIELDS[0];
+  const sort = sorts[0];
   const sets = (() => {
     const m = new Map<string, { code: string; name: string; copies: number }>();
     for (const r of inBinder) {
@@ -350,10 +359,26 @@ export default function CollectionPage() {
             ＋ Binder
           </button>
           {pick !== "" && pick !== "~" && !isWish && (
-            <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: pick, name: binderName(pick) })}>
-              Rename
+            <>
+              <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: pick, name: binderName(pick) })}>
+                Rename
+              </button>
+              <button className="chip add" disabled={locked} onClick={() => setMerging(true)}>
+                Merge…
+              </button>
+              <button className="chip add" disabled={locked} onClick={() => setDeletingBinder(true)}>
+                Delete…
+              </button>
+            </>
+          )}
+          {pick === "~" && (
+            <button className="chip add" disabled={locked || (counts.get("~") ?? 0) === 0} onClick={() => setMerging(true)}>
+              Move all to…
             </button>
           )}
+          <button className="chip add" disabled={locked} onClick={() => setArranging(true)}>
+            Arrange
+          </button>
         </div>
 
         {isWish ? (
@@ -386,25 +411,9 @@ export default function CollectionPage() {
           <button className={nFilter ? "btn on" : "btn"} onClick={() => setFiltering(true)}>
             Filter{nFilter ? ` (${nFilter})` : ""}
           </button>
-          {layout === "images" && (
-          <select
-            aria-label="Sort"
-            title={sort.reversed ? sortInfo.backward : sortInfo.forward}
-            value={`${sort.field}:${sort.reversed ? "r" : "f"}`}
-            onChange={(e) => {
-              const [field, dir] = e.target.value.split(":");
-              changeSort({ field: field as SortField, reversed: dir === "r" });
-            }}
-          >
-            {SORT_FIELDS.flatMap((f) =>
-              [false, true].map((rev) => (
-                <option key={`${f.field}:${rev}`} value={`${f.field}:${rev ? "r" : "f"}`}>
-                  {f.label}: {rev ? f.backward : f.forward}
-                </option>
-              )),
-            )}
-          </select>
-          )}
+          <button className={sorts.length > 1 ? "btn on" : "btn"} title={`Sorted by ${sortText(sorts)}`} onClick={() => setSorting(true)}>
+            Sort{sorts.length > 1 ? ` (${sorts.length})` : ""}
+          </button>
           <ViewSwitch layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} />
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
@@ -419,8 +428,7 @@ export default function CollectionPage() {
 
         <p className="muted small showing">
           Showing {nFilter > 0 || search.trim() ? `${rows.length} of ${inBinder.length}` : rows.length} piles{" "}
-          {pick === "" ? "in the whole collection" : pick === "~" ? "not in a binder" : `in “${binderLabel}”`}, sorted by{" "}
-          {sortInfo.label.toLowerCase()} ({(sort.reversed ? sortInfo.backward : sortInfo.forward).toLowerCase()}).
+          {pick === "" ? "in the whole collection" : pick === "~" ? "not in a binder" : `in “${binderLabel}”`}, sorted by {sortText(sorts)}.
         </p>
         {nFilter > 0 && (
           <p className="small">
@@ -459,6 +467,9 @@ export default function CollectionPage() {
                 </option>
               ))}
             </select>
+            <button className="btn" disabled={locked} onClick={() => setPricing(true)}>
+              Purchase price…
+            </button>
             {confirmDelete ? (
               <>
                 <span>Delete {picked.length} piles?</span>
@@ -498,7 +509,7 @@ export default function CollectionPage() {
             selected={selected}
             disabled={locked}
             sort={sort}
-            onSort={(field) => changeSort(field === sort.field ? { field, reversed: !sort.reversed } : { field, reversed: false })}
+            onSort={(field) => changeSort([field === sort.field && sorts.length === 1 ? { field, reversed: !sort.reversed } : { field, reversed: false }])}
             onToggle={toggle}
             onToggleAll={(on) => setSelected(on ? new Set([...selected, ...pageRows.map((r) => r.uid)]) : new Set())}
             onOpen={setOpen}
@@ -590,6 +601,71 @@ export default function CollectionPage() {
       )}
       {exporting && (
         <ExportDialog rows={rows} binders={view.binders} priceType={view.priceType} binderLabel={binderLabel} onClose={() => setExporting(false)} />
+      )}
+      {sorting && (
+        <SortDialog
+          initial={sorts}
+          onClose={() => setSorting(false)}
+          onSave={(levels) => {
+            changeSort(levels);
+            setSorting(false);
+          }}
+        />
+      )}
+      {merging && (pick === "~" || view.binders.some((b) => b.uid === pick)) && (
+        <MergeDialog
+          from={pick === "~" ? null : pick}
+          fromName={binderLabel}
+          copies={counts.get(pick) ?? 0}
+          binders={view.binders}
+          busy={busy}
+          onClose={() => setMerging(false)}
+          onSave={async (into, deleteSource) => {
+            const from = pick === "~" ? null : pick;
+            if ((await edit({ type: "mergeBinder", from, into, deleteSource })) != null) {
+              setMerging(false);
+              changeBinder(into ?? "~");
+            }
+          }}
+        />
+      )}
+      {deletingBinder && view.binders.some((b) => b.uid === pick) && (
+        <DeleteBinderDialog
+          name={binderLabel}
+          copies={counts.get(pick) ?? 0}
+          busy={busy}
+          onClose={() => setDeletingBinder(false)}
+          onSave={async (deleteCards) => {
+            if ((await edit({ type: "deleteBinder", uid: pick, deleteCards })) != null) {
+              setDeletingBinder(false);
+              changeBinder("");
+            }
+          }}
+        />
+      )}
+      {arranging && (
+        <ArrangeDialog
+          keys={view.bar}
+          usual={barKeys(view.binders, undefined)}
+          binders={view.binders}
+          busy={busy}
+          onClose={() => setArranging(false)}
+          onSave={async (keys) => {
+            if ((await edit({ type: "binderOrder", keys })) != null) setArranging(false);
+          }}
+        />
+      )}
+      {pricing && (
+        <PaidDialog
+          piles={picked.length}
+          currency={view.currency}
+          busy={busy}
+          onClose={() => setPricing(false)}
+          onSave={async (paid) => {
+            setPricing(false);
+            await bulk({ paid });
+          }}
+        />
       )}
       {naming && (
         <NameDialog
