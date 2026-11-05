@@ -75,7 +75,7 @@ export default function SettingsPage() {
     setSession((s) => (s ? { ...s, folder: r.data.folder } : s));
     setBrowsing(false);
     setListing(null);
-    if (first) window.location.replace("/wishlist");
+    if (first) window.location.replace("/collection");
     else setSaved(r.data.folder);
   }
 

@@ -1269,3 +1269,10 @@ main h2 {
   pointer-events: none;
   background: var(--raised);
 }
+
+/* Phones and tablets have no mouse to hover with, so the "Card on hover" switch would do nothing */
+@media (hover: none) {
+  .hover-toggle {
+    display: none;
+  }
+}

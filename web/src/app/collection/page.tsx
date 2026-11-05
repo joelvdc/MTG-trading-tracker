@@ -9,10 +9,13 @@ import { CollTable } from "@/components/CollTable";
 import { Dialog } from "@/components/Dialog";
 import { ExportDialog } from "@/components/ExportDialog";
 import { FilterDialog } from "@/components/FilterDialog";
+import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
+import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
+import { WishlistPanel } from "@/components/WishlistPanel";
 import { CONDITIONS, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit } from "@/lib/collection";
-import type { CollectionView, CollRow } from "@/lib/collview";
+import { BAR_UNSORTED, BAR_WISHLIST, type CollectionView, type CollRow } from "@/lib/collview";
 import {
   comparator,
   deckCardNames,
@@ -27,8 +30,7 @@ import {
 } from "@/lib/colquery";
 import { format } from "@/lib/money";
 
-type Layout = "list" | "images";
-/** "" = everything, "~" = Unsorted, otherwise a binder's uid. */
+/** "" = everything, "~" = Unsorted, "wishlist" = the wishlist, otherwise a binder's uid. */
 type BinderPick = string;
 
 const KEY = "mtg.collection";
@@ -80,6 +82,7 @@ export default function CollectionPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortLevel>(DEFAULT_SORT);
   const [layout, setLayout] = useState<Layout>("list");
+  const [hover, setHover] = useHoverSetting();
   const [binder, setBinder] = useState<BinderPick>("");
   const [filter, setFilter] = useState<Filter>(EMPTY_FILTER);
   const [perPage, setPerPage] = useState(50);
@@ -173,6 +176,12 @@ export default function CollectionPage() {
     return null;
   }
 
+  /** After a wishlist change: fetch the collection again so the Wishlist chip's number is right. */
+  const refreshCounts = useCallback(async () => {
+    const c = await api<CollectionView>("/api/collection");
+    if (c.ok && Array.isArray(c.data.rows)) setView(c.data);
+  }, []);
+
   function changeSort(next: SortLevel) {
     setSort(next);
     setPage(0);
@@ -202,11 +211,13 @@ export default function CollectionPage() {
   );
 
   /** The binder picked still exists (it may have been deleted on a phone). */
-  const pick: BinderPick = view && binder && binder !== "~" && !view.binders.some((b) => b.uid === binder) ? "" : binder;
+  const pick: BinderPick =
+    view && binder && binder !== "~" && binder !== BAR_WISHLIST && !view.binders.some((b) => b.uid === binder) ? "" : binder;
+  const isWish = pick === BAR_WISHLIST;
 
   const inBinder = useMemo(() => {
     if (!view) return [];
-    if (pick === "") return view.rows;
+    if (pick === "" || pick === BAR_WISHLIST) return view.rows;
     const want = pick === "~" ? null : pick;
     return view.rows.filter((r) => r.binder === want);
   }, [view, pick]);
@@ -313,9 +324,16 @@ export default function CollectionPage() {
 
         <div className="binder-bar" role="tablist" aria-label="Binders">
           {[
-            { key: "", name: "All", n: [...counts.values()].reduce((a, b) => a + b, 0) },
-            { key: "~", name: "Unsorted", n: counts.get("~") ?? 0 },
-            ...view.binders.map((b) => ({ key: b.uid, name: b.name, n: counts.get(b.uid) ?? 0 })),
+            { key: "", name: "All", n: [...counts.values()].reduce((a, b) => a + b, 0), star: false },
+            ...view.bar.flatMap((k) =>
+              k === BAR_UNSORTED
+                ? [{ key: "~", name: "Unsorted", n: counts.get("~") ?? 0, star: false }]
+                : k === BAR_WISHLIST
+                  ? [{ key: BAR_WISHLIST, name: "Wishlist", n: view.wishCount, star: true }]
+                  : view.binders
+                      .filter((b) => `b:${b.uid}` === k)
+                      .map((b) => ({ key: b.uid, name: b.name, n: counts.get(b.uid) ?? 0, star: false })),
+            ),
           ].map((b) => (
             <button
               key={b.key || "all"}
@@ -324,19 +342,31 @@ export default function CollectionPage() {
               className={pick === b.key ? "chip on" : "chip"}
               onClick={() => changeBinder(b.key)}
             >
+              {b.star && <span aria-hidden="true">★ </span>}
               {b.name} <span className="count">{b.n}</span>
             </button>
           ))}
           <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: null, name: "" })}>
             ＋ Binder
           </button>
-          {pick !== "" && pick !== "~" && (
+          {pick !== "" && pick !== "~" && !isWish && (
             <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: pick, name: binderName(pick) })}>
               Rename
             </button>
           )}
         </div>
 
+        {isWish ? (
+          <WishlistPanel
+            layout={layout}
+            onLayout={changeLayout}
+            hover={hover}
+            onHover={setHover}
+            onLoggedOut={goLogin}
+            onChanged={refreshCounts}
+          />
+        ) : (
+          <>
         <p className="summary">
           {copies} cards · {money(value)} ({view.priceTypeLabel}, {view.sourceLabel})
         </p>
@@ -375,34 +405,7 @@ export default function CollectionPage() {
             )}
           </select>
           )}
-          <div className="seg" role="group" aria-label="View">
-            <button
-              className={layout === "list" ? "on" : undefined}
-              aria-pressed={layout === "list"}
-              aria-label="View as list"
-              title="View as list"
-              onClick={() => changeLayout("list")}
-            >
-              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                <circle cx="5" cy="6" r="1.6" fill="currentColor" />
-                <circle cx="5" cy="12" r="1.6" fill="currentColor" />
-                <circle cx="5" cy="18" r="1.6" fill="currentColor" />
-                <path d="M9.5 6h10M9.5 12h10M9.5 18h10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
-            </button>
-            <button
-              className={layout === "images" ? "on" : undefined}
-              aria-pressed={layout === "images"}
-              aria-label="View as images"
-              title="View as images"
-              onClick={() => changeLayout("images")}
-            >
-              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                <rect x="9" y="3" width="11" height="15" rx="2" fill="currentColor" opacity="0.55" transform="rotate(12 14.5 10.5)" />
-                <rect x="4" y="5" width="11" height="15" rx="2" fill="currentColor" />
-              </svg>
-            </button>
-          </div>
+          <ViewSwitch layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} />
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
@@ -499,6 +502,7 @@ export default function CollectionPage() {
             onToggle={toggle}
             onToggleAll={(on) => setSelected(on ? new Set([...selected, ...pageRows.map((r) => r.uid)]) : new Set())}
             onOpen={setOpen}
+            hover={hover}
           />
         ) : (
           <CollGrid rows={pageRows} currency={view.currency} perEuro={view.perEuro} disabled={busy} onOpen={setOpen} />
@@ -538,6 +542,8 @@ export default function CollectionPage() {
         )}
         {view.rows.length === 0 && <p className="muted center">The collection is empty.</p>}
         {view.rows.length > 0 && rows.length === 0 && <p className="muted center">No cards match.</p>}
+          </>
+        )}
       </main>
 
       {open && (

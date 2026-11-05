@@ -276,12 +276,14 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
 - **What it does:** add cards (any printing or a specific one, foil or not), change the printing, quantity, notes and
   price alerts, tick *Ordered*, remove cards. Received cards are changed in the app. Prices are Cardmarket's (updated daily), shown
   in the app's currency and price type.
-- **Views:** a list with columns (click a column title to sort) or card pictures; the choice is remembered. A card's
-  window links to the card on Cardmarket (that printing) and CardTrader (a name search).
+- **Wishlist:** it sits in the collection, as the **★ Wishlist** chip in the binder bar (the binders follow the app's
+  order).
+- **Views:** a list with columns (click a column title to sort) or card pictures; the choice is remembered. With a
+  mouse, the list shows a card's picture when you point at a row; the **Card on hover** button beside the view buttons
+  switches that off and on. A card's window links to the card on Cardmarket (that printing) and CardTrader (a name search).
 - **Collection:** the same cards, prices and values as the app (its price source, price type, currency and condition
   adjustment). Pick a binder at the top; search, filter (colors, type, rarity, set, finish, condition, language, price,
-  decks, signed/altered) and sort. The list shows 25, 50 or 100 rows per page and the card's picture when you hover
-  over a row. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
+  decks, signed/altered) and sort. The list shows 25, 50 or 100 rows per page. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
   notes, signed/altered and the printing, shows every price source and the decks it's in, and deletes it. Tick several
   cards to move them, set their condition or language, or delete them. **Add card**, new binders and renaming them are
   there too; deleting, merging and arranging binders stays in the app.

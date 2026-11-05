@@ -6,7 +6,7 @@ import { parseCopy } from "@/lib/cardkingdom";
 import { resolveFinish } from "@/lib/cards";
 import { applyCollectionEdit } from "@/lib/collection";
 import { comparator, computeStats, EMPTY_FILTER, matchesFilter, matchesText } from "@/lib/colquery";
-import { collectionView, orderBinders, type CollRow } from "@/lib/collview";
+import { barKeys, collectionView, orderBinders, type CollRow } from "@/lib/collview";
 import { archidektCsv, fullCsv } from "@/lib/csvexport";
 import type { PriceFile } from "@/lib/prices";
 import { conditionNote, decodePcts, isApprox, pricingSetup, unitPrice } from "@/lib/pricing";
@@ -309,6 +309,16 @@ describe("binders and trades", () => {
       { uid: "c", name: "Mid" },
     ];
     expect(orderBinders(list, "unsorted,b:c,wishlist").map((b) => b.uid)).toEqual(["c", "b", "a"]);
+  });
+
+  it("lays out the binder bar like the app: arranged first, then Unsorted, the wishlist and binders by name", () => {
+    const list = [
+      { uid: "a", name: "Zed" },
+      { uid: "b", name: "Alpha" },
+      { uid: "c", name: "Mid" },
+    ];
+    expect(barKeys(list, undefined)).toEqual(["unsorted", "wishlist", "b:b", "b:c", "b:a"]);
+    expect(barKeys(list, "b:c,wishlist,b:gone")).toEqual(["b:c", "wishlist", "unsorted", "b:b", "b:a"]);
   });
 
   it("judges a trade with the app's margin", () => {

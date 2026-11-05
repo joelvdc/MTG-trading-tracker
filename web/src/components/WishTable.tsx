@@ -3,6 +3,7 @@
 import { format, type Currency } from "@/lib/money";
 import type { WishRow } from "@/lib/view";
 import { formatDate } from "./api";
+import { useHoverCard } from "./HoverCard";
 import { cardTitle, finishLabel, setLine, SORT_LABELS, type Sort, type SortKey } from "./wishText";
 
 /** Columns that hide on narrow screens. */
@@ -25,6 +26,7 @@ export function WishTable({
   onSort,
   onOpen,
   onToggleOrdered,
+  hover,
 }: {
   sections: Section[];
   currency: Currency;
@@ -34,7 +36,10 @@ export function WishTable({
   onSort: (key: SortKey) => void;
   onOpen: (row: WishRow) => void;
   onToggleOrdered: (row: WishRow, ordered: boolean) => void;
+  /** Show the card's picture next to the mouse. */
+  hover: boolean;
 }) {
+  const { follow, hide, picture } = useHoverCard(hover);
   const money = (eur: number) => format(eur * perEuro, currency);
   const colClass = (key: SortKey) =>
     [WIDE_ONLY.includes(key) ? "wide-only" : "", NUMERIC.includes(key) ? "num" : "", key === "ordered" ? "center" : ""]
@@ -71,7 +76,10 @@ export function WishTable({
               </tr>
               {s.rows.map((r) => {
                 const received = r.receivedAt != null;
-                const open = () => !received && !disabled && onOpen(r);
+                const open = () => {
+                  hide();
+                  if (!received && !disabled) onOpen(r);
+                };
                 const sub = [
                   r.gotSince > 0 ? `Got ${r.gotSince} since adding` : null,
                   received ? `Received ${formatDate(r.receivedAt!)}${r.receivedFrom ? ` · ${r.receivedFrom}` : ""}` : null,
@@ -82,6 +90,9 @@ export function WishTable({
                     key={r.uid}
                     className={["wish-row", received ? "received" : "clickable", r.alertHit ? "hit" : ""].filter(Boolean).join(" ")}
                     onClick={open}
+                    onMouseEnter={follow(r.card.imageUrl)}
+                    onMouseMove={follow(r.card.imageUrl)}
+                    onMouseLeave={hide}
                   >
                     <td className="card-cell">
                       {received ? (
@@ -149,6 +160,7 @@ export function WishTable({
             </tbody>
           ))}
       </table>
+      {picture}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type MouseEvent } from "react";
 import { format, type Currency } from "@/lib/money";
 import type { CollRow } from "@/lib/collview";
 import { displayName, finishName, type SortField, type SortLevel } from "@/lib/colquery";
 import { formatDate } from "./api";
+import { useHoverCard } from "./HoverCard";
 
 /** One line under a card's name in the picture view: set, finish, marks, condition, language. */
 export function rowTags(r: CollRow): string[] {
@@ -52,6 +52,7 @@ export function CollTable({
   onToggle,
   onToggleAll,
   onOpen,
+  hover,
 }: {
   rows: CollRow[];
   currency: Currency;
@@ -65,18 +66,11 @@ export function CollTable({
   onToggle: (uid: string) => void;
   onToggleAll: (on: boolean) => void;
   onOpen: (row: CollRow) => void;
+  /** Show the card's picture next to the mouse. */
+  hover: boolean;
 }) {
   const money = (eur: number) => format(eur * perEuro, currency);
-  const [hover, setHover] = useState<{ url: string; x: number; y: number } | null>(null);
-  /** Shows the card's picture next to the mouse (only with a mouse; on touch screens a tap opens the card). */
-  const follow = (r: CollRow) => (e: MouseEvent) => {
-    if (!r.card.imageUrl || !window.matchMedia("(hover: hover)").matches) return;
-    const w = 240;
-    const h = (w * 680) / 488;
-    const x = e.clientX + 24 + w > window.innerWidth ? e.clientX - 24 - w : e.clientX + 24;
-    const y = Math.max(8, Math.min(e.clientY - h / 2, window.innerHeight - h - 8));
-    setHover({ url: r.card.imageUrl, x, y });
-  };
+  const { follow, hide, picture } = useHoverCard(hover);
   const allOn = rows.length > 0 && rows.every((r) => selected.has(r.uid));
   const cols: Col[] = [
     { label: "Qty", field: "QUANTITY", className: "num" },
@@ -126,12 +120,12 @@ export function CollTable({
         <tbody>
           {rows.map((r) => (
             <tr key={r.uid} className={["wish-row clickable", selected.has(r.uid) ? "picked" : ""].join(" ")} onClick={() => {
-                setHover(null);
+                hide();
                 if (!disabled) onOpen(r);
               }}
-              onMouseEnter={follow(r)}
-              onMouseMove={follow(r)}
-              onMouseLeave={() => setHover(null)}
+              onMouseEnter={follow(r.card.imageUrl)}
+              onMouseMove={follow(r.card.imageUrl)}
+              onMouseLeave={hide}
             >
               <td className="center" onClick={(e) => e.stopPropagation()}>
                 <input
@@ -189,10 +183,7 @@ export function CollTable({
           ))}
         </tbody>
       </table>
-      {hover && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="hover-card" src={hover.url} alt="" style={{ left: hover.x, top: hover.y }} />
-      )}
+      {picture}
     </div>
   );
 }

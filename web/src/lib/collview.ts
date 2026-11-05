@@ -20,7 +20,7 @@ import {
   type PricingSetup,
   type Source,
 } from "./pricing";
-import { binders as bindersOf, canWrite, collection, prefs, type CardRef, type Json, type SyncFile } from "./syncfile";
+import { binders as bindersOf, canWrite, collection, prefs, wishlist as wishlistOf, type CardRef, type Json, type SyncFile } from "./syncfile";
 
 export interface CollRow {
   uid: string;
@@ -68,6 +68,10 @@ export interface CollDeck {
 export interface CollectionView {
   rows: CollRow[];
   binders: CollBinder[];
+  /** The binder bar in the app's order (BinderOrder): "unsorted", "wishlist" and "b:<uid>" keys. */
+  bar: string[];
+  /** Copies on the wishlist not yet received (the Wishlist chip's number). */
+  wishCount: number;
   decks: CollDeck[];
   currency: Currency;
   perEuro: number;
@@ -93,6 +97,21 @@ export interface CardPrices {
 /** "Fire // Ice" → "fire" (decks and the stats compare front-face names). */
 export function frontName(name: string): string {
   return name.split(" // ")[0].toLowerCase();
+}
+
+export const BAR_UNSORTED = "unsorted";
+export const BAR_WISHLIST = "wishlist";
+
+/**
+ * The app's BinderOrder.arrange: every place in the binder bar, those in [saved] first as arranged, then the rest in
+ * the usual order (Unsorted, the wishlist, then the binders by name). The app also puts its trade binder before the
+ * other binders; which binder that is doesn't sync yet.
+ */
+export function barKeys(list: CollBinder[], saved: string | undefined): string[] {
+  const usual = [BAR_UNSORTED, BAR_WISHLIST, ...[...list].sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())).map((b) => `b:${b.uid}`)];
+  const known = new Set(usual);
+  const kept = [...new Set((saved ?? "").split(",").map((k) => k.trim()).filter((k) => known.has(k)))];
+  return [...kept, ...usual.filter((k) => !kept.includes(k))];
 }
 
 /** The app's BinderOrder.arrange for the binders (Unsorted and the wishlist aren't binders here). */
@@ -180,6 +199,15 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
         .map((b) => ({ uid: b.uid!, name: b.name })),
       p.binderOrder,
     ),
+    bar: barKeys(
+      bindersOf(file)
+        .filter((b) => b.uid)
+        .map((b) => ({ uid: b.uid!, name: b.name })),
+      p.binderOrder,
+    ),
+    wishCount: wishlistOf(file)
+      .filter((w) => w.receivedAt == null)
+      .reduce((n, w) => n + w.quantity, 0),
     decks: decksOf(file),
     currency: cur,
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,
