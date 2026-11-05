@@ -257,7 +257,17 @@ class MtgRepository(
         if (w.anyPrinting) all.filter { it.card.name.equals(w.card.name, true) }.sumOf { it.quantity }
         else all.filter { it.card.scryfallId == w.card.scryfallId && it.foil == w.foil }.sumOf { it.quantity }
 
-    suspend fun updateWishlistItem(item: WishlistItem) = wishlist.update(item)
+    /**
+     * Saves the wishlist card window. After "Change printing" (since 1.78), "got since adding" counts again from the
+     * copies of the new printing already owned (for an exact-printing card, or when the name changed, as for a card
+     * added offline); an any-printing card keeps counting by name.
+     */
+    suspend fun updateWishlistItem(item: WishlistItem) = db.withTransaction {
+        val old = wishlist.byId(item.id)
+        val recount = old != null && old.card.scryfallId != item.card.scryfallId &&
+            (!item.anyPrinting || old.card.name != item.card.name)
+        wishlist.update(if (recount) item.copy(ownedAtAdd = ownedFor(item, coll.all())) else item)
+    }
 
     /**
      * Ticks or unticks "Ordered, on its way" straight from the list ([orderedAt] null unticks). Read

@@ -281,6 +281,7 @@ export default function WishlistPage() {
         <EditDialog
           row={editing}
           viewCurrency={view.currency}
+          perEuro={view.perEuro}
           busy={busy}
           onClose={() => setEditing(null)}
           onSave={async (e) => {

@@ -26,6 +26,8 @@ export type WishEdit =
       alertBelow?: number | null;
       alertCurrency?: string | null;
       ordered?: boolean;
+      /** Another printing of the same card (like the app's "Change printing" in the wishlist card window). */
+      card?: CardRef;
     }
   | { type: "remove"; uid: string };
 
@@ -137,13 +139,25 @@ export function applyEdit(file: SyncFile, edit: WishEdit, now: number, makeUid: 
       if (!w) throw new EditError("That card isn't on the wishlist any more.");
       if (w.receivedAt !== null) throw new EditError("Received cards can only be changed in the app.");
       if (edit.quantity !== undefined) w.quantity = checkQuantity(edit.quantity);
+      if (edit.anyPrinting !== undefined) w.anyPrinting = !!edit.anyPrinting;
+      if (edit.card !== undefined) {
+        const card = checkCard(edit.card);
+        if (!sameName(card.name, w.card.name)) throw new EditError("That's another card, not a printing of this one.");
+        if (card.scryfallId !== w.card.scryfallId) {
+          w.card = card;
+          // Keep the finish where the new printing has it (the app's CardRef.resolveFinish).
+          const want = edit.foil ?? w.foil;
+          w.foil = want ? card.hasFoil || card.hasEtched || !card.hasNonFoil : !card.hasNonFoil;
+          // "Got N since adding" starts again from the copies of the new printing already owned.
+          if (!w.anyPrinting) w.ownedAtAdd = ownedFor(file, card, w.foil, false);
+        }
+      }
       if (edit.notes !== undefined) {
         const n = (edit.notes ?? "").trim();
         if (n.length > 500) throw new EditError("Notes can be at most 500 characters.");
         w.notes = n === "" ? null : n;
       }
-      if (edit.anyPrinting !== undefined) w.anyPrinting = !!edit.anyPrinting;
-      if (edit.foil !== undefined) {
+      if (edit.foil !== undefined && edit.card === undefined) {
         if (edit.foil && !(w.card.hasFoil || w.card.hasEtched)) throw new EditError("This printing has no foil.");
         if (!edit.foil && !w.card.hasNonFoil) throw new EditError("This printing is only made in foil.");
         w.foil = !!edit.foil;

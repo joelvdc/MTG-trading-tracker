@@ -141,7 +141,7 @@ fun ctDetailLines(wp: WishPrice, zeroOnly: Boolean, anyPrinting: Boolean): List<
 fun wishShareText(rows: List<WishlistRow>): String =
     rows.filter { it.item.orderedAt == null && it.item.receivedAt == null }.joinToString("\n") { "${it.item.quantity} ${it.item.card.name}" }
 
-/** Edits a wishlist entry: how many, whether any printing will do (and the finish otherwise), notes. */
+/** Edits a wishlist entry: its printing, how many, whether any printing will do (and the finish otherwise), notes. */
 @Composable
 fun WishlistDialog(
     row: WishlistRow,
@@ -152,8 +152,17 @@ fun WishlistDialog(
     onSave: (WishlistItem) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val card = row.item.card
     var item by remember { mutableStateOf(row.item) }
+    // The printing shown: the saved one, or the one just picked with "Change printing" (since 1.78).
+    val card = item.card
+    val samePrinting = card.scryfallId == row.item.card.scryfallId
+    var choosing by remember { mutableStateOf(false) }
+    if (choosing) {
+        PrintingListDialog(card.name, onDismiss = { choosing = false }) { p ->
+            choosing = false
+            item = item.copy(card = p, foil = p.resolveFinish(if (item.foil) Finish.FOIL else Finish.NONFOIL).foil)
+        }
+    }
     // The level as typed, in the currency it was typed in (since 1.39; chosen in the field since 1.40).
     val level = remember {
         row.item.alertBelow?.let { a -> MoneyInput("%.2f".format(a), com.mtgtrader.data.AppCurrency.entries.firstOrNull { it.name == row.item.alertCurrency } ?: com.mtgtrader.data.AppCurrency.EUR) }
@@ -179,13 +188,14 @@ fun WishlistDialog(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        TextButton(onClick = { choosing = true }) { Text("Change printing") }
                         TextButton(onClick = { runCatching { uriHandler.openUri(card.cardmarketUrl) } }) {
                             Text("Open on Cardmarket")
                             Spacer(Modifier.width(4.dp))
                             Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
                         }
                         // Since 1.37: the printing of CardTrader's cheapest offer (or the card's own printing).
-                        val blueprint = wp?.ctBlueprintId?.takeIf { alerts.ctFilter != null }
+                        val blueprint = wp?.ctBlueprintId?.takeIf { alerts.ctFilter != null && samePrinting }
                         if (blueprint != null) {
                             TextButton(onClick = { runCatching { uriHandler.openUri(CardTrader.pageUrl(blueprint)) } }) {
                                 Text("Open on CardTrader")
@@ -265,7 +275,7 @@ fun WishlistDialog(
                 DeckUsageLine(card.name)
                 HorizontalDivider()
                 PriceTable(
-                    row.price?.toSet(item.foil) ?: PriceSet(trend = card.fallback(item.foil)),
+                    row.price?.takeIf { samePrinting }?.toSet(item.foil) ?: PriceSet(trend = card.fallback(item.foil)),
                     priceType,
                     if (item.foil) "Cardmarket prices (foil)" else "Cardmarket prices",
                 )

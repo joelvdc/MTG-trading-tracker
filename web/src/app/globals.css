@@ -700,6 +700,10 @@ a.btn.small-btn {
   text-align: center;
 }
 
+.print.current {
+  outline: 2px solid var(--gold);
+}
+
 .print:hover {
   border-color: var(--gold);
 }

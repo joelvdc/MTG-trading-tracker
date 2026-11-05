@@ -119,6 +119,40 @@ describe("wishlist edits", () => {
     expect(deletions(file)).toContainEqual({ uid: RHYSTIC, deletedAt: NOW });
   });
 
+  it("change the printing, keeping the finish where the new printing has it", () => {
+    const file = appFile();
+    const rhystic = wishlist(file).find((w) => w.uid === RHYSTIC)!;
+    const before = { quantity: rhystic.quantity, orderedAt: rhystic.orderedAt, addedAt: rhystic.addedAt };
+    const foilToo = { ...rhystic.card, scryfallId: "55555555-5555-5555-5555-555555555555", setCode: "pcy", hasFoil: true };
+    applyEdit(file, { type: "update", uid: RHYSTIC, card: foilToo }, NOW);
+    let w = wishlist(file).find((x) => x.uid === RHYSTIC)!;
+    expect(w.card.scryfallId).toBe(foilToo.scryfallId);
+    expect(w.card.setCode).toBe("pcy");
+    expect(w.foil).toBe(true);
+    expect({ quantity: w.quantity, orderedAt: w.orderedAt, addedAt: w.addedAt }).toEqual(before);
+    expect(w.updatedAt).toBe(NOW);
+
+    const nonFoilOnly = { ...foilToo, scryfallId: "66666666-6666-6666-6666-666666666666", hasFoil: false, hasEtched: false, hasNonFoil: true };
+    applyEdit(file, { type: "update", uid: RHYSTIC, card: nonFoilOnly }, NOW);
+    w = wishlist(file).find((x) => x.uid === RHYSTIC)!;
+    expect(w.foil).toBe(false);
+  });
+
+  it("count 'got since adding' from the new printing for an exact-printing card", () => {
+    const file = appFile();
+    const sol = wishlist(file).find((w) => w.uid === SOL)!;
+    const owned = sol.card;
+    const other = { ...owned, scryfallId: "77777777-7777-7777-7777-777777777777", setCode: "c20" };
+    applyEdit(file, { type: "update", uid: SOL, anyPrinting: false, card: other }, NOW);
+    expect(wishlist(file).find((w) => w.uid === SOL)!.ownedAtAdd).toBe(0);
+    applyEdit(file, { type: "update", uid: SOL, card: owned }, NOW);
+    expect(wishlist(file).find((w) => w.uid === SOL)!.ownedAtAdd).toBe(1);
+  });
+
+  it("refuse another card as a printing", () => {
+    expect(() => applyEdit(appFile(), { type: "update", uid: SOL, card: bolt }, NOW)).toThrow(EditError);
+  });
+
   it("leave received cards to the app", () => {
     expect(() => applyEdit(appFile(), { type: "update", uid: RIFT, quantity: 2 }, NOW)).toThrow(EditError);
   });

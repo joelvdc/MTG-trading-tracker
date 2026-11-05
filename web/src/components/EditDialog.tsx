@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CURRENCIES, type Currency } from "@/lib/money";
+import { CURRENCIES, type Currency, format } from "@/lib/money";
 import type { WishRow } from "@/lib/view";
 import type { WishEdit } from "@/lib/wishlist";
+import { api } from "./api";
 import { Dialog } from "./Dialog";
+import type { Printing } from "./AddDialog";
 import { cardmarketUrl, cardTitle, cardtraderUrl, finishLabel, setLine } from "./wishText";
 
 type Update = Extract<WishEdit, { type: "update" }>;
@@ -12,6 +14,7 @@ type Update = Extract<WishEdit, { type: "update" }>;
 export function EditDialog({
   row,
   viewCurrency,
+  perEuro,
   busy,
   onSave,
   onRemove,
@@ -19,6 +22,7 @@ export function EditDialog({
 }: {
   row: WishRow;
   viewCurrency: Currency;
+  perEuro: number;
   busy: boolean;
   onSave: (edit: Update) => void;
   onRemove: (uid: string) => void;
@@ -32,6 +36,10 @@ export function EditDialog({
   const [alertCur, setAlertCur] = useState<string>(row.alertCurrency ?? (row.alertBelow != null ? "EUR" : viewCurrency));
   const [ordered, setOrdered] = useState(row.orderedAt != null);
   const [confirming, setConfirming] = useState(false);
+  // The printing list, while choosing another printing: null while it loads.
+  const [picking, setPicking] = useState(false);
+  const [prints, setPrints] = useState<Printing[] | null>(null);
+  const [printError, setPrintError] = useState<string | null>(null);
 
   const canFoil = row.card.hasNonFoil && (row.card.hasFoil || row.card.hasEtched);
   const q = Number(quantity);
@@ -40,11 +48,22 @@ export function EditDialog({
   const alertNum = alertText === "" ? null : Number(alertText);
   const alertOk = alertNum === null || (Number.isFinite(alertNum) && alertNum > 0);
 
-  function save() {
+  async function openPrintings() {
+    setPicking(true);
+    setPrints(null);
+    setPrintError(null);
+    const r = await api<{ results?: Printing[] }>(`/api/cards/prints?name=${encodeURIComponent(row.card.name)}`);
+    if (r.ok) setPrints(r.data.results ?? []);
+    else setPrintError(r.data.error ?? "Could not load the printings.");
+  }
+
+  /** Saves the window's changes; with [card], the chosen printing too (straight away, from the printing list). */
+  function save(card?: Printing["card"]) {
     const edit: Update = { type: "update", uid: row.uid };
+    if (card && card.scryfallId !== row.card.scryfallId) edit.card = card;
     if (q !== row.quantity) edit.quantity = q;
     if (anyPrinting !== row.anyPrinting) edit.anyPrinting = anyPrinting;
-    if (canFoil && foil !== row.foil) edit.foil = foil;
+    if ((canFoil || edit.card) && foil !== row.foil) edit.foil = foil;
     const newNotes = notes.trim() === "" ? null : notes.trim();
     if (newNotes !== row.notes) edit.notes = newNotes;
     if (alertNum === null) {
@@ -64,6 +83,58 @@ export function EditDialog({
     onSave(edit);
   }
 
+  const money = (eur: number | null) => (eur == null ? "–" : format(eur * perEuro, viewCurrency));
+
+  if (picking) {
+    return (
+      <Dialog title={`Which printing? ${row.card.name}`} onClose={onClose}>
+        <div className="stack">
+          {printError && <div className="bar error">{printError}</div>}
+          {prints === null && !printError ? (
+            <div className="muted">Loading printings…</div>
+          ) : prints?.length === 0 ? (
+            <div className="muted">No printings found.</div>
+          ) : (
+            <div className="prints">
+              {prints?.map((p) => {
+                const current = p.card.scryfallId === row.card.scryfallId;
+                return (
+                  <button
+                    key={p.card.scryfallId}
+                    className={current ? "print current" : "print"}
+                    disabled={busy}
+                    aria-current={current || undefined}
+                    onClick={() => (current ? setPicking(false) : save(p.card))}
+                  >
+                    {p.card.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.card.imageUrl} alt={`${p.card.name} (${p.card.setCode})`} loading="lazy" />
+                    ) : (
+                      <div className="thumb empty" />
+                    )}
+                    <span className="small">
+                      {p.card.setCode.toUpperCase()} #{p.card.collectorNumber} · {p.released.slice(0, 4)}
+                    </span>
+                    <span className="small muted">
+                      {current
+                        ? "Current printing"
+                        : `${p.eur != null || p.card.hasNonFoil ? money(p.eur) : ""}${p.eurFoil != null ? ` / foil ${money(p.eurFoil)}` : ""}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="dialog-actions">
+            <button className="btn" disabled={busy} onClick={() => setPicking(false)}>
+              Back
+            </button>
+          </div>
+        </div>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog title={cardTitle(row)} onClose={onClose}>
       <div className="dialog-top">
@@ -76,6 +147,9 @@ export function EditDialog({
             {row.card.setName} · {setLine(row)} · {finishLabel(row)}
           </div>
           <div className="shop-links">
+            <button className="btn small-btn" disabled={busy} onClick={openPrintings}>
+              Change printing
+            </button>
             <a className="btn small-btn" href={cardmarketUrl(row)} target="_blank" rel="noreferrer">
               Cardmarket ↗
             </a>
@@ -149,7 +223,7 @@ export function EditDialog({
             <button className="btn" disabled={busy} onClick={onClose}>
               Cancel
             </button>
-            <button className="btn primary" disabled={busy || !qOk || !alertOk} onClick={save}>
+            <button className="btn primary" disabled={busy || !qOk || !alertOk} onClick={() => save()}>
               Save
             </button>
           </>

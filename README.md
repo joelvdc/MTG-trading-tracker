@@ -268,8 +268,8 @@ The password is stored encrypted with a key kept in the phone's keystore.
 Nextcloud sync as one more device, so its changes reach the phones at their next sync, and the other way round.
 - **Log in** with your Nextcloud (the website gets its own app password; logging out removes it). Then pick the sync
   folder under **Settings**, the same one the app uses; **Change folder** switches it later.
-- **What it does:** add cards (any printing or a specific one, foil or not), change quantity, notes and price alerts,
-  tick *Ordered*, remove cards. Received cards are changed in the app. Prices are Cardmarket's (updated daily), shown
+- **What it does:** add cards (any printing or a specific one, foil or not), change the printing, quantity, notes and
+  price alerts, tick *Ordered*, remove cards. Received cards are changed in the app. Prices are Cardmarket's (updated daily), shown
   in the app's currency and price type.
 - **Views:** a list with columns (click a column title to sort) or card pictures; the choice is remembered. A card's
   window links to the card on Cardmarket (that printing) and CardTrader (a name search).

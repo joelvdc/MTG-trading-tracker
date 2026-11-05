@@ -6,7 +6,7 @@ import type { FoundCard } from "@/lib/scryfall";
 import { api } from "./api";
 import { Dialog } from "./Dialog";
 
-type Printing = FoundCard & { eur: number | null; eurFoil: number | null };
+export type Printing = FoundCard & { eur: number | null; eurFoil: number | null };
 
 export interface AddRequest {
   card: Printing["card"];

@@ -66,6 +66,13 @@ onedrive?"
   at each) and the website (see above) would need the same choice. Do it after the website phases, so the sync code
   is only reshaped once.
 
+## In the code, waiting for the next app release
+Built and tested on `main`, but not released yet (the owner asked to wait). At the next release: mention it in the
+release notes and the README's Wishlist section, then move it to "Done".
+- 2026-11-05: **Change printing** in the wishlist card window (`WishlistDialog`, `MtgRepository.updateWishlistItem`,
+  `WishlistPrintingTest`). Owner: "you cannot change the printing on a card on the wishlist, can you add a function to
+  do that for both app and vercel?" The website part is live already.
+
 ## Done
 - 2026-11-05: website phase 1: the wishlist at mtgtrader.vercel.app (`web/`), editing the Nextcloud sync file as one more device; health check covers it.
 - 2026-11-03: /delegate-mistral runs `vibe --prompt-file` with step and size limits (VIBE_APP_SERVER_CMD works around the blocked vibe-app-server.exe; no IT change needed).
