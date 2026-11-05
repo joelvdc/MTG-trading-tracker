@@ -55,6 +55,50 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   - Phase 4: porting the win-turn simulation is the largest single piece; plan it as its own step with the app's own
     test decks as the check that both give the same numbers.
 
+### 2026-11-05: next app release: sync merges signed and plain piles (bug)
+Owner: "yes, add the sync fix to the list for the next release."
+- Found while building website phase 2: `Sync.kt` `clean()` groups collection piles by card, foil, etched, condition,
+  language and binder, but not signed/altered (the database's unique index does include them). A signed and a plain pile
+  of the same card in the same binder are merged at sync and one is deleted on every phone. Since 1.27.
+- Fix: add `signed` and `altered` to the grouping key, plus a test with a signed and a plain pile. No format change.
+
+### 2026-11-05: website: what the app can do that the website can't (yet)
+Owner: "There are some features missing on the website, like merging a binder into another and creating/updating trade
+binder. Please find and list what is missing on the website from the android app." Decks and games are phases 4 and 5;
+the scanner, package check and life tracker stay on the phone.
+- **Binders:** merge one into another; delete (keep the cards in Unsorted, or remove them); arrange the order; move all
+  Unsorted cards to a binder.
+- **Trade binder:** make it and fill it by its rules (most cards, keep at least 1 copy, keep the best copy for my decks or
+  of every card, minimum value, suggest turned-down cards again), swap copies. Open question: the app keeps *which*
+  binder is the trade binder only on the phone (`Settings.tradeBinderId`, not synced; its rules do sync), so the website
+  first needs an app release that syncs it.
+- **Collection:** sorting in several levels ("Add a level"); purchase price for several selected cards at once; "New
+  trade" from selected cards; split a pile when only some copies are signed/altered; value over time (its history is
+  only on the phone, it would have to sync); "Value by price source" in the stats; Import CSV (ManaBox…); import an order
+  (CardTrader, Cardmarket), the orders list and purchase prices from orders; add a preconstructed deck; copy/share as a
+  list; print cards as PDF.
+- **Wishlist:** the received flow (mark received, pick the printing, add to the collection or just take it off; "Mark
+  the cards I now own as received", "Mark all ordered cards as received", "Clear received cards", "Back on the
+  wishlist"); alert history; share the wishlist; the "ordered cards in their own section" choice.
+- **Trades:** make and edit trades, refresh prices, complete a trade and update the collection, undo, delete, export
+  trades as CSV (today the website only shows them, as decided).
+- **Settings:** price source, price type, currency, condition adjustment and other synced settings can only be changed in
+  the app; backups and restore.
+
+### 2026-11-05: website accounts instead of the Nextcloud login
+Owner: "Instead of logging into nextcloud for "opening" the website, could the website support users? Like create a
+username/password and use nextcloud for backups only? That means both the android app and vercel will have the data
+stored on an account created by the website, the android app would have to be able to create users as well."
+- Possible. Sketch: the website gets a small database (e.g. Neon Postgres, free tier, via Vercel) with accounts and each
+  account's sync file; the app syncs with the website (same file, same merge rules, read with a version number and save
+  only if unchanged, like the ETag today) instead of with Nextcloud; the app gets "Create account / Log in"; Nextcloud
+  becomes an optional nightly backup target. Existing data moves over once from the current Nextcloud file.
+- Open questions: who may make an account (only people with an invite code, recommended, or anyone); forgotten passwords
+  (no e-mail service today: the owner resets them, or add one); does Nextcloud backup stay per user and who sets it up;
+  where the database lives (EU region); the "more places to sync" item below becomes "where to back up". It is a phase of
+  its own (website and one app release); decide its place in the order (before phase 4 recommended, so decks and games
+  are built on the final storage).
+
 ### 2026-11-05: more places to sync
 Owner: "could we in the future expand the sync, so that the user can choose between nextcloud, google drive, dropbox or
 onedrive?"
