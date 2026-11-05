@@ -18,6 +18,15 @@ export function allowedUsers(): string[] {
 /** How the website names itself to other sites (Nextcloud shows it as the device; Scryfall asks for one). */
 export const USER_AGENT = "MTG Trader website (+https://github.com/joelvdc/MTG-trading-tracker)";
 
+/** The header the website sends to Nextcloud so a Cloudflare rule in front of it can let the website through. */
+export const PASS_HEADER = "X-MTG-Trader-Pass";
+
+/** The secret value of [PASS_HEADER] (Vercel variable NEXTCLOUD_PASS; not sent when empty). */
+export function passHeader(): Record<string, string> {
+  const v = (process.env.NEXTCLOUD_PASS ?? "").trim();
+  return v ? { [PASS_HEADER]: v } : {};
+}
+
 /** The app's default sync folder. */
 export const DEFAULT_FOLDER = "MTG Trader";
 
