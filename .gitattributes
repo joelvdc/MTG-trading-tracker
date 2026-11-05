@@ -3,3 +3,6 @@ gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
 *.png binary
+
+# The sample sync files are compared byte for byte by the app's and the website's tests.
+web/test/fixtures/*.json text eol=lf
