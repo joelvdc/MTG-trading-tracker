@@ -13,6 +13,44 @@ How to use this file:
 
 ## Collecting
 
+### 2026-11-05: website on Vercel (approved outline; each phase gets its own detailed plan and green light)
+Owner: "a wishlist web page, where I can edit my wishlist in the app from a computer browser", growing into an
+"archidekt lite website for editing/viewing the collection and decks", plus games.
+- **Sync (decided): option A.** The website joins the Nextcloud sync as one more device: reads and writes
+  `sync.json.gz` with ETag checks and the app's merge rules (ported to TypeScript, tested against example files from the
+  app's own tests), keeps fields it doesn't know, turns read-only on a newer sync format, backs up the file before its
+  first write in a session. Login = Nextcloud Login Flow v2 (the website stores no passwords). Prices: a daily Vercel job
+  makes a price file from the phone's sources. The website never contacts Archidekt. Code in `web/` in this repository.
+- **Order (decided): 1 → 3 → 2 → 4 → 5.**
+  1. Wishlist on the website (plus the foundation above). Health check gains: website up, login, price file fresh,
+     website knows the current sync format.
+  3. App release: break free from Archidekt. Last collection sync and pending deck edits first; then remove the
+     Archidekt login, collection sync, sending deck edits and "send to Archidekt"; own Archidekt decks become read-only
+     (edit on archidekt.com, then "Reload decklist"); public deck import, Commander Salt and ScrollVault stay; new
+     "Export for Archidekt" CSV with "only cards added since the last export". Only public Archidekt data is read (the
+     owner has no private decks). Health check drops the Archidekt login/collection checks.
+  2. Collection on the website: binders, search, filters, simple edits, all collection stats, CSV export. Trades
+     **view-only** (decided).
+  4. Decks on the website: Archidekt decks read-only, local decks with a deck builder, all deck stats, recommendations,
+     and the **win-turn simulation including the commander-casting turn** (owner's wish: ported from the app).
+  5. Games on the website: log, stats, head to head, per deck; edit and add games by hand. Life tracker stays on the
+     phone.
+- Open questions:
+  - Web address: the owner chose mtgtracker.vercel.app, but it's taken by someone else's site (and mtg-trader too);
+    mtgtrader.vercel.app was free on 2026-11-05.
+  - Can Vercel's servers reach the owner's Nextcloud over the internet? (Check at the start of phase 1.)
+  - Phase 3: does Archidekt's collection importer read the app's ManaBox-style CSV as is, or does "Export for
+    Archidekt" need its own columns? Test with a small file.
+  - Phase 4: porting the win-turn simulation is the largest single piece; plan it as its own step with the app's own
+    test decks as the check that both give the same numbers.
+
+### 2026-11-05: more places to sync
+Owner: "could we in the future expand the sync, so that the user can choose between nextcloud, google drive, dropbox or
+onedrive?"
+- Open questions: each service needs its own login (Google, Dropbox and Microsoft sign-in, with an app registration
+  at each) and the website (see above) would need the same choice. Do it after the website phases, so the sync code
+  is only reshaped once.
+
 ## Done
 - 2026-11-03: /delegate-mistral runs `vibe --prompt-file` with step and size limits (VIBE_APP_SERVER_CMD works around the blocked vibe-app-server.exe; no IT change needed).
 - 1.77: home-screen widgets, value by set, price alert history, land drops (mana sinks, more "unless" lands, ramp basics).
