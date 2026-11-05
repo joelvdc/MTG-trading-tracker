@@ -78,6 +78,7 @@ enum class BackupReason(val label: String) {
     MANUAL("Made by hand"),
     DAILY("Daily backup"),
     FIRST_NEXTCLOUD("Before the first Nextcloud sync"),
+    // The Archidekt sync made these until 1.78; kept so their backups still read with their reason.
     ARCHIDEKT("Before an Archidekt sync"),
     ARCHIDEKT_FIRST("Before the first Archidekt sync"),
     CSV_IMPORT("Before a CSV import"),
@@ -385,7 +386,7 @@ class Backups(
 
     /**
      * Replaces the app's data with [backup]'s, after a backup of the current state. Other phones
-     * get it through the next Nextcloud sync; Archidekt with the next Archidekt sync.
+     * get it through the next Nextcloud sync.
      */
     suspend fun restore(backup: BackupFile) {
         before(BackupReason.RESTORE)

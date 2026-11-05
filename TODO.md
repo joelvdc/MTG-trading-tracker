@@ -23,11 +23,8 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   makes a price file from the phone's sources. The website never contacts Archidekt. Code in `web/` in this repository.
 - **Order (decided): 1 → 3 → 2 → 4 → 5.**
   1. ~~Wishlist on the website~~ **Done 2026-11-05** (see Done).
-  3. App release: break free from Archidekt. Last collection sync and pending deck edits first; then remove the
-     Archidekt login, collection sync, sending deck edits and "send to Archidekt"; own Archidekt decks become read-only
-     (edit on archidekt.com, then "Reload decklist"); public deck import, Commander Salt and ScrollVault stay; new
-     "Export for Archidekt" CSV with "only cards added since the last export". Only public Archidekt data is read (the
-     owner has no private decks). Health check drops the Archidekt login/collection checks.
+  3. ~~App release: break free from Archidekt~~ **Done in 1.78** (see Done). Commander Salt for local decks moved
+     to phase 4.
   2. Collection on the website: binders, search, filters, simple edits, all collection stats, CSV export. Trades
      **view-only** (decided).
   4. Decks on the website: Archidekt decks read-only, local decks with a deck builder, all deck stats, recommendations,
@@ -66,14 +63,8 @@ onedrive?"
   at each) and the website (see above) would need the same choice. Do it after the website phases, so the sync code
   is only reshaped once.
 
-## In the code, waiting for the next app release
-Built and tested on `main`, but not released yet (the owner asked to wait). At the next release: mention it in the
-release notes and the README's Wishlist section, then move it to "Done".
-- 2026-11-05: **Change printing** in the wishlist card window (`WishlistDialog`, `MtgRepository.updateWishlistItem`,
-  `WishlistPrintingTest`). Owner: "you cannot change the printing on a card on the wishlist, can you add a function to
-  do that for both app and vercel?" The website part is live already.
-
 ## Done
+- 1.78: break free from Archidekt (website phase 3): no login, collection sync or sending deck edits; Archidekt decks read-only with "Make it a local deck"; old unsent changes kept or discarded; Export CSV for Archidekt (everything or only what's new); Archidekt contacted only on a tap. Also Change printing on wishlist cards.
 - 2026-11-05: website phase 1: the wishlist at mtgtrader.vercel.app (`web/`), editing the Nextcloud sync file as one more device; health check covers it.
 - 2026-11-03: /delegate-mistral runs `vibe --prompt-file` with step and size limits (VIBE_APP_SERVER_CMD works around the blocked vibe-app-server.exe; no IT change needed).
 - 1.77: home-screen widgets, value by set, price alert history, land drops (mana sinks, more "unless" lands, ramp basics).

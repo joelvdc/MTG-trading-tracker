@@ -134,23 +134,14 @@ class AppContainer(context: Context) {
     private val nextcloud = NextcloudClient(http)
     val sync = SyncManager(context, db, store, nextcloud, network, appScope)
     val backups = com.mtgtrader.data.Backups(context, store, sync, nextcloud)
-    val archidekt = com.mtgtrader.data.ArchidektSync(
-        context, db, repo, settings, sync, nextcloud,
-        com.mtgtrader.data.ArchidektCollectionClient(http) {
-            context.getSharedPreferences("archidekt", Context.MODE_PRIVATE).getString("server", null) ?: com.mtgtrader.data.ArchidektCollectionClient.DEFAULT_BASE
-        },
-        backups, network, appScope,
-    ) { switches.current }
 
     /** The life tracker's games and players (since 1.47). */
     val games = com.mtgtrader.data.GameStore(context, db, scryfall, appScope)
 
-    /** Editing decks and sending the edits to Archidekt (since 1.46). */
-    val deckEditor = com.mtgtrader.data.DeckEditor(db, scryfall, archidekt, decks, settings, network, precons, repo, appScope).also { editor ->
-        decks.privateReader = { id ->
-            archidekt.withLogin { c, l -> c.deckJson(l, id) }.let(com.mtgtrader.data.ArchidektApi::parse)
-        }
-        decks.editSender = { id -> editor.waitingCount(id) == 0 || editor.send(id).let { editor.waitingCount(id) == 0 } }
+    /** Editing local decks (since 1.46; Archidekt decks are read-only since 1.78). */
+    val deckEditor = com.mtgtrader.data.DeckEditor(db, scryfall, com.mtgtrader.data.ArchidektCollectionClient(http), decks, settings, precons, repo).also { editor ->
+        // Changes from before 1.78 that never reached Archidekt block a reload until they're kept or discarded.
+        decks.editSender = { id -> editor.waitingCount(id) == 0 }
         decks.detacher = { id -> editor.detach(id) }
         repo.deckAdder = { deckId, card, finish, qty, category ->
             db.deckDao().get(deckId)?.takeIf(editor::canEdit)?.let { editor.addCard(deckId, card, finish, qty, category) }
@@ -163,6 +154,8 @@ class AppContainer(context: Context) {
     }
 
     init {
+        // 1.78: the Archidekt login is gone; keep its username as "your Archidekt username".
+        com.mtgtrader.data.ArchidektFarewell.run(context, settings)
         // Prices show in the chosen currency at the latest rate (since 1.28), from the chosen source (since 1.29).
         // Set right away, so the first screen is right; afterwards the watchers below only pass on changes.
         val display = { cur: com.mtgtrader.data.AppCurrency, rates: com.mtgtrader.data.ExchangeRates? -> com.mtgtrader.data.DisplayCurrency.of(cur, rates) }

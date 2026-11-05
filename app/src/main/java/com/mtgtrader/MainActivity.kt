@@ -26,7 +26,6 @@ class MainActivity : ComponentActivity() {
         // Changes not synced yet go out in the background.
         if (!isChangingConfigurations) {
             container.sync.onAppBackground()
-            container.archidekt.onAppBackground()
             container.appScope.launch { container.backups.dailyIfDue() }
         }
     }

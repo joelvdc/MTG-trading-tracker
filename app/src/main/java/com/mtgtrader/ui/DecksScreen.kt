@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenuItem
 import com.mtgtrader.data.DeckSort
@@ -93,8 +94,8 @@ fun DecksScreen(nav: NavController) {
     var importing by rememberSaveable { mutableStateOf(false) }
     var newDeck by rememberSaveable { mutableStateOf(false) }
     var way by rememberSaveable { mutableStateOf<NewDeckWay?>(null) }
-    val account by c.archidekt.status.collectAsStateWithLifecycle()
-    val owner = account.username ?: c.settings.archidektUser.takeIf { it.isNotBlank() }
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val owner = c.settings.deckOwner(ownUser)
     val waiting by c.deckEditor.waiting.collectAsStateWithLifecycle(emptyMap())
     val collapsed by c.settings.deckCollapsed.collectAsStateWithLifecycle()
     val scanCount by remember { c.db.scanDao().observeCount() }.collectAsStateWithLifecycle(0)
@@ -109,10 +110,9 @@ fun DecksScreen(nav: NavController) {
 
     val source by c.settings.powerSource.collectAsStateWithLifecycle()
 
-    // Decks imported before 1.8 don't know when they last changed on Archidekt yet, and decks scored
-    // before 1.12 lack the rule-zero card details; both are filled in quietly.
+    // Decks scored before 1.12 lack the rule-zero card details; they're filled in quietly. (Decks imported before 1.8
+    // learn when they last changed on Archidekt with "Update all decks", so opening this tab doesn't contact Archidekt.)
     LaunchedEffect(Unit) {
-        c.decks.fillMissingUpdateDates()
         c.decks.fillMissingCardData()
     }
     // With another site as the power level source, decks without its power level get one (shown as a job).
@@ -175,19 +175,6 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; busy(c.decks.updateAll()) },
                         )
-                        val waitingTotal = waiting.values.sum()
-                        if (waitingTotal > 0) {
-                            DropdownMenuItem(
-                                text = { Text("Send waiting edits now ($waitingTotal)") },
-                                onClick = {
-                                    moreMenu = false
-                                    scope.launch {
-                                        val reports = c.deckEditor.sendAll()
-                                        snackbar.showSnackbar(reports.map { it.message }.filter { it.isNotEmpty() }.joinToString(" · ").ifEmpty { "Nothing to send" })
-                                    }
-                                },
-                            )
-                        }
                         DropdownMenuItem(
                             text = { Text("Re-score all decks on Commander Salt") },
                             enabled = any,
@@ -382,9 +369,9 @@ internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, wai
                 }
                 if (waiting > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CloudUpload, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.CloudOff, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("$waiting edit" + (if (waiting == 1) "" else "s") + " waiting to be sent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                        Text("$waiting change" + (if (waiting == 1) "" else "s") + " never reached Archidekt", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
                 if (deck.local && !deck.scored) {

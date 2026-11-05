@@ -1,7 +1,6 @@
 package com.mtgtrader
 
 import com.mtgtrader.data.ArchidektCategory
-import com.mtgtrader.data.DeckEditItems
 import com.mtgtrader.data.DeckEdit
 import com.mtgtrader.data.DeckEdits
 import com.mtgtrader.data.DeckOrder
@@ -264,8 +263,6 @@ class Release147Test {
         val e = DeckEdit(deckId = 1, lineUid = DeckEdits.CATEGORY_PREFIX + "x", relationId = 77, archidektCardId = null, name = "Wither", categories = DeckEdits.renameOp("Poison"))
         assertTrue(e.lineUid.startsWith(DeckEdits.CATEGORY_PREFIX))
         assertEquals("Poison", e.categories!!.removePrefix(DeckEdits.OP_RENAME))
-        // Never mistaken for a card line: without a line it isn't a removal either.
-        assertNull(DeckEditItems.item(e.copy(relationId = null), null))
         assertEquals(listOf(ArchidektCategory("Ramp", true, 5)), DeckEdits.categories(DeckEdits.encode(listOf(ArchidektCategory("Ramp", true, 5)))))
     }
 }

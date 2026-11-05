@@ -139,7 +139,7 @@ fun BackupsScreen(nav: NavController) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "A backup holds your collection, binders, trades, decks, scanned cards, wishlist and settings, so you can go back to it if something goes wrong. " +
-                            "The app makes one each day when something changed, and before big changes: the first Nextcloud sync, Archidekt syncs that change the app, " +
+                            "The app makes one each day when something changed, and before big changes: the first Nextcloud sync, " +
                             "CSV imports and restoring a backup.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -310,7 +310,7 @@ private fun RestoreDialog(file: BackupFile, diff: BackupDiff, onDismiss: () -> U
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "Everything in the app is replaced by the backup. A backup of what you have now is made first. " +
-                        "With Nextcloud sync, your other phones get the restored data too; with Archidekt sync, the next sync takes it to Archidekt (asking first if it removes many cards).",
+                        "With Nextcloud sync, your other phones get the restored data too.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

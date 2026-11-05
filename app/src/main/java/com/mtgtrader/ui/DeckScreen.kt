@@ -287,29 +287,25 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         // In the screen's scope: clearing the result restarts this effect, which would cancel the snackbar.
         if (r.openDeck == null) scope.launch { snackbar.showSnackbar(r.message) }
     }
-    fun refresh() {
-        if (!c.decks.refresh(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
-    }
-
-    // Editing (since 1.46): the logged-in Archidekt user's own decks and local decks.
-    val account by c.archidekt.status.collectAsStateWithLifecycle()
-    val ownDeck = deck?.let { d -> d.local || account.username?.equals(d.owner, true) == true } == true
-    // An own Archidekt deck loaded before 1.46 is reloaded first (its lines need their Archidekt ids).
-    val editable = ownDeck && deck?.let { c.deckEditor.ready(it) } == true
+    // Editing (since 1.46): local decks only since 1.78; decks from Archidekt are edited on archidekt.com.
+    val ownDeck = deck?.local == true
+    val editable = ownDeck
+    // Changes from before 1.78 that never reached Archidekt: a reload would overwrite them, so it asks first.
     val waitingMap by c.deckEditor.waiting.collectAsStateWithLifecycle(emptyMap())
     val waiting = waitingMap[deckId] ?: 0
-    val sending by c.deckEditor.sending.collectAsStateWithLifecycle()
-    val sendReport by c.deckEditor.report.collectAsStateWithLifecycle()
-    val reconnects by c.network.reconnects.collectAsStateWithLifecycle()
-    val online = remember(reconnects, waiting, sending) { c.network.online() }
+    var confirmReload by remember { mutableStateOf(false) }
+    fun reloadNow() {
+        if (!c.decks.refresh(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
+    }
+    fun refresh() {
+        if (waiting > 0) confirmReload = true else reloadNow()
+    }
     var selection by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var movingTo by remember { mutableStateOf<List<String>?>(null) }
     var categoryFor by remember { mutableStateOf<Pair<DeckCardRow, String?>?>(null) }
     var namingFor by remember { mutableStateOf<List<String>?>(null) }
     var renaming by remember { mutableStateOf<String?>(null) }
     var deletingCategory by remember { mutableStateOf<String?>(null) }
-    var sendingDeck by remember { mutableStateOf(false) }
-    var folderDialog by remember { mutableStateOf(false) }
     var renameDeck by remember { mutableStateOf(false) }
     var confirmDetach by remember { mutableStateOf(false) }
     var confirmAuto by remember { mutableStateOf(false) }
@@ -317,13 +313,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val listState = rememberLazyListState()
     val categoryInfo = remember(deck?.categoryInfo) { DeckEdits.categories(deck?.categoryInfo) }
     LaunchedEffect(deckId, ownDeck) {
-        if (ownDeck) c.deckEditor.prepare(deckId)?.let { snackbar.showSnackbar("To edit, the app needs the deck's latest list from Archidekt: $it") }
-    }
-    LaunchedEffect(sendReport) {
-        val r = sendReport ?: return@LaunchedEffect
-        if (r.deckId != deckId) return@LaunchedEffect
-        c.deckEditor.consumeReport()
-        scope.launch { snackbar.showSnackbar(r.message) }
+        if (ownDeck) c.deckEditor.prepare(deckId)?.let { snackbar.showSnackbar(it) }
     }
     BackHandler(enabled = selection.isNotEmpty()) { selection = emptyList() }
     fun edit(message: String, op: suspend () -> UndoAction) {
@@ -378,21 +368,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         // Editing (since 1.46).
                         if (local) {
                             DropdownMenuItem(
-                                text = { Text("Send to Archidekt…") },
-                                leadingIcon = { Icon(Icons.Default.CloudUpload, null) },
-                                enabled = account.username != null,
-                                onClick = { menu = false; sendingDeck = true },
-                            )
-                            DropdownMenuItem(
                                 text = { Text("Rename deck") },
                                 leadingIcon = { Icon(Icons.Default.Edit, null) },
                                 onClick = { menu = false; renameDeck = true },
-                            )
-                        } else if (editable) {
-                            DropdownMenuItem(
-                                text = { Text("Folder and visibility…") },
-                                leadingIcon = { Icon(Icons.Default.Folder, null) },
-                                onClick = { menu = false; folderDialog = true },
                             )
                         }
                         if (editable) {
@@ -408,7 +386,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             )
                         }
                         if (!local) DropdownMenuItem(
-                            text = { Text("Detach (make it a local deck)") },
+                            text = { Text("Make it a local deck (to edit here)") },
                             leadingIcon = { Icon(Icons.Default.LinkOff, null) },
                             onClick = { menu = false; confirmDetach = true },
                         )
@@ -600,10 +578,15 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         LazyColumn(Modifier.padding(pad), state = listState, contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 88.dp)) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
             if (waiting > 0) {
-                item(key = "waiting") {
-                    WaitingBanner(waiting, offline = !online, loggedIn = account.username != null, sending = sending) {
-                        scope.launch { snackbar.showSnackbar(c.deckEditor.send(deckId).message.ifEmpty { "Nothing to send" }) }
-                    }
+                item(key = "waiting") { UnsentBanner(waiting, onKeep = { confirmDetach = true }, onDiscard = { confirmReload = true }) }
+            } else if (!d.local) {
+                item(key = "readOnly") {
+                    Text(
+                        "Edit this deck on Archidekt, then reload it here (⟳). To change it in the app, make it a local deck (⋮).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
                 }
             }
             item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
@@ -872,7 +855,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 Text(
                     when {
                         deck?.local == true -> "This deck only exists in this app (and on your other phone after a sync), so it's gone for good. You can undo right after."
-                        waiting > 0 -> "The deck is only removed from this app; it stays on Archidekt. Its $waiting edit(s) not sent to Archidekt yet are lost."
+                        waiting > 0 -> "The deck is only removed from this app; it stays on Archidekt. Its $waiting change(s) that never reached Archidekt are lost."
                         else -> "The deck is only removed from this app; it stays on Archidekt and Commander Salt."
                     }
                 )
@@ -937,7 +920,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
     deletingCategory?.let { name ->
         val count = (archidektRows + maybeRows).filter { it.item.category.equals(name, true) }.sumOf { it.item.quantity }
-        DeleteCategoryDialog(name, count, categoryCounts.map { it.first }.filterNot { it.equals(name, true) }, onDismiss = { deletingCategory = null }, onArchidekt = deck?.local == false) { to ->
+        DeleteCategoryDialog(name, count, categoryCounts.map { it.first }.filterNot { it.equals(name, true) }, onDismiss = { deletingCategory = null }) { to ->
             deletingCategory = null
             edit("Deleted the category $name") { c.deckEditor.deleteCategory(deckId, name, to) }
         }
@@ -964,7 +947,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 Text(
                     "The deck becomes a local deck: you can change it freely here, and it's no longer reloaded from Archidekt " +
                         "(the deck on Archidekt isn't changed). Its scores stay until the list changes." +
-                        if (waiting > 0) " Its $waiting edit(s) not sent to Archidekt yet stay only in the local deck." else ""
+                        if (waiting > 0) " Its $waiting change(s) that never reached Archidekt are kept in the local deck." else ""
                 )
             },
             confirmButton = {
@@ -985,24 +968,27 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             scope.launch { c.deckEditor.renameLocal(deckId, name) }
         }
     }
-    if (sendingDeck) {
-        deck?.let { d ->
-            val decksAll by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
-            val own = decksAll.filter { !it.local && it.owner.equals(account.username, true) }
-            SendToArchidektDialog(d, own, onDismiss = { sendingDeck = false }) { id, message ->
-                sendingDeck = false
-                c.repo.reportImport(message)
-                nav.navigate("deck/$id") { popUpTo("deck/{id}") { inclusive = true } }
-            }
-        }
-    }
-    if (folderDialog) {
-        deck?.let { d ->
-            FolderVisibilityDialog(d, onDismiss = { folderDialog = false }) { message ->
-                folderDialog = false
-                scope.launch { snackbar.showSnackbar(message) }
-            }
-        }
+    if (confirmReload) {
+        AlertDialog(
+            onDismissRequest = { confirmReload = false },
+            title = { Text("Discard $waiting change(s)?") },
+            text = {
+                Text(
+                    "They were made on this phone before version 1.78 and never reached Archidekt. Reloading the deck from " +
+                        "Archidekt replaces them with Archidekt's list. To keep them instead, make it a local deck."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmReload = false
+                    scope.launch {
+                        c.deckEditor.discardWaiting(deckId)
+                        reloadNow()
+                    }
+                }) { Text("Discard and reload", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmReload = false }) { Text("Cancel") } },
+        )
     }
 }
 

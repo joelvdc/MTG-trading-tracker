@@ -1,33 +1,21 @@
 package com.mtgtrader.data
 
-import android.util.Base64
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
-import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 /**
@@ -99,31 +87,6 @@ object ArchidektCodes {
     }
 }
 
-/** One entry of an Archidekt collection: some copies of one printing in one finish, condition and language. */
-@Serializable
-data class ArchidektEntry(
-    val id: Long,
-    val cardId: Long,
-    val scryfallId: String,
-    val name: String = "",
-    val setCode: String = "",
-    val number: String = "",
-    val finish: Finish = Finish.NONFOIL,
-    /** Archidekt's code, e.g. "NM". */
-    val condition: String = "NM",
-    /** Archidekt's code, e.g. "EN". */
-    val language: String = "EN",
-    val quantity: Int,
-    val purchasePrice: Double? = null,
-    val tags: List<Long> = emptyList(),
-)
-
-@Serializable
-data class ArchidektTag(val id: Long, val name: String, val color: String = "")
-
-/** A collection as read from Archidekt. */
-data class ArchidektCollectionData(val entries: List<ArchidektEntry>, val tags: List<ArchidektTag>)
-
 /** A printing as Archidekt knows it: its own card id and the finishes it comes in. */
 data class ArchidektPrinting(
     val cardId: Long,
@@ -132,85 +95,13 @@ data class ArchidektPrinting(
     val defaultCategory: String? = null,
 )
 
-/** A folder of the logged-in user's decks on Archidekt, with its subfolders (id and name). Since 1.46. */
-data class ArchidektFolder(val id: Long, val name: String, val parentId: Long?, val subfolders: List<Pair<Long, String>>)
-
-/** Logged in to Archidekt: the tokens its website uses (never the password). */
-@Serializable
-data class ArchidektLogin(val userId: Long, val username: String, val token: String, val refresh: String)
-
-class ArchidektAuthException(message: String) : Exception(message)
-
 /**
- * Archidekt's collection, through the same (unofficial) JSON API its website uses: logging in,
- * reading the collection, and adding, changing and deleting entries.
+ * Archidekt's public card lookup, through the same (unofficial) JSON API its website uses; it needs no login. Used
+ * for the auto category of cards added to a local deck. Until 1.78 this client also logged in to sync the
+ * collection and send deck edits; that went with the Archidekt login.
  */
-class ArchidektCollectionClient(private val http: OkHttpClient, private val baseUrl: () -> String) {
+class ArchidektCollectionClient(private val http: OkHttpClient, private val baseUrl: () -> String = { DEFAULT_BASE }) {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
-    private val jsonType = "application/json".toMediaType()
-
-    /** Called with new tokens after they were refreshed, so they can be saved. */
-    var onTokens: ((ArchidektLogin) -> Unit)? = null
-
-    suspend fun login(user: String, password: String): ArchidektLogin = io {
-        val body = buildJsonObject {
-            if ('@' in user && '.' in user.substringAfter('@')) put("email", user.trim()) else put("username", user.trim())
-            put("password", password)
-        }
-        val req = Request.Builder().url(url("/api/rest-auth/login/")).header("Accept", "application/json")
-            .post(body.toString().toRequestBody(jsonType)).build()
-        http.newCall(req).execute().use { r ->
-            val text = r.body?.string().orEmpty()
-            if (r.code == 400 || r.code == 401) throw ArchidektAuthException("Archidekt didn't accept that user name or password.")
-            if (!r.isSuccessful) throw IOException("Archidekt answered ${r.code}")
-            val o = json.parseToJsonElement(text).jsonObject
-            val u = o["user"]?.jsonObject ?: throw IOException("Archidekt's answer had no user")
-            ArchidektLogin(
-                userId = u["id"]!!.jsonPrimitive.longOrNull ?: throw IOException("Archidekt's answer had no user id"),
-                username = u["username"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                token = o["token"]?.jsonPrimitive?.contentOrNull ?: o["access"]?.jsonPrimitive?.contentOrNull ?: throw IOException("Archidekt sent no token"),
-                refresh = o["refresh_token"]?.jsonPrimitive?.contentOrNull ?: o["refresh"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            )
-        }
-    }
-
-    /**
-     * The whole collection, page by page. Archidekt's "next" link on the first page leaves out the
-     * page number (it points at page 1 again), so the pages are asked for by number, up to the
-     * "totalPages" Archidekt reports.
-     */
-    suspend fun collection(login: ArchidektLogin, onPage: (Int, Int) -> Unit = { _, _ -> }): Pair<ArchidektCollectionData, ArchidektLogin> {
-        var auth = login
-        val entries = LinkedHashMap<Long, ArchidektEntry>()
-        val seen = HashSet<Long>()
-        val tags = LinkedHashMap<Long, ArchidektTag>()
-        var page = 1
-        var totalPages = 1
-        var total = 0
-        while (page <= totalPages) {
-            if (page > MAX_PAGES) throw IOException("The Archidekt collection is too big to read")
-            val (text, a) = send(auth) { it.url(url("/api/collection/${login.userId}/v2/?game=1&pageSize=$PAGE&page=$page")).get() }
-            auth = a
-            val o = json.parseToJsonElement(text).jsonObject
-            total = o["count"]?.jsonPrimitive?.intOrNull ?: total
-            val results = o["results"]?.jsonArray.orEmpty()
-            for (e in results) {
-                (e as? JsonObject)?.get("id")?.jsonPrimitive?.longOrNull?.let(seen::add)
-                // Entries without a Scryfall printing (custom cards) are left out, and so never touched.
-                parseEntry(e.jsonObject)?.let { entries[it.id] = it }
-            }
-            (o["tags"] as? JsonArray)?.forEach { t -> parseTag(t.jsonObject)?.let { tags[it.id] = it } }
-            totalPages = o["totalPages"]?.jsonPrimitive?.intOrNull
-                ?: if (results.isNotEmpty() && (o["next"] as? JsonPrimitive)?.contentOrNull != null) page + 1 else page
-            onPage(seen.size, total)
-            if (results.isEmpty()) break
-            page++
-        }
-        if (total > 0 && seen.size != total) {
-            throw IOException("Archidekt said the collection has $total entries, but ${seen.size} came back. Nothing was changed; try again.")
-        }
-        return ArchidektCollectionData(entries.values.toList(), tags.values.toList()) to auth
-    }
 
     /** Archidekt's card ids for Scryfall printings, 60 at a time. Printings Archidekt doesn't know are left out. */
     suspend fun printings(scryfallIds: Collection<String>): Map<String, ArchidektPrinting> = io {
@@ -240,233 +131,6 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
         out
     }
 
-    // ---- Decks (since 1.46): the calls Archidekt's own deck editor makes ----------------------
-
-    /**
-     * Changes a deck's cards: [items] are Archidekt's "add", "modify" and "remove" actions (see [DeckEditor]).
-     * Returns Archidekt's answer, which names the lines it added ("add": patchId → deckRelationId).
-     */
-    suspend fun modifyDeckCards(login: ArchidektLogin, deckId: Long, items: JsonArray): Pair<JsonObject, ArchidektLogin> {
-        val body = buildJsonObject { put("cards", items) }
-        val (text, a) = send(login) { it.url(url("/api/decks/$deckId/modifyCards/v2/")).patch(body.toString().toRequestBody(jsonType)) }
-        return (runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull() ?: JsonObject(emptyMap())) to a
-    }
-
-    /** Makes a new, empty Commander deck in [folderId] (the user's home folder when null); returns its id. */
-    suspend fun createDeck(login: ArchidektLogin, name: String, folderId: Long?, visibility: String): Pair<Long, ArchidektLogin> {
-        val body = buildJsonObject {
-            put("name", name)
-            put("deckFormat", 3)
-            put("edhBracket", JsonNull)
-            put("description", "")
-            put("featured", "")
-            put("playmat", "")
-            put("private", visibility == VISIBILITY_PRIVATE)
-            put("unlisted", visibility == VISIBILITY_UNLISTED)
-            put("theorycrafted", false)
-            put("game", JsonNull)
-            if (folderId != null) put("parent_folder", folderId)
-            put("cardPackage", JsonNull)
-            put("extras", buildJsonObject { put("forceCardsToSingleton", false); put("ignoreCardsOutOfCommanderIdentity", true) })
-        }
-        val (text, a) = send(login) { it.url(url("/api/decks/v2/")).post(body.toString().toRequestBody(jsonType)) }
-        val id = runCatching { json.parseToJsonElement(text).jsonObject["id"]?.jsonPrimitive?.longOrNull }.getOrNull()
-            ?: throw IOException("Archidekt didn't say which deck it made")
-        return id to a
-    }
-
-    /** Changes who can see a deck: [VISIBILITY_PRIVATE], [VISIBILITY_UNLISTED] or [VISIBILITY_PUBLIC]. */
-    suspend fun setDeckVisibility(login: ArchidektLogin, deckId: Long, visibility: String): ArchidektLogin {
-        val body = buildJsonObject {
-            put("private", visibility == VISIBILITY_PRIVATE)
-            put("unlisted", visibility == VISIBILITY_UNLISTED)
-        }
-        return send(login) { it.url(url("/api/decks/$deckId/update/")).patch(body.toString().toRequestBody(jsonType)) }.second
-    }
-
-    /** Moves a deck into another of the user's folders. */
-    suspend fun moveDeck(login: ArchidektLogin, deckId: Long, folderId: Long): ArchidektLogin {
-        val body = buildJsonObject {
-            put("items", buildJsonArray {
-                add(buildJsonObject {
-                    put("type", "deck")
-                    put("id", deckId)
-                    put("patch", buildJsonObject { put("parentFolder", folderId) })
-                })
-            })
-        }
-        return send(login) { it.url(url("/api/massUpdate/")).patch(body.toString().toRequestBody(jsonType)) }.second
-    }
-
-    /** Makes an empty category in a deck, as Archidekt's deck editor does (since 1.47); returns its id when given. */
-    suspend fun createCategory(login: ArchidektLogin, deckId: Long, name: String, included: Boolean): Pair<Long?, ArchidektLogin> {
-        val body = buildJsonObject {
-            put("name", name)
-            put("includedInDeck", included)
-            put("includedInPrice", included)
-            put("isPremier", false)
-            put("deck", deckId)
-        }
-        val (text, a) = send(login) { it.url(url("/api/decks/createCategory/")).post(body.toString().toRequestBody(jsonType)) }
-        val id = runCatching { json.parseToJsonElement(text).jsonObject["id"]?.jsonPrimitive?.longOrNull }.getOrNull()
-        return id to a
-    }
-
-    /** Renames a deck's category on Archidekt (its cards stay in it). Since 1.47. */
-    suspend fun renameCategory(login: ArchidektLogin, categoryId: Long, name: String): ArchidektLogin {
-        val body = buildJsonObject { put("id", categoryId); put("name", name) }
-        return send(login) { it.url(url("/api/decks/category/$categoryId/")).patch(body.toString().toRequestBody(jsonType)) }.second
-    }
-
-    /** Deletes a deck's (emptied) category on Archidekt. Since 1.47. */
-    suspend fun deleteCategory(login: ArchidektLogin, categoryId: Long): ArchidektLogin =
-        send(login) { it.url(url("/api/decks/category/$categoryId/")).delete() }.second
-
-    /** One of the user's folders, with its subfolders. */
-    suspend fun folder(login: ArchidektLogin, id: Long): Pair<ArchidektFolder, ArchidektLogin> {
-        val (text, a) = send(login) { it.url(url("/api/decks/folders/$id/")).get() }
-        val o = json.parseToJsonElement(text).jsonObject
-        val parent = (o["parentFolder"] as? JsonObject)?.get("id")?.jsonPrimitive?.longOrNull
-        val subs = (o["subfolders"] as? JsonArray).orEmpty().mapNotNull { e ->
-            val so = e as? JsonObject ?: return@mapNotNull null
-            val sid = so["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
-            sid to (so["name"]?.jsonPrimitive?.contentOrNull ?: "Folder $sid")
-        }
-        return ArchidektFolder(o["id"]?.jsonPrimitive?.longOrNull ?: id, o["name"]?.jsonPrimitive?.contentOrNull ?: "Folder", parent, subs) to a
-    }
-
-    /** A deck as Archidekt's API sends it, read with the login (so private decks can be read too). */
-    suspend fun deckJson(login: ArchidektLogin, deckId: Long): Pair<String, ArchidektLogin> =
-        send(login) { it.url(url("/api/decks/$deckId/")).get() }
-
-    /** Adds an entry ([entry]'s id is ignored); returns it with Archidekt's id. */
-    suspend fun create(login: ArchidektLogin, entry: ArchidektEntry): Pair<ArchidektEntry, ArchidektLogin> {
-        val (text, a) = send(login) { it.url(url("/api/collection/v2/")).post(body(entry, withId = false).toString().toRequestBody(jsonType)) }
-        val id = json.parseToJsonElement(text).jsonObject["id"]?.jsonPrimitive?.longOrNull ?: throw IOException("Archidekt didn't say which entry it made")
-        return entry.copy(id = id) to a
-    }
-
-    /** Changes an entry to [entry] (quantity, printing, finish, condition, language, price, tags). */
-    suspend fun update(login: ArchidektLogin, entry: ArchidektEntry): ArchidektLogin =
-        send(login) { it.url(url("/api/collection/v2/${entry.id}/")).patch(body(entry, withId = true).toString().toRequestBody(jsonType)) }.second
-
-    suspend fun delete(login: ArchidektLogin, ids: List<Long>): ArchidektLogin {
-        if (ids.isEmpty()) return login
-        var a = login
-        for (chunk in ids.chunked(100)) {
-            val body = buildJsonObject { put("ids", buildJsonArray { chunk.forEach { add(JsonPrimitive(it)) } }) }
-            a = send(a) { it.url(url("/api/collection/bulk/")).delete(body.toString().toRequestBody(jsonType)) }.second
-        }
-        return a
-    }
-
-    suspend fun createTag(login: ArchidektLogin, name: String, color: String): Pair<ArchidektTag, ArchidektLogin> {
-        val body = buildJsonObject { put("tagname", name); put("tagcolor", color) }
-        val (text, a) = send(login) { it.url(url("/api/collection/tags/")).post(body.toString().toRequestBody(jsonType)) }
-        return (parseTag(json.parseToJsonElement(text).jsonObject) ?: throw IOException("Archidekt didn't make the label")) to a
-    }
-
-    private fun body(e: ArchidektEntry, withId: Boolean) = buildJsonObject {
-        put("game", 1)
-        if (withId) put("id", e.id)
-        put("quantity", e.quantity)
-        put("card", e.cardId)
-        put("modifier", ArchidektCodes.modifier(e.finish))
-        put("language", ArchidektCodes.languageNumber(e.language))
-        put("condition", ArchidektCodes.conditionNumber(e.condition))
-        put("tags", buildJsonArray { e.tags.forEach { add(JsonPrimitive(it)) } })
-        put("purchasePrice", e.purchasePrice?.let { JsonPrimitive(it) } ?: JsonNull)
-    }
-
-    private fun parseEntry(o: JsonObject): ArchidektEntry? {
-        val card = o["card"] as? JsonObject ?: return null
-        val uid = card["uid"]?.jsonPrimitive?.contentOrNull ?: return null
-        val oracle = card["oracleCard"] as? JsonObject
-        val edition = card["edition"] as? JsonObject
-        return ArchidektEntry(
-            id = o["id"]?.jsonPrimitive?.longOrNull ?: return null,
-            cardId = card["id"]?.jsonPrimitive?.longOrNull ?: return null,
-            scryfallId = uid,
-            name = oracle?.get("name")?.jsonPrimitive?.contentOrNull ?: card["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            setCode = edition?.get("editioncode")?.jsonPrimitive?.contentOrNull.orEmpty(),
-            number = card["collectorNumber"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            finish = ArchidektCodes.finish(o["modifier"]?.jsonPrimitive?.contentOrNull),
-            condition = ArchidektCodes.conditionCode(o["condition"]),
-            language = ArchidektCodes.languageCode(o["language"]),
-            quantity = o["quantity"]?.jsonPrimitive?.intOrNull ?: 1,
-            purchasePrice = (o["purchasePrice"] as? JsonPrimitive)?.let { it.doubleOrNull ?: it.contentOrNull?.toDoubleOrNull() }?.takeIf { it > 0 },
-            tags = (o["tags"] as? JsonArray)?.mapNotNull { t ->
-                (t as? JsonPrimitive)?.longOrNull ?: (t as? JsonObject)?.get("id")?.jsonPrimitive?.longOrNull
-            }.orEmpty(),
-        )
-    }
-
-    private fun parseTag(o: JsonObject): ArchidektTag? {
-        val id = o["id"]?.jsonPrimitive?.longOrNull ?: return null
-        val name = (o["name"] ?: o["tagname"])?.jsonPrimitive?.contentOrNull ?: return null
-        return ArchidektTag(id, name, (o["color"] ?: o["tagcolor"])?.jsonPrimitive?.contentOrNull.orEmpty())
-    }
-
-    /** One authorised call; refreshes the token once when it has expired. Returns the answer and the (possibly new) tokens. */
-    private suspend fun send(login: ArchidektLogin, build: (Request.Builder) -> Request.Builder): Pair<String, ArchidektLogin> = io {
-        var auth = if (expiresSoon(login.token)) refreshShared(login) else login
-        var refreshed = false
-        var waits = 0
-        while (true) {
-            val req = build(Request.Builder()).header("Accept", "application/json").header("Authorization", "JWT ${auth.token}").build()
-            val answer = try {
-                http.newCall(req).execute().use { r -> Triple(r.code, r.body?.string().orEmpty(), r.header("Retry-After")?.toLongOrNull()) }
-            } catch (e: IOException) {
-                // Archidekt answers deletions with "204 No Content" plus a short body, which OkHttp rejects
-                // after the request went through: the deletion was done.
-                if (e is java.net.ProtocolException && e.message?.startsWith("HTTP 204 had non-zero Content-Length") == true) return@io "" to auth
-                // A timeout or dropped connection: ask again, unless it was a new entry (it may have been made already;
-                // the next sync then finds it on Archidekt and counts it as agreed).
-                if (req.method == "POST" || waits >= 3) throw e
-                waits++
-                delay(2000L * waits)
-                continue
-            }
-            val (code, text, retryAfter) = answer
-            when {
-                code in 200..299 -> return@io text to auth
-                code == 401 && !refreshed -> { auth = refreshShared(auth); refreshed = true }
-                code == 401 || code == 403 -> throw ArchidektAuthException("Archidekt no longer accepts this login. Log in to Archidekt again.")
-                // Too many requests, or a hiccup on Archidekt's side: wait a little and try again.
-                (code == 429 || code in 500..599) && waits < 4 -> {
-                    waits++
-                    delay(((retryAfter ?: 0L) * 1000).coerceIn(2000L * waits, 60_000L))
-                }
-                code == 429 -> throw IOException("Archidekt asks to slow down; try again in a few minutes")
-                else -> throw IOException("Archidekt answered $code" + text.take(200).takeIf { it.isNotBlank() && code in 400..499 }?.let { ": $it" }.orEmpty())
-            }
-        }
-        @Suppress("UNREACHABLE_CODE")
-        throw IllegalStateException()
-    }
-
-    private val refreshLock = Mutex()
-    @Volatile private var latest: ArchidektLogin? = null
-
-    /** Refreshes the token once for all requests running at the same time. */
-    private suspend fun refreshShared(stale: ArchidektLogin): ArchidektLogin = refreshLock.withLock {
-        latest?.takeIf { it.userId == stale.userId && it.token != stale.token && !expiresSoon(it.token) } ?: refresh(stale).also { latest = it }
-    }
-
-    private fun refresh(login: ArchidektLogin): ArchidektLogin {
-        if (login.refresh.isBlank()) throw ArchidektAuthException("Archidekt no longer accepts this login. Log in to Archidekt again.")
-        val body = buildJsonObject { put("refresh", login.refresh) }
-        val req = Request.Builder().url(url("/api/rest-auth/token/refresh/")).header("Accept", "application/json")
-            .post(body.toString().toRequestBody(jsonType)).build()
-        return http.newCall(req).execute().use { r ->
-            if (!r.isSuccessful) throw ArchidektAuthException("Archidekt no longer accepts this login. Log in to Archidekt again.")
-            val o = json.parseToJsonElement(r.body?.string().orEmpty()).jsonObject
-            val token = (o["access"] ?: o["token"])?.jsonPrimitive?.contentOrNull ?: throw ArchidektAuthException("Archidekt no longer accepts this login. Log in to Archidekt again.")
-            login.copy(token = token, refresh = o["refresh"]?.jsonPrimitive?.contentOrNull ?: o["refresh_token"]?.jsonPrimitive?.contentOrNull ?: login.refresh)
-                .also { onTokens?.invoke(it) }
-        }
-    }
-
     private fun url(path: String) = baseUrl().trimEnd('/') + path
 
     /** Archidekt's "next" links say http://; keep to the scheme the app talks (https, or http for a test server). */
@@ -490,20 +154,9 @@ class ArchidektCollectionClient(private val http: OkHttpClient, private val base
 
     companion object {
         const val DEFAULT_BASE = "https://archidekt.com"
+        /** A deck's visibility on Archidekt, as decks are read (kept on the deck). */
         const val VISIBILITY_PRIVATE = "private"
         const val VISIBILITY_UNLISTED = "unlisted"
         const val VISIBILITY_PUBLIC = "public"
-        private const val PAGE = 250
-        private const val MAX_PAGES = 400
-
-        /** Whether a JWT runs out within a minute (or can't be read, in which case the server will say). */
-        fun expiresSoon(token: String, now: Long = System.currentTimeMillis()): Boolean {
-            val exp = runCatching {
-                val payload = token.split('.')[1]
-                val text = String(Base64.decode(payload, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING), Charsets.UTF_8)
-                Json.parseToJsonElement(text).jsonObject["exp"]?.jsonPrimitive?.longOrNull
-            }.getOrNull() ?: return false
-            return exp * 1000 < now + 60_000
-        }
     }
 }

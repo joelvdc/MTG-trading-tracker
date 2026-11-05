@@ -1,24 +1,15 @@
 package com.mtgtrader
 
-import com.mtgtrader.data.AppSide
-import com.mtgtrader.data.ArchidektEntry
-import com.mtgtrader.data.ArchidektPlanner
-import com.mtgtrader.data.ArchidektSync
-import com.mtgtrader.data.ArchidektTag
 import com.mtgtrader.data.BackupFile
-import com.mtgtrader.data.CardKey
 import com.mtgtrader.data.CardKind
-import com.mtgtrader.data.CardLabel
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CollectionFilter
 import com.mtgtrader.data.CollectionItem
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.MarkFilter
-import com.mtgtrader.data.MarkTags
 import com.mtgtrader.data.Marks
 import com.mtgtrader.data.PriceType
-import com.mtgtrader.data.SnapEntry
 import com.mtgtrader.data.SyncData
 import com.mtgtrader.data.SyncException
 import com.mtgtrader.data.SyncFile
@@ -41,57 +32,7 @@ import java.util.zip.GZIPOutputStream
 class Release127Test {
     private val ref = CardRef("bs", "Brainstorm", "ice", "Ice Age", "61", "common", null, 1, 1.0, null, true, false)
 
-    // ---- Archidekt -------------------------------------------------------------------------
-
-    private val tags = listOf(ArchidektTag(7, "Signed"), ArchidektTag(8, "altered "), ArchidektTag(9, "Trade binder"))
-    private fun entry(id: Long, n: Int, vararg tagIds: Long) =
-        ArchidektEntry(id, 100, "bs", "Brainstorm", "ICE", "61", Finish.NONFOIL, "NM", "EN", n, tags = tagIds.toList())
-
-    @Test
-    fun archidektLabelsMarkTheEntries() {
-        val marks = MarkTags.of(tags)
-        assertEquals(CardKey("bs", Finish.NONFOIL, "NM", "EN"), CardKey.of(entry(1, 1, 9), marks))
-        assertEquals(CardKey("bs", Finish.NONFOIL, "NM", "EN", signed = true), CardKey.of(entry(1, 1, 7, 9), marks))
-        assertEquals(CardKey("bs", Finish.NONFOIL, "NM", "EN", signed = true, altered = true), CardKey.of(entry(1, 1, 8, 7), marks))
-        assertEquals(listOf(7L, 8L), marks.idsFor(CardKey("bs", Finish.NONFOIL, "NM", "EN", signed = true, altered = true)))
-        assertEquals(emptyList<Long>(), marks.idsFor(CardKey("bs", Finish.NONFOIL, "NM", "EN")))
-        // Plain keys read and print as before, so earlier agreements still match.
-        assertEquals("bs|NONFOIL|NM|EN", CardKey("bs", Finish.NONFOIL, "NM", "EN").toString())
-        assertEquals("bs|NONFOIL|NM|EN|signed", CardKey("bs", Finish.NONFOIL, "NM", "EN", signed = true).toString())
-        val item = CollectionItem(card = ref, foil = false, quantity = 1, signed = true)
-        assertEquals(CardKey("bs", Finish.NONFOIL, "NM", "EN", signed = true), CardKey.of(item))
-        assertEquals("Brainstorm (ICE 61), NM, EN, signed", ArchidektSync.describe(CardLabel("Brainstorm", "ICE", "61"), CardKey.of(item)))
-    }
-
-    @Test
-    fun oneOfFourMarkedSignedBecomesTwoArchidektEntries() {
-        val plain = CardKey("bs", Finish.NONFOIL, "NM", "EN")
-        val signed = plain.copy(signed = true)
-        val app = mapOf(plain to AppSide(3, null, CardLabel("Brainstorm")), signed to AppSide(1, null, CardLabel("Brainstorm")))
-        val arch = listOf(entry(1, 4)).groupBy { CardKey.of(it, MarkTags.of(tags)) }
-        val p = ArchidektPlanner.plan(app, arch, mapOf(plain to SnapEntry(plain, 4, entryIds = listOf(1))))
-        assertFalse(p.waitsForUser)
-        val byKey = p.all.associateBy { it.key }
-        assertEquals(2, byKey.size)
-        assertEquals(3, byKey.getValue(plain).archTarget)
-        assertEquals(1, byKey.getValue(signed).archTarget)
-        assertEquals(0, p.appAdded + p.appRemoved)
-    }
-
-    @Test
-    fun aSignedLabelAddedOnArchidektMarksTheCopiesInTheApp() {
-        val plain = CardKey("bs", Finish.NONFOIL, "NM", "EN")
-        val signed = plain.copy(signed = true)
-        val arch = listOf(entry(1, 1, 7)).groupBy { CardKey.of(it, MarkTags.of(tags)) }
-        val p = ArchidektPlanner.plan(mapOf(plain to AppSide(1, null, CardLabel("Brainstorm"))), arch, mapOf(plain to SnapEntry(plain, 1, entryIds = listOf(1))))
-        val byKey = p.all.associateBy { it.key }
-        assertEquals(0, byKey.getValue(plain).appTarget)
-        assertEquals(1, byKey.getValue(signed).appTarget)
-        // The same entry, edited: the copy keeps its binder in the app.
-        assertEquals(plain, byKey.getValue(signed).movedFrom)
-    }
-
-    // ---- Nextcloud -------------------------------------------------------------------------
+    // The Archidekt label tests went with the collection sync in 1.78.
 
     private fun gz(text: String): ByteArray {
         val out = ByteArrayOutputStream()

@@ -50,6 +50,11 @@ class DeckRepository(
     private val scope: CoroutineScope,
     private val winOdds: WinOddsStore,
 ) {
+    companion object {
+        /** Why a deck with changes that never reached Archidekt isn't reloaded. Since 1.78. */
+        const val UNSENT = "This deck has changes from this phone that never reached Archidekt. Make a local copy to keep them, or discard them, then reload"
+    }
+
     private val dao = db.deckDao()
     private val cardDir = File(context.filesDir, "rulezero")
 
@@ -69,11 +74,10 @@ class DeckRepository(
     private val appPowerTried = java.util.Collections.synchronizedSet(HashSet<Long>())
 
     /**
-     * Set by [DeckEditor] (since 1.46): reads a deck with the Archidekt login, so the user's private decks load
-     * too; sends a deck's waiting edits before its list is reloaded (true when none are left); and turns an
-     * imported deck into a local one.
+     * Set by [DeckEditor] (since 1.46): whether a deck may be reloaded from Archidekt (false while it holds changes
+     * from before 1.78 that never reached Archidekt, so a reload can't lose them), and turning an imported deck into
+     * a local one.
      */
-    var privateReader: (suspend (Long) -> ArchidektDeck?)? = null
     var editSender: (suspend (Long) -> Boolean)? = null
     var detacher: (suspend (Long) -> Long)? = null
 
@@ -104,35 +108,19 @@ class DeckRepository(
         }
     }
 
-    /** Reads a deck from Archidekt: as anyone can (public and unlisted decks), else with the login (the user's private ones). */
-    private suspend fun readDeck(id: Long): ArchidektDeck = try {
-        archidekt.deck(id)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: IOException) {
-        privateReader?.let { r -> runCatching { r(id) }.getOrNull() } ?: throw e
-    }
+    /** Reads a deck from Archidekt as anyone can (public and unlisted decks; the app has no Archidekt login since 1.78). */
+    private suspend fun readDeck(id: Long): ArchidektDeck = archidekt.deck(id)
 
     /**
-     * Reloads a deck's list from Archidekt without scoring it again (before editing, so every line knows its ids
-     * on Archidekt). Waiting edits are sent first; when they can't be, the list isn't reloaded. Since 1.46.
+     * Reloads a deck's list from Archidekt without scoring it again. Not while it holds changes that never reached
+     * Archidekt. Since 1.46.
      */
     suspend fun reloadList(deckId: Long) {
         val deck = dao.get(deckId) ?: return
         if (deck.local) return
-        if (editSender?.invoke(deckId) == false) throw IOException("Changes made in the app are still waiting to be sent to Archidekt")
+        if (editSender?.invoke(deckId) == false) throw IOException(UNSENT)
         load(deckId, {})
     }
-
-    /** Imports a deck without scoring it or reporting (for sending a local deck into it). Since 1.46. */
-    suspend fun importQuietly(deckId: Long) {
-        load(deckId, {})
-    }
-
-    /** The folder of one of [user]'s decks on Archidekt (to find their folders from). Since 1.46. */
-    suspend fun userDeckFolder(user: String): Long? = runCatching {
-        archidekt.userDecks(user).firstOrNull()?.let { readDeck(it.id).folderId }
-    }.getOrNull()
 
     /**
      * Has Commander Salt score the deck again (brackets and its power level) and, when another site
@@ -232,6 +220,8 @@ class DeckRepository(
      * imported. Decks that never got a score are scored again too. Can be stopped between decks.
      */
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
+        // Decks imported before 1.8 learn when they last changed on Archidekt (until 1.78 done on opening the Decks tab).
+        fillMissingUpdateDates()
         val decks = dao.all().filter { !it.local }
         val source = settings.powerSource.value
         val listed = archidektDates(decks)
@@ -371,10 +361,8 @@ class DeckRepository(
         fun step(msg: String) {
             _job.value = DeckJob(id, prefix + msg, canStop && !stopRequested)
         }
-        // Edits made in the app go to Archidekt first, so reloading doesn't lose them.
-        if (dao.get(id) != null && editSender?.invoke(id) == false) {
-            throw IOException("Changes made in the app are still waiting to be sent to Archidekt; reload once they're sent")
-        }
+        // Changes from before 1.78 that never reached Archidekt aren't overwritten without asking (see the deck page).
+        if (dao.get(id) != null && editSender?.invoke(id) == false) throw IOException(UNSENT)
         step("Loading the decklist from Archidekt…")
         val deck = load(id, ::step, fetched)
         step("Scoring on Commander Salt…")

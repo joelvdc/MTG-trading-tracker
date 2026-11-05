@@ -188,7 +188,6 @@ fun DeckCategoriesScreen(nav: NavController, deckId: Long) {
             row.cards,
             rows.map { it.name }.filterNot { it.equals(row.name, true) },
             onDismiss = { deleting = null },
-            onArchidekt = deck?.local == false,
         ) { to ->
             deleting = null
             edit("Deleted the category ${row.name}") { c.deckEditor.deleteCategory(deckId, row.name, to) }

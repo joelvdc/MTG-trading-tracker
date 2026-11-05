@@ -218,34 +218,6 @@ class Release146ItemsTest {
     private fun edit(rel: Long?) = com.mtgtrader.data.DeckEdit(deckId = 5, lineUid = "u1", relationId = rel, archidektCardId = 77, name = "Sol Ring", categories = "Ramp")
 
     @Test
-    fun addsModifiesAndRemovesLikeArchidektsEditor() {
-        val add = com.mtgtrader.data.DeckEditItems.item(edit(null), line(null, qty = 2, foil = true))!!
-        assertEquals("add", add["action"]!!.jsonPrimitive.content)
-        assertEquals(77, add["cardid"]!!.jsonPrimitive.content.toInt())
-        assertEquals("u1", add["patchId"]!!.jsonPrimitive.content)
-        assertEquals(listOf("Ramp", "Staples"), add["categories"]!!.jsonArray.map { it.jsonPrimitive.content })
-        assertEquals("2", add["modifications"]!!.jsonObject["quantity"]!!.jsonPrimitive.content)
-        assertEquals("Foil", add["modifications"]!!.jsonObject["modifier"]!!.jsonPrimitive.content)
-        assertTrue("deckRelationId" !in add)
-        val modify = com.mtgtrader.data.DeckEditItems.item(edit(900), line(900))!!
-        assertEquals("modify", modify["action"]!!.jsonPrimitive.content)
-        assertEquals("900", modify["deckRelationId"]!!.jsonPrimitive.content)
-        val remove = com.mtgtrader.data.DeckEditItems.item(edit(900), null)!!
-        assertEquals("remove", remove["action"]!!.jsonPrimitive.content)
-        assertEquals("900", remove["deckRelationId"]!!.jsonPrimitive.content)
-        // Never on Archidekt and gone again, or a printing Archidekt doesn't know: nothing to send.
-        assertEquals(null, com.mtgtrader.data.DeckEditItems.item(edit(null), null))
-        assertEquals(null, com.mtgtrader.data.DeckEditItems.item(edit(null), line(null, cardId = null)))
-    }
-
-    @Test
-    fun readsTheIdArchidektGaveAnAddedLine() {
-        val answer = Json.parseToJsonElement("""{"add": [{"patchId": "u1", "deckRelationId": 4242, "createdAt": "x"}], "createdCategories": []}""").jsonObject
-        assertEquals(4242L, com.mtgtrader.data.DeckEditItems.addedRelation(answer, "u1"))
-        assertEquals(null, com.mtgtrader.data.DeckEditItems.addedRelation(answer, "other"))
-    }
-
-    @Test
     fun movingKeepsTheOtherCategories() {
         val moved = line(1).inCategory("Mana", maybe = false)
         assertEquals(listOf("Mana", "Staples"), moved.categoryList)

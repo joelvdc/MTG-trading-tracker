@@ -78,8 +78,8 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
     val c = LocalContext.current.container
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(null)
     val source by c.settings.powerSource.collectAsStateWithLifecycle()
-    val account by c.archidekt.status.collectAsStateWithLifecycle()
-    val owner = account.username ?: c.settings.archidektUser.takeIf { it.isNotBlank() }
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val owner = c.settings.deckOwner(ownUser)
     var open by rememberSaveable { mutableStateOf<Int?>(null) }
     // Decks scored before their card details were kept get them now.
     LaunchedEffect(Unit) { c.decks.fillMissingCardData() }

@@ -1,7 +1,6 @@
 package com.mtgtrader
 
 import com.mtgtrader.data.ArchidektGuard
-import com.mtgtrader.data.ArchidektSync
 import com.mtgtrader.data.RemoteSwitches
 import com.mtgtrader.data.RequestPacer
 import com.mtgtrader.data.Switches
@@ -114,13 +113,5 @@ class Release176Test {
         assertTrue(s.archidektAccount)
         assertTrue(s.archidektDecks)
         assertFalse(f.readText().contains("archidektAcount"))
-    }
-
-    @Test
-    fun timeLeftAtArchidektsPace() {
-        assertEquals("", ArchidektSync.timeLeft(30))
-        assertEquals(" (about 1 min left)", ArchidektSync.timeLeft(40))
-        assertEquals(" (about 25 min left)", ArchidektSync.timeLeft(1000))
-        assertEquals(" (about 2 h left)", ArchidektSync.timeLeft(5000))
     }
 }

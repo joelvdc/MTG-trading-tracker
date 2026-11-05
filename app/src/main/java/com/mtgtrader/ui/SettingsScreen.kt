@@ -82,8 +82,7 @@ private val typeHelp = mapOf(
 @Composable
 fun SettingsScreen(nav: NavController) {
     val c = LocalContext.current.container
-    val archidekt by c.archidekt.status.collectAsStateWithLifecycle()
-    val unsynced by androidx.compose.runtime.produceState<Int?>(null, archidekt.lastSyncAt, archidekt.running) { value = c.archidekt.unsyncedCopies() }
+    val ownArchidekt by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val currency by c.settings.currency.collectAsStateWithLifecycle()
     val priceSource by c.settings.priceSource.collectAsStateWithLifecycle()
@@ -340,21 +339,23 @@ fun SettingsScreen(nav: NavController) {
             SyncSection()
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Archidekt collection", style = MaterialTheme.typography.titleMedium)
+            Text("Archidekt", style = MaterialTheme.typography.titleMedium)
             Text(
-                when {
-                    !archidekt.connected -> "Keep your Archidekt collection the same as the app's, both ways."
-                    archidekt.review != null || archidekt.conflicts.isNotEmpty() -> "Logged in as ${archidekt.username} · waiting for you"
-                    archidekt.lastSyncAt == 0L -> "Logged in as ${archidekt.username} · not synced yet"
-                    (unsynced ?: 0) > 0 -> "Logged in as ${archidekt.username} · $unsynced card(s) changed since the last sync"
-                    else -> "Logged in as ${archidekt.username} · last synced ${Fmt.dateTime(archidekt.lastSyncAt)}"
-                },
+                "The app reads public Archidekt decks; it doesn't log in to Archidekt (since 1.78). Your username marks " +
+                    "which decks are your own. To bring the collection to Archidekt, use Collection → Export CSV → Archidekt.",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (archidekt.review != null || archidekt.conflicts.isNotEmpty() || archidekt.lastError != null) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { nav.navigate("archidekt") }) { Text(if (archidekt.connected) "Archidekt sync…" else "Set up Archidekt sync…") }
+            var archidektName by remember(ownArchidekt) { mutableStateOf(ownArchidekt) }
+            OutlinedTextField(
+                value = archidektName,
+                onValueChange = { archidektName = it; c.settings.setOwnArchidektUser(it) },
+                label = { Text("Your Archidekt username") },
+                placeholder = { Text(c.settings.archidektUser.ifBlank { "e.g. from archidekt.com/u/username" }) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
             Text("Backups", style = MaterialTheme.typography.titleMedium)

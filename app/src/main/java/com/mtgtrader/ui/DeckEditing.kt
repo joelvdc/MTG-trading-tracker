@@ -151,7 +151,7 @@ fun TextInputDialog(title: String, label: String, initial: String, confirm: Stri
 
 /** Deleting a category: where its cards go (their auto categories, or another category). */
 @Composable
-fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismiss: () -> Unit, onArchidekt: Boolean = false, onConfirm: (moveTo: String?) -> Unit) {
+fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismiss: () -> Unit, onConfirm: (moveTo: String?) -> Unit) {
     var auto by remember { mutableStateOf(true) }
     var to by remember { mutableStateOf(others.firstOrNull()) }
     AlertDialog(
@@ -167,7 +167,6 @@ fun DeleteCategoryDialog(name: String, count: Int, others: List<String>, onDismi
                         if (!auto) DropdownSelector("Category", to, others, { it.orEmpty() }, { to = it }, Modifier.fillMaxWidth())
                     }
                 }
-                if (onArchidekt) Text("The category is deleted on Archidekt too.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = { TextButton(onClick = { onConfirm(if (auto) null else to) }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
@@ -214,205 +213,30 @@ fun CardEditControls(
     }
 }
 
-/** Edits waiting to be sent to Archidekt: why (offline, not logged in) and a button to send them now. */
-@Composable
-fun WaitingBanner(count: Int, offline: Boolean, loggedIn: Boolean, sending: Boolean, onSend: () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(top = 6.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-        Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(if (offline) Icons.Default.CloudOff else Icons.Default.CloudUpload, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onTertiaryContainer)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                "$count edit" + (if (count == 1) "" else "s") + when {
-                    !loggedIn -> " saved on the phone: log in to Archidekt (Settings) to send them."
-                    offline -> " saved on the phone, sent to Archidekt when online."
-                    sending -> " being sent to Archidekt…"
-                    else -> " waiting to be sent to Archidekt."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.weight(1f),
-            )
-            if (sending) CircularProgressIndicator(Modifier.padding(horizontal = 12.dp).size(18.dp), strokeWidth = 2.dp)
-            else if (loggedIn && !offline) TextButton(onClick = onSend) { Text("Send now") }
-        }
-    }
-}
-
-/** The visibility choice for an Archidekt deck: private, unlisted or public. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun VisibilityChoice(value: String, onChange: (String) -> Unit) {
-    val options = listOf(
-        ArchidektCollectionClient.VISIBILITY_PRIVATE to "Private",
-        ArchidektCollectionClient.VISIBILITY_UNLISTED to "Unlisted",
-        ArchidektCollectionClient.VISIBILITY_PUBLIC to "Public",
-    )
-    Text("Who can see it", style = MaterialTheme.typography.titleSmall)
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        options.forEachIndexed { i, (key, label) ->
-            SegmentedButton(
-                value == key, { onChange(key) }, SegmentedButtonDefaults.itemShape(i, options.size),
-                icon = { if (key == ArchidektCollectionClient.VISIBILITY_PRIVATE && value == key) Icon(Icons.Default.Lock, null, Modifier.size(16.dp)) },
-            ) { Text(label) }
-        }
-    }
-    Text(
-        "Private: only you (Commander Salt can't read it, so no bracket or power level). Unlisted: anyone with the link. Public: listed on Archidekt.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-/** The user's Archidekt folders, loaded when the dialog opens. */
-@Composable
-private fun FolderChoice(folders: List<Pair<Long, String>>?, error: String?, selected: Long?, onSelect: (Long, String) -> Unit) {
-    when {
-        error != null -> Text("Couldn't read your folders: $error", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-        folders == null -> Row(verticalAlignment = Alignment.CenterVertically) {
-            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            Spacer(Modifier.width(8.dp))
-            Text("Reading your folders on Archidekt…", style = MaterialTheme.typography.bodySmall)
-        }
-        folders.isEmpty() -> Text("No folders found; the deck goes into your top folder.", style = MaterialTheme.typography.bodySmall)
-        else -> DropdownSelector(
-            "Folder",
-            folders.firstOrNull { it.first == selected },
-            folders,
-            { it?.second.orEmpty() },
-            { it?.let { f -> onSelect(f.first, f.second) } },
-            Modifier.fillMaxWidth(),
-        )
-    }
-}
-
 /**
- * Sends a local deck to Archidekt: as a new deck of the logged-in user (name, folder, visibility; unlisted by
- * default, as the owner chose), or into one of their decks (adding its cards or replacing that deck's list).
+ * A deck from Archidekt with changes from before 1.78 that never reached Archidekt (the app no longer sends them):
+ * keep them in a local copy, or discard them so the deck can be reloaded from Archidekt.
  */
 @Composable
-fun SendToArchidektDialog(deck: Deck, ownDecks: List<Deck>, onDismiss: () -> Unit, onDone: (Long, String) -> Unit) {
-    val c = LocalContext.current.container
-    val scope = rememberCoroutineScope()
-    var intoDeck by rememberSaveable { mutableStateOf(false) }
-    var name by rememberSaveable { mutableStateOf(deck.name) }
-    var visibility by rememberSaveable { mutableStateOf(ArchidektCollectionClient.VISIBILITY_UNLISTED) }
-    var folders by remember { mutableStateOf<List<Pair<Long, String>>?>(null) }
-    var folderError by remember { mutableStateOf<String?>(null) }
-    var folder by remember { mutableStateOf<Pair<Long, String>?>(null) }
-    var target by remember { mutableStateOf(ownDecks.firstOrNull()) }
-    var replace by rememberSaveable { mutableStateOf(false) }
-    var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        try {
-            folders = c.deckEditor.folders().also { list -> folder = list.firstOrNull { it.second.contains("Brew", true) } ?: list.firstOrNull() }
-        } catch (e: Exception) {
-            folderError = e.message ?: "unknown error"
+fun UnsentBanner(count: Int, onKeep: () -> Unit, onDiscard: () -> Unit) {
+    Card(Modifier.fillMaxWidth().padding(top = 6.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+        Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CloudOff, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "$count change" + (if (count == 1) "" else "s") + " made on this phone never reached Archidekt. " +
+                        "The app no longer sends changes: keep them in a local deck, or discard them to reload the deck.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+            Row(Modifier.align(Alignment.End)) {
+                TextButton(onClick = onDiscard) { Text("Discard") }
+                TextButton(onClick = onKeep) { Text("Make it a local deck") }
+            }
         }
     }
-    AlertDialog(
-        onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text("Send ${deck.name} to Archidekt") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                @OptIn(ExperimentalMaterial3Api::class)
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    SegmentedButton(!intoDeck, { intoDeck = false }, SegmentedButtonDefaults.itemShape(0, 2)) { Text("New deck") }
-                    SegmentedButton(intoDeck, { intoDeck = true }, SegmentedButtonDefaults.itemShape(1, 2), enabled = ownDecks.isNotEmpty()) { Text("Into a deck") }
-                }
-                if (!intoDeck) {
-                    OutlinedTextField(name, { name = it }, label = { Text("Name on Archidekt") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    FolderChoice(folders, folderError, folder?.first) { id, path -> folder = id to path }
-                    VisibilityChoice(visibility) { visibility = it }
-                    Text(
-                        "Afterwards the deck is in the Archidekt section, editable, and changes are sent to Archidekt.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    DropdownSelector("Your Archidekt deck", target, ownDecks, { it?.name.orEmpty() }, { target = it }, Modifier.fillMaxWidth())
-                    RadioRow("Add its cards (a card in both keeps the higher number)", !replace) { replace = false }
-                    RadioRow("Replace that deck's list with this one", replace) { replace = true }
-                    Text("This local deck is then gone; the Archidekt deck holds the result.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                if (busy) Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Sending the cards to Archidekt…", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = !busy && (if (intoDeck) target != null else name.isNotBlank()),
-                onClick = {
-                    busy = true
-                    error = null
-                    scope.launch {
-                        try {
-                            val id = if (intoDeck) c.deckEditor.sendInto(deck.archidektId, target!!.archidektId, replace)
-                            else c.deckEditor.sendAsNew(deck.archidektId, name.trim(), folder?.first, folder?.second?.substringAfterLast(" › "), visibility)
-                            onDone(id, if (intoDeck) "Sent to ${target!!.name} on Archidekt" else "Made ${name.trim()} on Archidekt")
-                        } catch (e: Exception) {
-                            error = e.message ?: "Couldn't send the deck"
-                            busy = false
-                        }
-                    }
-                },
-            ) { Text(if (intoDeck) "Send" else "Create deck", fontWeight = FontWeight.SemiBold) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") } },
-    )
-}
-
-/** One of the user's own Archidekt decks: its folder and who can see it. */
-@Composable
-fun FolderVisibilityDialog(deck: Deck, onDismiss: () -> Unit, onDone: (String) -> Unit) {
-    val c = LocalContext.current.container
-    val scope = rememberCoroutineScope()
-    var visibility by rememberSaveable { mutableStateOf(deck.visibility ?: ArchidektCollectionClient.VISIBILITY_PUBLIC) }
-    var folders by remember { mutableStateOf<List<Pair<Long, String>>?>(null) }
-    var folderError by remember { mutableStateOf<String?>(null) }
-    var folder by remember { mutableStateOf<Pair<Long, String>?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        try {
-            folders = c.deckEditor.folders().also { list -> folder = list.firstOrNull { it.first == deck.folderId } }
-        } catch (e: Exception) {
-            folderError = e.message ?: "unknown error"
-        }
-    }
-    AlertDialog(
-        onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text("${deck.name} on Archidekt") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FolderChoice(folders, folderError, folder?.first) { id, path -> folder = id to path }
-                VisibilityChoice(visibility) { visibility = it }
-                Text("Folders are made, renamed and deleted on Archidekt's website.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = !busy, onClick = {
-                busy = true
-                scope.launch {
-                    try {
-                        val f = folder
-                        if (f != null && f.first != deck.folderId) c.deckEditor.moveToFolder(deck.archidektId, f.first, f.second)
-                        if (visibility != deck.visibility) c.deckEditor.setVisibility(deck.archidektId, visibility)
-                        onDone("Saved on Archidekt")
-                    } catch (e: Exception) {
-                        error = e.message ?: "Archidekt didn't take the change"
-                        busy = false
-                    }
-                }
-            }) { Text("Save", fontWeight = FontWeight.SemiBold) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") } },
-    )
 }
 
 /** "Maybeboard" first among the categories a card can be moved to, the rest alphabetically. */

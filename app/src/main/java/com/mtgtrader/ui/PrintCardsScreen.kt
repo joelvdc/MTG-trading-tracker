@@ -147,8 +147,8 @@ fun PrintCardsScreen(nav: NavController) {
     val c = context.container
     val all by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(null)
     val source by c.settings.powerSource.collectAsStateWithLifecycle()
-    val account by c.archidekt.status.collectAsStateWithLifecycle()
-    val owner = account.username ?: c.settings.archidektUser.takeIf { it.isNotBlank() }
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val owner = c.settings.deckOwner(ownUser)
     // Decks scored before their card details were kept get them now.
     LaunchedEffect(Unit) { c.decks.fillMissingCardData() }
     val decks = all?.let { list ->

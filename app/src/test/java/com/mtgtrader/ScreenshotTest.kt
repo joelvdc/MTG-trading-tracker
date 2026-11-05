@@ -1006,7 +1006,7 @@ class ScreenshotTest {
                             com.mtgtrader.data.Deck(5, "Auntie Plague", "joelvdc", "Auntie Ool, Cursewretch", null, null, "BRG", 100, powerLevel = 6.4, bracketRealistic = 3, bracketBaseline = 4),
                             com.mtgtrader.data.PowerSource.COMMANDER_SALT, showModified = false, waiting = 2,
                         ) {}
-                        com.mtgtrader.ui.WaitingBanner(2, offline = true, loggedIn = true, sending = false) {}
+                        com.mtgtrader.ui.UnsentBanner(2, onKeep = {}, onDiscard = {})
                         com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Ramp", emptyList()), 4.3, folded = false, count = 3, highlight = true, menu = {
                             androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Default.MoreVert, null)
                         }) {}

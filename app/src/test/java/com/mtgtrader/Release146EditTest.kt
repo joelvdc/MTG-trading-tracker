@@ -10,7 +10,8 @@ import com.mtgtrader.data.CardInfo
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
-import com.mtgtrader.data.DeckEditItems
+import com.mtgtrader.data.DeckEdit
+import com.mtgtrader.data.DeckRepository
 import com.mtgtrader.data.DeckEdits
 import com.mtgtrader.data.DeckGroup
 import com.mtgtrader.data.Finish
@@ -79,36 +80,41 @@ class Release146EditTest {
     }
 
     @Test
-    fun editsWaitForArchidektAndUndoPutsThemBack() = runBlocking {
+    fun archidektDecksAreReadOnlySince178() = runBlocking {
         val id = archidektDeck()
-        val undo = c.deckEditor.move(id, listOf("l-cult"), "Land Ramp")
-        val lines = c.db.deckDao().allLines(id).associateBy { it.lineUid }
-        assertEquals("Land Ramp", lines.getValue("l-cult").category)
-        assertEquals(901L, lines.getValue("l-cult").relationId)
-        // One edit waits, naming the line: sent as Archidekt's "modify" with the new category.
-        val waiting = c.db.deckEditDao().forDeck(id).single()
-        assertEquals("l-cult", waiting.lineUid)
-        val item = DeckEditItems.item(waiting, lines["l-cult"])!!
-        assertEquals("modify", item["action"]!!.jsonPrimitive.content)
-        assertEquals(listOf("Land Ramp"), item["categories"]!!.jsonArray.map { it.jsonPrimitive.content })
-        // Undo: back in Ramp, still one edit waiting for the line (it's sent as it is when sending).
-        undo()
-        assertEquals("Ramp", c.db.deckDao().allLines(id).first { it.lineUid == "l-cult" }.category)
-        assertEquals(1, c.db.deckEditDao().count(id))
+        val deck = c.db.deckDao().get(id)!!
+        assertFalse(c.deckEditor.canEdit(deck))
+        assertTrue(c.deckEditor.canEdit(c.db.deckDao().get(c.deckEditor.newEmpty("Brew"))!!))
     }
 
     @Test
-    fun removingSendsArchidektsRemovalAndTheMaybeboardIsLeftOut() = runBlocking {
+    fun oldUnsentChangesBlockAReloadUntilKeptOrDiscarded() = runBlocking {
         val id = archidektDeck()
-        c.deckEditor.toBoard(id, listOf("l-sol"), maybeboard = true)
-        val sol = c.db.deckDao().allLines(id).first { it.lineUid == "l-sol" }
-        assertTrue(sol.maybeboard)
-        assertEquals(1, c.db.deckDao().get(id)!!.cardCount)
-        c.deckEditor.remove(id, listOf("l-sol"))
-        val edit = c.db.deckEditDao().forDeck(id).single { it.lineUid == "l-sol" }
-        val remove = DeckEditItems.item(edit, null)!!
-        assertEquals("remove", remove["action"]!!.jsonPrimitive.content)
-        assertEquals("900", remove["deckRelationId"]!!.jsonPrimitive.content)
+        // A change made before 1.78 that never reached Archidekt: the line already shows it on the phone.
+        c.db.deckDao().allLines(id).first { it.lineUid == "l-cult" }.let { line ->
+            c.db.deckDao().deleteLines(id, listOf(line.lineUid))
+            c.db.deckDao().insertCards(listOf(line.copy(id = 0, category = "Land Ramp")))
+        }
+        c.db.deckEditDao().add(listOf(DeckEdit(deckId = id, lineUid = "l-cult", relationId = 901, archidektCardId = 12, name = "Cultivate")))
+        assertEquals(1, c.deckEditor.waitingCount(id))
+        // Reloading from Archidekt would overwrite it, so it's refused (before Archidekt is even asked).
+        val refused = runCatching { c.decks.reloadList(id) }.exceptionOrNull()
+        assertTrue(refused is java.io.IOException)
+        assertEquals(DeckRepository.UNSENT, refused!!.message)
+        // Making it a local deck keeps the change.
+        val local = c.deckEditor.detach(id)
+        assertEquals("Land Ramp", c.db.deckDao().allLines(local).first { it.card.name == "Cultivate" }.category)
+        assertEquals(0, c.deckEditor.waitingCount(local))
+        assertEquals(0, c.deckEditor.waitingCount(id))
+    }
+
+    @Test
+    fun discardingOldUnsentChangesAllowsAReload() = runBlocking {
+        val id = archidektDeck()
+        c.db.deckEditDao().add(listOf(DeckEdit(deckId = id, lineUid = "l-sol", relationId = 900, archidektCardId = 11, name = "Sol Ring")))
+        assertTrue(c.decks.editSender!!(id).not())
+        c.deckEditor.discardWaiting(id)
+        assertTrue(c.decks.editSender!!(id))
     }
 
     @Test

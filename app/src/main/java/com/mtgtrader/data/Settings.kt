@@ -241,6 +241,22 @@ class Settings(context: Context) {
         get() = prefs.getString("archidektUser", "") ?: ""
         set(v) = prefs.edit().putString("archidektUser", v).stamp().apply()
 
+    private val _ownArchidektUser = MutableStateFlow(prefs.getString("ownArchidektUser", "") ?: "")
+    /**
+     * Your own Archidekt username: whose decks are "your decks" (Settings → Archidekt). Filled in from the Archidekt
+     * login when 1.78 removed it. Synced. Since 1.78.
+     */
+    val ownArchidektUser: StateFlow<String> = _ownArchidektUser
+
+    fun setOwnArchidektUser(v: String) {
+        val name = v.trim()
+        _ownArchidektUser.value = name
+        prefs.edit().putString("ownArchidektUser", name).stamp().apply()
+    }
+
+    /** Whose Archidekt decks are your own: your username, else the one decks were last imported from. */
+    fun deckOwner(own: String = _ownArchidektUser.value): String? = own.ifBlank { archidektUser }.takeIf { it.isNotBlank() }
+
     /** The trade binder (see [TradeBinder]); 0 until it's made. Since 1.18. */
     var tradeBinderId: Long
         get() = prefs.getLong("tradeBinderId", 0)
@@ -544,6 +560,7 @@ class Settings(context: Context) {
             put("priceSource", priceSource.value.key)
             put("tolerancePct", tolerancePct.value.toString())
             put("archidektUser", archidektUser)
+            put("ownArchidektUser", _ownArchidektUser.value)
             put("deckSort", deckSort.name)
             put("deckSortReversed", deckSortReversed.toString())
             put("collectionView", collectionView.value.name)
@@ -582,6 +599,7 @@ class Settings(context: Context) {
         v["currency"]?.let { _currency.value = AppCurrency.fromKey(it); e.putString("currency", it) }
         v["tolerancePct"]?.toIntOrNull()?.let { _tolerance.value = it; e.putInt("tolerancePct", it) }
         v["archidektUser"]?.let { e.putString("archidektUser", it) }
+        v["ownArchidektUser"]?.let { _ownArchidektUser.value = it; e.putString("ownArchidektUser", it) }
         v["deckSort"]?.let { e.putString("deckSort", it) }
         v["deckSortReversed"]?.toBooleanStrictOrNull()?.let { e.putBoolean("deckSortReversed", it) }
         v["collectionView"]?.let { _collectionView.value = CollectionView.fromKey(it); e.putString("collectionView", it) }

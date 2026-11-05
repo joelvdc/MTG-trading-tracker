@@ -6,6 +6,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -234,6 +237,9 @@ fun CollectionScreen(nav: NavController) {
     var deletingMany by remember { mutableStateOf<List<com.mtgtrader.data.CollectionItem>?>(null) }
     var receivingOwned by remember { mutableStateOf<List<Pair<com.mtgtrader.data.WishlistItem, Int>>?>(null) }
     var exportIds by remember { mutableStateOf<Set<Long>?>(null) }
+    // Export CSV asks for the format first (since 1.78): the app's own, or Archidekt's (all, or only what's new).
+    var exportChoosing by remember { mutableStateOf(false) }
+    var archidektOnlyNew by remember { mutableStateOf(false) }
     // A received wishlist card on its way into the collection (since 1.39).
     var addingWish by remember { mutableStateOf<com.mtgtrader.data.WishlistItem?>(null) }
     var wishCurrency by remember { mutableStateOf<Triple<com.mtgtrader.data.WishlistItem, WishToCollection, List<AppCurrency>>?>(null) }
@@ -312,6 +318,46 @@ fun CollectionScreen(nav: NavController) {
             withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray()) } }
             Toast.makeText(context, "Collection exported", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    val archidektExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        val binder = selected
+        val onlyNew = archidektOnlyNew && binder == null
+        if (uri != null) scope.launch {
+            val all = com.mtgtrader.data.ArchidektExport.lines(c.db.collectionDao().all().filter { binder == null || it.binderId == binder })
+            val dir = context.filesDir
+            val lines = if (onlyNew) com.mtgtrader.data.ArchidektExport.since(all, com.mtgtrader.data.ArchidektExport.lastExport(dir)) else all
+            val ok = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(com.mtgtrader.data.ArchidektExport.csv(lines).toByteArray()) } != null }.getOrDefault(false)
+            }
+            if (!ok) {
+                Toast.makeText(context, "Couldn't write the file", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            // The next "only what's new" starts from here (whole-collection exports only).
+            if (binder == null) withContext(Dispatchers.IO) { com.mtgtrader.data.ArchidektExport.saveExport(dir, com.mtgtrader.data.ArchidektExport.snapshotOf(all)) }
+            val copies = lines.sumOf { it.quantity }
+            Toast.makeText(
+                context,
+                if (copies == 0) "Nothing new since the last export (an empty file was saved)" else "$copies card(s) exported for Archidekt",
+                Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
+    if (exportChoosing) {
+        val binder = selected
+        val name = if (binder == null) "mtg-collection" else "mtg-" + binderName(binder, binders).replace(Regex("[^A-Za-z0-9]+"), "-").lowercase()
+        ExportCsvDialog(
+            wholeCollection = binder == null,
+            lastExport = remember { com.mtgtrader.data.ArchidektExport.lastExport(context.filesDir)?.at },
+            onDismiss = { exportChoosing = false },
+            onFull = { exportChoosing = false; exporter.launch("$name.csv") },
+            onArchidekt = { onlyNew ->
+                exportChoosing = false
+                archidektOnlyNew = onlyNew
+                archidektExporter.launch("$name-archidekt" + (if (onlyNew) "-new" else "") + ".csv")
+            },
+        )
     }
 
     Scaffold(
@@ -548,11 +594,7 @@ fun CollectionScreen(nav: NavController) {
                         if (!wish) DropdownMenuItem(
                             text = { Text(if (selected == null) "Export CSV" else "Export this binder as CSV") },
                             leadingIcon = { Icon(Icons.Default.FileDownload, null) },
-                            onClick = {
-                                menu = false
-                                val name = if (selected == null) "mtg-collection" else "mtg-" + binderName(selected ?: 0, binders).replace(Regex("[^A-Za-z0-9]+"), "-").lowercase()
-                                exporter.launch("$name.csv")
-                            },
+                            onClick = { menu = false; exportChoosing = true },
                         )
                     }
                     SettingsButton(nav)
@@ -1311,4 +1353,46 @@ private fun barLabel(key: String, binders: List<Binder>, tradeBinderId: Long): S
     com.mtgtrader.data.BinderOrder.UNSORTED -> Binder.UNSORTED_NAME
     com.mtgtrader.data.BinderOrder.WISHLIST -> "★ Wishlist"
     else -> com.mtgtrader.data.BinderOrder.binderOf(key, binders)?.let { if (it.id == tradeBinderId) "⇄ ${it.name}" else it.name } ?: key
+}
+
+/**
+ * Export CSV's choices (since 1.78): the app's own file (everything it knows, ManaBox's column names), or a file for
+ * Archidekt's importer ("ManaBox – Single folder") with the whole collection or only what was added since this
+ * phone's last export for Archidekt.
+ */
+@Composable
+private fun ExportCsvDialog(wholeCollection: Boolean, lastExport: Long?, onDismiss: () -> Unit, onFull: () -> Unit, onArchidekt: (onlyNew: Boolean) -> Unit) {
+    var archidekt by remember { mutableStateOf(false) }
+    var onlyNew by remember { mutableStateOf(lastExport != null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Export CSV") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Format", style = MaterialTheme.typography.titleSmall)
+                RadioRow("MTG Trader (full)", !archidekt) { archidekt = false }
+                RadioRow("Archidekt (ManaBox – Single folder)", archidekt) { archidekt = true }
+                Text(
+                    if (archidekt) "On archidekt.com: Collection → Import → choose the \"ManaBox – Single folder\" preset. Binders are merged; prices and notes stay in the app."
+                    else "Every detail the app keeps, binders, prices and notes included. ManaBox reads it too.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (archidekt && wholeCollection) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Which cards", style = MaterialTheme.typography.titleSmall)
+                    RadioRow("Everything", !onlyNew) { onlyNew = false }
+                    RadioRow("Only cards added since the last export", onlyNew) { onlyNew = true }
+                    Text(
+                        (lastExport?.let { "Last export for Archidekt from this phone: ${Fmt.dateTime(it)}. " } ?: "No export for Archidekt from this phone yet, so that's everything. ") +
+                            "New cards and extra copies are included; cards removed since aren't, so remove those on Archidekt by hand.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { if (archidekt) onArchidekt(onlyNew && wholeCollection) else onFull() }) { Text("Export") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

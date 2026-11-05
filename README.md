@@ -3,7 +3,7 @@
 Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
 binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own
-Nextcloud. Your collection can also be kept the same as your Archidekt collection, both ways.
+Nextcloud. Decks come from Archidekt's public decklists; the collection goes to Archidekt as a CSV file.
 
 | Trade | Collection | Scan tab | Commander decks |
 |:---:|:---:|:---:|:---:|
@@ -30,7 +30,7 @@ Nextcloud. Your collection can also be kept the same as your Archidekt collectio
 - [Games: life tracker and game records](#games-life-tracker-and-game-records)
 - [Sync between phones](#sync-between-phones)
 - [Website](#website)
-- [Archidekt collection sync](#archidekt-collection-sync)
+- [Archidekt](#archidekt)
 - [Backups and restore points](#backups-and-restore-points)
 - [Rebuilding](#rebuilding)
 - [License and disclaimer](#license-and-disclaimer)
@@ -55,7 +55,7 @@ Everything is looked up live, so new sets show up without an app update.
 - **Prices:** Cardmarket's public daily price guide (~26 MB a day), plus TCGplayer's market prices (with Scryfall's
   card data) and Card Kingdom's public price list (~10 MB a day). Cardmarket's weekly product list fills in the
   printings Scryfall doesn't link (The List, some surge foils, special foils' separate products).
-- **Decks:** Archidekt (decklists, and changes to your own decks), [Commander Salt](https://www.commandersalt.com/)
+- **Decks:** Archidekt (public decklists, read only), [Commander Salt](https://www.commandersalt.com/)
   (brackets, scores and rule-zero card data), and optionally [EDH Power Level](https://edhpowerlevel.com/) or
   [ScrollVault](https://scrollvault.net/tools/commander-bracket/) for the power level. Mana symbols use the
   [Mana font](https://mana.andrewgioia.com) by Andrew Gioia (SIL Open Font License; symbols © Wizards of the Coast).
@@ -112,6 +112,9 @@ binder for the received ones. Trades can be shared as text, and an agreed price 
   condition, language, value per binder, your most valuable and most played cards and your Game Changers. Tap a slice
   to see those cards.
 - **CSV import and export** with binders, purchase prices (as typed), signed and altered (ManaBox's columns are read).
+  **Export CSV** asks for the format: the app's full file, or **Archidekt** (for Archidekt's importer, preset
+  "ManaBox – Single folder"; binders merged) with everything or **only the cards added since the last export** from
+  this phone (new cards and extra copies; cards removed since are removed on Archidekt by hand).
 
 ## Orders and purchase prices
 - **Import an order** (⋮ menu): a CardTrader order (Excel) or a Cardmarket shipment or monthly CSV. The app finds each
@@ -142,6 +145,7 @@ sections, **To buy**, **Ordered** and **Received**.
   per drop. Compares the chosen price source and, with your own CardTrader API token, CardTrader's cheapest offer
   (optionally CardTrader Zero only). Each phone keeps a year's **alert history** (when, at what price and where):
   the last ones in the card's window, all of them under ⋮ → Alert history.
+- **Change printing** in the card's window: pick another printing (with pictures and prices) of the same card.
 - **Offline:** "Add card" suggests names from Cardmarket's list on the phone; the details follow once online.
 
 ## Scan tab
@@ -158,7 +162,8 @@ trade**, **to a deck** or discard them.
 ## Commander decks
 **New deck** (Decks tab): paste or share an Archidekt link, pick decks from someone's Archidekt profile, or make a
 **local deck** (empty, from a precon, from scanned cards, a copy of one of yours, or a pasted Moxfield list). The tab
-has three sections: **Archidekt** (your own decks, editable), **Archidekt (read only)** (other people's) and **Local**.
+has three sections: **Archidekt** (your own decks), **Archidekt (read only)** (other people's) and **Local**. Your own
+decks are those of the Archidekt username under Settings → Archidekt.
 
 The deck page shows the list by your Archidekt categories (or card type) with mana costs and prices, as cards with
 pictures or one line per card. Labels mark game changers, combos, extra turns and land denial (red: they count for
@@ -215,14 +220,13 @@ the 🖨 button there prints them as an **A4 PDF** at the size of a Magic card (
 ink saver option).
 
 ### Editing decks and local decks
-Your own Archidekt decks (of the account logged in under Settings → Archidekt) and local decks can be changed in the
-app: drag cards between categories, select several to move, put in the maybeboard or remove, add cards (search,
-scanner, Scan tab or recommendations), and manage categories (add, rename, delete, hide). New cards go into Archidekt's
-auto category (or by card type). Every edit can be undone, shows at once and is sent to Archidekt the way its own
-editor does; offline, edits wait on the phone and go once online. On other people's decks, cards are added in the app
-only. A local deck can be **sent to Archidekt** as a new deck (folder and visibility of your choice) or into one of
-your decks; any Archidekt deck can be **detached** into a local deck. Deleting a deck in the app never deletes it on
-Archidekt.
+Local decks can be changed in the app: drag cards between categories, select several to move, put in the maybeboard
+or remove, add cards (search, scanner, Scan tab or recommendations), and manage categories (add, rename, delete,
+hide). New cards go into Archidekt's auto category (or by card type). Every edit can be undone and shows at once.
+Archidekt decks are read only in the app (since 1.78): edit them on archidekt.com, then **Reload decklist** (⟳); or ⋮ →
+**Make it a local deck** to edit a copy in the app. Changes made on a phone before 1.78 that never reached Archidekt
+show on the deck with **Make it a local deck** (keeps them) or **Discard** (then reload). Deleting a deck in the app
+never deletes it on Archidekt.
 
 Commander Salt has no official API: the app makes the same requests as its website, so this part may break if the site
 changes. Importing a deck adds it to commandersalt.com.
@@ -279,41 +283,24 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
 - Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in. The code is in `web/`
   (Next.js on Vercel); see `web/README.md`.
 
-## Archidekt collection sync
-Settings → **Archidekt collection** keeps your [Archidekt](https://archidekt.com/) collection the same as the app's,
-both ways. Archidekt holds the whole collection (it has no binders or wishlist).
-- **Log in** with your Archidekt user name and password (if you use Google to log in there, set a password first). The
-  app keeps only Archidekt's login token, encrypted.
-- **First sync:** if one side is empty it gets the other's cards; if they differ, choose: the app replaces Archidekt,
-  Archidekt replaces the app, or decide card by card.
-- **After that** the app compares both sides with the last sync, so each change goes the right way: added, removed and
-  changed cards, counts and purchase prices. Cards from Archidekt go to Unsorted or a "From Archidekt" binder.
-- **Careful by design:** a card changed differently on both sides waits for you, a sync removing more than 20 copies
-  waits for "Go ahead", and a backup is made before every sync that changes the app. Each sync has a report.
-- **Labels:** binders can become Archidekt labels; signed and altered copies are separate entries labelled "Signed" or
-  "Altered". Conditions are matched by grade (NM, LP, MP, HP, Damaged).
-- **Several phones:** with Nextcloud sync on, every phone can sync with Archidekt (one at a time); without it, use one
-  phone.
-- **Automatic sync** (optional, off by default): when you open the app (at most every 6 hours) and, when cards
-  changed, after you leave it.
+## Archidekt
+The app reads public [Archidekt](https://archidekt.com/) decklists, and only when you ask: adding a deck, **Reload
+decklist** or **Update all decks**. It doesn't log in to Archidekt (since 1.78; the collection sync and sending deck
+edits are gone). Settings → Archidekt holds your Archidekt username, which marks your own decks. To bring the
+collection to Archidekt, use Collection → ⋮ → **Export CSV** → Archidekt and import the file on archidekt.com with the
+"ManaBox – Single folder" preset.
 
-This uses the same connection as Archidekt's website, which isn't an official interface: logging in lets the app use
-your Archidekt account that way, unofficially and at your own risk, and if Archidekt changes it, syncing may stop
-until the app is updated. Your password goes only to Archidekt.
-
-**Going easy on Archidekt:** every request to Archidekt (decks, collection, edits) waits until 1.5 seconds after the
-previous one, so the app never sends more than 40 a minute; it names itself and backs off when Archidekt asks. A first
-sync of thousands of cards therefore takes a while (about 25 minutes per 1,000 changed cards; the progress shows the
-time left).
+**Going easy on Archidekt:** every request to Archidekt waits until 1.5 seconds after the previous one, so the app
+never sends more than 40 a minute; it names itself and backs off when Archidekt asks.
 
 **Switches:** the app reads [`remote-switches.json`](remote-switches.json) from this repository once a day.
-`"archidektAccount": false` stops logging in, the collection sync and sending deck edits on every installed copy
-(edits wait on the phone); `"archidektDecks": false` stops reading public decks; `"message"` is shown in the app.
+`"archidektDecks": false` stops reading public decks on every installed copy (`"archidektAccount"` only mattered
+before 1.78); `"message"` is shown in the app.
 Anything missing or unreadable counts as on.
 
 ## Backups and restore points
 Settings → **Backups** keeps restore points of everything the app syncs.
-- Made **every day** when something changed, and before big changes (the first Nextcloud sync, Archidekt syncs, CSV and
+- Made **every day** when something changed, and before big changes (the first Nextcloud sync, CSV and
   order imports, restoring). **Back up now** makes one you keep.
 - Stored next to the Nextcloud sync file (for all your phones), or on the phone or in a folder you choose; **Save to a
   file…** and **Restore from a file…** work with any file.

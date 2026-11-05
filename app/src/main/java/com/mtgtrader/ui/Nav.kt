@@ -93,7 +93,6 @@ fun AppNav() {
         c.appScope.launch { c.updater.autoUpdate() }
         c.sync.onAppStart()
         c.appScope.launch { c.switches.refreshIfDue(c.http) }
-        c.archidekt.onAppStart()
         c.appScope.launch { c.gameChangers.load() }
         c.appScope.launch { c.backups.dailyIfDue() }
         c.appScope.launch { c.setIcons.load() }
@@ -245,7 +244,6 @@ fun AppNav() {
             ) { PreconScreen(nav, it.arguments?.getBoolean("local") == true) }
             composable("settings") { SettingsScreen(nav) }
             composable("backups") { BackupsScreen(nav) }
-            composable("archidekt") { ArchidektSyncScreen(nav) }
             composable("trade/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 TradeEditorScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }
