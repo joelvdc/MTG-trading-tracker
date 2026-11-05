@@ -297,6 +297,9 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
   worth and the value at every price source; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt.
 - **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
+- **Settings:** besides the sync folder, the app's shared settings (price source, price type, currency, condition
+  adjustment, alert price, fair trade margin, the wishlist's choices); the phones take changes at their next sync. The
+  website's backups are listed there to download; restore one in the app (Settings → Backups → Restore from a file…).
 - **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
   folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync
   file format is newer than the website knows it only shows the data.

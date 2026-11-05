@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AppSettingsPanel, BackupsPanel } from "@/components/AppSettingsPanel";
 import { TopBar } from "@/components/Nav";
 import { api } from "@/components/api";
 
@@ -176,6 +177,13 @@ export default function SettingsPage() {
               </div>
             )}
           </section>
+
+          {session.folder && !browsing && (
+            <>
+              <AppSettingsPanel />
+              <BackupsPanel />
+            </>
+          )}
 
           <section className="card stack">
             <h2 className="section-head">Account</h2>

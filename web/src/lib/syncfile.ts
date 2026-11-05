@@ -182,8 +182,13 @@ export function addDeletion(file: SyncFile, uid: string, now: number): void {
  * the time stamp moves on with it.
  */
 export function setPref(file: SyncFile, key: string, value: string, now: number): void {
+  setPrefs(file, { [key]: value }, now);
+}
+
+/** Changes several synced settings at once. */
+export function setPrefs(file: SyncFile, values: Record<string, string>, now: number): void {
   const p = (file.data.prefs as { updatedAt?: number; values?: Record<string, string> } | undefined) ?? {};
-  const out = { ...p, updatedAt: bump(p.updatedAt ?? 0, now), values: { ...(p.values ?? {}), [key]: value } };
+  const out = { ...p, updatedAt: bump(p.updatedAt ?? 0, now), values: { ...(p.values ?? {}), ...values } };
   file.data.prefs = out as unknown as Json;
 }
 
