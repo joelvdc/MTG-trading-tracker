@@ -318,29 +318,32 @@ p.small {
 /* View switch */
 .seg {
   display: inline-flex;
-  border: 1px solid #4a4457;
-  border-radius: var(--radius);
-  overflow: hidden;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--raised);
 }
 
 .seg button {
-  min-height: 40px;
-  padding: 8px 14px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   border: 0;
-  background: var(--raised);
-  color: var(--text);
-  font: inherit;
+  border-radius: 50%;
+  background: none;
+  color: var(--violet);
   cursor: pointer;
 }
 
-.seg button + button {
-  border-left: 1px solid #4a4457;
+.seg button:hover {
+  background: #3a3446;
 }
 
 .seg button.on {
-  background: var(--gold);
-  color: var(--on-gold);
-  font-weight: 600;
+  background: #4a4457;
+  color: var(--gold);
 }
 
 /* List view */
