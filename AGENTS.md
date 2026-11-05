@@ -73,8 +73,8 @@ delegated does that after reviewing your work.
 ## After a release
 The owner clears the conversation after every release. Before the final report, make sure everything worth keeping is
 in the repository: work committed and merged, `TODO.md` up to date (shipped, still open), and
-`docs/health-check-instructions.txt` holding the full current health check text. When the health check changed, give
-the owner that full text in the report to paste (assume they do, without telling you).
+`docs/health-check-instructions.txt` holding the full current health check text. The weekly routine reads that file
+from `main` itself (since 2026-11-05), so a pushed change is all it needs; say in the report what the check gained.
 
 ---
 **For AI assistants:** Keep `AGENTS.md` identical to this file; when either changes, update the other and commit both
