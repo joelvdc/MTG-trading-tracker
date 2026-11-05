@@ -11,14 +11,13 @@ export interface Account {
   userId: string;
   /** The app password Nextcloud made for this website (revoked on logout). */
   appPassword: string;
-  /** The sync folder, as in the app ("MTG Trader"). */
+  /** The sync folder, as in the app ("MTG Trader"); "" until the owner picks one under Settings. */
   folder: string;
 }
 
 export interface PendingLogin {
   pollToken: string;
   pollEndpoint: string;
-  folder: string;
 }
 
 export const SESSION_COOKIE = "mtgt_session";

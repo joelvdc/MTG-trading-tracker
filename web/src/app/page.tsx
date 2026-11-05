@@ -5,8 +5,8 @@ import { api } from "@/components/api";
 
 export default function Home() {
   useEffect(() => {
-    api<{ loggedIn: boolean }>("/api/session").then((r) => {
-      window.location.replace(r.data.loggedIn ? "/wishlist" : "/login");
+    api<{ loggedIn: boolean; folder?: string }>("/api/session").then((r) => {
+      window.location.replace(!r.data.loggedIn ? "/login" : r.data.folder ? "/wishlist" : "/settings");
     });
   }, []);
   return <main className="page center muted">Loading…</main>;

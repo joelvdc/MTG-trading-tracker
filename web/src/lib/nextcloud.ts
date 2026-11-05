@@ -168,6 +168,40 @@ export async function listFiles(a: Account, folder: string): Promise<string[]> {
 }
 
 /** File names from a PROPFIND answer (folders, including the listed one itself, left out). */
+/** The folders and files directly inside [path] (from the top of the owner's Nextcloud), for picking the sync folder. */
+export async function browse(a: Account, path: string): Promise<{ folders: string[]; files: string[] }> {
+  const top: Account = { ...a, folder: "" };
+  const r = await call(davUrl(top, path), {
+    method: "PROPFIND",
+    headers: auth(top, { Depth: "1", "Content-Type": "application/xml" }),
+    body: '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>',
+  });
+  if (r.status === 404) throw new NextcloudError("That folder doesn't exist on Nextcloud.", 404);
+  if (!r.ok) throw failed("Listing the folder", r);
+  return parseEntries(await r.text());
+}
+
+/** Folder and file names from a Depth 1 listing; the first answer is the listed folder itself and is left out. */
+export function parseEntries(xml: string): { folders: string[]; files: string[] } {
+  const folders: string[] = [];
+  const files: string[] = [];
+  let first = true;
+  for (const m of xml.matchAll(/<(?:\w+:)?response\b[\s\S]*?<\/(?:\w+:)?response>/g)) {
+    if (first) {
+      first = false;
+      continue;
+    }
+    const block = m[0];
+    const href = /<(?:\w+:)?href>([^<]+)<\/(?:\w+:)?href>/.exec(block)?.[1];
+    if (!href) continue;
+    const name = decodeURIComponent(href.replace(/\/+$/, "").split("/").pop() ?? "");
+    if (!name) continue;
+    (/<(?:\w+:)?collection\s*\/>/.test(block) ? folders : files).push(name);
+  }
+  const byName = (x: string, y: string) => x.localeCompare(y, "en", { sensitivity: "base" });
+  return { folders: folders.sort(byName), files: files.sort(byName) };
+}
+
 export function parseListing(xml: string): string[] {
   const out: string[] = [];
   for (const m of xml.matchAll(/<(?:\w+:)?response\b[\s\S]*?<\/(?:\w+:)?response>/g)) {

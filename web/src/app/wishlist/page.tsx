@@ -67,6 +67,7 @@ export default function WishlistPage() {
       api<WishView>("/api/wishlist"),
     ]);
     if (!s.data.loggedIn || w.status === 401 || w.data.loggedOut) return goLogin();
+    if (!s.data.folder || (w.data as { noFolder?: boolean }).noFolder) return window.location.replace("/settings");
     setFolder(s.data.folder ?? "");
     if (w.ok && Array.isArray(w.data.rows)) setView(w.data);
     else setLoadError(w.data.error ?? "Could not load the wishlist.");
@@ -134,6 +135,9 @@ export default function WishlistPage() {
               <button className="btn" onClick={load}>
                 Try again
               </button>
+              <a className="btn" href="/settings">
+                Settings
+              </a>
               <button className="btn" onClick={logout}>
                 Log out
               </button>
@@ -182,9 +186,9 @@ export default function WishlistPage() {
             <strong>MTG Trader · Wishlist</strong>
             {folder && <div className="muted small">{folder}</div>}
           </div>
-          <button className="btn" onClick={logout}>
-            Log out
-          </button>
+          <a className="btn" href="/settings">
+            Settings
+          </a>
         </div>
       </header>
       <main className="page">

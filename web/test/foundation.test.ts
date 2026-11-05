@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanFolder } from "@/lib/config";
 import { format, toEur } from "@/lib/money";
-import { davUrl, parseListing, sameOrigin } from "@/lib/nextcloud";
+import { davUrl, parseEntries, parseListing, sameOrigin } from "@/lib/nextcloud";
 import { best, compactGuide, parseEcb, priceOf, type PriceFile } from "@/lib/prices";
 import { pickFoilType, toCardRef } from "@/lib/scryfall";
 import { seal, unseal, type Account } from "@/lib/session";
@@ -52,6 +52,15 @@ describe("Nextcloud", () => {
       <d:response><d:href>/remote.php/dav/files/joel/MTG%20Trader/web-backups/sync-2026-11-05.json.gz</d:href><d:propstat><d:prop><d:resourcetype/></d:prop></d:propstat></d:response>
     </d:multistatus>`;
     expect(parseListing(xml)).toEqual(["sync-2026-11-05.json.gz"]);
+  });
+  it("lists folders and files for the folder picker, without the folder itself", () => {
+    const xml = `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">
+      <d:response><d:href>/remote.php/dav/files/joel/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+      <d:response><d:href>/remote.php/dav/files/joel/MTG%20Trader%20web%20test/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+      <d:response><d:href>/remote.php/dav/files/joel/Documents/</d:href><d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop></d:propstat></d:response>
+      <d:response><d:href>/remote.php/dav/files/joel/sync.json.gz</d:href><d:propstat><d:prop><d:resourcetype/></d:prop></d:propstat></d:response>
+    </d:multistatus>`;
+    expect(parseEntries(xml)).toEqual({ folders: ["Documents", "MTG Trader web test"], files: ["sync.json.gz"] });
   });
   it("accepts sensible folder names only", () => {
     expect(cleanFolder(" MTG Trader ")).toBe("MTG Trader");

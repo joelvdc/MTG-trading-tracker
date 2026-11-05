@@ -7,7 +7,6 @@ const POLL_MS = 2000;
 const GIVE_UP_MS = 20 * 60 * 1000;
 
 export default function LoginPage() {
-  const [folder, setFolder] = useState("MTG Trader");
   const [phase, setPhase] = useState<"form" | "starting" | "waiting">("form");
   const [message, setMessage] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
@@ -16,7 +15,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     api<{ loggedIn: boolean }>("/api/session").then((r) => {
-      if (r.data.loggedIn) window.location.replace("/wishlist");
+      if (r.data.loggedIn) window.location.replace("/");
     });
     return () => {
       run.current++;
@@ -43,7 +42,7 @@ export default function LoginPage() {
       if (id !== run.current) return;
       const status = r.data.status;
       if (status === "done") {
-        window.location.replace("/wishlist");
+        window.location.replace("/");
       } else if (status === "expired") {
         stop();
         setMessage("The login timed out. Please start again.");
@@ -58,14 +57,12 @@ export default function LoginPage() {
 
   async function start(e: React.FormEvent) {
     e.preventDefault();
-    const name = folder.trim();
-    if (!name) return;
     setMessage(null);
     setLink(null);
     // Open a blank tab now (inside the click), so the browser doesn't block it; it gets its address later.
     const tab = window.open("", "_blank");
     setPhase("starting");
-    const r = await api<{ loginUrl?: string }>("/api/login/start", { folder: name });
+    const r = await api<{ loginUrl?: string }>("/api/login/start", {});
     const url = r.data.loginUrl;
     if (!url) {
       tab?.close();
@@ -86,13 +83,8 @@ export default function LoginPage() {
         <h1>MTG Trader</h1>
         {phase !== "waiting" ? (
           <form onSubmit={start} className="stack">
-            <label className="field">
-              <span>Sync folder</span>
-              <input value={folder} onChange={(e) => setFolder(e.target.value)} maxLength={200} disabled={phase === "starting"} />
-              <small className="muted">The folder chosen in the app under Settings → Sync with Nextcloud.</small>
-            </label>
             {message && <div className="bar error">{message}</div>}
-            <button className="btn primary" type="submit" disabled={phase === "starting" || !folder.trim()}>
+            <button className="btn primary" type="submit" disabled={phase === "starting"}>
               {phase === "starting" ? "Starting…" : "Log in with Nextcloud"}
             </button>
           </form>

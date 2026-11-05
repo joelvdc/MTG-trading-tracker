@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { allowedUsers, nextcloudServer } from "./config";
 import { NextcloudError } from "./nextcloud";
 import { type Account, SESSION_COOKIE, unseal } from "./session";
-import { NoSyncFile, ReadOnlyFile } from "./store";
+import { NoFolder, NoSyncFile, ReadOnlyFile } from "./store";
 import { EditError } from "./wishlist";
 
 export async function currentAccount(): Promise<Account | null> {
@@ -29,6 +29,7 @@ export function json(body: unknown, status = 200): NextResponse {
 export function errorResponse(e: unknown): NextResponse {
   if (e instanceof EditError) return json({ error: e.message }, 400);
   if (e instanceof ReadOnlyFile) return json({ error: e.message, readOnly: true }, 409);
+  if (e instanceof NoFolder) return json({ error: e.message, noFolder: true }, 409);
   if (e instanceof NoSyncFile) return json({ error: e.message }, 404);
   if (e instanceof NextcloudError) return json({ error: e.message, loggedOut: e.status === 401 }, e.status === 401 ? 401 : 502);
   console.error(e);

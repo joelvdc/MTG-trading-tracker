@@ -513,3 +513,49 @@ p.small {
     gap: 8px;
   }
 }
+
+/* Settings */
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.bar.ok {
+  border: 1px solid var(--green);
+}
+
+.bar .btn {
+  margin-left: 8px;
+}
+
+.crumbs {
+  overflow-wrap: anywhere;
+}
+
+.folders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.folder {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #4a4457;
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.folder:hover:not(:disabled) {
+  background: #352f41;
+}

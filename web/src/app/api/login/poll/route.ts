@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     if (!got) return json({ status: "waiting" });
     jar.delete(LOGIN_COOKIE);
     const id = await userId(server, got);
-    const account: Account = { server, loginName: got.loginName, userId: id, appPassword: got.appPassword, folder: pending.folder };
+    const account: Account = { server, loginName: got.loginName, userId: id, appPassword: got.appPassword, folder: "" };
     if (!allowedUsers().includes(id)) {
       await revoke(account);
       console.warn(`Login refused for Nextcloud user "${id}" (not in ALLOWED_USERS).`);

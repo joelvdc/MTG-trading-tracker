@@ -14,6 +14,12 @@ export class NoSyncFile extends Error {
   }
 }
 
+export class NoFolder extends Error {
+  constructor() {
+    super("Pick your sync folder under Settings first.");
+  }
+}
+
 export class ReadOnlyFile extends Error {
   constructor(format: number) {
     super(`The sync file was written by a newer version of the app (format ${format}). The website shows it but can't change it until it's updated.`);
@@ -21,6 +27,7 @@ export class ReadOnlyFile extends Error {
 }
 
 export async function loadSync(a: Account): Promise<{ file: SyncFile; etag: string | null; bytes: Uint8Array }> {
+  if (!a.folder) throw new NoFolder();
   const remote = await getFile(a, SYNC_FILE);
   if (!remote) throw new NoSyncFile();
   return { file: decode(remote.bytes), etag: remote.etag, bytes: remote.bytes };
