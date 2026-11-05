@@ -205,6 +205,24 @@ export default function WishlistPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {layout === "images" && (
+            <select
+              aria-label="Sort"
+              value={`${sort.key}:${sort.desc ? "desc" : "asc"}`}
+              onChange={(e) => {
+                const [key, dir] = e.target.value.split(":");
+                changeSort({ key: key as SortKey, desc: dir === "desc" });
+              }}
+            >
+              {(Object.keys(SORT_LABELS) as SortKey[]).flatMap((key) =>
+                [firstDirection(key), !firstDirection(key)].map((desc) => (
+                  <option key={`${key}:${desc}`} value={`${key}:${desc ? "desc" : "asc"}`}>
+                    {SORT_LABELS[key]} {desc ? "↓" : "↑"}
+                  </option>
+                )),
+              )}
+            </select>
+          )}
           <div className="seg" role="group" aria-label="View">
             <button
               className={layout === "list" ? "on" : undefined}
@@ -233,24 +251,6 @@ export default function WishlistPage() {
               </svg>
             </button>
           </div>
-          {layout === "images" && (
-            <select
-              aria-label="Sort"
-              value={`${sort.key}:${sort.desc ? "desc" : "asc"}`}
-              onChange={(e) => {
-                const [key, dir] = e.target.value.split(":");
-                changeSort({ key: key as SortKey, desc: dir === "desc" });
-              }}
-            >
-              {(Object.keys(SORT_LABELS) as SortKey[]).flatMap((key) =>
-                [firstDirection(key), !firstDirection(key)].map((desc) => (
-                  <option key={`${key}:${desc}`} value={`${key}:${desc ? "desc" : "asc"}`}>
-                    {SORT_LABELS[key]} {desc ? "↓" : "↑"}
-                  </option>
-                )),
-              )}
-            </select>
-          )}
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
