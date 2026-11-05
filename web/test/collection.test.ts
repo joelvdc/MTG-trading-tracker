@@ -5,7 +5,7 @@ import { mergeDetails, toInfo, type DetailsFile } from "@/lib/carddetails";
 import { parseCopy } from "@/lib/cardkingdom";
 import { resolveFinish } from "@/lib/cards";
 import { applyCollectionEdit } from "@/lib/collection";
-import { comparator, computeStats, EMPTY_FILTER, matchesFilter, matchesText } from "@/lib/colquery";
+import { comparator, computeStats, EMPTY_FILTER, matchesFilter, matchesText, sourceTotals, stacksText } from "@/lib/colquery";
 import { barKeys, collectionView, orderBinders, type CollRow } from "@/lib/collview";
 import { archidektCsv, fullCsv } from "@/lib/csvexport";
 import type { PriceFile } from "@/lib/prices";
@@ -278,6 +278,7 @@ function row(over: Partial<CollRow>): CollRow {
     condNote: null,
     changeEur: null,
     changePct: null,
+    srcEur: { cardmarket: 1, tcgplayer: null, cardkingdom: null, ckPays: null },
     info: { c: "R", i: "R", t: "Instant", v: 1, r: 5, d: "2020-08-07", g: false },
     ...over,
   };
@@ -314,6 +315,24 @@ describe("searching, filtering, sorting and stats", () => {
     expect(by("TYPE")).toEqual(["f", "b", "s"]);
     expect(by("CHANGE_PCT")).toEqual(["b", "f", "s"]);
     expect(by("NAME", true)).toEqual(["s", "b", "f"]);
+  });
+
+  it("totals the value at every price source, Cardmarket's price standing in", () => {
+    const rows = [
+      row({ uid: "a", quantity: 2, srcEur: { cardmarket: 1, tcgplayer: 1.5, cardkingdom: null, ckPays: 0.4 } }),
+      row({ uid: "b", quantity: 1, srcEur: { cardmarket: 3, tcgplayer: null, cardkingdom: 4, ckPays: null } }),
+    ];
+    const t = sourceTotals(rows);
+    expect(t.map((x) => [x.label, x.value, x.covered])).toEqual([
+      ["Cardmarket", 5, 3],
+      ["TCGplayer", 6, 2],
+      ["Card Kingdom", 6, 1],
+      ["Card Kingdom would pay", 0.8, 2],
+    ]);
+  });
+
+  it("writes piles as the app's plain list", () => {
+    expect(stacksText([row({ quantity: 2 }), row({ finish: "FOIL" })])).toBe("2 Lightning Bolt (2XM #117)\n1 Lightning Bolt (2XM #117, foil)");
   });
 
   it("counts the stats", () => {

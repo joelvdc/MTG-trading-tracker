@@ -25,6 +25,7 @@ import {
   matchesFilter,
   matchesText,
   SORT_FIELDS,
+  stacksText,
   type Filter,
   type SortLevel,
 } from "@/lib/colquery";
@@ -101,6 +102,7 @@ export default function CollectionPage() {
   const [deletingBinder, setDeletingBinder] = useState(false);
   const [arranging, setArranging] = useState(false);
   const [pricing, setPricing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const lookedUp = useRef(false);
 
   useEffect(() => {
@@ -469,6 +471,21 @@ export default function CollectionPage() {
             </select>
             <button className="btn" disabled={locked} onClick={() => setPricing(true)}>
               Purchase price…
+            </button>
+            <button
+              className="btn"
+              onClick={async () => {
+                const text = stacksText(rows.filter((r) => picked.includes(r.uid)));
+                try {
+                  await navigator.clipboard.writeText(text);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch {
+                  setMessage("The browser didn't allow copying.");
+                }
+              }}
+            >
+              {copied ? "Copied ✓" : "Copy as list"}
             </button>
             {confirmDelete ? (
               <>

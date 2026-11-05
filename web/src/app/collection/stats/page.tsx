@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
 import type { CollectionView } from "@/lib/collview";
-import { computeStats, deckCardNames, displayName, type StatCard, type StatEntry } from "@/lib/colquery";
+import { computeStats, deckCardNames, displayName, sourceTotals, type StatCard, type StatEntry } from "@/lib/colquery";
 import { format } from "@/lib/money";
 
 type Measure = "copies" | "value";
@@ -38,7 +38,7 @@ export default function StatsPage() {
     const rows = pick === "" ? view.rows : view.rows.filter((r) => r.binder === (pick === "~" ? null : pick));
     const names = new Map<string | null, string>(view.binders.map((b) => [b.uid, b.name]));
     names.set(null, "Unsorted");
-    return { pick, s: computeStats(rows, names, deckCardNames(view.decks)) };
+    return { pick, s: computeStats(rows, names, deckCardNames(view.decks)), sources: sourceTotals(rows) };
   }, [view, binder]);
 
   if (!view || !stats) {
@@ -50,7 +50,7 @@ export default function StatsPage() {
     );
   }
 
-  const { pick, s } = stats;
+  const { pick, s, sources } = stats;
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
   const amount = (e: StatEntry) => (measure === "copies" ? `${e.copies}` : money(e.value));
   const link = (filter: StatEntry["filter"], binderKey = pick) => {
@@ -189,6 +189,41 @@ export default function StatsPage() {
         )}
 
         <div className="stat-grid">
+          <section className="stat-block">
+            <h2>Value by price source</h2>
+            <p className="muted small">Cardmarket is Europe&apos;s market; TCGplayer and Card Kingdom are American. Card Kingdom&apos;s follow each copy&apos;s condition.</p>
+            <ul className="bars sources">
+              {sources.map((t) => {
+                const missing = t.source !== "cardmarket" && t.covered === 0;
+                const top = Math.max(...sources.map((x) => x.value), 0.0001);
+                const note =
+                  t.source !== "cardmarket" && !view.ratesKnown
+                    ? "Waiting for the exchange rates"
+                    : missing
+                      ? "No prices yet: they come with the next price update"
+                      : t.source === null
+                        ? `${t.covered} of ${t.copies} cards are on its buylist`
+                        : t.covered < t.copies
+                          ? `${t.covered} of ${t.copies} cards priced; Cardmarket's price for the rest`
+                          : null;
+                return (
+                  <li key={t.label}>
+                    <div className="bar-row">
+                      <span className="bar-label">
+                        {t.label}
+                        {t.source === view.source && <span className="muted"> · your price source</span>}
+                      </span>
+                      <span className="bar-track" aria-hidden="true">
+                        {!missing && <span className={t.source === null ? "bar-fill alt" : "bar-fill"} style={{ width: t.value > 0 ? `max(6px, ${(t.value / top) * 100}%)` : 0 }} />}
+                      </span>
+                      <span className="bar-num">{missing ? "–" : money(t.value)}</span>
+                    </div>
+                    {note && <div className="muted small source-note">{note}</div>}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
           <Bars title="Colors" entries={s.colors} />
           <Bars title="Color identity" entries={s.identities} sortBy />
           <Bars title="Rarity" entries={s.rarities} />

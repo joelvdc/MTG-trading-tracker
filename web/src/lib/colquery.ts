@@ -2,7 +2,7 @@
 // CollectionQuery.kt CollectionFilter/SortSpec, CollectionStats.kt). Runs in the browser on the rows the server sent.
 import type { CollDeck, CollRow } from "./collview";
 import { conditionName, languageName } from "./cards";
-import type { Finish } from "./pricing";
+import { SOURCE_LABELS, type Finish, type Source } from "./pricing";
 
 /** A finish's name as the app writes it (CardRef.finishName): "Normal", "Foil", "Surge foil", "Etched foil". */
 export function finishName(row: Pick<CollRow, "finish" | "card">): string {
@@ -283,6 +283,50 @@ export function comparator(levels: SortLevel[]): Cmp {
     }
     return 0;
   };
+}
+
+/** The piles as a plain list, "2 Sol Ring (C21 #263, foil)" per line (the app's stacksText). */
+export function stacksText(rows: CollRow[]): string {
+  return rows
+    .map((r) => {
+      const extra = [`${r.card.setCode.toUpperCase()} #${r.card.collectorNumber}`];
+      if (r.finish !== "NONFOIL") extra.push(finishName(r).toLowerCase());
+      return `${r.quantity} ${r.card.name} (${extra.join(", ")})`;
+    })
+    .join("\n");
+}
+
+// ---- Value by price source (the app's sourceTotals) ----
+
+export interface SourceTotal {
+  /** null: what Card Kingdom would pay. */
+  source: Source | null;
+  label: string;
+  value: number;
+  /** Copies the source has a price for. */
+  covered: number;
+  copies: number;
+}
+
+/** The cards' value at every source (Cardmarket's price for cards a source has none for), and what Card Kingdom pays. */
+export function sourceTotals(rows: CollRow[]): SourceTotal[] {
+  const copies = rows.reduce((n, r) => n + r.quantity, 0);
+  const sources: Source[] = ["cardmarket", "tcgplayer", "cardkingdom"];
+  const out: SourceTotal[] = sources.map((s) => ({
+    source: s,
+    label: SOURCE_LABELS[s],
+    value: rows.reduce((n, r) => n + (r.srcEur[s] ?? r.srcEur.cardmarket ?? 0) * r.quantity, 0),
+    covered: s === "cardmarket" ? copies : rows.filter((r) => r.srcEur[s] != null).reduce((n, r) => n + r.quantity, 0),
+    copies,
+  }));
+  out.push({
+    source: null,
+    label: "Card Kingdom would pay",
+    value: rows.reduce((n, r) => n + (r.srcEur.ckPays ?? 0) * r.quantity, 0),
+    covered: rows.filter((r) => r.srcEur.ckPays != null).reduce((n, r) => n + r.quantity, 0),
+    copies,
+  });
+  return out;
 }
 
 // ---- Statistics (CollectionStats.compute) ----

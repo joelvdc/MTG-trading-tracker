@@ -286,12 +286,13 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   decks, signed/altered) and sort, in up to three levels ("Color, then name"). The list shows 25, 50 or 100 rows per
   page. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
   notes, signed/altered (for some of the copies too) and the printing, shows every price source and the decks it's in,
-  and deletes it. Tick several cards to move them, set their condition, language or purchase price, or delete them.
+  and deletes it. Tick several cards to move them, set their condition, language or purchase price, copy them as a list, or delete
+  them.
   **Add card** is there too, and the binders: new, rename, merge into another, delete (keeping the cards in Unsorted or
   not), move all Unsorted cards, and **Arrange** the binder bar (the phones get that order too).
 - **Stats:** all of the app's collection stats (colors, identity, rarity, types, mana curve, finish, condition,
   language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
-  worth; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt.
+  worth and the value at every price source; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt.
 - **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
 - **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
   folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync

@@ -49,6 +49,8 @@ export interface CollRow {
   /** Cardmarket's trend against its 30-day average, one copy, in euros and percent (the app's PriceChange). */
   changeEur: number | null;
   changePct: number | null;
+  /** One copy at every source (null: no price there) and what Card Kingdom pays, in euros (the stats' source comparison). */
+  srcEur: { cardmarket: number | null; tcgplayer: number | null; cardkingdom: number | null; ckPays: number | null };
   /** Colours, type… from Scryfall; null until looked up. */
   info: Omit<CardInfo, "u" | "tu" | "at"> | null;
 }
@@ -81,6 +83,8 @@ export interface CollectionView {
   sourceLabel: string;
   /** "Prices from …" line. */
   pricesNote: string;
+  /** The exchange rates are there (TCGplayer's and Card Kingdom's dollars need them). */
+  ratesKnown: boolean;
   /** Printings without details yet (the page looks them up, 75 at a time). */
   missing: string[];
   readOnly: boolean;
@@ -180,6 +184,12 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
         cmEur: cm,
         approx: isApprox(setup, it.card.scryfallId, finish, it.condition),
         condNote: conditionNote(setup, it.card.scryfallId, finish, it.condition),
+        srcEur: {
+          cardmarket: priceAt(setup, "cardmarket", it.card.scryfallId, finish, it.condition, cm),
+          tcgplayer: priceAt(setup, "tcgplayer", it.card.scryfallId, finish, it.condition, cm),
+          cardkingdom: priceAt(setup, "cardkingdom", it.card.scryfallId, finish, it.condition, cm),
+          ckPays: cardKingdomPays(setup, it.card.scryfallId, finish),
+        },
         changeEur: change,
         changePct: change != null ? (change / avg30!) * 100 : null,
         info: d ? { c: d.c, i: d.i, t: d.t, v: d.v, r: d.r, d: d.d, g: d.g } : null,
@@ -215,6 +225,7 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
     priceTypeLabel: PRICE_TYPE_LABELS[setup.type],
     source: setup.source,
     sourceLabel: SOURCE_LABELS[setup.source],
+    ratesKnown: !!prices?.rates?.perEuro?.USD,
     pricesNote: dates.length ? `Price lists from ${dates.join(", ")}` : "Prices: Scryfall's saved prices (the daily price file isn't there yet)",
     missing: [...missing],
     readOnly: !canWrite(file),

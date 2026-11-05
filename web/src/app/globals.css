@@ -1312,3 +1312,16 @@ main h2 {
   padding: 4px 0;
   border-bottom: 1px solid #2c2836;
 }
+
+/* Value by price source (stats) */
+.bars.sources .bar-label {
+  white-space: normal;
+}
+
+.bar-fill.alt {
+  background: var(--gold);
+}
+
+.source-note {
+  padding: 0 4px 4px;
+}
