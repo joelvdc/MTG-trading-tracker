@@ -30,7 +30,7 @@ import java.util.zip.GZIPOutputStream
  *   app writes it. When the app's sync format changes, this test fails until the copy is rewritten (run the tests
  *   with WRITE_WEB_FIXTURES=1) and the website is updated to match.
  * - [websiteEditsMergeOnThePhone]: `web/test/fixtures/web-edited-sync.json` is that file after the website's tests
- *   made wishlist edits; a phone must read it and take the edits over. Since the website (2026-11).
+ *   made wishlist and collection edits; a phone must read it and take the edits over. Since the website (2026-11).
  */
 class WebSyncFixtureTest {
     private val fixtures = File("../web/test/fixtures")
@@ -114,7 +114,20 @@ class WebSyncFixtureTest {
         // Untouched.
         assertEquals(phone.wishlist.first { it.card.name == "Cyclonic Rift" }, byName.getValue("Cyclonic Rift"))
         assertEquals(phone.decks, merged.decks)
-        assertEquals(phone.collection, merged.collection)
+        // Collection edits (website phase 2): a new binder with a new stack, and the Sol Ring stack changed.
+        val trades = merged.binders.single { it.name == "Trades" }
+        assertEquals("b0000000000000000000000000000002", trades.uid)
+        val boltStack = merged.collection.single { it.item.card.name == "Lightning Bolt" }
+        assertEquals(trades.uid, boltStack.binder)
+        assertEquals(2, boltStack.item.quantity)
+        assertTrue(boltStack.item.foil && boltStack.item.signed && !boltStack.item.etched)
+        assertEquals("EX", boltStack.item.condition)
+        assertEquals("DE", boltStack.item.language)
+        val solStack = merged.collection.single { it.item.card.name == "Sol Ring" }
+        assertEquals(3, solStack.item.quantity)
+        assertEquals("from the website", solStack.item.notes)
+        assertEquals(1.25, solStack.item.purchasePrice)
+        assertEquals("b0000000000000000000000000000001", solStack.binder)
         // Syncing again changes nothing.
         assertEquals(merged, SyncMerge.merge(merged, merged, now = 1_750_000_100_000))
     }

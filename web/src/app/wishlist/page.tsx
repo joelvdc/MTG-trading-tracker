@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddDialog, type AddRequest } from "@/components/AddDialog";
 import { api, formatDate } from "@/components/api";
 import { EditDialog } from "@/components/EditDialog";
+import { TopBar } from "@/components/Nav";
 import { WishGrid } from "@/components/WishGrid";
 import { type Section, WishTable } from "@/components/WishTable";
 import {
@@ -159,17 +160,7 @@ export default function WishlistPage() {
 
   return (
     <>
-      <header className="topbar">
-        <div className="topbar-in">
-          <div>
-            <strong>MTG Trader · Wishlist</strong>
-            {folder && <div className="muted small">{folder}</div>}
-          </div>
-          <a className="btn" href="/settings">
-            Settings
-          </a>
-        </div>
-      </header>
+      <TopBar page="wishlist" folder={folder} />
       <main className="page">
         {view.readOnly && (
           <div className="bar warn">

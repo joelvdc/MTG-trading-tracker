@@ -36,7 +36,7 @@ export class EditError extends Error {}
 const MAX_QUANTITY = 999;
 
 /** SQLite's NOCASE: ASCII letters compared without case. */
-function sameName(a: string, b: string): boolean {
+export function sameName(a: string, b: string): boolean {
   const fold = (s: string) => s.replace(/[A-Z]/g, (c) => c.toLowerCase());
   return fold(a) === fold(b);
 }
@@ -56,7 +56,7 @@ function checkQuantity(q: number): number {
   return q;
 }
 
-function checkCard(card: CardRef): CardRef {
+export function checkCard(card: CardRef): CardRef {
   const ok =
     card &&
     typeof card.scryfallId === "string" &&

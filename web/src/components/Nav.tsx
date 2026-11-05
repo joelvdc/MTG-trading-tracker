@@ -1,0 +1,28 @@
+"use client";
+
+/** The top bar on every page after logging in: the website's sections and Settings. */
+export function TopBar({ page, folder }: { page: "wishlist" | "collection" | "stats" | "trades" | "settings"; folder?: string }) {
+  const link = (href: string, label: string, on: boolean) => (
+    <a href={href} className={on ? "nav-link on" : "nav-link"} aria-current={on ? "page" : undefined}>
+      {label}
+    </a>
+  );
+  return (
+    <header className="topbar">
+      <div className="topbar-in wide">
+        <div className="brand">
+          <strong>MTG Trader</strong>
+          {folder && <div className="muted small">{folder}</div>}
+        </div>
+        <nav className="nav" aria-label="Sections">
+          {link("/wishlist", "Wishlist", page === "wishlist")}
+          {link("/collection", "Collection", page === "collection" || page === "stats")}
+          {link("/trades", "Trades", page === "trades")}
+        </nav>
+        <a className={page === "settings" ? "btn on" : "btn"} href="/settings">
+          Settings
+        </a>
+      </div>
+    </header>
+  );
+}

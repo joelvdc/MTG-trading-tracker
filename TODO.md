@@ -25,8 +25,7 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   1. ~~Wishlist on the website~~ **Done 2026-11-05** (see Done).
   3. ~~App release: break free from Archidekt~~ **Done in 1.78** (see Done). Commander Salt for local decks moved
      to phase 4.
-  2. Collection on the website: binders, search, filters, simple edits, all collection stats, CSV export. Trades
-     **view-only** (decided).
+  2. ~~Collection on the website~~ **Done 2026-11-05** (see Done).
   4. Decks on the website: Archidekt decks read-only, local decks with a deck builder, all deck stats, recommendations,
      and the **win-turn simulation including the commander-casting turn** (owner's wish: ported from the app).
   5. Games on the website: log, stats, head to head, per deck; edit and add games by hand. Life tracker stays on the
@@ -64,6 +63,10 @@ onedrive?"
   is only reshaped once.
 
 ## Done
+- 2026-11-05: website phase 2: the collection (binders, search, filters, sort, edits, bulk changes, add cards, 25/50/100
+  rows per page, card picture on hover), all collection stats, CSV export (full and Archidekt) and trades (view only),
+  priced like the app (its source, type, currency and condition adjustment); two new daily stores (Card Kingdom copy,
+  Scryfall card details); health check covers them. No app release needed.
 - 1.78: break free from Archidekt (website phase 3): no login, collection sync or sending deck edits; Archidekt decks read-only with "Make it a local deck"; old unsent changes kept or discarded; Export CSV for Archidekt (everything or only what's new); Archidekt contacted only on a tap. Also Change printing on wishlist cards.
 - 2026-11-05: website phase 1: the wishlist at mtgtrader.vercel.app (`web/`), editing the Nextcloud sync file as one more device; health check covers it.
 - 2026-11-03: /delegate-mistral runs `vibe --prompt-file` with step and size limits (VIBE_APP_SERVER_CMD works around the blocked vibe-app-server.exe; no IT change needed).

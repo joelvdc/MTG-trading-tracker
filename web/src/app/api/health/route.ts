@@ -1,13 +1,19 @@
 import { json } from "@/lib/auth";
+import { loadCardKingdom } from "@/lib/cardkingdom";
+import { loadDetails } from "@/lib/carddetails";
 import { loadPrices } from "@/lib/pricestore";
 import { WEB_FORMAT } from "@/lib/syncfile";
 
 export const dynamic = "force-dynamic";
 
+const hours = (ms: number | null | undefined) => (ms ? Math.round((Date.now() - ms) / 3_600_000) : null);
+
 /** For the weekly health check: no secrets, no owner data. */
 export async function GET() {
-  const prices = await loadPrices();
-  const ageHours = prices ? Math.round((Date.now() - prices.madeAt) / 3_600_000) : null;
+  const [prices, details, ck] = await Promise.all([loadPrices(), loadDetails(), loadCardKingdom()]);
+  const ageHours = hours(prices?.madeAt);
+  const detailsAge = hours(details.madeAt);
+  const ckAge = hours(ck?.madeAt);
   return json({
     ok: true,
     syncFormat: WEB_FORMAT,
@@ -15,6 +21,12 @@ export async function GET() {
     pricesAgeHours: ageHours,
     pricesFresh: ageHours !== null && ageHours < 48,
     ratesDate: prices?.rates.date ?? null,
+    cardDetails: Object.keys(details.cards).length,
+    cardDetailsAgeHours: detailsAge,
+    cardKingdomRows: ck ? Object.keys(ck.rows).length : 0,
+    cardKingdomListDate: ck?.listDate ?? null,
+    cardKingdomAgeHours: ckAge,
+    cardKingdomFresh: ckAge !== null && ckAge < 48,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

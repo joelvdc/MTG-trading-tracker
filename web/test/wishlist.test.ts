@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { canWrite, decode, deletions, encode, parse, stamp, wishlist, type CardRef, type SyncFile } from "@/lib/syncfile";
+import { applyCollectionEdit } from "@/lib/collection";
 import { applyEdit, EditError, ownedFor } from "@/lib/wishlist";
 
 const fixtures = path.join(__dirname, "fixtures");
@@ -37,6 +38,10 @@ function webEdits(file: SyncFile): void {
   applyEdit(file, { type: "add", card: bolt, foil: false, quantity: 4, anyPrinting: true }, NOW, () => "f0000000000000000000000000000001");
   applyEdit(file, { type: "update", uid: SOL, quantity: 3, ordered: true, alertBelow: 2.5, alertCurrency: "EUR" }, NOW);
   applyEdit(file, { type: "remove", uid: RHYSTIC }, NOW);
+  // Collection edits (phase 2): a new binder with a new stack in it, and the Sol Ring stack changed.
+  const trades = applyCollectionEdit(file, { type: "addBinder", name: "Trades" }, NOW, null, () => "b0000000000000000000000000000002").uid;
+  applyCollectionEdit(file, { type: "add", card: bolt, quantity: 2, finish: "FOIL", condition: "EX", language: "DE", binder: trades, signed: true }, NOW, null, () => "c0000000000000000000000000000002");
+  applyCollectionEdit(file, { type: "update", uid: "c0000000000000000000000000000001", quantity: 3, notes: "from the website", paid: { amount: 1.25, currency: "EUR" } }, NOW);
   stamp(file, NOW);
 }
 

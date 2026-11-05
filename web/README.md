@@ -1,7 +1,7 @@
 # MTG Trader website
 
-The website at [mtgtrader.vercel.app](https://mtgtrader.vercel.app): the wishlist of the MTG Trader app, edited from a
-computer. Next.js (App Router) on Vercel, project `mtgtrader`, root folder `web/`, region `arn1` (Stockholm).
+The website at [mtgtrader.vercel.app](https://mtgtrader.vercel.app): the wishlist, collection (with stats and CSV
+export) and trades (view only) of the MTG Trader app, from a computer. Next.js (App Router) on Vercel, project `mtgtrader`, root folder `web/`, region `arn1` (Stockholm).
 Pushes to `main` that touch `web/` deploy to production; other branches get a preview address.
 
 ## How it works
@@ -16,7 +16,24 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   (Settings) and must hold `sync.json.gz`.
 - **Prices:** a daily cron (`/api/cron/prices`, 05:30 UTC) shrinks Cardmarket's `price_guide_1.json` and the ECB rates
   into a private Vercel Blob (`prices/latest.json.gz`). Card search uses Scryfall.
-- `/api/health` answers `syncFormat`, price freshness and whether the settings are complete (no secrets).
+- **Same numbers as the app:** the collection is priced like the app's `Pricing` (data/PriceSources.kt): the app's price
+  source (Cardmarket, TCGplayer or Card Kingdom, falling back to Cardmarket with "≈"), price type, currency and
+  condition adjustment, all read from the synced settings. A second daily cron (`/api/cron/sources`, 06:00 UTC) keeps
+  - `prices/cardkingdom.json.gz`: the Card Kingdom copy on the `card-kingdom-prices` branch (the same file the app
+    falls back to), all grades;
+  - `cards/details.json.gz`: per printing, from Scryfall's `/cards/collection`: colors, color identity, type line, mana
+    value, EDHREC rank, release date, Game Changer and the TCGplayer prices (`prices.usd*`, `purchase_uris.tcgplayer`).
+    New printings are looked up when the collection page opens (75 at a time, `/api/cards/details`); the cron refreshes
+    the oldest entries first for 4 minutes a day.
+- **Collection edits** (`lib/collection.ts`) follow the app's rules: a pile that becomes identical to another (card,
+  finish, condition, language, binder, signed, altered) is merged into it, with a deletion record for the other; new
+  uids are 32 hex characters; prices typed in DKK or USD are kept as typed and converted to euros with the ECB rate.
+  Binders can be created and renamed here; deleting, merging and arranging them stays in the app.
+- Stats, filters, sorting and the two CSV exports (`lib/colquery.ts`, `lib/csvexport.ts`) copy the app's
+  `CollectionStats`, filter sheet, `SortSpec` and `exportCollectionCsv`. Value over time is not shown (its history lives
+  on the phone); risers and fallers use Cardmarket's trend against its 30-day average, like the app.
+- `/api/health` answers `syncFormat`, price freshness, the card details and Card Kingdom stores (`cardDetails`,
+  `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`) and whether the settings are complete (no secrets).
 
 ## Settings (Vercel environment variables)
 | Name | What |
@@ -25,7 +42,7 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 | `NEXTCLOUD_SERVER` | The only Nextcloud the website logs in to (`https://cloud.nocar.me`). |
 | `ALLOWED_USERS` | Nextcloud user ids allowed in, comma separated. Empty: nobody. |
 | `NEXTCLOUD_PASS` | Sent as header `X-MTG-Trader-Pass` to Nextcloud, so Cloudflare rules can let the website through. |
-| `CRON_SECRET` | Vercel sends it to the price cron. |
+| `CRON_SECRET` | Vercel sends it to the two crons. |
 | `BLOB_READ_WRITE_TOKEN` | Set by Vercel for the Blob store. |
 
 ## Cloudflare in front of the Nextcloud

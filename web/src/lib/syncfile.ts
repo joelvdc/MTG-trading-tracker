@@ -58,10 +58,42 @@ export interface SyncDeletion {
   deletedAt: number;
 }
 
-/** The parts of a collection stack the website reads (SyncStack). */
+/** A collection stack (the app's CollectionItem; ids are local to each phone, so 0 here). */
+export interface CollectionItem {
+  id: number;
+  card: CardRef;
+  foil: boolean;
+  condition: string;
+  language: string;
+  quantity: number;
+  addedAt: number;
+  /** Only ever true together with [foil]. */
+  etched: boolean;
+  binderId: number;
+  uid: string | null;
+  updatedAt: number;
+  notes: string | null;
+  /** What one copy cost, in euros. */
+  purchasePrice: number | null;
+  signed: boolean;
+  altered: boolean;
+  /** The purchase price as typed, when typed in another currency than euros. */
+  paidTyped: number | null;
+  paidCurrency: string | null;
+}
+
+/** A collection stack and the uid of the binder it's in (null: Unsorted) (SyncStack). */
 export interface SyncStack {
-  item: { card: CardRef; foil: boolean; quantity: number; uid: string | null; updatedAt: number };
+  item: CollectionItem;
   binder: string | null;
+}
+
+export interface Binder {
+  id: number;
+  name: string;
+  createdAt: number;
+  uid: string | null;
+  updatedAt: number;
 }
 
 export interface SyncData extends Obj {}
@@ -105,6 +137,10 @@ export function wishlist(file: SyncFile): WishlistItem[] {
 
 export function collection(file: SyncFile): SyncStack[] {
   return ((file.data.collection as Json[] | undefined) ?? []) as unknown as SyncStack[];
+}
+
+export function binders(file: SyncFile): Binder[] {
+  return ((file.data.binders as Json[] | undefined) ?? []) as unknown as Binder[];
 }
 
 export function deletions(file: SyncFile): SyncDeletion[] {

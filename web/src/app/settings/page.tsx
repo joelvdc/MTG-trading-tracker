@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TopBar } from "@/components/Nav";
 import { api } from "@/components/api";
 
 interface Session {
@@ -89,16 +90,15 @@ export default function SettingsPage() {
 
   return (
     <>
-      <header className="topbar">
-        <div className="topbar-in">
-          <strong>MTG Trader · Settings</strong>
-          {session.folder && (
-            <a className="btn" href="/wishlist">
-              Wishlist
-            </a>
-          )}
-        </div>
-      </header>
+      {session.folder ? (
+        <TopBar page="settings" folder={session.folder} />
+      ) : (
+        <header className="topbar">
+          <div className="topbar-in">
+            <strong>MTG Trader · Settings</strong>
+          </div>
+        </header>
+      )}
       <main className="page narrow">
         <div className="stack">
           <section className="card stack">

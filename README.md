@@ -268,7 +268,8 @@ the same on all your phones, through a file (`sync.json.gz`) in a folder of your
 The password is stored encrypted with a key kept in the phone's keystore.
 
 ## Website
-[mtgtrader.vercel.app](https://mtgtrader.vercel.app) shows and edits the **wishlist** from a computer. It joins the
+[mtgtrader.vercel.app](https://mtgtrader.vercel.app) shows and edits the **wishlist** and the **collection** from a
+computer, and shows the **trades**. It joins the
 Nextcloud sync as one more device, so its changes reach the phones at their next sync, and the other way round.
 - **Log in** with your Nextcloud (the website gets its own app password; logging out removes it). Then pick the sync
   folder under **Settings**, the same one the app uses; **Change folder** switches it later.
@@ -277,6 +278,17 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   in the app's currency and price type.
 - **Views:** a list with columns (click a column title to sort) or card pictures; the choice is remembered. A card's
   window links to the card on Cardmarket (that printing) and CardTrader (a name search).
+- **Collection:** the same cards, prices and values as the app (its price source, price type, currency and condition
+  adjustment). Pick a binder at the top; search, filter (colors, type, rarity, set, finish, condition, language, price,
+  decks, signed/altered) and sort. The list shows 25, 50 or 100 rows per page and the card's picture when you hover
+  over a row. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
+  notes, signed/altered and the printing, shows every price source and the decks it's in, and deletes it. Tick several
+  cards to move them, set their condition or language, or delete them. **Add card**, new binders and renaming them are
+  there too; deleting, merging and arranging binders stays in the app.
+- **Stats:** all of the app's collection stats (colors, identity, rarity, types, mana curve, finish, condition,
+  language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
+  worth; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt.
+- **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
 - **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
   folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync
   file format is newer than the website knows it only shows the data.
