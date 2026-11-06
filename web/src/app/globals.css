@@ -2449,3 +2449,136 @@ details.deck-section > summary .mini-head {
 .arch-list li {
   padding: 2px 0;
 }
+
+/* ---- Card windows: card text, Versions/Rulings tabs, collection and decks sections, printing list ---- */
+.card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  background: var(--raised);
+  border-radius: 8px;
+}
+.card-face + .card-face {
+  border-top: 1px solid var(--surface);
+  padding-top: 8px;
+}
+.card-face-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.oracle {
+  margin: 4px 0;
+  white-space: pre-line;
+}
+.card-window-tabs {
+  margin-bottom: 10px;
+}
+.legal-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+}
+.legal-chip {
+  display: inline-flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--muted);
+  font-size: 13px;
+  background: var(--raised);
+}
+.legal-chip.legal {
+  border-color: var(--green);
+  background: rgba(46, 158, 91, 0.18);
+}
+.legal-chip.banned {
+  border-color: var(--red);
+  background: rgba(211, 47, 47, 0.18);
+}
+.legal-chip.restricted {
+  border-color: var(--gold);
+  background: rgba(224, 165, 38, 0.18);
+}
+.legal-chip.not_legal {
+  color: var(--muted);
+}
+.legal-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ruling-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--raised);
+}
+.owned-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.owned-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.print-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.print-list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+  background: var(--raised);
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+.print-list li.owned {
+  border-left: 6px solid var(--green);
+}
+.print-list li.current {
+  border-color: var(--gold);
+}
+.print-list img,
+.print-list .thumb {
+  width: 48px;
+  flex: none;
+  border-radius: 4px;
+}
+.print-list .grow {
+  flex: 1;
+  min-width: 0;
+}
+.print-list .picks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pile-list li {
+  padding: 3px 0;
+}

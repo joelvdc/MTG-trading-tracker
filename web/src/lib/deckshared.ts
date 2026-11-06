@@ -421,6 +421,14 @@ export interface HeldPile {
   quantity: number;
 }
 
+/** Another deck that has the card: its copies in the main deck, or on its maybeboard. */
+export interface DeckUse {
+  deckId: number;
+  deckName: string;
+  quantity: number;
+  maybeboard: boolean;
+}
+
 /** One line on the deck page. */
 export interface DeckRow {
   lineUid: string;
@@ -446,6 +454,8 @@ export interface DeckRow {
   exact: number;
   /** Every pile of the card in the collection, for the "Collection tracker" box; empty for basics and the maybeboard. */
   held: HeldPile[];
+  /** The other decks that have the card (by name; basics left out), in deck-name order. */
+  otherDecks: DeckUse[];
   /** Copies this line still needs (any printing counts, shared across lines); 0 for basics. */
   missing: number;
   tags: BracketTag[];

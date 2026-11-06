@@ -20,6 +20,7 @@ import {
   renameDeck,
   setCategoryHidden,
   setPick,
+  setPrinting,
   setQuantity,
   sortLines,
   type Lookups,
@@ -114,6 +115,13 @@ const look: Lookups = {
   auto: new Map([["sol", { cardId: 77, category: "Ramp" }]]),
 };
 
+/** Makes a line foil or not, as a stand-in for a line added in that finish. */
+function setFinish(sd: { cards: DeckCard[] }, uid: string, foil: boolean) {
+  const c = sd.cards.find((x) => x.lineUid === uid)!;
+  c.foil = foil;
+  c.etched = false;
+}
+
 function withLocal() {
   const f = fixture();
   const id = createDeck(
@@ -150,6 +158,28 @@ describe("editing local decks (the app's DeckEditor)", () => {
     expect(deck().deck.updatedAt).toBe(NOW + 10);
     removeLines(f, id, [uid("Maybe card")], NOW + 20, look);
     expect(deck().cards).toHaveLength(1);
+  });
+
+  it("changes a line's printing, keeping its copies, category and finish where the new printing has it", () => {
+    const { f, id, deck, uid } = withLocal();
+    const sol = uid("Sol Ring");
+    setQuantity(f, id, sol, 3, NOW, look);
+    setFinish(deck(), sol, true);
+    const other = { ...ref("sol2", "Sol Ring"), setCode: "c21", hasFoil: false };
+    setPrinting(f, id, sol, other, null, NOW + 5, look);
+    const line = deck().cards.find((c) => c.lineUid === sol)!;
+    expect(line).toMatchObject({ quantity: 3, category: "Mana", foil: false, etched: false, lineUid: sol });
+    expect(line.card.scryfallId).toBe("sol2");
+    expect(deck().deck.updatedAt).toBe(NOW + 5);
+    // A printing with the foil finish keeps the line foil.
+    setFinish(deck(), sol, true);
+    setPrinting(f, id, sol, ref("sol3", "Sol Ring"), null, NOW + 6, look);
+    expect(deck().cards.find((c) => c.lineUid === sol)).toMatchObject({ foil: true, etched: false });
+    // The asked-for finish wins when the printing has it.
+    setPrinting(f, id, sol, ref("sol3", "Sol Ring"), "NONFOIL", NOW + 7, look);
+    expect(deck().cards.find((c) => c.lineUid === sol)!.foil).toBe(false);
+    expect(() => setPrinting(f, id, sol, ref("x", "Island"), null, NOW, look)).toThrow(EditError);
+    expect(() => setPrinting(f, id, "nope", other, null, NOW, look)).toThrow(EditError);
   });
 
   it("moves cards keeping their other categories, to the maybeboard, to the commander and to auto categories", () => {

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { finishesOf, FINISH_LABELS } from "@/lib/cards";
-import { allCombos, saltKey, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { allCombos, saltKey, type DeckRow, type DeckView, type HeldPile } from "@/lib/deckshared";
+import { format } from "@/lib/money";
 import type { Finish } from "@/lib/pricing";
 import { api } from "./api";
+import { CardRulesTabs } from "./CardRules";
 import { CardSearch, type Printing } from "./CardSearch";
 import { ComboLine } from "./ComboLine";
 import { Dialog } from "./Dialog";
@@ -64,9 +66,151 @@ function CategoryPicker({ view, value, onChange, allowAuto, autoLabel }: { view:
   );
 }
 
+const FINISH_WORDS: Record<Finish, string> = { NONFOIL: "nonfoil", FOIL: "foil", ETCHED: "etched" };
+
+/** "Owned · 2 foil · 1 nonfoil": the copies you own of one printing, by finish. */
+function ownedText(piles: HeldPile[]): string {
+  const by = new Map<Finish, number>();
+  for (const h of piles) by.set(h.finish, (by.get(h.finish) ?? 0) + h.quantity);
+  return `Owned · ${[...by].map(([f, n]) => `${n} ${FINISH_WORDS[f]}`).join(" · ")}`;
+}
+
+/** "In your collection" and "In your decks": how many copies you own, where, and which other decks have the card. */
+function CardOwnership({ row }: { row: DeckRow }) {
+  return (
+    <>
+      <section>
+        <h3 className="mini-head">In your collection</h3>
+        {row.owned === 0 ? (
+          <p className="muted small">You own none.</p>
+        ) : (
+          <>
+            <p className="small">
+              <strong>You own {row.owned}</strong> cop{row.owned === 1 ? "y" : "ies"} in all printings{row.exact > 0 ? ` (${row.exact} of the printing shown)` : ""}.
+            </p>
+            <ul className="plain-list pile-list small">
+              {row.held.map((h, i) => (
+                <li key={i}>
+                  <span className="owned-dot" aria-hidden="true" />
+                  {h.quantity}× {h.setName || h.setCode.toUpperCase()} ({h.setCode.toUpperCase()}) #{h.collectorNumber} · {FINISH_WORDS[h.finish]} · {h.condition} · <span className="binder-name">{h.binder}</span>
+                </li>
+              ))}
+            </ul>
+            <a className="small" href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}>
+              Open in collection
+            </a>
+          </>
+        )}
+      </section>
+      <section>
+        <h3 className="mini-head">In your decks</h3>
+        {row.otherDecks.length === 0 ? (
+          <p className="muted small">In no other deck.</p>
+        ) : (
+          <ul className="plain-list small">
+            {row.otherDecks.map((d, i) => (
+              <li key={i}>
+                <a href={`/decks/${d.deckId}`}>{d.deckName}</a> <span className="muted">×{d.quantity}{d.maybeboard ? " (maybeboard)" : ""}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
+  );
+}
+
+/** Every printing of the card, those you own first (green), then the others newest first; picking one changes the deck line. */
+function ChangePrintingDialog({ view, row, onBack, onClose, onChanged }: { view: DeckView; row: DeckRow; onBack: () => void; onClose: () => void; onChanged: (notice: string | null) => void }) {
+  const [prints, setPrints] = useState<Printing[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const current = (row.original ?? row.card).scryfallId;
+  const money = (eur: number | null) => (eur == null ? "–" : format(eur * view.perEuro, view.currency));
+
+  useEffect(() => {
+    let live = true;
+    api<{ results?: Printing[] }>(`/api/cards/prints?name=${encodeURIComponent(row.card.name)}`).then((r) => {
+      if (!live) return;
+      if (r.ok) setPrints(r.data.results ?? []);
+      else setError(r.data.error ?? "Could not load the printings.");
+    });
+    return () => {
+      live = false;
+    };
+  }, [row.card.name]);
+
+  const piles = (id: string) => row.held.filter((h) => h.scryfallId === id);
+  const byNewest = (a: Printing, b: Printing) => (a.released < b.released ? 1 : a.released > b.released ? -1 : 0);
+  const sorted = prints ? [...prints.filter((p) => piles(p.card.scryfallId).length > 0).sort(byNewest), ...prints.filter((p) => piles(p.card.scryfallId).length === 0).sort(byNewest)] : [];
+
+  async function pick(p: Printing, finish: Finish) {
+    setBusy(true);
+    setError(null);
+    const r = await deckAction(view.id, { action: "printing", uid: row.lineUid, card: p.card, finish });
+    setBusy(false);
+    if (r.error) setError(r.error);
+    else onChanged(`${row.name} now uses ${p.card.setName || p.card.setCode.toUpperCase()} #${p.card.collectorNumber}.`);
+  }
+
+  return (
+    <Dialog title={`Change printing: ${row.name}`} onClose={() => !busy && onClose()}>
+      <div className="stack">
+        {error && <div className="bar error">{error}</div>}
+        {prints === null && !error ? (
+          <div className="muted">Loading printings…</div>
+        ) : sorted.length === 0 ? (
+          <div className="muted">No printings found.</div>
+        ) : (
+          <ul className="print-list">
+            {sorted.map((p) => {
+              const mine = piles(p.card.scryfallId);
+              const finishes = finishesOf(p.card);
+              return (
+                <li key={p.card.scryfallId} className={`${mine.length ? "owned" : ""} ${p.card.scryfallId === current ? "current" : ""}`}>
+                  {p.card.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.card.imageUrl} alt="" loading="lazy" />
+                  ) : (
+                    <div className="thumb empty" />
+                  )}
+                  <div className="grow stack">
+                    <span>
+                      {p.card.setName || p.card.setCode.toUpperCase()} <span className="muted small">({p.card.setCode.toUpperCase()}) #{p.card.collectorNumber} · {p.released.slice(0, 4)}</span>
+                    </span>
+                    {mine.length > 0 && <span className="owned-badge">{ownedText(mine)}</span>}
+                    <span className="small muted">
+                      {p.card.scryfallId === current ? "In the deck now · " : ""}
+                      {p.eur != null || p.card.hasNonFoil ? money(p.eur) : ""}
+                      {p.eurFoil != null ? ` / foil ${money(p.eurFoil)}` : ""}
+                    </span>
+                  </div>
+                  <div className="picks">
+                    {finishes.map((f) => (
+                      <button key={f} className="btn small-btn" disabled={busy || (p.card.scryfallId === current && f === row.finish)} onClick={() => pick(p, f)}>
+                        {finishes.length > 1 ? `Use ${FINISH_WORDS[f]}` : "Use"}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div className="dialog-actions">
+          <button className="btn" disabled={busy} onClick={onBack}>
+            Back
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /**
- * A card of the deck (the app's line menu): its quantity, category, commander and maybeboard (local decks), and the
- * printing you own to show (every deck).
+ * A card of the deck (the app's line menu): its picture and text, how many copies you own and which other decks have
+ * it, and, in the Versions tab, its quantity, category, commander and maybeboard (local decks). Local decks can change
+ * the line's printing. The Rulings tab shows legality and rulings.
  */
 export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; row: DeckRow; onClose: () => void; onChanged: (notice: string | null) => void }) {
   const [qty, setQty] = useState(String(row.quantity));
@@ -74,6 +218,7 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
   const cardCombos = view.salt ? allCombos(view.salt).filter((c) => c.cards.some((n) => saltKey(n) === saltKey(row.name))) : [];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [changing, setChanging] = useState(false);
   const editable = view.local && !view.readOnly;
 
   async function run(body: Record<string, unknown>, notice: string | null) {
@@ -86,6 +231,7 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
   }
 
   const q = Math.floor(Number(qty));
+  if (changing) return <ChangePrintingDialog view={view} row={row} onBack={() => setChanging(false)} onClose={onClose} onChanged={onChanged} />;
   return (
     <Dialog title={row.name} onClose={() => !busy && onClose()}>
       <div className="stack">
@@ -96,6 +242,14 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
           {row.finish !== "NONFOIL" ? ` · ${FINISH_LABELS[row.finish].toLowerCase()}` : ""}
           {row.original ? " (a printing you own; the deck has another)" : ""}
         </p>
+        {editable && (
+          <div className="inline">
+            <button className="btn small-btn" disabled={busy} onClick={() => setChanging(true)}>
+              Change printing
+            </button>
+          </div>
+        )}
+        <CardRulesTabs scryfallId={row.card.scryfallId} between={<CardOwnership row={row} />}>
         {editable ? (
           <>
             <div className="inline">
@@ -138,35 +292,6 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
         ) : (
           !view.local && <p className="muted small">Cards of a deck from Archidekt are changed on Archidekt, or make it a local deck first.</p>
         )}
-        {row.choices.length > 0 && view.myPrintings && (
-          <div className="stack">
-            <span className="muted small">Printing shown</span>
-            <ul className="plain-list">
-              {row.choices.map((c) => (
-                <li key={c.value}>
-                  <label className="check small">
-                    <input type="radio" name="pick" checked={row.picked === c.value} disabled={busy || view.readOnly} onChange={() => run({ action: "pick", name: row.name, value: c.value }, null)} />
-                    <span>
-                      {c.label} <span className="muted">· you own {c.quantity}</span>
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-            <div className="inline">
-              {row.picked !== "archidekt" && (
-                <button className="link small" disabled={busy || view.readOnly} onClick={() => run({ action: "pick", name: row.name, value: "archidekt" }, null)}>
-                  Use the deck&apos;s printing
-                </button>
-              )}
-              {row.picked !== null && (
-                <button className="link small" disabled={busy || view.readOnly} onClick={() => run({ action: "pick", name: row.name, value: null }, null)}>
-                  Let the site choose
-                </button>
-              )}
-            </div>
-          </div>
-        )}
         {cardCombos.length > 0 && (
           <ul className="combo-list">
             {cardCombos.map((c, i) => (
@@ -174,6 +299,7 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
             ))}
           </ul>
         )}
+        </CardRulesTabs>
         {error && <div className="bar error">{error}</div>}
         <div className="dialog-actions">
           {editable && (

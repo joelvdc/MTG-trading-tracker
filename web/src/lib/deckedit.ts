@@ -5,7 +5,9 @@
 // Sync (Sync.kt DeckMerge): a deck's decklist comes from the copy with the newest (archidektUpdatedAt, importedAt,
 // updatedAt); a local deck has no archidektUpdatedAt, so an edit wins by moving its updatedAt on, like the app's
 // database triggers do. Its lines are written whole; each keeps its lineUid.
+import { resolveFinish } from "./cards";
 import { primaryType, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
+import { finishOf, type Finish } from "./pricing";
 import { addDeletion, bump, prefs, setPrefs, type CardRef, type Json, type SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
 
@@ -160,6 +162,19 @@ export function setQuantity(file: SyncFile, id: number, uid: string, quantity: n
   const q = Math.min(MAX_QUANTITY, Math.floor(quantity));
   if (!sd.cards.some((c) => c.lineUid === uid)) throw new EditError("That card isn't in the deck any more.");
   save(sd, q <= 0 ? sd.cards.filter((c) => c.lineUid !== uid) : sd.cards.map((c) => (c.lineUid === uid ? { ...c, quantity: q } : c)), now, look);
+}
+
+/**
+ * Gives a line another printing of the same card: its quantity, category and commander/maybeboard place stay. It keeps
+ * its finish where the new printing has it, else [finish] (when given and available) or the nearest one.
+ */
+export function setPrinting(file: SyncFile, id: number, uid: string, card: CardRef, finish: Finish | null, now: number, look: Lookups): void {
+  const sd = local(file, id);
+  const line = sd.cards.find((c) => c.lineUid === uid);
+  if (!line) throw new EditError("That card isn't in the deck any more.");
+  if (card.name.split(" // ")[0].trim().toLowerCase() !== line.card.name.split(" // ")[0].trim().toLowerCase()) throw new EditError("That is a different card.");
+  const fin = resolveFinish(card, finish ?? finishOf(line.foil, line.etched));
+  save(sd, sd.cards.map((c) => (c === line ? { ...c, card, foil: fin !== "NONFOIL", etched: fin === "ETCHED", archidektCardId: null } : c)), now, look);
 }
 
 export function removeLines(file: SyncFile, id: number, uids: string[], now: number, look: Lookups): void {

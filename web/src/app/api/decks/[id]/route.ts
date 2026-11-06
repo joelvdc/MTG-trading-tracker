@@ -22,6 +22,7 @@ import {
   renameDeck,
   setCategoryHidden,
   setPick,
+  setPrinting,
   setQuantity,
   setTokenPick,
   type Lookups,
@@ -134,7 +135,7 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
  * Deck actions. Decks from Archidekt: "reload" (the list), "refresh" (the list and Commander Salt), "rescore"
  * (Commander Salt only), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
  * "copy", "detach" (a deck from Archidekt becomes a local deck), "hide-category", "pick" (the printing you own to
- * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself). Local decks only: "set-quantity", "remove", "move", "auto-all",
+ * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself). Local decks only: "set-quantity", "printing" (another printing of a line's card), "remove", "move", "auto-all",
  * "add-card", "rename-category", "delete-category", "add-category", "rename".
  */
 export async function POST(req: Request, { params }: Params) {
@@ -176,6 +177,12 @@ export async function POST(req: Request, { params }: Params) {
         case "set-quantity":
           setQuantity(f, id, str(body.uid, 100), Number(body.quantity) || 0, now, look);
           return {};
+        case "printing": {
+          const card = body.card;
+          if (!card || typeof card.scryfallId !== "string" || typeof card.name !== "string") throw new EditError("Pick a printing first.");
+          setPrinting(f, id, str(body.uid, 100), card, FINISHES.includes(body.finish as Finish) ? (body.finish as Finish) : null, now, look);
+          return {};
+        }
         case "remove":
           removeLines(f, id, uidList(body), now, look);
           return {};

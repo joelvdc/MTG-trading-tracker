@@ -10,6 +10,7 @@ import { PRICE_TYPE_LABELS, PRICE_TYPES } from "@/lib/prices";
 import { SOURCE_LABELS, type Finish } from "@/lib/pricing";
 import { api } from "./api";
 import { cardmarketUrlFor, cardtraderUrlFor } from "./cardLinks";
+import { CardRulesTabs } from "./CardRules";
 import type { Printing } from "./CardSearch";
 import { Dialog } from "./Dialog";
 import { rowTags } from "./CollTable";
@@ -202,6 +203,7 @@ export function CollCardDialog({
       </div>
 
       <div className="stack">
+        <CardRulesTabs scryfallId={row.card.scryfallId}>
         <div className="form-grid">
           <label className="field">
             <span>Copies</span>
@@ -369,6 +371,7 @@ export function CollCardDialog({
             </ul>
           </section>
         )}
+        </CardRulesTabs>
       </div>
 
       <div className="dialog-actions">

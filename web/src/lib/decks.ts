@@ -21,6 +21,7 @@ import {
   type DeckCategory,
   type DeckGroup,
   type DeckRow,
+  type DeckUse,
   type DecksView,
   type DeckView,
   type HeldPile,
@@ -235,6 +236,23 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
       quantity: s.item.quantity,
     });
   }
+  // The other decks' copies of each card, by name (as sharedCards matches them), main deck and maybeboard apart.
+  const usesByName = new Map<string, DeckUse[]>();
+  for (const other of [...syncDecks(file)].filter((x) => x.deck.archidektId !== id).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+    const here = new Map<string, DeckUse>();
+    for (const c of other.cards) {
+      if (isBasicName(c.card.name)) continue;
+      const k = `${c.card.name.toLowerCase()}|${c.maybeboard}`;
+      const u = here.get(k) ?? { deckId: other.deck.archidektId, deckName: other.deck.name, quantity: 0, maybeboard: c.maybeboard };
+      u.quantity += c.quantity;
+      here.set(k, u);
+    }
+    for (const [k, u] of here) {
+      const name = k.slice(0, k.lastIndexOf("|"));
+      if (!usesByName.has(name)) usesByName.set(name, []);
+      usesByName.get(name)!.push(u);
+    }
+  }
   const main = sd.cards.filter((c) => !c.maybeboard);
   const missing = new Map<DeckCard, number>(missingPlan(main.map((c) => ({ c, name: c.card.name, quantity: c.quantity })), owned, true).map(([l, n]) => [l.c, n]));
   const cur = currency(p.currency);
@@ -268,6 +286,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
       owned: owned.get(c.card.name.toLowerCase()) ?? 0,
       exact: held.filter((h) => h.scryfallId === card.scryfallId && h.finish === shown).reduce((n, h) => n + h.quantity, 0),
       held,
+      otherDecks: usesByName.get(c.card.name.toLowerCase()) ?? [],
       missing: missing.get(c) ?? 0,
       tags: t,
       choices: !isBasicName(key) && !c.maybeboard ? choicesOf(copiesByName.get(key) ?? []) : [],

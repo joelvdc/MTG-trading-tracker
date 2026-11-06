@@ -52,6 +52,18 @@ export function ManaCost({ cost, size = 16 }: { cost: string | null | undefined;
   );
 }
 
+/** Rules text with its {T}, {2}, {W/U} symbols drawn as round symbols; line breaks kept. */
+export function SymbolText({ text, size = 14 }: { text: string; size?: number }) {
+  return (
+    <span className="symbol-text">
+      {text.split(/(\{[^}]+\})/).map((part, i) => {
+        const m = /^\{([^}]+)\}$/.exec(part);
+        return m ? <Pip key={i} s={m[1]} size={size} /> : <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
 /** A colour identity ("BRG") as coloured dots; colourless shows {C}. */
 export function ColourPips({ identity, size = 14 }: { identity: string; size?: number }) {
   const list = identity ? [...identity] : ["C"];

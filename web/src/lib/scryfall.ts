@@ -1,4 +1,5 @@
 // Card search on Scryfall, turned into the app's CardRef (Scryfall.kt toRef).
+import { parseCardRules, type CardRules } from "./cardrules";
 import { USER_AGENT } from "./config";
 import type { CardRef } from "./syncfile";
 
@@ -91,6 +92,22 @@ export function searchNames(text: string): Promise<FoundCard[]> {
 /** Every paper printing of the card named exactly [name], newest first. */
 export function printings(name: string): Promise<FoundCard[]> {
   return search(`!"${name.replace(/["\\]/g, " ").trim()}"`, "prints");
+}
+
+/** A card's rules text, legalities and rulings by Scryfall id; null when Scryfall doesn't know the card. Cached for a day. */
+export async function rulesOf(id: string): Promise<CardRules | null> {
+  const get = async (path: string) => {
+    const r = await fetch(`${API}${path}`, {
+      headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+      signal: AbortSignal.timeout(15_000),
+      next: { revalidate: 86_400 },
+    });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`Scryfall lookup failed (HTTP ${r.status}).`);
+    return r.json();
+  };
+  const [card, rulings] = await Promise.all([get(`/cards/${id}`), get(`/cards/${id}/rulings`)]);
+  return card ? parseCardRules(card, rulings) : null;
 }
 
 /** Every paper printing of a token (or card) by its oracle id, newest first (the app's printsOfOracle). */
