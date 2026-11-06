@@ -2083,3 +2083,54 @@ details.menu > summary::-webkit-details-marker {
   max-height: 300px;
   overflow: auto;
 }
+
+/* ---- Recommendations ---- */
+.recs details > summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.rec-grid {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.rec-grid li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--raised);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.rec-grid img,
+.rec-noimg {
+  width: 44px;
+  height: 61px;
+  border-radius: 4px;
+  flex: none;
+  background: var(--surface);
+}
+
+.rec-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.rec-text strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-text .tag {
+  align-self: flex-start;
+  font-size: 10px;
+}

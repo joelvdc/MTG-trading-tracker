@@ -308,6 +308,8 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   its categories renamed, deleted or hidden, with the same rules as the app. Any deck can be copied, a deck from
   Archidekt made local, and the printing you own shown for a card picked. The phones get every change at their next
   sync.
+  **Recommendations** shows EDHREC's or recommander.cards' cards for the deck, like the app, with one-click adding
+  for local decks.
 - **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
   a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
   (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon

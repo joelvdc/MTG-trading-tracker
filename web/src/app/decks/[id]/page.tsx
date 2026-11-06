@@ -9,6 +9,7 @@ import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { ColourPips, ManaCost } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
+import { RecommendationsPanel } from "@/components/RecommendationsPanel";
 import { BracketCard, formatPower, PowerCard } from "@/components/RuleZeroCards";
 import type { StatsCard } from "@/lib/deckstats";
 import { bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView, type GroupBy } from "@/lib/deckshared";
@@ -29,6 +30,7 @@ export default function DeckPage() {
   const [onlyBracket, setOnlyBracket] = useState(false);
   const [maybe, setMaybe] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const [showRecs, setShowRecs] = useState(false);
   const [missingOpen, setMissingOpen] = useState(false);
   const [rz, setRz] = useState<"BRACKET" | "POWER" | null>(null);
   const [line, setLine] = useState<string | null>(null);
@@ -258,6 +260,13 @@ export default function DeckPage() {
             <strong>Stats</strong>
           </summary>
           {showStats && <DeckStatsPanel cards={view.stats} identity={d.colorIdentity} tokenInfo={view.tokenInfo} hover={hover} />}
+        </details>
+
+        <details className="card" open={showRecs} onToggle={(e) => setShowRecs((e.target as HTMLDetailsElement).open)}>
+          <summary>
+            <strong>Recommendations</strong>
+          </summary>
+          {showRecs && <RecommendationsPanel view={view} hover={hover} onAdded={(t) => reload(t)} />}
         </details>
 
         <div className="controls">
