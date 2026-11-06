@@ -1,6 +1,6 @@
 // Nextcloud: Login Flow v2 (as the app's Nextcloud.kt) and the WebDAV calls for the sync folder.
 import { passHeader, USER_AGENT } from "./config";
-import type { Account } from "./session";
+import type { NextcloudLogin as Account } from "./session";
 
 const TIMEOUT_MS = 20_000;
 

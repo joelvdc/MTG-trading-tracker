@@ -13,6 +13,7 @@
     "node": "22.x"
   },
   "dependencies": {
+    "@neondatabase/serverless": "1.1.0",
     "@vercel/blob": "2.8.2",
     "next": "16.4.2",
     "react": "19.3.1",

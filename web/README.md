@@ -5,15 +5,32 @@ export) and trades (view only) of the MTG Trader app, from a computer. Next.js (
 Pushes to `main` that touch `web/` deploy to production; other branches get a preview address.
 
 ## How it works
-- **No database.** The website reads and writes the app's Nextcloud sync file (`sync.json.gz`) directly, as one more
-  sync device (`writtenBy: "MTG Trader website"`). Every change: read the file with its ETag, apply the edit, write it
-  back with `If-Match`; if a phone wrote in between, read again and redo the edit (up to 4 times). Unknown fields are
-  kept as they are. If the file's `format` is newer than `WEB_FORMAT`, the website only shows the data.
-- **Backups:** before the first change of a day, a copy goes to `web-backups/sync-YYYY-MM-DD.json.gz` in the sync
-  folder; the newest 10 are kept.
-- **Login:** Nextcloud Login Flow v2 gives the website its own app password, kept only in an encrypted cookie
-  (AES-256-GCM with `SESSION_SECRET`, 30 days). Logging out revokes it. The sync folder is picked after logging in
-  (Settings) and must hold `sync.json.gz`.
+- **Two ways to hold the data**, both the app's sync file (`sync.json.gz`), edited as one more sync device
+  (`writtenBy: "MTG Trader website"`). Every change: read the file with its version (ETag), apply the edit, write it
+  back only over that version; if a phone wrote in between, read again and redo the edit (up to 4 times). Unknown
+  fields are kept as they are. If the file's `format` is newer than `WEB_FORMAT`, the website only shows the data.
+  - **Website accounts** (since step C, `lib/accounts.ts`, `lib/users.ts`): the file lives in the website's own
+    database (Neon Postgres, EU, added through Vercel's Storage tab; tables are made on first use). The phones sync
+    with it through `/api/sync` (below).
+  - **Nextcloud login** (the old way, still there): the website reads and writes the file on the owner's Nextcloud.
+- **Accounts:** user name and password (scrypt), 15 minutes' wait after 8 wrong passwords. The first account is made
+  from a Nextcloud login under Settings (**Make my account and copy my data**): it copies that sync file in, becomes the
+  owner, and keeps the Nextcloud login for a nightly backup. Anyone else needs an invite code from the owner (each works
+  once). Forgotten password: the owner resets it under Settings and passes the one-time password on; that logs out every
+  device of that account. Each browser and phone is a device with its own random token (only its SHA-256 is stored);
+  Settings lists them and can log them out.
+- **Phone API** (Bearer token, no cookies): `POST /api/app/login` and `/api/app/register` (`{username, password,
+  device[, invite]}` → `{token, username}`), `POST /api/app/logout`. `GET /api/sync` answers the gzip file with
+  `ETag: "v<n>"` (304 for a matching `If-None-Match`, 404 when the account has none yet); `PUT /api/sync` saves it with
+  `If-Match: "v<n>"` or `If-None-Match: *` (412 if it changed meanwhile, as on Nextcloud), 201/204 with the new ETag.
+  Uploads must be a readable sync file, at most 20 MB.
+- **Backups:** before the first change of a day a copy is kept: in the database for accounts (the newest 10, also before
+  a phone's first save of the day), in `web-backups/sync-YYYY-MM-DD.json.gz` in the sync folder for Nextcloud logins
+  (the newest 10). A nightly cron (`/api/cron/backup`, 02:30 UTC) also copies each account's file to its Nextcloud
+  `web-backups/` while that backup is on (Settings can stop it).
+- **Login:** an account's session, or Nextcloud Login Flow v2, which gives the website its own app password. Both live
+  only in an encrypted cookie (AES-256-GCM with `SESSION_SECRET`, 30 days). Logging out removes the device or revokes
+  the app password. With Nextcloud, the sync folder is picked after logging in (Settings) and must hold `sync.json.gz`.
 - **Prices:** a daily cron (`/api/cron/prices`, 05:30 UTC) shrinks Cardmarket's `price_guide_1.json` and the ECB rates
   into a private Vercel Blob (`prices/latest.json.gz`). Card search uses Scryfall.
 - **Same numbers as the app:** the collection is priced like the app's `Pricing` (data/PriceSources.kt): the app's price
@@ -33,7 +50,8 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   `CollectionStats`, filter sheet, `SortSpec` and `exportCollectionCsv`. Value over time is not shown (its history lives
   on the phone); risers and fallers use Cardmarket's trend against its 30-day average, like the app.
 - `/api/health` answers `syncFormat`, price freshness, the card details and Card Kingdom stores (`cardDetails`,
-  `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`) and whether the settings are complete (no secrets).
+  `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`), whether the accounts database answers (`database`,
+  `accounts`: how many, no names) and whether the settings are complete (no secrets).
 
 ## Settings (Vercel environment variables)
 | Name | What |
@@ -42,8 +60,9 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 | `NEXTCLOUD_SERVER` | The only Nextcloud the website logs in to (`https://cloud.nocar.me`). |
 | `ALLOWED_USERS` | Nextcloud user ids allowed in, comma separated. Empty: nobody. |
 | `NEXTCLOUD_PASS` | Sent as header `X-MTG-Trader-Pass` to Nextcloud, so Cloudflare rules can let the website through. |
-| `CRON_SECRET` | Vercel sends it to the two crons. |
+| `CRON_SECRET` | Vercel sends it to the crons. |
 | `BLOB_READ_WRITE_TOKEN` | Set by Vercel for the Blob store. |
+| `DATABASE_URL` (and the other `PG*`/`POSTGRES_*`) | Set by Vercel for the Neon database (preview and production only). `memory` keeps accounts in memory, for tests and local runs. |
 
 ## Cloudflare in front of the Nextcloud
 The owner's Nextcloud is behind Cloudflare, which challenges or blocks servers. What makes the website work:

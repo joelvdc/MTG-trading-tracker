@@ -1,6 +1,7 @@
 import { json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
+import { accountStore } from "@/lib/accounts";
 import { loadPrices } from "@/lib/pricestore";
 import { WEB_FORMAT } from "@/lib/syncfile";
 
@@ -10,7 +11,13 @@ const hours = (ms: number | null | undefined) => (ms ? Math.round((Date.now() - 
 
 /** For the weekly health check: no secrets, no owner data. */
 export async function GET() {
-  const [prices, details, ck] = await Promise.all([loadPrices(), loadDetails(), loadCardKingdom()]);
+  const store = accountStore();
+  const [prices, details, ck, accounts] = await Promise.all([
+    loadPrices(),
+    loadDetails(),
+    loadCardKingdom(),
+    store ? store.count().catch(() => null) : Promise.resolve(null),
+  ]);
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -27,6 +34,9 @@ export async function GET() {
     cardKingdomListDate: ck?.listDate ?? null,
     cardKingdomAgeHours: ckAge,
     cardKingdomFresh: ckAge !== null && ckAge < 48,
+    // The accounts database (step C): reachable, and how many accounts (no names).
+    database: accounts !== null,
+    accounts,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

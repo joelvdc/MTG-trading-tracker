@@ -1,8 +1,9 @@
-// The login, kept in an encrypted cookie in the owner's browser: the website itself stores no passwords.
+// The login, kept in an encrypted cookie in the browser: a website account's device (step C), or the older Nextcloud
+// login (kept until the data has moved to an account; then only for connecting Nextcloud as the backup).
 // AES-256-GCM with SESSION_SECRET (32 random bytes, base64, a Vercel environment variable).
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-export interface Account {
+export interface NextcloudLogin {
   /** "https://cloud.example.com", no trailing slash. */
   server: string;
   /** What the owner logs in with (may be an e-mail address); used for Basic auth. */
@@ -13,6 +14,22 @@ export interface Account {
   appPassword: string;
   /** The sync folder, as in the app ("MTG Trader"); "" until the owner picks one under Settings. */
   folder: string;
+}
+
+/** Logged in with a website account: which account, and the device row that keeps the login valid. */
+export interface UserSession {
+  kind: "user";
+  accountId: number;
+  username: string;
+  admin: boolean;
+  device: string;
+}
+
+/** Whoever is logged in: a website account, or (until the move) a Nextcloud login. */
+export type Account = NextcloudLogin | UserSession;
+
+export function isUser(a: Account): a is UserSession {
+  return (a as UserSession).kind === "user";
 }
 
 export interface PendingLogin {

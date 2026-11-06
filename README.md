@@ -324,8 +324,14 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
 - **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
   folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync
   file format is newer than the website knows it only shows the data.
-- Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in. The code is in `web/`
-  (Next.js on Vercel); see `web/README.md`.
+- **Website account:** logged in with Nextcloud, Settings → **Make my account and copy my data** makes your own
+  account on the website with a copy of your data (Nextcloud then gets a backup copy every night; nothing there is
+  changed). From then on you log in with that user name and password. The first account is the owner's: under Settings
+  it makes invite codes for others (each works once), resets a forgotten password, and shows every device logged in.
+  The app can sync with the account instead of Nextcloud from the version that has **Settings → Sync → MTG Trader
+  account**.
+- Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in with Nextcloud. The code is in
+  `web/` (Next.js on Vercel); see `web/README.md`.
 
 ## Archidekt
 The app reads public [Archidekt](https://archidekt.com/) decklists, and only when you ask: adding a deck, **Reload

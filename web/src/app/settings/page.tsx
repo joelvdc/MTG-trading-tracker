@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AccountPanel, MoveToAccountCard } from "@/components/AccountPanel";
 import { AppSettingsPanel, BackupsPanel } from "@/components/AppSettingsPanel";
 import { TopBar } from "@/components/Nav";
 import { api } from "@/components/api";
@@ -10,6 +11,8 @@ interface Session {
   user?: string;
   server?: string;
   folder?: string;
+  kind?: "user" | "nextcloud";
+  accounts?: boolean;
 }
 
 interface Listing {
@@ -48,8 +51,8 @@ export default function SettingsPage() {
     api<Session>("/api/session").then((r) => {
       if (!r.data.loggedIn) return goLogin();
       setSession(r.data);
-      // No folder yet (just logged in): start picking one straight away.
-      if (!r.data.folder) {
+      // No folder yet (just logged in with Nextcloud): start picking one straight away.
+      if (r.data.kind !== "user" && !r.data.folder) {
         setBrowsing(true);
         open("");
       }
@@ -89,6 +92,22 @@ export default function SettingsPage() {
 
   const crumbs = listing ? listing.path.split("/").filter(Boolean) : [];
 
+  // Logged in with a website account (step C): no folder to pick.
+  if (session.kind === "user") {
+    return (
+      <>
+        <TopBar page="settings" folder={session.folder} />
+        <main className="page narrow">
+          <div className="stack">
+            <AppSettingsPanel />
+            <BackupsPanel />
+            <AccountPanel onLogout={logout} />
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       {session.folder ? (
@@ -102,6 +121,7 @@ export default function SettingsPage() {
       )}
       <main className="page narrow">
         <div className="stack">
+          {session.accounts && session.folder && !browsing && <MoveToAccountCard />}
           <section className="card stack">
             <h2 className="section-head">Sync folder</h2>
             {session.folder ? (

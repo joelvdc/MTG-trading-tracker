@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
+import { currentAccount, nextcloudLogin, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { cleanFolder } from "@/lib/config";
 import { browse } from "@/lib/nextcloud";
 import { type Account, cookieOptions, SESSION_COOKIE, SESSION_DAYS, seal } from "@/lib/session";
@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 /** Sets the sync folder for this login (Settings). Only a folder that holds the app's sync file is accepted. */
 export async function POST(req: Request) {
   if (!fromOurPages(req)) return json({ error: "Not allowed." }, 403);
-  const a = await currentAccount();
-  if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
+  const a = await nextcloudLogin();
+  if (!a) return json({ error: (await currentAccount()) ? "Only with a Nextcloud login." : "Log in first.", loggedOut: !(await currentAccount()) }, 401);
   try {
     const body = (await req.json().catch(() => ({}))) as { folder?: string };
     const folder = cleanFolder(body.folder);

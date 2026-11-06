@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { errorResponse, fromOurPages, json } from "@/lib/auth";
 import { allowedUsers, nextcloudServer } from "@/lib/config";
 import { pollLogin, revoke, sameOrigin, userId } from "@/lib/nextcloud";
-import { type Account, cookieOptions, LOGIN_COOKIE, type PendingLogin, SESSION_COOKIE, SESSION_DAYS, seal, unseal } from "@/lib/session";
+import { type NextcloudLogin as Account, cookieOptions, LOGIN_COOKIE, type PendingLogin, SESSION_COOKIE, SESSION_DAYS, seal, unseal } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
