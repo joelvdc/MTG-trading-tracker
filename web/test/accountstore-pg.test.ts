@@ -89,4 +89,48 @@ describe.each([
     expect(Object.fromEntries(got)).toEqual({ cultivate: ["Ramp", "Tutor"], counterspell: ["Removal"] });
     expect(await s.tagCategoryStats()).toEqual({ cards: 2, updatedAt: NOW + 1 });
   });
+
+  it("value history, alert levels, the alert history and job runs", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    await s.putValueDays(a.id, [{ day: "2026-11-05", cards: 10, values: { trend: 12.5, "b:B1:trend": 2.25, "b:B1:cards": 3 } }], true);
+    // The phone's history sent once: days the website has are kept.
+    await s.putValueDays(
+      a.id,
+      [
+        { day: "2026-11-04", cards: 9, values: { trend: 11, "b:B1:trend": 2, "b:B1:cards": 2 } },
+        { day: "2026-11-05", cards: 99, values: { trend: 99 } },
+      ],
+      false,
+    );
+    await s.putValueDays(a.id, [{ day: "2026-11-06", cards: 11, values: { trend: 13, low: 9 } }], true);
+    expect(await s.valueDayCount(a.id)).toBe(3);
+    expect(await s.valuePoints(a.id, "trend", null)).toEqual([
+      { day: "2026-11-04", value: 11, cards: 9 },
+      { day: "2026-11-05", value: 12.5, cards: 10 },
+      { day: "2026-11-06", value: 13, cards: 11 },
+    ]);
+    expect(await s.valuePoints(a.id, "low", null)).toEqual([{ day: "2026-11-06", value: 9, cards: 11 }]);
+    expect(await s.valuePoints(a.id, "trend", "B1")).toEqual([
+      { day: "2026-11-04", value: 2, cards: 2 },
+      { day: "2026-11-05", value: 2.25, cards: 3 },
+    ]);
+
+    await s.setAlertLevels(a.id, new Map([["w1", 12], ["w2", 3.5]]));
+    await s.setAlertLevels(a.id, new Map([["w2", 4]]));
+    expect(Object.fromEntries(await s.alertLevels(a.id))).toEqual({ w2: 4 });
+
+    const ev = (at: number, wishUid = "w1") => ({ wishUid, cardName: "Cultivate", at, price: 0.4, level: 0.5, basis: "cardmarket:low", setCode: null });
+    await s.addAlertEvents(a.id, [ev(NOW - 400 * 86_400_000), ev(NOW - 1000)], NOW);
+    await s.addAlertEvents(a.id, [ev(NOW, "w2")], NOW);
+    expect((await s.alertEvents(a.id)).map((e) => [e.wishUid, e.at])).toEqual([
+      ["w2", NOW],
+      ["w1", NOW - 1000],
+    ]);
+
+    expect(await s.job("nightly")).toBeNull();
+    await s.setJob("nightly", NOW, { accounts: 1, alerts: 2 });
+    await s.setJob("nightly", NOW + 1, { accounts: 2, alerts: 0 });
+    expect(await s.job("nightly")).toEqual({ at: NOW + 1, info: { accounts: 2, alerts: 0 } });
+  });
 });

@@ -20,6 +20,7 @@ export async function GET() {
     store ? store.count().catch(() => null) : Promise.resolve(null),
   ]);
   const tags = store ? await store.tagCategoryStats().catch(() => null) : null;
+  const nightly = store ? await store.job("nightly").catch(() => null) : null;
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -43,6 +44,10 @@ export async function GET() {
     categoryCards: tags?.cards ?? null,
     categoriesAgeHours: hours(tags?.updatedAt),
     categoriesFresh: tags?.updatedAt ? Date.now() - tags.updatedAt < 9 * 86_400_000 : false,
+    // The nightly job (step D): when it last ran and its counts (no names).
+    nightlyAgeHours: hours(nightly?.at),
+    nightlyFresh: nightly ? Date.now() - nightly.at < 36 * 3_600_000 : false,
+    nightly: nightly?.info ?? null,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

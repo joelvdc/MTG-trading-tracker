@@ -35,6 +35,41 @@ export interface StoredSync {
   writtenAt: number;
 }
 
+/**
+ * One day's collection value, as the app keeps it (ValueSnapshot): the copies, and the values by the app's
+ * ValueHistory keys ("trend", "low@tcgplayer", "pays@cardkingdom", "b:<binder uid>:trend"…; Unsorted is "~").
+ */
+export interface ValueDay {
+  day: string;
+  cards: number;
+  values: Record<string, number>;
+}
+
+/** One point of the value chart. */
+export interface ValuePoint {
+  day: string;
+  value: number;
+  cards: number;
+}
+
+/** A wishlist price alert that was reached (the app's AlertEvent, without CardTrader). */
+export interface AlertEvent {
+  wishUid: string;
+  cardName: string;
+  at: number;
+  /** The price in euros, and the alert level in euros at the time. */
+  price: number;
+  level: number;
+  /** What the price was: "cardmarket:low" (PriceAlerts.basis). */
+  basis: string;
+  /** The printing's set, for "any printing" cards. */
+  setCode: string | null;
+}
+
+/** Alert history lines are kept a year (plus a day) and at most this many per account. */
+export const ALERT_KEEP_MS = 366 * 86_400_000;
+export const ALERT_MAX_LINES = 500;
+
 /** Where the account's file is copied at night (the Nextcloud login, its app password sealed with SESSION_SECRET). */
 export interface BackupTarget {
   server: string;
@@ -80,6 +115,21 @@ export interface AccountStore {
   replaceTagCategories(rows: { key: string; categories: string[] }[], now: number): Promise<void>;
   /** How many names the table has, and when it was last rebuilt (null: never). */
   tagCategoryStats(): Promise<{ cards: number; updatedAt: number | null }>;
+  /** Saves a day's value; [replace] false keeps a day that is there already (the phone's history sent once). */
+  putValueDays(accountId: number, days: ValueDay[], replace: boolean): Promise<void>;
+  /** The chart for one key ("trend", "low@tcgplayer"…), for the whole collection or a [binder] uid ("~": Unsorted), oldest first. */
+  valuePoints(accountId: number, key: string, binder: string | null): Promise<ValuePoint[]>;
+  valueDayCount(accountId: number): Promise<number>;
+  /** The alert levels the nightly check last reached, per wishlist uid (the app's WishPrice.alertedLevel). */
+  alertLevels(accountId: number): Promise<Map<string, number>>;
+  setAlertLevels(accountId: number, levels: Map<string, number>): Promise<void>;
+  /** Adds lines to the alert history, then drops lines older than a year and beyond the newest 500. */
+  addAlertEvents(accountId: number, events: AlertEvent[], now: number): Promise<void>;
+  /** The alert history, newest first. */
+  alertEvents(accountId: number): Promise<AlertEvent[]>;
+  /** A website job's last run (the nightly job's counts, for /api/health). */
+  setJob(name: string, at: number, info: Record<string, unknown>): Promise<void>;
+  job(name: string): Promise<{ at: number; info: Record<string, unknown> } | null>;
 }
 
 // ---- Passwords, tokens, codes ----
@@ -154,6 +204,10 @@ export function memoryStore(): AccountStore {
   const targets = new Map<number, BackupTarget>();
   let tags = new Map<string, string[]>();
   let tagsAt: number | null = null;
+  const valueDays = new Map<number, Map<string, ValueDay>>();
+  const levels = new Map<number, Map<string, number>>();
+  const alerts = new Map<number, AlertEvent[]>();
+  const jobs = new Map<string, { at: number; info: Record<string, unknown> }>();
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
   return {
@@ -245,6 +299,29 @@ export function memoryStore(): AccountStore {
       tagsAt = now;
     },
     tagCategoryStats: async () => ({ cards: tags.size, updatedAt: tags.size ? tagsAt : null }),
+    putValueDays: async (id, days, replace) => {
+      const m = valueDays.get(id) ?? new Map<string, ValueDay>();
+      valueDays.set(id, m);
+      for (const d of days) if (replace || !m.has(d.day)) m.set(d.day, { day: d.day, cards: d.cards, values: { ...d.values } });
+    },
+    valuePoints: async (id, key, binder) =>
+      [...(valueDays.get(id)?.values() ?? [])]
+        .sort((a, b) => a.day.localeCompare(b.day))
+        .flatMap((d) => {
+          const v = d.values[binder === null ? key : `b:${binder}:${key}`];
+          if (v === undefined) return [];
+          return [{ day: d.day, value: v, cards: binder === null ? d.cards : (d.values[`b:${binder}:cards`] ?? 0) }];
+        }),
+    valueDayCount: async (id) => valueDays.get(id)?.size ?? 0,
+    alertLevels: async (id) => new Map(levels.get(id) ?? []),
+    setAlertLevels: async (id, l) => void levels.set(id, new Map(l)),
+    addAlertEvents: async (id, events, now) => {
+      const all = [...events, ...(alerts.get(id) ?? [])].filter((e) => now - e.at <= ALERT_KEEP_MS).sort((a, b) => b.at - a.at);
+      alerts.set(id, all.slice(0, ALERT_MAX_LINES));
+    },
+    alertEvents: async (id) => [...(alerts.get(id) ?? [])],
+    setJob: async (name, at, info) => void jobs.set(name, { at, info }),
+    job: async (name) => jobs.get(name) ?? null,
   };
 }
 
@@ -291,6 +368,27 @@ const SCHEMA = [
      name_key TEXT PRIMARY KEY,
      categories TEXT NOT NULL,
      updated_at BIGINT NOT NULL)`,
+  // Step D (2026-11-06): the value over time, price alerts reached at night, and the website jobs' last runs.
+  `CREATE TABLE IF NOT EXISTS value_history (
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     day TEXT NOT NULL,
+     cards INTEGER NOT NULL,
+     vals JSONB NOT NULL,
+     PRIMARY KEY (account_id, day))`,
+  `CREATE TABLE IF NOT EXISTS alert_levels (
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     wish_uid TEXT NOT NULL,
+     level DOUBLE PRECISION NOT NULL,
+     PRIMARY KEY (account_id, wish_uid))`,
+  `CREATE TABLE IF NOT EXISTS alert_events (
+     id BIGSERIAL PRIMARY KEY,
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     at BIGINT NOT NULL,
+     event JSONB NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS jobs (
+     name TEXT PRIMARY KEY,
+     at BIGINT NOT NULL,
+     info JSONB NOT NULL)`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -411,6 +509,53 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
     tagCategoryStats: async () => {
       const r = (await q("SELECT COUNT(*) AS n, MAX(updated_at) AS at FROM card_tags"))[0];
       return { cards: num(r.n), updatedAt: r.at === null ? null : num(r.at) };
+    },
+    putValueDays: async (id, days, replace) => {
+      for (let i = 0; i < days.length; i += 500) {
+        const part = days.slice(i, i + 500);
+        await q(
+          `INSERT INTO value_history (account_id, day, cards, vals)
+           SELECT $1::int, d, c, v::jsonb FROM unnest($2::text[], $3::int[], $4::text[]) AS t(d, c, v)
+           ON CONFLICT (account_id, day) DO ${replace ? "UPDATE SET cards = EXCLUDED.cards, vals = EXCLUDED.vals" : "NOTHING"}`,
+          [id, part.map((d) => d.day), part.map((d) => Math.round(d.cards)), part.map((d) => JSON.stringify(d.values))],
+        );
+      }
+    },
+    valuePoints: async (id, key, binder) => {
+      const k = binder === null ? key : `b:${binder}:${key}`;
+      const rows = await q(
+        `SELECT day, cards, (vals->>$2)::float8 AS v, (vals->>$3)::float8 AS c FROM value_history
+         WHERE account_id = $1 AND vals->>$2 IS NOT NULL ORDER BY day`,
+        [id, k, binder === null ? "-" : `b:${binder}:cards`],
+      );
+      return rows.map((r) => ({ day: String(r.day), value: num(r.v), cards: binder === null ? num(r.cards) : r.c === null ? 0 : num(r.c) }));
+    },
+    valueDayCount: async (id) => num((await q("SELECT COUNT(*) AS n FROM value_history WHERE account_id = $1", [id]))[0].n),
+    alertLevels: async (id) => new Map((await q("SELECT wish_uid, level FROM alert_levels WHERE account_id = $1", [id])).map((r) => [String(r.wish_uid), num(r.level)])),
+    setAlertLevels: async (id, l) => {
+      await q("DELETE FROM alert_levels WHERE account_id = $1", [id]);
+      if (l.size)
+        await q("INSERT INTO alert_levels (account_id, wish_uid, level) SELECT $1::int, u, v FROM unnest($2::text[], $3::float8[]) AS t(u, v)", [id, [...l.keys()], [...l.values()]]);
+    },
+    addAlertEvents: async (id, events, now) => {
+      if (events.length)
+        await q("INSERT INTO alert_events (account_id, at, event) SELECT $1::int, a, e::jsonb FROM unnest($2::bigint[], $3::text[]) AS t(a, e)", [
+          id,
+          events.map((e) => e.at),
+          events.map((e) => JSON.stringify(e)),
+        ]);
+      await q(
+        `DELETE FROM alert_events WHERE account_id = $1 AND (at < $2::bigint
+           OR id NOT IN (SELECT id FROM alert_events WHERE account_id = $1 ORDER BY at DESC, id DESC LIMIT $3))`,
+        [id, now - ALERT_KEEP_MS, ALERT_MAX_LINES],
+      );
+    },
+    alertEvents: async (id) => (await q("SELECT event FROM alert_events WHERE account_id = $1 ORDER BY at DESC, id DESC", [id])).map((r) => r.event as AlertEvent),
+    setJob: async (name, at, info) =>
+      void (await q("INSERT INTO jobs (name, at, info) VALUES ($1, $2, $3::jsonb) ON CONFLICT (name) DO UPDATE SET at = EXCLUDED.at, info = EXCLUDED.info", [name, at, JSON.stringify(info)])),
+    job: async (name) => {
+      const r = (await q("SELECT at, info FROM jobs WHERE name = $1", [name]))[0];
+      return r ? { at: num(r.at), info: r.info as Record<string, unknown> } : null;
     },
   };
 }
