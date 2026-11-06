@@ -173,6 +173,9 @@ interface ValueHistoryDao {
     @Query("SELECT * FROM value_history ORDER BY day")
     fun observeAll(): Flow<List<ValueSnapshot>>
 
+    @Query("SELECT * FROM value_history ORDER BY day")
+    suspend fun all(): List<ValueSnapshot>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(row: ValueSnapshot)
 }

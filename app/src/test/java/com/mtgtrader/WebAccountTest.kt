@@ -5,9 +5,14 @@ import com.mtgtrader.data.SyncData
 import com.mtgtrader.data.SyncException
 import com.mtgtrader.data.SyncMerge
 import com.mtgtrader.data.SyncPrefs
+import com.mtgtrader.data.ValueHistory
 import com.mtgtrader.data.WebAccountClient
 import com.mtgtrader.data.WebLogin
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -29,6 +34,7 @@ class WebAccountTest {
         var bytes: ByteArray? = null
         var version = 0
         val seen = mutableListOf<Request>()
+        var valueHistory: String? = null
 
         override fun intercept(chain: Interceptor.Chain): Response {
             val req = chain.request()
@@ -45,6 +51,10 @@ class WebAccountTest {
                 else answer(400, """{"error":"Wrong user name or password."}""")
             }
             if (req.header("Authorization") != "Bearer tok123") return answer(401, """{"error":"Log in first."}""")
+            if (path == "/api/app/valuehistory") {
+                valueHistory = Buffer().also { req.body!!.writeTo(it) }.readUtf8()
+                return answer(200, """{"ok":true}""")
+            }
             val tag = "\"v$version\""
             return when (req.method) {
                 "GET" -> when {
@@ -114,5 +124,33 @@ class WebAccountTest {
         assertEquals(mapOf("currency" to "DKK", SyncPrefs.TRADE_BINDER to "abc"), merged.values)
         // Both the same: nothing to change.
         assertEquals(theirs.prefs, SyncMerge.merge(theirs, theirs, 3).prefs)
+    }
+
+    @Test
+    fun sendsTheValueHistoryWithBindersBySyncId() = runBlocking {
+        val values = mapOf("trend" to 12.5, "pays@cardkingdom" to 3.0, "b:0:trend" to 2.0, "b:7:cards" to 4.0, "b:7:trend" to 10.5, "b:9:trend" to 1.0)
+        val web = ValueHistory.forWebsite(values, mapOf(7L to "B7"))
+        // Unsorted becomes "~", binder 7 its uid; binder 9 is gone, so its entry is left out.
+        assertEquals(mapOf("trend" to 12.5, "pays@cardkingdom" to 3.0, "b:~:trend" to 2.0, "b:B7:cards" to 4.0, "b:B7:trend" to 10.5), web)
+
+        client.sendValueHistory(WebLogin("joel", "tok123"), listOf(WebAccountClient.ValueDay("2026-11-01", 20, web)))
+        val day = Json.parseToJsonElement(site.valueHistory!!).jsonObject["days"]!!.jsonArray.single().jsonObject
+        assertEquals("2026-11-01", day["day"]!!.jsonPrimitive.content)
+        assertEquals(20, day["cards"]!!.jsonPrimitive.content.toInt())
+        assertEquals(10.5, day["values"]!!.jsonObject["b:B7:trend"]!!.jsonPrimitive.content.toDouble(), 0.0)
+    }
+
+    @Test
+    fun declinedSuggestionsAndTradeRulesFollowTheNewerSettings() {
+        // A phone on 1.80 declined a suggestion; another on 1.79 changed the currency later: the skips are kept.
+        val mine = SyncData(prefs = SyncPrefs(1, mapOf("currency" to "EUR", "tradeMax" to "50", SyncPrefs.TRADE_SKIPS to "add|x|false|false|NM|EN")))
+        val older = SyncData(prefs = SyncPrefs(2, mapOf("currency" to "DKK")))
+        assertEquals(
+            mapOf("currency" to "DKK", "tradeMax" to "50", SyncPrefs.TRADE_SKIPS to "add|x|false|false|NM|EN"),
+            SyncMerge.merge(mine, older, 3).prefs.values,
+        )
+        // The website forgot the declined cards later: its empty list wins.
+        val website = SyncData(prefs = SyncPrefs(4, mapOf("currency" to "DKK", "tradeMax" to "60", SyncPrefs.TRADE_SKIPS to "")))
+        assertEquals(mapOf("currency" to "DKK", "tradeMax" to "60", SyncPrefs.TRADE_SKIPS to ""), SyncMerge.merge(mine, website, 5).prefs.values)
     }
 }

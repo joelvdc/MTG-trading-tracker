@@ -14,6 +14,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.mtgtrader.container
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,7 +105,7 @@ class SyncManager(
     val status: StateFlow<SyncStatus> = _status
 
     init {
-        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("collection", "binders", "trades", "trade_items", "decks", "deck_cards", "scans", "wishlist", "players", "player_decks", "games", "paused_games", "sync_deletions")) {
+        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("collection", "binders", "trades", "trade_items", "decks", "deck_cards", "scans", "wishlist", "players", "player_decks", "games", "paused_games", "sync_deletions", "trade_skips")) {
             override fun onInvalidated(tables: Set<String>) = onDataChanged()
         })
     }
@@ -433,7 +434,26 @@ class SyncManager(
             running = false, lastError = error, ready = firstDone,
             lastSyncAt = if (error == null) now else _status.value.lastSyncAt,
         )
+        if (error == null && place is SyncPlace.Web) sendValueHistoryOnce(place.login)
         error == null
+    }
+
+    /**
+     * Once per website account: the phone's value history goes to the account, so the website's chart (Stats → Value
+     * over time) starts from it; the website keeps the days it saved itself. Tried again after the next sync if it
+     * fails. Since 1.80.
+     */
+    private suspend fun sendValueHistoryOnce(login: WebLogin) {
+        if (prefs.getString(K_VALUES_SENT, null) == login.username) return
+        runCatching {
+            val uids = db.binderDao().all().associate { it.id to it.uid }
+            val days = db.valueHistoryDao().all().mapNotNull { s ->
+                val values = runCatching { Json.decodeFromString<Map<String, Double>>(s.values) }.getOrNull() ?: return@mapNotNull null
+                WebAccountClient.ValueDay(s.day, s.cards, ValueHistory.forWebsite(values, uids))
+            }
+            if (days.isNotEmpty()) web.sendValueHistory(login, days)
+            prefs.edit().putString(K_VALUES_SENT, login.username).apply()
+        }
     }
 
     private suspend fun runSync(place: SyncPlace, first: FirstSync?) {
@@ -480,6 +500,7 @@ class SyncManager(
         const val K_STAMP = "syncedStamp"
         const val K_PREFS_AT = "syncedPrefsAt"
         const val K_LAST_SYNC = "lastSync"
+        const val K_VALUES_SENT = "valueHistorySentTo"
         const val K_ERROR = "lastError"
         const val K_AUTO = "auto"
         const val K_WIFI = "wifiOnly"

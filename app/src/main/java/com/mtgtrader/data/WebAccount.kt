@@ -3,7 +3,9 @@ package com.mtgtrader.data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -71,6 +73,24 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
                 else -> throw failure(r)
             }
         }
+    }
+
+    /** One day of the phone's value history, for [sendValueHistory]. */
+    data class ValueDay(val day: String, val cards: Int, val values: Map<String, Double>)
+
+    /** Sends the phone's value history to the account (once, since 1.80), so the website's chart starts from it. */
+    suspend fun sendValueHistory(login: WebLogin, days: List<ValueDay>) = call {
+        val body = buildJsonObject {
+            put("days", JsonArray(days.map { d ->
+                buildJsonObject {
+                    put("day", d.day)
+                    put("cards", d.cards)
+                    put("values", JsonObject(d.values.mapValues { JsonPrimitive(it.value) }))
+                }
+            }))
+        }
+        val req = authed(login, "api/app/valuehistory").post(body.toString().toRequestBody("application/json".toMediaType())).build()
+        http.newCall(req).execute().use { r -> if (!r.isSuccessful) throw failure(r) }
     }
 
     private suspend fun account(path: String, body: JsonObject): WebLogin = call {

@@ -78,6 +78,8 @@ data class SyncPrefs(val updatedAt: Long = 0, val values: Map<String, String> = 
     companion object {
         /** The trade binder's sync id (its binder's uid). Since 1.79. */
         const val TRADE_BINDER = "tradeBinder"
+        /** The declined trade binder suggestions (the trade_skips table), newline-joined. Since 1.80. */
+        const val TRADE_SKIPS = "tradeSkips"
     }
 }
 

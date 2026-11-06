@@ -102,7 +102,9 @@ the scanner, package check and life tracker stay on the phone.
     table for its own "Auto categories for new cards" instead of Archidekt, so both agree.
   - Still to plan (owner agreed 2026-11-06): Commander Salt scores for local decks on the website: look for a deck
     link that needs no account, else the half-manual flow.
-  - **Step D plan (prepared 2026-11-06, waiting for the owner's green light):**
+  - Step D shipped 2026-11-07 (owner's green light 2026-11-06): the website's nightly job, Value over time, Alert
+    history, the trade binder page, and app 1.80 (trade binder rules and declined suggestions sync; the phone's value
+    history sent once). Left out as planned: CardTrader in the website's alert check. The plan as approved:
     - Found while preparing: the trade binder's rules (`tradeMax`, `tradeKeepOne`… in Settings.tradeRules) and its
       declined suggestions (`trade_skips`) are NOT synced (only which binder it is, since 1.79). The app's value
       history and alert history live only on each phone and aren't in backups.
@@ -160,6 +162,9 @@ onedrive?"
   is only reshaped once.
 
 ## Done
+- 2026-11-07: step D: the website's nightly job (value per day, price alerts against Cardmarket), Stats → Value over
+  time, Wishlist → Alert history, a trade binder page; app 1.80 syncs the trade binder's rules and declined
+  suggestions and sends the phone's value history once.
 - 2026-11-06: website auto categories from its own table, built weekly from Scryfall's card tags (owner: not
   Archidekt); a card's other categories go along; deleting a category moves cards to their next one.
 - 2026-11-06: step C: website accounts (Neon), app 1.79 syncs with them; the trade binder syncs.

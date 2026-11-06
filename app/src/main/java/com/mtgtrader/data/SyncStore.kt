@@ -31,7 +31,14 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             games = dao.games().map { it.copy(id = 0) },
             deletions = dao.deletions(),
             // Which binder is the trade binder, by its sync id (local ids differ per phone). Since 1.79.
-            prefs = settings.syncedPrefs().let { p -> binderUid[settings.tradeBinderId]?.let { p.copy(values = p.values + (SyncPrefs.TRADE_BINDER to it)) } ?: p },
+            // The declined trade binder suggestions too (since 1.80).
+            prefs = settings.syncedPrefs().let { p ->
+                val extra = listOfNotNull(
+                    binderUid[settings.tradeBinderId]?.let { SyncPrefs.TRADE_BINDER to it },
+                    SyncPrefs.TRADE_SKIPS to db.tradeSkipDao().keys().sorted().joinToString("\n"),
+                )
+                p.copy(values = p.values + extra)
+            },
             pausedGames = dao.pausedGames().map { it.copy(id = 0) },
         ).sorted() to (dao.lastChange() ?: 0L)
     }
@@ -60,6 +67,7 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
         if (done && merged.prefs != current.prefs) {
             settings.applySyncedPrefs(merged.prefs)
             merged.prefs.values[SyncPrefs.TRADE_BINDER]?.let { uid -> db.binderDao().all().firstOrNull { it.uid == uid }?.let { settings.setTradeBinderFromSync(it.id) } }
+            merged.prefs.values[SyncPrefs.TRADE_SKIPS]?.let { skips -> db.tradeSkipDao().replaceAll(skips.split('\n').filter { it.isNotBlank() }) }
         }
         return done
     }

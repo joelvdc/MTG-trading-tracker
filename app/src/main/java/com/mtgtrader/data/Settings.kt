@@ -585,6 +585,14 @@ class Settings(context: Context) {
             put("swipeRight", swipeRight.value.key)
             put("swipeLeft", swipeLeft.value.key)
             put("binderOrder", BinderOrder.encode(binderOrder.value))
+            // The trade binder's rules (since 1.80; the website's trade binder page edits them too).
+            tradeRules.let { r ->
+                put("tradeMax", r.maxCards.toString())
+                put("tradeKeepOne", r.keepOne.toString())
+                put("tradeMinValue", r.minValue.toString())
+                put("tradeKeepBestDecks", r.keepBestForDecks.toString())
+                put("tradeKeepBestAll", r.keepBestAlways.toString())
+            }
             trackerFlags.forEach { (k, f) -> put(k, f.value.toString()) }
             put("trackerLowLife", trackerLowLife.value.key)
             put("trackerCardLayout", trackerCardLayout.value.key)
@@ -624,6 +632,11 @@ class Settings(context: Context) {
         v["swipeRight"]?.let { _swipeRight.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_RIGHT); e.putString("swipeRight", it) }
         v["swipeLeft"]?.let { _swipeLeft.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_LEFT); e.putString("swipeLeft", it) }
         v["binderOrder"]?.let { _binderOrder.value = BinderOrder.decode(it); e.putString("binderOrder", it) }
+        v["tradeMax"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("tradeMax", it) }
+        v["tradeKeepOne"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepOne", it) }
+        v["tradeMinValue"]?.toFloatOrNull()?.takeIf { it >= 0 }?.let { e.putFloat("tradeMinValue", it) }
+        v["tradeKeepBestDecks"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepBestDecks", it) }
+        v["tradeKeepBestAll"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepBestAll", it) }
         trackerFlags.forEach { (k, f) -> v[k]?.toBooleanStrictOrNull()?.let { f.value = it; e.putBoolean(k, it) } }
         v["trackerLowLife"]?.let { _trackerLowLife.value = LowLifeStyle.fromKey(it); e.putString("trackerLowLife", it) }
         v["trackerCardLayout"]?.let { _trackerCardLayout.value = CardLayout.fromKey(it); e.putString("trackerCardLayout", it) }
@@ -633,6 +646,9 @@ class Settings(context: Context) {
     }
 
     private fun android.content.SharedPreferences.Editor.stamp() = putLong(PREFS_UPDATED_AT, System.currentTimeMillis())
+
+    /** Marks the synced settings as changed here (the declined trade binder suggestions changed). Since 1.80. */
+    fun stampSyncedPrefs() = prefs.edit().stamp().apply()
 
     fun setPriceGuideFetched(createdAt: String?, at: Long) {
         _lastFetch.value = at

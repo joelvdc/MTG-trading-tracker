@@ -50,6 +50,20 @@ class ValueHistory(private val db: AppDatabase) {
     companion object {
         fun binderKey(binder: Long, what: String) = "b:$binder:$what"
 
+        /**
+         * A day's numbers as the website keeps them (since 1.80): binders by their sync id instead of this phone's
+         * ("b:<uid>:trend"; Unsorted "b:~:trend"); entries of binders that are gone are left out.
+         */
+        fun forWebsite(values: Map<String, Double>, binderUid: Map<Long, String?>): Map<String, Double> = buildMap {
+            for ((k, v) in values) {
+                if (!k.startsWith("b:")) { put(k, v); continue }
+                val rest = k.removePrefix("b:")
+                val id = rest.substringBefore(':').toLongOrNull() ?: continue
+                val uid = if (id == Binder.UNSORTED) "~" else binderUid[id] ?: continue
+                put("b:$uid:${rest.substringAfter(':')}", v)
+            }
+        }
+
         /** "trend" for Cardmarket (as before 1.29), "trend@tcgplayer" for the others. */
         fun sourceKey(type: PriceType, source: PriceSource) = if (source == PriceSource.CARDMARKET) type.key else "${type.key}@${source.key}"
 

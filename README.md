@@ -132,7 +132,8 @@ binder for the received ones. Trades can be shared as text, and an agreed price 
 home), ranked by value and by how much Commander players want them, with a nudge for rising prices. Set the maximum
 number of cards, a minimum value and whether to keep one copy of each card; by default your decks keep their best copy.
 **Swap** picks another copy of a card. Later, **Update trade binder** shows what to put in and take out, with the reason
-for each. Signed and altered copies are never suggested. Nothing changes until you apply.
+for each. Signed and altered copies are never suggested. Nothing changes until you apply. The rules and the declined
+suggestions sync to your other phones and the [website](#website) (since 1.80), which has a trade binder page too.
 
 ## Wishlist
 The **★ Wishlist** in the binder bar holds the cards you want: any printing, or one printing and finish. It's in three
@@ -300,7 +301,16 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   not), move all Unsorted cards, and **Arrange** the binder bar (the phones get that order too).
 - **Stats:** all of the app's collection stats (colors, identity, rarity, types, mana curve, finish, condition,
   language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
-  worth and the value at every price source; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt. **Import CSV** reads a collection file
+  worth and the value at every price source; click a bar to see those cards. **Value over time** (with an MTG Trader
+  account) charts the value per day for the whole collection or a binder over a month, three months, a year or all:
+  the website saves it every night, and the app sends the phone's earlier history once (since 1.80).
+- **Trade binder:** Collection → **Trade binder** shows the app's suggestions (same rules, same ranking): put each card
+  in, take it out, decline it or leave it for later, then apply; the binder is made if there is none. **Rules** changes
+  the maximum, minimum value and which copies stay home; declined cards can be suggested again. The phones get it all
+  at their next sync.
+- **Price alerts at night:** with an MTG Trader account the website checks the wishlist's alert levels every night
+  against Cardmarket (at the app's alert price type; "any printing" cards at their cheapest printing) and lists the
+  ones reached under **Alert history** on the wishlist. The phones still send the notifications. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt. **Import CSV** reads a collection file
   (ManaBox, Moxfield, Archidekt, Deckbox or the app's own) the way the app does: cards found on Scryfall, binders made by
   name, purchase prices and notes kept.
 - **Decks:** the decks list (Archidekt and local decks, with bracket, power level, value and missing cards) and a page

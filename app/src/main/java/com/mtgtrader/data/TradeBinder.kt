@@ -27,6 +27,16 @@ interface TradeSkipDao {
 
     @Query("DELETE FROM trade_skips WHERE `key` LIKE :prefix || '%'")
     suspend fun deletePrefix(prefix: String)
+
+    @Query("DELETE FROM trade_skips")
+    suspend fun deleteAll()
+
+    /** Makes the table hold exactly [keys] (they came in through sync). Since 1.80. */
+    @androidx.room.Transaction
+    suspend fun replaceAll(keys: List<String>) {
+        deleteAll()
+        putAll(keys.distinct().map { TradeSkip(it) })
+    }
 }
 
 /**
@@ -220,6 +230,7 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
     suspend fun prefer(name: String, kind: CardKind, insteadOf: CardKind) {
         db.tradeSkipDao().deletePrefix("prefer|${TradeBinderPlanner.nameKey(name)}|")
         db.tradeSkipDao().putAll(listOf(TradeSkip(TradeBinderPlanner.preferKey(name, kind)), TradeSkip("add|${insteadOf.key}")))
+        settings.stampSyncedPrefs() // synced since 1.80
     }
 
     /**
@@ -257,7 +268,10 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
                 }
             }
         }
-        if (declined.isNotEmpty()) db.tradeSkipDao().putAll(declined.map { TradeSkip(it.skipKey) })
+        if (declined.isNotEmpty()) {
+            db.tradeSkipDao().putAll(declined.map { TradeSkip(it.skipKey) })
+            settings.stampSyncedPrefs() // synced since 1.80
+        }
         binderId
     }
 
@@ -277,7 +291,10 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
     }
 
     /** Suggests the turned-down cards again. */
-    suspend fun forgetSkipped() = db.tradeSkipDao().clear()
+    suspend fun forgetSkipped() {
+        db.tradeSkipDao().clear()
+        settings.stampSyncedPrefs() // synced since 1.80
+    }
 
     companion object {
         const val NAME = "Trade binder"

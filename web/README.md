@@ -57,9 +57,21 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   (protection). The first decides the card's section, the others go on the deck line as extra categories; deleting a
   category moves its cards to their next one. Cards without a tag go by card type. The website doesn't contact
   Archidekt (owner's decision, 2026-11-06).
+- **Nightly job** (`lib/nightly.ts`, `/api/cron/nightly`, 06:30 UTC after the price jobs), for every account with a
+  sync file: the day's collection value with the app's own keys (ValueHistory.snapshotValues: every source and price
+  type, `pays@cardkingdom`, per binder `b:<uid>:…`, Unsorted `b:~:…`) into `value_history`; and the wishlist's alert
+  levels against Cardmarket at the alert price type (PriceAlerts.step; "any printing" via Scryfall's prints search),
+  the levels reached in `alert_levels`, the lines in `alert_events` (a year, at most 500). Its last run and counts go to
+  `jobs` and `/api/health`. CardTrader is left to the phones. The app (1.80) sends the phone's value history once with
+  `POST /api/app/valuehistory` (`{days:[{day, cards, values}]}`; days the website has are kept). Pages: Stats → Value
+  over time (`/api/collection/history`), Wishlist → Alert history (`/api/wishlist/alerts`).
+- **Trade binder** (`lib/tradebinder.ts`, `/tradebinder`, `/api/tradebinder`): the app's TradeBinderPlanner and
+  TradeBinder.apply ported. Its rules and declined suggestions are synced settings (`tradeMax`, `tradeKeepOne`,
+  `tradeMinValue`, `tradeKeepBestDecks`, `tradeKeepBestAll`, `tradeSkips` newline-joined; the binder is `tradeBinder`).
 - `/api/health` answers `syncFormat`, price freshness, the card details and Card Kingdom stores (`cardDetails`,
   `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`), whether the accounts database answers (`database`,
-  `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`) and whether the settings are complete (no secrets).
+  `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`), the nightly job (`nightly`
+  counts, `nightlyAgeHours`, `nightlyFresh`) and whether the settings are complete (no secrets).
 
 ## Settings (Vercel environment variables)
 | Name | What |
