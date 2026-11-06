@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
+import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
@@ -30,6 +31,11 @@ export default function DeckPage() {
   const [showStats, setShowStats] = useState(true);
   const [missingOpen, setMissingOpen] = useState(false);
   const [rz, setRz] = useState<"BRACKET" | "POWER" | null>(null);
+  const [line, setLine] = useState<string | null>(null);
+  const [catsOpen, setCatsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
+  const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | null>(null);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
 
@@ -43,6 +49,16 @@ export default function DeckPage() {
       else setError(d.data.error ?? "Could not load the deck.");
     })();
   }, [params.id]);
+
+  /** Loads the deck again after an edit (keeping the page as it is meanwhile). */
+  async function reload(text: string | null) {
+    const d = await api<Answer>(`/api/decks/${encodeURIComponent(params.id)}`);
+    if (d.ok && Array.isArray(d.data.rows)) {
+      setView(d.data);
+      setError(null);
+    } else setError(d.data.error ?? "Could not load the deck.");
+    if (text) setNotice(text);
+  }
 
   const shaped = useMemo(() => {
     if (!view) return null;
@@ -85,7 +101,17 @@ export default function DeckPage() {
   const row = (r: DeckRow) => {
     const basic = BASICS.has(r.name.toLowerCase());
     return (
-      <li key={r.lineUid} className="deck-row" onMouseMove={hover.follow(r.card.imageUrl)} onMouseLeave={hover.hide}>
+      <li
+        key={r.lineUid}
+        className="deck-row clickable"
+        role="button"
+        tabIndex={0}
+        title={view.local && !view.readOnly ? "Change this card" : "This card"}
+        onClick={() => (hover.hide(), setLine(r.lineUid))}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setLine(r.lineUid))}
+        onMouseMove={hover.follow(r.card.imageUrl)}
+        onMouseLeave={hover.hide}
+      >
         <span className="deck-qty num">{r.quantity}</span>
         <span className="grow deck-card-name">
           {r.name}
@@ -200,6 +226,23 @@ export default function DeckPage() {
                 Archidekt
               </a>
             )}
+            {!view.readOnly && (
+              <details className="menu">
+                <summary className="btn small-btn">Edit ▾</summary>
+                <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
+                  {view.local && <button onClick={() => setAddOpen(true)}>Add a card</button>}
+                  <button onClick={() => setCatsOpen(true)}>Categories</button>
+                  {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
+                  <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
+                  {!view.local && <button onClick={() => setConfirm("DETACH")}>Make it a local deck</button>}
+                  {view.local && (
+                    <button className="danger-text" onClick={() => setConfirm("DELETE")}>
+                      Delete deck
+                    </button>
+                  )}
+                </div>
+              </details>
+            )}
             {d.saltId && (
               <a className="btn small-btn" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
                 Commander Salt
@@ -265,6 +308,68 @@ export default function DeckPage() {
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
       {rz && view.salt && (
         <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} />
+      )}
+      {line && view.rows.find((r) => r.lineUid === line) && (
+        <LineDialog
+          key={line + view.rows.find((r) => r.lineUid === line)!.quantity}
+          view={view}
+          row={view.rows.find((r) => r.lineUid === line)!}
+          onClose={() => setLine(null)}
+          onChanged={async (t) => {
+            await reload(t);
+            if (t) setLine(null);
+          }}
+        />
+      )}
+      {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
+      {addOpen && <AddCardDialog view={view} onClose={() => setAddOpen(false)} onChanged={(t) => reload(t)} />}
+      {nameDialog && (
+        <NameDialog
+          title={nameDialog === "RENAME" ? "Rename the deck" : "Copy as a local deck"}
+          start={nameDialog === "RENAME" ? d.name : `Copy of ${d.name}`}
+          button={nameDialog === "RENAME" ? "Rename" : "Copy"}
+          note={nameDialog === "COPY" ? "A local deck with the same cards, categories and maybeboard (not the scores). It syncs to the phones." : undefined}
+          onClose={() => setNameDialog(null)}
+          onSave={async (name) => {
+            const r = await deckAction(view.id, { action: nameDialog === "RENAME" ? "rename" : "copy", name });
+            if (r.error) return r.error;
+            if (nameDialog === "COPY" && r.id !== undefined) window.location.assign(`/decks/${r.id}`);
+            else {
+              setNameDialog(null);
+              await reload(null);
+            }
+            return null;
+          }}
+        />
+      )}
+      {confirm === "DELETE" && (
+        <ConfirmDialog
+          title="Delete the deck?"
+          text={`${d.name} is deleted here and, at their next sync, on the phones. This can't be undone.`}
+          button="Delete"
+          danger
+          onClose={() => setConfirm(null)}
+          onYes={async () => {
+            const r = await deckAction(view.id, { action: "delete" });
+            if (r.error) return r.error;
+            window.location.assign("/decks");
+            return null;
+          }}
+        />
+      )}
+      {confirm === "DETACH" && (
+        <ConfirmDialog
+          title="Make it a local deck?"
+          text={`${d.name} stops following Archidekt: it can then be changed here and in the app, but changes made on Archidekt no longer come in and nothing is sent back there. Its scores stay. The deck on Archidekt itself isn't touched.`}
+          button="Make it local"
+          onClose={() => setConfirm(null)}
+          onYes={async () => {
+            const r = await deckAction(view.id, { action: "detach" });
+            if (r.error) return r.error;
+            window.location.assign(`/decks/${r.id}`);
+            return null;
+          }}
+        />
       )}
     </>
   );

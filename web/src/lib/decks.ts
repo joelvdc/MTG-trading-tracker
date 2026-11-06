@@ -2,7 +2,9 @@
 // (DecksScreen), a deck's cards by category or type (DeckGrouping), owned and missing copies (DeckToCollection,
 // DeckPrintings), bracket tags (SaltCard.tagsByCard) and prices. Shared pieces: deckshared.ts.
 import { frontName } from "./collview";
+import { categories, included } from "./deckedit";
 import {
+  caseless,
   coverUrl,
   decodeSalt,
   isBasicName,
@@ -16,6 +18,7 @@ import {
   type BracketTag,
   type Deck,
   type DeckCard,
+  type DeckCategory,
   type DeckGroup,
   type DeckRow,
   type DecksView,
@@ -166,6 +169,33 @@ function ownPrinting(c: DeckCard, copies: Copy[], deckBinder: string | null, tra
   return choice;
 }
 
+/** The printings you own, each printing and finish once (DeckScreen's printing dialog). */
+function choicesOf(copies: Copy[]): DeckRow["choices"] {
+  const by = new Map<string, DeckRow["choices"][number]>();
+  for (const x of copies) {
+    const f = finishOf(x.foil, x.etched);
+    const value = `${x.card.scryfallId}|${f}`;
+    const had = by.get(value);
+    if (had) had.quantity += x.quantity;
+    else by.set(value, { value, label: `${x.card.setName || x.card.setCode.toUpperCase()} #${x.card.collectorNumber}${f === "FOIL" ? " · foil" : f === "ETCHED" ? " · etched" : ""}`, quantity: x.quantity });
+  }
+  return [...by.values()];
+}
+
+/** The deck's categories: those of its lines (first category) and those in categoryInfo, Commander first. */
+function categoriesOf(sd: SyncDeck): DeckCategory[] {
+  const info = categories(sd.deck.categoryInfo);
+  const out = new Map<string, DeckCategory>();
+  const add = (name: string) => {
+    const k = name.toLowerCase();
+    if (!out.has(k)) out.set(k, { name, included: included(name, info), cards: 0 });
+    return out.get(k)!;
+  };
+  for (const c of sd.cards) add(c.category).cards += c.quantity;
+  for (const c of info) add(c.name);
+  return [...out.values()].sort((a, b) => (a.name.toLowerCase() === "commander" ? -1 : b.name.toLowerCase() === "commander" ? 1 : caseless(a.name, b.name)));
+}
+
 export function deckView(file: SyncFile, id: number, prices: PriceFile | null, details: DetailsFile | null, ck: CkFile | null): DeckView | null {
   const sd = syncDecks(file).find((d) => d.deck.archidektId === id);
   if (!sd) return null;
@@ -218,6 +248,8 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
       owned: owned.get(c.card.name.toLowerCase()) ?? 0,
       missing: missing.get(c) ?? 0,
       tags: t,
+      choices: !isBasicName(key) && !c.maybeboard ? choicesOf(copiesByName.get(key) ?? []) : [],
+      picked: picks[key] ?? null,
     };
   });
   const { saltCard, scrollVault, categoryInfo, ...plain } = d;
@@ -239,6 +271,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     scrollVault: sv,
     rows,
     hidden: Object.keys(decodePicks(p.deckHidden)[String(id)] ?? {}),
+    categories: categoriesOf(sd),
     myPrintings,
     currency: cur,
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,

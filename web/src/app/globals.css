@@ -2005,3 +2005,81 @@ details.card > summary {
     display: none;
   }
 }
+
+/* ---- Deck editing ---- */
+.deck-row.clickable {
+  cursor: pointer;
+}
+
+.deck-row.clickable:focus-visible {
+  outline: 2px solid var(--violet);
+}
+
+details.menu {
+  position: relative;
+}
+
+details.menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details.menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-items {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  background: var(--raised);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  padding: 4px;
+}
+
+.menu-items button {
+  background: none;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.menu-items button:hover,
+.menu-items button:focus-visible {
+  background: var(--surface);
+}
+
+.menu-items button.danger-text {
+  color: #ff8a80;
+}
+
+.line-picture {
+  width: 200px;
+  max-width: 60%;
+  border-radius: 10px;
+  align-self: center;
+}
+
+.cat-list > li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--raised);
+}
+
+.new-deck-preview {
+  max-height: 160px;
+  overflow: auto;
+}
+
+.precon-list {
+  max-height: 300px;
+  overflow: auto;
+}

@@ -303,6 +303,11 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   bracket tags, the maybeboard, the stats (mana curve, colours in the costs, mana production, tokens) and the
   commander-casting odds from the app's own shuffling model (the same numbers as the phone). **Cards I'm missing**
   puts them on the wishlist or copies them as a list; the **Bracket card** and **Power card** print like the app's.
+  **New deck** makes a local deck from a pasted list (Moxfield, Archidekt, Arena), a precon or nothing; a local deck's
+  cards can be added, removed, counted, moved between categories, made commander or sent to the maybeboard, and
+  its categories renamed, deleted or hidden, with the same rules as the app. Any deck can be copied, a deck from
+  Archidekt made local, and the printing you own shown for a card picked. The phones get every change at their next
+  sync.
 - **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
   a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
   (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon

@@ -82,6 +82,25 @@ export function deckCards(json: unknown): { name: string; releaseDate: string | 
   return { name: String(d.name ?? ""), releaseDate: typeof d.releaseDate === "string" ? d.releaseDate : null, cards: [...by.values()] };
 }
 
+/**
+ * The whole deck to make a local deck from (DeckEditor.fromPrecon): commander and main board, basic lands too (the
+ * sideboard holds extras, not deck cards), each printing and finish once with its count.
+ */
+export function deckList(json: unknown): { name: string; releaseDate: string | null; commanders: string[]; cards: PreconCard[] } {
+  const d = ((json as { data?: Record<string, unknown> })?.data ?? {}) as Record<string, unknown>;
+  const part = (k: string) => (Array.isArray(d[k]) ? (d[k] as Record<string, unknown>[]) : []).map(toCard);
+  const commanders = part("commander");
+  const by = new Map<string, PreconCard>();
+  for (const c of [...commanders, ...part("mainBoard")]) {
+    if (!c.scryfallId) continue;
+    const k = `${c.scryfallId}|${c.isFoil}`;
+    const had = by.get(k);
+    if (had) had.count += c.count;
+    else by.set(k, { ...c });
+  }
+  return { name: String(d.name ?? ""), releaseDate: typeof d.releaseDate === "string" ? d.releaseDate : null, commanders: [...new Set(commanders.map((c) => c.name))], cards: [...by.values()] };
+}
+
 export interface PricedCard {
   card: CardRef;
   finish: Finish;

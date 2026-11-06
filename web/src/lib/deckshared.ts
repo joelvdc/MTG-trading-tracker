@@ -414,6 +414,18 @@ export interface DeckRow {
   /** Copies this line still needs (any printing counts, shared across lines); 0 for basics. */
   missing: number;
   tags: BracketTag[];
+  /** The printings you own of the card, to pick the one shown ("scryfallId|FINISH"); empty for basics and the maybeboard. */
+  choices: { value: string; label: string; quantity: number }[];
+  /** The pick for this card: a choice's value, "archidekt" for the deck's own printing, or null to let the site choose. */
+  picked: string | null;
+}
+
+/** A category of the deck: from its lines and its categoryInfo (which keeps empty ones and those left out). */
+export interface DeckCategory {
+  name: string;
+  /** False for categories left out of the deck (the maybeboard, a sideboard…). */
+  included: boolean;
+  cards: number;
 }
 
 export interface DeckView {
@@ -427,6 +439,7 @@ export interface DeckView {
   rows: DeckRow[];
   /** Lower-case names of the categories switched off in "Manage categories" (synced). */
   hidden: string[];
+  categories: DeckCategory[];
   /** Whether the deck is shown in the printings you own (the app's "Show in my printings"). */
   myPrintings: boolean;
   currency: Currency;

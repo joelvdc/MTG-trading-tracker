@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
+import { NewDeckDialog } from "@/components/NewDeckDialog";
 import { formatPower } from "@/components/RuleZeroCards";
 import { bracketName, caseless, GROUP_TITLES, type DeckGroup, type DeckSummary, type DecksView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
@@ -40,6 +41,7 @@ export default function DecksPage() {
   const [sort, setSort] = useState<Sort>("NAME");
   const [reverse, setReverse] = useState(false);
   const [query, setQuery] = useState("");
+  const [newOpen, setNewOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -93,8 +95,14 @@ export default function DecksPage() {
           <button className="btn small-btn" onClick={() => setReverse((r) => !r)} title="Reverse the order">
             {reverse ? "▲" : "▼"}
           </button>
+          <span className="spacer" />
+          {!view.readOnly && (
+            <button className="btn primary small-btn" onClick={() => setNewOpen(true)}>
+              New deck
+            </button>
+          )}
         </div>
-        {view.decks.length === 0 && <p className="muted center">No decks yet. Import them in the app (from Archidekt, a pasted list or a precon); they sync here.</p>}
+        {view.decks.length === 0 && <p className="muted center">No decks yet. Import them in the app from Archidekt, or make a local deck here with New deck.</p>}
         {groups.map(({ g, decks }) => (
           <section key={g} className="stack">
             <h2 className="section-head">
@@ -137,6 +145,7 @@ export default function DecksPage() {
           {view.powerSource === "APP" ? " (worked out on the phone; not synced)" : ""}.
         </p>
       </main>
+      {newOpen && <NewDeckDialog onClose={() => setNewOpen(false)} />}
     </>
   );
 }

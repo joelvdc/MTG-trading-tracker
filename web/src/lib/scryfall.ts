@@ -33,6 +33,8 @@ interface ScryCard {
   digital?: boolean;
   type_line?: string;
   layout?: string;
+  cmc?: number;
+  color_identity?: string[];
 }
 
 export interface FoundCard {
@@ -96,9 +98,17 @@ export interface LookedUp {
   card: CardRef;
   typeLine: string;
   layout: string;
+  cmc: number;
+  colorIdentity: string[];
 }
 
-const looked = (c: ScryCard): LookedUp => ({ card: toCardRef(c), typeLine: c.type_line ?? "", layout: c.layout ?? "" });
+const looked = (c: ScryCard): LookedUp => ({
+  card: toCardRef(c),
+  typeLine: c.type_line ?? "",
+  layout: c.layout ?? "",
+  cmc: c.cmc ?? 0,
+  colorIdentity: c.color_identity ?? [],
+});
 
 async function getJson(url: string, init: RequestInit = {}): Promise<unknown | null> {
   const r = await fetch(url, {

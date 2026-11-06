@@ -1,8 +1,8 @@
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { applyCollectionEdit } from "@/lib/collection";
-import { USER_AGENT } from "@/lib/config";
 import { addBought, makeOrder, PRECON, recordOrders } from "@/lib/orders";
-import { deckCards, deckUrl, LIST_URL, orderedOf, parseList, searchPrecons, split, type PreconInfo } from "@/lib/precons";
+import { deckCards, deckUrl, orderedOf, searchPrecons, split } from "@/lib/precons";
+import { mtgjson, preconList as decks } from "@/lib/preconfetch";
 import { loadPrices } from "@/lib/pricestore";
 import { lookupCollection } from "@/lib/scryfall";
 import { editSync } from "@/lib/store";
@@ -11,20 +11,6 @@ import { EditError } from "@/lib/wishlist";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-let listCache: { at: number; decks: PreconInfo[] } | null = null;
-
-async function mtgjson(url: string): Promise<unknown> {
-  const r = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(30_000), cache: "no-store" });
-  if (r.status === 404) throw new EditError("MTGJSON doesn't have that deck.");
-  if (!r.ok) throw new Error(`MTGJSON answered ${r.status}.`);
-  return r.json();
-}
-
-async function decks(): Promise<PreconInfo[]> {
-  if (!listCache || Date.now() - listCache.at > 12 * 3600_000) listCache = { at: Date.now(), decks: parseList(await mtgjson(LIST_URL)) };
-  return listCache.decks;
-}
 
 /** A deck's cards with today's price of one copy (Scryfall's euro price, the deck's finish else the other, like the app). */
 async function pricedDeck(fileName: string) {
