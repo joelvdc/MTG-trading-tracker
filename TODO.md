@@ -101,6 +101,23 @@ the scanner, package check and life tracker stay on the phone.
     fallback to scryfall if something is missing"; web/src/lib/autocategories.ts, see Done).
   - Still to plan (owner agreed 2026-11-06): Commander Salt scores for local decks on the website: look for a deck
     link that needs no account, else the half-manual flow.
+  - **Step D plan (prepared 2026-11-06, waiting for the owner's green light):**
+    - Found while preparing: the trade binder's rules (`tradeMax`, `tradeKeepOne`… in Settings.tradeRules) and its
+      declined suggestions (`trade_skips`) are NOT synced (only which binder it is, since 1.79). The app's value
+      history and alert history live only on each phone and aren't in backups.
+    - D1 nightly website job (`/api/cron/nightly`, 06:30 UTC, after the price jobs), for every account with a file:
+      the day's collection value with the app's own keys (ValueHistory.snapshotValues: every price source and type,
+      Card Kingdom's buylist, each binder by its uid) into a database table; and a check of wishlist alert levels
+      against Cardmarket at the alert price type (PriceAlerts.step: once per drop below the level), written to an
+      alert history table (the app's AlertEvent fields; a year, at most 500 lines). CardTrader prices left out (they
+      need the owner's CardTrader token, which stays on the phone).
+    - D2 website pages: Stats → Value over time (whole collection or a binder, the app's price source and type, 1
+      month / 3 months / 1 year / all); Wishlist → Alert history.
+    - D3 trade binder page on the website: the app's TradeBinderPlanner ported (cards to add and take out, with
+      reasons), accept or decline, the binder made if needed; the rules editable there.
+    - App 1.80 (needed by D3): trade binder rules and declined suggestions sync (as synced settings, no file format
+      change); the phone's value history is sent once to the account so the website's chart starts from it.
+    - Health check: the nightly job's last run and counts in /api/health.
 
 ### 2026-11-05: website accounts instead of the Nextcloud login
 Owner: "Instead of logging into nextcloud for "opening" the website, could the website support users? Like create a
