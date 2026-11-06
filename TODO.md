@@ -97,10 +97,11 @@ the scanner, package check and life tracker stay on the phone.
     the trade binder's uid in the synced settings). The owner approved copying their data; they do it themselves on
     the website (Settings → Make my account and copy my data, while logged in with Nextcloud), then switch each phone
     the same day. Next: step D.
-  - Owner's questions 2026-11-06, still to plan: Commander Salt scores for local decks on the website ("yes, if
-    possible": Commander Salt only scores deck links; look for a link that needs no account, else the half-manual
-    flow), and categories like Archidekt's automatic ones built on the website (from Scryfall's tagger tags, falling
-    back to card type) instead of contacting Archidekt.
+  - Owner's decisions 2026-11-06, plans waiting for a green light: Commander Salt scores for local decks on the
+    website (agreed: look for a deck link that needs no account, else the half-manual flow), and automatic
+    categories on the website. Owner: "build a database copying the archidekt one and fallback to scryfall if
+    something is missing." Archidekt's public card search (api/cards/v2/?nameSearch=, no login) answers
+    oracleCard.defaultCategory; Scryfall's tagger tags fill the gaps, then card type.
 
 ### 2026-11-05: website accounts instead of the Nextcloud login
 Owner: "Instead of logging into nextcloud for "opening" the website, could the website support users? Like create a
