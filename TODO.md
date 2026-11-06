@@ -109,6 +109,24 @@ stored on an account created by the website, the android app would have to be ab
   where the database lives (EU region); the "more places to sync" item below becomes "where to back up". It is a phase of
   its own (website and one app release); decide its place in the order (before phase 4 recommended, so decks and games
   are built on the final storage).
+- **Step C design (prepared 2026-11-06; decided: Neon Postgres in the EU, invite codes, the owner resets passwords)**:
+  - Database (Neon via Vercel's Storage tab, connected to the `mtgtrader` project): `accounts` (user name, password
+    hash with scrypt, admin flag), `invites` (code, made by, used by, when), `devices` (one login token per phone or
+    browser, only its hash stored, last used), `sync_files` (one per account: the same `sync.json.gz`, a version
+    number, who wrote it last, when). Nothing else moves: prices and card details stay in Vercel Blob.
+  - Website: log in with user name and password (the encrypted cookie stays), **Create account** needs an invite code
+    (the owner makes codes in Settings), **Accounts** page for the owner to reset a password (shows a one-time
+    password). Every page reads and writes the account's file instead of Nextcloud's, with the same read-edit-write
+    and "someone wrote in between, redo" rule (the version number does what the ETag does now).
+  - App release: Settings → Sync gets "MTG Trader account" (log in, or create one with an invite code) next to
+    Nextcloud; the sync code keeps its merge rules and only swaps where the file is read and written
+    (`GET/PUT /api/sync` with the version). The trade binder's uid joins the synced settings (needed by step D).
+  - Nextcloud becomes a backup: the website copies each account's file to its Nextcloud folder at night when the
+    account has connected one (Nextcloud's login flow, app password kept encrypted), keeping the last 10 days.
+  - Moving the owner's data: once, from the current Nextcloud file into the owner's account (**asks the owner first**);
+    the phones then switch to the account in Settings. Until a phone switches it keeps syncing with Nextcloud, so the
+    switch happens on all phones the same day.
+  - Health check: `/api/health` adds `database: true` and the account count; Neon is the one new outside service.
 
 ### 2026-11-05: more places to sync
 Owner: "could we in the future expand the sync, so that the user can choose between nextcloud, google drive, dropbox or
