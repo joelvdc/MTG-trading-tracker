@@ -10,12 +10,15 @@ import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { ColourPips, ManaCost } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { RecommendationsPanel } from "@/components/RecommendationsPanel";
-import { BracketCard, formatPower, PowerCard } from "@/components/RuleZeroCards";
+import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
+import { useWinOdds, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView, type GroupBy } from "@/lib/deckshared";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; detailsError: string | null };
+type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; detailsError: string | null; saltCard: string | null };
+
+const NO_CARDS: StatsCard[] = [];
 
 const BASICS = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].flatMap((b) => [b, `Snow-Covered ${b}`]).map((n) => n.toLowerCase()));
 
@@ -40,6 +43,7 @@ export default function DeckPage() {
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | null>(null);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
+  const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null);
 
   useEffect(() => {
     (async () => {
@@ -162,6 +166,8 @@ export default function DeckPage() {
   );
 
   const source = view.powerSource;
+  // The app's own power level isn't synced: the website works it out from the win turn, as the phone does.
+  const power = view.power ?? (source === "APP" && win.status === "done" && win.win ? win.win.power.power : null);
   return (
     <>
       <TopBar page="decks" folder={folder} />
@@ -201,7 +207,7 @@ export default function DeckPage() {
           </div>
           <div className="score">
             <span className="muted small">Power ({POWER_SOURCES[source].label})</span>
-            <strong>{view.power != null ? formatPower(view.power, source) : "–"}</strong>
+            <strong>{power != null ? formatPower(power, source) : source === "APP" && win.status === "working" ? "…" : "–"}</strong>
             {d.archetype && <span className="small">{d.archetype}</span>}
           </div>
           <div className="score">
@@ -259,7 +265,7 @@ export default function DeckPage() {
           <summary>
             <strong>Stats</strong>
           </summary>
-          {showStats && <DeckStatsPanel cards={view.stats} identity={d.colorIdentity} tokenInfo={view.tokenInfo} hover={hover} />}
+          {showStats && <DeckStatsPanel cards={view.stats} identity={d.colorIdentity} tokenInfo={view.tokenInfo} hover={hover} win={win} />}
         </details>
 
         <details className="card" open={showRecs} onToggle={(e) => setShowRecs((e.target as HTMLDetailsElement).open)}>
@@ -316,7 +322,7 @@ export default function DeckPage() {
       {hover.picture}
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
       {rz && view.salt && (
-        <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} />
+        <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} win={win} power={power} />
       )}
       {line && view.rows.find((r) => r.lineUid === line) && (
         <LineDialog
@@ -472,7 +478,7 @@ function MissingDialog({ view, money, onClose, onDone }: { view: Answer; money: 
   );
 }
 
-function RuleZeroDialog({ view, start, onClose }: { view: Answer; start: "BRACKET" | "POWER"; onClose: () => void }) {
+function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; start: "BRACKET" | "POWER"; onClose: () => void; win: WinState; power: number | null }) {
   const [inkSaver, setInkSaver] = useState(false);
   const [which, setWhich] = useState<"BOTH" | "BRACKET" | "POWER">(start);
   const salt = view.salt!;
@@ -501,9 +507,9 @@ function RuleZeroDialog({ view, start, onClose }: { view: Answer; start: "BRACKE
           </label>
         </div>
         <div className="rz-print">
-          {which !== "POWER" && <BracketCard deck={deck} cover={view.cover} data={salt} inkSaver={inkSaver} />}
+          {which !== "POWER" && <BracketCard deck={deck} cover={view.cover} data={salt} inkSaver={inkSaver} speed={win.status === "done" && win.win ? <SpeedSection win={win.win} /> : undefined} />}
           {which !== "BRACKET" && (
-            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={view.power} error={view.powerError} scrollVault={sv} inkSaver={inkSaver} />
+            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} scrollVault={sv} inkSaver={inkSaver} />
           )}
         </div>
         <div className="dialog-actions">

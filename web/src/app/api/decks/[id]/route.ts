@@ -51,7 +51,8 @@ export async function GET(_req: Request, { params }: Params) {
     const [{ file }, prices, details, ck] = await Promise.all([loadSync(a), loadPrices(), loadDetails(), loadCardKingdom()]);
     const view = id === null ? null : deckView(file, id, prices, details, ck);
     if (!view) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
-    const lines = syncDecks(file).find((d) => d.deck.archidektId === id)!.cards.filter((c) => !c.maybeboard);
+    const synced = syncDecks(file).find((d) => d.deck.archidektId === id)!;
+    const lines = synced.cards.filter((c) => !c.maybeboard);
     let info: Awaited<ReturnType<typeof ensureDeckDetails>> = {};
     let detailsError: string | null = null;
     try {
@@ -64,7 +65,8 @@ export async function GET(_req: Request, { params }: Params) {
     );
     const tokenInfo: Record<string, { oi: string | null; pt: string | null }> = {};
     for (const s of stats) for (const t of s.tokens ?? []) if (info[t.id]) tokenInfo[t.id] = { oi: info[t.id].oi, pt: info[t.id].pt };
-    return json({ ...view, stats, tokenInfo, detailsError });
+    // The Commander Salt data as the app keeps it, for the win turn (its combos) and the app's power level.
+    return json({ ...view, stats, tokenInfo, detailsError, saltCard: synced.deck.saltCard ?? null });
   } catch (e) {
     return errorResponse(e);
   }

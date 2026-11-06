@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { costs, curve, scryfallImage, sources, tokens, type StatsCard } from "@/lib/deckstats";
 import { calculate, type ManaOdds } from "@/lib/manaodds";
+import { WIN_SLOW_NOTE, winAbout, winDamageNote, winWindow, type WinResult } from "@/lib/winodds";
 import { COLOUR_FILL, COLOUR_NAMES, ManaCost } from "./Mana";
+import type { WinState } from "./useWinOdds";
 
 const KEY = "mtg.deckStats";
 
@@ -36,11 +38,13 @@ export function DeckStatsPanel({
   identity,
   tokenInfo,
   hover,
+  win,
 }: {
   cards: StatsCard[];
   identity: string;
   tokenInfo: Record<string, { oi: string | null; pt: string | null }>;
   hover: { follow: (url: string | null) => (e: React.MouseEvent) => void; hide: () => void };
+  win: WinState;
 }) {
   const [landsOnly, setLandsOnly] = useStored("landsOnly", false);
   const [colourless, setColourless] = useStored("colourless", true);
@@ -259,6 +263,8 @@ export function DeckStatsPanel({
         </section>
       )}
 
+      {hasCommander && <WinningBlock win={win} missing={cards.filter((c) => c.typeLine === null).length} />}
+
       {toks.length > 0 && (
         <section className="stat-block">
           <h2>Tokens</h2>
@@ -277,5 +283,96 @@ export function DeckStatsPanel({
         </section>
       )}
     </div>
+  );
+}
+
+/** The first win (green) and 4 in 10 games (gold) on the dark page. */
+const FIRST_WIN = "#5DCAA5";
+const FOUR_IN_TEN = "var(--gold)";
+
+/**
+ * When the deck can win (the app's WinningCard): the first turn it wins (green) and the turn of 4 in 10 games
+ * (gold), 9 in 10 games, the share of games won by each turn (and by a combo), where the damage came from and what
+ * was counted. Worked out by the app's own code in this browser.
+ */
+function WinningBlock({ win, missing }: { win: WinState; missing: number }) {
+  const [about, setAbout] = useState(false);
+  return (
+    <section className="stat-block odds-block">
+      <h2>Winning the game</h2>
+      {win.status === "working" || win.status === "off" ? (
+        <p className="muted small">Playing the deck 10,000 times… (half a minute or so, in this browser; kept here afterwards)</p>
+      ) : win.status === "failed" ? (
+        <p className="warn-text small">Couldn&apos;t work the win turn out: {win.error}</p>
+      ) : win.win === null ? (
+        <p className="muted small">Too few cards to play.</p>
+      ) : (
+        <WinningTable w={win.win} about={about} setAbout={setAbout} />
+      )}
+      {missing > 0 && win.status === "done" && <p className="muted small">{missing} card(s) are still waiting for their details from Scryfall, so they don&apos;t count yet.</p>}
+    </section>
+  );
+}
+
+function WinningTable({ w, about, setAbout }: { w: WinResult; about: boolean; setAbout: (f: (a: boolean) => boolean) => void }) {
+  const marks = new Map<number, string>();
+  if (w.firstWin !== null) marks.set(w.firstWin, FIRST_WIN);
+  if (w.fourInTen !== null) marks.set(w.fourInTen, FOUR_IN_TEN);
+  const turn = (t: number) => {
+    const c = marks.get(t);
+    return c ? <strong style={{ color: c }}>turn {t}</strong> : <>turn {t}</>;
+  };
+  const turns = winWindow(w);
+  const cell = (p: number, mark?: string) => (
+    <td style={{ background: `rgba(179, 157, 219, ${Math.max(0.08, p / 100)})`, color: p > 55 ? "#15131a" : undefined, outline: mark ? `2px solid ${mark}` : undefined }}>{p}</td>
+  );
+  return (
+    <>
+      <p className="small">
+        {w.firstWin !== null && <>Can win from {turn(w.firstWin)}. </>}
+        {w.fourInTen !== null ? <>Wins by {turn(w.fourInTen)}</> : <>{w.odds.byTurn[w.odds.byTurn.length - 1]}% of games won by turn {w.odds.byTurn.length}</>}
+        {w.nineInTen !== null && <>; 9 in 10 by turn {w.nineInTen}</>}.
+      </p>
+      <div className="table-wrap">
+        <table className="odds-table">
+          <thead>
+            <tr>
+              <th />
+              {turns.map((t) => (
+                <th key={t} style={marks.has(t) ? { color: marks.get(t), fontWeight: 700 } : undefined}>
+                  T{t}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Win</th>
+              {turns.map((t) => (
+                <Fragment key={t}>{cell(w.odds.byTurn[t - 1], marks.get(t))}</Fragment>
+              ))}
+            </tr>
+            {w.comboShare > 0 && (
+              <tr>
+                <th>by combo</th>
+                {turns.map((t) => (
+                  <Fragment key={t}>{cell(w.odds.byCombo[t - 1])}</Fragment>
+                ))}
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {winDamageNote(w) && <p className="muted small">{winDamageNote(w)}</p>}
+      {w.fourInTen === null && <p className="muted small">{WIN_SLOW_NOTE}</p>}
+      <p className="muted small">
+        % of games won by each turn, from {w.odds.games.toLocaleString("en-GB")} shuffles of this deck (playing alone against three players at 40 life, a best case),
+        worked out by the app&apos;s own code.{" "}
+        <button className="link" onClick={() => setAbout((a) => !a)}>
+          {about ? "Less" : "How?"}
+        </button>
+      </p>
+      {about && <p className="muted small">{winAbout(w.odds.counted)}</p>}
+    </>
   );
 }

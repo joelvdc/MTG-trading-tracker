@@ -1,6 +1,7 @@
 "use client";
 
 import { bracketName, POWER_SOURCES, type Deck, type PowerSource, type SaltCard } from "@/lib/deckshared";
+import { WIN_SLOW_NOTE, winDamageNote, winWindow, type WinResult } from "@/lib/winodds";
 import { ColourPips } from "./Mana";
 
 /** Fixed tile colours per bracket (light tints with dark text), as the app draws them. */
@@ -99,7 +100,51 @@ function Footer({ credit, deck }: { credit: string; deck: DeckLike }) {
   );
 }
 
-/** The bracket card (the app's BracketCardView); [speed] is the win-turn section, once the website works it out. */
+/** The win turn's bars on the printed (light) card: the first win in green, 4 in 10 games in gold. */
+const SPEED_FIRST = "#1E7A52";
+const SPEED_FOUR = "#BA7517";
+
+/**
+ * When the deck wins, playing alone (the app's SpeedSection): the turn of 4 in 10 games (gold) and the first win
+ * (green), 9 in 10 games, and the share won by each turn.
+ */
+export function SpeedSection({ win }: { win: WinResult }) {
+  const marks = new Map<number, string>();
+  if (win.firstWin !== null) marks.set(win.firstWin, SPEED_FIRST);
+  if (win.fourInTen !== null) marks.set(win.fourInTen, SPEED_FOUR);
+  const turns = win.odds.byTurn.length;
+  const sub = [win.firstWin !== null ? `can win from turn ${win.firstWin}` : null, win.nineInTen !== null ? `9 in 10 by turn ${win.nineInTen}` : `${win.odds.byTurn[turns - 1]}% by turn ${turns}`]
+    .filter(Boolean)
+    .join("  ·  ");
+  return (
+    <Section title={`Speed · playing alone, ${win.odds.games.toLocaleString("en-GB")} games`}>
+      <p>
+        <strong>{win.fourInTen !== null ? `Wins by turn ${win.fourInTen}` : `Wins by turn ${turns}+`}</strong>
+      </p>
+      <p className="rz-small">{sub[0].toUpperCase() + sub.slice(1)}</p>
+      <div className="rz-speed-bars">
+        {winWindow(win).map((t) => {
+          const v = win.odds.byTurn[t - 1];
+          const mark = marks.get(t);
+          return (
+            <div key={t}>
+              <span
+                className="cell"
+                style={{ background: `rgba(127, 119, 221, ${Math.min(1, Math.max(0.1, v / 100))})`, color: v > 55 ? "#fff" : "#1c1b1f", border: mark ? `2px solid ${mark}` : undefined }}
+              >
+                {v}
+              </span>
+              <span style={{ color: mark ?? "#49454f", fontWeight: mark ? 700 : undefined }}>T{t}</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="rz-small">{["% of games won by each turn.", winDamageNote(win), win.fourInTen === null ? WIN_SLOW_NOTE : ""].filter(Boolean).join(" ")}</p>
+    </Section>
+  );
+}
+
+/** The bracket card (the app's BracketCardView); [speed] is the win-turn section (SpeedSection) once worked out. */
 export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: DeckLike; cover: string | null; data: SaltCard; inkSaver: boolean; speed?: React.ReactNode }) {
   const tile = (label: string, b: number | null) => {
     const [bg, fg] = BRACKET_COLORS[b ?? 0] ?? BRACKET_COLORS[0];
@@ -224,7 +269,7 @@ export function PowerCard({
             {error
               ? `${site[0].toUpperCase()}${site.slice(1)} couldn't rate this deck: ${error}`
               : source === "APP"
-                ? "Worked out on the phone (the app's own power level isn't synced)."
+                ? "Not worked out yet (the deck's win turn, under Stats)."
                 : `Not rated by ${site} yet.`}
           </div>
         )}

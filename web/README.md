@@ -60,6 +60,17 @@ When Cloudflare still blocks, the website says "Cloudflare … blocked the websi
 Node 22. In `web/`: `npm ci`, `npm test` (vitest), `npm run typecheck`, `npm run build` (it rewrites `tsconfig.json`;
 undo that). `.npmrc` has `legacy-peer-deps=true` because of a vitest peer-dependency clash in npm.
 
+**The win turn** (deck page, "Winning the game") is the app's own `WinOdds.kt` compiled to JavaScript, so its numbers
+are the phone's. `web/winodds-kt/` is a small Kotlin/JS build: it copies `DeckStats.kt`, `ManaOdds.kt`, `SaltCard.kt`,
+`WinOdds.kt` and `AppPowerLevel` from `app/src/main/java/com/mtgtrader/data`, swaps out the few JVM-only parts (threads
+become the same four batches one after another, file storage is left out; each swap fails loudly if the app's text
+moved) and writes the result to `src/lib/winodds-js/` (committed). **After changing the app's win turn, rebuild it**
+from the repository root with JDK 18:
+`./gradlew -p web/winodds-kt copyToWeb`, then `npm test` in `web/` (`test/winodds.test.ts` compares it with the app's
+answer for a small deck, `test/fixtures/winodds-small.json`; refresh that answer when the model changes on purpose).
+The browser runs it in a Web Worker (`src/lib/winodds.worker.ts`) and keeps each deck's result in `localStorage`
+until its cards, colours, combos or `WinOddsCalc.VERSION` change.
+
 **When the app's sync format changes** (`Sync.FORMAT` in `app/.../data/Sync.kt`): update `web/src/lib/syncfile.ts`
 (`WEB_FORMAT` and the types) in the same release, and refresh the shared sample files:
 - `WRITE_WEB_FIXTURES=1 ./gradlew testDebugUnitTest --tests '*WebSyncFixtureTest*'` writes `web/test/fixtures/app-sync.json`;
