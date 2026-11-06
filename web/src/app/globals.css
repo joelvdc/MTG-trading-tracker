@@ -1325,3 +1325,43 @@ main h2 {
 .source-note {
   padding: 0 4px 4px;
 }
+
+/* Orders */
+.order-review {
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid #2c2836;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.order-review .tag {
+  margin-left: 6px;
+}
+
+.tag.warn {
+  color: var(--gold);
+  background: rgba(224, 165, 38, 0.15);
+}
+
+.order-sums {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 14px;
+}
+
+button.link.left {
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .trade-title {
+    flex-direction: column;
+  }
+  .order-sums {
+    justify-content: flex-start;
+  }
+}

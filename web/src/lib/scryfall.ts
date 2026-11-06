@@ -32,6 +32,7 @@ interface ScryCard {
   flavor_name?: string;
   digital?: boolean;
   type_line?: string;
+  layout?: string;
 }
 
 export interface FoundCard {
@@ -90,21 +91,61 @@ export function printings(name: string): Promise<FoundCard[]> {
   return search(`!"${name.replace(/["\\]/g, " ").trim()}"`, "prints");
 }
 
+/** A card as an order needs it: the app's CardRef plus what tells tokens and basic lands apart. */
+export interface LookedUp {
+  card: CardRef;
+  typeLine: string;
+  layout: string;
+}
+
+const looked = (c: ScryCard): LookedUp => ({ card: toCardRef(c), typeLine: c.type_line ?? "", layout: c.layout ?? "" });
+
+async function getJson(url: string, init: RequestInit = {}): Promise<unknown | null> {
+  const r = await fetch(url, {
+    ...init,
+    headers: { "User-Agent": USER_AGENT, Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    signal: AbortSignal.timeout(20_000),
+    cache: "no-store",
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`Scryfall lookup failed (HTTP ${r.status}).`);
+  return r.json();
+}
+
+const pause = () => new Promise((r) => setTimeout(r, 100)); // Scryfall asks for 50–100 ms between requests.
+
 /** Scryfall's /cards/collection, 75 identifiers per request (the app's ScryfallApi.collection); unknown ones are left out. */
-export async function lookupCollection(identifiers: object[]): Promise<CardRef[]> {
-  const out: CardRef[] = [];
+export async function lookupCollectionFull(identifiers: object[]): Promise<LookedUp[]> {
+  const out: LookedUp[] = [];
   for (let i = 0; i < identifiers.length; i += 75) {
-    if (i > 0) await new Promise((r) => setTimeout(r, 100)); // Scryfall asks for 50–100 ms between requests.
-    const r = await fetch(`${API}/cards/collection`, {
-      method: "POST",
-      headers: { "User-Agent": USER_AGENT, Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify({ identifiers: identifiers.slice(i, i + 75) }),
-      signal: AbortSignal.timeout(20_000),
-      cache: "no-store",
-    });
-    if (!r.ok) throw new Error(`Scryfall lookup failed (HTTP ${r.status}).`);
-    const j = (await r.json()) as { data?: ScryCard[] };
-    for (const c of j.data ?? []) out.push(toCardRef(c));
+    if (i > 0) await pause();
+    const j = (await getJson(`${API}/cards/collection`, { method: "POST", body: JSON.stringify({ identifiers: identifiers.slice(i, i + 75) }) })) as { data?: ScryCard[] } | null;
+    for (const c of j?.data ?? []) out.push(looked(c));
   }
   return out;
+}
+
+export async function lookupCollection(identifiers: object[]): Promise<CardRef[]> {
+  return (await lookupCollectionFull(identifiers)).map((l) => l.card);
+}
+
+/** The printing Cardmarket sells as product [id], if Scryfall knows it. */
+export async function byCardmarketId(id: number): Promise<LookedUp | null> {
+  await pause();
+  const c = (await getJson(`${API}/cards/cardmarket/${id}`)) as ScryCard | null;
+  return c ? looked(c) : null;
+}
+
+/** Scryfall's best guess for a name. */
+export async function fuzzyNamed(name: string): Promise<LookedUp | null> {
+  await pause();
+  const c = (await getJson(`${API}/cards/named?${new URLSearchParams({ fuzzy: name })}`)) as ScryCard | null;
+  return c ? looked(c) : null;
+}
+
+/** A Scryfall search as written ([q] as is), first page. */
+export async function searchExact(q: string): Promise<LookedUp[]> {
+  await pause();
+  const j = (await getJson(`${API}/cards/search?${new URLSearchParams({ q })}`)) as { data?: ScryCard[] } | null;
+  return (j?.data ?? []).map(looked);
 }

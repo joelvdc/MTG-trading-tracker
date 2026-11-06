@@ -298,6 +298,10 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   worth and the value at every price source; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt. **Import CSV** reads a collection file
   (ManaBox, Moxfield, Archidekt, Deckbox or the app's own) the way the app does: cards found on Scryfall, binders made by
   name, purchase prices and notes kept.
+- **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
+  a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
+  (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon
+  from MTGJSON with the price split over its cards, like the app.
 - **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
 - **Settings:** besides the sync folder, the app's shared settings (price source, price type, currency, condition
   adjustment, alert price, fair trade margin, the wishlist's choices); the phones take changes at their next sync. The
