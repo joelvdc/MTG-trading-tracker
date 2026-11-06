@@ -23,6 +23,7 @@ import {
   type DeckRow,
   type DecksView,
   type DeckView,
+  type HeldPile,
   type PowerSource,
   type SyncDeck,
 } from "./deckshared";
@@ -112,6 +113,7 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
     sort: p.deckSort ?? "NAME",
     sortReversed: p.deckSortReversed === "true",
     readOnly: !canWrite(file),
+    archidektUser: owner,
   };
 }
 
@@ -217,6 +219,22 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     if (!copiesByName.has(k)) copiesByName.set(k, []);
     copiesByName.get(k)!.push({ card: s.item.card, foil: s.item.foil, etched: s.item.etched, quantity: s.item.quantity, binder: s.binder });
   }
+  const binderNames = new Map(binders.map((b) => [b.uid, b.name]));
+  const pilesByName = new Map<string, HeldPile[]>();
+  for (const s of collection(file)) {
+    const k = s.item.card.name.toLowerCase();
+    if (!pilesByName.has(k)) pilesByName.set(k, []);
+    pilesByName.get(k)!.push({
+      scryfallId: s.item.card.scryfallId,
+      setCode: s.item.card.setCode,
+      setName: s.item.card.setName,
+      collectorNumber: s.item.card.collectorNumber,
+      finish: finishOf(s.item.foil, s.item.etched),
+      condition: s.item.condition,
+      binder: (s.binder && binderNames.get(s.binder)) || "Unsorted",
+      quantity: s.item.quantity,
+    });
+  }
   const main = sd.cards.filter((c) => !c.maybeboard);
   const missing = new Map<DeckCard, number>(missingPlan(main.map((c) => ({ c, name: c.card.name, quantity: c.quantity })), owned, true).map(([l, n]) => [l.c, n]));
   const cur = currency(p.currency);
@@ -229,6 +247,8 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     const etched = mine ? mine.etched : c.etched;
     const t = [...(tags.get(saltKey(c.card.name)) ?? [])];
     if (c.gameChanger && !t.includes("GAME_CHANGER")) t.unshift("GAME_CHANGER");
+    const shown = finishOf(foil, etched);
+    const held = !isBasicName(key) && !c.maybeboard ? (pilesByName.get(c.card.name.toLowerCase()) ?? []) : [];
     return {
       lineUid: c.lineUid,
       name: c.card.name,
@@ -246,6 +266,8 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
       maybeboard: c.maybeboard,
       unitEur: lineUnit(setup, c, card, foil, etched),
       owned: owned.get(c.card.name.toLowerCase()) ?? 0,
+      exact: held.filter((h) => h.scryfallId === card.scryfallId && h.finish === shown).reduce((n, h) => n + h.quantity, 0),
+      held,
       missing: missing.get(c) ?? 0,
       tags: t,
       choices: !isBasicName(key) && !c.maybeboard ? choicesOf(copiesByName.get(key) ?? []) : [],

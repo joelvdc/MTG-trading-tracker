@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
+import { ArchidektImportDialog, ArchidektUpdateDialog } from "@/components/ArchidektDialogs";
 import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
 import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
@@ -44,6 +45,9 @@ export default function DecksPage() {
   const [query, setQuery] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [deleting, setDeleting] = useState<DeckSummary | null>(null);
+  const [archidekt, setArchidekt] = useState<"import" | "update" | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -58,7 +62,7 @@ export default function DecksPage() {
         setReverse(d.data.sortReversed);
       } else setError(d.data.error ?? "Could not load the decks.");
     })();
-  }, []);
+  }, [reloads]);
 
   const groups = useMemo(() => {
     if (!view) return [];
@@ -82,6 +86,11 @@ export default function DecksPage() {
     <>
       <TopBar page="decks" folder={folder} />
       <main className="page wide">
+        {notice && (
+          <div className="bar ok" role="status">
+            {notice}
+          </div>
+        )}
         <div className="controls">
           <input type="search" placeholder="Search decks, commanders, owners" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search decks" />
           <label className="inline small">
@@ -104,6 +113,16 @@ export default function DecksPage() {
           <a className="btn small-btn" href="/decks/cards">
             Rule-zero cards of all decks
           </a>
+          {!view.readOnly && (
+            <button className="btn small-btn" onClick={() => setArchidekt("update")} title="Reload the decks changed on Archidekt and score them again">
+              Update all decks
+            </button>
+          )}
+          {!view.readOnly && (
+            <button className="btn small-btn" onClick={() => setArchidekt("import")}>
+              Import from Archidekt
+            </button>
+          )}
           {!view.readOnly && (
             <button className="btn primary small-btn" onClick={() => setNewOpen(true)}>
               New deck
@@ -159,10 +178,32 @@ export default function DecksPage() {
         <p className="muted small">
           Values are the decks&apos; cards at their own printings (maybeboard left out). Missing: copies the collection lacks in any printing, basic lands left
           out. Power levels: {view.powerLabel}
-          {view.powerSource === "APP" ? " (worked out on the phone; not synced)" : ""}.
+          {view.powerSource === "APP" ? " (from each deck's win turn, which the website works out by itself when a decklist changes)" : ""}.
         </p>
       </main>
       {newOpen && <NewDeckDialog onClose={() => setNewOpen(false)} />}
+      {archidekt === "import" && (
+        <ArchidektImportDialog
+          user={view.archidektUser}
+          onClose={() => setArchidekt(null)}
+          onDone={(text, openId) => {
+            if (openId !== undefined) return window.location.assign(`/decks/${openId}`);
+            setArchidekt(null);
+            setNotice(text);
+            setReloads((n) => n + 1);
+          }}
+        />
+      )}
+      {archidekt === "update" && (
+        <ArchidektUpdateDialog
+          onClose={() => setArchidekt(null)}
+          onDone={(text) => {
+            setArchidekt(null);
+            setNotice(text);
+            setReloads((n) => n + 1);
+          }}
+        />
+      )}
       {deleting && (
         <ConfirmDialog
           title="Delete the deck?"

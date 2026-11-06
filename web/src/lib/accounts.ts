@@ -130,6 +130,20 @@ export interface AccountStore {
   /** A website job's last run (the nightly job's counts, for /api/health). */
   setJob(name: string, at: number, info: Record<string, unknown>): Promise<void>;
   job(name: string): Promise<{ at: number; info: Record<string, unknown> } | null>;
+  /** Takes the job [name] if nobody took it in the last [staleMs] (a lock for jobs that may start twice); true if taken. */
+  claimJob(name: string, at: number, staleMs: number): Promise<boolean>;
+  /** The decks' win turns worked out on the website (lib/winturns.ts), by deck id. */
+  winTurns(accountId: number): Promise<Map<number, StoredWinTurn>>;
+  putWinTurn(accountId: number, deckId: number, win: StoredWinTurn): Promise<void>;
+  /** Forgets the win turns of decks that are gone. */
+  dropWinTurns(accountId: number, deckIds: number[]): Promise<void>;
+}
+
+/** A deck's win turn: [key] names the decklist it belongs to; [result] is the app's JSON answer ("null": none). */
+export interface StoredWinTurn {
+  key: string;
+  result: string;
+  at: number;
 }
 
 // ---- Passwords, tokens, codes ----
@@ -208,6 +222,7 @@ export function memoryStore(): AccountStore {
   const levels = new Map<number, Map<string, number>>();
   const alerts = new Map<number, AlertEvent[]>();
   const jobs = new Map<string, { at: number; info: Record<string, unknown> }>();
+  const wins = new Map<number, Map<number, StoredWinTurn>>();
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
   return {
@@ -322,6 +337,18 @@ export function memoryStore(): AccountStore {
     alertEvents: async (id) => [...(alerts.get(id) ?? [])],
     setJob: async (name, at, info) => void jobs.set(name, { at, info }),
     job: async (name) => jobs.get(name) ?? null,
+    claimJob: async (name, at, staleMs) => {
+      const j = jobs.get(name);
+      if (j && j.at > at - staleMs) return false;
+      jobs.set(name, { at, info: {} });
+      return true;
+    },
+    winTurns: async (id) => new Map(wins.get(id) ?? []),
+    putWinTurn: async (id, deckId, w) => {
+      if (!wins.has(id)) wins.set(id, new Map());
+      wins.get(id)!.set(deckId, { ...w });
+    },
+    dropWinTurns: async (id, deckIds) => deckIds.forEach((d) => wins.get(id)?.delete(d)),
   };
 }
 
@@ -389,6 +416,14 @@ const SCHEMA = [
      name TEXT PRIMARY KEY,
      at BIGINT NOT NULL,
      info JSONB NOT NULL)`,
+  // 2026-11-07: decks' win turns, worked out on the website without opening the deck.
+  `CREATE TABLE IF NOT EXISTS win_turns (
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     deck_id BIGINT NOT NULL,
+     list_key TEXT NOT NULL,
+     result TEXT NOT NULL,
+     at BIGINT NOT NULL,
+     PRIMARY KEY (account_id, deck_id))`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -556,6 +591,25 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
     job: async (name) => {
       const r = (await q("SELECT at, info FROM jobs WHERE name = $1", [name]))[0];
       return r ? { at: num(r.at), info: r.info as Record<string, unknown> } : null;
+    },
+    claimJob: async (name, at, staleMs) =>
+      (
+        await q(
+          "INSERT INTO jobs (name, at, info) VALUES ($1, $2::bigint, '{}'::jsonb) ON CONFLICT (name) DO UPDATE SET at = EXCLUDED.at, info = EXCLUDED.info WHERE jobs.at <= $2::bigint - $3::bigint RETURNING name",
+          [name, at, staleMs],
+        )
+      ).length === 1,
+    winTurns: async (id) =>
+      new Map(
+        (await q("SELECT deck_id, list_key, result, at FROM win_turns WHERE account_id = $1", [id])).map((r) => [num(r.deck_id), { key: String(r.list_key), result: String(r.result), at: num(r.at) }]),
+      ),
+    putWinTurn: async (id, deckId, w) =>
+      void (await q(
+        "INSERT INTO win_turns (account_id, deck_id, list_key, result, at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (account_id, deck_id) DO UPDATE SET list_key = EXCLUDED.list_key, result = EXCLUDED.result, at = EXCLUDED.at",
+        [id, deckId, w.key, w.result, w.at],
+      )),
+    dropWinTurns: async (id, deckIds) => {
+      if (deckIds.length) await q("DELETE FROM win_turns WHERE account_id = $1 AND deck_id = ANY($2::bigint[])", [id, deckIds]);
     },
   };
 }

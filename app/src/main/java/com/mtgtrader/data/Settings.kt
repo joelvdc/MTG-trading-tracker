@@ -116,7 +116,7 @@ class Settings(context: Context) {
         prefs.edit().putStringSet("deckStatsOpen", keys).apply()
     }
 
-    /** Cards added to a deck in the app go into Archidekt's auto category (this phone only). Since 1.46. */
+    /** Cards added to a deck in the app go into the website's auto categories (this phone only). Since 1.46. */
     private val _deckAutoCategories = MutableStateFlow(prefs.getBoolean("deckAutoCategories", true))
     val deckAutoCategories: StateFlow<Boolean> = _deckAutoCategories
 

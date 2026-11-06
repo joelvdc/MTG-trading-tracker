@@ -39,7 +39,7 @@ export function categories(info: string | null | undefined): Category[] {
   }
 }
 
-function encode(list: Category[]): string | null {
+export function encodeCategories(list: Category[]): string | null {
   if (list.length === 0) return null;
   return JSON.stringify(
     list.map((c) => {
@@ -242,7 +242,7 @@ export function renameCategory(file: SyncFile, id: number, from: string, toRaw: 
   const old = info.find((c) => same(c.name, from));
   const kept = info.filter((c) => !same(c.name, from) && !same(c.name, to));
   const now2 = [...kept, { name: to, included: old?.included ?? true, id: old?.id ?? null }];
-  sd.deck.categoryInfo = encode(now2);
+  sd.deck.categoryInfo = encodeCategories(now2);
   if (hidden(file)[String(id)]?.[from.toLowerCase()] !== undefined) {
     setCategoryHidden(file, id, from, false, now);
     setCategoryHidden(file, id, to, true, now);
@@ -257,7 +257,7 @@ export function deleteCategory(file: SyncFile, id: number, name: string, moveTo:
   const uids = new Set(sd.cards.filter((c) => same(c.category, name)).map((c) => c.lineUid));
   // To their auto categories: the next one when the deleted category was one of them (Cultivate: Ramp deleted, Tutor).
   const lines = moved(sd, uids, moveTo?.trim() ? moveTo.trim() : AUTO, look, name);
-  sd.deck.categoryInfo = encode(categories(sd.deck.categoryInfo).filter((c) => !same(c.name, name)));
+  sd.deck.categoryInfo = encodeCategories(categories(sd.deck.categoryInfo).filter((c) => !same(c.name, name)));
   setCategoryHidden(file, id, name, false, now);
   save(sd, lines, now, look);
 }
@@ -269,7 +269,7 @@ export function addCategory(file: SyncFile, id: number, raw: string, now: number
   if (!name) throw new EditError("Give the category a name.");
   const info = categories(sd.deck.categoryInfo);
   if (info.some((c) => same(c.name, name)) || same(name, COMMANDER) || same(name, MAYBEBOARD)) return;
-  sd.deck.categoryInfo = encode([...info, { name }]);
+  sd.deck.categoryInfo = encodeCategories([...info, { name }]);
   touch(sd, now);
 }
 
@@ -390,7 +390,7 @@ export function deleteDeck(file: SyncFile, id: number, now: number): void {
 }
 
 /** A deck with the app's defaults for everything not given. */
-function newDeck(id: number, now: number, d: Partial<Deck>): Deck {
+export function newDeck(id: number, now: number, d: Partial<Deck>): Deck {
   return {
     archidektId: id,
     name: "New deck",
@@ -436,7 +436,7 @@ function newLocalId(file: SyncFile, now: number): number {
   return id;
 }
 
-function addDeck(file: SyncFile, sd: SyncDeck): void {
+export function addDeck(file: SyncFile, sd: SyncDeck): void {
   const list = [...syncDecks(file), sd].sort((a, b) => a.deck.archidektId - b.deck.archidektId);
   file.data.decks = list as unknown as Json;
 }

@@ -1724,6 +1724,105 @@ details.card > summary {
   text-align: right;
 }
 
+/* The "Collection tracker" icon on a deck line and its box */
+.own-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.own-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.own-icon.own-ok {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.own-icon.own-some {
+  border-color: var(--gold);
+}
+
+.own-icon.own-none {
+  opacity: 0.6;
+}
+
+.own-icon:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+.own-tip {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  overflow-wrap: anywhere;
+}
+
+.own-title {
+  font-size: 13px;
+}
+
+.own-part {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.own-exact {
+  color: #6fcf97;
+  font-weight: 700;
+}
+
+.own-note {
+  margin-top: 4px;
+  color: var(--gold);
+}
+
+.own-link {
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  /* On a narrow screen the box spans the line, so it stays inside the screen. */
+  .deck-row {
+    position: relative;
+  }
+  .own-wrap {
+    position: static;
+  }
+  .own-tip {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
+}
+
 /* ---- Rule-zero cards (the bracket and power cards), also for printing ---- */
 .rz-print {
   display: flex;
@@ -2340,4 +2439,13 @@ details.deck-section > summary .mini-head {
 }
 .set-value-row:hover {
   background: var(--raised);
+}
+
+/* Import from Archidekt: the user's decks to pick from. */
+.arch-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.arch-list li {
+  padding: 2px 0;
 }

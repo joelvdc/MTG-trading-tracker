@@ -21,6 +21,10 @@
     {
       "path": "/api/cron/nightly",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/winturns",
+      "schedule": "0 7 * * *"
     }
   ]
 }

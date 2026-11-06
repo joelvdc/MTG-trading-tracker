@@ -5,19 +5,21 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
+import { DeckTokens } from "@/components/DeckTokens";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { ColourPips, ManaCost } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
+import { OwnedIcon } from "@/components/OwnedIcon";
 import { RecommendationsPanel } from "@/components/RecommendationsPanel";
 import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
-import { useWinOdds, type WinState } from "@/components/useWinOdds";
+import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView, type GroupBy } from "@/lib/deckshared";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; detailsError: string | null; saltCard: string | null };
+type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
 
 const NO_CARDS: StatsCard[] = [];
 
@@ -74,7 +76,7 @@ export default function DeckPage() {
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
-  const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null);
+  const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null, view?.winTurn ?? null);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +88,15 @@ export default function DeckPage() {
       else setError(d.data.error ?? "Could not load the deck.");
     })();
   }, [params.id]);
+
+  /** Reads an Archidekt deck again ("reload": the list, "refresh": and Commander Salt, "rescore": Commander Salt only). */
+  async function fromArchidekt(action: "reload" | "refresh" | "rescore") {
+    setNotice(action === "reload" ? "Reading the decklist from Archidekt…" : action === "refresh" ? "Reading the decklist from Archidekt and scoring it on Commander Salt…" : "Scoring the deck on Commander Salt…");
+    const r = await api<{ ok?: boolean; scoreError?: string | null }>(`/api/decks/${encodeURIComponent(params.id)}`, { action });
+    if (!r.ok) return setNotice(r.data.error ?? "That did not work.");
+    const done = action === "reload" ? "Decklist reloaded from Archidekt." : action === "refresh" ? "Reloaded from Archidekt and scored again." : "Scored again on Commander Salt.";
+    await reload(r.data.scoreError ? `${action === "reload" ? done : "Saved"}, but Commander Salt couldn't score it: ${r.data.scoreError}` : done);
+  }
 
   /** Loads the deck again after an edit (keeping the page as it is meanwhile). */
   async function reload(text: string | null) {
@@ -174,13 +185,7 @@ export default function DeckPage() {
           <ManaCost cost={costOf.get(r.original?.scryfallId ?? r.card.scryfallId) ?? null} size={14} />
         </span>
         <span className="deck-own small">
-          {basic || r.maybeboard ? null : r.missing > 0 ? (
-            <span className="warn-text" title={`You own ${r.owned} in any printing`}>
-              {r.missing === r.quantity ? "missing" : `${r.missing} missing`}
-            </span>
-          ) : (
-            <span className="ok-text">owned</span>
-          )}
+          {basic || r.maybeboard ? null : <OwnedIcon row={r} />}
         </span>
         <span className="num nowrap deck-price">{r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}</span>
       </li>
@@ -274,6 +279,9 @@ export default function DeckPage() {
                 <summary className="btn small-btn">Edit ▾</summary>
                 <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
                   {view.local && <button onClick={() => setAddOpen(true)}>Add a card</button>}
+                  {!view.local && <button onClick={() => fromArchidekt("reload")}>Reload decklist</button>}
+                  {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
+                  {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
                   <button onClick={() => setCatsOpen(true)}>Categories</button>
                   {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
                   <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
@@ -302,19 +310,6 @@ export default function DeckPage() {
             <DeckStatsPanel
               cards={view.stats}
               identity={d.colorIdentity}
-              tokenInfo={view.tokenInfo}
-              tokenPicks={view.tokenPicks}
-              onTokenPick={
-                view.readOnly
-                  ? undefined
-                  : async (key, value) => {
-                      const r = await deckAction(view.id, { action: "token-pick", key, value });
-                      if (r.error) return r.error;
-                      await reload(null);
-                      return null;
-                    }
-              }
-              hover={hover}
               win={win}
             />
           )}
@@ -337,6 +332,25 @@ export default function DeckPage() {
             <p className="muted small">From Commander Salt&apos;s analysis. Red: counts for the bracket (two cards, or early in the game); blue: doesn&apos;t.</p>
           </details>
         )}
+
+        <DeckTokens
+          cards={view.stats}
+          tokenInfo={view.tokenInfo}
+          tokenPicks={view.tokenPicks}
+          onTokenPick={
+            view.readOnly
+              ? undefined
+              : async (key, value) => {
+                  const r = await deckAction(view.id, { action: "token-pick", key, value });
+                  if (r.error) return r.error;
+                  await reload(null);
+                  return null;
+                }
+          }
+          hover={hover}
+          open={!folded.has("\u0000tokens")}
+          onToggle={(open) => setFold("\u0000tokens", !open)}
+        />
 
         <details className="card" open={showRecs} onToggle={(e) => setShowRecs((e.target as HTMLDetailsElement).open)}>
           <summary>

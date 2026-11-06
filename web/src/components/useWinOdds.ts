@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { StatsCard } from "@/lib/deckstats";
 import { fingerprint, winInput, type WinResult } from "@/lib/winodds";
 import { WIN_ODDS_VERSION } from "@/lib/winodds-js/version";
+import { api } from "./api";
 
 /** The win turn's state: being worked out, worked out (null: no commander or too few cards), or failed. */
 export type WinState = { status: "working"; started: number; games: number } | { status: "done"; win: WinResult | null } | { status: "failed"; error: string } | { status: "off" };
@@ -12,11 +13,16 @@ const KEY = "mtg.winOdds.";
 /** The games the app plays (WinOddsCalc.GAMES). */
 const GAMES = 10_000;
 
+/** A win turn the website kept for the deck (lib/winturns.ts), with the key of the list it belongs to. */
+export type KeptWin = { key: string; win: WinResult | null } | null;
+
 /**
- * The deck's win turn (the app's WinOddsStore): kept in this browser per deck until its cards, colours or combos
- * change, else worked out in a Web Worker (half a minute or so). [ready] is false while card details are missing.
+ * The deck's win turn (the app's WinOddsStore): the one the website worked out for this list ([kept], when its key is
+ * this list's), or kept in this browser until the deck's cards, colours or combos change, else worked out in a Web
+ * Worker (half a minute or so) and handed to the website to keep. [ready] is false while card details are missing.
+ * The key is lib/winturns.ts winKey (the same text, so the server and the browser agree).
  */
-export function useWinOdds(deckId: number, cards: StatsCard[], identity: string, saltCard: string | null, ready: boolean): WinState {
+export function useWinOdds(deckId: number, cards: StatsCard[], identity: string, saltCard: string | null, ready: boolean, kept: KeptWin = null): WinState {
   const [state, setState] = useState<WinState>({ status: "off" });
   useEffect(() => {
     if (!ready || !cards.some((c) => c.commander)) {
@@ -25,6 +31,10 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
     }
     const input = winInput(cards);
     const key = `${WIN_ODDS_VERSION}|${fingerprint(`${input}|${identity}|${saltCard ?? ""}`)}`;
+    if (kept?.key === key) {
+      setState({ status: "done", win: kept.win });
+      return;
+    }
     try {
       const kept = JSON.parse(localStorage.getItem(KEY + deckId) ?? "null") as { key: string; win: WinResult | null } | null;
       if (kept?.key === key) {
@@ -47,6 +57,8 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
         return;
       }
       const win = JSON.parse(e.data.result) as WinResult | null;
+      // Kept on the website too, for the Decks list, the rule-zero cards and other devices (best effort).
+      void api(`/api/decks/${deckId}/winturn`, { key, result: e.data.result }).catch(() => undefined);
       try {
         localStorage.setItem(KEY + deckId, JSON.stringify({ key, win }));
       } catch {
@@ -60,6 +72,6 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
     };
     worker.postMessage({ cards: input, identity, saltCard });
     return () => worker.terminate();
-  }, [deckId, cards, identity, saltCard, ready]);
+  }, [deckId, cards, identity, saltCard, ready, kept]);
   return state;
 }

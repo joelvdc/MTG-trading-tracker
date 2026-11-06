@@ -97,7 +97,7 @@ data class ArchidektPrinting(
 
 /**
  * Archidekt's public card lookup, through the same (unofficial) JSON API its website uses; it needs no login. Used
- * for the auto category of cards added to a local deck. Until 1.78 this client also logged in to sync the
+ * for the auto category of cards added to a local deck (the app now uses the website's table instead). Until 1.78 this client also logged in to sync the
  * collection and send deck edits; that went with the Archidekt login.
  */
 class ArchidektCollectionClient(private val http: OkHttpClient, private val baseUrl: () -> String = { DEFAULT_BASE }) {

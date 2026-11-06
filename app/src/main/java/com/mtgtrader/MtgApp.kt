@@ -132,14 +132,15 @@ class AppContainer(context: Context) {
     val offlineImages = com.mtgtrader.data.OfflineImages(context, db, settings, network, appScope)
     private val store = SyncStore(db, settings)
     private val nextcloud = NextcloudClient(http)
-    val sync = SyncManager(context, db, store, nextcloud, com.mtgtrader.data.WebAccountClient(http), network, appScope)
+    val webAccount = com.mtgtrader.data.WebAccountClient(http)
+    val sync = SyncManager(context, db, store, nextcloud, webAccount, network, appScope)
     val backups = com.mtgtrader.data.Backups(context, store, sync, nextcloud)
 
     /** The life tracker's games and players (since 1.47). */
     val games = com.mtgtrader.data.GameStore(context, db, scryfall, appScope)
 
     /** Editing local decks (since 1.46; Archidekt decks are read-only since 1.78). */
-    val deckEditor = com.mtgtrader.data.DeckEditor(db, scryfall, com.mtgtrader.data.ArchidektCollectionClient(http), decks, settings, precons, repo).also { editor ->
+    val deckEditor = com.mtgtrader.data.DeckEditor(db, scryfall, webAccount, decks, settings, precons, repo).also { editor ->
         // Changes from before 1.78 that never reached Archidekt block a reload until they're kept or discarded.
         decks.editSender = { id -> editor.waitingCount(id) == 0 }
         decks.detacher = { id -> editor.detach(id) }

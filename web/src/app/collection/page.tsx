@@ -118,9 +118,12 @@ export default function CollectionPage() {
     const params = new URLSearchParams(window.location.search);
     const fromUrl = filterFrom(params.get("filter"));
     const binderUrl = params.get("binder");
-    if (fromUrl || binderUrl != null) {
+    // The deck pages link here with a card name to search for.
+    const searchUrl = params.get("search");
+    if (fromUrl || binderUrl != null || searchUrl != null) {
       setFilter(fromUrl ?? EMPTY_FILTER);
       setBinder(binderUrl ?? "");
+      setSearch(searchUrl ?? "");
       window.history.replaceState(null, "", "/collection");
     } else {
       if (typeof s.binder === "string") setBinder(s.binder);

@@ -9,7 +9,7 @@ import type { WinResult } from "@/lib/winodds";
 
 type Which = "BRACKET" | "POWER" | "BOTH";
 
-/** A deck's win turn, if this browser has worked it out (the deck page keeps it); it may be from before a change. */
+/** A deck's win turn as this browser kept it (before the website kept them, and for Nextcloud folders); it may be from before a change. */
 function keptWin(id: number): WinResult | null {
   try {
     const kept = JSON.parse(localStorage.getItem(`mtg.winOdds.${id}`) ?? "null") as { win: WinResult | null } | null;
@@ -34,14 +34,15 @@ export default function AllRuleZeroCardsPage() {
     (async () => {
       const [s, d] = await Promise.all([
         api<{ loggedIn: boolean; folder?: string }>("/api/session"),
-        api<{ decks?: RuleZeroDeck[]; powerSource?: PowerSource; noFolder?: boolean }>("/api/decks/cards"),
+        api<{ decks?: RuleZeroDeck[]; powerSource?: PowerSource; wins?: Record<number, WinResult | null>; noFolder?: boolean }>("/api/decks/cards"),
       ]);
       if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
       if (!s.data.folder || d.data.noFolder) return window.location.replace("/settings");
       setFolder(s.data.folder ?? "");
       if (d.ok && Array.isArray(d.data.decks)) {
         setData({ decks: d.data.decks, powerSource: d.data.powerSource ?? "COMMANDER_SALT" });
-        setWins(Object.fromEntries(d.data.decks.map((x) => [x.id, keptWin(x.id)])));
+        const kept = d.data.wins ?? {};
+        setWins(Object.fromEntries(d.data.decks.map((x) => [x.id, x.id in kept ? kept[x.id] : keptWin(x.id)])));
       } else setError(d.data.error ?? "Could not load the decks.");
     })();
   }, []);
@@ -83,8 +84,8 @@ export default function AllRuleZeroCardsPage() {
             </div>
             <p className="muted small">
               {data.decks.length} deck{data.decks.length === 1 ? "" : "s"} scored by Commander Salt. The speed on a bracket card
-              {data.powerSource === "APP" ? " and the app's own power level show" : " shows"} for decks whose win turn this browser has worked out (open the
-              deck once).
+              {data.powerSource === "APP" ? " and the app's own power level show" : " shows"} for decks whose win turn the website has worked out (it does
+              so by itself after a decklist changes, within a day).
             </p>
             {data.decks.length === 0 ? (
               <p className="muted center">No deck has been scored yet.</p>

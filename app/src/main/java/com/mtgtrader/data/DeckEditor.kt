@@ -16,8 +16,8 @@ import java.util.UUID
 class DeckEditor(
     private val db: AppDatabase,
     private val scryfall: ScryfallApi,
-    /** Archidekt's public card lookup, for each card's auto category. */
-    private val archidekt: ArchidektCollectionClient,
+    /** The website's table of auto categories (by card name). */
+    private val web: WebAccountClient,
     private val decks: DeckRepository,
     private val settings: Settings,
     private val precons: PreconStore,
@@ -25,7 +25,7 @@ class DeckEditor(
 ) {
     private val dao = db.deckDao()
     private val edits = db.deckEditDao()
-    private val autoCache = HashMap<String, ArchidektPrinting>()
+    private val autoCache = HashMap<String, List<String>>()
 
     /** Changes from before 1.78 that never reached Archidekt, per deck. */
     val waiting: Flow<Map<Long, Int>> = edits.observeCounts().map { l -> l.associate { it.deckId to it.count } }
@@ -108,17 +108,19 @@ class DeckEditor(
     suspend fun remove(deckId: Long, uids: Collection<String>): UndoAction = change(deckId, lines(deckId, uids), emptyList())
 
     /**
-     * Moves lines to [category]: [AUTO] for each card's Archidekt auto category, [DeckEdits.MAYBEBOARD] (or another
+     * Moves lines to [category]: [AUTO] for each card's auto categories from the website, [DeckEdits.MAYBEBOARD] (or another
      * category left out of the deck) to the maybeboard, [DeckEdits.COMMANDER] to make them the commander.
      */
     suspend fun move(deckId: Long, uids: Collection<String>, category: String): UndoAction {
         val before = lines(deckId, uids)
         val deck = dao.get(deckId) ?: return {}
         val info = DeckEdits.categories(deck.categoryInfo)
-        val auto = if (category == AUTO) autoCategories(before.map { it.card.scryfallId }) else emptyMap()
+        val auto = if (category == AUTO) autoCategories(before.associate { it.card.scryfallId to it.card.name }) else emptyMap()
         val after = before.map { line ->
-            val to = if (category == AUTO) auto[line.card.scryfallId] ?: fallbackCategory(line.types) else category
-            line.inCategory(to, maybe = !DeckEdits.included(to, info)).copy(
+            val cats = auto[line.card.scryfallId]
+            val to = if (category == AUTO) cats?.firstOrNull() ?: fallbackCategory(line.types) else category
+            val moved = line.inCategory(to, maybe = !DeckEdits.included(to, info))
+            (if (category == AUTO && cats != null) moved.copy(categories = cats.joinToString("\n")) else moved).copy(
                 commander = to.equals(DeckEdits.COMMANDER, true),
                 addedInApp = false,
             )
@@ -195,7 +197,7 @@ class DeckEditor(
         dao.update(deck.copy(categoryInfo = DeckEdits.encode(kept + ArchidektCategory(to, old?.included ?: true, old?.id))))
     }
 
-    /** Every card of the deck (not the commander or the maybeboard) into its Archidekt auto category. */
+    /** Every card of the deck (not the commander or the maybeboard) into its auto categories. */
     suspend fun autoCategoriseAll(deckId: Long): UndoAction {
         val uids = dao.cards(deckId).filter { !it.commander }.map { it.lineUid }
         return move(deckId, uids, AUTO)
@@ -216,20 +218,21 @@ class DeckEditor(
             ?: runCatching { scryfall.collection(listOf(ScryfallApi.idIdentifier(card.scryfallId))).firstOrNull()?.toInfo() }.getOrNull()
                 ?.also { db.cardInfoDao().putAll(listOf(it)) }
         val types = info?.typeLine?.substringBefore(" — ") ?: ""
-        val to = category ?: (if (settings.deckAutoCategories.value) autoCategories(listOf(card.scryfallId))[card.scryfallId] else null) ?: fallbackCategory(types)
+        val cats = if (category == null && settings.deckAutoCategories.value) autoCategories(mapOf(card.scryfallId to card.name))[card.scryfallId] else null
+        val to = category ?: cats?.firstOrNull() ?: fallbackCategory(types)
         val deck = dao.get(deckId)
         val line = DeckCard(
             deckId = deckId,
             card = card,
             quantity = quantity,
             category = to,
+            categories = (cats ?: listOf(to)).joinToString("\n"),
             types = types,
             cmc = info?.cmc ?: 0.0,
             commander = to.equals(DeckEdits.COMMANDER, true),
             foil = f.foil,
             etched = f.etched,
             maybeboard = !DeckEdits.included(to, DeckEdits.categories(deck?.categoryInfo)),
-            archidektCardId = autoCache[card.scryfallId]?.cardId,
         )
         change(deckId, emptyList(), listOf(line))
         return AddResult(dao.allLines(deckId).firstOrNull { it.lineUid == line.lineUid }?.id ?: 0, AddedTo.DECK)
@@ -255,11 +258,18 @@ class DeckEditor(
         else change(line.deckId, listOf(line), emptyList())
     }
 
-    /** Archidekt's auto category of each printing (by Scryfall id), where it has one; looked up once per card. */
-    suspend fun autoCategories(scryfallIds: Collection<String>): Map<String, String> {
-        val missing = scryfallIds.filter { it !in autoCache }.distinct()
-        if (missing.isNotEmpty()) runCatching { archidekt.printings(missing) }.getOrNull()?.let { autoCache.putAll(it) }
-        return scryfallIds.mapNotNull { id -> autoCache[id]?.defaultCategory?.let { id to it } }.toMap()
+    /**
+     * The website's auto categories of each card ([cards]: Scryfall id to card name), where it has any: the first is
+     * the card's category, the others are extra categories. Looked up once per card name; empty when the website
+     * can't be reached (cards then go by card type).
+     */
+    suspend fun autoCategories(cards: Map<String, String>): Map<String, List<String>> {
+        val missing = cards.values.filter { it !in autoCache }.distinct()
+        if (missing.isNotEmpty()) runCatching { web.autoCategories(missing) }.getOrNull()?.let { found ->
+            // Names the website doesn't know are remembered too, so they aren't asked again.
+            missing.forEach { autoCache[it] = found[it].orEmpty() }
+        }
+        return cards.mapNotNull { (id, name) -> autoCache[name]?.takeIf { it.isNotEmpty() }?.let { id to it } }.toMap()
     }
 
     // ---- Changes that never reached Archidekt (from before 1.78) --------------------------------
@@ -356,20 +366,21 @@ class DeckEditor(
         return id
     }
 
-    /** A local deck from a preconstructed Commander deck (MTGJSON's list), with Archidekt's auto categories. */
+    /** A local deck from a preconstructed Commander deck (MTGJSON's list), with the website's auto categories. */
     suspend fun fromPrecon(info: Precons.Info): Long {
         val deck = precons.deck(info)
         val commanders = deck.commander.map { it.name }.toSet()
         // The whole deck this time, basic lands too (the sideboard holds extras, not deck cards).
         val cards = (deck.commander + deck.mainBoard).filter { it.identifiers.scryfallId != null }
         val found = scryfall.collection(cards.mapNotNull { it.identifiers.scryfallId }.distinct().map(ScryfallApi::idIdentifier)).associateBy { it.id }
-        val auto = if (settings.deckAutoCategories.value) autoCategories(found.keys) else emptyMap()
+        val auto = if (settings.deckAutoCategories.value) autoCategories(found.mapValues { it.value.name }) else emptyMap()
         val lines = cards.groupBy { (it.identifiers.scryfallId ?: it.name) to it.isFoil }.mapNotNull { (_, same) ->
             val c = same.first()
             val sc = c.identifiers.scryfallId?.let { found[it] } ?: return@mapNotNull null
             val commander = c.name in commanders
-            val category = if (commander) DeckEdits.COMMANDER else auto[sc.id] ?: fallbackCategory(sc.typeLine.substringBefore(" — "))
-            lineFor(sc, same.sumOf { it.count }, c.isFoil, false, category, commander)
+            val cats = if (commander) emptyList() else auto[sc.id].orEmpty()
+            val category = if (commander) DeckEdits.COMMANDER else cats.firstOrNull() ?: fallbackCategory(sc.typeLine.substringBefore(" — "))
+            lineFor(sc, same.sumOf { it.count }, c.isFoil, false, category, commander, extra = cats.drop(1))
         }
         return createLocal(deck.name, lines, "Precon: ${deck.name}" + (deck.releaseDate?.take(4)?.let { " ($it)" } ?: ""), identityFromCards(found.values, commanders))
     }
@@ -378,13 +389,14 @@ class DeckEditor(
     suspend fun fromScans(scanIds: List<Long>, name: String, keep: Boolean): Long {
         val scans = repo.scansById(scanIds)
         val found = runCatching { scryfall.collection(scans.map { it.card.scryfallId }.distinct().map(ScryfallApi::idIdentifier)).associateBy { it.id } }.getOrDefault(emptyMap())
-        val auto = if (settings.deckAutoCategories.value) autoCategories(found.keys) else emptyMap()
+        val auto = if (settings.deckAutoCategories.value) autoCategories(found.mapValues { it.value.name }) else emptyMap()
         val lines = scans.groupBy { Triple(it.card.scryfallId, it.foil, it.etched) }.map { (k, same) ->
             val sc = found[k.first]
             val types = sc?.typeLine?.substringBefore(" — ") ?: ""
+            val cats = auto[k.first] ?: listOf(fallbackCategory(types))
             DeckCard(
                 deckId = 0, card = same.first().card, quantity = same.sumOf { it.quantity },
-                category = auto[k.first] ?: fallbackCategory(types), types = types, cmc = sc?.cmc ?: 0.0,
+                category = cats.first(), categories = cats.joinToString("\n"), types = types, cmc = sc?.cmc ?: 0.0,
                 commander = false, foil = k.second, etched = k.third,
             )
         }
@@ -428,9 +440,9 @@ class DeckEditor(
         return TextPreview(result, found, exact, named, notFound)
     }
 
-    /** A local deck from a pasted decklist: categories from its tags ([useTags]) or Archidekt's auto categories. */
+    /** A local deck from a pasted decklist: categories from its tags ([useTags]) or the website's auto categories. */
     suspend fun fromText(name: String, preview: TextPreview, useTags: Boolean, commanderOverride: String? = null): Long {
-        val auto = if (!useTags || !preview.result.hasTags) autoCategories(preview.found.values.map { it.id }) else emptyMap()
+        val auto = if (!useTags || !preview.result.hasTags) autoCategories(preview.found.values.associate { it.id to it.name }) else emptyMap()
         val commanderNames = commanderOverride?.let { setOf(it) } ?: preview.commanders.toSet()
         val lines = preview.result.lines.mapNotNull { l ->
             val sc = preview.found[l] ?: return@mapNotNull null
@@ -439,9 +451,10 @@ class DeckEditor(
                 commander -> DeckEdits.COMMANDER
                 l.board == DeckText.Board.MAYBE -> DeckEdits.MAYBEBOARD
                 useTags && l.tags.isNotEmpty() -> l.tags.first()
-                else -> auto[sc.id] ?: fallbackCategory(sc.typeLine.substringBefore(" — "))
+                else -> auto[sc.id]?.firstOrNull() ?: fallbackCategory(sc.typeLine.substringBefore(" — "))
             }
-            lineFor(sc, l.quantity, l.foil, l.etched, category, commander, extra = if (useTags) l.tags.drop(1) else emptyList())
+            val extra = if (useTags && l.tags.isNotEmpty()) l.tags.drop(1) else if (!commander && l.board != DeckText.Board.MAYBE) auto[sc.id].orEmpty().drop(1) else emptyList()
+            lineFor(sc, l.quantity, l.foil, l.etched, category, commander, extra = extra)
         }
         return createLocal(name, lines, "Pasted decklist", identityFromCards(preview.found.values, commanderNames))
     }
@@ -465,12 +478,11 @@ class DeckEditor(
             etched = etched,
             maybeboard = category.equals(DeckEdits.MAYBEBOARD, true),
             categories = (listOf(category) + extra.filterNot { it.equals(category, true) }).joinToString("\n"),
-            archidektCardId = autoCache[sc.id]?.cardId,
         )
     }
 
     companion object {
-        /** Stands for "each card's Archidekt auto category" when moving cards. */
+        /** Stands for "each card's auto categories from the website" when moving cards. */
         const val AUTO = "\u0000auto"
 
         /** The category a card without an auto category goes into: its card type, as Archidekt does. */

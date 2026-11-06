@@ -4,6 +4,7 @@ package com.mtgtrader.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 /** Java's Math.round, which the app's code calls (half up). */
 internal object Math {
@@ -122,3 +123,10 @@ fun winOddsJson(cardsJson: String, identity: String, saltCard: String?, games: I
         ),
     )
 }
+
+/**
+ * Commander Salt's answer for a deck (its whole JSON) as the app keeps it with the deck ([SaltCardParser], the deck's
+ * saltCard), so decks scored on the website show the same rule-zero cards and combos; null when it can't be read.
+ */
+@JsExport
+fun saltCardJson(body: String): String? = runCatching { SaltCardParser.parse(Json.parseToJsonElement(body).jsonObject).encode() }.getOrNull()

@@ -49,6 +49,18 @@ class SyncMergeTest {
     )
 
     @Test
+    fun signedAndPlainStacksOfTheSameCardStayApart() {
+        val plain = stack("plain", "sol", 2, at = 10, binder = "b1")
+        val signed = SyncStack(plain.item.copy(uid = "signed", quantity = 1, signed = true, updatedAt = 20), "b1")
+        val altered = SyncStack(plain.item.copy(uid = "altered", quantity = 1, altered = true, updatedAt = 30), "b1")
+        val local = SyncData(binders = listOf(binder("b1", "Main", at = 10)), collection = listOf(plain, signed))
+        val remote = SyncData(binders = listOf(binder("b1", "Main", at = 10)), collection = listOf(plain, altered))
+        val m = merge(local, remote)
+        assertEquals(listOf("altered", "plain", "signed"), m.collection.mapNotNull { it.item.uid }.sorted())
+        assertTrue(m.deletions.none { it.uid in setOf("plain", "signed", "altered") })
+    }
+
+    @Test
     fun newerArchidektListWinsOverLaterScoresOnTheOldList() {
         // Phone A reloaded the deck after River of Tears went to the maybeboard and Polluted Delta came in.
         val phoneA = vohar(archidektAt = 2_000, importedAt = 10_000, updatedAt = 10_005, land = "Polluted Delta", scoredAt = 10_004, power = 4.4)

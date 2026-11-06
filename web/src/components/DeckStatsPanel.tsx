@@ -1,11 +1,9 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { costs, curve, scryfallImage, sources, tokens, type DeckToken, type StatsCard } from "@/lib/deckstats";
+import { costs, curve, sources, type StatsCard } from "@/lib/deckstats";
 import { calculate, type ManaOdds } from "@/lib/manaodds";
 import { WIN_SLOW_NOTE, winAbout, winDamageNote, winWindow, type WinResult } from "@/lib/winodds";
-import { api } from "./api";
-import { Dialog } from "./Dialog";
 import { COLOUR_FILL, COLOUR_NAMES, ManaCost } from "./Mana";
 import type { WinState } from "./useWinOdds";
 
@@ -47,47 +45,26 @@ function useStored(key: string, initial: boolean): [boolean, (v: boolean) => voi
   ];
 }
 
-/** The app's deck stats cards (DeckStatsViews.kt): mana curve, colours in the costs, mana production, commander odds, tokens. */
+/** The app's deck stats cards (DeckStatsViews.kt): mana curve, colours in the costs, mana production, commander odds. */
 export function DeckStatsPanel({
   cards,
   identity,
-  tokenInfo,
-  tokenPicks,
-  onTokenPick,
-  hover,
   win,
 }: {
   cards: StatsCard[];
   identity: string;
-  tokenInfo: Record<string, { oi: string | null; pt: string | null }>;
-  /** The printing picked for each token (its key → Scryfall id). */
-  tokenPicks: Record<string, string>;
-  /** Saves a token's printing (null: the cards' own); an error text or null. Missing when the deck can't be changed. */
-  onTokenPick?: (key: string, id: string | null) => Promise<string | null>;
-  hover: { follow: (url: string | null) => (e: React.MouseEvent) => void; hide: () => void };
   win: WinState;
 }) {
   const [landsOnly, setLandsOnly] = useStored("landsOnly", false);
   const [colourless, setColourless] = useStored("colourless", true);
   const [odds, setOdds] = useState<ManaOdds | null | undefined>(undefined);
   const [about, setAbout] = useState(false);
-  const [openToken, setOpenToken] = useState<string | null>(null);
   const hasCommander = cards.some((c) => c.commander);
   const waiting = cards.filter((c) => c.producedMana === null).length;
 
   const mc = useMemo(() => curve(cards), [cards]);
   const cc = useMemo(() => costs(cards), [cards]);
   const src = useMemo(() => sources(cards, hasCommander ? identity : null, landsOnly, colourless), [cards, identity, hasCommander, landsOnly, colourless]);
-  const toks = useMemo(() => {
-    const oi: Record<string, string | undefined> = {};
-    const pt: Record<string, string | null> = {};
-    for (const [id, t] of Object.entries(tokenInfo)) {
-      if (t.oi) oi[id] = t.oi;
-      pt[id] = t.pt;
-    }
-    return tokens(cards, oi, pt, tokenPicks);
-  }, [cards, tokenInfo, tokenPicks]);
-  const shownToken = toks.find((t) => t.key === openToken) ?? null;
 
   // The commander odds: 10,000 shuffles, worked out after the page has drawn.
   useEffect(() => {
@@ -283,126 +260,7 @@ export function DeckStatsPanel({
       )}
 
       {hasCommander && <WinningBlock win={win} missing={cards.filter((c) => c.typeLine === null).length} />}
-
-      {toks.length > 0 && (
-        <Fold title="Tokens" className="stat-block">
-          <ul className="token-grid">
-            {toks.map((t) => (
-              <li
-                key={t.key}
-                className="clickable"
-                role="button"
-                tabIndex={0}
-                title="See it and choose its printing"
-                onClick={() => (hover.hide(), setOpenToken(t.key))}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpenToken(t.key))}
-                onMouseMove={hover.follow(scryfallImage(t.id))}
-                onMouseLeave={hover.hide}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={scryfallImage(t.id, "small")} alt="" loading="lazy" />
-                <span className="small">
-                  <strong>{t.label}</strong>
-                  {t.picked && <span className="ok-text"> · your printing</span>}
-                  <span className="muted"> · made by {t.makers.join(", ")}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="muted small">Click a token to see it{onTokenPick ? " and choose the printing shown for this deck (the phones show it too)" : ""}.</p>
-        </Fold>
-      )}
-      {shownToken && <TokenDialog token={shownToken} onPick={onTokenPick} onClose={() => setOpenToken(null)} />}
     </div>
-  );
-}
-
-type Printing = { id: string; setName: string; collectorNumber: string };
-
-/** A token large, with every printing to pick from (the app's TokenDialog). */
-function TokenDialog({ token, onPick, onClose }: { token: DeckToken; onPick?: (key: string, id: string | null) => Promise<string | null>; onClose: () => void }) {
-  const [prints, setPrints] = useState<Printing[] | null>(null);
-  const [choosing, setChoosing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    if (!token.oracleId) {
-      setPrints([]);
-      return;
-    }
-    api<{ results?: Printing[] }>(`/api/cards/tokenprints?oracle=${encodeURIComponent(token.oracleId)}`).then((r) =>
-      setPrints(r.ok && Array.isArray(r.data.results) ? r.data.results : []),
-    );
-  }, [token.oracleId]);
-  const where = (id: string) => prints?.find((p) => p.id === id);
-  async function pick(id: string | null) {
-    if (!onPick) return;
-    setBusy(true);
-    setError(null);
-    const e = await onPick(token.key, id === token.defaultId ? null : id);
-    setBusy(false);
-    if (e) setError(e);
-    else setChoosing(false);
-  }
-  const ids = prints ? [token.defaultId, ...prints.map((p) => p.id).filter((id) => id !== token.defaultId)] : [];
-  const here = where(token.id);
-  return (
-    <Dialog title={choosing ? `${token.name} · choose a printing` : token.label} onClose={() => !busy && onClose()}>
-      <div className="stack">
-        {!choosing ? (
-          <>
-            <p className="muted small">Made by {token.makers.join(", ")}</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={scryfallImage(token.id)} alt={token.label} className="line-picture" />
-            {here && (
-              <p className="small center">
-                {here.setName} · #{here.collectorNumber}
-              </p>
-            )}
-            {token.picked && <p className="ok-text small center">Your pick for this deck</p>}
-          </>
-        ) : prints === null ? (
-          <p className="muted small">Looking up its printings on Scryfall…</p>
-        ) : prints.length === 0 ? (
-          <p className="muted small">Its printings can&apos;t be looked up right now.</p>
-        ) : (
-          <>
-            <p className="muted small">{prints.length} printings on Scryfall, newest first. The one you pick shows for this deck, here and on the phones.</p>
-            <ul className="print-pick">
-              {ids.map((id) => (
-                <li key={id}>
-                  <button className={id === token.id ? "on" : ""} disabled={busy} onClick={() => pick(id)} title={id === token.defaultId ? "The cards' own printing" : undefined}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={scryfallImage(id, "small")} alt="" loading="lazy" />
-                    <span className="small">
-                      {where(id)?.setName ?? "The cards' own"}
-                      {where(id) ? ` #${where(id)!.collectorNumber}` : ""}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-        {error && <div className="bar error">{error}</div>}
-        <div className="dialog-actions">
-          {choosing && token.picked && (
-            <button className="btn" disabled={busy} onClick={() => pick(null)}>
-              Use the cards&apos; own printing
-            </button>
-          )}
-          <span className="spacer" />
-          {!choosing && onPick && (
-            <button className="btn" disabled={!token.oracleId} onClick={() => setChoosing(true)}>
-              Other printings
-            </button>
-          )}
-          <button className="btn" disabled={busy} onClick={() => (choosing ? setChoosing(false) : onClose())}>
-            {choosing ? "Back" : "Close"}
-          </button>
-        </div>
-      </div>
-    </Dialog>
   );
 }
 

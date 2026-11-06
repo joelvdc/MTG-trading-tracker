@@ -173,4 +173,46 @@ describe("decks pages", () => {
       expect(row.owned).toBeGreaterThan(0);
     }
   });
+
+  it("counts the copies of the printing shown and lists the piles for the collection tracker", () => {
+    const f = fixture();
+    const sd = syncDecks(f)[0];
+    const line = sd.cards[0];
+    const other = { ...line.card, scryfallId: "33333333-3333-3333-3333-333333333333", setCode: "cmr", setName: "Commander Legends" };
+    const pile = (card: typeof line.card, quantity: number, foil: boolean, binder: string | null) =>
+      ({ item: { card, quantity, foil, etched: false, condition: "NM" }, binder }) as never;
+    // Show the deck's own printing, so the line's printing is the deck's.
+    f.data.prefs = { values: { ...((f.data.prefs as { values?: Record<string, string> } | undefined)?.values ?? {}), deckPrintingsOff: String(sd.deck.archidektId) } } as unknown as Json;
+    f.data.binders = [{ id: 1, name: "Trades", createdAt: 0, uid: "b1", updatedAt: 0 }] as unknown as Json;
+    f.data.collection = [pile(line.card, 2, line.foil, "b1"), pile(line.card, 1, !line.foil, null), pile(other, 1, line.foil, null)] as unknown as Json;
+    const row = deckView(f, sd.deck.archidektId, null, null, null)!.rows[0];
+    // Only the pile with the same printing and finish counts as exact; the others are still listed.
+    expect(row.exact).toBe(2);
+    expect(row.owned).toBe(4);
+    expect(row.held).toHaveLength(3);
+    expect(row.held[0]).toMatchObject({ scryfallId: line.card.scryfallId, quantity: 2, condition: "NM", binder: "Trades" });
+    expect(row.held[1].binder).toBe("Unsorted");
+    // Only another printing: nothing is exact, but the card is held.
+    f.data.collection = [pile(other, 1, line.foil, null)] as unknown as Json;
+    const split = deckView(f, sd.deck.archidektId, null, null, null)!.rows[0];
+    expect(split.exact).toBe(0);
+    expect(split.held.map((h) => h.setCode)).toEqual(["cmr"]);
+  });
+
+  it("gives no piles for basic lands and the maybeboard", () => {
+    const f = fixture();
+    const sd = syncDecks(f)[0];
+    const card = sd.cards[0].card;
+    sd.cards.push(
+      { ...sd.cards[0], id: 900, lineUid: "basic", card: { ...card, name: "Island" }, maybeboard: false },
+      { ...sd.cards[0], id: 901, lineUid: "maybe", maybeboard: true },
+    );
+    f.data.collection = [
+      { item: { card: { ...card, name: "Island" }, quantity: 5, foil: false, etched: false, condition: "NM" }, binder: null },
+      { item: { card, quantity: 1, foil: false, etched: false, condition: "NM" }, binder: null },
+    ] as unknown as Json;
+    const rows = deckView(f, sd.deck.archidektId, null, null, null)!.rows;
+    expect(rows.find((r) => r.lineUid === "basic")).toMatchObject({ held: [], exact: 0 });
+    expect(rows.find((r) => r.lineUid === "maybe")).toMatchObject({ held: [], exact: 0 });
+  });
 });

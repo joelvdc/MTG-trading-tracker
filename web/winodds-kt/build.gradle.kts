@@ -96,7 +96,7 @@ val copyToWeb by tasks.registering(Sync::class) {
     doLast {
         val version = Regex("const val VERSION = (\\d+)").find(appData.resolve("WinOdds.kt").readText())!!.groupValues[1]
         // Its TypeScript type (Kotlin's own generator needs yarn and an npm download).
-        destinationDir.resolve("winodds-kt.d.mts").writeText("export declare function winOddsJson(cardsJson: string, identity: string, saltCard: string | null, games?: number | null, onProgress?: ((started: number) => void) | null): string;\n")
+        destinationDir.resolve("winodds-kt.d.mts").writeText("export declare function winOddsJson(cardsJson: string, identity: string, saltCard: string | null, games?: number | null, onProgress?: ((started: number) => void) | null): string;\nexport declare function saltCardJson(body: string): string | null;\n")
         destinationDir.resolve("version.ts").writeText("// Written by web/winodds-kt (copyToWeb): the app's WinOddsCalc.VERSION.\nexport const WIN_ODDS_VERSION = $version;\n")
     }
 }

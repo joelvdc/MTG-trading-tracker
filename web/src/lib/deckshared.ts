@@ -404,6 +404,21 @@ export interface DecksView {
   sort: string;
   sortReversed: boolean;
   readOnly: boolean;
+  /** Your Archidekt username (Settings), to import your decks from. */
+  archidektUser: string | null;
+}
+
+/** One pile of a card in the collection (a printing, finish, condition and binder). */
+export interface HeldPile {
+  scryfallId: string;
+  setCode: string;
+  setName: string;
+  collectorNumber: string;
+  finish: Finish;
+  condition: string;
+  /** The binder's name; "Unsorted" when it has none. */
+  binder: string;
+  quantity: number;
 }
 
 /** One line on the deck page. */
@@ -427,6 +442,10 @@ export interface DeckRow {
   unitEur: number | null;
   /** Copies owned in any printing. */
   owned: number;
+  /** Copies owned of the printing and finish shown on the line (the same Scryfall id and finish). */
+  exact: number;
+  /** Every pile of the card in the collection, for the "Collection tracker" box; empty for basics and the maybeboard. */
+  held: HeldPile[];
   /** Copies this line still needs (any printing counts, shared across lines); 0 for basics. */
   missing: number;
   tags: BracketTag[];

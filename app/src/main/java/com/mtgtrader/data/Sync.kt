@@ -305,10 +305,12 @@ object SyncMerge {
         val binderIds = binders.mapNotNull { it.uid }.toSet()
         fun binder(uid: String?): String? = uid?.let { remap[it] ?: it }?.takeIf { it in binderIds }
 
-        // Collection: one stack per printing, finish, condition, language and binder (the newest).
+        // Collection: one stack per printing, finish, condition, language, signed/altered and binder (the newest), as
+        // the database's unique index. Before 1.81 signed and altered were left out, so a signed and a plain stack of
+        // the same card in the same binder became one at sync.
         val collection = d.collection.filter { alive(it.item.uid, it.item.updatedAt) }
             .map { it.copy(binder = binder(it.binder)) }
-            .groupBy { s -> listOf(s.item.card.scryfallId, s.item.foil, s.item.etched, s.item.condition, s.item.language, s.binder) }
+            .groupBy { s -> listOf(s.item.card.scryfallId, s.item.foil, s.item.etched, s.item.condition, s.item.language, s.item.signed, s.item.altered, s.binder) }
             .map { (_, same) ->
                 val keep = same.maxWith(compareBy<SyncStack>({ it.item.updatedAt }, { it.item.uid }))
                 for (s in same) if (s !== keep) bury(s.item.uid, s.item.updatedAt)

@@ -151,7 +151,7 @@ fun ScansDeckDialog(count: Int, onDismiss: () -> Unit, onCreate: (name: String, 
 
 /**
  * "Paste a Moxfield list": the decklist as text, read and looked up on Scryfall first ("Read"), then made into a
- * local deck with the categories chosen (the list's tags, or Archidekt's auto categories).
+ * local deck with the categories chosen (the list's tags, or the website's auto categories).
  */
 @Composable
 fun PasteDeckDialog(onDismiss: () -> Unit, onCreated: (Long) -> Unit) {
@@ -210,7 +210,7 @@ fun PasteDeckDialog(onDismiss: () -> Unit, onCreated: (Long) -> Unit) {
                     if (p.result.hasTags) {
                         Text("The list has tags. Use as categories:", style = MaterialTheme.typography.titleSmall)
                         RadioRow("The list's tags (a card's first tag)", useTags) { useTags = true }
-                        RadioRow("Archidekt's auto categories", !useTags) { useTags = false }
+                        RadioRow("The website's auto categories", !useTags) { useTags = false }
                     }
                 }
                 if (busy) Row(verticalAlignment = Alignment.CenterVertically) {

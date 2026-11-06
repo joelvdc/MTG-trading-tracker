@@ -57,6 +57,25 @@ export async function autoCategories(cards: AutoCard[]): Promise<AutoMap> {
   return out;
 }
 
+/** The most names one call to /api/cards/categories may ask for (the app sends them in chunks). */
+export const MAX_NAMES = 500;
+
+/**
+ * The categories of each name, keyed by the name as asked (for the app's "Auto categories for new cards", since
+ * 1.81, so the phone and the website agree). Names the table doesn't have are left out.
+ */
+export async function categoriesByName(names: string[]): Promise<Record<string, string[]>> {
+  const store = accountStore();
+  const out: Record<string, string[]> = {};
+  if (!store || names.length === 0) return out;
+  const found = await store.tagCategories([...new Set(names.flatMap((n) => [nameKey(n), frontKey(n)]))]);
+  for (const n of names) {
+    const cats = found.get(nameKey(n)) ?? found.get(frontKey(n));
+    if (cats?.length) out[n] = cats;
+  }
+  return out;
+}
+
 type Fetch = typeof fetch;
 const pause = () => new Promise((r) => setTimeout(r, 100)); // Scryfall asks for 50–100 ms between requests.
 

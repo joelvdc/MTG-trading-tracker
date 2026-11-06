@@ -93,6 +93,30 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
         http.newCall(req).execute().use { r -> if (!r.isSuccessful) throw failure(r) }
     }
 
+    /**
+     * The website's auto categories for cards, by card name (no login needed): the first of each list is the card's
+     * category, the others are extra categories. Cards the website doesn't know are left out. Throws when the website
+     * can't be reached or answers badly.
+     */
+    suspend fun autoCategories(names: Collection<String>): Map<String, List<String>> = call {
+        val result = HashMap<String, List<String>>()
+        for (chunk in names.distinct().chunked(CATEGORY_CHUNK)) {
+            val body = buildJsonObject { put("names", JsonArray(chunk.map { JsonPrimitive(it) })) }
+            val req = Request.Builder().url(base + "api/cards/categories")
+                .post(body.toString().toRequestBody("application/json".toMediaType())).build()
+            http.newCall(req).execute().use { r ->
+                if (!r.isSuccessful) throw IOException("The website answered ${r.code}")
+                val categories = json.parseToJsonElement(r.body!!.string()).jsonObject["categories"]?.jsonObject
+                    ?: throw IOException("The website's answer has no categories")
+                for ((name, list) in categories) {
+                    val cats = (list as JsonArray).map { it.jsonPrimitive.content }.filter { it.isNotBlank() }
+                    if (cats.isNotEmpty()) result[name] = cats
+                }
+            }
+        }
+        result
+    }
+
     private suspend fun account(path: String, body: JsonObject): WebLogin = call {
         val req = Request.Builder().url(base + path).post(body.toString().toRequestBody("application/json".toMediaType())).build()
         http.newCall(req).execute().use { r ->
@@ -121,5 +145,8 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
     companion object {
         const val BASE = "https://mtgtrader.vercel.app/"
         const val HOST = "mtgtrader.vercel.app"
+
+        /** The most card names the website answers in one call. */
+        const val CATEGORY_CHUNK = 500
     }
 }

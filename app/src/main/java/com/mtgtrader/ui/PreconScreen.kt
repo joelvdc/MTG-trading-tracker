@@ -104,7 +104,7 @@ fun PreconScreen(nav: NavController, local: Boolean = false) {
             title = { Text(info.name) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Makes a local deck with this precon's cards (in their printings), each in Archidekt's auto category. Your collection isn't changed.")
+                    Text("Makes a local deck with this precon's cards (in their printings), each in its auto category. Your collection isn't changed.")
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     if (making) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator()

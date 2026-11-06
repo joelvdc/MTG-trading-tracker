@@ -1,7 +1,7 @@
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
-import { ensureDeckDetails, statsCard, type DeckInfo } from "@/lib/deckdetails";
+import { ensureDeckDetails, type DeckInfo } from "@/lib/deckdetails";
 import { deckView, missingPlan, ownedByName, syncDecks } from "@/lib/decks";
 import { loadPrices } from "@/lib/pricestore";
 import { editSync, loadSync } from "@/lib/store";
@@ -30,9 +30,13 @@ import type { DeckCard } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import type { CardRef } from "@/lib/syncfile";
 import { autoCategories } from "@/lib/autocategories";
+import { loadFromArchidekt, scoreAgain, updateOne } from "@/lib/deckload";
+import { isUser } from "@/lib/session";
+import { deckStatsCards, keptWins, parseWin } from "@/lib/winturns";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Commander Salt can take a while (it retries its import), so up to two minutes.
+export const maxDuration = 120;
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -62,13 +66,14 @@ export async function GET(_req: Request, { params }: Params) {
     } catch (e) {
       detailsError = e instanceof Error ? e.message : "Scryfall couldn't be reached.";
     }
-    const stats = lines.map((c) =>
-      statsCard({ name: c.card.name, scryfallId: c.card.scryfallId, quantity: c.quantity, cmc: c.cmc, types: c.types, commander: c.commander }, info[c.card.scryfallId]),
-    );
+    const stats = deckStatsCards(synced, info);
     const tokenInfo: Record<string, { oi: string | null; pt: string | null }> = {};
     for (const s of stats) for (const t of s.tokens ?? []) if (info[t.id]) tokenInfo[t.id] = { oi: info[t.id].oi, pt: info[t.id].pt };
     // The Commander Salt data as the app keeps it, for the win turn (its combos) and the app's power level.
-    return json({ ...view, stats, tokenInfo, detailsError, saltCard: synced.deck.saltCard ?? null });
+    // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
+    const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
+    const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
+    return json({ ...view, stats, tokenInfo, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
   } catch (e) {
     return errorResponse(e);
   }
@@ -76,6 +81,7 @@ export async function GET(_req: Request, { params }: Params) {
 
 type Body = {
   action?: string;
+  need?: string;
   skipBasics?: boolean;
   uid?: string;
   uids?: string[];
@@ -125,7 +131,8 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
 }
 
 /**
- * Deck actions. Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
+ * Deck actions. Decks from Archidekt: "reload" (the list), "refresh" (the list and Commander Salt), "rescore"
+ * (Commander Salt only), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
  * "copy", "detach" (a deck from Archidekt becomes a local deck), "hide-category", "pick" (the printing you own to
  * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself). Local decks only: "set-quantity", "remove", "move", "auto-all",
  * "add-card", "rename-category", "delete-category", "add-category", "rename".
@@ -138,6 +145,17 @@ export async function POST(req: Request, { params }: Params) {
     const id = deckId((await params).id);
     if (id === null) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
     const body = ((await req.json()) ?? {}) as Body;
+    // Decks from Archidekt: read again from there (with or without Commander Salt), or one step of "Update all decks".
+    if (body.action === "reload" || body.action === "refresh" || body.action === "rescore" || body.action === "update") {
+      if (id < 0) throw new EditError("A local deck isn't on Archidekt.");
+      if (body.action === "rescore") return json({ ok: true, scoreError: await scoreAgain(a, id) });
+      if (body.action === "update") {
+        const need = body.need === "changed" || body.need === "unscored" ? body.need : "check";
+        return json({ ok: true, ...(await updateOne(a, id, need)) });
+      }
+      const r = await loadFromArchidekt(a, id, { score: body.action === "refresh" });
+      return json({ ok: true, scoreError: r.scoreError });
+    }
     if (body.action === "missing-to-wishlist") {
       const added = await editSync(a, (f, now) => {
         const sd = syncDecks(f).find((d) => d.deck.archidektId === id);

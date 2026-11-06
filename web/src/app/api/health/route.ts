@@ -21,6 +21,7 @@ export async function GET() {
   ]);
   const tags = store ? await store.tagCategoryStats().catch(() => null) : null;
   const nightly = store ? await store.job("nightly").catch(() => null) : null;
+  const winturns = store ? await store.job("winturns").catch(() => null) : null;
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -48,6 +49,9 @@ export async function GET() {
     nightlyAgeHours: hours(nightly?.at),
     nightlyFresh: nightly ? Date.now() - nightly.at < 36 * 3_600_000 : false,
     nightly: nightly?.info ?? null,
+    // The daily win-turn job (decks' win turns worked out on the website): when it last ran and its counts.
+    winTurnsAgeHours: hours(winturns?.at),
+    winTurns: winturns?.info ?? null,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

@@ -810,7 +810,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             editControls = if (!editable) null else {
                 {
                     val uid = row.item.lineUid
-                    val auto by produceState<String?>(null, row.item.card.scryfallId) { value = c.deckEditor.autoCategories(listOf(row.item.card.scryfallId))[row.item.card.scryfallId] }
+                    val auto by produceState<String?>(null, row.item.card.scryfallId) { value = c.deckEditor.autoCategories(mapOf(row.item.card.scryfallId to row.item.card.name))[row.item.card.scryfallId]?.firstOrNull() }
                     CardEditControls(
                         category = row.item.category,
                         autoCategory = auto,
@@ -929,7 +929,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         AlertDialog(
             onDismissRequest = { confirmAuto = false },
             title = { Text("Auto-categorise all cards?") },
-            text = { Text("Every card (not the commander or the maybeboard) goes into Archidekt's auto category for it; cards without one go by card type. You can undo right after.") },
+            text = { Text("Every card (not the commander or the maybeboard) goes into its auto category from the website; cards without one go by card type. You can undo right after.") },
             confirmButton = {
                 TextButton(onClick = {
                     confirmAuto = false

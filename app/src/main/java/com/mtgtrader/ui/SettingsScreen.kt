@@ -329,8 +329,9 @@ fun SettingsScreen(nav: NavController) {
             val autoCategories by c.settings.deckAutoCategories.collectAsStateWithLifecycle()
             SwitchRow(
                 "Auto categories for new cards",
-                "Cards added to a deck you can edit go into Archidekt's auto category for them (Ramp, Draw, Removal…), " +
-                    "or by card type when they have none. Off: by card type.",
+                "Cards added to a deck you can edit go into the website's auto categories for them (built from Scryfall's card tags, " +
+                    "as on the website: Ramp, Removal, Draw…), the first as their category and the others as extra categories; " +
+                    "by card type when they have none or the website can't be reached. Off: by card type.",
                 autoCategories,
                 c.settings::setDeckAutoCategories,
             )

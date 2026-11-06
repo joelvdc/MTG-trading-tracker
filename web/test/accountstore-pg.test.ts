@@ -90,6 +90,25 @@ describe.each([
     expect(await s.tagCategoryStats()).toEqual({ cards: 2, updatedAt: NOW + 1 });
   });
 
+  it("win turns and job locks", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    expect(await s.claimJob("winturns:1", NOW, 60_000)).toBe(true);
+    expect(await s.claimJob("winturns:1", NOW + 1000, 60_000)).toBe(false);
+    expect(await s.claimJob("winturns:1", NOW + 61_000, 60_000)).toBe(true);
+    await s.setJob("winturns:1", 0, { done: 1 });
+    expect(await s.claimJob("winturns:1", NOW + 62_000, 60_000)).toBe(true);
+    await s.putWinTurn(a.id, -1793996277123, { key: "13|abc", result: "null", at: NOW });
+    await s.putWinTurn(a.id, 10710772, { key: "13|x", result: '{"label":"a"}', at: NOW });
+    await s.putWinTurn(a.id, 10710772, { key: "13|y", result: '{"label":"b"}', at: NOW + 1 });
+    expect(Object.fromEntries(await s.winTurns(a.id))).toEqual({
+      "-1793996277123": { key: "13|abc", result: "null", at: NOW },
+      "10710772": { key: "13|y", result: '{"label":"b"}', at: NOW + 1 },
+    });
+    await s.dropWinTurns(a.id, [10710772]);
+    expect([...(await s.winTurns(a.id)).keys()]).toEqual([-1793996277123]);
+  });
+
   it("value history, alert levels, the alert history and job runs", async () => {
     const s = await make();
     const a = (await s.create("joel", "h", true, NOW))!;
