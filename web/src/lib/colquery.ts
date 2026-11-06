@@ -338,6 +338,8 @@ export interface StatEntry {
   value: number;
   /** The collection filter that shows exactly these cards, or null. */
   filter: Partial<Filter> | null;
+  /** Sets only: the copies' latest change (trend against the 30-day average) together; null when none has one. */
+  change?: number | null;
 }
 
 export interface StatCard {
@@ -484,6 +486,8 @@ export function computeStats(rows: CollRow[], binderNames: Map<string | null, st
     copies: sumQ(rs),
     value: sumV(rs),
     filter: { sets: [code] } as Partial<Filter>,
+    // ValueHistory.bySet: the sum of the copies' latest changes (null when none of them has one).
+    change: rs.some((r) => r.changeEur != null) ? rs.reduce((s, r) => s + (r.changeEur ?? 0) * r.quantity, 0) : null,
   }));
 
   const years = group((r) => (r.info?.d ? r.info.d.slice(0, 4) : null)).sort((a, b) => (a.key < b.key ? -1 : 1));

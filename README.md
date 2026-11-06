@@ -301,7 +301,7 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   not), move all Unsorted cards, and **Arrange** the binder bar (the phones get that order too).
 - **Stats:** all of the app's collection stats (colors, identity, rarity, types, mana curve, finish, condition,
   language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
-  worth and the value at every price source; click a bar to see those cards. **Value over time** (with an MTG Trader
+  worth, the value at every price source and **Value by set** (with each set's latest change); click a bar to see those cards. **Value over time** (with an MTG Trader
   account) charts the value per day for the whole collection or a binder over a month, three months, a year or all:
   the website saves it every night, and the app sends the phone's earlier history once (since 1.80).
 - **Trade binder:** Collection → **Trade binder** shows the app's suggestions (same rules, same ranking): put each card
@@ -328,8 +328,12 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   sync.
   **Recommendations** shows EDHREC's or recommander.cards' cards for the deck, like the app, with one-click adding
   for local decks. **Winning the game** plays the deck 10,000 times with the app's own code (the same numbers as the
-  phone; half a minute or so in the browser, then kept there until the deck changes), and fills in the bracket card's
-  speed and the app's own power level.
+  phone; half a minute or so in the browser, with a bar showing the games played, then kept there until the deck
+  changes), and fills in the bracket card's speed and the app's own power level. Each stats section and card category
+  folds away; **Combos** lists Commander Salt's combos (what they do, whether they count for the bracket, a link to
+  Commander Spellbook), also in a card's window; a token's printing can be chosen (the phones show it too). Any deck
+  can be deleted (never on Archidekt). The Decks page also has **Cards in several decks** and **Rule-zero cards of all
+  decks** (every bracket and power card, to print together).
 - **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
   a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
   (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon
@@ -337,7 +341,8 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   cards you already have from one or more order files, asking where a line could be several piles.
 - **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
 - **Settings:** besides the sync folder, the app's shared settings (price source, price type, currency, condition
-  adjustment, alert price, fair trade margin, the wishlist's choices); the phones take changes at their next sync. The
+  adjustment, alert price, fair trade margin, the wishlist's choices, the power level source and your Archidekt
+  username); the phones take changes at their next sync. The
   website's backups are listed there to download; restore one in the app (Settings → Backups → Restore from a file…).
 - **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
   folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync

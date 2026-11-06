@@ -214,6 +214,14 @@ describe("editing local decks (the app's DeckEditor)", () => {
     expect(() => setQuantity(f, archidekt.deck.archidektId, archidekt.cards[0].lineUid, 2, NOW, NO_LOOKUPS)).toThrow(EditError);
   });
 
+  it("deletes a deck from Archidekt like the app (here and on the phones, not on Archidekt)", () => {
+    const f = fixture();
+    const id = syncDecks(f)[0].deck.archidektId;
+    deleteDeck(f, id, NOW);
+    expect(syncDecks(f).some((x) => x.deck.archidektId === id)).toBe(false);
+    expect(deletions(f).some((x) => x.uid === `deck:${id}` && x.deletedAt === NOW)).toBe(true);
+  });
+
   it("detaches a deck from Archidekt like the app (new id, lines keep their uid, old deck deleted)", () => {
     const f = fixture();
     const src = syncDecks(f)[0];

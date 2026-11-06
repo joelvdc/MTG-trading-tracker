@@ -192,6 +192,22 @@ export function saltKey(name: string): string {
   return name.split(" // ")[0].trim().toLowerCase();
 }
 
+/** What a combo does, in words ("infinite ETB, infinite life loss"; SaltCombo.resultText). */
+export function comboResultText(c: SaltCombo): string {
+  return c.results
+    .map((r) =>
+      r === "win-game"
+        ? "wins the game"
+        : r === "opponents-locked"
+          ? "locks opponents"
+          : r
+              .split("-")
+              .map((w) => (w === "etb" || w === "ltb" ? w.toUpperCase() : w === "lifeloss" ? "life loss" : w === "lifegain" ? "life gain" : w))
+              .join(" "),
+    )
+    .join(", ");
+}
+
 /** Every combo, those that count for the bracket first (SaltCard.allCombos). */
 export function allCombos(s: SaltCard): SaltCombo[] {
   const seen = new Set<string>();
@@ -439,6 +455,8 @@ export interface DeckView {
   rows: DeckRow[];
   /** Lower-case names of the categories switched off in "Manage categories" (synced). */
   hidden: string[];
+  /** The printing picked for each of its tokens (the token's key → Scryfall id; synced as deckTokenPicks). */
+  tokenPicks: Record<string, string>;
   categories: DeckCategory[];
   /** Whether the deck is shown in the printings you own (the app's "Show in my printings"). */
   myPrintings: boolean;

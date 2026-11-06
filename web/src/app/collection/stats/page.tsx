@@ -17,6 +17,7 @@ export default function StatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [binder, setBinder] = useState("");
   const [measure, setMeasure] = useState<Measure>("copies");
+  const [allSets, setAllSets] = useState(false);
 
   useEffect(() => {
     setBinder(new URLSearchParams(window.location.search).get("binder") ?? "");
@@ -97,6 +98,49 @@ export default function StatsPage() {
             );
           })}
         </ul>
+      </section>
+    );
+  }
+
+  /** The sets by value, most valuable first, with each set's latest change (the app's ValueBySetList). */
+  function SetValues() {
+    const sets = [...s.sets].filter((e) => e.copies > 0).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+    if (sets.length === 0) return null;
+    const total = sets.reduce((n, e) => n + e.value, 0);
+    return (
+      <section className="stat-block">
+        <h2>Value by set</h2>
+        <ul className="plain-list set-values">
+          {(allSets ? sets : sets.slice(0, 10)).map((e) => (
+            <li key={e.key}>
+              <a className="set-value-row" href={link(e.filter)}>
+                <span className="grow">
+                  {e.label}
+                  <span className="muted small">
+                    {" "}
+                    · {e.copies} cards · {total > 0 ? Math.round((e.value / total) * 100) : 0}%
+                  </span>
+                </span>
+                <span className="num">
+                  <strong>{money(e.value)}</strong>
+                  {e.change != null && Math.abs(e.change) > 0.004 && (
+                    <span className={e.change >= 0 ? "ok-text small" : "warn-text small"}>
+                      {" "}
+                      {e.change >= 0 ? "+" : "−"}
+                      {money(Math.abs(e.change))}
+                    </span>
+                  )}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        {sets.length > 10 && (
+          <button className="link small" onClick={() => setAllSets((x) => !x)}>
+            {allSets ? "Show fewer" : `Show all sets (${sets.length})`}
+          </button>
+        )}
+        <p className="muted small">The change is each card&apos;s trend price against its 30-day average, for all its copies. Click a set to see its cards.</p>
       </section>
     );
   }
@@ -239,6 +283,7 @@ export default function StatsPage() {
           <Bars title="Sets (top 15)" entries={s.sets} sortBy limit={15} />
           <Bars title="Release year" entries={s.years} />
         </div>
+        <SetValues />
         <div className="stat-grid">
           <Cards title="Most valuable" cards={s.mostValuable} />
           <Cards title="Rising (trend vs 30-day average)" cards={s.risers} />

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
+import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
 import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { NewDeckDialog } from "@/components/NewDeckDialog";
@@ -42,6 +43,7 @@ export default function DecksPage() {
   const [reverse, setReverse] = useState(false);
   const [query, setQuery] = useState("");
   const [newOpen, setNewOpen] = useState(false);
+  const [deleting, setDeleting] = useState<DeckSummary | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -96,6 +98,12 @@ export default function DecksPage() {
             {reverse ? "▲" : "▼"}
           </button>
           <span className="spacer" />
+          <a className="btn small-btn" href="/decks/shared">
+            Cards in several decks
+          </a>
+          <a className="btn small-btn" href="/decks/cards">
+            Rule-zero cards of all decks
+          </a>
           {!view.readOnly && (
             <button className="btn primary small-btn" onClick={() => setNewOpen(true)}>
               New deck
@@ -110,7 +118,8 @@ export default function DecksPage() {
             </h2>
             <div className="deck-grid">
               {decks.map((d) => (
-                <a key={d.id} className="deck-tile" href={`/decks/${d.id}`}>
+                <div key={d.id} className="deck-tile-wrap">
+                <a className="deck-tile" href={`/decks/${d.id}`}>
                   <div className="deck-cover" style={d.cover ? { backgroundImage: `url("${d.cover}")` } : undefined}>
                     <div className="deck-cover-in">
                       <strong className="deck-name">{d.name}</strong>
@@ -135,6 +144,14 @@ export default function DecksPage() {
                     {g === "OTHERS" && d.owner && <span>· {d.owner}</span>}
                   </div>
                 </a>
+                {!view.readOnly && (
+                  <button className="tile-delete" title={`Delete ${d.name}`} aria-label={`Delete ${d.name}`} onClick={() => setDeleting(d)}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9zm4 2v8h2v-8h-2zm4 0v8h2v-8h-2z" />
+                    </svg>
+                  </button>
+                )}
+                </div>
               ))}
             </div>
           </section>
@@ -146,6 +163,22 @@ export default function DecksPage() {
         </p>
       </main>
       {newOpen && <NewDeckDialog onClose={() => setNewOpen(false)} />}
+      {deleting && (
+        <ConfirmDialog
+          title="Delete the deck?"
+          text={`${deleting.name} is deleted here and, at their next sync, on the phones. This can't be undone.${deleting.id < 0 ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
+          button="Delete"
+          danger
+          onClose={() => setDeleting(null)}
+          onYes={async () => {
+            const r = await deckAction(deleting.id, { action: "delete" });
+            if (r.error) return r.error;
+            setView((v) => (v ? { ...v, decks: v.decks.filter((x) => x.id !== deleting.id) } : v));
+            setDeleting(null);
+            return null;
+          }}
+        />
+      )}
     </>
   );
 }

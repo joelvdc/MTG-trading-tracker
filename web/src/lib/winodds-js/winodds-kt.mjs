@@ -280,6 +280,7 @@ initMetadataForClass(WebWinOdds, 'WebWinOdds', VOID, VOID, VOID, VOID, VOID, {0:
 initMetadataForCompanion(Companion_7);
 initMetadataForObject($serializer_6, '$serializer', VOID, VOID, [GeneratedSerializer]);
 initMetadataForClass(WebPower, 'WebPower', VOID, VOID, VOID, VOID, VOID, {0: $serializer_getInstance_6});
+initMetadataForObject(WebProgress, 'WebProgress');
 //endregion
 function AppPowerReading(power, exact, turn, wonByEnd, speed, adjust) {
   this.o1e_1 = power;
@@ -11784,22 +11785,23 @@ function playBatch($this, count, random, deck, leaders, own, plans, features, tu
       var index = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.playBatch.<anonymous>' call
+      WebProgress_instance.q2d();
       var tmp = ManaOddsCalc_getInstance();
       var _destruct__k2r9zo = tmp.h1q(deck, random, WinOddsCalc$playBatch$lambda);
       var hand = _destruct__k2r9zo.ce();
       var rest = _destruct__k2r9zo.de();
       var game = new Game(hand, toMutableList(rest), leaders, own, plans, features);
-      var turn = game.p2d(turns);
+      var turn = game.r2d(turns);
       if (turn > 0) {
-        var _array__4zh2yp = r.q2d_1;
+        var _array__4zh2yp = r.s2d_1;
         _array__4zh2yp[turn] = _array__4zh2yp[turn] + 1 | 0;
-        r.u2d_1 = r.u2d_1 + 1 | 0;
+        r.w2d_1 = r.w2d_1 + 1 | 0;
         if (game.f29_1) {
-          var _array__4zh2yp_0 = r.r2d_1;
+          var _array__4zh2yp_0 = r.t2d_1;
           _array__4zh2yp_0[turn] = _array__4zh2yp_0[turn] + 1 | 0;
         }
         if (game.m29_1) {
-          var _array__4zh2yp_1 = r.s2d_1;
+          var _array__4zh2yp_1 = r.u2d_1;
           _array__4zh2yp_1[turn] = _array__4zh2yp_1[turn] + 1 | 0;
         }
         // Inline function 'kotlin.collections.forEachIndexed' call
@@ -11813,11 +11815,11 @@ function playBatch($this, count, random, deck, leaders, own, plans, features, tu
           // Inline function 'com.mtgtrader.data.WinOddsCalc.playBatch.<anonymous>.<anonymous>' call
           var tmp1 = index_0;
           index_0 = tmp1 + 1 | 0;
-          var _array__4zh2yp_2 = r.t2d_1;
+          var _array__4zh2yp_2 = r.v2d_1;
           _array__4zh2yp_2[tmp1] = _array__4zh2yp_2[tmp1].g(item);
         }
         if (game.i29_1) {
-          r.v2d_1 = r.v2d_1 + 1 | 0;
+          r.x2d_1 = r.x2d_1 + 1 | 0;
         }
       }
     }
@@ -11825,21 +11827,21 @@ function playBatch($this, count, random, deck, leaders, own, plans, features, tu
   return r;
 }
 function Batch(turns) {
-  this.q2d_1 = new Int32Array(turns + 1 | 0);
-  this.r2d_1 = new Int32Array(turns + 1 | 0);
   this.s2d_1 = new Int32Array(turns + 1 | 0);
-  this.t2d_1 = longArray(WinOddsCalc_getInstance().g1k_1.m());
-  this.u2d_1 = 0;
-  this.v2d_1 = 0;
+  this.t2d_1 = new Int32Array(turns + 1 | 0);
+  this.u2d_1 = new Int32Array(turns + 1 | 0);
+  this.v2d_1 = longArray(WinOddsCalc_getInstance().g1k_1.m());
+  this.w2d_1 = 0;
+  this.x2d_1 = 0;
 }
 function Source(colours, amount, from, creature, until) {
   creature = creature === VOID ? false : creature;
   until = until === VOID ? 2147483647 : until;
-  this.w2d_1 = colours;
-  this.x2d_1 = amount;
-  this.y2d_1 = from;
-  this.z2d_1 = creature;
-  this.a2e_1 = until;
+  this.y2d_1 = colours;
+  this.z2d_1 = amount;
+  this.a2e_1 = from;
+  this.b2e_1 = creature;
+  this.c2e_1 = until;
 }
 function Entry(card, turn, power, creature, haste, double, types, subtypes) {
   var tmp;
@@ -11923,7 +11925,7 @@ function Entry(card, turn, power, creature, haste, double, types, subtypes) {
   tmp_5.m28_1 = tmp_7;
   this.n28_1 = 0;
 }
-protoOf(Entry).b2e = function (kind) {
+protoOf(Entry).d2e = function (kind) {
   var tmp;
   var tmp_0;
   var tmp_1;
@@ -12020,7 +12022,7 @@ function Features(cards) {
     }
     tmp$ret$0 = false;
   }
-  tmp.c2e_1 = tmp$ret$0;
+  tmp.e2e_1 = tmp$ret$0;
   var tmp_1 = this;
   var tmp$ret$2;
   $l$block_2: {
@@ -12047,7 +12049,7 @@ function Features(cards) {
     }
     tmp$ret$2 = false;
   }
-  tmp_1.d2e_1 = tmp$ret$2;
+  tmp_1.f2e_1 = tmp$ret$2;
   var tmp_3 = this;
   var tmp$ret$5;
   $l$block_4: {
@@ -12073,7 +12075,7 @@ function Features(cards) {
     }
     tmp$ret$5 = false;
   }
-  tmp_3.e2e_1 = tmp$ret$5;
+  tmp_3.g2e_1 = tmp$ret$5;
   var tmp_5 = this;
   var tmp$ret$7;
   $l$block_6: {
@@ -12099,7 +12101,7 @@ function Features(cards) {
     }
     tmp$ret$7 = false;
   }
-  tmp_5.f2e_1 = tmp$ret$7;
+  tmp_5.h2e_1 = tmp$ret$7;
   var tmp_7 = this;
   var tmp$ret$9;
   $l$block_8: {
@@ -12125,7 +12127,7 @@ function Features(cards) {
     }
     tmp$ret$9 = false;
   }
-  tmp_7.g2e_1 = tmp$ret$9;
+  tmp_7.i2e_1 = tmp$ret$9;
   var tmp_9 = this;
   var tmp$ret$11;
   $l$block_10: {
@@ -12151,7 +12153,7 @@ function Features(cards) {
     }
     tmp$ret$11 = false;
   }
-  tmp_9.h2e_1 = tmp$ret$11;
+  tmp_9.j2e_1 = tmp$ret$11;
   var tmp_11 = this;
   var tmp$ret$13;
   $l$block_12: {
@@ -12177,7 +12179,7 @@ function Features(cards) {
     }
     tmp$ret$13 = false;
   }
-  tmp_11.i2e_1 = tmp$ret$13;
+  tmp_11.k2e_1 = tmp$ret$13;
   var tmp_13 = this;
   var tmp$ret$15;
   $l$block_14: {
@@ -12203,7 +12205,7 @@ function Features(cards) {
     }
     tmp$ret$15 = false;
   }
-  tmp_13.j2e_1 = tmp$ret$15;
+  tmp_13.l2e_1 = tmp$ret$15;
   var tmp_15 = this;
   var tmp$ret$17;
   $l$block_16: {
@@ -12229,7 +12231,7 @@ function Features(cards) {
     }
     tmp$ret$17 = false;
   }
-  tmp_15.k2e_1 = tmp$ret$17;
+  tmp_15.m2e_1 = tmp$ret$17;
   var tmp_17 = this;
   var tmp$ret$19;
   $l$block_18: {
@@ -12262,7 +12264,7 @@ function Features(cards) {
     }
     tmp$ret$19 = false;
   }
-  tmp_17.l2e_1 = tmp$ret$19;
+  tmp_17.n2e_1 = tmp$ret$19;
   var tmp_20 = this;
   var tmp$ret$22;
   $l$block_20: {
@@ -12288,7 +12290,7 @@ function Features(cards) {
     }
     tmp$ret$22 = false;
   }
-  tmp_20.m2e_1 = tmp$ret$22;
+  tmp_20.o2e_1 = tmp$ret$22;
   var tmp_22 = this;
   var tmp$ret$24;
   $l$block_22: {
@@ -12315,7 +12317,7 @@ function Features(cards) {
     }
     tmp$ret$24 = false;
   }
-  tmp_22.n2e_1 = tmp$ret$24;
+  tmp_22.p2e_1 = tmp$ret$24;
   var tmp_24 = this;
   var tmp$ret$27;
   $l$block_24: {
@@ -12342,7 +12344,7 @@ function Features(cards) {
     }
     tmp$ret$27 = false;
   }
-  tmp_24.o2e_1 = tmp$ret$27;
+  tmp_24.q2e_1 = tmp$ret$27;
   var tmp_26 = this;
   var tmp$ret$30;
   $l$block_26: {
@@ -12368,7 +12370,7 @@ function Features(cards) {
     }
     tmp$ret$30 = false;
   }
-  tmp_26.p2e_1 = tmp$ret$30;
+  tmp_26.r2e_1 = tmp$ret$30;
   var tmp_28 = this;
   var tmp$ret$32;
   $l$block_28: {
@@ -12394,7 +12396,7 @@ function Features(cards) {
     }
     tmp$ret$32 = false;
   }
-  tmp_28.q2e_1 = tmp$ret$32;
+  tmp_28.s2e_1 = tmp$ret$32;
   var tmp_30 = this;
   var tmp$ret$34;
   $l$block_30: {
@@ -12427,7 +12429,7 @@ function Features(cards) {
     }
     tmp$ret$34 = false;
   }
-  tmp_30.r2e_1 = tmp$ret$34;
+  tmp_30.t2e_1 = tmp$ret$34;
   var tmp_33 = this;
   var tmp$ret$37;
   $l$block_32: {
@@ -12453,7 +12455,7 @@ function Features(cards) {
     }
     tmp$ret$37 = false;
   }
-  tmp_33.s2e_1 = tmp$ret$37;
+  tmp_33.u2e_1 = tmp$ret$37;
   var tmp_35 = this;
   var tmp$ret$39;
   $l$block_38: {
@@ -12547,7 +12549,7 @@ function Features(cards) {
     }
     tmp$ret$39 = false;
   }
-  tmp_35.t2e_1 = tmp$ret$39;
+  tmp_35.v2e_1 = tmp$ret$39;
   var tmp_42 = this;
   var tmp$ret$45;
   $l$block_46: {
@@ -12666,7 +12668,7 @@ function Features(cards) {
     }
     tmp$ret$45 = false;
   }
-  tmp_42.u2e_1 = tmp$ret$45;
+  tmp_42.w2e_1 = tmp$ret$45;
   var tmp_50 = this;
   var tmp$ret$53;
   $l$block_48: {
@@ -12692,7 +12694,7 @@ function Features(cards) {
     }
     tmp$ret$53 = false;
   }
-  tmp_50.v2e_1 = tmp$ret$53;
+  tmp_50.x2e_1 = tmp$ret$53;
   var tmp_52 = this;
   var tmp$ret$55;
   $l$block_50: {
@@ -12718,7 +12720,7 @@ function Features(cards) {
     }
     tmp$ret$55 = false;
   }
-  tmp_52.w2e_1 = tmp$ret$55;
+  tmp_52.y2e_1 = tmp$ret$55;
   var tmp_54 = this;
   var tmp$ret$57;
   $l$block_52: {
@@ -12744,7 +12746,7 @@ function Features(cards) {
     }
     tmp$ret$57 = false;
   }
-  tmp_54.x2e_1 = tmp$ret$57;
+  tmp_54.z2e_1 = tmp$ret$57;
   var tmp_56 = this;
   var tmp$ret$59;
   $l$block_54: {
@@ -12770,7 +12772,7 @@ function Features(cards) {
     }
     tmp$ret$59 = false;
   }
-  tmp_56.y2e_1 = tmp$ret$59;
+  tmp_56.a2f_1 = tmp$ret$59;
   var tmp_58 = this;
   var tmp$ret$61;
   $l$block_56: {
@@ -12796,7 +12798,7 @@ function Features(cards) {
     }
     tmp$ret$61 = false;
   }
-  tmp_58.z2e_1 = tmp$ret$61;
+  tmp_58.b2f_1 = tmp$ret$61;
   var tmp_60 = this;
   var tmp$ret$63;
   $l$block_58: {
@@ -12823,7 +12825,7 @@ function Features(cards) {
     }
     tmp$ret$63 = false;
   }
-  tmp_60.a2f_1 = tmp$ret$63;
+  tmp_60.c2f_1 = tmp$ret$63;
   var tmp_62 = this;
   var tmp$ret$66;
   $l$block_60: {
@@ -12849,7 +12851,7 @@ function Features(cards) {
     }
     tmp$ret$66 = false;
   }
-  tmp_62.b2f_1 = tmp$ret$66;
+  tmp_62.d2f_1 = tmp$ret$66;
   var tmp_64 = this;
   var tmp$ret$68;
   $l$block_62: {
@@ -12875,7 +12877,7 @@ function Features(cards) {
     }
     tmp$ret$68 = false;
   }
-  tmp_64.c2f_1 = tmp$ret$68;
+  tmp_64.e2f_1 = tmp$ret$68;
   var tmp_66 = this;
   var tmp_67;
   var tmp$ret$70;
@@ -12993,7 +12995,7 @@ function Features(cards) {
     }
     tmp_67 = tmp$ret$72;
   }
-  tmp_66.d2f_1 = tmp_67;
+  tmp_66.f2f_1 = tmp_67;
   var tmp_74 = this;
   var tmp$ret$78;
   $l$block_76: {
@@ -13081,7 +13083,7 @@ function Features(cards) {
     }
     tmp$ret$78 = false;
   }
-  tmp_74.e2f_1 = tmp$ret$78;
+  tmp_74.g2f_1 = tmp$ret$78;
   var tmp_80 = this;
   var tmp$ret$84;
   $l$block_78: {
@@ -13107,7 +13109,7 @@ function Features(cards) {
     }
     tmp$ret$84 = false;
   }
-  tmp_80.f2f_1 = tmp$ret$84;
+  tmp_80.h2f_1 = tmp$ret$84;
   var tmp_82 = this;
   var tmp$ret$86;
   $l$block_80: {
@@ -13133,7 +13135,7 @@ function Features(cards) {
     }
     tmp$ret$86 = false;
   }
-  tmp_82.g2f_1 = tmp$ret$86;
+  tmp_82.i2f_1 = tmp$ret$86;
   var tmp_84 = this;
   var tmp$ret$88;
   $l$block_82: {
@@ -13159,7 +13161,7 @@ function Features(cards) {
     }
     tmp$ret$88 = false;
   }
-  tmp_84.h2f_1 = tmp$ret$88;
+  tmp_84.j2f_1 = tmp$ret$88;
   var tmp_86 = this;
   var tmp$ret$90;
   $l$block_84: {
@@ -13192,7 +13194,7 @@ function Features(cards) {
     }
     tmp$ret$90 = false;
   }
-  tmp_86.i2f_1 = tmp$ret$90;
+  tmp_86.k2f_1 = tmp$ret$90;
   var tmp_89 = this;
   var tmp$ret$93;
   $l$block_86: {
@@ -13233,7 +13235,7 @@ function Features(cards) {
     }
     tmp$ret$93 = false;
   }
-  tmp_89.j2f_1 = tmp$ret$93;
+  tmp_89.l2f_1 = tmp$ret$93;
   var tmp_93 = this;
   var tmp$ret$98;
   $l$block_88: {
@@ -13259,7 +13261,7 @@ function Features(cards) {
     }
     tmp$ret$98 = false;
   }
-  tmp_93.k2f_1 = tmp$ret$98;
+  tmp_93.m2f_1 = tmp$ret$98;
   var tmp_95 = this;
   var tmp$ret$100;
   $l$block_90: {
@@ -13285,7 +13287,7 @@ function Features(cards) {
     }
     tmp$ret$100 = false;
   }
-  tmp_95.l2f_1 = tmp$ret$100;
+  tmp_95.n2f_1 = tmp$ret$100;
   var tmp_97 = this;
   var tmp$ret$102;
   $l$block_92: {
@@ -13311,7 +13313,7 @@ function Features(cards) {
     }
     tmp$ret$102 = false;
   }
-  tmp_97.m2f_1 = tmp$ret$102;
+  tmp_97.o2f_1 = tmp$ret$102;
   var tmp_99 = this;
   var tmp$ret$104;
   $l$block_94: {
@@ -13337,7 +13339,7 @@ function Features(cards) {
     }
     tmp$ret$104 = false;
   }
-  tmp_99.n2f_1 = tmp$ret$104;
+  tmp_99.p2f_1 = tmp$ret$104;
   var tmp_101 = this;
   var tmp$ret$106;
   $l$block_96: {
@@ -13364,7 +13366,7 @@ function Features(cards) {
     }
     tmp$ret$106 = false;
   }
-  tmp_101.o2f_1 = tmp$ret$106;
+  tmp_101.q2f_1 = tmp$ret$106;
   var tmp_103 = this;
   var tmp$ret$109;
   $l$block_98: {
@@ -13390,7 +13392,7 @@ function Features(cards) {
     }
     tmp$ret$109 = false;
   }
-  tmp_103.p2f_1 = tmp$ret$109;
+  tmp_103.r2f_1 = tmp$ret$109;
   var tmp_105 = this;
   var tmp$ret$111;
   $l$block_100: {
@@ -13416,7 +13418,7 @@ function Features(cards) {
     }
     tmp$ret$111 = false;
   }
-  tmp_105.q2f_1 = tmp$ret$111;
+  tmp_105.s2f_1 = tmp$ret$111;
   var tmp_107 = this;
   var tmp$ret$113;
   $l$block_104: {
@@ -13473,7 +13475,7 @@ function Features(cards) {
     }
     tmp$ret$113 = false;
   }
-  tmp_107.r2f_1 = tmp$ret$113;
+  tmp_107.t2f_1 = tmp$ret$113;
   var tmp_111 = this;
   var tmp$ret$117;
   $l$block_106: {
@@ -13530,7 +13532,7 @@ function Features(cards) {
     }
     tmp$ret$117 = false;
   }
-  tmp_111.s2f_1 = tmp$ret$117;
+  tmp_111.u2f_1 = tmp$ret$117;
   var tmp_118 = this;
   var tmp$ret$120;
   $l$block_108: {
@@ -13556,7 +13558,7 @@ function Features(cards) {
     }
     tmp$ret$120 = false;
   }
-  tmp_118.t2f_1 = tmp$ret$120;
+  tmp_118.v2f_1 = tmp$ret$120;
   var tmp_120 = this;
   var tmp$ret$122;
   $l$block_110: {
@@ -13582,7 +13584,7 @@ function Features(cards) {
     }
     tmp$ret$122 = false;
   }
-  tmp_120.u2f_1 = tmp$ret$122;
+  tmp_120.w2f_1 = tmp$ret$122;
   var tmp_122 = this;
   var tmp$ret$124;
   $l$block_112: {
@@ -13608,7 +13610,7 @@ function Features(cards) {
     }
     tmp$ret$124 = false;
   }
-  tmp_122.v2f_1 = tmp$ret$124;
+  tmp_122.x2f_1 = tmp$ret$124;
   var tmp_124 = this;
   var tmp$ret$126;
   $l$block_114: {
@@ -13634,7 +13636,7 @@ function Features(cards) {
     }
     tmp$ret$126 = false;
   }
-  tmp_124.w2f_1 = tmp$ret$126;
+  tmp_124.y2f_1 = tmp$ret$126;
 }
 function Game(hand, rest, leaders, own, combos, f) {
   Companion_getInstance_5();
@@ -13679,11 +13681,11 @@ function Game(hand, rest, leaders, own, combos, f) {
   this.k29_1 = false;
   this.l29_1 = false;
   this.m29_1 = false;
-  this.n29_1 = this.t28_1.v2e_1;
+  this.n29_1 = this.t28_1.x2e_1;
   this.o29_1 = 0;
-  this.p29_1 = this.t28_1.w2e_1;
+  this.p29_1 = this.t28_1.y2e_1;
   this.q29_1 = ArrayList_init_$Create$();
-  this.r29_1 = this.t28_1.u2e_1;
+  this.r29_1 = this.t28_1.w2e_1;
   this.s29_1 = 0;
   this.t29_1 = HashSet_init_$Create$();
   this.u29_1 = 0;
@@ -13710,7 +13712,7 @@ function Game(hand, rest, leaders, own, combos, f) {
   this.o2a_1 = false;
   this.p2a_1 = 0;
 }
-protoOf(Game).x2f = function () {
+protoOf(Game).z2f = function () {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = plus_0(this.u28_1, this.o28_1);
@@ -13719,7 +13721,7 @@ protoOf(Game).x2f = function () {
   while (tmp0_iterator.k()) {
     var element = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.mainOptions.<anonymous>' call
-    if (useful(WinOddsCalc_getInstance(), element, this.j29_1, this.k29_1, this.p29_1) && this.y2f(element)) {
+    if (useful(WinOddsCalc_getInstance(), element, this.j29_1, this.k29_1, this.p29_1) && this.a2g(element)) {
       destination.h(element);
     }
   }
@@ -13732,13 +13734,13 @@ protoOf(Game).x2f = function () {
   var tmp$ret$4 = new sam$kotlin_Comparator$0_5(tmp_1);
   return sortedWith(tmp, tmp$ret$4);
 };
-protoOf(Game).z2f = function () {
+protoOf(Game).b2g = function () {
   this.b2a_1 = 0;
   fill(this.d2a_1, 0);
   this.g2a_1.h2();
   this.f2a_1 = false;
 };
-protoOf(Game).a2g = function (n) {
+protoOf(Game).c2g = function (n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -13752,7 +13754,7 @@ protoOf(Game).a2g = function (n) {
       // Inline function 'kotlin.repeat' call
       var tmp_0;
       var tmp_1;
-      if (!first && this.t28_1.m2f_1) {
+      if (!first && this.t28_1.o2f_1) {
         var tmp$ret$0;
         $l$block_0: {
           // Inline function 'kotlin.collections.any' call
@@ -13796,7 +13798,7 @@ protoOf(Game).a2g = function (n) {
           var index_0 = inductionVariable_0;
           inductionVariable_0 = inductionVariable_0 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.draw.<anonymous>.<anonymous>' call
-          this.b2g();
+          this.d2g();
         }
          while (inductionVariable_0 < times);
     }
@@ -13805,7 +13807,7 @@ protoOf(Game).a2g = function (n) {
   }
   return tmp;
 };
-protoOf(Game).b2g = function () {
+protoOf(Game).d2g = function () {
   if (this.c29_1 >= this.p28_1.m())
     return Unit_instance;
   // Inline function 'kotlin.collections.plusAssign' call
@@ -13815,7 +13817,7 @@ protoOf(Game).b2g = function () {
   var element = this.p28_1.o(_unary__edvuaz);
   this_0.h(element);
   this.b2a_1 = this.b2a_1 + 1 | 0;
-  if (this.t28_1.f2e_1) {
+  if (this.t28_1.h2e_1) {
     var _iterator__ex2g4s = toList(this.w28_1).j();
     while (_iterator__ex2g4s.k()) {
       var b = _iterator__ex2g4s.l();
@@ -13826,16 +13828,16 @@ protoOf(Game).b2g = function () {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         if (tmp0_safe_receiver.w22_1) {
-          this.c2g(b, 1);
+          this.e2g(b, 1);
         }
         if (this.b2a_1 === 2 && tmp0_safe_receiver.m21_1.g26() && !(tmp0_safe_receiver.o21_1 && this.e2a_1 >= 0)) {
-          this.d2g(tmp0_safe_receiver.m21_1, b);
+          this.f2g(tmp0_safe_receiver.m21_1, b);
         }
       }
     }
   }
 };
-protoOf(Game).e2g = function (i, n) {
+protoOf(Game).g2g = function (i, n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -13866,10 +13868,10 @@ protoOf(Game).e2g = function (i, n) {
               _array__4zh2yp_1[3] = _array__4zh2yp_1[3].g(toLong(tmp0_safe_receiver.p21_1));
             }
             if (tmp0_safe_receiver.q21_1 && !(this.e2a_1 === i) && this.g2a_1.h(to(b, 'treasure'))) {
-              this.f2g('treasure', 1);
+              this.h2g('treasure', 1);
             }
             if (this.d2a_1[i] === 2 && tmp0_safe_receiver.n21_1.g26() && (!tmp0_safe_receiver.o21_1 || this.e2a_1 === i)) {
-              this.d2g(tmp0_safe_receiver.n21_1, b);
+              this.f2g(tmp0_safe_receiver.n21_1, b);
             }
           }
         }
@@ -13880,8 +13882,8 @@ protoOf(Game).e2g = function (i, n) {
   }
   return tmp;
 };
-protoOf(Game).g2g = function () {
-  if (!this.t28_1.k2e_1)
+protoOf(Game).i2g = function () {
+  if (!this.t28_1.m2e_1)
     return Unit_instance;
   var inductionVariable = 0;
   var last = this.x28_1.length - 1 | 0;
@@ -13892,7 +13894,7 @@ protoOf(Game).g2g = function () {
       if (this.x28_1[i] <= 0)
         continue $l$loop;
       this.e2a_1 = i;
-      this.z2f();
+      this.b2g();
       // Inline function 'kotlin.takeIf' call
       // Inline function 'kotlin.collections.sumOf' call
       // Inline function 'kotlin.collections.filter' call
@@ -13931,7 +13933,7 @@ protoOf(Game).g2g = function () {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        this.e2g(i, tmp0_safe_receiver_0);
+        this.g2g(i, tmp0_safe_receiver_0);
       }
       // Inline function 'kotlin.collections.forEach' call
       var tmp0_iterator_1 = toList(this.w28_1).j();
@@ -13945,7 +13947,7 @@ protoOf(Game).g2g = function () {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           if (tmp0_safe_receiver_1.t21_1.g26()) {
-            this.d2g(tmp0_safe_receiver_1.t21_1, element_1);
+            this.f2g(tmp0_safe_receiver_1.t21_1, element_1);
           }
         }
       }
@@ -13961,7 +13963,7 @@ protoOf(Game).g2g = function () {
         sum_0 = tmp_1 + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
       }
       var tmp$ret$10 = sum_0;
-      this.e2g(i, 1 + tmp$ret$10 | 0);
+      this.g2g(i, 1 + tmp$ret$10 | 0);
       var tmp_2;
       var tmp_3;
       if (this.x28_1[i] > 0) {
@@ -14021,20 +14023,20 @@ protoOf(Game).g2g = function () {
         tmp_2 = false;
       }
       if (tmp_2) {
-        this.a2g(1);
-        this.e2g(i, 1);
+        this.c2g(1);
+        this.g2g(i, 1);
       }
     }
      while (inductionVariable <= last);
   this.e2a_1 = -1;
 };
-protoOf(Game).c2g = function (e, n) {
+protoOf(Game).e2g = function (e, n) {
   if (n <= 0)
     return Unit_instance;
-  if (this.t28_1.v2f_1) {
-    this.h2g(n);
+  if (this.t28_1.x2f_1) {
+    this.j2g(n);
   }
-  if (!this.t28_1.g2e_1) {
+  if (!this.t28_1.i2e_1) {
     e.r27_1 = e.r27_1 + n | 0;
     return Unit_instance;
   }
@@ -14100,15 +14102,15 @@ protoOf(Game).c2g = function (e, n) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       if (tmp0_safe_receiver_1.u22_1) {
-        this.i2g(k, 3);
+        this.k2g(k, 3);
       }
       if (tmp0_safe_receiver_1.v22_1 && this.g2a_1.h(to(b, 'counter'))) {
-        this.a2g(1);
+        this.c2g(1);
       }
     }
   }
 };
-protoOf(Game).j2g = function () {
+protoOf(Game).l2g = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -14244,7 +14246,7 @@ protoOf(Game).j2g = function () {
   }
   return tmp_0;
 };
-protoOf(Game).f2g = function (kind, n) {
+protoOf(Game).h2g = function (kind, n) {
   if (n <= 0)
     return Unit_instance;
   var count = n;
@@ -14384,14 +14386,14 @@ protoOf(Game).f2g = function (kind, n) {
         var e = this_3;
         // Inline function 'kotlin.collections.plusAssign' call
         this.w28_1.h(e);
-        this.k2g(e);
+        this.m2g(e);
       }
        while (inductionVariable < times);
   }
-  this.l2g(imul(count, kinds.m()), true);
+  this.n2g(imul(count, kinds.m()), true);
 };
-protoOf(Game).m2g = function (e) {
-  if (!this.t28_1.i2e_1)
+protoOf(Game).o2g = function (e) {
+  if (!this.t28_1.k2e_1)
     return Unit_instance;
   var _iterator__ex2g4s = this.w28_1.j();
   while (_iterator__ex2g4s.k()) {
@@ -14404,11 +14406,11 @@ protoOf(Game).m2g = function (e) {
       tmp = false;
     }
     if (tmp) {
-      this.c2g(b, 1);
+      this.e2g(b, 1);
     }
   }
 };
-protoOf(Game).n2g = function (kinds) {
+protoOf(Game).p2g = function (kinds) {
   // Inline function 'kotlin.collections.iterator' call
   var tmp0_iterator = kinds.f2().j();
   while (tmp0_iterator.k()) {
@@ -14418,11 +14420,11 @@ protoOf(Game).n2g = function (kinds) {
     var k = element.y1();
     // Inline function 'kotlin.collections.component2' call
     var n = element.z1();
-    this.f2g(k, n);
+    this.h2g(k, n);
   }
   return Unit_instance;
 };
-protoOf(Game).o2g = function (n, source) {
+protoOf(Game).q2g = function (n, source) {
   if (n <= 0)
     return Unit_instance;
   var inductionVariable = 0;
@@ -14440,7 +14442,7 @@ protoOf(Game).o2g = function (n, source) {
     }
      while (inductionVariable <= last);
 };
-protoOf(Game).i2g = function (n, source) {
+protoOf(Game).k2g = function (n, source) {
   if (n <= 0)
     return Unit_instance;
   var tmp$ret$3;
@@ -14501,8 +14503,8 @@ protoOf(Game).i2g = function (n, source) {
   var _array__4zh2yp_0 = this.b29_1;
   _array__4zh2yp_0[source] = _array__4zh2yp_0[source].g(toLong(n));
 };
-protoOf(Game).p2g = function (self_0, land) {
-  if (!this.t28_1.o2e_1)
+protoOf(Game).r2g = function (self_0, land) {
+  if (!this.t28_1.q2e_1)
     return Unit_instance;
   var _iterator__ex2g4s = toList(this.w28_1).j();
   while (_iterator__ex2g4s.k()) {
@@ -14548,16 +14550,16 @@ protoOf(Game).p2g = function (self_0, land) {
           }
           var n = tmp_1;
           if (element.h2c_1) {
-            this.o2g(n, 2);
+            this.q2g(n, 2);
           } else {
-            this.i2g(n, 2);
+            this.k2g(n, 2);
           }
         }
       }
     }
   }
 };
-protoOf(Game).q2g = function (power, kind) {
+protoOf(Game).s2g = function (power, kind) {
   // Inline function 'kotlin.also' call
   var tmp = this.d29_1;
   var tmp1_elvis_lhs = kind == null ? null : kind.s2b_1;
@@ -14605,18 +14607,18 @@ protoOf(Game).q2g = function (power, kind) {
   tmp_8.u27_1 = tmp7_elvis_lhs == null ? 0 : tmp7_elvis_lhs;
   // Inline function 'kotlin.collections.plusAssign' call
   this.w28_1.h(this_0);
-  this.l2g(1, this_0.p27_1.u('Artifact'));
+  this.n2g(1, this_0.p27_1.u('Artifact'));
+  this.o2g(this_0);
+  this.r2g(this_0, false);
+  this.t2g(this_0);
   this.m2g(this_0);
-  this.p2g(this_0, false);
-  this.r2g(this_0);
-  this.k2g(this_0);
   return this_0;
 };
-protoOf(Game).s2g = function (power, kind, $super) {
+protoOf(Game).u2g = function (power, kind, $super) {
   kind = kind === VOID ? null : kind;
-  return $super === VOID ? this.q2g(power, kind) : $super.q2g.call(this, power, kind);
+  return $super === VOID ? this.s2g(power, kind) : $super.s2g.call(this, power, kind);
 };
-protoOf(Game).t2g = function (n, total, kind) {
+protoOf(Game).v2g = function (n, total, kind) {
   if (total <= 0 && n <= 0)
     return Unit_instance;
   var count = coerceIn_0(n, 1, 30);
@@ -14634,15 +14636,15 @@ protoOf(Game).t2g = function (n, total, kind) {
       } else {
         tmp = (total / count | 0) + (index < (total % count | 0) ? 1 : 0) | 0;
       }
-      this.q2g(tmp, kind);
+      this.s2g(tmp, kind);
     }
      while (inductionVariable < count);
 };
-protoOf(Game).l2g = function (n, artifact) {
+protoOf(Game).n2g = function (n, artifact) {
   if (n <= 0)
     return Unit_instance;
   this.f2a_1 = true;
-  if (!this.t28_1.h2e_1)
+  if (!this.t28_1.j2e_1)
     return Unit_instance;
   var _iterator__ex2g4s = this.w28_1.j();
   while (_iterator__ex2g4s.k()) {
@@ -14653,8 +14655,8 @@ protoOf(Game).l2g = function (n, artifact) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.o2g(imul(tmp0_safe_receiver.l20_1, n), 3);
-      this.o2g(tmp0_safe_receiver.m20_1, 3);
+      this.q2g(imul(tmp0_safe_receiver.l20_1, n), 3);
+      this.q2g(tmp0_safe_receiver.m20_1, 3);
     }
   }
   if (!this.h2a_1) {
@@ -14686,7 +14688,7 @@ protoOf(Game).l2g = function (n, artifact) {
       tmp$ret$1 = false;
     }
     if (tmp$ret$1) {
-      this.f2g('mutagen', 1);
+      this.h2g('mutagen', 1);
     }
     var tmp$ret$3;
     $l$block_2: {
@@ -14715,7 +14717,7 @@ protoOf(Game).l2g = function (n, artifact) {
       tmp$ret$3 = false;
     }
     if (tmp$ret$3) {
-      this.f2g('food', 1);
+      this.h2g('food', 1);
     }
     var tmp_1;
     if (artifact) {
@@ -14750,13 +14752,13 @@ protoOf(Game).l2g = function (n, artifact) {
       tmp_1 = false;
     }
     if (tmp_1) {
-      this.f2g('map', 1);
+      this.h2g('map', 1);
     }
     this.h2a_1 = false;
   }
 };
-protoOf(Game).r2g = function (e) {
-  if (!this.t28_1.m2e_1)
+protoOf(Game).t2g = function (e) {
+  if (!this.t28_1.o2e_1)
     return Unit_instance;
   var _iterator__ex2g4s = toList(this.w28_1).j();
   while (_iterator__ex2g4s.k()) {
@@ -14768,12 +14770,12 @@ protoOf(Game).r2g = function (e) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       if (tmp0_safe_receiver.w21_1.g26() && !(tmp0_safe_receiver.x21_1 && b === e) && !(tmp0_safe_receiver.y21_1 && e.b28_1)) {
-        this.d2g(tmp0_safe_receiver.w21_1, b);
+        this.f2g(tmp0_safe_receiver.w21_1, b);
       }
     }
   }
 };
-protoOf(Game).u2g = function (kind) {
+protoOf(Game).w2g = function (kind) {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
@@ -14793,7 +14795,7 @@ protoOf(Game).u2g = function (kind) {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.count.<anonymous>' call
-      if (element.b2e(kind)) {
+      if (element.d2e(kind)) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -14802,7 +14804,7 @@ protoOf(Game).u2g = function (kind) {
   }
   return tmp$ret$0;
 };
-protoOf(Game).v2g = function () {
+protoOf(Game).x2g = function () {
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
@@ -14812,7 +14814,7 @@ protoOf(Game).v2g = function () {
   while (tmp0_iterator.k()) {
     var element = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.gateNames.<anonymous>' call
-    if (element.b2e('gate')) {
+    if (element.d2e('gate')) {
       destination.h(element);
     }
   }
@@ -14836,8 +14838,8 @@ protoOf(Game).v2g = function () {
   }
   return toSet(destination_0);
 };
-protoOf(Game).k2g = function (e) {
-  if (this.k2a_1 > 3 || !this.t28_1.n2e_1)
+protoOf(Game).m2g = function (e) {
+  if (this.k2a_1 > 3 || !this.t28_1.p2e_1)
     return Unit_instance;
   this.k2a_1 = this.k2a_1 + 1 | 0;
   var _iterator__ex2g4s = toList(this.w28_1).j();
@@ -14854,25 +14856,25 @@ protoOf(Game).k2g = function (e) {
         var element = tmp0_iterator.l();
         $l$block_0: {
           // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>' call
-          if (!e.b2e(element.q25_1) || (!element.r25_1 && b === e) || (element.s25_1 && e.b28_1)) {
+          if (!e.d2e(element.q25_1) || (!element.r25_1 && b === e) || (element.s25_1 && e.b28_1)) {
             break $l$block_0;
           }
           if (element.f26_1 && !this.g2a_1.h(to(b, element))) {
             break $l$block_0;
           }
-          this.n2g(element.d26_1);
+          this.p2g(element.d26_1);
           if (element.e26_1 > 0) {
-            this.c2g(b, element.e26_1);
+            this.e2g(b, element.e26_1);
           }
-          this.o2g(element.t25_1, 3);
-          this.i2g(element.u25_1, 3);
+          this.q2g(element.t25_1, 3);
+          this.k2g(element.u25_1, 3);
           var tmp0_safe_receiver_0 = element.c26_1;
           if (tmp0_safe_receiver_0 == null)
             null;
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
-            this.o2g(this.u2g(tmp0_safe_receiver_0), 3);
+            this.q2g(this.w2g(tmp0_safe_receiver_0), 3);
           }
           var tmp1_safe_receiver_0 = element.b26_1;
           if (tmp1_safe_receiver_0 == null)
@@ -14880,7 +14882,7 @@ protoOf(Game).k2g = function (e) {
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
-            this.i2g(this.u2g(tmp1_safe_receiver_0), 3);
+            this.k2g(this.w2g(tmp1_safe_receiver_0), 3);
           }
           // Inline function 'kotlin.repeat' call
           var times = element.w25_1;
@@ -14893,11 +14895,11 @@ protoOf(Game).k2g = function (e) {
               // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>.<anonymous>' call
               var tmp0_safe_receiver_1 = element.v25_1;
               var tmp1_elvis_lhs = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.r2b_1;
-              this.q2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, element.v25_1);
+              this.s2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, element.v25_1);
             }
              while (inductionVariable < times);
-          this.w2g(element.a26_1);
-          this.a2g(element.x25_1);
+          this.y2g(element.a26_1);
+          this.c2g(element.x25_1);
           if (element.y25_1 > 0) {
             // Inline function 'kotlin.collections.forEach' call
             // Inline function 'kotlin.collections.filter' call
@@ -14916,7 +14918,7 @@ protoOf(Game).k2g = function (e) {
             while (tmp0_iterator_1.k()) {
               var element_1 = tmp0_iterator_1.l();
               // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>.<anonymous>' call
-              this.c2g(element_1, element.y25_1);
+              this.e2g(element_1, element.y25_1);
             }
           }
           if (element.z25_1) {
@@ -14931,7 +14933,7 @@ protoOf(Game).k2g = function (e) {
   }
   this.k2a_1 = this.k2a_1 - 1 | 0;
 };
-protoOf(Game).x2g = function (s) {
+protoOf(Game).z2g = function (s) {
   var tmp;
   if (s.m2c_1 === 'permanent') {
     // Inline function 'kotlin.collections.groupingBy' call
@@ -14961,7 +14963,7 @@ protoOf(Game).x2g = function (s) {
     var tmp0_elvis_lhs = maxOrNull(eachCount(tmp$ret$6).e2());
     tmp = tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs;
   } else {
-    tmp = this.u2g(s.m2c_1);
+    tmp = this.w2g(s.m2c_1);
   }
   var n = imul(tmp, s.n2c_1);
   if (n <= 0)
@@ -14969,9 +14971,9 @@ protoOf(Game).x2g = function (s) {
   switch (s.k2c_1.o2_1) {
     case 0:
       if (s.o2c_1) {
-        this.o2g(n, 3);
+        this.q2g(n, 3);
       } else {
-        this.i2g(n, 3);
+        this.k2g(n, 3);
       }
 
       break;
@@ -14991,12 +14993,12 @@ protoOf(Game).x2g = function (s) {
           // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
           var tmp0_safe_receiver = s.p2c_1;
           var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.r2b_1;
-          this.q2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, s.p2c_1);
+          this.s2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, s.p2c_1);
         }
          while (inductionVariable < times);
       break;
     case 2:
-      this.a2g(n);
+      this.c2g(n);
       break;
     case 3:
       // Inline function 'kotlin.collections.forEach' call
@@ -15020,7 +15022,7 @@ protoOf(Game).x2g = function (s) {
       while (tmp0_iterator_2.k()) {
         var element_2 = tmp0_iterator_2.l();
         // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
-        this.c2g(element_2, n);
+        this.e2g(element_2, n);
       }
 
       break;
@@ -15039,7 +15041,7 @@ protoOf(Game).a2c = function (land, hand) {
     tmp_0 = true;
   } else {
     var tmp_1 = ManaOddsCalc_getInstance();
-    var tmp_2 = this.y2g();
+    var tmp_2 = this.a2h();
     // Inline function 'kotlin.collections.map' call
     // Inline function 'kotlin.collections.mapTo' call
     var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(hand, 10));
@@ -15095,11 +15097,11 @@ protoOf(Game).a2c = function (land, hand) {
   }
   return tmp;
 };
-protoOf(Game).z2g = function (land, hand, $super) {
+protoOf(Game).b2h = function (land, hand, $super) {
   hand = hand === VOID ? this.o28_1 : hand;
   return $super === VOID ? this.a2c(land, hand) : $super.a2c.call(this, land, hand);
 };
-protoOf(Game).y2g = function () {
+protoOf(Game).a2h = function () {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.w28_1;
@@ -15108,7 +15110,7 @@ protoOf(Game).y2g = function () {
   while (tmp0_iterator.k()) {
     var element = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
-    if (element.b2e('land')) {
+    if (element.d2e('land')) {
       destination.h(element);
     }
   }
@@ -15128,7 +15130,7 @@ protoOf(Game).y2g = function () {
       var tmp_0 = ManaOddsCalc_getInstance();
       // Inline function 'kotlin.collections.orEmpty' call
       var tmp3_safe_receiver = element_0.z27_1;
-      var tmp0_elvis_lhs = tmp3_safe_receiver == null ? null : tmp3_safe_receiver.w2d_1;
+      var tmp0_elvis_lhs = tmp3_safe_receiver == null ? null : tmp3_safe_receiver.y2d_1;
       var tmp$ret$3 = tmp0_elvis_lhs == null ? emptySet() : tmp0_elvis_lhs;
       tmp = tmp_0.z1p(tmp$ret$3);
     } else {
@@ -15237,7 +15239,7 @@ protoOf(Game).y2g = function () {
   var tmp$ret$14 = Math.min(40, b);
   return new LandsOut(tmp_1, tmp_3, tmp_4, tmp_5, tmp_8, tmp_10, tmp$ret$14);
 };
-protoOf(Game).a2h = function () {
+protoOf(Game).c2h = function () {
   var tmp;
   var tmp$ret$0;
   $l$block_0: {
@@ -15378,8 +15380,8 @@ protoOf(Game).a2h = function () {
   }
   return tmp;
 };
-protoOf(Game).b2h = function () {
-  var names = this.v2g();
+protoOf(Game).d2h = function () {
+  var names = this.x2g();
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -15409,7 +15411,7 @@ protoOf(Game).b2h = function () {
   }
   var i = tmp;
   var gate = this.p28_1.j2(i);
-  var source = new Source(gate.x1v_1.j1i_1, 1, this.z2g(gate) ? this.d29_1 : this.d29_1 + 1 | 0);
+  var source = new Source(gate.x1v_1.j1i_1, 1, this.b2h(gate) ? this.d29_1 : this.d29_1 + 1 | 0);
   // Inline function 'kotlin.collections.plusAssign' call
   this.v28_1.h(source);
   // Inline function 'kotlin.also' call
@@ -15420,16 +15422,16 @@ protoOf(Game).b2h = function () {
   var e = this_0;
   // Inline function 'kotlin.collections.plusAssign' call
   this.w28_1.h(e);
-  this.c2h(e);
+  this.e2h(e);
 };
-protoOf(Game).c2h = function (e) {
-  this.p2g(null, true);
+protoOf(Game).e2h = function (e) {
+  this.r2g(null, true);
   if (e == null)
     null;
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    this.k2g(e);
+    this.m2g(e);
   }
   var _iterator__ex2g4s = toList(this.w28_1).j();
   while (_iterator__ex2g4s.k()) {
@@ -15440,7 +15442,7 @@ protoOf(Game).c2h = function (e) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.n2g(tmp1_safe_receiver.l21_1);
+      this.p2g(tmp1_safe_receiver.l21_1);
       // Inline function 'kotlin.repeat' call
       var times = tmp1_safe_receiver.i20_1;
       // Inline function 'kotlin.contracts.contract' call
@@ -15452,7 +15454,7 @@ protoOf(Game).c2h = function (e) {
           // Inline function 'com.mtgtrader.data.Game.landEntered.<anonymous>.<anonymous>' call
           var tmp0_safe_receiver = tmp1_safe_receiver.j20_1;
           var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.r2b_1;
-          this.q2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, tmp1_safe_receiver.j20_1);
+          this.s2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, tmp1_safe_receiver.j20_1);
         }
          while (inductionVariable < times);
       var tmp0_safe_receiver_0 = tmp1_safe_receiver.k20_1;
@@ -15470,7 +15472,7 @@ protoOf(Game).c2h = function (e) {
         while (tmp0_iterator.k()) {
           var element = tmp0_iterator.l();
           // Inline function 'com.mtgtrader.data.Game.landEntered.<anonymous>.<anonymous>.<anonymous>' call
-          if (element.m27_1 && element.b2e(tmp0_safe_receiver_0)) {
+          if (element.m27_1 && element.d2e(tmp0_safe_receiver_0)) {
             destination.h(element);
           }
         }
@@ -15478,14 +15480,14 @@ protoOf(Game).c2h = function (e) {
         while (tmp0_iterator_0.k()) {
           var element_0 = tmp0_iterator_0.l();
           // Inline function 'com.mtgtrader.data.Game.landEntered.<anonymous>.<anonymous>.<anonymous>' call
-          this.c2g(element_0, 1);
+          this.e2g(element_0, 1);
         }
       }
-      this.d2h(tmp1_safe_receiver.d24_1);
+      this.f2h(tmp1_safe_receiver.d24_1);
     }
   }
 };
-protoOf(Game).e2h = function (want) {
+protoOf(Game).g2h = function (want) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -15521,7 +15523,7 @@ protoOf(Game).e2h = function (want) {
 };
 protoOf(Game).o2b = function (c) {
   var tmp;
-  if (c.n2b() && c.c1y_1.u('Gate') && !this.v2g().u(c.w1v_1)) {
+  if (c.n2b() && c.c1y_1.u('Gate') && !this.x2g().u(c.w1v_1)) {
     var tmp$ret$0;
     $l$block_0: {
       // Inline function 'kotlin.collections.none' call
@@ -15553,7 +15555,7 @@ protoOf(Game).o2b = function (c) {
   }
   return tmp;
 };
-protoOf(Game).f2h = function (kind) {
+protoOf(Game).h2h = function (kind) {
   var tmp$ret$3;
   $l$block_1: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -15616,9 +15618,9 @@ protoOf(Game).f2h = function (kind) {
   var c = this.p28_1.j2(i_0);
   // Inline function 'kotlin.collections.plusAssign' call
   this.o28_1.h(c);
-  this.g2h(c, true);
+  this.i2h(c, true);
 };
-protoOf(Game).h2h = function (pool, tokens) {
+protoOf(Game).j2h = function (pool, tokens) {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.minByOrNull' call
@@ -15666,7 +15668,7 @@ protoOf(Game).h2h = function (pool, tokens) {
     tmp = tmp0_elvis_lhs;
   }
   var c = tmp;
-  var tmp1_elvis_lhs = ManaOddsCalc_getInstance().f1q(plus_0(pool, this.i2h()), this.j2h(c));
+  var tmp1_elvis_lhs = ManaOddsCalc_getInstance().f1q(plus_0(pool, this.k2h()), this.l2h(c));
   var tmp_0;
   if (tmp1_elvis_lhs == null) {
     return null;
@@ -15694,11 +15696,11 @@ protoOf(Game).h2h = function (pool, tokens) {
   }
   return to(c, tmp_2);
 };
-protoOf(Game).k2h = function (pool, tokens, $super) {
+protoOf(Game).m2h = function (pool, tokens, $super) {
   tokens = tokens === VOID ? false : tokens;
-  return $super === VOID ? this.h2h(pool, tokens) : $super.h2h.call(this, pool, tokens);
+  return $super === VOID ? this.j2h(pool, tokens) : $super.j2h.call(this, pool, tokens);
 };
-protoOf(Game).l2h = function (pool) {
+protoOf(Game).n2h = function (pool) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -15710,7 +15712,7 @@ protoOf(Game).l2h = function (pool) {
       var tmp0_safe_receiver = element.j27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.j1y_1) === true) {
         var tmp1_safe_receiver = element.z27_1;
-        var tmp2_elvis_lhs = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.y2d_1;
+        var tmp2_elvis_lhs = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.a2e_1;
         tmp = (tmp2_elvis_lhs == null ? 2147483647 : tmp2_elvis_lhs) <= this.d29_1;
       } else {
         tmp = false;
@@ -15752,15 +15754,15 @@ protoOf(Game).l2h = function (pool) {
   var this_0 = this.o28_1;
   var element_0 = ensureNotNull(m.j27_1);
   this_0.h(element_0);
-  this.b2h();
-  if (this.v2g().m() >= 10)
+  this.d2h();
+  if (this.x2g().m() >= 10)
     this.m29_1 = true;
   return left;
 };
-protoOf(Game).w2g = function (n) {
-  return this.f2g('treasure', n);
+protoOf(Game).y2g = function (n) {
+  return this.h2g('treasure', n);
 };
-protoOf(Game).m2h = function () {
+protoOf(Game).o2h = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -15849,8 +15851,8 @@ protoOf(Game).m2h = function () {
   }
   return tmp;
 };
-protoOf(Game).n2h = function (c, fromGraveyard) {
-  if (!this.t28_1.r2e_1)
+protoOf(Game).p2h = function (c, fromGraveyard) {
+  if (!this.t28_1.t2e_1)
     return c.y1v_1;
   var less = 0;
   var _iterator__ex2g4s = this.w28_1.j();
@@ -16029,7 +16031,7 @@ protoOf(Game).n2h = function (c, fromGraveyard) {
       }
       tmp_10 = tmp$ret$6;
     } else {
-      tmp_10 = this.u2g(tmp2_safe_receiver);
+      tmp_10 = this.w2g(tmp2_safe_receiver);
     }
     less = tmp_9 + tmp_10 | 0;
   }
@@ -16037,18 +16039,18 @@ protoOf(Game).n2h = function (c, fromGraveyard) {
     return c.y1v_1;
   return new Cost(coerceAtLeast_0(c.y1v_1.f1i_1 - less | 0, 0), c.y1v_1.g1i_1);
 };
-protoOf(Game).j2h = function (c, fromGraveyard, $super) {
+protoOf(Game).l2h = function (c, fromGraveyard, $super) {
   fromGraveyard = fromGraveyard === VOID ? false : fromGraveyard;
-  return $super === VOID ? this.n2h(c, fromGraveyard) : $super.n2h.call(this, c, fromGraveyard);
+  return $super === VOID ? this.p2h(c, fromGraveyard) : $super.p2h.call(this, c, fromGraveyard);
 };
-protoOf(Game).o2h = function (e) {
+protoOf(Game).q2h = function (e) {
   var tmp;
   var tmp_0;
   if (e.c28_1) {
     tmp_0 = true;
   } else {
     var tmp_1;
-    if (this.t28_1.q2e_1 && e.d28_1 === 'food') {
+    if (this.t28_1.s2e_1 && e.d28_1 === 'food') {
       var tmp$ret$0;
       $l$block_0: {
         // Inline function 'kotlin.collections.any' call
@@ -16088,8 +16090,8 @@ protoOf(Game).o2h = function (e) {
   }
   return tmp;
 };
-protoOf(Game).i2h = function () {
-  if (!this.t28_1.t2e_1)
+protoOf(Game).k2h = function () {
+  if (!this.t28_1.v2e_1)
     return emptyList();
   var tmp$ret$0;
   $l$block: {
@@ -16110,7 +16112,7 @@ protoOf(Game).i2h = function () {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.treasurePool.<anonymous>' call
-      if (this.o2h(element)) {
+      if (this.q2h(element)) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -16176,9 +16178,9 @@ protoOf(Game).i2h = function () {
      while (inductionVariable < n);
   return list;
 };
-protoOf(Game).p2h = function () {
+protoOf(Game).r2h = function () {
   var tmp;
-  if (!this.t28_1.s2e_1) {
+  if (!this.t28_1.u2e_1) {
     tmp = emptyList();
   } else {
     // Inline function 'kotlin.collections.filter' call
@@ -16194,12 +16196,12 @@ protoOf(Game).p2h = function () {
       var tmp_2;
       if (element.m27_1) {
         var tmp0_safe_receiver = element.z27_1;
-        tmp_2 = (tmp0_safe_receiver == null ? null : tmp0_safe_receiver.z2d_1) === true;
+        tmp_2 = (tmp0_safe_receiver == null ? null : tmp0_safe_receiver.b2e_1) === true;
       } else {
         tmp_2 = false;
       }
       if (tmp_2) {
-        tmp_1 = ensureNotNull(element.z27_1).y2d_1 <= this.d29_1;
+        tmp_1 = ensureNotNull(element.z27_1).a2e_1 <= this.d29_1;
       } else {
         tmp_1 = false;
       }
@@ -16216,25 +16218,25 @@ protoOf(Game).p2h = function () {
   }
   return tmp;
 };
-protoOf(Game).q2h = function (pool, cost) {
+protoOf(Game).s2h = function (pool, cost) {
   var tmp = ManaOddsCalc_getInstance();
   // Inline function 'kotlin.collections.map' call
-  var this_0 = this.p2h();
+  var this_0 = this.r2h();
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
   var tmp0_iterator = this_0.j();
   while (tmp0_iterator.k()) {
     var item = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.canSpend.<anonymous>' call
-    var tmp$ret$0 = to(ensureNotNull(item.z27_1).w2d_1, ensureNotNull(item.z27_1).x2d_1);
+    var tmp$ret$0 = to(ensureNotNull(item.z27_1).y2d_1, ensureNotNull(item.z27_1).z2d_1);
     destination.h(tmp$ret$0);
   }
-  return !(tmp.f1q(plus_0(plus_0(pool, destination), this.i2h()), cost) == null);
+  return !(tmp.f1q(plus_0(plus_0(pool, destination), this.k2h()), cost) == null);
 };
-protoOf(Game).r2h = function (pool, cost, manaValue) {
+protoOf(Game).t2h = function (pool, cost, manaValue) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
-  var this_0 = this.p2h();
+  var this_0 = this.r2h();
   var destination = ArrayList_init_$Create$();
   var tmp0_iterator = this_0.j();
   while (tmp0_iterator.k()) {
@@ -16265,12 +16267,12 @@ protoOf(Game).r2h = function (pool, cost, manaValue) {
       return tmp0_safe_receiver_0;
     }
   }
-  if (!this.t28_1.s2e_1 && !this.t28_1.t2e_1)
+  if (!this.t28_1.u2e_1 && !this.t28_1.v2e_1)
     return null;
   // Inline function 'kotlin.collections.sortedBy' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
-  var this_1 = this.p2h();
+  var this_1 = this.r2h();
   var destination_0 = ArrayList_init_$Create$();
   var tmp0_iterator_0 = this_1.j();
   while (tmp0_iterator_0.k()) {
@@ -16321,7 +16323,7 @@ protoOf(Game).r2h = function (pool, cost, manaValue) {
   while (tmp0_iterator_2.k()) {
     var element_2 = tmp0_iterator_2.l();
     // Inline function 'com.mtgtrader.data.Game.spend.<anonymous>' call
-    if (this.o2h(element_2)) {
+    if (this.q2h(element_2)) {
       destination_1.h(element_2);
     }
   }
@@ -16333,7 +16335,7 @@ protoOf(Game).r2h = function (pool, cost, manaValue) {
     var e = _iterator__ex2g4s.l();
     var tmp_2 = p;
     var tmp_3;
-    if (this.o2h(e)) {
+    if (this.q2h(e)) {
       // Inline function 'kotlin.collections.ifEmpty' call
       var this_4 = this.r28_1;
       // Inline function 'kotlin.contracts.contract' call
@@ -16347,7 +16349,7 @@ protoOf(Game).r2h = function (pool, cost, manaValue) {
       var tmp$ret$15 = tmp_4;
       tmp_3 = to(tmp$ret$15, two && e.c28_1 ? 2 : 1);
     } else {
-      tmp_3 = to(ensureNotNull(e.z27_1).w2d_1, ensureNotNull(e.z27_1).x2d_1);
+      tmp_3 = to(ensureNotNull(e.z27_1).y2d_1, ensureNotNull(e.z27_1).z2d_1);
     }
     p = plus(tmp_2, tmp_3);
     // Inline function 'kotlin.collections.plusAssign' call
@@ -16361,16 +16363,16 @@ protoOf(Game).r2h = function (pool, cost, manaValue) {
       var _iterator__ex2g4s_0 = used.j();
       while (_iterator__ex2g4s_0.k()) {
         var u = _iterator__ex2g4s_0.l();
-        if (this.o2h(u)) {
+        if (this.q2h(u)) {
           this.w28_1.g2(u);
-          this.s2h(u, true);
+          this.u2h(u, true);
         } else {
           u.a28_1 = this.d29_1;
           var tmp0_safe_receiver_2 = u.j27_1;
           var tmp1_elvis_lhs_0 = tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.e20_1;
           var containsArg = tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0;
           if (1 <= containsArg ? containsArg <= manaValue : false) {
-            this.a2g(1);
+            this.c2g(1);
           }
         }
       }
@@ -16379,28 +16381,28 @@ protoOf(Game).r2h = function (pool, cost, manaValue) {
   }
   return null;
 };
-protoOf(Game).t2h = function (pool, cost, manaValue, $super) {
+protoOf(Game).v2h = function (pool, cost, manaValue, $super) {
   manaValue = manaValue === VOID ? cost.h1i() : manaValue;
-  return $super === VOID ? this.r2h(pool, cost, manaValue) : $super.r2h.call(this, pool, cost, manaValue);
+  return $super === VOID ? this.t2h(pool, cost, manaValue) : $super.t2h.call(this, pool, cost, manaValue);
 };
-protoOf(Game).u2h = function (pool) {
+protoOf(Game).w2h = function (pool) {
   // Inline function 'kotlin.collections.map' call
-  var this_0 = this.p2h();
+  var this_0 = this.r2h();
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
   var tmp0_iterator = this_0.j();
   while (tmp0_iterator.k()) {
     var item = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.potential.<anonymous>' call
-    var tmp$ret$0 = to(ensureNotNull(item.z27_1).w2d_1, ensureNotNull(item.z27_1).x2d_1);
+    var tmp$ret$0 = to(ensureNotNull(item.z27_1).y2d_1, ensureNotNull(item.z27_1).z2d_1);
     destination.h(tmp$ret$0);
   }
-  return plus_0(plus_0(pool, destination), this.i2h());
+  return plus_0(plus_0(pool, destination), this.k2h());
 };
 protoOf(Game).m2b = function (c) {
-  return (c.c1w_1 ? c.f1w_1 : 0) + this.v2h(c) | 0;
+  return (c.c1w_1 ? c.f1w_1 : 0) + this.x2h(c) | 0;
 };
-protoOf(Game).v2h = function (c) {
+protoOf(Game).x2h = function (c) {
   var tmp = imul(3, c.m1w_1) + c.o1w_1 | 0;
   var tmp_0;
   var tmp_1 = c.h20_1;
@@ -16471,7 +16473,7 @@ protoOf(Game).v2h = function (c) {
   }
   return ((tmp_5 + imul(tmp$ret$2, 3) | 0) + c.f1y_1.m() | 0) + c.w1y_1 | 0;
 };
-protoOf(Game).y2f = function (c) {
+protoOf(Game).a2g = function (c) {
   var tmp;
   var tmp_0;
   var tmp_1;
@@ -16504,7 +16506,7 @@ protoOf(Game).y2f = function (c) {
     tmp = false;
   }
   if (tmp)
-    return this.j29_1 || this.w2h(c.l1z_1) >= 5;
+    return this.j29_1 || this.y2h(c.l1z_1) >= 5;
   if (c.b1w_1)
     return true;
   var a = c.l1z_1;
@@ -16592,7 +16594,7 @@ protoOf(Game).y2f = function (c) {
     tmp_18 = true;
   } else {
     var tmp_21;
-    if (a.i1t_1 > 0 && this.w2h(a) >= (a.i1t_1 === 99 ? 12 : 5)) {
+    if (a.i1t_1 > 0 && this.y2h(a) >= (a.i1t_1 === 99 ? 12 : 5)) {
       var tmp_22;
       if (!a.k1t_1) {
         tmp_22 = true;
@@ -16663,7 +16665,7 @@ protoOf(Game).y2f = function (c) {
               // Inline function 'kotlin.let' call
               // Inline function 'kotlin.contracts.contract' call
               // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>.<anonymous>' call
-              tmp_27 = this.v2h(tmp0_safe_receiver) >= 3;
+              tmp_27 = this.x2h(tmp0_safe_receiver) >= 3;
             }
             tmp_26 = tmp_27 === true;
           } else {
@@ -16794,7 +16796,7 @@ protoOf(Game).y2f = function (c) {
         while (tmp0_iterator_4.k()) {
           var element_4 = tmp0_iterator_4.l();
           // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
-          if (this.x2h(element_4, a.o1t_1)) {
+          if (this.z2h(element_4, a.o1t_1)) {
             tmp$ret$15 = true;
             break $l$block_9;
           }
@@ -16820,7 +16822,7 @@ protoOf(Game).y2f = function (c) {
   if (tmp_12) {
     tmp_11 = true;
   } else {
-    tmp_11 = (a.z1u_1 > 0 && this.y2h() > 0);
+    tmp_11 = (a.z1u_1 > 0 && this.a2i() > 0);
   }
   if (tmp_11) {
     tmp_10 = true;
@@ -16829,7 +16831,7 @@ protoOf(Game).y2f = function (c) {
   }
   return tmp_10;
 };
-protoOf(Game).x2h = function (c, kind) {
+protoOf(Game).z2h = function (c, kind) {
   var tmp;
   switch (kind) {
     case null:
@@ -16906,7 +16908,7 @@ protoOf(Game).x2h = function (c, kind) {
   }
   return tmp;
 };
-protoOf(Game).z2h = function (c, kind, chosen) {
+protoOf(Game).b2i = function (c, kind, chosen) {
   var tmp;
   if (c.c1w_1) {
     switch (kind) {
@@ -17083,7 +17085,7 @@ protoOf(Game).chosenTypeInGraveyard = function () {
   var tmp0_safe_receiver = tmp$ret$7;
   return tmp0_safe_receiver == null ? null : tmp0_safe_receiver.y1();
 };
-protoOf(Game).w2h = function (a) {
+protoOf(Game).y2h = function (a) {
   var chosen = this.chosenTypeInGraveyard();
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.filter' call
@@ -17094,7 +17096,7 @@ protoOf(Game).w2h = function (a) {
   while (tmp0_iterator.k()) {
     var element = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.reanimationWorth.<anonymous>' call
-    if (this.z2h(element, a.j1t_1, chosen)) {
+    if (this.b2i(element, a.j1t_1, chosen)) {
       destination.h(element);
     }
   }
@@ -17144,7 +17146,7 @@ protoOf(Game).w2h = function (a) {
   }
   return tmp;
 };
-protoOf(Game).a2i = function (cards) {
+protoOf(Game).c2i = function (cards) {
   if (cards.n())
     return Unit_instance;
   // Inline function 'kotlin.collections.forEach' call
@@ -17170,16 +17172,16 @@ protoOf(Game).a2i = function (cards) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.leftGraveyard.<anonymous>.<anonymous>' call
-        this.q2g(tmp0_safe_receiver_0.r2b_1, tmp0_safe_receiver_0);
+        this.s2g(tmp0_safe_receiver_0.r2b_1, tmp0_safe_receiver_0);
       }
       if (tmp0_safe_receiver.y20_1 && !this.v29_1) {
         this.v29_1 = true;
-        this.a2g(1);
+        this.c2g(1);
       }
     }
   }
 };
-protoOf(Game).b2i = function (n) {
+protoOf(Game).d2i = function (n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -17202,7 +17204,7 @@ protoOf(Game).b2i = function (n) {
   }
   return tmp;
 };
-protoOf(Game).c2i = function (n) {
+protoOf(Game).e2i = function (n) {
   var inductionVariable = 0;
   if (inductionVariable < n)
     $l$loop: do {
@@ -17259,7 +17261,7 @@ protoOf(Game).c2i = function (n) {
     }
      while (inductionVariable < n);
 };
-protoOf(Game).d2i = function (n, spellsWanted) {
+protoOf(Game).f2i = function (n, spellsWanted) {
   var spellsOut = 0;
   var tmp$ret$0;
   $l$block: {
@@ -17280,7 +17282,7 @@ protoOf(Game).d2i = function (n, spellsWanted) {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>' call
-      if (!element.z2d_1) {
+      if (!element.b2e_1) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -17497,16 +17499,16 @@ protoOf(Game).d2i = function (n, spellsWanted) {
       if (!c.b1w_1) {
         spellsOut = spellsOut + 1 | 0;
       }
-      this.e2i(c);
+      this.g2i(c);
     }
      while (inductionVariable < n);
   return spellsOut;
 };
-protoOf(Game).f2i = function (n, spellsWanted, $super) {
+protoOf(Game).h2i = function (n, spellsWanted, $super) {
   spellsWanted = spellsWanted === VOID ? false : spellsWanted;
-  return $super === VOID ? this.d2i(n, spellsWanted) : $super.d2i.call(this, n, spellsWanted);
+  return $super === VOID ? this.f2i(n, spellsWanted) : $super.f2i.call(this, n, spellsWanted);
 };
-protoOf(Game).g2i = function () {
+protoOf(Game).i2i = function () {
   // Inline function 'kotlin.takeIf' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
@@ -17587,7 +17589,7 @@ protoOf(Game).g2i = function () {
               while (tmp0_iterator_2.k()) {
                 var element_2 = tmp0_iterator_2.l();
                 // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>.<anonymous>' call
-                if (!element_2.z2d_1) {
+                if (!element_2.b2e_1) {
                   count = count + 1 | 0;
                   checkCountOverflow(count);
                 }
@@ -17637,7 +17639,7 @@ protoOf(Game).g2i = function () {
   }
   return tmp_1;
 };
-protoOf(Game).e2i = function (c) {
+protoOf(Game).g2i = function (c) {
   this.u29_1 = this.u29_1 + 1 | 0;
   var tmp$ret$1;
   $l$block: {
@@ -17661,7 +17663,7 @@ protoOf(Game).e2i = function (c) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     if (this.q29_1.u(c)) {
-      this.a2i(listOf_0(c));
+      this.c2i(listOf_0(c));
       // Inline function 'kotlin.collections.plusAssign' call
       tmp0_safe_receiver_0.v27_1.h(c);
     }
@@ -17678,23 +17680,23 @@ protoOf(Game).e2i = function (c) {
       if (tmp1_safe_receiver.e21_1) {
         switch (this.u29_1) {
           case 1:
-            this.o2g(3, 3);
+            this.q2g(3, 3);
             break;
           case 2:
-            this.a2g(1);
+            this.c2g(1);
             break;
           case 3:
-            this.w2g(1);
+            this.y2g(1);
             break;
         }
       }
       if (tmp1_safe_receiver.f21_1 > 0 && c.c1w_1) {
-        this.s2g(tmp1_safe_receiver.f21_1);
+        this.u2g(tmp1_safe_receiver.f21_1);
       }
     }
   }
 };
-protoOf(Game).h2i = function (a) {
+protoOf(Game).j2i = function (a) {
   if (a.j1t_1 === 'land') {
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
@@ -17709,13 +17711,13 @@ protoOf(Game).h2i = function (a) {
       }
     }
     var lands = take(destination, a.i1t_1 === 99 ? 99 : a.i1t_1);
-    this.a2i(lands);
+    this.c2i(lands);
     // Inline function 'kotlin.collections.forEach' call
     var tmp0_iterator_0 = lands.j();
     while (tmp0_iterator_0.k()) {
       var element_0 = tmp0_iterator_0.l();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-      this.i2i(element_0, false);
+      this.k2i(element_0, false);
     }
     return Unit_instance;
   }
@@ -17729,7 +17731,7 @@ protoOf(Game).h2i = function (a) {
   while (tmp0_iterator_1.k()) {
     var element_1 = tmp0_iterator_1.l();
     // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-    if (this.z2h(element_1, a.j1t_1, chosen)) {
+    if (this.b2i(element_1, a.j1t_1, chosen)) {
       destination_0.h(element_1);
     }
   }
@@ -17742,7 +17744,7 @@ protoOf(Game).h2i = function (a) {
   if (ok.n())
     return Unit_instance;
   if (a.k1t_1) {
-    if (this.j2i() == null)
+    if (this.l2i() == null)
       return Unit_instance;
   }
   if (a.l1t_1) {
@@ -17764,10 +17766,10 @@ protoOf(Game).h2i = function (a) {
       var element_3 = tmp0_iterator_3.l();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
       this.w28_1.g2(element_3);
-      this.s2h(element_3, element_3.p27_1.u('Artifact'));
+      this.u2h(element_3, element_3.p27_1.u('Artifact'));
     }
   }
-  this.a2i(ok);
+  this.c2i(ok);
   // Inline function 'kotlin.collections.map' call
   var this_3 = ok;
   // Inline function 'kotlin.collections.mapTo' call
@@ -17776,7 +17778,7 @@ protoOf(Game).h2i = function (a) {
   while (tmp0_iterator_4.k()) {
     var item = tmp0_iterator_4.l();
     // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-    var tmp$ret$11 = this.k2i(item, true);
+    var tmp$ret$11 = this.m2i(item, true);
     destination_2.h(tmp$ret$11);
   }
   var back = destination_2;
@@ -17881,11 +17883,11 @@ protoOf(Game).h2i = function (a) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-      this.k2i(tmp2_safe_receiver, true, true);
+      this.m2i(tmp2_safe_receiver, true, true);
     }
   }
 };
-protoOf(Game).l2i = function (b) {
+protoOf(Game).n2i = function (b) {
   var tmp = b.u27_1;
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
@@ -17898,7 +17900,7 @@ protoOf(Game).l2i = function (b) {
   }
   return tmp + sum | 0;
 };
-protoOf(Game).m2i = function (t) {
+protoOf(Game).o2i = function (t) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.w28_1;
@@ -17968,7 +17970,7 @@ protoOf(Game).m2i = function (t) {
       crew.h(c);
       sum = sum + c.l27_1 | 0;
       if (crew$canAttack(t, this, c))
-        lost = lost + this.n2i(c).ae_1 | 0;
+        lost = lost + this.p2i(c).ae_1 | 0;
     }
     if (sum < need || lost >= v.l27_1)
       continue $l$loop_0;
@@ -17985,7 +17987,7 @@ protoOf(Game).m2i = function (t) {
   }
   return crewed;
 };
-protoOf(Game).o2i = function (e, k) {
+protoOf(Game).q2i = function (e, k) {
   var tmp0_safe_receiver = e.j27_1;
   var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a25_1;
   var tmp;
@@ -18011,14 +18013,14 @@ protoOf(Game).o2i = function (e, k) {
       var elements = a.p1v_1;
       addAll(this_1, elements);
     } else {
-      this.d2g(a, e);
+      this.f2g(a, e);
     }
   }
   if (k === (chapters.m() - 1 | 0)) {
-    this.p2i(e);
+    this.r2i(e);
   }
 };
-protoOf(Game).q2i = function (start) {
+protoOf(Game).s2i = function (start) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -18239,7 +18241,7 @@ protoOf(Game).q2i = function (start) {
   var waiting = tmp_4;
   if (!lethal && (x < 8 || waiting))
     return start;
-  var tmp2_elvis_lhs = this.t2h(start, this.j2h(c));
+  var tmp2_elvis_lhs = this.v2h(start, this.l2h(c));
   var tmp_8;
   if (tmp2_elvis_lhs == null) {
     return start;
@@ -18247,12 +18249,12 @@ protoOf(Game).q2i = function (start) {
     tmp_8 = tmp2_elvis_lhs;
   }
   var pool = tmp_8;
-  this.g2h(c);
-  this.r2i(target, x);
-  this.o2g(x, 3);
+  this.i2h(c);
+  this.t2i(target, x);
+  this.q2g(x, 3);
   return pool;
 };
-protoOf(Game).s2i = function (start) {
+protoOf(Game).u2i = function (start) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -18318,7 +18320,7 @@ protoOf(Game).s2i = function (start) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
-    tmp_3 = this.t2h(start, tmp2_safe_receiver);
+    tmp_3 = this.v2h(start, tmp2_safe_receiver);
   }
   var overload = tmp_3;
   var tmp_4;
@@ -18340,7 +18342,7 @@ protoOf(Game).s2i = function (start) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
-      tmp_6 = this.t2h(start, this.j2h(m));
+      tmp_6 = this.v2h(start, this.l2h(m));
     }
     tmp_4 = tmp_6;
   } else {
@@ -18354,10 +18356,10 @@ protoOf(Game).s2i = function (start) {
     tmp_7 = tmp5_elvis_lhs;
   }
   var pool = tmp_7;
-  this.g2h(m);
+  this.i2h(m);
   this.q29_1.g2(m);
   var copies = !(overload == null) ? spells : take(spells, 1);
-  this.a2i(copies);
+  this.c2i(copies);
   // Inline function 'kotlin.collections.forEach' call
   var tmp0_iterator_1 = copies.j();
   while (tmp0_iterator_1.k()) {
@@ -18365,12 +18367,12 @@ protoOf(Game).s2i = function (start) {
     // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var o = this.g2h(element_1, VOID, VOID, VOID, true);
+    var o = this.i2h(element_1, VOID, VOID, VOID, true);
     this.s29_1 = this.s29_1 + o | 0;
   }
   return pool;
 };
-protoOf(Game).j2i = function () {
+protoOf(Game).l2i = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.minByOrNull' call
@@ -18407,7 +18409,7 @@ protoOf(Game).j2i = function () {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.sacrificeWorst.<anonymous>.<anonymous>' call
-      tmp_0 = this.v2h(tmp0_safe_receiver);
+      tmp_0 = this.x2h(tmp0_safe_receiver);
     }
     var tmp1_elvis_lhs = tmp_0;
     var minValue = tmp + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
@@ -18423,7 +18425,7 @@ protoOf(Game).j2i = function () {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.sacrificeWorst.<anonymous>.<anonymous>' call
-        tmp_2 = this.v2h(tmp0_safe_receiver_0);
+        tmp_2 = this.x2h(tmp0_safe_receiver_0);
       }
       var tmp1_elvis_lhs_0 = tmp_2;
       var v = tmp_1 + (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) | 0;
@@ -18444,10 +18446,10 @@ protoOf(Game).j2i = function () {
   }
   var e_0 = tmp_3;
   this.w28_1.g2(e_0);
-  this.s2h(e_0, e_0.p27_1.u('Artifact'));
+  this.u2h(e_0, e_0.p27_1.u('Artifact'));
   return e_0;
 };
-protoOf(Game).t2i = function (a, user, attackers) {
+protoOf(Game).v2i = function (a, user, attackers) {
   if (!a.g26())
     return Unit_instance;
   if (a.s1v_1) {
@@ -18463,15 +18465,15 @@ protoOf(Game).t2i = function (a, user, attackers) {
     // Inline function 'kotlin.collections.plusAssign' call
     this.q29_1.h(c);
     if (c.n2b()) {
-      this.w2g(1);
+      this.y2g(1);
     } else {
       var tmp3_safe_receiver = a.y1s_1;
       var tmp4_elvis_lhs = tmp3_safe_receiver == null ? null : tmp3_safe_receiver.r2b_1;
-      this.q2g(tmp4_elvis_lhs == null ? 2 : tmp4_elvis_lhs, a.y1s_1);
+      this.s2g(tmp4_elvis_lhs == null ? 2 : tmp4_elvis_lhs, a.y1s_1);
     }
     return Unit_instance;
   }
-  this.a2g(a.u1s_1);
+  this.c2g(a.u1s_1);
   var tmp5_safe_receiver = a.j1v_1;
   var tmp_0;
   if (tmp5_safe_receiver == null) {
@@ -18480,12 +18482,12 @@ protoOf(Game).t2i = function (a, user, attackers) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-    tmp_0 = this.u2g(tmp5_safe_receiver);
+    tmp_0 = this.w2g(tmp5_safe_receiver);
   }
   var tmp6_elvis_lhs = tmp_0;
   var per = tmp6_elvis_lhs == null ? 1 : tmp6_elvis_lhs;
-  this.o2g(imul(a.v1s_1, per), 3);
-  this.i2g(imul(a.w1s_1, per), 3);
+  this.q2g(imul(a.v1s_1, per), 3);
+  this.k2g(imul(a.w1s_1, per), 3);
   var tmp7_safe_receiver = a.w1u_1;
   if (tmp7_safe_receiver == null)
     null;
@@ -18494,7 +18496,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.repeat' call
     // Inline function 'kotlin.comparisons.minOf' call
-    var a_0 = this.u2g(tmp7_safe_receiver);
+    var a_0 = this.w2g(tmp7_safe_receiver);
     var times = Math.min(a_0, 20);
     // Inline function 'kotlin.contracts.contract' call
     var inductionVariable = 0;
@@ -18505,7 +18507,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
         var tmp0_safe_receiver = a.y1s_1;
         var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.r2b_1;
-        this.q2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, a.y1s_1);
+        this.s2g(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, a.y1s_1);
       }
        while (inductionVariable < times);
   }
@@ -18522,7 +18524,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
         // Inline function 'kotlin.also' call
         var tmp0_safe_receiver_0 = a.y1s_1;
         var tmp1_elvis_lhs_0 = tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.r2b_1;
-        var this_0 = this.q2g(tmp1_elvis_lhs_0 == null ? 1 : tmp1_elvis_lhs_0, a.y1s_1);
+        var this_0 = this.s2g(tmp1_elvis_lhs_0 == null ? 1 : tmp1_elvis_lhs_0, a.y1s_1);
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
         if (a.r1u_1) {
@@ -18532,7 +18534,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
       }
        while (inductionVariable_0 < times_0);
   }
-  this.n2g(a.g1u_1);
+  this.p2g(a.g1u_1);
   var tmp_1;
   if (a.e1u_1 === 0) {
     tmp_1 = true;
@@ -18544,15 +18546,15 @@ protoOf(Game).t2i = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      tmp_2 = this.n2i(user).ae_1 >= a.e1u_1;
+      tmp_2 = this.p2i(user).ae_1 >= a.e1u_1;
     }
     tmp_1 = tmp_2 === true;
   }
   if (tmp_1) {
-    this.f2g('treasure', a.a1t_1);
+    this.h2g('treasure', a.a1t_1);
   }
   if (a.h1u_1 > 0 && !(user == null)) {
-    this.c2g(user, a.h1u_1);
+    this.e2g(user, a.h1u_1);
   }
   if (a.i1u_1 > 0) {
     // Inline function 'kotlin.collections.forEach' call
@@ -18572,24 +18574,24 @@ protoOf(Game).t2i = function (a, user, attackers) {
     while (tmp0_iterator_0.k()) {
       var element_0 = tmp0_iterator_0.l();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.c2g(element_0, a.i1u_1);
+      this.e2g(element_0, a.i1u_1);
     }
   }
   if (a.j1u_1 > 0) {
-    var tmp9_safe_receiver = this.j2g();
+    var tmp9_safe_receiver = this.l2g();
     if (tmp9_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.c2g(tmp9_safe_receiver, a.j1u_1);
+      this.e2g(tmp9_safe_receiver, a.j1u_1);
     }
   }
   if (a.m1u_1 && !(user == null)) {
-    this.c2g(user, user.r27_1);
+    this.e2g(user, user.r27_1);
   }
   if (a.n1u_1 && !(user == null)) {
-    this.a2g(user.r27_1);
+    this.c2g(user.r27_1);
   }
   var tmp_3;
   if (a.o1u_1) {
@@ -18598,7 +18600,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     tmp_3 = false;
   }
   if (tmp_3) {
-    this.k2i(user.j27_1, true, true);
+    this.m2i(user.j27_1, true, true);
   }
   if (a.p1u_1) {
     var tmp$ret$12;
@@ -18622,11 +18624,11 @@ protoOf(Game).t2i = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       this.o28_1.g2(tmp11_safe_receiver);
-      this.i2i(tmp11_safe_receiver, true);
+      this.k2i(tmp11_safe_receiver, true);
     }
   }
   if (a.s1u_1 > 0) {
-    this.a2g(a.s1u_1);
+    this.c2g(a.s1u_1);
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
@@ -18649,7 +18651,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     while (tmp0_iterator_2.k()) {
       var element_3 = tmp0_iterator_2.l();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.e2g(element_3, a.s1u_1);
+      this.g2g(element_3, a.s1u_1);
     }
   }
   if (a.t1u_1 > 0) {
@@ -18679,7 +18681,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.e2g(tmp12_safe_receiver, a.t1u_1);
+      this.g2g(tmp12_safe_receiver, a.t1u_1);
     }
   }
   if (a.v1u_1) {
@@ -18730,8 +18732,8 @@ protoOf(Game).t2i = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.a2i(listOf_0(tmp13_safe_receiver));
-      this.k2i(tmp13_safe_receiver, true, true);
+      this.c2i(listOf_0(tmp13_safe_receiver));
+      this.m2i(tmp13_safe_receiver, true, true);
     }
   }
   if (a.u1u_1)
@@ -18787,7 +18789,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
       }
       tmp$ret$28 = count;
     }
-    this.a2g(tmp$ret$28);
+    this.c2g(tmp$ret$28);
   }
   // Inline function 'kotlin.repeat' call
   var times_1 = a.y1t_1;
@@ -18798,11 +18800,11 @@ protoOf(Game).t2i = function (a, user, attackers) {
       var index_1 = inductionVariable_3;
       inductionVariable_3 = inductionVariable_3 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.u2i(this.r28_1, true);
+      this.w2i(this.r28_1, true);
     }
      while (inductionVariable_3 < times_1);
-  this.b2i(a.b1t_1);
-  this.c2i(a.c1t_1);
+  this.d2i(a.b1t_1);
+  this.e2i(a.c1t_1);
   var tmp_6;
   if (a.f1t_1) {
     var tmp$ret$32;
@@ -18831,7 +18833,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
-          tmp_8 = element_8.b2e(tmp0_safe_receiver_1);
+          tmp_8 = element_8.d2e(tmp0_safe_receiver_1);
         }
         var tmp1_elvis_lhs_1 = tmp_8;
         if (tmp1_elvis_lhs_1 == null ? true : tmp1_elvis_lhs_1) {
@@ -18847,10 +18849,10 @@ protoOf(Game).t2i = function (a, user, attackers) {
   }
   var many = tmp_6;
   if ((a.d1t_1 + many | 0) > 0) {
-    this.a2g(a.d1t_1 + many | 0);
-    var spells = this.d2i(a.e1t_1 + many | 0, a.g1t_1 > 0);
+    this.c2g(a.d1t_1 + many | 0);
+    var spells = this.f2i(a.e1t_1 + many | 0, a.g1t_1 > 0);
     if (spells > 0) {
-      this.o2g(a.g1t_1, 3);
+      this.q2g(a.g1t_1, 3);
     }
   }
   // Inline function 'kotlin.repeat' call
@@ -18934,7 +18936,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     }
      while (inductionVariable_4 < times_2);
   if (a.i1t_1 > 0) {
-    this.h2i(a);
+    this.j2i(a);
   }
   if (a.n1t_1 > 0) {
     // Inline function 'kotlin.collections.sortedByDescending' call
@@ -18946,7 +18948,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     while (tmp0_iterator_8.k()) {
       var element_10 = tmp0_iterator_8.l();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      if (this.x2h(element_10, a.o1t_1)) {
+      if (this.z2h(element_10, a.o1t_1)) {
         destination_3.h(element_10);
       }
     }
@@ -18955,7 +18957,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     var tmp$ret$49 = new sam$kotlin_Comparator$0_10(tmp_11);
     var tmp$ret$50 = sortedWith(destination_3, tmp$ret$49);
     var back = take(tmp$ret$50, a.n1t_1);
-    this.a2i(back);
+    this.c2i(back);
     // Inline function 'kotlin.collections.plusAssign' call
     var this_7 = this.o28_1;
     addAll(this_7, back);
@@ -18967,7 +18969,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     var tmp_12 = WinOddsCalc$Game$use$lambda_0(this);
     var tmp$ret$51 = new sam$kotlin_Comparator$0_10(tmp_12);
     var tmp$ret$52 = sortedWith(this_8, tmp$ret$51);
-    this.a2i(take(tmp$ret$52, a.t1t_1));
+    this.c2i(take(tmp$ret$52, a.t1t_1));
   }
   if (a.x1t_1) {
     var tmp$ret$54;
@@ -18990,7 +18992,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.a2i(listOf_0(tmp14_safe_receiver));
+      this.c2i(listOf_0(tmp14_safe_receiver));
       var source = new Source(tmp14_safe_receiver.x1v_1.j1i_1, 1, this.d29_1 + 1 | 0);
       // Inline function 'kotlin.collections.plusAssign' call
       this.v28_1.h(source);
@@ -19002,7 +19004,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
       var e_1 = this_9;
       // Inline function 'kotlin.collections.plusAssign' call
       this.w28_1.h(e_1);
-      this.c2h(e_1);
+      this.e2h(e_1);
     }
   }
   // Inline function 'kotlin.repeat' call
@@ -19014,7 +19016,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
       var index_3 = inductionVariable_5;
       inductionVariable_5 = inductionVariable_5 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.v2i();
+      this.x2i();
     }
      while (inductionVariable_5 < times_3);
   // Inline function 'kotlin.repeat' call
@@ -19026,11 +19028,11 @@ protoOf(Game).t2i = function (a, user, attackers) {
       var index_4 = inductionVariable_6;
       inductionVariable_6 = inductionVariable_6 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.w2i();
+      this.y2i();
     }
      while (inductionVariable_6 < times_4);
   if (a.x1u_1) {
-    this.x2i();
+    this.z2i();
   }
   // Inline function 'kotlin.repeat' call
   var times_5 = a.y1u_1;
@@ -19041,7 +19043,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
       var index_5 = inductionVariable_7;
       inductionVariable_7 = inductionVariable_7 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.y2i();
+      this.a2j();
     }
      while (inductionVariable_7 < times_5);
   if (a.r1t_1) {
@@ -19094,12 +19096,12 @@ protoOf(Game).t2i = function (a, user, attackers) {
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       var tmp_13;
       if (!(tmp15_safe_receiver.j27_1 == null)) {
-        tmp_13 = this.k2i(tmp15_safe_receiver.j27_1, true, true, VOID, minus(tmp15_safe_receiver.p27_1, tmp15_safe_receiver.j27_1.m1x_1));
+        tmp_13 = this.m2i(tmp15_safe_receiver.j27_1, true, true, VOID, minus(tmp15_safe_receiver.p27_1, tmp15_safe_receiver.j27_1.m1x_1));
       } else if (tmp15_safe_receiver.m27_1) {
-        tmp_13 = this.q2g(tmp15_safe_receiver.l27_1, new TokenKind(tmp15_safe_receiver.l27_1, tmp15_safe_receiver.p27_1, tmp15_safe_receiver.q27_1, tmp15_safe_receiver.f28_1, tmp15_safe_receiver.g28_1));
+        tmp_13 = this.s2g(tmp15_safe_receiver.l27_1, new TokenKind(tmp15_safe_receiver.l27_1, tmp15_safe_receiver.p27_1, tmp15_safe_receiver.q27_1, tmp15_safe_receiver.f28_1, tmp15_safe_receiver.g28_1));
       } else {
         var tmp0_elvis_lhs = tmp15_safe_receiver.d28_1;
-        this.f2g(tmp0_elvis_lhs == null ? 'other' : tmp0_elvis_lhs, 1);
+        this.h2g(tmp0_elvis_lhs == null ? 'other' : tmp0_elvis_lhs, 1);
         tmp_13 = Unit_instance;
       }
     }
@@ -19200,10 +19202,10 @@ protoOf(Game).t2i = function (a, user, attackers) {
         var element_16 = tmp0_iterator_14.l();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         this.w28_1.g2(element_16);
-        this.s2h(element_16, true);
+        this.u2h(element_16, true);
       }
-      this.a2i(listOf_0(target));
-      this.k2i(target, true, true, VOID, setOf_0('Artifact'));
+      this.c2i(listOf_0(target));
+      this.m2i(target, true, true, VOID, setOf_0('Artifact'));
     }
   }
   if (a.u1t_1 > 0) {
@@ -19366,7 +19368,7 @@ protoOf(Game).t2i = function (a, user, attackers) {
         tmp_23 = tmp18_elvis_lhs;
       }
       var i = tmp_23;
-      this.k2i(this.p28_1.j2(i), true);
+      this.m2i(this.p28_1.j2(i), true);
     }
   }
   var tmp19_safe_receiver = a.v1t_1;
@@ -19440,20 +19442,20 @@ protoOf(Game).t2i = function (a, user, attackers) {
     }
   }
   this.z28_1 = this.z28_1 + a.c1v_1 | 0;
-  this.h2g(a.a1v_1 + a.b1v_1 | 0);
-  this.d2h(a.z1u_1);
+  this.j2g(a.a1v_1 + a.b1v_1 | 0);
+  this.f2h(a.z1u_1);
   if (a.d1v_1 > 0) {
-    var tmp21_safe_receiver = this.z2i(a.d1v_1, a.e1v_1);
+    var tmp21_safe_receiver = this.b2j(a.d1v_1, a.e1v_1);
     if (tmp21_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.r2i(tmp21_safe_receiver, a.d1v_1);
+      this.t2i(tmp21_safe_receiver, a.d1v_1);
     }
   }
   if (a.f1v_1 > 0) {
-    this.a2j(a.f1v_1);
+    this.c2j(a.f1v_1);
   }
   if (a.g1v_1 > 0) {
     // Inline function 'kotlin.collections.forEach' call
@@ -19473,17 +19475,17 @@ protoOf(Game).t2i = function (a, user, attackers) {
     while (tmp0_iterator_19.k()) {
       var element_23 = tmp0_iterator_19.l();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.r2i(element_23, a.g1v_1);
+      this.t2i(element_23, a.g1v_1);
     }
-    if (this.b2j()) {
-      this.r2i(null, a.g1v_1);
+    if (this.d2j()) {
+      this.t2i(null, a.g1v_1);
     }
   }
-  if (a.h1v_1 > 0 && this.b2j()) {
-    this.r2i(null, a.h1v_1);
+  if (a.h1v_1 > 0 && this.d2j()) {
+    this.t2i(null, a.h1v_1);
   }
   if (a.i1v_1 > 0) {
-    this.c2j(a.i1v_1);
+    this.e2j(a.i1v_1);
   }
   if (a.r1v_1) {
     var tmp$ret$119;
@@ -19538,35 +19540,35 @@ protoOf(Game).t2i = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.k2i(this.p28_1.j2(tmp22_safe_receiver), true);
+      this.m2i(this.p28_1.j2(tmp22_safe_receiver), true);
     }
   }
   if (a.w1t_1 > 0) {
-    if (this.j2i() == null)
+    if (this.l2i() == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.q2g(a.w1t_1, new TokenKind(a.w1t_1, Companion_getInstance_5().p26_1, setOf_0('Dragon'), true));
+      this.s2g(a.w1t_1, new TokenKind(a.w1t_1, Companion_getInstance_5().p26_1, setOf_0('Dragon'), true));
     }
   }
   if (a.c1u_1 > 0)
     this.s29_1 = this.s29_1 + a.c1u_1 | 0;
 };
-protoOf(Game).d2g = function (a, user, attackers, $super) {
+protoOf(Game).f2g = function (a, user, attackers, $super) {
   user = user === VOID ? null : user;
   attackers = attackers === VOID ? emptyList() : attackers;
   var tmp;
   if ($super === VOID) {
-    this.t2i(a, user, attackers);
+    this.v2i(a, user, attackers);
     tmp = Unit_instance;
   } else {
-    tmp = $super.t2i.call(this, a, user, attackers);
+    tmp = $super.v2i.call(this, a, user, attackers);
   }
   return tmp;
 };
-protoOf(Game).d2h = function (n) {
+protoOf(Game).f2h = function (n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -19594,7 +19596,7 @@ protoOf(Game).d2h = function (n) {
         var element_0 = tmp0_iterator_0.l();
         // Inline function 'com.mtgtrader.data.Game.proliferate.<anonymous>.<anonymous>' call
         element_0.k28_1 = element_0.k28_1 + 1 | 0;
-        this.h2g(1);
+        this.j2g(1);
       }
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.filter' call
@@ -19613,7 +19615,7 @@ protoOf(Game).d2h = function (n) {
       while (tmp0_iterator_2.k()) {
         var element_2 = tmp0_iterator_2.l();
         // Inline function 'com.mtgtrader.data.Game.proliferate.<anonymous>.<anonymous>' call
-        this.c2g(element_2, 1);
+        this.e2g(element_2, 1);
       }
       var inductionVariable_0 = 0;
       var last = this.x28_1.length - 1 | 0;
@@ -19624,7 +19626,7 @@ protoOf(Game).d2h = function (n) {
           if (this.x28_1[i] > 0 && this.y28_1[i] > 0) {
             var _array__4zh2yp = this.y28_1;
             _array__4zh2yp[i] = _array__4zh2yp[i] + 1 | 0;
-            this.h2g(1);
+            this.j2g(1);
             if (this.y28_1[i] >= 10) {
               this.x28_1[i] = 0;
             }
@@ -19637,26 +19639,26 @@ protoOf(Game).d2h = function (n) {
   }
   return tmp;
 };
-protoOf(Game).b2j = function () {
+protoOf(Game).d2j = function () {
   return this.d29_1 >= 4;
 };
-protoOf(Game).h2g = function (n) {
-  if (n <= 0 || !this.t28_1.v2f_1)
+protoOf(Game).j2g = function (n) {
+  if (n <= 0 || !this.t28_1.x2f_1)
     return Unit_instance;
   var _iterator__ex2g4s = toList(this.w28_1).j();
   while (_iterator__ex2g4s.k()) {
     var b = _iterator__ex2g4s.l();
     var tmp0_safe_receiver = b.j27_1;
     if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.s24_1) === true) {
-      this.i2g(n, 3);
+      this.k2g(n, 3);
     }
   }
 };
-protoOf(Game).r2i = function (target, n) {
+protoOf(Game).t2i = function (target, n) {
   if (n <= 0 || this.l2a_1 > 4)
     return Unit_instance;
   this.l2a_1 = this.l2a_1 + 1 | 0;
-  if (this.t28_1.u2f_1) {
+  if (this.t28_1.w2f_1) {
     var _iterator__ex2g4s = toList(this.w28_1).j();
     while (_iterator__ex2g4s.k()) {
       var b = _iterator__ex2g4s.l();
@@ -19682,7 +19684,7 @@ protoOf(Game).r2i = function (target, n) {
               var index = inductionVariable;
               inductionVariable = inductionVariable + 1 | 0;
               // Inline function 'com.mtgtrader.data.Game.minus.<anonymous>.<anonymous>.<anonymous>' call
-              this.q2g(tmp0_safe_receiver_0.r2b_1, tmp0_safe_receiver_0);
+              this.s2g(tmp0_safe_receiver_0.r2b_1, tmp0_safe_receiver_0);
             }
              while (inductionVariable < times);
         }
@@ -19693,7 +19695,7 @@ protoOf(Game).r2i = function (target, n) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.Game.minus.<anonymous>.<anonymous>' call
-          this.q2g(tmp1_safe_receiver.r2b_1, tmp1_safe_receiver);
+          this.s2g(tmp1_safe_receiver.r2b_1, tmp1_safe_receiver);
         }
         var tmp2_safe_receiver = tmp0_safe_receiver.n24_1;
         if (tmp2_safe_receiver == null)
@@ -19711,22 +19713,22 @@ protoOf(Game).r2i = function (target, n) {
               var index_0 = inductionVariable_0;
               inductionVariable_0 = inductionVariable_0 + 1 | 0;
               // Inline function 'com.mtgtrader.data.Game.minus.<anonymous>.<anonymous>.<anonymous>' call
-              this.q2g(tmp2_safe_receiver.r2b_1, tmp2_safe_receiver);
+              this.s2g(tmp2_safe_receiver.r2b_1, tmp2_safe_receiver);
             }
              while (inductionVariable_0 < times_0);
         }
-        this.o2g(tmp0_safe_receiver.m24_1, 3);
+        this.q2g(tmp0_safe_receiver.m24_1, 3);
         if (tmp0_safe_receiver.o24_1) {
           if (!(target == null)) {
-            this.a2g(1);
+            this.c2g(1);
           } else {
-            this.i2g(1, 3);
+            this.k2g(1, 3);
           }
         }
       }
     }
   }
-  this.h2g(n);
+  this.j2g(n);
   if (!(target == null) && this.w28_1.u(target)) {
     // Inline function 'kotlin.repeat' call
     // Inline function 'kotlin.contracts.contract' call
@@ -19746,12 +19748,12 @@ protoOf(Game).r2i = function (target, n) {
       }
        while (inductionVariable_1 < n);
     if (target.m27_1 && (target.m28_1 + target.r27_1 | 0) <= 0) {
-      this.p2i(target);
+      this.r2i(target);
     }
   }
   this.l2a_1 = this.l2a_1 - 1 | 0;
 };
-protoOf(Game).p2i = function (e) {
+protoOf(Game).r2i = function (e) {
   this.w28_1.g2(e);
   var tmp0_safe_receiver = e.z27_1;
   if (tmp0_safe_receiver == null)
@@ -19785,9 +19787,9 @@ protoOf(Game).p2i = function (e) {
       this.w28_1.g2(element_0);
     }
   }
-  this.s2h(e, e.p27_1.u('Artifact'));
+  this.u2h(e, e.p27_1.u('Artifact'));
 };
-protoOf(Game).d2j = function () {
+protoOf(Game).f2j = function () {
   var tmp$ret$0;
   $l$block_0: {
     // Inline function 'kotlin.collections.any' call
@@ -19832,8 +19834,8 @@ protoOf(Game).d2j = function () {
   }
   return tmp$ret$0;
 };
-protoOf(Game).z2i = function (n, may) {
-  if (may && !this.d2j())
+protoOf(Game).b2j = function (n, may) {
+  if (may && !this.f2j())
     return null;
   var tmp$ret$3;
   $l$block_0: {
@@ -19977,21 +19979,21 @@ protoOf(Game).z2i = function (n, may) {
   }
   return tmp_0;
 };
-protoOf(Game).a2j = function (n) {
-  if (this.b2j()) {
-    this.r2i(null, n);
+protoOf(Game).c2j = function (n) {
+  if (this.d2j()) {
+    this.t2i(null, n);
   } else {
-    var tmp0_safe_receiver = this.z2i(n, true);
+    var tmp0_safe_receiver = this.b2j(n, true);
     if (tmp0_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.r2i(tmp0_safe_receiver, n);
+      this.t2i(tmp0_safe_receiver, n);
     }
   }
 };
-protoOf(Game).c2j = function (n) {
+protoOf(Game).e2j = function (n) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
@@ -19999,7 +20001,7 @@ protoOf(Game).c2j = function (n) {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.amass.<anonymous>' call
-      if (element.m27_1 && element.b2e('army')) {
+      if (element.m27_1 && element.d2e('army')) {
         tmp$ret$1 = element;
         break $l$block;
       }
@@ -20007,10 +20009,10 @@ protoOf(Game).c2j = function (n) {
     tmp$ret$1 = null;
   }
   var tmp0_elvis_lhs = tmp$ret$1;
-  var army = tmp0_elvis_lhs == null ? this.q2g(0, new TokenKind(0, Companion_getInstance_5().p26_1, setOf(['Zombie', 'Army']), VOID, VOID, VOID, 0)) : tmp0_elvis_lhs;
-  this.c2g(army, n);
+  var army = tmp0_elvis_lhs == null ? this.s2g(0, new TokenKind(0, Companion_getInstance_5().p26_1, setOf(['Zombie', 'Army']), VOID, VOID, VOID, 0)) : tmp0_elvis_lhs;
+  this.e2g(army, n);
 };
-protoOf(Game).e2j = function (e) {
+protoOf(Game).g2j = function (e) {
   var tmp = coerceAtLeast_0(e.l27_1 + e.r27_1 | 0, 0) + imul(2, e.x27_1.m()) | 0;
   var tmp0_safe_receiver = e.j27_1;
   var tmp_0;
@@ -20118,7 +20120,7 @@ protoOf(Game).r2a = function (e, each) {
         var element_0 = tmp0_iterator_0.l();
         var tmp_1 = sum_0;
         // Inline function 'com.mtgtrader.data.Game.deathDrains.<anonymous>.<anonymous>' call
-        var fires = !(element === e && element_0.b2d_1 && !element_0.a2d_1) && !(element_0.c2d_1 && e.b28_1) && (element_0.d2d_1 == null || e.b2e(element_0.d2d_1));
+        var fires = !(element === e && element_0.b2d_1 && !element_0.a2d_1) && !(element_0.c2d_1 && e.b28_1) && (element_0.d2d_1 == null || e.d2e(element_0.d2d_1));
         sum_0 = tmp_1 + (!fires ? 0 : each == null ? imul(2, element_0.z2c_1) : element_0.x2c_1 === each ? element_0.y2c_1 : 0) | 0;
       }
       tmp_0 = sum_0;
@@ -20128,7 +20130,7 @@ protoOf(Game).r2a = function (e, each) {
   }
   return sum;
 };
-protoOf(Game).f2j = function () {
+protoOf(Game).h2j = function () {
   // Inline function 'kotlin.repeat' call
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
@@ -20192,7 +20194,7 @@ protoOf(Game).f2j = function () {
       var candidates = destination;
       if (candidates.n())
         return Unit_instance;
-      var outletWorth = ((imul(2, a.u1s_1) + a.a1t_1 | 0) + a.h1u_1 | 0) + (a.f1v_1 > 0 && this.t28_1.u2f_1 ? 3 : 0) | 0;
+      var outletWorth = ((imul(2, a.u1s_1) + a.a1t_1 | 0) + a.h1u_1 | 0) + (a.f1v_1 > 0 && this.t28_1.w2f_1 ? 3 : 0) | 0;
       // Inline function 'kotlin.collections.sumOf' call
       var sum = 0;
       var tmp0_iterator_1 = candidates.j();
@@ -20229,7 +20231,7 @@ protoOf(Game).f2j = function () {
         while (tmp0_iterator_2.k()) {
           var item = tmp0_iterator_2.l();
           // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
-          var tmp$ret$12 = to(item, sacrificeForDeaths$_anonymous_$deathWorth_n263ku(alive, this, outletWorth, item) - this.e2j(item) | 0);
+          var tmp$ret$12 = to(item, sacrificeForDeaths$_anonymous_$deathWorth_n263ku(alive, this, outletWorth, item) - this.g2j(item) | 0);
           destination_1.h(tmp$ret$12);
         }
         var iterator = destination_1.j();
@@ -20268,12 +20270,12 @@ protoOf(Game).f2j = function () {
       var gain = _destruct__k2r9zo.de();
       if (gain <= 0 && !finish)
         return Unit_instance;
-      this.p2i(pick);
-      this.d2g(a, outlet);
+      this.r2i(pick);
+      this.f2g(a, outlet);
     }
      while (inductionVariable < 30);
 };
-protoOf(Game).g2j = function (x) {
+protoOf(Game).i2j = function (x) {
   if (x <= 0 || this.z29_1 > 6)
     return Unit_instance;
   // Inline function 'kotlin.comparisons.minOf' call
@@ -20382,12 +20384,12 @@ protoOf(Game).g2j = function (x) {
     this.z29_1 = this.z29_1 + 1 | 0;
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var it_1 = this.g2h(hit);
+    var it_1 = this.i2h(hit);
     this.s29_1 = this.s29_1 + it_1 | 0;
     this.z29_1 = this.z29_1 - 1 | 0;
   }
 };
-protoOf(Game).h2j = function (r) {
+protoOf(Game).j2j = function (r) {
   var tmp;
   if (r.v24_1) {
     var tmp_0 = first(r.x23_1).ae_1;
@@ -20411,7 +20413,7 @@ protoOf(Game).h2j = function (r) {
   }
   return tmp;
 };
-protoOf(Game).y2h = function () {
+protoOf(Game).a2i = function () {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
@@ -20500,7 +20502,7 @@ protoOf(Game).y2h = function () {
   }
   return tmp_2 + imul(6, tmp$ret$4) | 0;
 };
-protoOf(Game).i2j = function (c, x) {
+protoOf(Game).k2j = function (c, x) {
   var tmp0_elvis_lhs = c.e24_1;
   var tmp;
   if (tmp0_elvis_lhs == null) {
@@ -20566,7 +20568,7 @@ protoOf(Game).i2j = function (c, x) {
   }
   return tmp$ret$6;
 };
-protoOf(Game).v2i = function () {
+protoOf(Game).x2i = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -20594,11 +20596,11 @@ protoOf(Game).v2i = function () {
     }
     // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
     var it = maxElem;
-    var maxValue = this.v2h(ensureNotNull(it.j27_1));
+    var maxValue = this.x2h(ensureNotNull(it.j27_1));
     do {
       var e = iterator.l();
       // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
-      var v = this.v2h(ensureNotNull(e.j27_1));
+      var v = this.x2h(ensureNotNull(e.j27_1));
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
@@ -20616,7 +20618,7 @@ protoOf(Game).v2i = function () {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_0;
     // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
-    if (this.v2h(ensureNotNull(tmp0_safe_receiver.j27_1)) > 0) {
+    if (this.x2h(ensureNotNull(tmp0_safe_receiver.j27_1)) > 0) {
       tmp_0 = tmp0_safe_receiver;
     } else {
       tmp_0 = null;
@@ -20664,10 +20666,10 @@ protoOf(Game).v2i = function () {
       this.w28_1.g2(element_1);
     }
   }
-  this.k2i(ensureNotNull(e_0.j27_1), true);
+  this.m2i(ensureNotNull(e_0.j27_1), true);
 };
-protoOf(Game).j2j = function (c) {
-  var tmp = this.v2h(c) + (c.x1v_1.i1i_1.equals(Kind_ROCK_getInstance()) ? imul(2, c.x1v_1.m1i_1) : 0) | 0;
+protoOf(Game).l2j = function (c) {
+  var tmp = this.x2h(c) + (c.x1v_1.i1i_1.equals(Kind_ROCK_getInstance()) ? imul(2, c.x1v_1.m1i_1) : 0) | 0;
   var tmp_0;
   var tmp_1;
   if (c.g2d()) {
@@ -20683,7 +20685,7 @@ protoOf(Game).j2j = function (c) {
   }
   return (tmp + tmp_0 | 0) + 1 | 0;
 };
-protoOf(Game).x2i = function () {
+protoOf(Game).z2i = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -20695,7 +20697,7 @@ protoOf(Game).x2i = function () {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
-      if (!(element.j27_1 == null) && element.b2e('artifact') && !element.b2e('land') && !element.j27_1.w1w_1 && !element.j27_1.f1z_1) {
+      if (!(element.j27_1 == null) && element.d2e('artifact') && !element.d2e('land') && !element.j27_1.w1w_1 && !element.j27_1.f1z_1) {
         destination.h(element);
       }
     }
@@ -20711,11 +20713,11 @@ protoOf(Game).x2i = function () {
     }
     // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
     var it = maxElem;
-    var maxValue = this.j2j(ensureNotNull(it.j27_1));
+    var maxValue = this.l2j(ensureNotNull(it.j27_1));
     do {
       var e = iterator.l();
       // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
-      var v = this.j2j(ensureNotNull(e.j27_1));
+      var v = this.l2j(ensureNotNull(e.j27_1));
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
@@ -20726,17 +20728,17 @@ protoOf(Game).x2i = function () {
   }
   var e_0 = tmp$ret$3;
   if (e_0 == null) {
-    this.q2g(1, new TokenKind(1, setOf(['Artifact', 'Creature']), setOf_0('Soldier')));
+    this.s2g(1, new TokenKind(1, setOf(['Artifact', 'Creature']), setOf_0('Soldier')));
     return Unit_instance;
   }
   // Inline function 'kotlin.also' call
-  var this_1 = this.k2i(ensureNotNull(e_0.j27_1), true, true);
+  var this_1 = this.m2i(ensureNotNull(e_0.j27_1), true, true);
   // Inline function 'kotlin.contracts.contract' call
   // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
   this_1.m27_1 = true;
   this_1.l27_1 = 1;
 };
-protoOf(Game).y2i = function () {
+protoOf(Game).a2j = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -20775,7 +20777,7 @@ protoOf(Game).y2i = function () {
       tmp = this.m2b(tmp0_safe_receiver);
     }
     var tmp1_elvis_lhs = tmp;
-    var maxValue = (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) + this.n2i(it).ae_1 | 0;
+    var maxValue = (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) + this.p2i(it).ae_1 | 0;
     do {
       var e = iterator.l();
       // Inline function 'com.mtgtrader.data.Game.populate.<anonymous>' call
@@ -20790,7 +20792,7 @@ protoOf(Game).y2i = function () {
         tmp_0 = this.m2b(tmp0_safe_receiver_0);
       }
       var tmp1_elvis_lhs_0 = tmp_0;
-      var v = (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) + this.n2i(e).ae_1 | 0;
+      var v = (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) + this.p2i(e).ae_1 | 0;
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
@@ -20808,11 +20810,11 @@ protoOf(Game).y2i = function () {
   }
   var e_0 = tmp_1;
   if (!(e_0.j27_1 == null))
-    this.k2i(e_0.j27_1, true, true);
+    this.m2i(e_0.j27_1, true, true);
   else
-    this.q2g(e_0.l27_1, new TokenKind(e_0.l27_1, e_0.p27_1, e_0.q27_1, e_0.f28_1, e_0.g28_1));
+    this.s2g(e_0.l27_1, new TokenKind(e_0.l27_1, e_0.p27_1, e_0.q27_1, e_0.f28_1, e_0.g28_1));
 };
-protoOf(Game).w2i = function () {
+protoOf(Game).y2i = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -20861,9 +20863,9 @@ protoOf(Game).w2i = function () {
     tmp = tmp0_elvis_lhs;
   }
   var e_0 = tmp;
-  this.k2i(ensureNotNull(e_0.j27_1), true, true);
+  this.m2i(ensureNotNull(e_0.j27_1), true, true);
 };
-protoOf(Game).u2i = function (colours, tapped) {
+protoOf(Game).w2i = function (colours, tapped) {
   var tmp = ManaOddsCalc_getInstance();
   // Inline function 'kotlin.collections.map' call
   var this_0 = this.v28_1;
@@ -20873,7 +20875,7 @@ protoOf(Game).u2i = function (colours, tapped) {
   while (tmp0_iterator.k()) {
     var item = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.rampLand.<anonymous>' call
-    var tmp$ret$0 = item.w2d_1;
+    var tmp$ret$0 = item.y2d_1;
     destination.h(tmp$ret$0);
   }
   var tmp_0 = tmp.a1q(colours, destination);
@@ -20927,13 +20929,13 @@ protoOf(Game).u2i = function (colours, tapped) {
   var e = this_2;
   // Inline function 'kotlin.collections.plusAssign' call
   this.w28_1.h(e);
-  this.c2h(e);
+  this.e2h(e);
 };
-protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
+protoOf(Game).m2j = function (c, free, x, fromGraveyard, copy) {
   var fromHand = !copy && !fromGraveyard && !this.u28_1.u(c) && this.o28_1.u(c);
   if (!copy && !this.u28_1.g2(c))
     if (!this.o28_1.g2(c) && fromGraveyard) {
-      this.a2i(listOf_0(c));
+      this.c2i(listOf_0(c));
     }
   this.p2a_1 = this.p2a_1 + (c.y23_1 + c.z23_1 | 0) | 0;
   if (!free) {
@@ -20959,9 +20961,9 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
             }
             var n = element.e2c_1 === -1 ? c.z1v_1 + x | 0 : element.e2c_1;
             if (element.d2c_1) {
-              this.o2g(n, 2);
+              this.q2g(n, 2);
             } else {
-              this.i2g(n, 2);
+              this.k2g(n, 2);
             }
           }
         }
@@ -20970,7 +20972,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
   }
   if (!free) {
     this.e29_1 = this.e29_1 + 1 | 0;
-    if (this.t28_1.l2e_1) {
+    if (this.t28_1.n2e_1) {
       var _iterator__ex2g4s_0 = toList(this.w28_1).j();
       while (_iterator__ex2g4s_0.k()) {
         var b_0 = _iterator__ex2g4s_0.l();
@@ -20981,15 +20983,15 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           if (this.e29_1 === 2 && tmp2_safe_receiver.u21_1.g26()) {
-            this.d2g(tmp2_safe_receiver.u21_1, b_0);
+            this.f2g(tmp2_safe_receiver.u21_1, b_0);
           }
           var _iterator__ex2g4s_1 = tmp2_safe_receiver.v21_1.j();
           while (_iterator__ex2g4s_1.k()) {
             var _destruct__k2r9zo = _iterator__ex2g4s_1.l();
             var kind = _destruct__k2r9zo.ce();
             var a = _destruct__k2r9zo.de();
-            if (this.l2j(c, kind) && (!a.q1u_1 || this.g2a_1.h(to(b_0, a)))) {
-              this.d2g(a, b_0);
+            if (this.n2j(c, kind) && (!a.q1u_1 || this.g2a_1.h(to(b_0, a)))) {
+              this.f2g(a, b_0);
             }
           }
         }
@@ -20998,7 +21000,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
     var tmp = c.g23_1;
     var tmp_0;
     var tmp_1;
-    if (this.t28_1.n2f_1 && this.e29_1 === 1) {
+    if (this.t28_1.p2f_1 && this.e29_1 === 1) {
       var tmp$ret$2;
       $l$block_2: {
         // Inline function 'kotlin.collections.any' call
@@ -21035,7 +21037,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
       tmp_0 = 0;
     }
     var cascades = tmp + tmp_0 | 0;
-    if (cascades > 0 && this.t28_1.n2f_1) {
+    if (cascades > 0 && this.t28_1.p2f_1) {
       // Inline function 'kotlin.takeIf' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
@@ -21064,12 +21066,12 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        this.a2i(tmp3_safe_receiver);
+        this.c2i(tmp3_safe_receiver);
         var this_2 = this.o28_1;
         addAll(this_2, tmp3_safe_receiver);
       }
     }
-    if (this.t28_1.n2f_1 && c.c1w_1) {
+    if (this.t28_1.p2f_1 && c.c1w_1) {
       var _iterator__ex2g4s_2 = toList(this.w28_1).j();
       while (_iterator__ex2g4s_2.k()) {
         var b_1 = _iterator__ex2g4s_2.l();
@@ -21082,7 +21084,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
           tmp_4 = false;
         }
         if (tmp_4) {
-          this.m2j(c.z1v_1 + x | 0);
+          this.o2j(c.z1v_1 + x | 0);
         }
       }
     }
@@ -21094,10 +21096,10 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         var index = inductionVariable;
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.m2j((c.z1v_1 + x | 0) - 1 | 0);
+        this.o2j((c.z1v_1 + x | 0) - 1 | 0);
       }
        while (inductionVariable < cascades);
-    if (this.t28_1.w2f_1 && fromHand) {
+    if (this.t28_1.y2f_1 && fromHand) {
       // Inline function 'kotlin.repeat' call
       var tmp$ret$11;
       $l$block_3: {
@@ -21134,7 +21136,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
           var index_0 = inductionVariable_0;
           inductionVariable_0 = inductionVariable_0 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-          this.g2j(c.z1v_1 + x | 0);
+          this.i2j(c.z1v_1 + x | 0);
         }
          while (inductionVariable_0 < times);
     }
@@ -21162,7 +21164,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         var index_1 = inductionVariable_1;
         inductionVariable_1 = inductionVariable_1 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.b2h();
+        this.d2h();
       }
        while (inductionVariable_1 < times_0);
     // Inline function 'kotlin.repeat' call
@@ -21174,11 +21176,11 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         var index_2 = inductionVariable_2;
         inductionVariable_2 = inductionVariable_2 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.e2h(WinOddsCalc$Game$wantedGate$ref(this));
+        this.g2h(WinOddsCalc$Game$wantedGate$ref(this));
       }
        while (inductionVariable_2 < times_1);
     if (c.m1y_1) {
-      this.e2h(WinOddsCalc$Game$cast$lambda(this));
+      this.g2h(WinOddsCalc$Game$cast$lambda(this));
     }
   }
   if (c.x1v_1.i1i_1.equals(Kind_RAMP_getInstance()) && !(this.n29_1 && c.k1y_1 > 0)) {
@@ -21191,11 +21193,11 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         var index_3 = inductionVariable_3;
         inductionVariable_3 = inductionVariable_3 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.u2i(c.x1v_1.j1i_1, c.x1v_1.k1i_1);
+        this.w2i(c.x1v_1.j1i_1, c.x1v_1.k1i_1);
       }
        while (inductionVariable_3 < times_2);
     if (c.x1v_1.n1i_1) {
-      this.e2h(WinOddsCalc$Game$cast$lambda_0);
+      this.g2h(WinOddsCalc$Game$cast$lambda_0);
     }
   }
   if (!c.b1w_1) {
@@ -21248,14 +21250,14 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         var index_4 = inductionVariable_4;
         inductionVariable_4 = inductionVariable_4 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.o2g(c.m1w_1, 3);
-        this.i2g(c.o1w_1, 3);
+        this.q2g(c.m1w_1, 3);
+        this.k2g(c.o1w_1, 3);
         if (c.d1z_1) {
-          this.o2g(x, 3);
+          this.q2g(x, 3);
         }
       }
        while (inductionVariable_4 < copies);
-    this.a2g(c.s1w_1);
+    this.c2g(c.s1w_1);
     var tmp4_safe_receiver = c.z1x_1;
     var tmp_9;
     if (tmp4_safe_receiver == null) {
@@ -21278,9 +21280,9 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.n2j(tmp5_safe_receiver, c.a1y_1);
+      this.p2j(tmp5_safe_receiver, c.a1y_1);
     }
-    this.t2g(c.k1w_1, c.i1w_1, c.d1y_1);
+    this.v2g(c.k1w_1, c.i1w_1, c.d1y_1);
     if (c.u20_1 > 0) {
       // Inline function 'kotlin.repeat' call
       // Inline function 'kotlin.comparisons.minOf' call
@@ -21292,11 +21294,11 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
           var index_5 = inductionVariable_5;
           inductionVariable_5 = inductionVariable_5 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-          this.q2g(c.u20_1, c.v20_1);
+          this.s2g(c.u20_1, c.v20_1);
         }
          while (inductionVariable_5 < times_3);
     }
-    this.n2g(c.j21_1);
+    this.p2g(c.j21_1);
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
@@ -21314,7 +21316,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
     while (tmp0_iterator_5.k()) {
       var element_5 = tmp0_iterator_5.l();
       // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-      this.x2g(element_5);
+      this.z2g(element_5);
     }
     if (c.y1z_1) {
       var tmp_11 = this;
@@ -21377,7 +21379,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var o = this.g2h(element_8);
+        var o = this.i2h(element_8);
         this.s29_1 = this.s29_1 + o | 0;
       }
       this.z29_1 = this.z29_1 - 1 | 0;
@@ -21394,7 +21396,7 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         while (tmp0_iterator_9.k()) {
           var element_9 = tmp0_iterator_9.l();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-          if (element_9.b2e('artifact') && !element_9.m27_1 && !element_9.b2e('land')) {
+          if (element_9.d2e('artifact') && !element_9.m27_1 && !element_9.d2e('land')) {
             destination_2.h(element_9);
           }
         }
@@ -21430,10 +21432,10 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
         // Inline function 'kotlin.contracts.contract' call
         tmp6_safe_receiver.m27_1 = true;
         tmp6_safe_receiver.l27_1 = 0;
-        this.c2g(tmp6_safe_receiver, c.f23_1);
+        this.e2g(tmp6_safe_receiver, c.f23_1);
       }
     }
-    this.d2g(c.l1z_1);
+    this.f2g(c.l1z_1);
     if (c.n23_1) {
       var tmp_14;
       if (!copy) {
@@ -21476,17 +21478,17 @@ protoOf(Game).k2j = function (c, free, x, fromGraveyard, copy) {
     }
     return c.r1w_1;
   }
-  this.k2i(c, free);
+  this.m2i(c, free);
   return 0;
 };
-protoOf(Game).g2h = function (c, free, x, fromGraveyard, copy, $super) {
+protoOf(Game).i2h = function (c, free, x, fromGraveyard, copy, $super) {
   free = free === VOID ? false : free;
   x = x === VOID ? 0 : x;
   fromGraveyard = fromGraveyard === VOID ? false : fromGraveyard;
   copy = copy === VOID ? false : copy;
-  return $super === VOID ? this.k2j(c, free, x, fromGraveyard, copy) : $super.k2j.call(this, c, free, x, fromGraveyard, copy);
+  return $super === VOID ? this.m2j(c, free, x, fromGraveyard, copy) : $super.m2j.call(this, c, free, x, fromGraveyard, copy);
 };
-protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
+protoOf(Game).q2j = function (c, cheated, token, haste, extraTypes) {
   var tmp;
   if (c.g21_1 && !token) {
     var tmp$ret$3;
@@ -21564,15 +21566,15 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
   e_0.z27_1 = source;
   // Inline function 'kotlin.collections.plusAssign' call
   this.w28_1.h(e_0);
-  this.c2g(e_0, card.w1y_1 + card.z22_1 | 0);
+  this.e2g(e_0, card.w1y_1 + card.z22_1 | 0);
   if (card.x1w_1 && card.a23_1 > 0) {
-    var tmp4_safe_receiver = this.m2h();
+    var tmp4_safe_receiver = this.o2h();
     if (tmp4_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.c2g(tmp4_safe_receiver, card.a23_1);
+      this.e2g(tmp4_safe_receiver, card.a23_1);
     }
   }
   if (card.e23_1 > 0)
@@ -21638,16 +21640,16 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
     return e_0;
   this.y29_1 = this.y29_1 + 1 | 0;
   if (token) {
-    this.l2g(1, card.m1x_1.u('Artifact'));
+    this.n2g(1, card.m1x_1.u('Artifact'));
   }
   if (token && card.c1w_1) {
-    this.m2g(e_0);
+    this.o2g(e_0);
   }
   if (card.c1w_1) {
-    this.p2g(e_0, false);
-    this.r2g(e_0);
+    this.r2g(e_0, false);
+    this.t2g(e_0);
   }
-  this.k2g(e_0);
+  this.m2g(e_0);
   var tmp5_safe_receiver = card.h1y_1;
   var tmp_2;
   if (tmp5_safe_receiver == null) {
@@ -21670,12 +21672,12 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    this.f2h(tmp6_safe_receiver);
+    this.h2h(tmp6_safe_receiver);
   }
   var germ = card.e1x_1;
   if (card.w1w_1 && !(germ == null)) {
     // Inline function 'kotlin.also' call
-    var this_3 = this.s2g(germ);
+    var this_3 = this.u2g(germ);
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
     // Inline function 'kotlin.collections.plusAssign' call
@@ -21683,7 +21685,7 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
     e_0.y27_1 = this_3;
   } else {
     if (card.x1w_1) {
-      var tmp7_safe_receiver = this.m2h();
+      var tmp7_safe_receiver = this.o2h();
       if (tmp7_safe_receiver == null)
         null;
       else {
@@ -21727,7 +21729,7 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
         tmp_4 = false;
       }
       if (tmp_4) {
-        var tmp8_safe_receiver = this.m2h();
+        var tmp8_safe_receiver = this.o2h();
         if (tmp8_safe_receiver == null)
           null;
         else {
@@ -21814,8 +21816,8 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
       tmp9_safe_receiver.y27_1 = e_0;
     }
   }
-  this.o2g(card.m1w_1, 3);
-  this.i2g(card.o1w_1, 3);
+  this.q2g(card.m1w_1, 3);
+  this.k2g(card.o1w_1, 3);
   var tmp10_safe_receiver = card.h20_1;
   var tmp_9 = tmp10_safe_receiver;
   if ((tmp_9 == null ? null : new Char(tmp_9)) == null)
@@ -21870,9 +21872,9 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
       sum = tmp_11 + (tmp3_elvis_lhs == null ? 0 : tmp3_elvis_lhs) | 0;
     }
     var tmp$ret$32 = sum;
-    this.o2g(tmp$ret$32, 3);
+    this.q2g(tmp$ret$32, 3);
   }
-  this.a2g(card.s1w_1);
+  this.c2g(card.s1w_1);
   var tmp11_safe_receiver = card.z1x_1;
   var tmp_14;
   if (tmp11_safe_receiver == null) {
@@ -21895,10 +21897,10 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    this.n2j(tmp12_safe_receiver, card.a1y_1);
+    this.p2j(tmp12_safe_receiver, card.a1y_1);
   }
-  this.t2g(card.k1w_1, card.i1w_1, card.d1y_1);
-  this.n2g(card.j21_1);
+  this.v2g(card.k1w_1, card.i1w_1, card.d1y_1);
+  this.p2g(card.j21_1);
   // Inline function 'kotlin.collections.forEach' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
@@ -21916,7 +21918,7 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
   while (tmp0_iterator_7.k()) {
     var element_9 = tmp0_iterator_7.l();
     // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
-    this.x2g(element_9);
+    this.z2g(element_9);
   }
   this.s29_1 = this.s29_1 + card.r1w_1 | 0;
   if (card.y1z_1) {
@@ -21950,7 +21952,7 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
     }
     tmp_16.s29_1 = tmp_17 + tmp$ret$40 | 0;
   }
-  this.d2g(card.l1z_1, e_0);
+  this.f2g(card.l1z_1, e_0);
   if (card.m23_1 > 0) {
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
@@ -21969,29 +21971,29 @@ protoOf(Game).o2j = function (c, cheated, token, haste, extraTypes) {
     while (tmp0_iterator_10.k()) {
       var element_12 = tmp0_iterator_10.l();
       // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
-      this.c2g(element_12, card.m23_1);
+      this.e2g(element_12, card.m23_1);
     }
   }
   if (card.r24_1 > 0) {
-    this.r2i(e_0, card.r24_1);
+    this.t2i(e_0, card.r24_1);
   }
   if (card.i23_1 > 0) {
-    this.m2j(card.i23_1);
+    this.o2j(card.i23_1);
   }
   // Inline function 'kotlin.collections.isNotEmpty' call
   if (!card.a25_1.n()) {
-    this.o2i(e_0, 0);
+    this.q2i(e_0, 0);
   }
   this.y29_1 = this.y29_1 - 1 | 0;
   return e_0;
 };
-protoOf(Game).k2i = function (c, cheated, token, haste, extraTypes, $super) {
+protoOf(Game).m2i = function (c, cheated, token, haste, extraTypes, $super) {
   token = token === VOID ? false : token;
   haste = haste === VOID ? false : haste;
   extraTypes = extraTypes === VOID ? emptySet() : extraTypes;
-  return $super === VOID ? this.o2j(c, cheated, token, haste, extraTypes) : $super.o2j.call(this, c, cheated, token, haste, extraTypes);
+  return $super === VOID ? this.q2j(c, cheated, token, haste, extraTypes) : $super.q2j.call(this, c, cheated, token, haste, extraTypes);
 };
-protoOf(Game).m2j = function (most) {
+protoOf(Game).o2j = function (most) {
   if (this.z29_1 > 6)
     return Unit_instance;
   var tmp$ret$1;
@@ -22032,11 +22034,11 @@ protoOf(Game).m2j = function (most) {
   this.z29_1 = this.z29_1 + 1 | 0;
   // Inline function 'kotlin.let' call
   // Inline function 'kotlin.contracts.contract' call
-  var it_0 = this.g2h(hit);
+  var it_0 = this.i2h(hit);
   this.s29_1 = this.s29_1 + it_0 | 0;
   this.z29_1 = this.z29_1 - 1 | 0;
 };
-protoOf(Game).p2j = function () {
+protoOf(Game).r2j = function () {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
@@ -22046,7 +22048,7 @@ protoOf(Game).p2j = function () {
   while (tmp0_iterator.k()) {
     var element = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-    if (element.y2d_1 <= this.d29_1 && this.d29_1 <= element.a2e_1 && !element.z2d_1) {
+    if (element.a2e_1 <= this.d29_1 && this.d29_1 <= element.c2e_1 && !element.b2e_1) {
       destination.h(element);
     }
   }
@@ -22056,11 +22058,11 @@ protoOf(Game).p2j = function () {
   while (tmp0_iterator_0.k()) {
     var item = tmp0_iterator_0.l();
     // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-    var tmp$ret$3 = to(item.w2d_1, item.x2d_1);
+    var tmp$ret$3 = to(item.y2d_1, item.z2d_1);
     destination_0.h(tmp$ret$3);
   }
   var base = toMutableList(destination_0);
-  if (!this.t28_1.p2e_1)
+  if (!this.t28_1.r2e_1)
     return base;
   var _iterator__ex2g4s = this.w28_1.j();
   $l$loop_3: while (_iterator__ex2g4s.k()) {
@@ -22091,7 +22093,7 @@ protoOf(Game).p2j = function () {
     var tmp_1;
     if (c.n2b()) {
       var tmp2_safe_receiver = b.z27_1;
-      var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.y2d_1;
+      var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.a2e_1;
       tmp_1 = (tmp3_elvis_lhs == null ? 2147483647 : tmp3_elvis_lhs) > this.d29_1;
     } else {
       tmp_1 = false;
@@ -22178,7 +22180,7 @@ protoOf(Game).p2j = function () {
         while (tmp0_iterator_3.k()) {
           var element_2 = tmp0_iterator_3.l();
           // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-          if (element_2.b28_1 && !element_2.m27_1 && !this.o2h(element_2)) {
+          if (element_2.b28_1 && !element_2.m27_1 && !this.q2h(element_2)) {
             count_0 = count_0 + 1 | 0;
             checkCountOverflow(count_0);
           }
@@ -22187,7 +22189,7 @@ protoOf(Game).p2j = function () {
       }
       tmp_2 = tmp$ret$10;
     } else if (kind === 'artifact') {
-      tmp_2 = this.q2j();
+      tmp_2 = this.s2j();
     } else {
       var tmp$ret$12;
       $l$block_3: {
@@ -22208,7 +22210,7 @@ protoOf(Game).p2j = function () {
         while (tmp0_iterator_4.k()) {
           var element_3 = tmp0_iterator_4.l();
           // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-          if (element_3.b2e(kind)) {
+          if (element_3.d2e(kind)) {
             count_1 = count_1 + 1 | 0;
             checkCountOverflow(count_1);
           }
@@ -22252,7 +22254,7 @@ protoOf(Game).p2j = function () {
   }
   if (tmp$ret$14) {
     // Inline function 'kotlin.takeIf' call
-    var this_6 = this.q2j();
+    var this_6 = this.s2j();
     // Inline function 'kotlin.contracts.contract' call
     var tmp_9;
     // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
@@ -22273,7 +22275,7 @@ protoOf(Game).p2j = function () {
   }
   return base;
 };
-protoOf(Game).q2j = function () {
+protoOf(Game).s2j = function () {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
@@ -22293,7 +22295,7 @@ protoOf(Game).q2j = function () {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.spareArtifacts.<anonymous>' call
-      if (element.b2e('artifact') && !element.m27_1 && element.z27_1 == null && !this.o2h(element)) {
+      if (element.d2e('artifact') && !element.m27_1 && element.z27_1 == null && !this.q2h(element)) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -22302,7 +22304,7 @@ protoOf(Game).q2j = function () {
   }
   return tmp$ret$0;
 };
-protoOf(Game).l2j = function (c, kind) {
+protoOf(Game).n2j = function (c, kind) {
   switch (kind) {
     case null:
       return true;
@@ -22314,7 +22316,7 @@ protoOf(Game).l2j = function (c, kind) {
       return this.s2a(c, kind);
   }
 };
-protoOf(Game).i2i = function (l, tapped) {
+protoOf(Game).k2i = function (l, tapped) {
   var tmp;
   var tmp_0;
   if (tapped) {
@@ -22364,9 +22366,9 @@ protoOf(Game).i2i = function (l, tapped) {
   var e = this_1;
   // Inline function 'kotlin.collections.plusAssign' call
   this.w28_1.h(e);
-  this.c2h(e);
+  this.e2h(e);
 };
-protoOf(Game).n2i = function (b) {
+protoOf(Game).p2i = function (b) {
   var tmp = b.l27_1 + b.r27_1 | 0;
   var tmp0_safe_receiver = b.j27_1;
   var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.g1y_1;
@@ -22377,7 +22379,7 @@ protoOf(Game).n2i = function (b) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.gearPower.<anonymous>' call
-    tmp_0 = this.u2g(tmp1_safe_receiver);
+    tmp_0 = this.w2g(tmp1_safe_receiver);
   }
   var tmp2_elvis_lhs = tmp_0;
   var tmp_1 = tmp + (tmp2_elvis_lhs == null ? 0 : tmp2_elvis_lhs) | 0;
@@ -22389,7 +22391,7 @@ protoOf(Game).n2i = function (b) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.gearPower.<anonymous>' call
-    tmp_2 = this.u2g(tmp3_safe_receiver);
+    tmp_2 = this.w2g(tmp3_safe_receiver);
   }
   var tmp4_elvis_lhs = tmp_2;
   var base = tmp_1 + (tmp4_elvis_lhs == null ? 0 : tmp4_elvis_lhs) | 0;
@@ -22444,7 +22446,7 @@ protoOf(Game).n2i = function (b) {
             if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.d1w_1) === true) {
               tmp_6 = true;
             } else {
-              tmp_6 = (element.b2e('artifact') && !element.m27_1);
+              tmp_6 = (element.d2e('artifact') && !element.m27_1);
             }
             if (tmp_6) {
               count = count + 1 | 0;
@@ -22500,12 +22502,12 @@ protoOf(Game).n2i = function (b) {
     plus = tmp_3 + tmp_4 | 0;
     double = double || g.b1x_1;
   }
-  return to(((base + plus | 0) + this.r2j(b) | 0) + this.z28_1 | 0, double);
+  return to(((base + plus | 0) + this.t2j(b) | 0) + this.z28_1 | 0, double);
 };
-protoOf(Game).r2j = function (b) {
-  var tmp = this.s2j(b);
+protoOf(Game).t2j = function (b) {
+  var tmp = this.u2j(b);
   var tmp_0;
-  if (!this.t28_1.d2e_1) {
+  if (!this.t28_1.f2e_1) {
     tmp_0 = 0;
   } else {
     // Inline function 'kotlin.collections.sumOf' call
@@ -22558,7 +22560,7 @@ protoOf(Game).r2j = function (b) {
                     tmp$ret$1 = (contains_1(this.q28_1, b.j27_1) && !b.b28_1);
                     break;
                   default:
-                    tmp$ret$1 = b.b2e(element_1);
+                    tmp$ret$1 = b.d2e(element_1);
                     break;
                 }
                 if (tmp$ret$1) {
@@ -22571,7 +22573,7 @@ protoOf(Game).r2j = function (b) {
             tmp_4 = tmp$ret$0;
           }
           var fits = tmp_4;
-          sum_0 = tmp_3 + (fits && !(element_0.s2c_1 && element === b) && (!element_0.t2c_1 || this.t2j()) ? element_0.r2c_1 : 0) | 0;
+          sum_0 = tmp_3 + (fits && !(element_0.s2c_1 && element === b) && (!element_0.t2c_1 || this.v2j()) ? element_0.r2c_1 : 0) | 0;
         }
         tmp_2 = sum_0;
       }
@@ -22582,14 +22584,14 @@ protoOf(Game).r2j = function (b) {
   }
   return tmp + tmp_0 | 0;
 };
-protoOf(Game).u2j = function () {
+protoOf(Game).w2j = function () {
   // Inline function 'kotlin.getValue' call
   var this_0 = this.n2a_1;
   chosenType$factory();
   return this_0.z1();
 };
-protoOf(Game).s2j = function (b) {
-  var tmp0_elvis_lhs = this.u2j();
+protoOf(Game).u2j = function (b) {
+  var tmp0_elvis_lhs = this.w2j();
   var tmp;
   if (tmp0_elvis_lhs == null) {
     return 0;
@@ -22598,7 +22600,7 @@ protoOf(Game).s2j = function (b) {
   }
   var kind = tmp;
   var tmp_0;
-  if (b.m27_1 && b.b2e(kind)) {
+  if (b.m27_1 && b.d2e(kind)) {
     // Inline function 'kotlin.collections.sumOf' call
     var sum = 0;
     var tmp0_iterator = this.w28_1.j();
@@ -22616,8 +22618,8 @@ protoOf(Game).s2j = function (b) {
   }
   return tmp_0;
 };
-protoOf(Game).v2j = function (t) {
-  var tmp0_elvis_lhs = this.u2j();
+protoOf(Game).x2j = function (t) {
+  var tmp0_elvis_lhs = this.w2j();
   var tmp;
   if (tmp0_elvis_lhs == null) {
     return Unit_instance;
@@ -22669,7 +22671,7 @@ protoOf(Game).v2j = function (t) {
       while (tmp0_iterator_0.k()) {
         var element_0 = tmp0_iterator_0.l();
         // Inline function 'com.mtgtrader.data.Game.copyNewTokens.<anonymous>.<anonymous>' call
-        if (element_0.b28_1 && element_0.m27_1 && element_0.k27_1 === t && element_0.b2e(kind)) {
+        if (element_0.b28_1 && element_0.m27_1 && element_0.k27_1 === t && element_0.d2e(kind)) {
           destination.h(element_0);
         }
       }
@@ -22679,12 +22681,12 @@ protoOf(Game).v2j = function (t) {
         // Inline function 'kotlin.also' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.copyNewTokens.<anonymous>.<anonymous>' call
-        this.q2g(e.l27_1, new TokenKind(e.l27_1, e.p27_1, e.q27_1, e.f28_1, e.g28_1, VOID, e.m28_1, e.u27_1)).w27_1 = e.w27_1;
+        this.s2g(e.l27_1, new TokenKind(e.l27_1, e.p27_1, e.q27_1, e.f28_1, e.g28_1, VOID, e.m28_1, e.u27_1)).w27_1 = e.w27_1;
       }
     }
      while (inductionVariable < times);
 };
-protoOf(Game).t2j = function () {
+protoOf(Game).v2j = function () {
   if (!this.o2a_1 && this.w28_1.m() >= 10)
     this.o2a_1 = true;
   return this.o2a_1;
@@ -22726,7 +22728,7 @@ protoOf(Game).q2a = function (b) {
     tmp = true;
   } else {
     var tmp_2;
-    if (this.t28_1.e2e_1) {
+    if (this.t28_1.g2e_1) {
       var tmp$ret$2;
       $l$block_2: {
         // Inline function 'kotlin.collections.any' call
@@ -22764,7 +22766,7 @@ protoOf(Game).q2a = function (b) {
               tmp$ret$3 = b.h28_1;
               break;
             default:
-              tmp$ret$3 = b.b2e(k);
+              tmp$ret$3 = b.d2e(k);
               break;
           }
           if (tmp$ret$3) {
@@ -22782,7 +22784,7 @@ protoOf(Game).q2a = function (b) {
   }
   return tmp;
 };
-protoOf(Game).p2d = function (turns) {
+protoOf(Game).r2d = function (turns) {
   var inductionVariable = 1;
   if (inductionVariable <= turns)
     do {
@@ -22798,7 +22800,7 @@ protoOf(Game).p2d = function (turns) {
       this.x29_1 = false;
       this.i2a_1 = false;
       this.j2a_1 = 0;
-      this.z2f();
+      this.b2g();
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
@@ -22816,7 +22818,7 @@ protoOf(Game).p2d = function (turns) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-          tmp = tmp0_safe_receiver.a2e_1 < t;
+          tmp = tmp0_safe_receiver.c2e_1 < t;
         }
         if (tmp === true) {
           destination.h(element);
@@ -22826,7 +22828,7 @@ protoOf(Game).p2d = function (turns) {
       while (tmp0_iterator_0.k()) {
         var element_0 = tmp0_iterator_0.l();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-        this.p2i(element_0);
+        this.r2i(element_0);
       }
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.filter' call
@@ -22848,7 +22850,7 @@ protoOf(Game).p2d = function (turns) {
         element_2.s27_1 = element_2.s27_1 - 1 | 0;
         element_2.t27_1 = t;
       }
-      if (this.t28_1.x2e_1) {
+      if (this.t28_1.z2e_1) {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_2 = this.w28_1;
@@ -22917,7 +22919,7 @@ protoOf(Game).p2d = function (turns) {
             tmp_0 = tmp1_elvis_lhs;
           }
           var kind = tmp_0;
-          this.f2g(kind, 1);
+          this.h2g(kind, 1);
           var tmp$ret$19;
           $l$block_1: {
             // Inline function 'kotlin.collections.count' call
@@ -22950,7 +22952,7 @@ protoOf(Game).p2d = function (turns) {
           }
         }
       }
-      if (this.t28_1.x2e_1) {
+      if (this.t28_1.z2e_1) {
         // Inline function 'kotlin.collections.mapNotNull' call
         // Inline function 'kotlin.collections.mapNotNullTo' call
         var this_6 = this.w28_1;
@@ -22993,7 +22995,7 @@ protoOf(Game).p2d = function (turns) {
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          if (this.u2g('artifact') >= tmp2_safe_receiver) {
+          if (this.w2g('artifact') >= tmp2_safe_receiver) {
             this.f29_1 = true;
             return t;
           }
@@ -23036,7 +23038,7 @@ protoOf(Game).p2d = function (turns) {
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          this.a2g(tmp3_safe_receiver);
+          this.c2g(tmp3_safe_receiver);
         }
         // Inline function 'kotlin.collections.forEach' call
         var tmp0_iterator_9 = toList(this.w28_1).j();
@@ -23050,7 +23052,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             if (tmp0_safe_receiver_5.t21_1.g26()) {
-              this.d2g(tmp0_safe_receiver_5.t21_1, element_9);
+              this.f2g(tmp0_safe_receiver_5.t21_1, element_9);
             }
           }
         }
@@ -23071,7 +23073,7 @@ protoOf(Game).p2d = function (turns) {
         sum_0 = tmp_6 + (tmp_7 + (tmp3_elvis_lhs == null ? 0 : tmp3_elvis_lhs) | 0) | 0;
       }
       var tmp$ret$38 = sum_0;
-      this.a2g(1 + tmp$ret$38 | 0);
+      this.c2g(1 + tmp$ret$38 | 0);
       this.c2a_1 = false;
       // Inline function 'kotlin.collections.forEach' call
       var tmp0_iterator_11 = toList(this.w28_1).j();
@@ -23101,7 +23103,7 @@ protoOf(Game).p2d = function (turns) {
           while (tmp0_iterator_13.k()) {
             var element_13 = tmp0_iterator_13.l();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-            this.x2g(element_13);
+            this.z2g(element_13);
           }
         }
       }
@@ -23133,7 +23135,7 @@ protoOf(Game).p2d = function (turns) {
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          this.f2h(tmp2_safe_receiver_1);
+          this.h2h(tmp2_safe_receiver_1);
         }
       }
       // Inline function 'kotlin.collections.filter' call
@@ -23166,9 +23168,9 @@ protoOf(Game).p2d = function (turns) {
       var _iterator__ex2g4s_0 = toList(destination_6).j();
       while (_iterator__ex2g4s_0.k()) {
         var e_0 = _iterator__ex2g4s_0.l();
-        this.o2i(e_0, t - e_0.k27_1 | 0);
+        this.q2i(e_0, t - e_0.k27_1 | 0);
       }
-      if (this.t28_1.y2e_1) {
+      if (this.t28_1.a2f_1) {
         // Inline function 'kotlin.collections.forEach' call
         var tmp0_iterator_16 = toList(this.w28_1).j();
         while (tmp0_iterator_16.k()) {
@@ -23181,7 +23183,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             if (tmp0_safe_receiver_10.m1z_1.g26()) {
-              this.d2g(tmp0_safe_receiver_10.m1z_1, element_16);
+              this.f2g(tmp0_safe_receiver_10.m1z_1, element_16);
             }
           }
         }
@@ -23191,12 +23193,12 @@ protoOf(Game).p2d = function (turns) {
         var c = _iterator__ex2g4s_1.l();
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var it = this.g2h(c, VOID, VOID, VOID, true);
+        var it = this.i2h(c, VOID, VOID, VOID, true);
         this.s29_1 = this.s29_1 + it | 0;
       }
       var mazeSpent = 0;
       if (this.n29_1) {
-        if (this.l2h(this.p2j()) == null)
+        if (this.n2h(this.r2j()) == null)
           null;
         else {
           // Inline function 'kotlin.let' call
@@ -23219,9 +23221,9 @@ protoOf(Game).p2d = function (turns) {
         sum_1 = tmp_13 + (tmp1_elvis_lhs_1 == null ? 0 : tmp1_elvis_lhs_1) | 0;
       }
       tmp_12.p2a_1 = 1 + sum_1 | 0;
-      this.w2j();
-      this.x2j(emptyList());
-      var pool = plus_0(this.p2j(), this.g29_1);
+      this.y2j();
+      this.z2j(emptyList());
+      var pool = plus_0(this.r2j(), this.g29_1);
       this.g29_1.h2();
       var _iterator__ex2g4s_2 = this.h29_1.j();
       while (_iterator__ex2g4s_2.k()) {
@@ -23236,7 +23238,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             pool = tmp5_safe_receiver;
-            this.d2g(a, e_1);
+            this.f2g(a, e_1);
           }
         }
       }
@@ -23246,7 +23248,7 @@ protoOf(Game).p2d = function (turns) {
         pool = tmp6_elvis_lhs == null ? emptyList() : tmp6_elvis_lhs;
       }
       if (this.n29_1 && mazeSpent > 0) {
-        var tmp7_safe_receiver = this.l2h(pool);
+        var tmp7_safe_receiver = this.n2h(pool);
         if (tmp7_safe_receiver == null)
           null;
         else {
@@ -23258,7 +23260,7 @@ protoOf(Game).p2d = function (turns) {
       if (this.m29_1)
         return t;
       this.o29_1 = 0;
-      var bigX = this.l29_1 ? this.k2h(pool) : null;
+      var bigX = this.l29_1 ? this.m2h(pool) : null;
       var tmp_14;
       if (bigX == null) {
         tmp_14 = 0;
@@ -23274,7 +23276,7 @@ protoOf(Game).p2d = function (turns) {
           while (tmp0_iterator_18.k()) {
             var element_18 = tmp0_iterator_18.l();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-            if (!element_18.n2b() && this.q2h(pool, this.j2h(element_18)) && !element_18.d1z_1) {
+            if (!element_18.n2b() && this.s2h(pool, this.l2h(element_18)) && !element_18.d1z_1) {
               destination_7.h(element_18);
             }
           }
@@ -23299,7 +23301,7 @@ protoOf(Game).p2d = function (turns) {
       }
       var biggest = tmp_14;
       if (!(bigX == null) && bigX.be_1 >= 2 && (bigX.ae_1.z1v_1 + bigX.be_1 | 0) > biggest) {
-        this.t2h(pool, this.j2h(bigX.ae_1));
+        this.v2h(pool, this.l2h(bigX.ae_1));
         // Inline function 'kotlin.collections.forEach' call
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
@@ -23309,7 +23311,7 @@ protoOf(Game).p2d = function (turns) {
         while (tmp0_iterator_19.k()) {
           var element_19 = tmp0_iterator_19.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          if (this.o2h(element_19)) {
+          if (this.q2h(element_19)) {
             destination_8.h(element_19);
           }
         }
@@ -23318,9 +23320,9 @@ protoOf(Game).p2d = function (turns) {
           var element_20 = tmp0_iterator_20.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           this.w28_1.g2(element_20);
-          this.s2h(element_20, true);
+          this.u2h(element_20, true);
         }
-        this.g2h(bigX.ae_1, VOID, bigX.be_1);
+        this.i2h(bigX.ae_1, VOID, bigX.be_1);
         pool = emptyList();
         var tmp$ret$67;
         $l$block_3: {
@@ -23361,7 +23363,7 @@ protoOf(Game).p2d = function (turns) {
         var _iterator__ex2g4s_3 = sortedWith(destination_9, tmp$ret$71).j();
         $l$loop_0: while (_iterator__ex2g4s_3.k()) {
           var c_0 = _iterator__ex2g4s_3.l();
-          var tmp9_elvis_lhs = this.r2h(pool, this.j2h(c_0), c_0.z1v_1);
+          var tmp9_elvis_lhs = this.t2h(pool, this.l2h(c_0), c_0.z1v_1);
           var tmp_16;
           if (tmp9_elvis_lhs == null) {
             continue $l$loop_0;
@@ -23372,7 +23374,7 @@ protoOf(Game).p2d = function (turns) {
           pool = left;
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          var it_0 = this.g2h(c_0);
+          var it_0 = this.i2h(c_0);
           this.s29_1 = this.s29_1 + it_0 | 0;
           break $l$loop_0;
         }
@@ -23398,7 +23400,7 @@ protoOf(Game).p2d = function (turns) {
         var c_1 = _iterator__ex2g4s_4.l();
         if (!this.o28_1.u(c_1))
           continue $l$loop_2;
-        var tmp10_elvis_lhs = this.r2h(pool, this.j2h(c_1), c_1.z1v_1);
+        var tmp10_elvis_lhs = this.t2h(pool, this.l2h(c_1), c_1.z1v_1);
         var tmp_18;
         if (tmp10_elvis_lhs == null) {
           continue $l$loop_2;
@@ -23407,9 +23409,9 @@ protoOf(Game).p2d = function (turns) {
         }
         var left_0 = tmp_18;
         pool = left_0;
-        this.g2h(c_1);
+        this.i2h(c_1);
       }
-      var tmp11_subject = this.y2j(this.u2h(pool));
+      var tmp11_subject = this.a2k(this.w2h(pool));
       switch (tmp11_subject == null ? -1 : tmp11_subject.o2_1) {
         case 0:
         case 1:
@@ -23424,7 +23426,7 @@ protoOf(Game).p2d = function (turns) {
           noWhenBranchMatchedException();
           break;
       }
-      var tmp12_safe_receiver = this.k2h(pool);
+      var tmp12_safe_receiver = this.m2h(pool);
       if (tmp12_safe_receiver == null)
         null;
       else {
@@ -23497,7 +23499,7 @@ protoOf(Game).p2d = function (turns) {
           while (tmp0_iterator_24.k()) {
             var element_26 = tmp0_iterator_24.l();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-            if (this.o2h(element_26)) {
+            if (this.q2h(element_26)) {
               destination_12.h(element_26);
             }
           }
@@ -23506,9 +23508,9 @@ protoOf(Game).p2d = function (turns) {
             var element_27 = tmp0_iterator_25.l();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             this.w28_1.g2(element_27);
-            this.s2h(element_27, true);
+            this.u2h(element_27, true);
           }
-          this.g2h(c_2, VOID, x);
+          this.i2h(c_2, VOID, x);
           pool = emptyList();
           var tmp$ret$88;
           $l$block_6: {
@@ -23531,23 +23533,23 @@ protoOf(Game).p2d = function (turns) {
             return t;
         }
       }
-      if (this.t28_1.p2f_1) {
-        this.z2j(pool);
+      if (this.t28_1.r2f_1) {
+        this.b2k(pool);
       }
-      var options = this.x2f();
+      var options = this.z2f();
       var i = 0;
       $l$loop_3: while (i < options.m()) {
         var c_3 = options.o(i);
-        var left_1 = this.o28_1.u(c_3) || this.u28_1.u(c_3) ? this.r2h(pool, this.j2h(c_3), c_3.z1v_1) : null;
-        if (left_1 == null && this.t28_1.o2f_1 && (this.o28_1.u(c_3) || this.u28_1.u(c_3))) {
-          var tmp13_safe_receiver = this.a2k(pool, c_3);
+        var left_1 = this.o28_1.u(c_3) || this.u28_1.u(c_3) ? this.t2h(pool, this.l2h(c_3), c_3.z1v_1) : null;
+        if (left_1 == null && this.t28_1.q2f_1 && (this.o28_1.u(c_3) || this.u28_1.u(c_3))) {
+          var tmp13_safe_receiver = this.c2k(pool, c_3);
           if (tmp13_safe_receiver == null)
             null;
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             pool = tmp13_safe_receiver;
-            left_1 = this.r2h(tmp13_safe_receiver, this.j2h(c_3), c_3.z1v_1);
+            left_1 = this.t2h(tmp13_safe_receiver, this.l2h(c_3), c_3.z1v_1);
           }
         }
         if (left_1 == null) {
@@ -23559,19 +23561,19 @@ protoOf(Game).p2d = function (turns) {
         var triggers = to(this.j29_1, this.k29_1);
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var it_1 = this.g2h(c_3);
+        var it_1 = this.i2h(c_3);
         this.s29_1 = this.s29_1 + it_1 | 0;
-        pool = this.x2j(pool);
+        pool = this.z2j(pool);
         if (this.o28_1.m() >= before || !triggers.equals(to(this.j29_1, this.k29_1))) {
-          options = this.x2f();
+          options = this.z2f();
           i = 0;
         } else {
           i = i + 1 | 0;
         }
       }
-      if (this.t28_1.h2f_1)
-        pool = this.b2k(pool);
-      pool = this.q2i(pool);
+      if (this.t28_1.j2f_1)
+        pool = this.d2k(pool);
+      pool = this.s2i(pool);
       var tmp$ret$93;
       $l$block_7: {
         // Inline function 'kotlin.collections.all' call
@@ -23591,7 +23593,7 @@ protoOf(Game).p2d = function (turns) {
       }
       if (tmp$ret$93)
         return t;
-      pool = this.s2i(pool);
+      pool = this.u2i(pool);
       var tmp$ret$95;
       $l$block_8: {
         // Inline function 'kotlin.collections.all' call
@@ -23611,7 +23613,7 @@ protoOf(Game).p2d = function (turns) {
       }
       if (tmp$ret$95)
         return t;
-      if (this.t28_1.o2f_1 && this.j29_1) {
+      if (this.t28_1.q2f_1 && this.j29_1) {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_18 = this.o28_1;
@@ -23625,7 +23627,7 @@ protoOf(Game).p2d = function (turns) {
           if (!element_31.x23_1.n()) {
             // Inline function 'kotlin.collections.sumOf' call
             var sum_2 = 0;
-            var tmp0_iterator_27 = this.h2j(element_31).j();
+            var tmp0_iterator_27 = this.j2j(element_31).j();
             while (tmp0_iterator_27.k()) {
               var element_32 = tmp0_iterator_27.l();
               var tmp_24 = sum_2;
@@ -23643,19 +23645,19 @@ protoOf(Game).p2d = function (turns) {
         var _iterator__ex2g4s_5 = toList(destination_13).j();
         $l$loop_4: while (_iterator__ex2g4s_5.k()) {
           var r = _iterator__ex2g4s_5.l();
-          var tmp14_elvis_lhs = this.r2h(pool, this.j2h(r), r.z1v_1);
+          var tmp14_elvis_lhs = this.t2h(pool, this.l2h(r), r.z1v_1);
           var tmp_25;
           if (tmp14_elvis_lhs == null) {
             continue $l$loop_4;
           } else {
             tmp_25 = tmp14_elvis_lhs;
           }
-          pool = plus_0(tmp_25, this.h2j(r));
-          this.g2h(r);
+          pool = plus_0(tmp_25, this.j2j(r));
+          this.i2h(r);
         }
       }
-      pool = this.x2j(pool);
-      if (this.t28_1.q2f_1) {
+      pool = this.z2j(pool);
+      if (this.t28_1.s2f_1) {
         var tmp$ret$103;
         $l$block_9: {
           // Inline function 'kotlin.collections.firstOrNull' call
@@ -23678,7 +23680,7 @@ protoOf(Game).p2d = function (turns) {
           // Inline function 'kotlin.contracts.contract' call
           $l$block_11: {
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-            var tmp0_elvis_lhs_0 = ManaOddsCalc_getInstance().f1q(plus_0(pool, this.i2h()), this.j2h(tmp15_safe_receiver));
+            var tmp0_elvis_lhs_0 = ManaOddsCalc_getInstance().f1q(plus_0(pool, this.k2h()), this.l2h(tmp15_safe_receiver));
             var tmp_26;
             if (tmp0_elvis_lhs_0 == null) {
               break $l$block_11;
@@ -23696,7 +23698,7 @@ protoOf(Game).p2d = function (turns) {
               sum_3 = tmp_27 + element_34.be_1 | 0;
             }
             var x_0 = sum_3;
-            var tmp1_safe_receiver_2 = this.i2j(tmp15_safe_receiver, x_0);
+            var tmp1_safe_receiver_2 = this.k2j(tmp15_safe_receiver, x_0);
             var tmp_28;
             if (tmp1_safe_receiver_2 == null) {
               tmp_28 = null;
@@ -23729,7 +23731,7 @@ protoOf(Game).p2d = function (turns) {
             while (tmp0_iterator_30.k()) {
               var element_35 = tmp0_iterator_30.l();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-              if (this.o2h(element_35)) {
+              if (this.q2h(element_35)) {
                 destination_14.h(element_35);
               }
             }
@@ -23738,12 +23740,12 @@ protoOf(Game).p2d = function (turns) {
               var element_36 = tmp0_iterator_31.l();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
               this.w28_1.g2(element_36);
-              this.s2h(element_36, true);
+              this.u2h(element_36, true);
             }
-            this.g2h(tmp15_safe_receiver, VOID, x_0);
+            this.i2h(tmp15_safe_receiver, VOID, x_0);
             pool = emptyList();
             if (this.q29_1.u(found)) {
-              this.a2i(listOf_0(found));
+              this.c2i(listOf_0(found));
             } else {
               var tmp$ret$113;
               $l$block_12: {
@@ -23767,14 +23769,14 @@ protoOf(Game).p2d = function (turns) {
               }
               this.p28_1.j2(tmp$ret$113);
             }
-            this.k2i(found, true);
+            this.m2i(found, true);
           }
         }
       }
-      var _iterator__ex2g4s_6 = (this.t28_1.l2f_1 ? listOf([false, true]) : listOf_0(false)).j();
+      var _iterator__ex2g4s_6 = (this.t28_1.n2f_1 ? listOf([false, true]) : listOf_0(false)).j();
       while (_iterator__ex2g4s_6.k()) {
         var tokens = _iterator__ex2g4s_6.l();
-        var tmp16_safe_receiver = this.h2h(pool, tokens);
+        var tmp16_safe_receiver = this.j2h(pool, tokens);
         var tmp_31;
         if (tmp16_safe_receiver == null) {
           tmp_31 = null;
@@ -23807,7 +23809,7 @@ protoOf(Game).p2d = function (turns) {
           while (tmp0_iterator_32.k()) {
             var element_38 = tmp0_iterator_32.l();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-            if (this.o2h(element_38)) {
+            if (this.q2h(element_38)) {
               destination_15.h(element_38);
             }
           }
@@ -23816,9 +23818,9 @@ protoOf(Game).p2d = function (turns) {
             var element_39 = tmp0_iterator_33.l();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             this.w28_1.g2(element_39);
-            this.s2h(element_39, true);
+            this.u2h(element_39, true);
           }
-          this.g2h(c_4, VOID, x_1);
+          this.i2h(c_4, VOID, x_1);
           pool = emptyList();
           var tmp$ret$121;
           $l$block_13: {
@@ -23841,13 +23843,13 @@ protoOf(Game).p2d = function (turns) {
             return t;
         }
       }
-      if (this.t28_1.i2f_1)
-        pool = this.c2k(pool);
-      if (this.t28_1.j2f_1)
-        pool = this.d2k(pool);
       if (this.t28_1.k2f_1)
         pool = this.e2k(pool);
-      pool = this.f2k(pool);
+      if (this.t28_1.l2f_1)
+        pool = this.f2k(pool);
+      if (this.t28_1.m2f_1)
+        pool = this.g2k(pool);
+      pool = this.h2k(pool);
       var tmp$ret$124;
       $l$block_14: {
         // Inline function 'kotlin.collections.all' call
@@ -23895,12 +23897,12 @@ protoOf(Game).p2d = function (turns) {
           continue $l$loop_6;
         if (b.k27_1 === t && c_5.u23_1 && !c_5.t23_1) {
           if (c_5.m1z_1.g26()) {
-            this.d2g(c_5.m1z_1, b);
+            this.f2g(c_5.m1z_1, b);
           }
-          this.a2g(c_5.w23_1);
+          this.c2g(c_5.w23_1);
         }
-        this.o2g(c_5.n1w_1, 3);
-        this.i2g(c_5.p1w_1, 3);
+        this.q2g(c_5.n1w_1, 3);
+        this.k2g(c_5.p1w_1, 3);
         var need = c_5.z20_1;
         var tmp_34;
         if (c_5.j1w_1 > 0) {
@@ -23952,7 +23954,7 @@ protoOf(Game).p2d = function (turns) {
                 }
                 throw NoSuchElementException_init_$Create$_0('Collection contains no element matching the predicate.');
               }
-              this.a2i(listOf_0(tmp$ret$131));
+              this.c2i(listOf_0(tmp$ret$131));
             }
             tmp_35 = this_23;
           }
@@ -23961,9 +23963,9 @@ protoOf(Game).p2d = function (turns) {
           tmp_34 = false;
         }
         if (tmp_34) {
-          this.t2g(c_5.l1w_1, c_5.j1w_1, c_5.d1y_1);
+          this.v2g(c_5.l1w_1, c_5.j1w_1, c_5.d1y_1);
         }
-        this.n2g(c_5.k21_1);
+        this.p2g(c_5.k21_1);
         // Inline function 'kotlin.collections.forEach' call
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
@@ -23981,7 +23983,7 @@ protoOf(Game).p2d = function (turns) {
         while (tmp0_iterator_38.k()) {
           var element_46 = tmp0_iterator_38.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          this.x2g(element_46);
+          this.z2g(element_46);
         }
       }
       var tmp_37;
@@ -24018,7 +24020,7 @@ protoOf(Game).p2d = function (turns) {
       }
       if (tmp_37) {
         // Inline function 'kotlin.comparisons.minOf' call
-        var a_0 = this.u2g('gate');
+        var a_0 = this.w2g('gate');
         // Inline function 'kotlin.collections.sumOf' call
         var sum_4 = 0;
         var tmp0_iterator_40 = pool.j();
@@ -24030,18 +24032,18 @@ protoOf(Game).p2d = function (turns) {
         }
         var b_0 = sum_4;
         var n = Math.min(a_0, b_0);
-        this.o2g(n, 2);
+        this.q2g(n, 2);
         var tmp19_elvis_lhs = ManaOddsCalc_getInstance().f1q(pool, new Cost(n, emptyList()));
         pool = tmp19_elvis_lhs == null ? pool : tmp19_elvis_lhs;
       }
-      if (this.t28_1.j2e_1)
-        pool = this.g2k(pool);
-      if (this.t28_1.e2f_1)
-        pool = this.h2k(pool);
-      if (this.t28_1.d2f_1)
+      if (this.t28_1.l2e_1)
         pool = this.i2k(pool);
+      if (this.t28_1.g2f_1)
+        pool = this.j2k(pool);
+      if (this.t28_1.f2f_1)
+        pool = this.k2k(pool);
       var tmp_40;
-      if (this.t28_1.f2f_1) {
+      if (this.t28_1.h2f_1) {
         var tmp$ret$141;
         $l$block_21: {
           // Inline function 'kotlin.collections.any' call
@@ -24074,13 +24076,13 @@ protoOf(Game).p2d = function (turns) {
       }
       if (tmp_40) {
         // Inline function 'kotlin.comparisons.minOf' call
-        var b_1 = this.q2j() / 2 | 0;
+        var b_1 = this.s2j() / 2 | 0;
         var tmp$ret$143 = Math.min(4, b_1);
-        this.a2g(tmp$ret$143);
+        this.c2g(tmp$ret$143);
       }
-      this.j2k(t);
+      this.l2k(t);
       var tmp_42;
-      if (!this.t28_1.z2e_1) {
+      if (!this.t28_1.b2f_1) {
         tmp_42 = 0;
       } else {
         // Inline function 'kotlin.collections.mapNotNull' call
@@ -24124,7 +24126,7 @@ protoOf(Game).p2d = function (turns) {
       }
       var kelp = tmp_42;
       var tmp_45;
-      if (!this.t28_1.z2e_1) {
+      if (!this.t28_1.b2f_1) {
         tmp_45 = emptyList();
       } else {
         // Inline function 'kotlin.collections.filter' call
@@ -24135,7 +24137,7 @@ protoOf(Game).p2d = function (turns) {
         while (tmp0_iterator_43.k()) {
           var element_51 = tmp0_iterator_43.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          if (!element_51.m27_1 && element_51.b2e('artifact') && !element_51.b2e('land') && element_51.k27_1 < t && (kelp > 0 && element_51.d28_1 === 'clue' || (this.j2a_1 > 0 && element_51.z27_1 == null && !this.o2h(element_51)))) {
+          if (!element_51.m27_1 && element_51.d2e('artifact') && !element_51.d2e('land') && element_51.k27_1 < t && (kelp > 0 && element_51.d28_1 === 'clue' || (this.j2a_1 > 0 && element_51.z27_1 == null && !this.q2h(element_51)))) {
             destination_19.h(element_51);
           }
         }
@@ -24150,7 +24152,7 @@ protoOf(Game).p2d = function (turns) {
         element_52.m27_1 = true;
         element_52.l27_1 = kelp > 0 && element_52.d28_1 === 'clue' ? kelp : this.j2a_1;
       }
-      var crewed = this.m2i(t);
+      var crewed = this.o2i(t);
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_29 = this.w28_1;
@@ -24240,7 +24242,7 @@ protoOf(Game).p2d = function (turns) {
       var doubled = HashSet_init_$Create$();
       // Inline function 'kotlin.collections.isNotEmpty' call
       if (!attackers.n()) {
-        var carrier = this.m2h();
+        var carrier = this.o2h();
         var tmp_51;
         if (carrier == null) {
           tmp_51 = null;
@@ -24291,7 +24293,7 @@ protoOf(Game).p2d = function (turns) {
         }
         var hit = tmp_53;
         var tmp_54;
-        if (this.t28_1.g2f_1) {
+        if (this.t28_1.i2f_1) {
           var tmp$ret$166;
           $l$block_28: {
             // Inline function 'kotlin.collections.any' call
@@ -24326,7 +24328,7 @@ protoOf(Game).p2d = function (turns) {
           doubled.h(hit);
         }
         var tmp_56;
-        if (this.t28_1.g2f_1) {
+        if (this.t28_1.i2f_1) {
           // Inline function 'kotlin.collections.sumOf' call
           var sum_5 = 0;
           var tmp0_iterator_49 = live.j();
@@ -24384,7 +24386,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'kotlin.contracts.contract' call
             pool = tmp23_safe_receiver;
             var tmp0_elvis_lhs_1 = extra.c2(hit);
-            var value = (tmp0_elvis_lhs_1 == null ? 0 : tmp0_elvis_lhs_1) + this.u2g('gate') | 0;
+            var value = (tmp0_elvis_lhs_1 == null ? 0 : tmp0_elvis_lhs_1) + this.w2g('gate') | 0;
             extra.k2(hit, value);
           }
         }
@@ -24423,7 +24425,7 @@ protoOf(Game).p2d = function (turns) {
                 var element_60 = tmp0_iterator_52.l();
                 var tmp_65 = sum_6;
                 // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-                sum_6 = tmp_65 + this.n2i(element_60).ae_1 | 0;
+                sum_6 = tmp_65 + this.p2i(element_60).ae_1 | 0;
               }
               tmp_64 = sum_6 < 6;
             }
@@ -24433,7 +24435,7 @@ protoOf(Game).p2d = function (turns) {
           }
           if (tmp_63)
             continue $l$loop_8;
-          var tmp24_elvis_lhs = this.t2h(pool, this.j2h(c_6));
+          var tmp24_elvis_lhs = this.v2h(pool, this.l2h(c_6));
           var tmp_66;
           if (tmp24_elvis_lhs == null) {
             continue $l$loop_8;
@@ -24463,7 +24465,7 @@ protoOf(Game).p2d = function (turns) {
           }
           var x_2 = tmp_67;
           pool = left_3;
-          this.g2h(c_6);
+          this.i2h(c_6);
           // Inline function 'kotlin.collections.set' call
           var tmp25_elvis_lhs = extra.c2(hit);
           var value_0 = (((tmp25_elvis_lhs == null ? 0 : tmp25_elvis_lhs) + c_6.f1x_1 | 0) + x_2 | 0) + targeted | 0;
@@ -24479,9 +24481,9 @@ protoOf(Game).p2d = function (turns) {
             this_34.h(element_62);
           }
         }
-        if (this.t28_1.a2f_1)
-          pool = this.k2k(pool, attackers, extra);
-        if (this.t28_1.b2f_1) {
+        if (this.t28_1.c2f_1)
+          pool = this.m2k(pool, attackers, extra);
+        if (this.t28_1.d2f_1) {
           var _iterator__ex2g4s_9 = attackers.j();
           while (_iterator__ex2g4s_9.k()) {
             var b_2 = _iterator__ex2g4s_9.l();
@@ -24492,7 +24494,7 @@ protoOf(Game).p2d = function (turns) {
               // Inline function 'kotlin.let' call
               // Inline function 'kotlin.contracts.contract' call
               if (!tmp26_safe_receiver.o1z_1) {
-                this.t2i(tmp26_safe_receiver.n1z_1, b_2, attackers);
+                this.v2i(tmp26_safe_receiver.n1z_1, b_2, attackers);
               }
               this.s29_1 = this.s29_1 + tmp26_safe_receiver.x1z_1 | 0;
               var tmp_69;
@@ -24519,7 +24521,7 @@ protoOf(Game).p2d = function (turns) {
                     while (tmp0_iterator_54.k()) {
                       var element_63 = tmp0_iterator_54.l();
                       // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-                      if (element_63.m27_1 && this.n2i(element_63).ae_1 >= tmp26_safe_receiver.n1z_1.d1u_1) {
+                      if (element_63.m27_1 && this.p2i(element_63).ae_1 >= tmp26_safe_receiver.n1z_1.d1u_1) {
                         tmp$ret$183 = true;
                         break $l$block_32;
                       }
@@ -24556,11 +24558,11 @@ protoOf(Game).p2d = function (turns) {
             while (tmp0_iterator_56.k()) {
               var element_65 = tmp0_iterator_56.l();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-              this.t2i(element_65.n1z_1, b_2, attackers);
+              this.v2i(element_65.n1z_1, b_2, attackers);
             }
           }
         }
-        if (this.t28_1.b2f_1) {
+        if (this.t28_1.d2f_1) {
           var _iterator__ex2g4s_10 = live.j();
           while (_iterator__ex2g4s_10.k()) {
             var s = _iterator__ex2g4s_10.l();
@@ -24594,7 +24596,7 @@ protoOf(Game).p2d = function (turns) {
                     while (tmp0_iterator_57.k()) {
                       var element_66 = tmp0_iterator_57.l();
                       // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-                      if (element_66.b2e(ensureNotNull(tmp27_safe_receiver.p1z_1.z1t_1))) {
+                      if (element_66.d2e(ensureNotNull(tmp27_safe_receiver.p1z_1.z1t_1))) {
                         tmp$ret$189 = true;
                         break $l$block_34;
                       }
@@ -24608,7 +24610,7 @@ protoOf(Game).p2d = function (turns) {
                 tmp_72 = false;
               }
               if (tmp_72) {
-                this.t2i(tmp27_safe_receiver.p1z_1, s, attackers);
+                this.v2i(tmp27_safe_receiver.p1z_1, s, attackers);
               }
               var tmp0_safe_receiver_22 = tmp27_safe_receiver.q1z_1;
               var tmp_75;
@@ -24625,7 +24627,7 @@ protoOf(Game).p2d = function (turns) {
                 while (tmp0_iterator_58.k()) {
                   var element_67 = tmp0_iterator_58.l();
                   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-                  if (element_67.b2e(tmp0_safe_receiver_22)) {
+                  if (element_67.d2e(tmp0_safe_receiver_22)) {
                     destination_23.h(element_67);
                   }
                 }
@@ -24633,7 +24635,7 @@ protoOf(Game).p2d = function (turns) {
                 while (tmp0_iterator_59.k()) {
                   var element_68 = tmp0_iterator_59.l();
                   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-                  this.t2i(tmp27_safe_receiver.r1z_1, s, attackers);
+                  this.v2i(tmp27_safe_receiver.r1z_1, s, attackers);
                 }
                 tmp_75 = Unit_instance;
               }
@@ -24656,7 +24658,7 @@ protoOf(Game).p2d = function (turns) {
       var fighters = plus_0(attackers, destination_24);
       var tmp_76;
       var tmp_77;
-      if (this.t28_1.f2f_1) {
+      if (this.t28_1.h2f_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
         tmp_77 = !fighters.n();
       } else {
@@ -24686,18 +24688,18 @@ protoOf(Game).p2d = function (turns) {
         while (tmp0_iterator_62.k()) {
           var element_71 = tmp0_iterator_62.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          var tmp0_safe_receiver_24 = this.j2g();
+          var tmp0_safe_receiver_24 = this.l2g();
           if (tmp0_safe_receiver_24 == null)
             null;
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
-            this.c2g(tmp0_safe_receiver_24, this.b2a_1 - 1 | 0);
+            this.e2g(tmp0_safe_receiver_24, this.b2a_1 - 1 | 0);
           }
         }
       }
       var tmp_78;
-      if (this.t28_1.f2f_1) {
+      if (this.t28_1.h2f_1) {
         var tmp$ret$205;
         $l$block_35: {
           // Inline function 'kotlin.collections.count' call
@@ -24730,7 +24732,7 @@ protoOf(Game).p2d = function (turns) {
       }
       var drawnBonus = tmp_78;
       var tmp_80;
-      if (this.t28_1.g2f_1) {
+      if (this.t28_1.i2f_1) {
         var tmp$ret$207;
         $l$block_37: {
           // Inline function 'kotlin.collections.any' call
@@ -24762,7 +24764,7 @@ protoOf(Game).p2d = function (turns) {
       }
       var allDouble = tmp_80;
       var tmp_82;
-      if (this.t28_1.g2f_1) {
+      if (this.t28_1.i2f_1) {
         var tmp$ret$209;
         $l$block_39: {
           // Inline function 'kotlin.collections.any' call
@@ -24832,13 +24834,13 @@ protoOf(Game).p2d = function (turns) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var element_76 = to(imul(this.u2g(tmp28_safe_receiver.m2c_1), tmp28_safe_receiver.n2c_1), 0);
+        var element_76 = to(imul(this.w2g(tmp28_safe_receiver.m2c_1), tmp28_safe_receiver.n2c_1), 0);
         hits.h(element_76);
       }
       var draws = 0;
       var fromCommanders = new Int32Array(this.q28_1.m());
       var tmp_86;
-      if (this.t28_1.g2f_1) {
+      if (this.t28_1.i2f_1) {
         // Inline function 'kotlin.collections.sumOf' call
         var sum_8 = 0;
         var tmp0_iterator_67 = live.j();
@@ -24884,7 +24886,7 @@ protoOf(Game).p2d = function (turns) {
       }
       var pumpedTypes = tmp_88;
       var tmp_89;
-      if (this.t28_1.c2e_1) {
+      if (this.t28_1.e2e_1) {
         // Inline function 'kotlin.collections.mapNotNull' call
         // Inline function 'kotlin.collections.mapNotNullTo' call
         var destination_28 = ArrayList_init_$Create$();
@@ -24912,7 +24914,7 @@ protoOf(Game).p2d = function (turns) {
       var _iterator__ex2g4s_11 = fighters.j();
       while (_iterator__ex2g4s_11.k()) {
         var b_3 = _iterator__ex2g4s_11.l();
-        var _destruct__k2r9zo_0 = this.n2i(b_3);
+        var _destruct__k2r9zo_0 = this.p2i(b_3);
         var power = _destruct__k2r9zo_0.ce();
         var double = _destruct__k2r9zo_0.de();
         var tmp_90;
@@ -24976,7 +24978,7 @@ protoOf(Game).p2d = function (turns) {
             while (tmp0_iterator_72.k()) {
               var element_82 = tmp0_iterator_72.l();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-              if (element_82 === 'creature' || b_3.b2e(element_82)) {
+              if (element_82 === 'creature' || b_3.d2e(element_82)) {
                 tmp$ret$231 = true;
                 break $l$block_44;
               }
@@ -25013,7 +25015,7 @@ protoOf(Game).p2d = function (turns) {
               var element_83 = tmp0_iterator_73.l();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var tmp_98;
-              if (b_3.b2e(element_83)) {
+              if (b_3.d2e(element_83)) {
                 var tmp0_safe_receiver_32 = b_3.j27_1;
                 tmp_98 = !((tmp0_safe_receiver_32 == null ? null : tmp0_safe_receiver_32.f1z_1) === true);
               } else {
@@ -25089,14 +25091,14 @@ protoOf(Game).p2d = function (turns) {
           }
         } else if (this.i2a_1) {
           // Inline function 'kotlin.collections.plusAssign' call
-          var element_86 = to(once, this.l2i(b_3));
+          var element_86 = to(once, this.n2i(b_3));
           hits.h(element_86);
           // Inline function 'kotlin.collections.plusAssign' call
-          var element_87 = to(once, this.l2i(b_3));
+          var element_87 = to(once, this.n2i(b_3));
           hits.h(element_87);
         } else {
           // Inline function 'kotlin.collections.plusAssign' call
-          var element_88 = to(p, this.l2i(b_3));
+          var element_88 = to(p, this.n2i(b_3));
           hits.h(element_88);
         }
         var tmp34_safe_receiver = b_3.j27_1;
@@ -25351,7 +25353,7 @@ protoOf(Game).p2d = function (turns) {
       while (tmp0_iterator_79.k()) {
         var element_95 = tmp0_iterator_79.l();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-        this.p2i(element_95);
+        this.r2i(element_95);
       }
       var tmp$ret$270;
       $l$block_54: {
@@ -25373,7 +25375,7 @@ protoOf(Game).p2d = function (turns) {
       if (tmp$ret$270)
         return t;
       var tmp_107;
-      if (this.t28_1.c2f_1) {
+      if (this.t28_1.e2f_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
         tmp_107 = !fighters.n();
       } else {
@@ -25420,7 +25422,7 @@ protoOf(Game).p2d = function (turns) {
                     while (tmp0_iterator_81.k()) {
                       var element_98 = tmp0_iterator_81.l();
                       // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-                      if (element_97.b2e(element_98)) {
+                      if (element_97.d2e(element_98)) {
                         tmp$ret$272 = true;
                         break $l$block_56;
                       }
@@ -25437,7 +25439,7 @@ protoOf(Game).p2d = function (turns) {
               var hitters = destination_34;
               // Inline function 'kotlin.collections.isNotEmpty' call
               if (!hitters.n()) {
-                this.t2i(tmp38_safe_receiver.z21_1, s_0, fighters);
+                this.v2i(tmp38_safe_receiver.z21_1, s_0, fighters);
                 if (tmp38_safe_receiver.z21_1.k1u_1 > 0) {
                   // Inline function 'kotlin.collections.forEach' call
                   // Inline function 'kotlin.collections.filter' call
@@ -25455,7 +25457,7 @@ protoOf(Game).p2d = function (turns) {
                   while (tmp0_iterator_83.k()) {
                     var element_100 = tmp0_iterator_83.l();
                     // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-                    this.c2g(element_100, tmp38_safe_receiver.z21_1.k1u_1);
+                    this.e2g(element_100, tmp38_safe_receiver.z21_1.k1u_1);
                   }
                 }
               }
@@ -25495,8 +25497,8 @@ protoOf(Game).p2d = function (turns) {
       // Inline function 'kotlin.comparisons.minOf' call
       var a_1 = draws;
       var tmp$ret$284 = Math.min(a_1, 10);
-      this.a2g(tmp$ret$284);
-      if (this.t28_1.c2f_1) {
+      this.c2g(tmp$ret$284);
+      if (this.t28_1.e2f_1) {
         var _iterator__ex2g4s_14 = attackers.j();
         while (_iterator__ex2g4s_14.k()) {
           var b_4 = _iterator__ex2g4s_14.l();
@@ -25507,7 +25509,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             if (tmp39_safe_receiver.s1z_1.g26()) {
-              this.t2i(tmp39_safe_receiver.s1z_1, b_4, attackers);
+              this.v2i(tmp39_safe_receiver.s1z_1, b_4, attackers);
             }
           }
         }
@@ -25534,7 +25536,7 @@ protoOf(Game).p2d = function (turns) {
               tmp_112 = false;
             }
             if (tmp_112) {
-              this.d2g(tmp40_safe_receiver.b22_1, b_5);
+              this.f2g(tmp40_safe_receiver.b22_1, b_5);
             }
           }
         }
@@ -25565,7 +25567,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             this.v28_1.g2(tmp0_safe_receiver_34);
           }
-          this.s2h(element_103, element_103.p27_1.u('Artifact'));
+          this.u2h(element_103, element_103.p27_1.u('Artifact'));
         }
         if (this.f2a_1) {
           var tmp$ret$293;
@@ -25594,7 +25596,7 @@ protoOf(Game).p2d = function (turns) {
             }
             tmp$ret$293 = count_2;
           }
-          this.a2g(tmp$ret$293);
+          this.c2g(tmp$ret$293);
         }
         var tmp$ret$295;
         $l$block_60: {
@@ -25622,7 +25624,7 @@ protoOf(Game).p2d = function (turns) {
           tmp$ret$295 = false;
         }
         if (tmp$ret$295) {
-          this.a2g(1);
+          this.c2g(1);
         }
       }
       var tmp$ret$297;
@@ -25652,7 +25654,7 @@ protoOf(Game).p2d = function (turns) {
         tmp$ret$297 = false;
       }
       if (tmp$ret$297) {
-        this.v2j(t);
+        this.x2j(t);
       }
       var tmp$ret$299;
       $l$block_64: {
@@ -25691,7 +25693,7 @@ protoOf(Game).p2d = function (turns) {
         while (tmp0_iterator_91.k()) {
           var element_108 = tmp0_iterator_91.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          if (element_108.b2e('land')) {
+          if (element_108.d2e('land')) {
             destination_37.h(element_108);
           }
         }
@@ -25712,7 +25714,7 @@ protoOf(Game).p2d = function (turns) {
             // Inline function 'kotlin.contracts.contract' call
             var tmp_119;
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-            if (tmp0_safe_receiver_39.y2d_1 <= t && t <= tmp0_safe_receiver_39.a2e_1) {
+            if (tmp0_safe_receiver_39.a2e_1 <= t && t <= tmp0_safe_receiver_39.c2e_1) {
               tmp_119 = tmp0_safe_receiver_39;
             } else {
               tmp_119 = null;
@@ -25734,18 +25736,18 @@ protoOf(Game).p2d = function (turns) {
         while (tmp0_iterator_93.k()) {
           var item_0 = tmp0_iterator_93.l();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          var tmp$ret$310 = to(item_0.w2d_1, item_0.x2d_1);
+          var tmp$ret$310 = to(item_0.y2d_1, item_0.z2d_1);
           destination_39.h(tmp$ret$310);
         }
         var lands = destination_39;
-        if (this.t28_1.d2f_1)
-          lands = this.i2k(lands);
-        if (this.t28_1.j2f_1) {
-          this.l2k(lands, false);
+        if (this.t28_1.f2f_1)
+          lands = this.k2k(lands);
+        if (this.t28_1.l2f_1) {
+          this.n2k(lands, false);
         }
       }
-      if (this.t28_1.t2f_1) {
-        this.f2j();
+      if (this.t28_1.v2f_1) {
+        this.h2j();
       }
       var tmp$ret$314;
       $l$block_65: {
@@ -25767,7 +25769,7 @@ protoOf(Game).p2d = function (turns) {
       if (tmp$ret$314)
         return t;
       if (t < turns) {
-        this.g2g();
+        this.i2g();
       }
       var tmp$ret$316;
       $l$block_66: {
@@ -25792,7 +25794,7 @@ protoOf(Game).p2d = function (turns) {
      while (!(t === turns));
   return 0;
 };
-protoOf(Game).g2k = function (start) {
+protoOf(Game).i2k = function (start) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -25865,7 +25867,7 @@ protoOf(Game).g2k = function (start) {
   while (_iterator__ex2g4s.k()) {
     var e = _iterator__ex2g4s.l();
     this.w28_1.g2(e);
-    this.s2h(e, true);
+    this.u2h(e, true);
     var tmp_1 = pool;
     // Inline function 'kotlin.collections.ifEmpty' call
     var this_3 = this.r28_1;
@@ -25938,9 +25940,9 @@ protoOf(Game).g2k = function (start) {
             var element_3 = tmp0_iterator_3.l();
             // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>.<anonymous>' call
             this.w28_1.g2(element_3);
-            this.s2h(element_3, true);
+            this.u2h(element_3, true);
           }
-          this.a2g(1);
+          this.c2g(1);
         }
       }
        while (inductionVariable < 10);
@@ -25953,7 +25955,7 @@ protoOf(Game).g2k = function (start) {
   while (tmp0_iterator_4.k()) {
     var element_4 = tmp0_iterator_4.l();
     // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
-    if (element_4.d28_1 === 'food' && !this.o2h(element_4)) {
+    if (element_4.d28_1 === 'food' && !this.q2h(element_4)) {
       destination_1.h(element_4);
     }
   }
@@ -25969,7 +25971,7 @@ protoOf(Game).g2k = function (start) {
     }
     pool = tmp_6;
     this.w28_1.g2(e_0);
-    this.s2h(e_0, true);
+    this.u2h(e_0, true);
     var before = toHashSet(this.w28_1);
     var tmp$ret$18;
     $l$block_5: {
@@ -25998,7 +26000,7 @@ protoOf(Game).g2k = function (start) {
       }
       tmp$ret$18 = count;
     }
-    this.w2g(tmp$ret$18);
+    this.y2g(tmp$ret$18);
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
@@ -26043,11 +26045,11 @@ protoOf(Game).g2k = function (start) {
     }
     pool = tmp_8;
     this.w28_1.g2(e_1);
-    this.s2h(e_1, true);
+    this.u2h(e_1, true);
   }
   return pool;
 };
-protoOf(Game).h2k = function (start) {
+protoOf(Game).j2k = function (start) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -26092,7 +26094,7 @@ protoOf(Game).h2k = function (start) {
   var _iterator__ex2g4s = toList(destination).j();
   $l$loop_0: while (_iterator__ex2g4s.k()) {
     var e = _iterator__ex2g4s.l();
-    var tmp0_elvis_lhs = this.j2g();
+    var tmp0_elvis_lhs = this.l2g();
     var tmp_0;
     if (tmp0_elvis_lhs == null) {
       break $l$loop_0;
@@ -26111,12 +26113,12 @@ protoOf(Game).h2k = function (start) {
       pool = tmp_1;
     }
     this.w28_1.g2(e);
-    this.s2h(e, true);
-    this.c2g(target, 1);
+    this.u2h(e, true);
+    this.e2g(target, 1);
   }
   return pool;
 };
-protoOf(Game).i2k = function (start) {
+protoOf(Game).k2k = function (start) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -26178,7 +26180,7 @@ protoOf(Game).i2k = function (start) {
     }
     pool = tmp_1;
     this.w28_1.g2(e);
-    this.s2h(e, true);
+    this.u2h(e, true);
     var _iterator__ex2g4s_0 = toList(this.w28_1).j();
     while (_iterator__ex2g4s_0.k()) {
       var b = _iterator__ex2g4s_0.l();
@@ -26189,15 +26191,15 @@ protoOf(Game).i2k = function (start) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         if (tmp1_safe_receiver.a22_1.g26()) {
-          this.d2g(tmp1_safe_receiver.a22_1, b);
+          this.f2g(tmp1_safe_receiver.a22_1, b);
         }
       }
     }
-    this.a2g(1);
+    this.c2g(1);
   }
   return pool;
 };
-protoOf(Game).b2k = function (start) {
+protoOf(Game).d2k = function (start) {
   var pool = start;
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.mapNotNullTo' call
@@ -26286,7 +26288,7 @@ protoOf(Game).b2k = function (start) {
         while (tmp0_iterator_1.k()) {
           var element_1 = tmp0_iterator_1.l();
           // Inline function 'com.mtgtrader.data.Game.fromGraveyard.<anonymous>.<anonymous>' call
-          if (element_1.b2e(tmp0_safe_receiver_1)) {
+          if (element_1.d2e(tmp0_safe_receiver_1)) {
             tmp$ret$8 = true;
             break $l$block_2;
           }
@@ -26299,8 +26301,8 @@ protoOf(Game).b2k = function (start) {
     var flash = c.c21_1;
     var tmp_4;
     if (viaPermission || self_0) {
-      tmp_4 = this.n2h(c, true);
-    } else if (!(flash == null) && this.y2f(c) && useful(WinOddsCalc_getInstance(), c, this.j29_1, this.k29_1, this.p29_1)) {
+      tmp_4 = this.p2h(c, true);
+    } else if (!(flash == null) && this.a2g(c) && useful(WinOddsCalc_getInstance(), c, this.j29_1, this.k29_1, this.p29_1)) {
       tmp_4 = flash;
     } else {
       continue $l$loop_1;
@@ -26308,7 +26310,7 @@ protoOf(Game).b2k = function (start) {
     var cost = tmp_4;
     if (!useful(WinOddsCalc_getInstance(), c, this.j29_1, this.k29_1, this.p29_1) && !self_0)
       continue $l$loop_1;
-    var tmp1_elvis_lhs = this.r2h(pool, cost, c.z1v_1);
+    var tmp1_elvis_lhs = this.t2h(pool, cost, c.z1v_1);
     var tmp_5;
     if (tmp1_elvis_lhs == null) {
       continue $l$loop_1;
@@ -26321,14 +26323,14 @@ protoOf(Game).b2k = function (start) {
       this.w29_1 = this.w29_1 + 1 | 0;
     }
     if (!(flash == null) && !viaPermission && !self_0 && c.c21_1 === c.y1v_1) {
-      this.f2i(1);
+      this.h2i(1);
     }
-    this.g2h(c, VOID, VOID, true);
+    this.i2h(c, VOID, VOID, true);
     c.b1w_1;
   }
   return pool;
 };
-protoOf(Game).c2k = function (pool) {
+protoOf(Game).e2k = function (pool) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.w28_1;
@@ -26362,7 +26364,7 @@ protoOf(Game).c2k = function (pool) {
       // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
       var cost = element_0.ce();
       var a = element_0.de();
-      if ((pw.k28_1 + cost | 0) >= 0 && this.m2k(a, pw)) {
+      if ((pw.k28_1 + cost | 0) >= 0 && this.o2k(a, pw)) {
         destination_0.h(element_0);
       }
     }
@@ -26393,11 +26395,11 @@ protoOf(Game).c2k = function (pool) {
       }
       // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
       var it = maxElem;
-      var maxValue = this.n2k(it.be_1);
+      var maxValue = this.p2k(it.be_1);
       do {
         var e = iterator.l();
         // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
-        var v = this.n2k(e.be_1);
+        var v = this.p2k(e.be_1);
         if (compareTo(maxValue, v) < 0) {
           maxElem = e;
           maxValue = v;
@@ -26433,11 +26435,11 @@ protoOf(Game).c2k = function (pool) {
       }
       // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
       var it_0 = maxElem_0;
-      var maxValue_0 = this.n2k(it_0.be_1);
+      var maxValue_0 = this.p2k(it_0.be_1);
       do {
         var e_0 = iterator_0.l();
         // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
-        var v_0 = this.n2k(e_0.be_1);
+        var v_0 = this.p2k(e_0.be_1);
         if (compareTo(maxValue_0, v_0) < 0) {
           maxElem_0 = e_0;
           maxValue_0 = v_0;
@@ -26448,7 +26450,7 @@ protoOf(Game).c2k = function (pool) {
     }
     var minus = tmp$ret$16;
     var tmp_0;
-    if (!(minus == null) && (plus == null || this.n2k(minus.be_1) >= (this.n2k(plus.be_1) + 3 | 0))) {
+    if (!(minus == null) && (plus == null || this.p2k(minus.be_1) >= (this.p2k(plus.be_1) + 3 | 0))) {
       tmp_0 = minus;
     } else {
       var tmp_1;
@@ -26461,7 +26463,7 @@ protoOf(Game).c2k = function (pool) {
     }
     var pick = tmp_0;
     pw.k28_1 = pw.k28_1 + pick.ae_1 | 0;
-    this.d2g(pick.be_1, pw);
+    this.f2g(pick.be_1, pw);
     if (pw.k28_1 <= 0) {
       this.w28_1.g2(pw);
       // Inline function 'kotlin.collections.plusAssign' call
@@ -26472,7 +26474,7 @@ protoOf(Game).c2k = function (pool) {
   }
   return pool;
 };
-protoOf(Game).m2k = function (a, user) {
+protoOf(Game).o2k = function (a, user) {
   var tmp;
   if (a.u1t_1 > 0) {
     var tmp_0;
@@ -26568,7 +26570,7 @@ protoOf(Game).m2k = function (a, user) {
       }
       tmp_4 = tmp$ret$4;
     } else {
-      tmp_4 = this.w2h(a) >= 4;
+      tmp_4 = this.y2h(a) >= 4;
     }
     tmp = tmp_4;
   } else if (a.s1t_1) {
@@ -26667,7 +26669,7 @@ protoOf(Game).m2k = function (a, user) {
     while (tmp0_iterator_5.k()) {
       var element_5 = tmp0_iterator_5.l();
       // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
-      if (element_5.m27_1 && element_5.b2e(ensureNotNull(a.v1t_1)) && (element_5.k27_1 < this.d29_1 || this.q2a(element_5))) {
+      if (element_5.m27_1 && element_5.d2e(ensureNotNull(a.v1t_1)) && (element_5.k27_1 < this.d29_1 || this.q2a(element_5))) {
         destination.h(element_5);
       }
     }
@@ -26677,7 +26679,7 @@ protoOf(Game).m2k = function (a, user) {
       var element_6 = tmp0_iterator_6.l();
       var tmp_10 = sum;
       // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
-      sum = tmp_10 + this.n2i(element_6).ae_1 | 0;
+      sum = tmp_10 + this.p2i(element_6).ae_1 | 0;
     }
     tmp = sum >= 6;
   } else if (a.s1v_1) {
@@ -26786,7 +26788,7 @@ protoOf(Game).m2k = function (a, user) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>.<anonymous>' call
-            tmp_18 = this.v2h(tmp0_safe_receiver_0) > 0;
+            tmp_18 = this.x2h(tmp0_safe_receiver_0) > 0;
           }
           tmp_17 = tmp_18 === true;
         } else {
@@ -26846,7 +26848,7 @@ protoOf(Game).m2k = function (a, user) {
       while (tmp0_iterator_11.k()) {
         var element_11 = tmp0_iterator_11.l();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
-        if (element_11.b2e('artifact') && !element_11.b2e('land')) {
+        if (element_11.d2e('artifact') && !element_11.d2e('land')) {
           tmp$ret$28 = true;
           break $l$block_19;
         }
@@ -26859,7 +26861,7 @@ protoOf(Game).m2k = function (a, user) {
   }
   return tmp;
 };
-protoOf(Game).n2k = function (a) {
+protoOf(Game).p2k = function (a) {
   var tmp = (imul(2, a.u1s_1) + imul(3, a.v1s_1) | 0) + a.w1s_1 | 0;
   var tmp_0 = a.x1s_1;
   // Inline function 'kotlin.comparisons.maxOf' call
@@ -26867,7 +26869,7 @@ protoOf(Game).n2k = function (a) {
   var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.r2b_1;
   var b = tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs;
   var tmp$ret$0 = Math.max(1, b);
-  var tmp_1 = ((((((tmp + imul(tmp_0, tmp$ret$0) | 0) + a.a1t_1 | 0) + a.z1s_1 | 0) + a.d1t_1 | 0) + (a.b1t_1 / 2 | 0) | 0) + (a.i1t_1 > 0 ? this.w2h(a) : 0) | 0) + imul(a.n1t_1, 2) | 0;
+  var tmp_1 = ((((((tmp + imul(tmp_0, tmp$ret$0) | 0) + a.a1t_1 | 0) + a.z1s_1 | 0) + a.d1t_1 | 0) + (a.b1t_1 / 2 | 0) | 0) + (a.i1t_1 > 0 ? this.y2h(a) : 0) | 0) + imul(a.n1t_1, 2) | 0;
   var tmp_2;
   if (a.s1t_1) {
     var tmp$ret$4;
@@ -26920,7 +26922,7 @@ protoOf(Game).n2k = function (a) {
     while (tmp0_iterator_0.k()) {
       var element_0 = tmp0_iterator_0.l();
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-      if (element_0.m27_1 && element_0.b2e(ensureNotNull(a.v1t_1))) {
+      if (element_0.m27_1 && element_0.d2e(ensureNotNull(a.v1t_1))) {
         destination_0.h(element_0);
       }
     }
@@ -26930,7 +26932,7 @@ protoOf(Game).n2k = function (a) {
       var element_1 = tmp0_iterator_1.l();
       var tmp_5 = sum;
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-      sum = tmp_5 + this.n2i(element_1).ae_1 | 0;
+      sum = tmp_5 + this.p2i(element_1).ae_1 | 0;
     }
     tmp_4 = sum;
   } else {
@@ -26984,7 +26986,7 @@ protoOf(Game).n2k = function (a) {
       while (tmp0_iterator_3.k()) {
         var element_3 = tmp0_iterator_3.l();
         // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-        if (!(element_3.j27_1 == null) && element_3.b2e('artifact')) {
+        if (!(element_3.j27_1 == null) && element_3.d2e('artifact')) {
           destination_1.h(element_3);
         }
       }
@@ -26995,11 +26997,11 @@ protoOf(Game).n2k = function (a) {
       }
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
       var it_1 = iterator_0.l();
-      var maxValue_0 = this.j2j(ensureNotNull(it_1.j27_1));
+      var maxValue_0 = this.l2j(ensureNotNull(it_1.j27_1));
       while (iterator_0.k()) {
         // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
         var it_2 = iterator_0.l();
-        var v_0 = this.j2j(ensureNotNull(it_2.j27_1));
+        var v_0 = this.l2j(ensureNotNull(it_2.j27_1));
         if (compareTo(maxValue_0, v_0) < 0) {
           maxValue_0 = v_0;
         }
@@ -27011,7 +27013,7 @@ protoOf(Game).n2k = function (a) {
   } else {
     tmp_11 = 0;
   }
-  var tmp_12 = (((tmp_10 + tmp_11 | 0) + imul(a.y1u_1, 2) | 0) + imul(a.z1u_1, this.y2h()) | 0) + ((a.a1v_1 + a.b1v_1 | 0) > 0 ? this.t28_1.r2f_1 ? 15 : 3 : 0) | 0;
+  var tmp_12 = (((tmp_10 + tmp_11 | 0) + imul(a.y1u_1, 2) | 0) + imul(a.z1u_1, this.a2i()) | 0) + ((a.a1v_1 + a.b1v_1 | 0) > 0 ? this.t28_1.t2f_1 ? 15 : 3 : 0) | 0;
   var tmp_13 = imul(a.c1v_1, 2);
   var tmp$ret$20;
   $l$block_3: {
@@ -27041,7 +27043,7 @@ protoOf(Game).n2k = function (a) {
   }
   return (tmp_12 + imul(tmp_13, tmp$ret$20) | 0) + (a.o1v_1 ? 6 : 0) | 0;
 };
-protoOf(Game).l2k = function (start, taps) {
+protoOf(Game).n2k = function (start, taps) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -27097,7 +27099,7 @@ protoOf(Game).l2k = function (start, taps) {
       }
       if (tmp_1) {
         var tmp2_safe_receiver = element_0.z27_1;
-        var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.y2d_1;
+        var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.a2e_1;
         tmp_0 = (tmp3_elvis_lhs == null ? 2147483647 : tmp3_elvis_lhs) <= this.d29_1;
       } else {
         tmp_0 = false;
@@ -27122,11 +27124,11 @@ protoOf(Game).l2k = function (start, taps) {
         }
         // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
         var it = maxElem;
-        var maxValue = this.n2k(it);
+        var maxValue = this.p2k(it);
         do {
           var e = iterator.l();
           // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
-          var v = this.n2k(e);
+          var v = this.p2k(e);
           if (compareTo(maxValue, v) < 0) {
             maxElem = e;
             maxValue = v;
@@ -27145,7 +27147,7 @@ protoOf(Game).l2k = function (start, taps) {
       }
       pool = tmp_3;
       b.a28_1 = this.d29_1;
-      this.d2g(a, b);
+      this.f2g(a, b);
     }
   }
   if (taps) {
@@ -27164,7 +27166,7 @@ protoOf(Game).l2k = function (start, taps) {
         continue $l$loop_5;
       if (b_0.m27_1 && b_0.k27_1 >= this.d29_1 && !this.q2a(b_0) && !hasteAbilities)
         continue $l$loop_5;
-      var attack = b_0.m27_1 ? this.n2i(b_0).ae_1 : 0;
+      var attack = b_0.m27_1 ? this.p2i(b_0).ae_1 : 0;
       var tmp$ret$14;
       $l$block_3: {
         // Inline function 'kotlin.collections.maxByOrNull' call
@@ -27177,7 +27179,7 @@ protoOf(Game).l2k = function (start, taps) {
           var element_1 = tmp0_iterator_1.l();
           // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
           var tmp_5;
-          if (this.m2k(element_1, b_0) && (element_1.f1u_1 === 0 || !(this.g2i() == null)) && this.q2h(pool, element_1.t1s_1) && this.o2k(element_1, b_0, false)) {
+          if (this.o2k(element_1, b_0) && (element_1.f1u_1 === 0 || !(this.i2i() == null)) && this.s2h(pool, element_1.t1s_1) && this.q2k(element_1, b_0, false)) {
             var tmp_6;
             if (!element_1.o1v_1) {
               tmp_6 = true;
@@ -27213,11 +27215,11 @@ protoOf(Game).l2k = function (start, taps) {
         }
         // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
         var it_0 = maxElem_0;
-        var maxValue_0 = this.n2k(it_0);
+        var maxValue_0 = this.p2k(it_0);
         do {
           var e_0 = iterator_0.l();
           // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
-          var v_0 = this.n2k(e_0);
+          var v_0 = this.p2k(e_0);
           if (compareTo(maxValue_0, v_0) < 0) {
             maxElem_0 = e_0;
             maxValue_0 = v_0;
@@ -27234,9 +27236,9 @@ protoOf(Game).l2k = function (start, taps) {
         tmp_8 = tmp2_elvis_lhs;
       }
       var pick = tmp_8;
-      if (b_0.m27_1 && attack > 2 && this.n2k(pick) < attack)
+      if (b_0.m27_1 && attack > 2 && this.p2k(pick) < attack)
         continue $l$loop_5;
-      var tmp3_elvis_lhs_0 = this.t2h(pool, pick.t1s_1);
+      var tmp3_elvis_lhs_0 = this.v2h(pool, pick.t1s_1);
       var tmp_9;
       if (tmp3_elvis_lhs_0 == null) {
         continue $l$loop_5;
@@ -27245,12 +27247,12 @@ protoOf(Game).l2k = function (start, taps) {
       }
       pool = tmp_9;
       if (pick.f1u_1 > 0) {
-        this.f2i(pick.f1u_1);
+        this.h2i(pick.f1u_1);
       }
-      this.o2k(pick, b_0, true);
+      this.q2k(pick, b_0, true);
       b_0.a28_1 = this.d29_1;
-      pool = this.p2k(pick, pool);
-      this.d2g(pick, b_0);
+      pool = this.r2k(pick, pool);
+      this.f2g(pick, b_0);
     }
   }
   var _iterator__ex2g4s_1 = toList(this.w28_1).j();
@@ -27276,16 +27278,16 @@ protoOf(Game).l2k = function (start, taps) {
           inductionVariable = inductionVariable + 1 | 0;
           $l$block_7: {
             // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
-            if (!this.w28_1.u(b_1) || !this.m2k(a_0, b_1) || (a_0.f1u_1 > 0 && this.g2i() == null)) {
+            if (!this.w28_1.u(b_1) || !this.o2k(a_0, b_1) || (a_0.f1u_1 > 0 && this.i2i() == null)) {
               break $l$block_7;
             }
             if (a_0.t1t_1 > 0 && this.q29_1.m() < a_0.t1t_1) {
               break $l$block_7;
             }
-            if (!this.q2h(pool, a_0.t1s_1) || !this.o2k(a_0, b_1, false)) {
+            if (!this.s2h(pool, a_0.t1s_1) || !this.q2k(a_0, b_1, false)) {
               break $l$block_7;
             }
-            var tmp0_elvis_lhs_0 = this.t2h(pool, a_0.t1s_1);
+            var tmp0_elvis_lhs_0 = this.v2h(pool, a_0.t1s_1);
             var tmp_11;
             if (tmp0_elvis_lhs_0 == null) {
               break $l$block_7;
@@ -27294,9 +27296,9 @@ protoOf(Game).l2k = function (start, taps) {
             }
             pool = tmp_11;
             if (a_0.f1u_1 > 0) {
-              this.f2i(a_0.f1u_1);
+              this.h2i(a_0.f1u_1);
             }
-            this.o2k(a_0, b_1, true);
+            this.q2k(a_0, b_1, true);
             if (a_0.t1t_1 > 0) {
               // Inline function 'kotlin.collections.sortedBy' call
               var this_3 = this.q29_1;
@@ -27304,7 +27306,7 @@ protoOf(Game).l2k = function (start, taps) {
               var tmp_12 = WinOddsCalc$Game$abilities$lambda(this);
               var tmp$ret$18 = new sam$kotlin_Comparator$0_14(tmp_12);
               var tmp$ret$19 = sortedWith(this_3, tmp$ret$18);
-              this.a2i(take(tmp$ret$19, a_0.t1t_1));
+              this.c2i(take(tmp$ret$19, a_0.t1t_1));
             }
             // Inline function 'kotlin.also' call
             var this_4 = new Ability();
@@ -27318,7 +27320,7 @@ protoOf(Game).l2k = function (start, taps) {
             this_4.a1t_1 = a_0.a1t_1;
             this_4.z1s_1 = a_0.z1s_1;
             var copy = this_4;
-            this.d2g(a_0.t1t_1 > 0 ? copy : a_0, b_1);
+            this.f2g(a_0.t1t_1 > 0 ? copy : a_0, b_1);
           }
         }
          while (inductionVariable < 3);
@@ -27326,12 +27328,12 @@ protoOf(Game).l2k = function (start, taps) {
   }
   return pool;
 };
-protoOf(Game).d2k = function (start, taps, $super) {
+protoOf(Game).f2k = function (start, taps, $super) {
   taps = taps === VOID ? true : taps;
-  return $super === VOID ? this.l2k(start, taps) : $super.l2k.call(this, start, taps);
+  return $super === VOID ? this.n2k(start, taps) : $super.n2k.call(this, start, taps);
 };
-protoOf(Game).o2k = function (a, user, pay) {
-  var gain = this.n2k(a);
+protoOf(Game).q2k = function (a, user, pay) {
+  var gain = this.p2k(a);
   var tmp0_safe_receiver = a.k1v_1;
   if (tmp0_safe_receiver == null)
     null;
@@ -27349,7 +27351,7 @@ protoOf(Game).o2k = function (a, user, pay) {
       while (tmp0_iterator.k()) {
         var element = tmp0_iterator.l();
         // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>.<anonymous>' call
-        if (!(element === user) && !contains_1(this.q28_1, element.j27_1) && this.q2k(element, tmp0_safe_receiver)) {
+        if (!(element === user) && !contains_1(this.q28_1, element.j27_1) && this.s2k(element, tmp0_safe_receiver)) {
           destination.h(element);
         }
       }
@@ -27365,11 +27367,11 @@ protoOf(Game).o2k = function (a, user, pay) {
       }
       // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>.<anonymous>' call
       var it = minElem;
-      var minValue = this.r2k(it);
+      var minValue = this.t2k(it);
       do {
         var e = iterator.l();
         // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>.<anonymous>' call
-        var v = this.r2k(e);
+        var v = this.t2k(e);
         if (compareTo(minValue, v) > 0) {
           minElem = e;
           minValue = v;
@@ -27386,14 +27388,14 @@ protoOf(Game).o2k = function (a, user, pay) {
       tmp = tmp0_elvis_lhs;
     }
     var victim = tmp;
-    if (this.r2k(victim) >= gain)
+    if (this.t2k(victim) >= gain)
       return false;
     if (pay) {
-      this.p2i(victim);
+      this.r2i(victim);
     }
   }
   if (a.m1v_1 > 0) {
-    var tmp1_elvis_lhs = this.z2i(a.m1v_1, false);
+    var tmp1_elvis_lhs = this.b2j(a.m1v_1, false);
     var tmp_0;
     if (tmp1_elvis_lhs == null) {
       return false;
@@ -27404,11 +27406,11 @@ protoOf(Game).o2k = function (a, user, pay) {
     // Inline function 'kotlin.comparisons.minOf' call
     var a_0 = a.m1v_1;
     var b = coerceAtLeast_0(target.l27_1 + target.r27_1 | 0, 0);
-    var loss = Math.min(a_0, b) - (this.d2j() ? imul(2, a.m1v_1) : 0) | 0;
+    var loss = Math.min(a_0, b) - (this.f2j() ? imul(2, a.m1v_1) : 0) | 0;
     if (loss >= gain)
       return false;
     if (pay) {
-      this.r2i(target, a.m1v_1);
+      this.t2i(target, a.m1v_1);
     }
   }
   if (a.n1v_1 > 0) {
@@ -27466,30 +27468,30 @@ protoOf(Game).o2k = function (a, user, pay) {
   }
   return true;
 };
-protoOf(Game).q2k = function (e, kind) {
+protoOf(Game).s2k = function (e, kind) {
   switch (kind) {
     case 'creature':
       return e.m27_1;
     case 'artifact':
-      return e.b2e('artifact') && !e.b2e('land') && !e.m27_1 && e.y27_1 == null;
+      return e.d2e('artifact') && !e.d2e('land') && !e.m27_1 && e.y27_1 == null;
     default:
       return e.d28_1 === kind;
   }
 };
-protoOf(Game).r2k = function (e) {
+protoOf(Game).t2k = function (e) {
   var tmp;
   if (e.m27_1) {
-    tmp = this.e2j(e) - (this.r2a(e, true) > 0 ? 2 : 0) | 0;
+    tmp = this.g2j(e) - (this.r2a(e, true) > 0 ? 2 : 0) | 0;
   } else if (e.b28_1) {
-    tmp = this.o2h(e) || e.d28_1 === 'clue' ? 1 : 0;
+    tmp = this.q2h(e) || e.d28_1 === 'clue' ? 1 : 0;
   } else {
     var tmp0_safe_receiver = e.z27_1;
-    var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.x2d_1;
+    var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.z2d_1;
     tmp = 3 + imul(2, tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
   }
   return tmp;
 };
-protoOf(Game).p2k = function (a, pool) {
+protoOf(Game).r2k = function (a, pool) {
   if (!a.o1v_1)
     return pool;
   // Inline function 'kotlin.comparisons.minOf' call
@@ -27504,11 +27506,11 @@ protoOf(Game).p2k = function (a, pool) {
   }
   var b = sum;
   var x = Math.min(5, b);
-  this.a2g(x);
+  this.c2g(x);
   var tmp0_elvis_lhs = ManaOddsCalc_getInstance().f1q(pool, new Cost(x, emptyList()));
   return tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
 };
-protoOf(Game).e2k = function (start) {
+protoOf(Game).g2k = function (start) {
   var pool = start;
   var tmp$ret$1;
   $l$block: {
@@ -27543,7 +27545,7 @@ protoOf(Game).e2k = function (start) {
   while (tmp0_iterator_0.k()) {
     var element_0 = tmp0_iterator_0.l();
     // Inline function 'com.mtgtrader.data.Game.sneakAttack.<anonymous>' call
-    if (element_0.c1w_1 && (element_0.f1w_1 >= 3 || this.v2h(element_0) >= 3)) {
+    if (element_0.c1w_1 && (element_0.f1w_1 >= 3 || this.x2h(element_0) >= 3)) {
       destination.h(element_0);
     }
   }
@@ -27553,7 +27555,7 @@ protoOf(Game).e2k = function (start) {
   var _iterator__ex2g4s = sortedWith(destination, tmp$ret$5).j();
   $l$loop: while (_iterator__ex2g4s.k()) {
     var c = _iterator__ex2g4s.l();
-    var tmp1_elvis_lhs = this.t2h(pool, cost);
+    var tmp1_elvis_lhs = this.v2h(pool, cost);
     var tmp_1;
     if (tmp1_elvis_lhs == null) {
       break $l$loop;
@@ -27562,11 +27564,11 @@ protoOf(Game).e2k = function (start) {
     }
     pool = tmp_1;
     this.o28_1.g2(c);
-    this.k2i(c, true, VOID, true).j28_1 = true;
+    this.m2i(c, true, VOID, true).j28_1 = true;
   }
   return pool;
 };
-protoOf(Game).k2k = function (start, attackers, extra) {
+protoOf(Game).m2k = function (start, attackers, extra) {
   var pool = start;
   // Inline function 'kotlin.collections.flatMap' call
   // Inline function 'kotlin.collections.flatMapTo' call
@@ -27639,7 +27641,7 @@ protoOf(Game).k2k = function (start, attackers, extra) {
               while (tmp0_iterator_2.k()) {
                 var element_0 = tmp0_iterator_2.l();
                 // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>.<anonymous>' call
-                if (element_0.b2e(p.v2c_1)) {
+                if (element_0.d2e(p.v2c_1)) {
                   count = count + 1 | 0;
                   checkCountOverflow(count);
                 }
@@ -27658,7 +27660,7 @@ protoOf(Game).k2k = function (start, attackers, extra) {
         while (tmp0_iterator_3.k()) {
           var element_1 = tmp0_iterator_3.l();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
-          if (element_1.ai_1 > 0 && this.q2h(pool, element_1.zh_1.u2c_1)) {
+          if (element_1.ai_1 > 0 && this.s2h(pool, element_1.zh_1.u2c_1)) {
             destination_2.h(element_1);
           }
         }
@@ -27701,7 +27703,7 @@ protoOf(Game).k2k = function (start, attackers, extra) {
         tmp_3 = tmp0_elvis_lhs_0;
       }
       var best = tmp_3;
-      var tmp1_elvis_lhs = this.t2h(pool, best.zh_1.u2c_1);
+      var tmp1_elvis_lhs = this.v2h(pool, best.zh_1.u2c_1);
       var tmp_4;
       if (tmp1_elvis_lhs == null) {
         return pool;
@@ -27725,7 +27727,7 @@ protoOf(Game).k2k = function (start, attackers, extra) {
         while (tmp0_iterator_4.k()) {
           var element_2 = tmp0_iterator_4.l();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
-          if (element_2.b2e(p_0.v2c_1)) {
+          if (element_2.d2e(p_0.v2c_1)) {
             destination_3.h(element_2);
           }
         }
@@ -27743,7 +27745,7 @@ protoOf(Game).k2k = function (start, attackers, extra) {
      while (inductionVariable < 20);
   return pool;
 };
-protoOf(Game).j2k = function (t) {
+protoOf(Game).l2k = function (t) {
   var tmp$ret$0;
   $l$block_0: {
     // Inline function 'kotlin.collections.any' call
@@ -27951,7 +27953,7 @@ protoOf(Game).j2k = function (t) {
     }
     var uses = 1 + tmp_9 | 0;
     $l$loop_1: while (uses > 0) {
-      var tmp4_elvis_lhs = this.s2k(user, ability, liquimetal > 0);
+      var tmp4_elvis_lhs = this.u2k(user, ability, liquimetal > 0);
       var tmp_11;
       if (tmp4_elvis_lhs == null) {
         break $l$loop_1;
@@ -27970,7 +27972,7 @@ protoOf(Game).j2k = function (t) {
     }
   }
 };
-protoOf(Game).s2k = function (user, ability, liquimetal) {
+protoOf(Game).u2k = function (user, ability, liquimetal) {
   var t = this.d29_1;
   var tmp$ret$0;
   $l$block: {
@@ -28139,14 +28141,14 @@ protoOf(Game).s2k = function (user, ability, liquimetal) {
         this.w28_1.g2(element_4);
       }
     }
-    this.s2h(e, e.p27_1.u('Artifact') || (usedLiquimetal && e === first(chosen)));
+    this.u2h(e, e.p27_1.u('Artifact') || (usedLiquimetal && e === first(chosen)));
   }
   user.a28_1 = t;
-  this.o2g(ability.w2a_1, 3);
-  this.a2g(ability.x2a_1);
+  this.q2g(ability.w2a_1, 3);
+  this.c2g(ability.x2a_1);
   return usedLiquimetal;
 };
-protoOf(Game).s2h = function (e, artifact) {
+protoOf(Game).u2h = function (e, artifact) {
   var land = e.p27_1.u('Land');
   var _iterator__ex2g4s = toList(this.w28_1).j();
   $l$loop: while (_iterator__ex2g4s.k()) {
@@ -28160,13 +28162,13 @@ protoOf(Game).s2h = function (e, artifact) {
     }
     var c = tmp;
     if (artifact && c.v1y_1) {
-      this.i2g(b.l27_1 + b.r27_1 | 0, 3);
+      this.k2g(b.l27_1 + b.r27_1 | 0, 3);
     }
     if (land && c.x1y_1 > 0) {
-      this.s2g(c.x1y_1);
+      this.u2g(c.x1y_1);
     }
     if (land && c.y1y_1 > 0) {
-      this.s2g(c.y1y_1);
+      this.u2g(c.y1y_1);
       if (b.s27_1 > 0) {
         b.s27_1 = b.s27_1 - 1 | 0;
         b.t27_1 = this.d29_1;
@@ -28190,14 +28192,14 @@ protoOf(Game).s2h = function (e, artifact) {
       while (tmp0_iterator_0.k()) {
         var element_0 = tmp0_iterator_0.l();
         // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
-        this.c2g(element_0, 1);
+        this.e2g(element_0, 1);
       }
     }
     if (e.b28_1) {
-      this.o2g(c.l20_1, 3);
+      this.q2g(c.l20_1, 3);
     }
     if ((e.m27_1 || artifact) && !(b === e)) {
-      this.o2g(c.n20_1, 3);
+      this.q2g(c.n20_1, 3);
     }
   }
   var tmp1_safe_receiver = e.j27_1;
@@ -28224,9 +28226,9 @@ protoOf(Game).s2h = function (e, artifact) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
-    this.s2g(tmp3_safe_receiver);
+    this.u2g(tmp3_safe_receiver);
   }
-  if (this.t28_1.s2f_1 && e.m27_1) {
+  if (this.t28_1.u2f_1 && e.m27_1) {
     var tmp4_safe_receiver = e.j27_1;
     if (tmp4_safe_receiver == null)
       null;
@@ -28234,10 +28236,10 @@ protoOf(Game).s2h = function (e, artifact) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       if (tmp4_safe_receiver.i25_1.g26()) {
-        this.d2g(tmp4_safe_receiver.i25_1, e);
+        this.f2g(tmp4_safe_receiver.i25_1, e);
       }
       if (tmp4_safe_receiver.j25_1 && !e.b28_1) {
-        this.k2i(tmp4_safe_receiver, true, true);
+        this.m2i(tmp4_safe_receiver, true, true);
       }
     }
     if (!e.w27_1) {
@@ -28253,11 +28255,11 @@ protoOf(Game).s2h = function (e, artifact) {
           // Inline function 'kotlin.contracts.contract' call
           var kind = tmp6_safe_receiver.ce();
           var k = tmp6_safe_receiver.de();
-          if (!(b_0 === e) && (kind == null || e.b2e(kind))) {
+          if (!(b_0 === e) && (kind == null || e.d2e(kind))) {
             // Inline function 'kotlin.also' call
             // Inline function 'kotlin.contracts.contract' call
             // Inline function 'com.mtgtrader.data.Game.left.<anonymous>.<anonymous>' call
-            this.q2g(k.r2b_1, k).w27_1 = b_0.j27_1.l25_1;
+            this.s2g(k.r2b_1, k).w27_1 = b_0.j27_1.l25_1;
           }
         }
       }
@@ -28280,9 +28282,9 @@ protoOf(Game).s2h = function (e, artifact) {
       tmp$ret$11 = false;
     }
     if (tmp$ret$11) {
-      this.o2g(this.r2a(e, true), 3);
-      this.i2g(this.r2a(e, false), 3);
-      this.a2g(this.r2a(e, null) / 2 | 0);
+      this.q2g(this.r2a(e, true), 3);
+      this.k2g(this.r2a(e, false), 3);
+      this.c2g(this.r2a(e, null) / 2 | 0);
       var tmp7_safe_receiver = e.j27_1;
       var tmp8_safe_receiver = tmp7_safe_receiver == null ? null : tmp7_safe_receiver.h24_1;
       if (tmp8_safe_receiver == null)
@@ -28295,11 +28297,11 @@ protoOf(Game).s2h = function (e, artifact) {
           // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
           if (element_2.a2d_1 || !element_2.b2d_1) {
             if (element_2.x2c_1) {
-              this.o2g(element_2.y2c_1, 3);
+              this.q2g(element_2.y2c_1, 3);
             } else {
-              this.i2g(element_2.y2c_1, 3);
+              this.k2g(element_2.y2c_1, 3);
             }
-            this.a2g(element_2.z2c_1);
+            this.c2g(element_2.z2c_1);
           }
         }
       }
@@ -28315,10 +28317,10 @@ protoOf(Game).s2h = function (e, artifact) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           if (tmp9_safe_receiver.q24_1) {
-            this.a2g(1);
+            this.c2g(1);
           }
           if (tmp9_safe_receiver.p24_1) {
-            this.a2j(1);
+            this.c2j(1);
           }
         }
       }
@@ -28341,7 +28343,7 @@ protoOf(Game).s2h = function (e, artifact) {
     }
   }
 };
-protoOf(Game).x2j = function (start) {
+protoOf(Game).z2j = function (start) {
   var pool = start;
   $l$loop_0: while (true) {
     var tmp;
@@ -28441,7 +28443,7 @@ protoOf(Game).x2j = function (start) {
     if (!tmp) {
       break $l$loop_0;
     }
-    var tmp0_elvis_lhs = this.w2j();
+    var tmp0_elvis_lhs = this.y2j();
     var tmp_5;
     if (tmp0_elvis_lhs == null) {
       break $l$loop_0;
@@ -28449,12 +28451,12 @@ protoOf(Game).x2j = function (start) {
       tmp_5 = tmp0_elvis_lhs;
     }
     var s = tmp_5;
-    if (s.y2d_1 <= this.d29_1)
-      pool = plus(pool, to(s.w2d_1, s.x2d_1));
+    if (s.a2e_1 <= this.d29_1)
+      pool = plus(pool, to(s.y2d_1, s.z2d_1));
   }
   return pool;
 };
-protoOf(Game).a2k = function (pool, c) {
+protoOf(Game).c2k = function (pool, c) {
   // Inline function 'kotlin.collections.sortedBy' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
@@ -28475,7 +28477,7 @@ protoOf(Game).a2k = function (pool, c) {
     if (tmp_0) {
       // Inline function 'kotlin.collections.sumOf' call
       var sum = 0;
-      var tmp0_iterator_0 = this.h2j(element).j();
+      var tmp0_iterator_0 = this.j2j(element).j();
       while (tmp0_iterator_0.k()) {
         var element_0 = tmp0_iterator_0.l();
         var tmp_1 = sum;
@@ -28496,8 +28498,8 @@ protoOf(Game).a2k = function (pool, c) {
   var _iterator__ex2g4s = sortedWith(destination, tmp$ret$6).j();
   $l$loop_1: while (_iterator__ex2g4s.k()) {
     var r = _iterator__ex2g4s.l();
-    var mana = this.h2j(r);
-    var tmp0_elvis_lhs = ManaOddsCalc_getInstance().f1q(this.u2h(pool), this.j2h(r));
+    var mana = this.j2j(r);
+    var tmp0_elvis_lhs = ManaOddsCalc_getInstance().f1q(this.w2h(pool), this.l2h(r));
     var tmp_3;
     if (tmp0_elvis_lhs == null) {
       continue $l$loop_1;
@@ -28505,9 +28507,9 @@ protoOf(Game).a2k = function (pool, c) {
       tmp_3 = tmp0_elvis_lhs;
     }
     var test = tmp_3;
-    if (ManaOddsCalc_getInstance().f1q(plus_0(test, mana), this.j2h(c)) == null)
+    if (ManaOddsCalc_getInstance().f1q(plus_0(test, mana), this.l2h(c)) == null)
       continue $l$loop_1;
-    var tmp1_elvis_lhs = this.r2h(pool, this.j2h(r), r.z1v_1);
+    var tmp1_elvis_lhs = this.t2h(pool, this.l2h(r), r.z1v_1);
     var tmp_4;
     if (tmp1_elvis_lhs == null) {
       continue $l$loop_1;
@@ -28515,12 +28517,12 @@ protoOf(Game).a2k = function (pool, c) {
       tmp_4 = tmp1_elvis_lhs;
     }
     var left = tmp_4;
-    this.g2h(r);
+    this.i2h(r);
     return plus_0(left, mana);
   }
   return null;
 };
-protoOf(Game).z2j = function (pool) {
+protoOf(Game).b2k = function (pool) {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
@@ -28540,7 +28542,7 @@ protoOf(Game).z2j = function (pool) {
     while (tmp0_iterator.k()) {
       var element = tmp0_iterator.l();
       // Inline function 'com.mtgtrader.data.Game.spellSides.<anonymous>' call
-      if (element.b2e('land')) {
+      if (element.d2e('land')) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -28594,14 +28596,14 @@ protoOf(Game).z2j = function (pool) {
     }
     if ((onBoard + tmp$ret$5 | 0) < 5)
       return Unit_instance;
-    if (!useful(WinOddsCalc_getInstance(), side, this.j29_1, this.k29_1, this.p29_1) || !this.y2f(side) || !this.q2h(pool, this.j2h(side)))
+    if (!useful(WinOddsCalc_getInstance(), side, this.j29_1, this.k29_1, this.p29_1) || !this.a2g(side) || !this.s2h(pool, this.l2h(side)))
       continue $l$loop;
     this.o28_1.g2(l);
     // Inline function 'kotlin.collections.plusAssign' call
     this.o28_1.h(side);
   }
 };
-protoOf(Game).w2j = function () {
+protoOf(Game).y2j = function () {
   var have = HashSet_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
   var tmp0_iterator = this.v28_1.j();
@@ -28609,7 +28611,7 @@ protoOf(Game).w2j = function () {
     var element = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
     // Inline function 'kotlin.collections.plusAssign' call
-    var elements = element.w2d_1;
+    var elements = element.y2d_1;
     addAll(have, elements);
   }
   // Inline function 'kotlin.collections.filter' call
@@ -28642,9 +28644,9 @@ protoOf(Game).w2j = function () {
           var element_1 = tmp0_iterator_1.l();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
           var tmp_1;
-          if (element_1.b2e('land')) {
+          if (element_1.d2e('land')) {
             var tmp0_safe_receiver = element_1.z27_1;
-            var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a2e_1;
+            var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.c2e_1;
             tmp_1 = (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) > this.d29_1;
           } else {
             tmp_1 = false;
@@ -28665,7 +28667,7 @@ protoOf(Game).w2j = function () {
     }
   }
   var lands = destination;
-  var names = this.n29_1 ? this.v2g() : emptySet();
+  var names = this.n29_1 ? this.x2g() : emptySet();
   var tmp_2;
   var tmp_3;
   if (lands.n()) {
@@ -28808,8 +28810,8 @@ protoOf(Game).w2j = function () {
       var tmp_10 = ManaOddsCalc_getInstance();
       var tmp_11 = WinOddsCalc$Game$playLand$lambda;
       var tmp_12 = WinOddsCalc$Game$playLand$lambda_0(this);
-      var tmp_13 = this.p2j();
-      tmp_9 = tmp_10.g1q(tmp2_safe_receiver, tmp_11, tmp_12, have, tmp_13, costs, WinOddsCalc$Game$playLand$lambda_1, this.a2h());
+      var tmp_13 = this.r2j();
+      tmp_9 = tmp_10.g1q(tmp2_safe_receiver, tmp_11, tmp_12, have, tmp_13, costs, WinOddsCalc$Game$playLand$lambda_1, this.c2h());
     }
     tmp_7 = tmp_9;
   } else {
@@ -28831,7 +28833,7 @@ protoOf(Game).w2j = function () {
   this_5.g2(land);
   var up = this.a2c(land, this_5);
   if (land === fromYard) {
-    this.a2i(listOf_0(land));
+    this.c2i(listOf_0(land));
   } else
     this.o28_1.g2(land);
   this.p2a_1 = this.p2a_1 - 1 | 0;
@@ -28856,9 +28858,9 @@ protoOf(Game).w2j = function () {
           var element_7 = tmp0_iterator_8.l();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
           var tmp_15;
-          if (element_7.b2e('land')) {
+          if (element_7.d2e('land')) {
             var tmp0_safe_receiver_1 = element_7.z27_1;
-            var tmp1_elvis_lhs_1 = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.a2e_1;
+            var tmp1_elvis_lhs_1 = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.c2e_1;
             tmp_15 = (tmp1_elvis_lhs_1 == null ? 0 : tmp1_elvis_lhs_1) > this.d29_1;
           } else {
             tmp_15 = false;
@@ -28879,11 +28881,11 @@ protoOf(Game).w2j = function () {
         }
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
         var it = minElem;
-        var minValue = imul(ensureNotNull(it.z27_1).w2d_1.m(), 10) + ensureNotNull(it.z27_1).x2d_1 | 0;
+        var minValue = imul(ensureNotNull(it.z27_1).y2d_1.m(), 10) + ensureNotNull(it.z27_1).z2d_1 | 0;
         do {
           var e = iterator.l();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
-          var v = imul(ensureNotNull(e.z27_1).w2d_1.m(), 10) + ensureNotNull(e.z27_1).x2d_1 | 0;
+          var v = imul(ensureNotNull(e.z27_1).y2d_1.m(), 10) + ensureNotNull(e.z27_1).z2d_1 | 0;
           if (compareTo(minValue, v) > 0) {
             minElem = e;
             minValue = v;
@@ -28898,7 +28900,7 @@ protoOf(Game).w2j = function () {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        ensureNotNull(tmp0_safe_receiver_2.z27_1).a2e_1 = this.d29_1;
+        ensureNotNull(tmp0_safe_receiver_2.z27_1).c2e_1 = this.d29_1;
       }
     }
      while (inductionVariable < times);
@@ -28914,18 +28916,18 @@ protoOf(Game).w2j = function () {
   var e_0 = this_7;
   // Inline function 'kotlin.collections.plusAssign' call
   this.w28_1.h(e_0);
-  this.n2g(land.j21_1);
-  this.c2h(e_0);
+  this.p2g(land.j21_1);
+  this.e2h(e_0);
   // Inline function 'kotlin.collections.isNotEmpty' call
   if (!land.a25_1.n()) {
-    this.o2i(e_0, 0);
+    this.q2i(e_0, 0);
   }
   if (land.a24_1) {
-    this.c2h(e_0);
+    this.e2h(e_0);
   }
   return source;
 };
-protoOf(Game).y2j = function (pool) {
+protoOf(Game).a2k = function (pool) {
   if (this.s28_1.n())
     return null;
   // Inline function 'kotlin.collections.mapNotNull' call
@@ -29346,7 +29348,7 @@ protoOf(Game).y2j = function (pool) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
-        tmp_19 = ManaOddsCalc_getInstance().f1q(tmp1_safe_receiver, this.j2h(c));
+        tmp_19 = ManaOddsCalc_getInstance().f1q(tmp1_safe_receiver, this.l2h(c));
       }
       p = tmp_19;
     }
@@ -29355,7 +29357,7 @@ protoOf(Game).y2j = function (pool) {
   }
   return null;
 };
-protoOf(Game).n2j = function (types, toTop) {
+protoOf(Game).p2j = function (types, toTop) {
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var this_0 = this.w28_1;
@@ -29563,9 +29565,9 @@ protoOf(Game).n2j = function (types, toTop) {
     return Unit_instance;
   }
 };
-protoOf(Game).f2k = function (start) {
+protoOf(Game).h2k = function (start) {
   var pool = start;
-  var tmp0_elvis_lhs = this.m2h();
+  var tmp0_elvis_lhs = this.o2h();
   var tmp;
   if (tmp0_elvis_lhs == null) {
     return pool;
@@ -29653,7 +29655,7 @@ protoOf(Game).f2k = function (start) {
       while (tmp0_iterator_1.k()) {
         var element_1 = tmp0_iterator_1.l();
         // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
-        if (element_1.b2e('artifact')) {
+        if (element_1.d2e('artifact')) {
           count = count + 1 | 0;
           checkCountOverflow(count);
         }
@@ -29748,7 +29750,7 @@ protoOf(Game).f2k = function (start) {
       this.x29_1 = true;
     }
     if (cost > 0) {
-      var tmp3_elvis_lhs = this.t2h(pool, new Cost(cost, emptyList()));
+      var tmp3_elvis_lhs = this.v2h(pool, new Cost(cost, emptyList()));
       var tmp_12;
       if (tmp3_elvis_lhs == null) {
         continue $l$loop_1;
@@ -29770,16 +29772,16 @@ protoOf(Game).f2k = function (start) {
   return pool;
 };
 function sam$kotlin_Comparator$0_21(function_0) {
-  this.t2k_1 = function_0;
+  this.v2k_1 = function_0;
 }
 protoOf(sam$kotlin_Comparator$0_21).sc = function (a, b) {
-  return this.t2k_1(a, b);
+  return this.v2k_1(a, b);
 };
 protoOf(sam$kotlin_Comparator$0_21).compare = function (a, b) {
   return this.sc(a, b);
 };
 protoOf(sam$kotlin_Comparator$0_21).j3 = function () {
-  return this.t2k_1;
+  return this.v2k_1;
 };
 protoOf(sam$kotlin_Comparator$0_21).equals = function (other) {
   var tmp;
@@ -29857,7 +29859,7 @@ function calculate$cumulative($turns, $games, counts) {
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.cumulative.<anonymous>' call
       sum = sum + counts[item] | 0;
-      var p = Math_instance.u2k(100.0 * sum / $games).g1();
+      var p = Math_instance.w2k(100.0 * sum / $games).g1();
       var tmp$ret$0 = p === 100 && sum < $games ? 99 : p;
       destination.h(tmp$ret$0);
     }
@@ -29871,10 +29873,10 @@ function WinOddsCalc$read62$lambda(it) {
   return new Char(charSequenceGet(tmp$ret$1, 0));
 }
 function _no_name_provided__qut3iv_4($this) {
-  this.v2k_1 = $this;
+  this.x2k_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_4).z3 = function () {
-  return this.v2k_1.j();
+  return this.x2k_1.j();
 };
 protoOf(_no_name_provided__qut3iv_4).j2b = function (element) {
   // Inline function 'com.mtgtrader.data.WinOddsCalc.read62.<anonymous>.<anonymous>' call
@@ -29891,10 +29893,10 @@ function WinOddsCalc$readChapters$lambda(it) {
   return new Char(charSequenceGet(tmp$ret$1, 0));
 }
 function _no_name_provided__qut3iv_5($this) {
-  this.w2k_1 = $this;
+  this.y2k_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_5).z3 = function () {
-  return this.w2k_1.j();
+  return this.y2k_1.j();
 };
 protoOf(_no_name_provided__qut3iv_5).j2b = function (element) {
   // Inline function 'com.mtgtrader.data.WinOddsCalc.readChapters.<anonymous>' call
@@ -30183,7 +30185,7 @@ protoOf(WinOddsCalc).o1r = function (key) {
       return key;
   }
 };
-protoOf(WinOddsCalc).x2k = function (combo) {
+protoOf(WinOddsCalc).z2k = function (combo) {
   var tmp$ret$0;
   $l$block_0: {
     // Inline function 'kotlin.collections.any' call
@@ -30278,7 +30280,7 @@ protoOf(WinOddsCalc).x2k = function (combo) {
   }
   return new ComboPlan(combo.r1q_1, wins, loops, tokens, creatures, opponent, enablers);
 };
-protoOf(WinOddsCalc).y2k = function (p, cards) {
+protoOf(WinOddsCalc).a2l = function (p, cards) {
   if (p.z2a_1)
     return true;
   // Inline function 'kotlin.collections.filter' call
@@ -30978,7 +30980,7 @@ protoOf(WinOddsCalc).o2d = function (c, own, lands, comboKeys) {
   }
   return w;
 };
-protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, random) {
+protoOf(WinOddsCalc).b2l = function (cards, identity, combos, games, turns, random) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination = ArrayList_init_$Create$();
@@ -31058,7 +31060,7 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
   while (tmp0_iterator_3.k()) {
     var element_4 = tmp0_iterator_3.l();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
-    var tmp0_safe_receiver = this.x2k(element_4);
+    var tmp0_safe_receiver = this.z2k(element_4);
     if (tmp0_safe_receiver == null)
       null;
     else {
@@ -31269,7 +31271,7 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
   while (tmp0_iterator_12.k()) {
     var element_11 = tmp0_iterator_12.l();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
-    if (WinOddsCalc_getInstance().y2k(element_11, plus_0(kinds, leaders))) {
+    if (WinOddsCalc_getInstance().a2l(element_11, plus_0(kinds, leaders))) {
       destination_8.h(element_11);
     }
   }
@@ -31425,16 +31427,16 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
         var t = inductionVariable_4;
         inductionVariable_4 = inductionVariable_4 + 1 | 0;
         var _index_0__fvwizt = t;
-        won[_index_0__fvwizt] = won[_index_0__fvwizt] + r.q2d_1[t] | 0;
+        won[_index_0__fvwizt] = won[_index_0__fvwizt] + r.s2d_1[t] | 0;
         var _index_0__fvwizt_0 = t;
-        byCombo[_index_0__fvwizt_0] = byCombo[_index_0__fvwizt_0] + r.r2d_1[t] | 0;
+        byCombo[_index_0__fvwizt_0] = byCombo[_index_0__fvwizt_0] + r.t2d_1[t] | 0;
         var _index_0__fvwizt_1 = t;
-        byMaze[_index_0__fvwizt_1] = byMaze[_index_0__fvwizt_1] + r.s2d_1[t] | 0;
+        byMaze[_index_0__fvwizt_1] = byMaze[_index_0__fvwizt_1] + r.u2d_1[t] | 0;
       }
        while (!(t === turns));
     // Inline function 'kotlin.collections.forEachIndexed' call
     var index_2 = 0;
-    var indexedObject = r.t2d_1;
+    var indexedObject = r.v2d_1;
     var inductionVariable_5 = 0;
     var last_2 = indexedObject.length;
     while (inductionVariable_5 < last_2) {
@@ -31445,8 +31447,8 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
       index_2 = tmp1 + 1 | 0;
       dealt[tmp1] = dealt[tmp1].g(item_2);
     }
-    wins = wins + r.u2d_1 | 0;
-    knockouts = knockouts + r.v2d_1 | 0;
+    wins = wins + r.w2d_1 | 0;
+    knockouts = knockouts + r.x2d_1 | 0;
   }
   var total = coerceAtLeast_1(sum_0(dealt), new Long(1, 0));
   var all = plus_0(kinds, leaders);
@@ -31465,7 +31467,7 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
     var tmp1_0 = index_3;
     index_3 = tmp1_0 + 1 | 0;
     var i = checkIndexOverflow(tmp1_0);
-    var tmp$ret$64 = to(item_3, Math_instance.u2k(100.0 * dealt[i].i3() / total.i3()).g1());
+    var tmp$ret$64 = to(item_3, Math_instance.w2k(100.0 * dealt[i].i3() / total.i3()).g1());
     destination_13.h(tmp$ret$64);
   }
   // Inline function 'kotlin.collections.filterTo' call
@@ -31479,7 +31481,7 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
     }
   }
   var tmp_12 = toMap(destination_14);
-  var tmp_13 = wins === 0 ? 0 : Math_instance.u2k(100.0 * knockouts / wins).g1();
+  var tmp_13 = wins === 0 ? 0 : Math_instance.w2k(100.0 * knockouts / wins).g1();
   var tmp$ret$70;
   $l$block_8: {
     // Inline function 'kotlin.collections.count' call
@@ -32100,11 +32102,11 @@ protoOf(WinOddsCalc).z2k = function (cards, identity, combos, games, turns, rand
   }
   return new WinOdds(games, tmp_10, tmp_11, tmp_12, tmp_13, tmp_59, tmp_60);
 };
-protoOf(WinOddsCalc).a2l = function (cards, identity, combos, games, turns, random, $super) {
+protoOf(WinOddsCalc).c2l = function (cards, identity, combos, games, turns, random, $super) {
   games = games === VOID ? 10000 : games;
   turns = turns === VOID ? 15 : turns;
   random = random === VOID ? Random_0(52) : random;
-  return $super === VOID ? this.z2k(cards, identity, combos, games, turns, random) : $super.z2k.call(this, cards, identity, combos, games, turns, random);
+  return $super === VOID ? this.b2l(cards, identity, combos, games, turns, random) : $super.b2l.call(this, cards, identity, combos, games, turns, random);
 };
 var WinOddsCalc_instance;
 function WinOddsCalc_getInstance() {
@@ -32124,7 +32126,7 @@ function use55$factory() {
 }
 function chosenType$factory() {
   return getPropertyCallableRef('chosenType', 1, KProperty1, function (receiver) {
-    return receiver.u2j();
+    return receiver.w2j();
   }, null);
 }
 function get_json() {
@@ -32132,8 +32134,9 @@ function get_json() {
   return json;
 }
 var json;
-function winOddsJson(cardsJson, identity, saltCard, games) {
+function winOddsJson(cardsJson, identity, saltCard, games, onProgress) {
   games = games === VOID ? null : games;
+  onProgress = onProgress === VOID ? null : onProgress;
   _init_properties_Website_kt__35unmf();
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlinx.serialization.json.Json.decodeFromString' call
@@ -32150,44 +32153,61 @@ function winOddsJson(cardsJson, identity, saltCard, games) {
   while (tmp0_iterator.k()) {
     var item = tmp0_iterator.l();
     // Inline function 'com.mtgtrader.data.winOddsJson.<anonymous>' call
-    var tmp$ret$3 = item.o2l();
+    var tmp$ret$3 = item.q2l();
     destination.h(tmp$ret$3);
   }
   var cards = destination;
   var salt = Companion_getInstance_0().m1q(saltCard);
-  var tmp = WinOddsCalc_getInstance();
-  // Inline function 'kotlin.collections.orEmpty' call
-  var tmp0_elvis_lhs = salt == null ? null : salt.x1q();
-  var tmp_0 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
-  var tmp2_elvis_lhs = tmp.a2l(cards, identity, tmp_0, games == null ? 10000 : games);
+  var started = {_v: 0};
+  var tmp = WebProgress_instance;
+  var tmp_0;
+  if (onProgress == null) {
+    tmp_0 = null;
+  } else {
+    // Inline function 'kotlin.let' call
+    // Inline function 'kotlin.contracts.contract' call
+    // Inline function 'com.mtgtrader.data.winOddsJson.<anonymous>' call
+    tmp_0 = winOddsJson$lambda(started, onProgress);
+  }
+  tmp.p2d_1 = tmp_0;
   var tmp_1;
-  if (tmp2_elvis_lhs == null) {
+  try {
+    var tmp_2 = WinOddsCalc_getInstance();
+    // Inline function 'kotlin.collections.orEmpty' call
+    var tmp0_elvis_lhs = salt == null ? null : salt.x1q();
+    var tmp_3 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
+    tmp_1 = tmp_2.c2l(cards, identity, tmp_3, games == null ? 10000 : games);
+  }finally {
+    WebProgress_instance.p2d_1 = null;
+  }
+  var tmp_4;
+  if (tmp_1 == null) {
     return 'null';
   } else {
-    tmp_1 = tmp2_elvis_lhs;
+    tmp_4 = tmp_1;
   }
-  var odds = tmp_1;
+  var odds = tmp_4;
   var window_0 = odds.w1r();
-  var tmp_2 = get_json();
-  var tmp_3 = Companion_instance_7.v15();
-  var tmp_4 = odds.v1r();
-  var tmp_5 = odds.r1r();
-  var tmp_6 = odds.s1r();
-  var tmp_7 = odds.t1r();
-  var tmp_8 = odds.u1r();
-  var tmp_9 = odds.x1r();
-  var tmp_10 = odds.y1r();
-  var tmp_11 = odds.z1r();
+  var tmp_5 = get_json();
+  var tmp_6 = Companion_instance_7.v15();
+  var tmp_7 = odds.v1r();
+  var tmp_8 = odds.r1r();
+  var tmp_9 = odds.s1r();
+  var tmp_10 = odds.t1r();
+  var tmp_11 = odds.u1r();
+  var tmp_12 = odds.x1r();
+  var tmp_13 = odds.y1r();
+  var tmp_14 = odds.z1r();
   // Inline function 'kotlin.let' call
   // Inline function 'kotlin.contracts.contract' call
   // Inline function 'com.mtgtrader.data.winOddsJson.<anonymous>' call
   var it = AppPowerLevel_getInstance().c1f(odds, salt);
-  var tmp$ret$8 = new WebPower(it.o1e_1, it.p1e_1, it.q1e_1, it.r1e_1, it.s1e_1, it.t1e_1);
-  return tmp_2.k13(tmp_3, new WebWinOdds(odds, tmp_4, tmp_5, tmp_6, tmp_7, tmp_8, window_0.a1_1, window_0.b1_1, tmp_9, tmp_10, tmp_11, tmp$ret$8));
+  var tmp$ret$10 = new WebPower(it.o1e_1, it.p1e_1, it.q1e_1, it.r1e_1, it.s1e_1, it.t1e_1);
+  return tmp_5.k13(tmp_6, new WebWinOdds(odds, tmp_7, tmp_8, tmp_9, tmp_10, tmp_11, window_0.a1_1, window_0.b1_1, tmp_12, tmp_13, tmp_14, tmp$ret$10));
 }
 function Math_0() {
 }
-protoOf(Math_0).u2k = function (x) {
+protoOf(Math_0).w2k = function (x) {
   // Inline function 'kotlin.math.floor' call
   var x_0 = x + 0.5;
   var tmp$ret$0 = Math.floor(x_0);
@@ -32212,23 +32232,23 @@ function sortedSetOf() {
 }
 function SortedSet() {
   AbstractMutableSet.call(this);
-  this.p2l_1 = ArrayList_init_$Create$();
+  this.r2l_1 = ArrayList_init_$Create$();
 }
 protoOf(SortedSet).m = function () {
-  return this.p2l_1.m();
+  return this.r2l_1.m();
 };
 protoOf(SortedSet).j = function () {
-  return this.p2l_1.j();
+  return this.r2l_1.j();
 };
-protoOf(SortedSet).q2l = function (element) {
-  var i = binarySearch(this.p2l_1, element);
+protoOf(SortedSet).s2l = function (element) {
+  var i = binarySearch(this.r2l_1, element);
   if (i >= 0)
     return false;
-  this.p2l_1.i2((-i | 0) - 1 | 0, element);
+  this.r2l_1.i2((-i | 0) - 1 | 0, element);
   return true;
 };
 protoOf(SortedSet).h = function (element) {
-  return this.q2l((!(element == null) ? isComparable(element) : false) ? element : THROW_CCE());
+  return this.s2l((!(element == null) ? isComparable(element) : false) ? element : THROW_CCE());
 };
 function Companion_5() {
 }
@@ -32252,45 +32272,45 @@ function $serializer_4() {
   tmp0_serialDesc.ku('tokens', true);
   tmp0_serialDesc.ku('powerToughness', true);
   tmp0_serialDesc.ku('loyalty', true);
-  this.r2l_1 = tmp0_serialDesc;
+  this.t2l_1 = tmp0_serialDesc;
 }
-protoOf($serializer_4).s2l = function (encoder, value) {
-  var tmp0_desc = this.r2l_1;
+protoOf($serializer_4).u2l = function (encoder, value) {
+  var tmp0_desc = this.t2l_1;
   var tmp1_output = encoder.dn(tmp0_desc);
-  tmp1_output.ro(tmp0_desc, 0, value.b2l_1);
-  tmp1_output.ro(tmp0_desc, 1, value.c2l_1);
-  tmp1_output.mo(tmp0_desc, 2, value.d2l_1);
-  tmp1_output.po(tmp0_desc, 3, value.e2l_1);
-  tmp1_output.ro(tmp0_desc, 4, value.f2l_1);
-  tmp1_output.jo(tmp0_desc, 5, value.g2l_1);
-  if (tmp1_output.zo(tmp0_desc, 6) ? true : !(value.h2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 6, StringSerializer_getInstance(), value.h2l_1);
+  tmp1_output.ro(tmp0_desc, 0, value.d2l_1);
+  tmp1_output.ro(tmp0_desc, 1, value.e2l_1);
+  tmp1_output.mo(tmp0_desc, 2, value.f2l_1);
+  tmp1_output.po(tmp0_desc, 3, value.g2l_1);
+  tmp1_output.ro(tmp0_desc, 4, value.h2l_1);
+  tmp1_output.jo(tmp0_desc, 5, value.i2l_1);
+  if (tmp1_output.zo(tmp0_desc, 6) ? true : !(value.j2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 6, StringSerializer_getInstance(), value.j2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 7) ? true : !(value.i2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 7, StringSerializer_getInstance(), value.i2l_1);
+  if (tmp1_output.zo(tmp0_desc, 7) ? true : !(value.k2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 7, StringSerializer_getInstance(), value.k2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 8) ? true : !(value.j2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 8, StringSerializer_getInstance(), value.j2l_1);
+  if (tmp1_output.zo(tmp0_desc, 8) ? true : !(value.l2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 8, StringSerializer_getInstance(), value.l2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 9) ? true : !(value.k2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 9, StringSerializer_getInstance(), value.k2l_1);
+  if (tmp1_output.zo(tmp0_desc, 9) ? true : !(value.m2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 9, StringSerializer_getInstance(), value.m2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 10) ? true : !(value.l2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 10, StringSerializer_getInstance(), value.l2l_1);
+  if (tmp1_output.zo(tmp0_desc, 10) ? true : !(value.n2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 10, StringSerializer_getInstance(), value.n2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 11) ? true : !(value.m2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 11, StringSerializer_getInstance(), value.m2l_1);
+  if (tmp1_output.zo(tmp0_desc, 11) ? true : !(value.o2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 11, StringSerializer_getInstance(), value.o2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 12) ? true : !(value.n2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 12, StringSerializer_getInstance(), value.n2l_1);
+  if (tmp1_output.zo(tmp0_desc, 12) ? true : !(value.p2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 12, StringSerializer_getInstance(), value.p2l_1);
   }
   tmp1_output.en(tmp0_desc);
 };
 protoOf($serializer_4).hk = function (encoder, value) {
-  return this.s2l(encoder, value instanceof WebCard ? value : THROW_CCE());
+  return this.u2l(encoder, value instanceof WebCard ? value : THROW_CCE());
 };
 protoOf($serializer_4).ik = function (decoder) {
-  var tmp0_desc = this.r2l_1;
+  var tmp0_desc = this.t2l_1;
   var tmp1_flag = true;
   var tmp2_index = 0;
   var tmp3_bitMask0 = 0;
@@ -32402,7 +32422,7 @@ protoOf($serializer_4).ik = function (decoder) {
   return WebCard_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, tmp10_local6, tmp11_local7, tmp12_local8, tmp13_local9, tmp14_local10, tmp15_local11, tmp16_local12, null);
 };
 protoOf($serializer_4).gk = function () {
-  return this.r2l_1;
+  return this.t2l_1;
 };
 protoOf($serializer_4).mu = function () {
   // Inline function 'kotlin.arrayOf' call
@@ -32418,42 +32438,42 @@ function $serializer_getInstance_4() {
 }
 function WebCard_init_$Init$(seen0, name, scryfallId, quantity, cmc, types, commander, typeLine, manaCost, producedMana, oracleText, tokens, powerToughness, loyalty, serializationConstructorMarker, $this) {
   if (!(63 === (63 & seen0))) {
-    throwMissingFieldException(seen0, 63, $serializer_getInstance_4().r2l_1);
+    throwMissingFieldException(seen0, 63, $serializer_getInstance_4().t2l_1);
   }
-  $this.b2l_1 = name;
-  $this.c2l_1 = scryfallId;
-  $this.d2l_1 = quantity;
-  $this.e2l_1 = cmc;
-  $this.f2l_1 = types;
-  $this.g2l_1 = commander;
+  $this.d2l_1 = name;
+  $this.e2l_1 = scryfallId;
+  $this.f2l_1 = quantity;
+  $this.g2l_1 = cmc;
+  $this.h2l_1 = types;
+  $this.i2l_1 = commander;
   if (0 === (seen0 & 64))
-    $this.h2l_1 = null;
-  else
-    $this.h2l_1 = typeLine;
-  if (0 === (seen0 & 128))
-    $this.i2l_1 = null;
-  else
-    $this.i2l_1 = manaCost;
-  if (0 === (seen0 & 256))
     $this.j2l_1 = null;
   else
-    $this.j2l_1 = producedMana;
-  if (0 === (seen0 & 512))
+    $this.j2l_1 = typeLine;
+  if (0 === (seen0 & 128))
     $this.k2l_1 = null;
   else
-    $this.k2l_1 = oracleText;
-  if (0 === (seen0 & 1024))
+    $this.k2l_1 = manaCost;
+  if (0 === (seen0 & 256))
     $this.l2l_1 = null;
   else
-    $this.l2l_1 = tokens;
-  if (0 === (seen0 & 2048))
+    $this.l2l_1 = producedMana;
+  if (0 === (seen0 & 512))
     $this.m2l_1 = null;
   else
-    $this.m2l_1 = powerToughness;
-  if (0 === (seen0 & 4096))
+    $this.m2l_1 = oracleText;
+  if (0 === (seen0 & 1024))
     $this.n2l_1 = null;
   else
-    $this.n2l_1 = loyalty;
+    $this.n2l_1 = tokens;
+  if (0 === (seen0 & 2048))
+    $this.o2l_1 = null;
+  else
+    $this.o2l_1 = powerToughness;
+  if (0 === (seen0 & 4096))
+    $this.p2l_1 = null;
+  else
+    $this.p2l_1 = loyalty;
   return $this;
 }
 function WebCard_init_$Create$(seen0, name, scryfallId, quantity, cmc, types, commander, typeLine, manaCost, producedMana, oracleText, tokens, powerToughness, loyalty, serializationConstructorMarker) {
@@ -32467,22 +32487,22 @@ function WebCard(name, scryfallId, quantity, cmc, types, commander, typeLine, ma
   tokens = tokens === VOID ? null : tokens;
   powerToughness = powerToughness === VOID ? null : powerToughness;
   loyalty = loyalty === VOID ? null : loyalty;
-  this.b2l_1 = name;
-  this.c2l_1 = scryfallId;
-  this.d2l_1 = quantity;
-  this.e2l_1 = cmc;
-  this.f2l_1 = types;
-  this.g2l_1 = commander;
-  this.h2l_1 = typeLine;
-  this.i2l_1 = manaCost;
-  this.j2l_1 = producedMana;
-  this.k2l_1 = oracleText;
-  this.l2l_1 = tokens;
-  this.m2l_1 = powerToughness;
-  this.n2l_1 = loyalty;
+  this.d2l_1 = name;
+  this.e2l_1 = scryfallId;
+  this.f2l_1 = quantity;
+  this.g2l_1 = cmc;
+  this.h2l_1 = types;
+  this.i2l_1 = commander;
+  this.j2l_1 = typeLine;
+  this.k2l_1 = manaCost;
+  this.l2l_1 = producedMana;
+  this.m2l_1 = oracleText;
+  this.n2l_1 = tokens;
+  this.o2l_1 = powerToughness;
+  this.p2l_1 = loyalty;
 }
-protoOf(WebCard).o2l = function () {
-  return new StatsCard(this.b2l_1, this.c2l_1, this.d2l_1, this.e2l_1, this.f2l_1, this.g2l_1, this.h2l_1, this.i2l_1, this.j2l_1, this.k2l_1, this.l2l_1, this.m2l_1, this.n2l_1);
+protoOf(WebCard).q2l = function () {
+  return new StatsCard(this.d2l_1, this.e2l_1, this.f2l_1, this.g2l_1, this.h2l_1, this.i2l_1, this.j2l_1, this.k2l_1, this.l2l_1, this.m2l_1, this.n2l_1, this.o2l_1, this.p2l_1);
 };
 function Companion_6() {
 }
@@ -32508,30 +32528,30 @@ function $serializer_5() {
   tmp0_serialDesc.ku('comboShare', false);
   tmp0_serialDesc.ku('mazeShare', false);
   tmp0_serialDesc.ku('power', false);
-  this.t2l_1 = tmp0_serialDesc;
+  this.v2l_1 = tmp0_serialDesc;
 }
-protoOf($serializer_5).u2l = function (encoder, value) {
-  var tmp0_desc = this.t2l_1;
+protoOf($serializer_5).w2l = function (encoder, value) {
+  var tmp0_desc = this.v2l_1;
   var tmp1_output = encoder.dn(tmp0_desc);
-  tmp1_output.to(tmp0_desc, 0, $serializer_getInstance_2(), value.v2l_1);
-  tmp1_output.ro(tmp0_desc, 1, value.w2l_1);
-  tmp1_output.vo(tmp0_desc, 2, IntSerializer_getInstance(), value.x2l_1);
-  tmp1_output.vo(tmp0_desc, 3, IntSerializer_getInstance(), value.y2l_1);
-  tmp1_output.vo(tmp0_desc, 4, IntSerializer_getInstance(), value.z2l_1);
-  tmp1_output.vo(tmp0_desc, 5, IntSerializer_getInstance(), value.a2m_1);
-  tmp1_output.mo(tmp0_desc, 6, value.b2m_1);
-  tmp1_output.mo(tmp0_desc, 7, value.c2m_1);
-  tmp1_output.ro(tmp0_desc, 8, value.d2m_1);
-  tmp1_output.mo(tmp0_desc, 9, value.e2m_1);
-  tmp1_output.mo(tmp0_desc, 10, value.f2m_1);
-  tmp1_output.to(tmp0_desc, 11, $serializer_getInstance_6(), value.g2m_1);
+  tmp1_output.to(tmp0_desc, 0, $serializer_getInstance_2(), value.x2l_1);
+  tmp1_output.ro(tmp0_desc, 1, value.y2l_1);
+  tmp1_output.vo(tmp0_desc, 2, IntSerializer_getInstance(), value.z2l_1);
+  tmp1_output.vo(tmp0_desc, 3, IntSerializer_getInstance(), value.a2m_1);
+  tmp1_output.vo(tmp0_desc, 4, IntSerializer_getInstance(), value.b2m_1);
+  tmp1_output.vo(tmp0_desc, 5, IntSerializer_getInstance(), value.c2m_1);
+  tmp1_output.mo(tmp0_desc, 6, value.d2m_1);
+  tmp1_output.mo(tmp0_desc, 7, value.e2m_1);
+  tmp1_output.ro(tmp0_desc, 8, value.f2m_1);
+  tmp1_output.mo(tmp0_desc, 9, value.g2m_1);
+  tmp1_output.mo(tmp0_desc, 10, value.h2m_1);
+  tmp1_output.to(tmp0_desc, 11, $serializer_getInstance_6(), value.i2m_1);
   tmp1_output.en(tmp0_desc);
 };
 protoOf($serializer_5).hk = function (encoder, value) {
-  return this.u2l(encoder, value instanceof WebWinOdds ? value : THROW_CCE());
+  return this.w2l(encoder, value instanceof WebWinOdds ? value : THROW_CCE());
 };
 protoOf($serializer_5).ik = function (decoder) {
-  var tmp0_desc = this.t2l_1;
+  var tmp0_desc = this.v2l_1;
   var tmp1_flag = true;
   var tmp2_index = 0;
   var tmp3_bitMask0 = 0;
@@ -32636,7 +32656,7 @@ protoOf($serializer_5).ik = function (decoder) {
   return WebWinOdds_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, tmp10_local6, tmp11_local7, tmp12_local8, tmp13_local9, tmp14_local10, tmp15_local11, null);
 };
 protoOf($serializer_5).gk = function () {
-  return this.t2l_1;
+  return this.v2l_1;
 };
 protoOf($serializer_5).mu = function () {
   // Inline function 'kotlin.arrayOf' call
@@ -32652,38 +32672,38 @@ function $serializer_getInstance_5() {
 }
 function WebWinOdds_init_$Init$(seen0, odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power, serializationConstructorMarker, $this) {
   if (!(4095 === (4095 & seen0))) {
-    throwMissingFieldException(seen0, 4095, $serializer_getInstance_5().t2l_1);
+    throwMissingFieldException(seen0, 4095, $serializer_getInstance_5().v2l_1);
   }
-  $this.v2l_1 = odds;
-  $this.w2l_1 = label;
-  $this.x2l_1 = fourInTen;
-  $this.y2l_1 = usual;
-  $this.z2l_1 = nineInTen;
-  $this.a2m_1 = firstWin;
-  $this.b2m_1 = windowStart;
-  $this.c2m_1 = windowEnd;
-  $this.d2m_1 = damageText;
-  $this.e2m_1 = comboShare;
-  $this.f2m_1 = mazeShare;
-  $this.g2m_1 = power;
+  $this.x2l_1 = odds;
+  $this.y2l_1 = label;
+  $this.z2l_1 = fourInTen;
+  $this.a2m_1 = usual;
+  $this.b2m_1 = nineInTen;
+  $this.c2m_1 = firstWin;
+  $this.d2m_1 = windowStart;
+  $this.e2m_1 = windowEnd;
+  $this.f2m_1 = damageText;
+  $this.g2m_1 = comboShare;
+  $this.h2m_1 = mazeShare;
+  $this.i2m_1 = power;
   return $this;
 }
 function WebWinOdds_init_$Create$(seen0, odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power, serializationConstructorMarker) {
   return WebWinOdds_init_$Init$(seen0, odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power, serializationConstructorMarker, objectCreate(protoOf(WebWinOdds)));
 }
 function WebWinOdds(odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power) {
-  this.v2l_1 = odds;
-  this.w2l_1 = label;
-  this.x2l_1 = fourInTen;
-  this.y2l_1 = usual;
-  this.z2l_1 = nineInTen;
-  this.a2m_1 = firstWin;
-  this.b2m_1 = windowStart;
-  this.c2m_1 = windowEnd;
-  this.d2m_1 = damageText;
-  this.e2m_1 = comboShare;
-  this.f2m_1 = mazeShare;
-  this.g2m_1 = power;
+  this.x2l_1 = odds;
+  this.y2l_1 = label;
+  this.z2l_1 = fourInTen;
+  this.a2m_1 = usual;
+  this.b2m_1 = nineInTen;
+  this.c2m_1 = firstWin;
+  this.d2m_1 = windowStart;
+  this.e2m_1 = windowEnd;
+  this.f2m_1 = damageText;
+  this.g2m_1 = comboShare;
+  this.h2m_1 = mazeShare;
+  this.i2m_1 = power;
 }
 function Companion_7() {
 }
@@ -32700,24 +32720,24 @@ function $serializer_6() {
   tmp0_serialDesc.ku('wonByEnd', false);
   tmp0_serialDesc.ku('speed', false);
   tmp0_serialDesc.ku('adjust', false);
-  this.h2m_1 = tmp0_serialDesc;
+  this.j2m_1 = tmp0_serialDesc;
 }
-protoOf($serializer_6).i2m = function (encoder, value) {
-  var tmp0_desc = this.h2m_1;
+protoOf($serializer_6).k2m = function (encoder, value) {
+  var tmp0_desc = this.j2m_1;
   var tmp1_output = encoder.dn(tmp0_desc);
-  tmp1_output.mo(tmp0_desc, 0, value.j2m_1);
-  tmp1_output.po(tmp0_desc, 1, value.k2m_1);
-  tmp1_output.vo(tmp0_desc, 2, DoubleSerializer_getInstance(), value.l2m_1);
-  tmp1_output.mo(tmp0_desc, 3, value.m2m_1);
-  tmp1_output.po(tmp0_desc, 4, value.n2m_1);
-  tmp1_output.vo(tmp0_desc, 5, DoubleSerializer_getInstance(), value.o2m_1);
+  tmp1_output.mo(tmp0_desc, 0, value.l2m_1);
+  tmp1_output.po(tmp0_desc, 1, value.m2m_1);
+  tmp1_output.vo(tmp0_desc, 2, DoubleSerializer_getInstance(), value.n2m_1);
+  tmp1_output.mo(tmp0_desc, 3, value.o2m_1);
+  tmp1_output.po(tmp0_desc, 4, value.p2m_1);
+  tmp1_output.vo(tmp0_desc, 5, DoubleSerializer_getInstance(), value.q2m_1);
   tmp1_output.en(tmp0_desc);
 };
 protoOf($serializer_6).hk = function (encoder, value) {
-  return this.i2m(encoder, value instanceof WebPower ? value : THROW_CCE());
+  return this.k2m(encoder, value instanceof WebPower ? value : THROW_CCE());
 };
 protoOf($serializer_6).ik = function (decoder) {
-  var tmp0_desc = this.h2m_1;
+  var tmp0_desc = this.j2m_1;
   var tmp1_flag = true;
   var tmp2_index = 0;
   var tmp3_bitMask0 = 0;
@@ -32780,7 +32800,7 @@ protoOf($serializer_6).ik = function (decoder) {
   return WebPower_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, null);
 };
 protoOf($serializer_6).gk = function () {
-  return this.h2m_1;
+  return this.j2m_1;
 };
 protoOf($serializer_6).mu = function () {
   // Inline function 'kotlin.arrayOf' call
@@ -32796,32 +32816,55 @@ function $serializer_getInstance_6() {
 }
 function WebPower_init_$Init$(seen0, power, exact, turn, wonByEnd, speed, adjust, serializationConstructorMarker, $this) {
   if (!(63 === (63 & seen0))) {
-    throwMissingFieldException(seen0, 63, $serializer_getInstance_6().h2m_1);
+    throwMissingFieldException(seen0, 63, $serializer_getInstance_6().j2m_1);
   }
-  $this.j2m_1 = power;
-  $this.k2m_1 = exact;
-  $this.l2m_1 = turn;
-  $this.m2m_1 = wonByEnd;
-  $this.n2m_1 = speed;
-  $this.o2m_1 = adjust;
+  $this.l2m_1 = power;
+  $this.m2m_1 = exact;
+  $this.n2m_1 = turn;
+  $this.o2m_1 = wonByEnd;
+  $this.p2m_1 = speed;
+  $this.q2m_1 = adjust;
   return $this;
 }
 function WebPower_init_$Create$(seen0, power, exact, turn, wonByEnd, speed, adjust, serializationConstructorMarker) {
   return WebPower_init_$Init$(seen0, power, exact, turn, wonByEnd, speed, adjust, serializationConstructorMarker, objectCreate(protoOf(WebPower)));
 }
 function WebPower(power, exact, turn, wonByEnd, speed, adjust) {
-  this.j2m_1 = power;
-  this.k2m_1 = exact;
-  this.l2m_1 = turn;
-  this.m2m_1 = wonByEnd;
-  this.n2m_1 = speed;
-  this.o2m_1 = adjust;
+  this.l2m_1 = power;
+  this.m2m_1 = exact;
+  this.n2m_1 = turn;
+  this.o2m_1 = wonByEnd;
+  this.p2m_1 = speed;
+  this.q2m_1 = adjust;
+}
+function WebProgress() {
+  this.p2d_1 = null;
+}
+protoOf(WebProgress).q2d = function () {
+  var tmp0_safe_receiver = this.p2d_1;
+  if (tmp0_safe_receiver == null)
+    null;
+  else
+    tmp0_safe_receiver();
+};
+var WebProgress_instance;
+function WebProgress_getInstance() {
+  return WebProgress_instance;
 }
 function json$lambda($this$Json) {
   _init_properties_Website_kt__35unmf();
   $this$Json.d14_1 = true;
   $this$Json.b14_1 = true;
   return Unit_instance;
+}
+function winOddsJson$lambda($started, $this) {
+  return function () {
+    var _unary__edvuaz = $started._v;
+    $started._v = _unary__edvuaz + 1 | 0;
+    if (($started._v % 100 | 0) === 0)
+      $this($started._v);
+    return Unit_instance;
+  };
 }
 var properties_initialized_Website_kt_5xc0et;
 function _init_properties_Website_kt__35unmf() {
@@ -32847,6 +32890,7 @@ Integer_instance = new Integer();
 Companion_instance_6 = new Companion_5();
 Companion_instance_7 = new Companion_6();
 Companion_instance_8 = new Companion_7();
+WebProgress_instance = new WebProgress();
 //endregion
 //region block: exports
 export {

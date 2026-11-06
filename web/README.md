@@ -108,7 +108,9 @@ from the repository root with JDK 18:
 `./gradlew -p web/winodds-kt copyToWeb`, then `npm test` in `web/` (`test/winodds.test.ts` compares it with the app's
 answer for a small deck, `test/fixtures/winodds-small.json`; refresh that answer when the model changes on purpose).
 The browser runs it in a Web Worker (`src/lib/winodds.worker.ts`) and keeps each deck's result in `localStorage`
-until its cards, colours, combos or `WinOddsCalc.VERSION` change.
+until its cards, colours, combos or `WinOddsCalc.VERSION` change. For the progress bar the build adds one call at the
+start of each game (`WebProgress.game()` in `Website.kt`); the worker posts the games started every 100, which doesn't
+change the result.
 
 **When the app's sync format changes** (`Sync.FORMAT` in `app/.../data/Sync.kt`): update `web/src/lib/syncfile.ts`
 (`WEB_FORMAT` and the types) in the same release, and refresh the shared sample files:

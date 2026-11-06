@@ -35,6 +35,15 @@ describe("the app's synced settings", () => {
     expect(() => applySettings(f, { tolerancePct: 50 }, NOW)).toThrow(EditError);
   });
 
+  it("changes the power level source and your Archidekt username like the app", () => {
+    const f = appFile();
+    applySettings(f, { powerSource: "SCROLLVAULT", ownArchidektUser: "  joel " }, NOW);
+    expect(prefs(f)).toMatchObject({ powerSource: "SCROLLVAULT", ownArchidektUser: "joel" });
+    expect(appSettings(f)).toMatchObject({ powerSource: "SCROLLVAULT", ownArchidektUser: "joel" });
+    expect(() => applySettings(f, { powerSource: "MOXFIELD" }, NOW)).toThrow(EditError);
+    expect(() => applySettings(f, { ownArchidektUser: "two words" }, NOW)).toThrow(EditError);
+  });
+
   it("leaves the file alone when nothing changes", () => {
     const f = appFile();
     applySettings(f, { currency: "DKK" }, NOW);

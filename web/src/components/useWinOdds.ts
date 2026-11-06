@@ -6,9 +6,11 @@ import { fingerprint, winInput, type WinResult } from "@/lib/winodds";
 import { WIN_ODDS_VERSION } from "@/lib/winodds-js/version";
 
 /** The win turn's state: being worked out, worked out (null: no commander or too few cards), or failed. */
-export type WinState = { status: "working" } | { status: "done"; win: WinResult | null } | { status: "failed"; error: string } | { status: "off" };
+export type WinState = { status: "working"; started: number; games: number } | { status: "done"; win: WinResult | null } | { status: "failed"; error: string } | { status: "off" };
 
 const KEY = "mtg.winOdds.";
+/** The games the app plays (WinOddsCalc.GAMES). */
+const GAMES = 10_000;
 
 /**
  * The deck's win turn (the app's WinOddsStore): kept in this browser per deck until its cards, colours or combos
@@ -32,9 +34,13 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
     } catch {
       // Not kept.
     }
-    setState({ status: "working" });
+    setState({ status: "working", started: 0, games: GAMES });
     const worker = new Worker(new URL("../lib/winodds.worker.ts", import.meta.url), { type: "module" });
-    worker.onmessage = (e: MessageEvent<{ result?: string; error?: string }>) => {
+    worker.onmessage = (e: MessageEvent<{ started?: number; result?: string; error?: string }>) => {
+      if (e.data.started !== undefined && e.data.result === undefined && e.data.error === undefined) {
+        setState({ status: "working", started: e.data.started, games: GAMES });
+        return;
+      }
       worker.terminate();
       if (e.data.error !== undefined || e.data.result === undefined) {
         setState({ status: "failed", error: e.data.error ?? "No answer." });

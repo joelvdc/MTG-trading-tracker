@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { finishesOf, FINISH_LABELS } from "@/lib/cards";
-import type { DeckRow, DeckView } from "@/lib/deckshared";
+import { allCombos, saltKey, type DeckRow, type DeckView } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import { api } from "./api";
 import { CardSearch, type Printing } from "./CardSearch";
+import { ComboLine } from "./ComboLine";
 import { Dialog } from "./Dialog";
 
 const COMMANDER = "Commander";
@@ -70,6 +71,7 @@ function CategoryPicker({ view, value, onChange, allowAuto, autoLabel }: { view:
 export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; row: DeckRow; onClose: () => void; onChanged: (notice: string | null) => void }) {
   const [qty, setQty] = useState(String(row.quantity));
   const [category, setCategory] = useState(row.category);
+  const cardCombos = view.salt ? allCombos(view.salt).filter((c) => c.cards.some((n) => saltKey(n) === saltKey(row.name))) : [];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editable = view.local && !view.readOnly;
@@ -164,6 +166,13 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
               )}
             </div>
           </div>
+        )}
+        {cardCombos.length > 0 && (
+          <ul className="combo-list">
+            {cardCombos.map((c, i) => (
+              <ComboLine key={i} combo={c} cardName={row.name} />
+            ))}
+          </ul>
         )}
         {error && <div className="bar error">{error}</div>}
         <div className="dialog-actions">

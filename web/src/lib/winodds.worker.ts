@@ -3,7 +3,9 @@ import { winOddsJson } from "./winodds-js/winodds-kt.mjs";
 
 self.onmessage = (e: MessageEvent<{ cards: string; identity: string; saltCard: string | null }>) => {
   try {
-    self.postMessage({ result: winOddsJson(e.data.cards, e.data.identity, e.data.saltCard) });
+    // How many games have started, every 100 (for the progress bar), then the answer.
+    const result = winOddsJson(e.data.cards, e.data.identity, e.data.saltCard, null, (started) => self.postMessage({ started }));
+    self.postMessage({ result });
   } catch (err) {
     self.postMessage({ error: err instanceof Error ? err.message : String(err) });
   }

@@ -87,16 +87,32 @@ internal class WebPower(val power: Int, val exact: Double, val turn: Double?, va
 
 private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
+/** Counts the games played (the website's copy of WinOdds.kt calls [game] as each one starts), for a progress bar. */
+internal object WebProgress {
+    var onGame: (() -> Unit)? = null
+
+    fun game() {
+        onGame?.invoke()
+    }
+}
+
 /**
  * The app's win turn for a deck ([WinOddsCalc.calculate], same games and seed as the app), as JSON, or "null" for a
  * deck without a commander. [cardsJson] is a list of [WebCard]s in the deck's order; [saltCard] the deck's Commander
  * Salt JSON (its combos and ratings), if any. [games] is for the tests (fewer games, quicker); the app plays 10,000.
+ * [onProgress] hears the number of games started, every 100 games (it doesn't change the result).
  */
 @JsExport
-fun winOddsJson(cardsJson: String, identity: String, saltCard: String?, games: Int? = null): String {
+fun winOddsJson(cardsJson: String, identity: String, saltCard: String?, games: Int? = null, onProgress: ((Int) -> Unit)? = null): String {
     val cards = json.decodeFromString<List<WebCard>>(cardsJson).map { it.stats() }
     val salt = SaltCard.decode(saltCard)
-    val odds = WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty(), games ?: WinOddsCalc.GAMES) ?: return "null"
+    var started = 0
+    WebProgress.onGame = onProgress?.let { report -> { started++; if (started % 100 == 0) report(started) } }
+    val odds = try {
+        WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty(), games ?: WinOddsCalc.GAMES)
+    } finally {
+        WebProgress.onGame = null
+    } ?: return "null"
     val window = odds.window
     return json.encodeToString(
         WebWinOdds.serializer(),

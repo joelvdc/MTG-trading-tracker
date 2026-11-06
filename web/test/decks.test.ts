@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { statsCard, toDeckInfo, type ScryDeckCard } from "@/lib/deckdetails";
-import { decksView, deckView, syncDecks } from "@/lib/decks";
+import { copyDeck } from "@/lib/deckedit";
+import { decksView, deckView, ruleZeroDecks, sharedCards, syncDecks } from "@/lib/decks";
 import { decodeSalt, missingPlan, sections, tagsByCard } from "@/lib/deckshared";
 import { costs, curve, fetches, sources, tokens, type StatsCard } from "@/lib/deckstats";
 import { parse, type Json } from "@/lib/syncfile";
@@ -62,9 +63,25 @@ describe("deck stats (the app's DeckStats)", () => {
     const a = sc("A", "Creature", { tokens: [{ id: "t1", name: "Insect", typeLine: "Token Creature — Insect" }] });
     const b = sc("B", "Creature", { tokens: [{ id: "t2", name: "Insect", typeLine: "Token Creature — Insect" }, { id: "m", name: "The Monarch", typeLine: "Card" }] });
     expect(tokens([a, b], { t1: "o1", t2: "o1" }, { t1: "1/1" })).toEqual([
-      { id: "t1", name: "Insect", label: "Insect 1/1", makers: ["A", "B"] },
-      { id: "m", name: "The Monarch", label: "The Monarch", makers: ["B"] },
+      { id: "t1", name: "Insect", label: "Insect 1/1", makers: ["A", "B"], key: "o1", defaultId: "t1", oracleId: "o1", picked: false },
+      { id: "m", name: "The Monarch", label: "The Monarch", makers: ["B"], key: "The Monarch|Card", defaultId: "m", oracleId: null, picked: false },
     ]);
+    // A printing picked for the deck (deckTokenPicks, by the token's key) is the one shown.
+    expect(tokens([a, b], { t1: "o1", t2: "o1" }, {}, { o1: "t9" })[0]).toMatchObject({ id: "t9", defaultId: "t1", picked: true });
+  });
+
+  it("finds the cards in several decks and every scored deck's rule-zero cards", () => {
+    const f = fixture();
+    const src = syncDecks(f)[0];
+    copyDeck(f, src.deck.archidektId, "Copy", 1_750_000_000_000);
+    const shared = sharedCards(f);
+    expect(shared.length).toBeGreaterThan(0);
+    expect(shared[0].uses.map((u) => u.deckName).sort()).toEqual(["Copy", src.deck.name].sort());
+    for (const s of shared) {
+      expect(s.uses.length).toBeGreaterThan(1);
+      expect(s.need).toBe(s.uses.reduce((n, u) => n + u.quantity, 0));
+    }
+    expect(ruleZeroDecks(f).decks.every((d) => d.salt !== null)).toBe(true);
   });
 });
 

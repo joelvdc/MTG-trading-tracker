@@ -101,6 +101,13 @@ export interface DeckToken {
   /** With power and toughness when known ("Insect 1/1"). */
   label: string;
   makers: string[];
+  /** The token's key for a pick (deckTokenPicks): its oracle id, else "name|type line". */
+  key: string;
+  /** The printing the cards make (shown when nothing is picked). */
+  defaultId: string;
+  oracleId: string | null;
+  /** A printing was picked for this deck. */
+  picked: boolean;
 }
 
 const COLOURS = "WUBRGC";
@@ -205,7 +212,12 @@ export function sources(cards: StatsCard[], identity: string | null, landsOnly: 
  * The deck's tokens, one per token (by Scryfall's oracle id when [oracleIds] knows it, else by name and type), sorted
  * by name, each with the cards that make it. [pt] gives a token's power and toughness for its label.
  */
-export function tokens(cards: StatsCard[], oracleIds: Record<string, string | undefined> = {}, pt: Record<string, string | null | undefined> = {}): DeckToken[] {
+export function tokens(
+  cards: StatsCard[],
+  oracleIds: Record<string, string | undefined> = {},
+  pt: Record<string, string | null | undefined> = {},
+  picks: Record<string, string> = {},
+): DeckToken[] {
   const parts = new Map<string, { part: TokenPart; makers: Set<string> }>();
   for (const c of cards) {
     for (const p of c.tokens ?? []) {
@@ -220,11 +232,12 @@ export function tokens(cards: StatsCard[], oracleIds: Record<string, string | un
     groups.get(key)!.push(e);
   }
   const out: DeckToken[] = [];
-  for (const same of groups.values()) {
+  for (const [key, same] of groups) {
     const first = same[0].part;
     const p = pt[first.id];
     const makers = [...new Set(same.flatMap((e) => [...e.makers]))].sort();
-    out.push({ id: first.id, name: first.name, label: first.name + (p ? ` ${p}` : ""), makers });
+    const pick = picks[key];
+    out.push({ id: pick ?? first.id, name: first.name, label: first.name + (p ? ` ${p}` : ""), makers, key, defaultId: first.id, oracleId: oracleIds[first.id] ?? null, picked: pick !== undefined });
   }
   return out.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.label.localeCompare(b.label));
 }

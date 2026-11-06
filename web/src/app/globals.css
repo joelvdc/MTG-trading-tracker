@@ -2153,3 +2153,191 @@ details.menu > summary::-webkit-details-marker {
 .trade-list li .grow { flex: 1 1 220px; min-width: 0; }
 .trade-list li .seg { margin-left: auto; }
 .trade-list li.faded > :not(.seg) { opacity: 0.5; }
+
+/* ---- Folding sections on the deck page ---- */
+details.fold > summary,
+details.deck-section > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+details.fold > summary::-webkit-details-marker,
+details.deck-section > summary::-webkit-details-marker {
+  display: none;
+}
+details.fold > summary::after,
+details.deck-section > summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--muted);
+}
+details.fold:not([open]) > summary::after,
+details.deck-section:not([open]) > summary::after {
+  content: "▸";
+}
+details.fold:not([open]) > summary h2 {
+  margin-bottom: 0;
+}
+details.deck-section > summary .mini-head {
+  margin: 0;
+}
+.token-grid li.clickable {
+  cursor: pointer;
+  border-radius: 6px;
+}
+.token-grid li.clickable:hover,
+.token-grid li.clickable:focus-visible {
+  background: var(--raised);
+}
+.print-pick {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.print-pick button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--raised);
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.print-pick button.on {
+  border-color: var(--violet);
+}
+.print-pick img {
+  width: 100%;
+  border-radius: 6px;
+}
+
+/* ---- Combos ---- */
+.combo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.combo-list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--raised);
+}
+.combo-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #6fa8dc;
+}
+.combo-dot.counts {
+  background: #e24b4a;
+}
+
+/* ---- Win turn progress ---- */
+.progress {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--raised);
+  overflow: hidden;
+  margin: 6px 0;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--violet);
+  transition: width 0.2s;
+}
+
+/* ---- Decks list: delete on a tile ---- */
+.deck-tile-wrap {
+  position: relative;
+}
+.tile-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.deck-tile-wrap:hover .tile-delete,
+.tile-delete:focus-visible {
+  opacity: 1;
+}
+.tile-delete:hover {
+  background: #b3261e;
+}
+@media (hover: none) {
+  .tile-delete {
+    opacity: 0.85;
+  }
+}
+
+/* ---- Cards in several decks ---- */
+.shared-list > li {
+  display: block;
+  border-bottom: 1px solid var(--raised);
+}
+.shared-row {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.shared-row:hover {
+  background: var(--surface);
+}
+.shared-uses {
+  padding: 0 0 8px 20px;
+}
+.shared-uses li {
+  display: block;
+  padding: 3px 0;
+}
+
+/* ---- Value by set ---- */
+.set-values > li {
+  display: block;
+}
+.set-value-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 5px 4px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--raised);
+}
+.set-value-row:hover {
+  background: var(--raised);
+}

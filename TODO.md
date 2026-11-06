@@ -161,7 +161,29 @@ onedrive?"
   at each) and the website (see above) would need the same choice. Do it after the website phases, so the sync code
   is only reshaped once.
 
+### 2026-11-06: website: second scan of what the app has and the website hasn't
+Owner: "please scan for features in the app that are missing for the website. For example, I cannot delete a deck on
+the website? The tokens section on the website is not collapsible." Also: "can you make a progress bar for the website
+while it is playing the deck 10,000 times?"
+- Done 2026-11-07 (owner's green light; full-screen pictures left out by the owner): see Done.
+- **Still open, each needs its own plan** (owner: "then come back for the missing todo"):
+  - **Trades on the website:** make, edit, complete (update the collection), delete and export trades; today they are
+    only shown.
+  - **Games on the website:** the game list, stats per deck and player, head to head, CSV export, the Games section on
+    a deck page (the life tracker itself stays on the phone).
+  - **Scan tab waiting list:** scans sync, but the website doesn't show them or send them to a binder, trade or deck.
+  - **Archidekt on the website:** import decks by link or profile, Reload decklist, Update all decks (the website
+    doesn't contact Archidekt today; the health check would gain a check).
+  - **Commander Salt scores for local decks** (already planned above).
+- **Asked 2026-11-07, plan to be approved:** the deck page's owned/missing column like Moxfield (owner's screenshot: a
+  tick for owned cards, and on hover a "collection tracker" box with what the deck needs and which copies the
+  collection has), and a "view on hover" switch for decks.
+
 ## Done
+- 2026-11-07: website tweaks from the second scan: any deck can be deleted (also from the Decks list), each stats
+  section and card category folds, a progress bar while the deck is played 10,000 times, Combos (with Commander
+  Spellbook links, also in a card's window), a token's printing can be chosen, Cards in several decks, Rule-zero cards
+  of all decks, power level source and Archidekt username in Settings, Stats → Value by set.
 - 2026-11-07: step D: the website's nightly job (value per day, price alerts against Cardmarket), Stats → Value over
   time, Wishlist → Alert history, a trade binder page; app 1.80 syncs the trade binder's rules and declined
   suggestions and sends the phone's value history once.

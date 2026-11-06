@@ -23,6 +23,7 @@ import {
   setCategoryHidden,
   setPick,
   setQuantity,
+  setTokenPick,
   type Lookups,
 } from "@/lib/deckedit";
 import type { DeckCard } from "@/lib/deckshared";
@@ -86,6 +87,7 @@ type Body = {
   moveTo?: string | null;
   hidden?: boolean;
   value?: string | null;
+  key?: string;
   card?: CardRef;
   finish?: Finish;
 };
@@ -125,8 +127,8 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
 /**
  * Deck actions. Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
  * "copy", "detach" (a deck from Archidekt becomes a local deck), "hide-category", "pick" (the printing you own to
- * show). Local decks only: "set-quantity", "remove", "move", "auto-all", "add-card", "rename-category", "delete-category",
- * "add-category", "rename", "delete".
+ * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself). Local decks only: "set-quantity", "remove", "move", "auto-all",
+ * "add-card", "rename-category", "delete-category", "add-category", "rename".
  */
 export async function POST(req: Request, { params }: Params) {
   if (!fromOurPages(req)) return json({ error: "Not allowed." }, 403);
@@ -190,6 +192,9 @@ export async function POST(req: Request, { params }: Params) {
           return {};
         case "pick":
           setPick(f, id, str(body.name), typeof body.value === "string" ? str(body.value) : null, now);
+          return {};
+        case "token-pick":
+          setTokenPick(f, id, str(body.key), typeof body.value === "string" && /^[0-9a-f-]{36}$/.test(body.value) ? body.value : null, now);
           return {};
         case "rename":
           renameDeck(f, id, str(body.name), now);

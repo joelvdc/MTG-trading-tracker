@@ -13,12 +13,42 @@ import { RecommendationsPanel } from "@/components/RecommendationsPanel";
 import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
 import { useWinOdds, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
-import { bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView, type GroupBy } from "@/lib/deckshared";
+import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView, type GroupBy } from "@/lib/deckshared";
+import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
 type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; detailsError: string | null; saltCard: string | null };
 
 const NO_CARDS: StatsCard[] = [];
+
+/** The deck's folded card sections, remembered in this browser per deck. */
+function useFolded(deckId: string): [Set<string>, (key: string, folded: boolean) => void] {
+  const key = `mtg.deckFolded.${deckId}`;
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      setFolded(new Set(JSON.parse(localStorage.getItem(key) ?? "[]") as string[]));
+    } catch {
+      setFolded(new Set());
+    }
+  }, [key]);
+  return [
+    folded,
+    (k, f) =>
+      setFolded((old) => {
+        if (old.has(k) === f) return old;
+        const next = new Set(old);
+        if (f) next.add(k);
+        else next.delete(k);
+        try {
+          localStorage.setItem(key, JSON.stringify([...next]));
+        } catch {
+          // Not remembered.
+        }
+        return next;
+      }),
+  ];
+}
 
 const BASICS = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].flatMap((b) => [b, `Snow-Covered ${b}`]).map((n) => n.toLowerCase()));
 
@@ -41,6 +71,7 @@ export default function DeckPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | null>(null);
+  const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
   const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null);
@@ -157,13 +188,17 @@ export default function DeckPage() {
   };
 
   const block = (title: string, rows: DeckRow[], key: string) => (
-    <section key={key} className="deck-section">
-      <h3 className="mini-head">
-        {title} <span className="muted small">· {rows.reduce((s, r) => s + r.quantity, 0)} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
-      </h3>
+    <details key={key} className="deck-section" open={!folded.has(key)} onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}>
+      <summary>
+        <h3 className="mini-head">
+          {title} <span className="muted small">· {rows.reduce((s, r) => s + r.quantity, 0)} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
+        </h3>
+      </summary>
       <ul className="plain-list deck-list">{rows.map(row)}</ul>
-    </section>
+    </details>
   );
+  const combos = view.salt ? allCombos(view.salt) : [];
+  const counted = combos.filter((c) => c.counts).length;
 
   const source = view.powerSource;
   // The app's own power level isn't synced: the website works it out from the win turn, as the phone does.
@@ -243,11 +278,9 @@ export default function DeckPage() {
                   {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
                   <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
                   {!view.local && <button onClick={() => setConfirm("DETACH")}>Make it a local deck</button>}
-                  {view.local && (
-                    <button className="danger-text" onClick={() => setConfirm("DELETE")}>
-                      Delete deck
-                    </button>
-                  )}
+                  <button className="danger-text" onClick={() => setConfirm("DELETE")}>
+                    Delete deck
+                  </button>
                 </div>
               </details>
             )}
@@ -265,8 +298,45 @@ export default function DeckPage() {
           <summary>
             <strong>Stats</strong>
           </summary>
-          {showStats && <DeckStatsPanel cards={view.stats} identity={d.colorIdentity} tokenInfo={view.tokenInfo} hover={hover} win={win} />}
+          {showStats && (
+            <DeckStatsPanel
+              cards={view.stats}
+              identity={d.colorIdentity}
+              tokenInfo={view.tokenInfo}
+              tokenPicks={view.tokenPicks}
+              onTokenPick={
+                view.readOnly
+                  ? undefined
+                  : async (key, value) => {
+                      const r = await deckAction(view.id, { action: "token-pick", key, value });
+                      if (r.error) return r.error;
+                      await reload(null);
+                      return null;
+                    }
+              }
+              hover={hover}
+              win={win}
+            />
+          )}
         </details>
+
+        {combos.length > 0 && (
+          <details className="card" open={!folded.has("\u0000combos")} onToggle={(e) => setFold("\u0000combos", !(e.currentTarget as HTMLDetailsElement).open)}>
+            <summary>
+              <strong>Combos</strong>{" "}
+              <span className="muted small">
+                · {combos.length}
+                {counted === combos.length ? (combos.length === 1 ? ", it counts for the bracket" : ", all count for the bracket") : counted === 0 ? ", none count for the bracket" : `, ${counted} count for the bracket`}
+              </span>
+            </summary>
+            <ul className="combo-list">
+              {combos.map((c, i) => (
+                <ComboLine key={i} combo={c} />
+              ))}
+            </ul>
+            <p className="muted small">From Commander Salt&apos;s analysis. Red: counts for the bracket (two cards, or early in the game); blue: doesn&apos;t.</p>
+          </details>
+        )}
 
         <details className="card" open={showRecs} onToggle={(e) => setShowRecs((e.target as HTMLDetailsElement).open)}>
           <summary>
@@ -360,7 +430,7 @@ export default function DeckPage() {
       {confirm === "DELETE" && (
         <ConfirmDialog
           title="Delete the deck?"
-          text={`${d.name} is deleted here and, at their next sync, on the phones. This can't be undone.`}
+          text={`${d.name} is deleted here and, at their next sync, on the phones. This can't be undone.${view.local ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
           button="Delete"
           danger
           onClose={() => setConfirm(null)}

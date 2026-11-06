@@ -93,6 +93,13 @@ export function printings(name: string): Promise<FoundCard[]> {
   return search(`!"${name.replace(/["\\]/g, " ").trim()}"`, "prints");
 }
 
+/** Every paper printing of a token (or card) by its oracle id, newest first (the app's printsOfOracle). */
+export async function tokenPrintings(oracleId: string): Promise<{ id: string; setName: string; collectorNumber: string }[]> {
+  const q = new URLSearchParams({ q: `oracleid:${oracleId} game:paper`, unique: "prints", order: "released", dir: "desc", include_extras: "true" });
+  const j = (await getJson(`${API}/cards/search?${q}`)) as { data?: ScryCard[] } | null;
+  return (j?.data ?? []).filter((c) => !c.digital).map((c) => ({ id: c.id, setName: c.set_name ?? "", collectorNumber: c.collector_number ?? "" }));
+}
+
 /** A card as an order needs it: the app's CardRef plus what tells tokens and basic lands apart. */
 export interface LookedUp {
   card: CardRef;

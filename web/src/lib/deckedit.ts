@@ -350,6 +350,25 @@ export function setPick(file: SyncFile, id: number, name: string, value: string 
   setPrefs(file, { deckPicks: JSON.stringify(all) }, now);
 }
 
+/** The printing to show for one of the deck's tokens (Settings.setDeckTokenPick); null for the cards' own. */
+export function setTokenPick(file: SyncFile, id: number, key: string, value: string | null, now: number): void {
+  find(file, id);
+  if (!key) throw new EditError("Which token?");
+  let all: Record<string, Record<string, string>> = {};
+  try {
+    const j = JSON.parse(prefs(file).deckTokenPicks ?? "{}");
+    if (j && typeof j === "object") all = j;
+  } catch {
+    all = {};
+  }
+  const forDeck = { ...(all[String(id)] ?? {}) };
+  if (value === null) delete forDeck[key];
+  else forDeck[key] = value;
+  if (Object.keys(forDeck).length === 0) delete all[String(id)];
+  else all[String(id)] = forDeck;
+  setPrefs(file, { deckTokenPicks: JSON.stringify(all) }, now);
+}
+
 // ---- Decks ---------------------------------------------------------------------------------------------------------
 
 export function renameDeck(file: SyncFile, id: number, raw: string, now: number): void {
@@ -360,9 +379,12 @@ export function renameDeck(file: SyncFile, id: number, raw: string, now: number)
   touch(sd, now);
 }
 
-/** Deletes a local deck for good (DeckEditor.deleteLocal); the phones drop it at their next sync. */
+/**
+ * Deletes a deck for good (DeckRepository.delete: local decks and decks from Archidekt alike, which stay on Archidekt);
+ * the phones drop it at their next sync.
+ */
 export function deleteDeck(file: SyncFile, id: number, now: number): void {
-  local(file, id);
+  find(file, id);
   file.data.decks = syncDecks(file).filter((d) => d.deck.archidektId !== id) as unknown as Json;
   addDeletion(file, `deck:${id}`, now);
 }

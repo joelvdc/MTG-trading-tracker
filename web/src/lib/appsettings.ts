@@ -31,6 +31,13 @@ export const RECEIVED_CLEAR: [string, string][] = [
   ["6m", "After 6 months"],
   ["1y", "After 1 year"],
 ];
+/** The app's PowerSource (Settings → Commander deck power level), in its order. */
+export const POWER_SOURCE_CHOICES: [string, string][] = [
+  ["COMMANDER_SALT", "Commander Salt"],
+  ["EDH_POWER_LEVEL", "EDH Power Level (edhpowerlevel.com)"],
+  ["SCROLLVAULT", "ScrollVault"],
+  ["APP", "This app (from the win turn)"],
+];
 
 export interface AppSettings {
   priceSource: string;
@@ -44,6 +51,10 @@ export interface AppSettings {
   wishSections: boolean;
   receivedToCollection: boolean;
   receivedClear: string;
+  /** Where the decks' power level comes from. */
+  powerSource: string;
+  /** Your own Archidekt username: whose Archidekt decks are "your decks" (the app's ownArchidektUser). */
+  ownArchidektUser: string;
 }
 
 const keys = (list: [string, string][]) => list.map(([k]) => k);
@@ -64,6 +75,8 @@ export function appSettings(file: SyncFile): AppSettings {
     wishSections: p.wishSections !== "false",
     receivedToCollection: p.receivedToCollection === "true",
     receivedClear: pick(p.receivedClear, RECEIVED_CLEAR, "never"),
+    powerSource: pick(p.powerSource, POWER_SOURCE_CHOICES, "COMMANDER_SALT"),
+    ownArchidektUser: (p.ownArchidektUser ?? "").trim(),
   };
 }
 
@@ -87,6 +100,12 @@ export function applySettings(file: SyncFile, changes: Partial<AppSettings>, now
   choice("currency", CURRENCY_CHOICES);
   choice("alertPriceType", PRICE_TYPE_CHOICES);
   choice("receivedClear", RECEIVED_CLEAR);
+  choice("powerSource", POWER_SOURCE_CHOICES);
+  if (changes.ownArchidektUser !== undefined) {
+    const u = changes.ownArchidektUser;
+    if (typeof u !== "string" || u.trim().length > 100 || /[\s/?#]/.test(u.trim())) throw new EditError("That isn't an Archidekt username.");
+    out.ownArchidektUser = u.trim();
+  }
   flag("conditionAdjust");
   flag("wishSections");
   flag("receivedToCollection");

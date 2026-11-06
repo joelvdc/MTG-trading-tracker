@@ -271,6 +271,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     scrollVault: sv,
     rows,
     hidden: Object.keys(decodePicks(p.deckHidden)[String(id)] ?? {}),
+    tokenPicks: decodePicks(p.deckTokenPicks)[String(id)] ?? {},
     categories: categoriesOf(sd),
     myPrintings,
     currency: cur,
@@ -282,4 +283,77 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     powerError: powerError(d, source),
     readOnly: !canWrite(file),
   };
+}
+
+/** A card in more than one deck (the app's SharedCardsScreen): the decks that use it and how many copies you own. */
+export interface SharedCard {
+  name: string;
+  imageUrl: string | null;
+  owned: number;
+  need: number;
+  uses: { deckId: number; deckName: string; quantity: number }[];
+}
+
+/**
+ * Cards that are in more than one deck (DeckDao.observeUsage + DeckUsage.byName): the main deck only, basic lands left
+ * out, by name; most decks first, then by name. The decks are in name order.
+ */
+export function sharedCards(file: SyncFile): SharedCard[] {
+  const owned = ownedByName(file);
+  const by = new Map<string, SharedCard>();
+  const decks = [...syncDecks(file)].sort((a, b) => caseless(a.deck.name, b.deck.name));
+  for (const { deck, cards } of decks) {
+    const here = new Map<string, { name: string; quantity: number; imageUrl: string | null }>();
+    for (const c of cards) {
+      if (c.maybeboard || isBasicName(c.card.name)) continue;
+      const k = c.card.name.toLowerCase();
+      const h = here.get(k) ?? { name: c.card.name, quantity: 0, imageUrl: null };
+      h.quantity += c.quantity;
+      h.imageUrl = h.imageUrl && c.card.imageUrl ? (h.imageUrl > c.card.imageUrl ? h.imageUrl : c.card.imageUrl) : (h.imageUrl ?? c.card.imageUrl ?? null);
+      here.set(k, h);
+    }
+    for (const [k, h] of here) {
+      const s = by.get(k) ?? { name: h.name, imageUrl: null, owned: owned.get(k) ?? 0, need: 0, uses: [] };
+      s.imageUrl ??= h.imageUrl;
+      s.need += h.quantity;
+      s.uses.push({ deckId: deck.archidektId, deckName: deck.name, quantity: h.quantity });
+      by.set(k, s);
+    }
+  }
+  return [...by.entries()]
+    .filter(([, s]) => s.uses.length > 1)
+    .sort(([ka, a], [kb, b]) => b.uses.length - a.uses.length || (ka < kb ? -1 : ka > kb ? 1 : 0))
+    .map(([, s]) => s);
+}
+
+/** What the rule-zero cards of one deck need (the deck page's RuleZeroDialog), for "Rule-zero cards of all decks". */
+export interface RuleZeroDeck {
+  id: number;
+  deck: DeckView["deck"];
+  cover: string | null;
+  salt: NonNullable<DeckView["salt"]>;
+  scrollVault: Record<string, Json> | null;
+  power: number | null;
+  powerError: string | null;
+}
+
+/** Every deck Commander Salt has scored, in name order, with what its bracket and power cards show. */
+export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[]; powerSource: PowerSource } {
+  const source = powerSource(prefs(file).powerSource);
+  const decks: RuleZeroDeck[] = [];
+  for (const { deck: d } of [...syncDecks(file)].sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+    const salt = decodeSalt(d.saltCard);
+    if (!salt) continue;
+    const { saltCard, scrollVault, categoryInfo, ...plain } = d;
+    void saltCard;
+    void categoryInfo;
+    let sv: Record<string, Json> | null = null;
+    try {
+      sv = scrollVault ? (JSON.parse(scrollVault) as Record<string, Json>) : null;
+    } catch {
+      sv = null;
+    }
+    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, scrollVault: sv, power: powerOf(d, source), powerError: powerError(d, source) });
+  }
+  return { decks, powerSource: source };
 }
