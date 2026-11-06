@@ -1,0 +1,159 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { statsCard, toDeckInfo, type ScryDeckCard } from "@/lib/deckdetails";
+import { decksView, deckView, syncDecks } from "@/lib/decks";
+import { decodeSalt, missingPlan, sections, tagsByCard } from "@/lib/deckshared";
+import { costs, curve, fetches, sources, tokens, type StatsCard } from "@/lib/deckstats";
+import { parse, type Json } from "@/lib/syncfile";
+
+const fixture = () => parse(readFileSync(path.join(__dirname, "fixtures", "app-sync.json"), "utf8"));
+
+const sc = (name: string, typeLine: string, o: Partial<StatsCard> = {}): StatsCard => ({
+  name,
+  scryfallId: name,
+  quantity: 1,
+  cmc: 0,
+  types: typeLine,
+  commander: false,
+  typeLine,
+  manaCost: "",
+  producedMana: "",
+  oracleText: "",
+  tokens: null,
+  ...o,
+});
+
+describe("deck stats (the app's DeckStats)", () => {
+  it("counts the curve without lands and the colours in the costs", () => {
+    const cards = [
+      sc("Bolt", "Instant", { cmc: 1, manaCost: "{R}", quantity: 2 }),
+      sc("Big", "Creature — Giant", { cmc: 9, manaCost: "{7}{G}{G}" }),
+      sc("Hybrid", "Sorcery", { cmc: 2, manaCost: "{B/G}{B/P}" }),
+      sc("Forest", "Basic Land — Forest", { producedMana: "G" }),
+    ];
+    const c = curve(cards);
+    expect(c.counts).toEqual([0, 2, 1, 0, 0, 0, 0, 1]);
+    expect(c.spells).toBe(4);
+    expect(costs(cards)).toEqual([
+      { colour: "B", count: 2 },
+      { colour: "R", count: 2 },
+      { colour: "G", count: 3 },
+    ]);
+  });
+
+  it("counts fetch lands for the lands they find and limits any-colour cards to the identity", () => {
+    const tomb = sc("Overgrown Tomb", "Land — Swamp Forest", { producedMana: "BG" });
+    const swamp = sc("Swamp", "Basic Land — Swamp", { producedMana: "B" });
+    const mire = sc("Bloodstained Mire", "Land", { oracleText: "{T}, Pay 1 life, Sacrifice this land: Search your library for a Swamp or Mountain card, put it onto the battlefield, then shuffle." });
+    const tower = sc("Command Tower", "Land", { producedMana: "WUBRG" });
+    const signet = sc("Arcane Signet", "Artifact", { producedMana: "WUBRG", cmc: 2 });
+    expect(Object.fromEntries(fetches(mire, [tomb, swamp, mire, tower]))).toEqual({ B: ["Overgrown Tomb", "Swamp"], G: ["Overgrown Tomb"] });
+    const s = sources([tomb, swamp, mire, tower, signet], "BG", false);
+    expect(s.map((x) => [x.colour, x.count])).toEqual([
+      ["B", 5],
+      ["G", 4],
+    ]);
+    expect(sources([tomb, swamp, mire, tower, signet], "BG", true).map((x) => x.count)).toEqual([4, 3]);
+    expect(s[0].cards.find((l) => l.name === "Bloodstained Mire")?.finds).toEqual(["Overgrown Tomb", "Swamp"]);
+  });
+
+  it("lists each token once with the cards that make it", () => {
+    const a = sc("A", "Creature", { tokens: [{ id: "t1", name: "Insect", typeLine: "Token Creature — Insect" }] });
+    const b = sc("B", "Creature", { tokens: [{ id: "t2", name: "Insect", typeLine: "Token Creature — Insect" }, { id: "m", name: "The Monarch", typeLine: "Card" }] });
+    expect(tokens([a, b], { t1: "o1", t2: "o1" }, { t1: "1/1" })).toEqual([
+      { id: "t1", name: "Insect", label: "Insect 1/1", makers: ["A", "B"] },
+      { id: "m", name: "The Monarch", label: "The Monarch", makers: ["B"] },
+    ]);
+  });
+});
+
+describe("Scryfall's deck details (the app's CardInfo.toInfo)", () => {
+  it("reads double-faced cards, tokens and loyalty", () => {
+    const c: ScryDeckCard = {
+      id: "a",
+      cmc: 3,
+      color_identity: ["G", "B"],
+      produced_mana: ["G", "C", "B"],
+      card_faces: [
+        { type_line: "Creature — Elf", mana_cost: "{1}{B}{G}", oracle_text: "Front text", power: "2", toughness: "3", oracle_id: "x" },
+        { type_line: "Land", mana_cost: "", oracle_text: "Back text" },
+      ],
+      type_line: "Creature — Elf // Land",
+      all_parts: [
+        { id: "a", component: "combo_piece", name: "Self", type_line: "Creature" },
+        { id: "tok", component: "token", name: "Elf Warrior", type_line: "Token Creature — Elf Warrior" },
+        { id: "mon", component: "combo_piece", name: "The Monarch", type_line: "Card" },
+      ],
+    };
+    const d = toDeckInfo(c, 1);
+    expect(d).toMatchObject({ t: "Creature — Elf // Land", m: "{1}{B}{G} // ", p: "BGC", o: "Front text\n//\nBack text", pt: "2/3", l: null, oi: "x", i: "BG" });
+    expect(d.k?.map((t) => t.id)).toEqual(["tok", "mon"]);
+    expect(toDeckInfo({ id: "p", type_line: "Legendary Planeswalker — Jace", mana_cost: "{2}{U}{U}" }, 1).l).toBe("");
+    const s = statsCard({ name: "X", scryfallId: "a", quantity: 1, cmc: 3, types: "Creature", commander: false }, d);
+    expect(s.manaCost).toBe("{1}{B}{G} // ");
+    expect(statsCard({ name: "X", scryfallId: "a", quantity: 1, cmc: 3, types: "Creature", commander: false }, undefined).producedMana).toBeNull();
+  });
+});
+
+describe("decks pages", () => {
+  it("groups by category or type with the commander first", () => {
+    const r = (name: string, category: string, types: string, commander = false) => ({ name, category, types, commander });
+    const rows = [r("Sol Ring", "Ramp", "Artifact"), r("Vohar", "Commander", "Legendary Creature", true), r("Arcane Signet", "ramp", "Artifact"), r("Island", "Land", "Basic Land")];
+    expect(sections(rows, "CATEGORY").map((s) => [s.title, s.rows.map((x) => x.name)])).toEqual([
+      ["Commander", ["Vohar"]],
+      ["Land", ["Island"]],
+      ["Ramp", ["Arcane Signet", "Sol Ring"]],
+    ]);
+    expect(sections(rows, "TYPE").map((s) => s.title)).toEqual(["Commander", "Lands", "Artifacts"]);
+  });
+
+  it("counts owned copies once across lines and skips basics", () => {
+    const owned = new Map([["sol ring", 1]]);
+    const plan = missingPlan(
+      [
+        { name: "Sol Ring", quantity: 1 },
+        { name: "Sol Ring", quantity: 1 },
+        { name: "Island", quantity: 10 },
+      ],
+      owned,
+      true,
+    );
+    expect(plan.map(([l, n]) => [l.name, n])).toEqual([["Sol Ring", 1]]);
+  });
+
+  it("tags bracket cards like the app", () => {
+    const s = decodeSalt(JSON.stringify({ gameChangers: ["Rhystic Study"], twoCardCombos: [["Thassa's Oracle", "Demonic Consultation"]], combos: [{ cards: ["A", "B", "C"] }], tutors: ["Demonic Tutor"] }))!;
+    const t = tagsByCard(s);
+    expect(t.get("rhystic study")).toEqual(["GAME_CHANGER"]);
+    expect(t.get("thassa's oracle")).toEqual(["COMBO"]);
+    expect(t.get("a")).toEqual(["OTHER_COMBO_3"]);
+    expect(t.get("demonic tutor")).toEqual(["TUTOR"]);
+  });
+
+  it("shows the app's decks with value and missing cards", () => {
+    const f = fixture();
+    const v = decksView(f, null, null, null);
+    expect(v.decks).toHaveLength(syncDecks(f).length);
+    const first = v.decks[0];
+    expect(first.name).toBe("Vohar Danse");
+    expect(first.valueEur).toBeCloseTo(1.5);
+    const d = deckView(f, first.id, null, null, null)!;
+    expect(d.rows[0]).toMatchObject({ name: "Sol Ring", quantity: 1, category: "Ramp", unitEur: 1.5 });
+    expect(deckView(f, 123, null, null, null)).toBeNull();
+  });
+
+  it("shows a deck in the printing you own", () => {
+    const f = fixture();
+    const sol = syncDecks(f)[0].cards[0].card;
+    const mine = { ...sol, scryfallId: "22222222-2222-2222-2222-222222222222", setCode: "cmr" };
+    const coll = ((f.data.collection as Json[]) ?? []) as unknown as { item: { card: unknown; quantity: number; foil: boolean; etched: boolean }; binder: string | null }[];
+    coll.push({ item: { ...(coll[0]?.item ?? {}), card: mine, quantity: 1, foil: false, etched: false } as never, binder: null });
+    f.data.collection = coll as unknown as Json;
+    const row = deckView(f, syncDecks(f)[0].deck.archidektId, null, null, null)!.rows[0];
+    if (coll.some((s) => (s.item.card as { name: string }).name === "Sol Ring")) {
+      expect(row.missing).toBe(0);
+      expect(row.owned).toBeGreaterThan(0);
+    }
+  });
+});

@@ -298,6 +298,11 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   worth and the value at every price source; click a bar to see those cards. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt. **Import CSV** reads a collection file
   (ManaBox, Moxfield, Archidekt, Deckbox or the app's own) the way the app does: cards found on Scryfall, binders made by
   name, purchase prices and notes kept.
+- **Decks:** the decks list (Archidekt and local decks, with bracket, power level, value and missing cards) and a page
+  per deck: its cards by category or card type (in the printings you own, like the app), owned and missing copies,
+  bracket tags, the maybeboard, the stats (mana curve, colours in the costs, mana production, tokens) and the
+  commander-casting odds from the app's own shuffling model (the same numbers as the phone). **Cards I'm missing**
+  puts them on the wishlist or copies them as a list; the **Bracket card** and **Power card** print like the app's.
 - **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
   a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
   (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon
