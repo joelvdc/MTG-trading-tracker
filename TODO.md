@@ -177,7 +177,9 @@ while it is playing the deck 10,000 times?"
   - **Commander Salt scores for local decks** (already planned above).
 - **Asked 2026-11-07, plan to be approved:** the deck page's owned/missing column like Moxfield (owner's screenshot: a
   tick for owned cards, and on hover a "collection tracker" box with what the deck needs and which copies the
-  collection has), and a "view on hover" switch for decks.
+  collection has), and a "view on hover" switch for decks. Owner's correction 2026-11-07: "the amber circle is for when
+  there is a copy in the collection, but not the version chosen for the deck." Also: "get the tokens section out of the
+  stats and make its own collapsible section, maybe before recommendations."
 
 ## Done
 - 2026-11-07: website tweaks from the second scan: any deck can be deleted (also from the Decks list), each stats
