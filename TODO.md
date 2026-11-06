@@ -28,6 +28,22 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   2. ~~Collection on the website~~ **Done 2026-11-05** (see Done).
   4. Decks on the website: Archidekt decks read-only, local decks with a deck builder, all deck stats, recommendations,
      and the **win-turn simulation including the commander-casting turn** (owner's wish: ported from the app).
+     **Plan (written 2026-11-06, started on the owner's go-ahead "you can start working on the decks while I am
+     sleeping")**, in parts, each tested against the app's own test decks and committed on its own (website only, no
+     app release, nothing that changes how the app reads decks):
+     - 4a. Decks page (read only): the decks list (folders, commander picture, colours, card count, value, bracket and
+       power from the synced scores), a deck page with its cards by category or type, owned/missing against the
+       collection, prices, maybeboard, the deck stats (`DeckStats.kt`, `ManaOdds.kt`), "Missing cards to the wishlist",
+       and the bracket/power card to print (the app's print screen; moved here from step B).
+     - 4b. Editing local decks (`DeckEdits.kt`, `DeckEditor.kt`): add/remove cards, quantities, categories, commander,
+       printing; "Make it a local deck" from an Archidekt deck; new deck from a pasted list or a precon. Follows the
+       app's sync rules for deck lines (`lineUid`), so phones take the edits; checked against `Sync.kt` first.
+     - 4c. Recommendations (`Recommendations.kt`) and the Commander Salt scoring for local decks (decision still open,
+       see below).
+     - 4d. The win-turn simulation (`WinOdds.kt`, about 4,800 lines): its own step, with the app's test decks as the
+       check that both give the same numbers.
+     - Health check: each part names any new outside service it uses (4a uses none new; 4c adds EDHREC/Commander Salt
+       for the website).
   5. Games on the website: log, stats, head to head, per deck; edit and add games by hand. Life tracker stays on the
      phone.
 - Open questions:
@@ -84,6 +100,13 @@ the scanner, package check and life tracker stay on the phone.
   trades as CSV (today the website only shows them, as decided).
 - **Settings:** price source, price type, currency, condition adjustment and other synced settings can only be changed in
   the app; backups and restore.
+- **Status 2026-11-06 (approved plan: steps A wishlist in the collection + hover switch, B the website-only items,
+  C website accounts, D nightly job for value over time, alert history and the trade binder page):**
+  - A and B done (see Done). Print cards as PDF moved to decks (phase 4a): in the app it is the deck's bracket/power card.
+  - Still open from this list: the trade binder (step D, needs the app to sync which binder it is: step C's release),
+    value over time and alert history (step D), trades on the website (left out for now, as decided).
+  - Step C waits for the owner: add Neon Postgres (EU) from Vercel's Storage tab, and say yes before the owner's real
+    Nextcloud data is imported. Step D follows C.
 
 ### 2026-11-05: website accounts instead of the Nextcloud login
 Owner: "Instead of logging into nextcloud for "opening" the website, could the website support users? Like create a
@@ -107,6 +130,12 @@ onedrive?"
   is only reshaped once.
 
 ## Done
+- 2026-11-06: website step B: binder tools (rename, merge, delete, arrange, move all Unsorted), sorting in up to three
+  levels, purchase price for several cards, splitting signed/altered copies off a pile, "Value by price source" in the
+  stats, copy selected cards as a list, the wishlist's received flow, the app's synced settings and the website's
+  backups in Settings, Import CSV, and an Orders page: order history with today's worth, importing CardTrader and
+  Cardmarket orders, adding a precon (MTGJSON), purchase prices from order files.
+- 2026-11-05: website step A: the wishlist sits in the collection (its own chip), "Card on hover" switch.
 - 2026-11-05: website phase 2: the collection (binders, search, filters, sort, edits, bulk changes, add cards, 25/50/100
   rows per page, card picture on hover), all collection stats, CSV export (full and Archidekt) and trades (view only),
   priced like the app (its source, type, currency and condition adjustment); two new daily stores (Card Kingdom copy,
