@@ -159,6 +159,20 @@ export function scryfallPrintings(f: Fetch = fetch): PrintingsOf {
   };
 }
 
+// ---- The phone's history (POST /api/app/valuehistory) ----
+
+/** One day from the app, checked: "2026-11-07", a card count, and number values by ValueHistory key. */
+export function cleanDay(d: unknown): ValueDay | null {
+  if (!d || typeof d !== "object") return null;
+  const { day, cards, values } = d as { day?: unknown; cards?: unknown; values?: unknown };
+  if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  if (typeof cards !== "number" || !Number.isFinite(cards) || cards < 0) return null;
+  if (!values || typeof values !== "object" || Array.isArray(values)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(values)) if (k.length <= 120 && typeof v === "number" && Number.isFinite(v)) out[k] = v;
+  return { day, cards: Math.round(cards), values: out };
+}
+
 // ---- The job ----
 
 export interface NightlyResult {

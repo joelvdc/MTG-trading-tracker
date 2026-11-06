@@ -171,3 +171,13 @@ describe("the nightly job", () => {
     expect((await store.job("nightly"))?.info).toMatchObject({ accounts: 1, alertsReached: 1 });
   });
 });
+
+describe("the phone's value history", () => {
+  it("takes well-formed days only", async () => {
+    const { cleanDay } = await import("@/lib/nightly");
+    expect(cleanDay({ day: "2026-01-02", cards: 3.4, values: { trend: 1.5, "b:~:trend": 1, bad: "x" } })).toEqual({ day: "2026-01-02", cards: 3, values: { trend: 1.5, "b:~:trend": 1 } });
+    expect(cleanDay({ day: "2 Jan", cards: 1, values: {} })).toBeNull();
+    expect(cleanDay({ day: "2026-01-02", cards: -1, values: {} })).toBeNull();
+    expect(cleanDay(null)).toBeNull();
+  });
+});
