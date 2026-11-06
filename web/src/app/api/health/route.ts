@@ -4,17 +4,14 @@ import { loadDetails } from "@/lib/carddetails";
 import { accountStore } from "@/lib/accounts";
 import { loadPrices } from "@/lib/pricestore";
 import { WEB_FORMAT } from "@/lib/syncfile";
-import { fromArchidekt } from "@/lib/autocategories";
 
-/** Cultivate (C21), whose Archidekt category is Ramp: for ?archidekt=1. */
-const CULTIVATE = "a78f5d3f-74d6-4ec1-89c4-e24639d3f4ba";
 
 export const dynamic = "force-dynamic";
 
 const hours = (ms: number | null | undefined) => (ms ? Math.round((Date.now() - ms) / 3_600_000) : null);
 
-/** For the weekly health check: no secrets, no owner data. With ?archidekt=1 also one Archidekt card lookup. */
-export async function GET(req: Request) {
+/** For the weekly health check: no secrets, no owner data. */
+export async function GET() {
   const store = accountStore();
   const [prices, details, ck, accounts] = await Promise.all([
     loadPrices(),
@@ -22,13 +19,7 @@ export async function GET(req: Request) {
     loadCardKingdom(),
     store ? store.count().catch(() => null) : Promise.resolve(null),
   ]);
-  const cardCategories = store ? await store.countCardCategories().catch(() => null) : null;
-  let archidekt: string | undefined;
-  if (new URL(req.url).searchParams.get("archidekt") === "1") {
-    archidekt = await fromArchidekt([CULTIVATE], Date.now())
-      .then((r) => r[0]?.category ?? "no answer for Cultivate")
-      .catch((e) => (e instanceof Error ? e.message : "failed"));
-  }
+  const tags = store ? await store.tagCategoryStats().catch(() => null) : null;
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -48,9 +39,10 @@ export async function GET(req: Request) {
     // The accounts database (step C): reachable, and how many accounts (no names).
     database: accounts !== null,
     accounts,
-    // Printings with a looked-up auto category (Archidekt / Scryfall tags), kept in the database.
-    cardCategories,
-    ...(archidekt !== undefined ? { archidekt } : {}),
+    // The auto categories table (Scryfall's card tags, rebuilt weekly): how many cards, and its age.
+    categoryCards: tags?.cards ?? null,
+    categoriesAgeHours: hours(tags?.updatedAt),
+    categoriesFresh: tags?.updatedAt ? Date.now() - tags.updatedAt < 9 * 86_400_000 : false,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

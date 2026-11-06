@@ -44,18 +44,6 @@ export interface BackupTarget {
   folder: string;
 }
 
-/**
- * A printing's automatic deck category, as looked up (lib/autocategories.ts): Archidekt's card id for it (null when
- * Archidekt doesn't know it), the category (null: none found, go by card type), where it came from, and when.
- */
-export interface CardCategory {
-  scryfallId: string;
-  archidektId: number | null;
-  category: string | null;
-  source: "archidekt" | "tags" | "scryfall" | "none";
-  checkedAt: number;
-}
-
 export interface AccountStore {
   count(): Promise<number>;
   create(username: string, passwordHash: string, admin: boolean, now: number): Promise<UserAccount | null>;
@@ -86,10 +74,12 @@ export interface AccountStore {
   setBackupTarget(accountId: number, target: BackupTarget | null): Promise<void>;
   /** Accounts with a backup target, for the nightly copy. */
   withBackupTargets(): Promise<{ accountId: number; target: BackupTarget }[]>;
-  /** The automatic categories known for these printings (shared by every account). */
-  cardCategories(scryfallIds: string[]): Promise<CardCategory[]>;
-  putCardCategories(rows: CardCategory[]): Promise<void>;
-  countCardCategories(): Promise<number>;
+  /** The automatic categories (lib/autocategories.ts) for these name keys, in order; shared by every account. */
+  tagCategories(keys: string[]): Promise<Map<string, string[]>>;
+  /** Replaces the whole table with [rows] (written at [now]). */
+  replaceTagCategories(rows: { key: string; categories: string[] }[], now: number): Promise<void>;
+  /** How many names the table has, and when it was last rebuilt (null: never). */
+  tagCategoryStats(): Promise<{ cards: number; updatedAt: number | null }>;
 }
 
 // ---- Passwords, tokens, codes ----
@@ -162,7 +152,8 @@ export function memoryStore(): AccountStore {
   const syncs = new Map<number, StoredSync>();
   const backups = new Map<number, Map<string, Uint8Array>>();
   const targets = new Map<number, BackupTarget>();
-  const cats = new Map<string, CardCategory>();
+  let tags = new Map<string, string[]>();
+  let tagsAt: number | null = null;
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
   return {
@@ -248,9 +239,12 @@ export function memoryStore(): AccountStore {
       else targets.delete(id);
     },
     withBackupTargets: async () => [...targets.entries()].map(([accountId, target]) => ({ accountId, target })),
-    cardCategories: async (ids) => ids.flatMap((id) => (cats.has(id) ? [{ ...cats.get(id)! }] : [])),
-    putCardCategories: async (rows) => void rows.forEach((r) => cats.set(r.scryfallId, { ...r })),
-    countCardCategories: async () => cats.size,
+    tagCategories: async (keys) => new Map(keys.flatMap((k) => (tags.has(k) ? [[k, [...tags.get(k)!]] as [string, string[]]] : []))),
+    replaceTagCategories: async (rows, now) => {
+      tags = new Map(rows.map((r) => [r.key, [...r.categories]]));
+      tagsAt = now;
+    },
+    tagCategoryStats: async () => ({ cards: tags.size, updatedAt: tags.size ? tagsAt : null }),
   };
 }
 
@@ -291,12 +285,12 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS backup_targets (
      account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
      target JSONB NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS card_categories (
-     scryfall_id TEXT PRIMARY KEY,
-     archidekt_id BIGINT,
-     category TEXT,
-     source TEXT NOT NULL,
-     checked_at BIGINT NOT NULL)`,
+  // card_categories held Archidekt's answers for a few hours on 2026-11-06; replaced by card_tags (Scryfall only).
+  `DROP TABLE IF EXISTS card_categories`,
+  `CREATE TABLE IF NOT EXISTS card_tags (
+     name_key TEXT PRIMARY KEY,
+     categories TEXT NOT NULL,
+     updated_at BIGINT NOT NULL)`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -393,27 +387,31 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
         ? await q("INSERT INTO backup_targets (account_id, target) VALUES ($1, $2) ON CONFLICT (account_id) DO UPDATE SET target = EXCLUDED.target", [id, JSON.stringify(t)])
         : await q("DELETE FROM backup_targets WHERE account_id = $1", [id])),
     withBackupTargets: async () => (await q("SELECT account_id, target FROM backup_targets")).map((r) => ({ accountId: num(r.account_id), target: r.target as BackupTarget })),
-    cardCategories: async (ids) =>
-      ids.length === 0
-        ? []
-        : (await q("SELECT * FROM card_categories WHERE scryfall_id = ANY($1::text[])", [ids])).map((r) => ({
-            scryfallId: String(r.scryfall_id),
-            archidektId: r.archidekt_id === null ? null : num(r.archidekt_id),
-            category: r.category === null ? null : String(r.category),
-            source: String(r.source) as CardCategory["source"],
-            checkedAt: num(r.checked_at),
-          })),
-    putCardCategories: async (rows) => {
-      if (rows.length === 0) return;
-      await q(
-        `INSERT INTO card_categories (scryfall_id, archidekt_id, category, source, checked_at)
-         SELECT * FROM unnest($1::text[], $2::bigint[], $3::text[], $4::text[], $5::bigint[])
-         ON CONFLICT (scryfall_id) DO UPDATE SET archidekt_id = EXCLUDED.archidekt_id, category = EXCLUDED.category,
-           source = EXCLUDED.source, checked_at = EXCLUDED.checked_at`,
-        [rows.map((r) => r.scryfallId), rows.map((r) => r.archidektId), rows.map((r) => r.category), rows.map((r) => r.source), rows.map((r) => r.checkedAt)],
-      );
+    tagCategories: async (keys) =>
+      new Map(
+        keys.length === 0
+          ? []
+          : (await q("SELECT name_key, categories FROM card_tags WHERE name_key = ANY($1::text[])", [keys])).map((r) => [
+              String(r.name_key),
+              String(r.categories).split("\n").filter(Boolean),
+            ]),
+      ),
+    replaceTagCategories: async (rows, now) => {
+      for (let i = 0; i < rows.length; i += 2000) {
+        const part = rows.slice(i, i + 2000);
+        await q(
+          `INSERT INTO card_tags (name_key, categories, updated_at)
+           SELECT k, c, $3::bigint FROM unnest($1::text[], $2::text[]) AS t(k, c)
+           ON CONFLICT (name_key) DO UPDATE SET categories = EXCLUDED.categories, updated_at = EXCLUDED.updated_at`,
+          [part.map((r) => r.key), part.map((r) => r.categories.join("\n")), now],
+        );
+      }
+      await q("DELETE FROM card_tags WHERE updated_at < $1::bigint", [now]);
     },
-    countCardCategories: async () => num((await q("SELECT COUNT(*) AS n FROM card_categories"))[0].n),
+    tagCategoryStats: async () => {
+      const r = (await q("SELECT COUNT(*) AS n, MAX(updated_at) AS at FROM card_tags"))[0];
+      return { cards: num(r.n), updatedAt: r.at === null ? null : num(r.at) };
+    },
   };
 }
 

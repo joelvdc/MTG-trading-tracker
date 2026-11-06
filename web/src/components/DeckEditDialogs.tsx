@@ -280,7 +280,7 @@ export function CategoriesDialog({ view, onClose, onChanged }: { view: DeckView;
               </button>
             </div>
             <p className="muted small">
-              Auto categories are Archidekt&apos;s (Ramp, Draw, Removal…), else from Scryfall&apos;s card tags, else the card type. The commander and the maybeboard stay
+              Auto categories come from Scryfall&apos;s card tags (Ramp, Removal, Draw, Tutor, Recursion, Protection; a card&apos;s other ones go along), else the card type. The commander and the maybeboard stay
               where they are.
             </p>
           </div>

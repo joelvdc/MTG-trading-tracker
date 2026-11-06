@@ -49,17 +49,17 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 - Stats, filters, sorting and the two CSV exports (`lib/colquery.ts`, `lib/csvexport.ts`) copy the app's
   `CollectionStats`, filter sheet, `SortSpec` and `exportCollectionCsv`. Value over time is not shown (its history lives
   on the phone); risers and fallers use Cardmarket's trend against its 30-day average, like the app.
-- **Auto categories** (`lib/autocategories.ts`, since 2026-11-06): cards added to local decks, new decks and "Put
-  every card in its auto category" use Archidekt's category for the card (its public card search
-  `archidekt.com/api/cards/v2/?uids=…`, no login, 60 printings per request, like the app's
-  `ArchidektCollectionClient.printings`); without one, the Scryfall tagger tags Archidekt sends along
-  (`oracleCard.oTags`/`inheritedTags`: ramp, removal/sweeper/counterspell, draw, tutor, recursion, protection);
-  for cards Archidekt doesn't know yet, a Scryfall `otag:` search by name; else the card type. Each printing is kept
-  in the database table `card_categories` (60 days; 7 for cards Archidekt didn't know). This is the website's only
-  contact with Archidekt (approved by the owner on 2026-11-06).
+- **Auto categories** (`lib/autocategories.ts`): cards added to local decks, new decks and "Put every card in its auto
+  category" use the website's own table `card_tags` (card name → categories). A daily job (`/api/cron/categories`,
+  04:00 UTC) rebuilds it from Scryfall's card tags when it is a week old: one tag search per category (paged), about
+  16,000 cards in about 2½ minutes; if a page fails the old table stays. The categories and their order: Ramp (ramp),
+  Removal (removal, sweeper, counterspell), Draw (draw), Tutor (tutor), Recursion (recursion), Protection
+  (protection). The first decides the card's section, the others go on the deck line as extra categories; deleting a
+  category moves its cards to their next one. Cards without a tag go by card type. The website doesn't contact
+  Archidekt (owner's decision, 2026-11-06).
 - `/api/health` answers `syncFormat`, price freshness, the card details and Card Kingdom stores (`cardDetails`,
   `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`), whether the accounts database answers (`database`,
-  `accounts`: how many, no names) and whether the settings are complete (no secrets).
+  `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`) and whether the settings are complete (no secrets).
 
 ## Settings (Vercel environment variables)
 | Name | What |

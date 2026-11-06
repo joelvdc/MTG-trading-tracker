@@ -96,7 +96,17 @@ export function sortLines(lines: DeckCard[]): DeckCard[] {
  */
 export interface Lookups {
   identity: (scryfallIds: string[]) => string | null;
-  auto: Map<string, { cardId: number | null; category: string | null }>;
+  auto: Map<string, { cardId: number | null; category: string | null; extra?: string[] }>;
+}
+
+/**
+ * Where a card goes "in its auto category": its first auto category (not [skip], the category being deleted) and its
+ * other ones as extra categories; by card type when it has none.
+ */
+export function autoFor(look: Lookups, scryfallId: string, types: string, skip: string | null = null): { to: string; extra: string[] } {
+  const a = look.auto.get(scryfallId);
+  const all = [a?.category, ...(a?.extra ?? [])].filter((x): x is string => !!x && !(skip !== null && same(x, skip)));
+  return all.length ? { to: all[0], extra: all.slice(1) } : { to: fallbackCategory(types), extra: [] };
 }
 
 export const NO_LOOKUPS: Lookups = { identity: () => null, auto: new Map() };
@@ -158,12 +168,20 @@ export function removeLines(file: SyncFile, id: number, uids: string[], now: num
   save(sd, sd.cards.filter((c) => !gone.has(c.lineUid)), now, look);
 }
 
-function moved(sd: SyncDeck, uids: Set<string>, category: string, look: Lookups): DeckCard[] {
+function moved(sd: SyncDeck, uids: Set<string>, category: string, look: Lookups, skip: string | null = null): DeckCard[] {
   const info = categories(sd.deck.categoryInfo);
   return sd.cards.map((c) => {
     if (!uids.has(c.lineUid)) return c;
-    const to = category === AUTO ? (look.auto.get(c.card.scryfallId)?.category ?? fallbackCategory(c.types)) : category;
-    return { ...inCategory(c, to, !included(to, info)), commander: same(to, COMMANDER), addedInApp: false };
+    const auto = category === AUTO ? autoFor(look, c.card.scryfallId, c.types, skip) : null;
+    const to = auto ? auto.to : category;
+    const line = inCategory(c, to, !included(to, info));
+    if (auto?.extra.length) {
+      // Its other auto categories go along (after the first), as on Archidekt.
+      const list = categoryList(line);
+      const merged = [list[0], ...auto.extra, ...list.slice(1)].filter((x, i, all) => !(skip !== null && same(x, skip)) && all.findIndex((y) => same(x, y)) === i);
+      line.categories = merged.join("\n");
+    }
+    return { ...line, commander: same(to, COMMANDER), addedInApp: false };
   });
 }
 
@@ -237,7 +255,8 @@ export function renameCategory(file: SyncFile, id: number, from: string, toRaw: 
 export function deleteCategory(file: SyncFile, id: number, name: string, moveTo: string | null, now: number, look: Lookups): void {
   const sd = local(file, id);
   const uids = new Set(sd.cards.filter((c) => same(c.category, name)).map((c) => c.lineUid));
-  const lines = moved(sd, uids, moveTo?.trim() ? moveTo.trim() : AUTO, look);
+  // To their auto categories: the next one when the deleted category was one of them (Cultivate: Ramp deleted, Tutor).
+  const lines = moved(sd, uids, moveTo?.trim() ? moveTo.trim() : AUTO, look, name);
   sd.deck.categoryInfo = encode(categories(sd.deck.categoryInfo).filter((c) => !same(c.name, name)));
   setCategoryHidden(file, id, name, false, now);
   save(sd, lines, now, look);
@@ -286,8 +305,8 @@ export function addCard(
     return there.lineUid;
   }
   const types = (facts?.typeLine ?? "").split(" — ")[0];
-  const auto = look.auto.get(card.scryfallId);
-  const to = category?.trim() || auto?.category || fallbackCategory(types);
+  const auto = category?.trim() ? null : autoFor(look, card.scryfallId, types);
+  const to = category?.trim() || auto!.to;
   const line: DeckCard = {
     id: 0,
     deckId: id,
@@ -302,8 +321,8 @@ export function addCard(
     gameChanger: false,
     addedInApp: false,
     maybeboard: !included(to, categories(sd.deck.categoryInfo)),
-    categories: "",
-    archidektCardId: auto?.cardId ?? null,
+    categories: auto?.extra.length ? [to, ...auto.extra].join("\n") : "",
+    archidektCardId: look.auto.get(card.scryfallId)?.cardId ?? null,
     relationId: null,
     label: null,
     lineUid: crypto.randomUUID(),

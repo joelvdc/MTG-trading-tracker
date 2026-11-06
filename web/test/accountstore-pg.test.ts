@@ -1,5 +1,8 @@
 import { PGlite } from "@electric-sql/pglite";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Starting a PGlite database takes a few seconds while the other test files run.
+vi.setConfig({ testTimeout: 30_000 });
 import { memoryStore, sqlStore, type AccountStore, type Row } from "@/lib/accounts";
 
 /**
@@ -75,17 +78,15 @@ describe.each([
     expect(await s.backupTarget(a.id)).toBeNull();
   });
 
-  it("automatic card categories", async () => {
+  it("the auto categories table", async () => {
     const s = await make();
-    expect(await s.cardCategories([])).toEqual([]);
-    const rows = [
-      { scryfallId: "a", archidektId: 12, category: "Ramp", source: "archidekt" as const, checkedAt: NOW },
-      { scryfallId: "b", archidektId: null, category: null, source: "none" as const, checkedAt: NOW },
-    ];
-    await s.putCardCategories(rows);
-    await s.putCardCategories([{ ...rows[0], category: "Draw", checkedAt: NOW + 1 }]);
-    const got = (await s.cardCategories(["a", "b", "c"])).sort((x, y) => x.scryfallId.localeCompare(y.scryfallId));
-    expect(got).toEqual([{ ...rows[0], category: "Draw", checkedAt: NOW + 1 }, rows[1]]);
-    expect(await s.countCardCategories()).toBe(2);
+    expect(await s.tagCategoryStats()).toEqual({ cards: 0, updatedAt: null });
+    expect((await s.tagCategories([])).size).toBe(0);
+    await s.replaceTagCategories([{ key: "cultivate", categories: ["Ramp", "Tutor"] }, { key: "old card", categories: ["Draw"] }], NOW);
+    // The next rebuild replaces everything: cards no longer tagged are gone.
+    await s.replaceTagCategories([{ key: "cultivate", categories: ["Ramp", "Tutor"] }, { key: "counterspell", categories: ["Removal"] }], NOW + 1);
+    const got = await s.tagCategories(["cultivate", "old card", "counterspell", "nope"]);
+    expect(Object.fromEntries(got)).toEqual({ cultivate: ["Ramp", "Tutor"], counterspell: ["Removal"] });
+    expect(await s.tagCategoryStats()).toEqual({ cards: 2, updatedAt: NOW + 1 });
   });
 });

@@ -1,7 +1,7 @@
 // New local decks from a pasted decklist or a preconstructed deck (the app's DeckEditor.previewText, fromText and
 // fromPrecon): the cards are looked up on Scryfall and put in their auto category (lib/autocategories.ts: Archidekt's,
 // else Scryfall's tags), or the category of their card type. Server only.
-import { COMMANDER, fallbackCategory, inOrder, MAYBEBOARD, type NewLine } from "./deckedit";
+import { autoFor, COMMANDER, inOrder, MAYBEBOARD, type NewLine } from "./deckedit";
 import { hasTags, parseDeckText, type TextLine, type TextResult } from "./decktext";
 import { deckList, deckUrl } from "./precons";
 import { mtgjson, preconList } from "./preconfetch";
@@ -88,8 +88,9 @@ export async function textLines(preview: TextPreview, useTags: boolean, commande
         ? MAYBEBOARD
         : tags && l.tags.length
           ? l.tags[0]
-          : (auto.get(sc.card.scryfallId)?.category ?? fallbackCategory(sc.typeLine.split(" — ")[0]));
-    return [lineFor(sc, l.quantity, l.foil, l.etched, category, commander, auto.get(sc.card.scryfallId)?.cardId ?? null, tags ? l.tags.slice(1) : [])];
+          : null;
+    const a = autoFor({ identity: () => null, auto }, sc.card.scryfallId, sc.typeLine.split(" — ")[0]);
+    return [lineFor(sc, l.quantity, l.foil, l.etched, category ?? a.to, commander, null, tags ? l.tags.slice(1) : category ? [] : a.extra)];
   });
   const found = preview.found.filter((c): c is LookedUp => c !== null);
   return { lines, identity: identityOf(found, names) };
@@ -107,8 +108,8 @@ export async function preconLines(fileName: string) {
     const sc = found.get(c.scryfallId!);
     if (!sc) return [];
     const commander = commanders.has(c.name);
-    const category = commander ? COMMANDER : (auto.get(sc.card.scryfallId)?.category ?? fallbackCategory(sc.typeLine.split(" — ")[0]));
-    return [lineFor(sc, c.count, c.isFoil, false, category, commander, auto.get(sc.card.scryfallId)?.cardId ?? null)];
+    const a = autoFor({ identity: () => null, auto }, sc.card.scryfallId, sc.typeLine.split(" — ")[0]);
+    return [lineFor(sc, c.count, c.isFoil, false, commander ? COMMANDER : a.to, commander, null, commander ? [] : a.extra)];
   });
   const name = deck.name || info.name;
   const origin = `Precon: ${name}` + (deck.releaseDate ? ` (${deck.releaseDate.slice(0, 4)})` : "");

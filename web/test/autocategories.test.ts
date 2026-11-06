@@ -1,86 +1,65 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
-import { autoCategories, categoryFromTags } from "@/lib/autocategories";
+import { autoCategories, fetchTagCategories, rebuildTagCategories, REBUILD_AFTER_MS } from "@/lib/autocategories";
+import { autoFor, type Lookups } from "@/lib/deckedit";
 
 const NOW = 1_793_968_645_412;
-const DAY = 86_400_000;
 
-/** A fake Archidekt card search and Scryfall tag search; records every address asked. */
-function fakeWeb(opts: { archidektDown?: boolean } = {}) {
+/** A fake Scryfall tag search: Cultivate is ramp and a tutor, Counterspell a counterspell, removal in two pages. */
+function fakeScryfall(opts: { fail?: boolean } = {}) {
   const asked: string[] = [];
-  const archidekt: Record<string, object> = {
-    "id-cultivate": { id: 1, uid: "id-cultivate", oracleCard: { defaultCategory: "Ramp", oTags: ["tutor-to-hand"], inheritedTags: ["ramp", "tutor"] } },
-    "id-bolt": { id: 2, uid: "id-bolt", oracleCard: { defaultCategory: null, oTags: ["burn"], inheritedTags: ["removal"] } },
-    "id-bears": { id: 3, uid: "id-bears", oracleCard: { defaultCategory: null, oTags: ["meme"], inheritedTags: [] } },
-  };
   const f = async (input: string | URL | Request): Promise<Response> => {
     const url = String(input);
     asked.push(url);
-    if (url.startsWith("https://archidekt.com/")) {
-      if (opts.archidektDown) return new Response("down", { status: 503 });
-      const uids = new URL(url).searchParams.get("uids")!.split(",");
-      return Response.json({ results: uids.flatMap((u) => (archidekt[u] ? [archidekt[u]] : [])), next: null });
+    if (opts.fail) return new Response("down", { status: 503 });
+    const q = new URL(url).searchParams.get("q") ?? "";
+    const page = new URL(url).searchParams.get("page");
+    if (q.includes("otag:ramp")) return Response.json({ data: [{ name: "Cultivate" }, { name: "Sol Ring" }], has_more: false });
+    if (q.includes("otag:counterspell")) {
+      if (page === "2") return Response.json({ data: [{ name: "Fire // Ice" }], has_more: false });
+      return Response.json({ data: [{ name: "Counterspell" }], has_more: true, next_page: `${url}&page=2` });
     }
-    if (url.startsWith("https://api.scryfall.com/cards/search")) {
-      const q = new URL(url).searchParams.get("q")!;
-      // "Brand New Ramp" is a ramp card Archidekt doesn't know yet.
-      if (q.includes("otag:ramp") && q.includes('!"Brand New Ramp"')) return Response.json({ data: [{ name: "Brand New Ramp" }] });
-      return Response.json({ object: "error" }, { status: 404 });
-    }
-    return new Response("?", { status: 500 });
+    if (q.includes("otag:tutor")) return Response.json({ data: [{ name: "Cultivate" }, { name: "Demonic Tutor" }], has_more: false });
+    return Response.json({ object: "error" }, { status: 404 });
   };
   return { f: f as typeof fetch, asked };
 }
-
-const cards = [
-  { scryfallId: "id-cultivate", name: "Cultivate" },
-  { scryfallId: "id-bolt", name: "Lightning Bolt" },
-  { scryfallId: "id-bears", name: "Grizzly Bears" },
-  { scryfallId: "id-new", name: "Brand New Ramp" },
-  { scryfallId: "id-plain", name: "Plain New Card" },
-];
 
 beforeEach(() => {
   process.env.DATABASE_URL = "memory";
   resetMemoryStore();
 });
 
-describe("auto categories", () => {
-  it("tags pick the first matching group", () => {
-    expect(categoryFromTags(["tutor", "ramp"])).toBe("Ramp");
-    expect(categoryFromTags(["board-wipe"])).toBe("Removal");
-    expect(categoryFromTags(["Card Advantage"])).toBe("Draw");
-    expect(categoryFromTags(["meme"])).toBeNull();
+describe("auto categories (the website's own table, from Scryfall's tags)", () => {
+  it("collects every category of a card, in the fixed order", async () => {
+    const rows = await fetchTagCategories(fakeScryfall().f, Date.now() + 60_000);
+    const by = Object.fromEntries(rows.map((r) => [r.name, r.categories]));
+    expect(by).toEqual({ Cultivate: ["Ramp", "Tutor"], "Sol Ring": ["Ramp"], Counterspell: ["Removal"], "Fire // Ice": ["Removal"], "Demonic Tutor": ["Tutor"] });
   });
 
-  it("Archidekt's category first, then its Scryfall tags, then a Scryfall search; kept for next time", async () => {
-    const web = fakeWeb();
-    const got = await autoCategories(cards, NOW, web.f);
-    expect(Object.fromEntries([...got].map(([id, v]) => [id, v]))).toEqual({
-      "id-cultivate": { cardId: 1, category: "Ramp" },
-      "id-bolt": { cardId: 2, category: "Removal" },
-      "id-bears": { cardId: 3, category: null },
-      "id-new": { cardId: null, category: "Ramp" },
-      "id-plain": { cardId: null, category: null },
-    });
-    expect(web.asked.filter((u) => u.includes("archidekt"))).toHaveLength(1);
-    expect(await accountStore()!.countCardCategories()).toBe(5);
+  it("rebuilds weekly, keeps the old table when Scryfall fails, and answers by name", async () => {
+    const first = await rebuildTagCategories(NOW, fakeScryfall().f, Date.now() + 60_000);
+    expect(first).toMatchObject({ rebuilt: true, cards: 6, updatedAt: NOW }); // Fire // Ice also as "fire"
+    const soon = fakeScryfall();
+    expect((await rebuildTagCategories(NOW + 86_400_000, soon.f)).rebuilt).toBe(false);
+    expect(soon.asked).toEqual([]);
+    await expect(rebuildTagCategories(NOW + REBUILD_AFTER_MS + 1, fakeScryfall({ fail: true }).f, Date.now() + 60_000)).rejects.toThrow(/failed/);
+    expect((await accountStore()!.tagCategoryStats()).cards).toBe(6);
 
-    // Next time from the database, without asking anyone.
-    const again = fakeWeb();
-    expect((await autoCategories(cards, NOW + DAY, again.f)).get("id-bolt")?.category).toBe("Removal");
-    expect(again.asked).toEqual([]);
-
-    // A week on, only the cards Archidekt didn't know are asked again.
-    const later = fakeWeb();
-    await autoCategories(cards, NOW + 8 * DAY, later.f);
-    expect(later.asked[0]).toContain("uids=id-new,id-plain&");
+    const got = await autoCategories([
+      { scryfallId: "p1", name: "Cultivate" },
+      { scryfallId: "p2", name: "Fire" },
+      { scryfallId: "p3", name: "Grizzly Bears" },
+    ]);
+    expect(got.get("p1")).toEqual({ cardId: null, category: "Ramp", extra: ["Tutor"] });
+    expect(got.get("p2")?.category).toBe("Removal");
+    expect(got.has("p3")).toBe(false);
   });
 
-  it("when Archidekt is down, cards go by card type and nothing is kept", async () => {
-    const web = fakeWeb({ archidektDown: true });
-    const got = await autoCategories(cards, NOW, web.f);
-    expect(got.size).toBe(0);
-    expect(await accountStore()!.countCardCategories()).toBe(0);
+  it("a deck line gets its first category, the others along; deleting the first moves it to the next", () => {
+    const look: Lookups = { identity: () => null, auto: new Map([["p1", { cardId: null, category: "Ramp", extra: ["Tutor"] }]]) };
+    expect(autoFor(look, "p1", "Sorcery")).toEqual({ to: "Ramp", extra: ["Tutor"] });
+    expect(autoFor(look, "p1", "Sorcery", "ramp")).toEqual({ to: "Tutor", extra: [] });
+    expect(autoFor(look, "p9", "Creature — Bear")).toEqual({ to: "Creature", extra: [] });
   });
 });
