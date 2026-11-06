@@ -167,7 +167,7 @@ export function memoryStore(): AccountStore {
     list: async () => accounts.map(plain),
     setPassword: async (id, hash) => {
       const a = accounts.find((x) => x.id === id);
-      if (a) a.passwordHash = hash;
+      if (a) Object.assign(a, { passwordHash: hash, failures: 0, lockedUntil: 0 });
     },
     setFailures: async (id, failures, lockedUntil) => {
       const a = accounts.find((x) => x.id === id);
@@ -197,7 +197,8 @@ export function memoryStore(): AccountStore {
     devices: async (accountId) => devices.filter((d) => d.accountId === accountId).map(dev),
     touchDevice: async (id, now) => {
       const d = devices.find((x) => x.id === id);
-      if (d) d.lastUsed = now;
+      // Like the database: written at most every 10 minutes.
+      if (d && d.lastUsed < now - 600_000) d.lastUsed = now;
     },
     removeDevice: async (id) => {
       const i = devices.findIndex((x) => x.id === id);
@@ -272,23 +273,28 @@ const SCHEMA = [
      target JSONB NOT NULL)`,
 ];
 
-type Row = Record<string, unknown>;
+export type Row = Record<string, unknown>;
 const num = (v: unknown) => Number(v);
 const b64 = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64");
 const unb64 = (s: unknown) => new Uint8Array(Buffer.from(String(s), "base64"));
 
 export function postgresStore(url: string): AccountStore {
   const sql = neon(url);
+  return sqlStore(async (text, params) => (await sql.query(text, params)) as Row[]);
+}
+
+/** The store on any Postgres: [run] sends one query with $1… parameters (Neon on Vercel, PGlite in the tests). */
+export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]>): AccountStore {
   let ready: Promise<void> | null = null;
   const q = async (text: string, params: unknown[] = []): Promise<Row[]> => {
     ready ??= (async () => {
-      for (const s of SCHEMA) await sql.query(s);
+      for (const s of SCHEMA) await run(s, []);
     })().catch((e) => {
       ready = null;
       throw e;
     });
     await ready;
-    return (await sql.query(text, params)) as Row[];
+    return run(text, params);
   };
   const acc = (r: Row): UserAccount => ({ id: num(r.id), username: String(r.username), admin: Boolean(r.admin), createdAt: num(r.created_at) });
   const dev = (r: Row): Device => ({ id: String(r.id), accountId: num(r.account_id), name: String(r.name), createdAt: num(r.created_at), lastUsed: num(r.last_used) });
@@ -329,7 +335,7 @@ export function postgresStore(url: string): AccountStore {
       return r ? dev(r) : null;
     },
     devices: async (accountId) => (await q("SELECT * FROM devices WHERE account_id = $1 ORDER BY last_used DESC", [accountId])).map(dev),
-    touchDevice: async (id, now) => void (await q("UPDATE devices SET last_used = $2 WHERE id = $1 AND last_used < $2 - 600000", [id, now])),
+    touchDevice: async (id, now) => void (await q("UPDATE devices SET last_used = $2::bigint WHERE id = $1 AND last_used < $2::bigint - 600000", [id, now])),
     removeDevice: async (id) => void (await q("DELETE FROM devices WHERE id = $1", [id])),
     removeDevices: async (accountId) => void (await q("DELETE FROM devices WHERE account_id = $1", [accountId])),
     getSync: async (id) => {
