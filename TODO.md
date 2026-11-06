@@ -97,11 +97,10 @@ the scanner, package check and life tracker stay on the phone.
     the trade binder's uid in the synced settings). The owner approved copying their data; they do it themselves on
     the website (Settings → Make my account and copy my data, while logged in with Nextcloud), then switch each phone
     the same day. Next: step D.
-  - Owner's decisions 2026-11-06, plans waiting for a green light: Commander Salt scores for local decks on the
-    website (agreed: look for a deck link that needs no account, else the half-manual flow), and automatic
-    categories on the website. Owner: "build a database copying the archidekt one and fallback to scryfall if
-    something is missing." Archidekt's public card search (api/cards/v2/?nameSearch=, no login) answers
-    oracleCard.defaultCategory; Scryfall's tagger tags fill the gaps, then card type.
+  - Automatic categories on the website: done 2026-11-06 (owner: "build a database copying the archidekt one and
+    fallback to scryfall if something is missing"; web/src/lib/autocategories.ts, see Done).
+  - Still to plan (owner agreed 2026-11-06): Commander Salt scores for local decks on the website: look for a deck
+    link that needs no account, else the half-manual flow.
 
 ### 2026-11-05: website accounts instead of the Nextcloud login
 Owner: "Instead of logging into nextcloud for "opening" the website, could the website support users? Like create a
@@ -143,6 +142,9 @@ onedrive?"
   is only reshaped once.
 
 ## Done
+- 2026-11-06: website auto categories: cards added to local decks, new decks and "Put every card in its auto
+  category" use Archidekt's category, else Scryfall's tags, else card type; kept in the database (card_categories).
+- 2026-11-06: step C: website accounts (Neon), app 1.79 syncs with them; the trade binder syncs.
 - 2026-11-06: website phase 4 (decks): decks list and deck pages (cards by category or type, owned/missing, stats,
   commander-casting odds, missing cards to the wishlist, bracket and power cards to print); editing local decks, new
   decks from a pasted list, a precon or empty, copy and "make it a local deck"; recommendations (EDHREC,

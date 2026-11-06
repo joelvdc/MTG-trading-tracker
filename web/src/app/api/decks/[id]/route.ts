@@ -28,6 +28,7 @@ import {
 import type { DeckCard } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import type { CardRef } from "@/lib/syncfile";
+import { autoCategories } from "@/lib/autocategories";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -103,9 +104,20 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
   } catch {
     facts = {};
   }
-  // The website never contacts Archidekt (the plan's rule), so cards go by card type, as in the app with auto categories off.
-  void action;
-  const auto = new Map();
+  // Auto categories (Archidekt's, else Scryfall's tags) for the cards this action may put in theirs.
+  const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  const uids = new Set(uidList(body));
+  const needs: DeckCard[] =
+    action === "move" && body.category === null
+      ? lines.filter((c) => uids.has(c.lineUid))
+      : action === "delete-category" && !body.moveTo
+        ? lines.filter((c) => sameName(c.category, str(body.name)))
+        : action === "auto-all"
+          ? lines.filter((c) => !c.commander && !c.maybeboard)
+          : [];
+  const cards = needs.map((c) => ({ scryfallId: c.card.scryfallId, name: c.card.name }));
+  if (action === "add-card" && body.card?.scryfallId && !str(body.category)) cards.push({ scryfallId: body.card.scryfallId, name: str(body.card.name) });
+  const auto = cards.length ? await autoCategories(cards) : new Map();
   const identity = (list: string[]) => (list.every((i) => facts[i]) ? inOrder(list.map((i) => facts[i].i)) : null);
   return { look: { identity, auto }, facts };
 }
@@ -113,7 +125,7 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
 /**
  * Deck actions. Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
  * "copy", "detach" (a deck from Archidekt becomes a local deck), "hide-category", "pick" (the printing you own to
- * show). Local decks only: "set-quantity", "remove", "move", "add-card", "rename-category", "delete-category",
+ * show). Local decks only: "set-quantity", "remove", "move", "auto-all", "add-card", "rename-category", "delete-category",
  * "add-category", "rename", "delete".
  */
 export async function POST(req: Request, { params }: Params) {
@@ -150,6 +162,12 @@ export async function POST(req: Request, { params }: Params) {
         case "move":
           moveLines(f, id, uidList(body), body.category === null ? AUTO : str(body.category), now, look);
           return {};
+        case "auto-all": {
+          // Every card (not the commander or the maybeboard) into its auto category (DeckEditor.autoCategoriseAll).
+          const sd = syncDecks(f).find((d) => d.deck.archidektId === id);
+          moveLines(f, id, (sd?.cards ?? []).filter((c) => !c.commander && !c.maybeboard).map((c) => c.lineUid), AUTO, now, look);
+          return {};
+        }
         case "add-card": {
           const card = body.card;
           if (!card || typeof card.scryfallId !== "string" || typeof card.name !== "string") throw new EditError("Pick a card first.");

@@ -11,7 +11,7 @@ import { EditError } from "./wishlist";
 
 export const MAYBEBOARD = "Maybeboard";
 export const COMMANDER = "Commander";
-/** Stands for "each card's auto category" when moving cards (the app's DeckEditor.AUTO); by card type here. */
+/** Stands for "each card's auto category" when moving cards (the app's DeckEditor.AUTO). */
 export const AUTO = "\u0000auto";
 const MAX_QUANTITY = 999;
 const COLOURS = "WUBRG";
@@ -92,11 +92,11 @@ export function sortLines(lines: DeckCard[]): DeckCard[] {
 
 /**
  * What an edit needs from outside: commanders' colour identity (null when unknown) and auto categories by Scryfall id
- * (Archidekt's in the app; the website never contacts Archidekt, so it passes none and cards go by card type).
+ * (Archidekt's, else Scryfall's tags: lib/autocategories.ts; cards without one go by card type).
  */
 export interface Lookups {
   identity: (scryfallIds: string[]) => string | null;
-  auto: Map<string, { cardId: number; category: string | null }>;
+  auto: Map<string, { cardId: number | null; category: string | null }>;
 }
 
 export const NO_LOOKUPS: Lookups = { identity: () => null, auto: new Map() };

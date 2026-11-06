@@ -74,4 +74,18 @@ describe.each([
     await s.setBackupTarget(a.id, null);
     expect(await s.backupTarget(a.id)).toBeNull();
   });
+
+  it("automatic card categories", async () => {
+    const s = await make();
+    expect(await s.cardCategories([])).toEqual([]);
+    const rows = [
+      { scryfallId: "a", archidektId: 12, category: "Ramp", source: "archidekt" as const, checkedAt: NOW },
+      { scryfallId: "b", archidektId: null, category: null, source: "none" as const, checkedAt: NOW },
+    ];
+    await s.putCardCategories(rows);
+    await s.putCardCategories([{ ...rows[0], category: "Draw", checkedAt: NOW + 1 }]);
+    const got = (await s.cardCategories(["a", "b", "c"])).sort((x, y) => x.scryfallId.localeCompare(y.scryfallId));
+    expect(got).toEqual([{ ...rows[0], category: "Draw", checkedAt: NOW + 1 }, rows[1]]);
+    expect(await s.countCardCategories()).toBe(2);
+  });
 });

@@ -310,7 +310,9 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   puts them on the wishlist or copies them as a list; the **Bracket card** and **Power card** print like the app's.
   **New deck** makes a local deck from a pasted list (Moxfield, Archidekt, Arena), a precon or nothing; a local deck's
   cards can be added, removed, counted, moved between categories, made commander or sent to the maybeboard, and
-  its categories renamed, deleted or hidden, with the same rules as the app. Any deck can be copied, a deck from
+  its categories renamed, deleted or hidden, with the same rules as the app. New cards go into their **auto
+  category** (Ramp, Draw, Removal…): Archidekt's, else from Scryfall's card tags, else the card type; Categories →
+  **Put every card in its auto category** sorts a whole deck that way. Any deck can be copied, a deck from
   Archidekt made local, and the printing you own shown for a card picked. The phones get every change at their next
   sync.
   **Recommendations** shows EDHREC's or recommander.cards' cards for the deck, like the app, with one-click adding

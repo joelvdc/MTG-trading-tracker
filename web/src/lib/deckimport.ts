@@ -1,15 +1,16 @@
 // New local decks from a pasted decklist or a preconstructed deck (the app's DeckEditor.previewText, fromText and
-// fromPrecon): the cards are looked up on Scryfall and put in the category of their card type (the app with auto
-// categories off: the website never contacts Archidekt). Server only.
+// fromPrecon): the cards are looked up on Scryfall and put in their auto category (lib/autocategories.ts: Archidekt's,
+// else Scryfall's tags), or the category of their card type. Server only.
 import { COMMANDER, fallbackCategory, inOrder, MAYBEBOARD, type NewLine } from "./deckedit";
 import { hasTags, parseDeckText, type TextLine, type TextResult } from "./decktext";
 import { deckList, deckUrl } from "./precons";
 import { mtgjson, preconList } from "./preconfetch";
 import { lookupCollectionFull, type LookedUp } from "./scryfall";
 import { EditError } from "./wishlist";
+import { autoCategories, type AutoMap } from "./autocategories";
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-const NO_AUTO = new Map<string, { cardId: number; category: string | null }>();
+const NO_AUTO: AutoMap = new Map();
 
 export interface TextPreview {
   result: TextResult;
@@ -73,9 +74,10 @@ function lineFor(sc: LookedUp, quantity: number, foil: boolean, etched: boolean,
 
 /** The lines for a pasted list; categories from its tags ([useTags]) or the card types. */
 export async function textLines(preview: TextPreview, useTags: boolean, commanderOverride: string | null) {
-  const auto = NO_AUTO;
   const names = new Set(commanderOverride ? [commanderOverride] : preview.commanders);
   const tags = useTags && hasTags(preview.result);
+  // Cards without a category of their own go into their auto category (like the app's DeckEditor.importText).
+  const auto = tags ? NO_AUTO : await autoCategories(preview.found.flatMap((c) => (c ? [{ scryfallId: c.card.scryfallId, name: c.card.name }] : [])));
   const lines = preview.result.lines.flatMap((l, i): NewLine[] => {
     const sc = preview.found[i];
     if (!sc) return [];
@@ -99,7 +101,7 @@ export async function preconLines(fileName: string) {
   if (!info) throw new EditError("That deck isn't in MTGJSON's list.");
   const deck = deckList(await mtgjson(deckUrl(fileName)));
   const found = new Map((await lookupCollectionFull(deck.cards.map((c) => ({ id: c.scryfallId! })))).map((c) => [c.card.scryfallId, c]));
-  const auto = NO_AUTO;
+  const auto = await autoCategories([...found.values()].map((c) => ({ scryfallId: c.card.scryfallId, name: c.card.name })));
   const commanders = new Set(deck.commanders);
   const lines = deck.cards.flatMap((c): NewLine[] => {
     const sc = found.get(c.scryfallId!);

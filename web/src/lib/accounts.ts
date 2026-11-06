@@ -44,6 +44,18 @@ export interface BackupTarget {
   folder: string;
 }
 
+/**
+ * A printing's automatic deck category, as looked up (lib/autocategories.ts): Archidekt's card id for it (null when
+ * Archidekt doesn't know it), the category (null: none found, go by card type), where it came from, and when.
+ */
+export interface CardCategory {
+  scryfallId: string;
+  archidektId: number | null;
+  category: string | null;
+  source: "archidekt" | "tags" | "scryfall" | "none";
+  checkedAt: number;
+}
+
 export interface AccountStore {
   count(): Promise<number>;
   create(username: string, passwordHash: string, admin: boolean, now: number): Promise<UserAccount | null>;
@@ -74,6 +86,10 @@ export interface AccountStore {
   setBackupTarget(accountId: number, target: BackupTarget | null): Promise<void>;
   /** Accounts with a backup target, for the nightly copy. */
   withBackupTargets(): Promise<{ accountId: number; target: BackupTarget }[]>;
+  /** The automatic categories known for these printings (shared by every account). */
+  cardCategories(scryfallIds: string[]): Promise<CardCategory[]>;
+  putCardCategories(rows: CardCategory[]): Promise<void>;
+  countCardCategories(): Promise<number>;
 }
 
 // ---- Passwords, tokens, codes ----
@@ -146,6 +162,7 @@ export function memoryStore(): AccountStore {
   const syncs = new Map<number, StoredSync>();
   const backups = new Map<number, Map<string, Uint8Array>>();
   const targets = new Map<number, BackupTarget>();
+  const cats = new Map<string, CardCategory>();
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
   return {
@@ -231,6 +248,9 @@ export function memoryStore(): AccountStore {
       else targets.delete(id);
     },
     withBackupTargets: async () => [...targets.entries()].map(([accountId, target]) => ({ accountId, target })),
+    cardCategories: async (ids) => ids.flatMap((id) => (cats.has(id) ? [{ ...cats.get(id)! }] : [])),
+    putCardCategories: async (rows) => void rows.forEach((r) => cats.set(r.scryfallId, { ...r })),
+    countCardCategories: async () => cats.size,
   };
 }
 
@@ -271,6 +291,12 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS backup_targets (
      account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
      target JSONB NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS card_categories (
+     scryfall_id TEXT PRIMARY KEY,
+     archidekt_id BIGINT,
+     category TEXT,
+     source TEXT NOT NULL,
+     checked_at BIGINT NOT NULL)`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -367,6 +393,27 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
         ? await q("INSERT INTO backup_targets (account_id, target) VALUES ($1, $2) ON CONFLICT (account_id) DO UPDATE SET target = EXCLUDED.target", [id, JSON.stringify(t)])
         : await q("DELETE FROM backup_targets WHERE account_id = $1", [id])),
     withBackupTargets: async () => (await q("SELECT account_id, target FROM backup_targets")).map((r) => ({ accountId: num(r.account_id), target: r.target as BackupTarget })),
+    cardCategories: async (ids) =>
+      ids.length === 0
+        ? []
+        : (await q("SELECT * FROM card_categories WHERE scryfall_id = ANY($1::text[])", [ids])).map((r) => ({
+            scryfallId: String(r.scryfall_id),
+            archidektId: r.archidekt_id === null ? null : num(r.archidekt_id),
+            category: r.category === null ? null : String(r.category),
+            source: String(r.source) as CardCategory["source"],
+            checkedAt: num(r.checked_at),
+          })),
+    putCardCategories: async (rows) => {
+      if (rows.length === 0) return;
+      await q(
+        `INSERT INTO card_categories (scryfall_id, archidekt_id, category, source, checked_at)
+         SELECT * FROM unnest($1::text[], $2::bigint[], $3::text[], $4::text[], $5::bigint[])
+         ON CONFLICT (scryfall_id) DO UPDATE SET archidekt_id = EXCLUDED.archidekt_id, category = EXCLUDED.category,
+           source = EXCLUDED.source, checked_at = EXCLUDED.checked_at`,
+        [rows.map((r) => r.scryfallId), rows.map((r) => r.archidektId), rows.map((r) => r.category), rows.map((r) => r.source), rows.map((r) => r.checkedAt)],
+      );
+    },
+    countCardCategories: async () => num((await q("SELECT COUNT(*) AS n FROM card_categories"))[0].n),
   };
 }
 

@@ -131,7 +131,7 @@ export function NewDeckDialog({ onClose }: { onClose: () => void }) {
                 {preview.hasTags && (
                   <label className="check">
                     <input type="checkbox" checked={useTags} onChange={(e) => setUseTags(e.target.checked)} />
-                    <span>Use the list&apos;s tags as categories (else by card type)</span>
+                    <span>Use the list&apos;s tags as categories (else each card&apos;s auto category)</span>
                   </label>
                 )}
               </div>
@@ -154,7 +154,7 @@ export function NewDeckDialog({ onClose }: { onClose: () => void }) {
               ))}
               {precons && precons.more > 0 && <li className="muted small">…and {precons.more} more: search to narrow down.</li>}
             </ul>
-            <p className="muted small">The whole deck from MTGJSON, basic lands too, sorted by card type. Adding its cards to the collection is done on the Orders page (Add a precon).</p>
+            <p className="muted small">The whole deck from MTGJSON, basic lands too, each card in its auto category (Ramp, Draw, Removal…). Adding its cards to the collection is done on the Orders page (Add a precon).</p>
           </>
         )}
         <label className="stack">
