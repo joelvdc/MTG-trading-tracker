@@ -118,6 +118,8 @@ class AppContainer(context: Context) {
     val history = ValueHistory(db)
     val precons = com.mtgtrader.data.PreconStore(http)
     val cardDetails = com.mtgtrader.data.CardDetails(db, scryfall)
+    /** Card text, legalities and rulings for the card windows (since 1.81), kept in files on the phone. */
+    val cardRules = com.mtgtrader.data.CardRulesRepository(context.filesDir.resolve("card-rules"), scryfall)
     /** When each deck can win (since 1.52), kept in a file on the phone. */
     val winOdds = com.mtgtrader.data.WinOddsStore(context.filesDir, db)
     val symbols = SetSymbolMatcher(context, http, setIcons, scryfall)

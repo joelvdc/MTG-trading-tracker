@@ -440,6 +440,8 @@ private fun RecCardDialog(
     onWishlist: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val rules = rememberCardRules(card.card?.scryfallId, card.name)
+    var tab by remember { mutableStateOf(CardTab.VERSIONS) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
@@ -455,38 +457,43 @@ private fun RecCardDialog(
                         card.releasedAt?.let { Text("Released $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
-                decks.forEach { d ->
-                    Button(onClick = { onAddToDeck(d) }, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
-                        Text("Add to ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-                OutlinedButton(onClick = onWishlist, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Star, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Add to wishlist")
-                }
-                HorizontalDivider()
-                PriceTable(price?.toSet(false) ?: PriceSet(trend = card.card?.fallbackEur), priceType, "Cardmarket prices")
-                Row {
-                    TextButton(onClick = {
-                        val slug = card.name.substringBefore(" // ").lowercase().replace(Regex("[^a-z0-9 -]"), "").trim().replace(Regex("[ -]+"), "-")
-                        runCatching { uriHandler.openUri("https://edhrec.com/cards/$slug") }
-                    }) {
-                        Text("EDHREC")
-                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
-                    }
-                    card.card?.let { ref ->
-                        TextButton(onClick = { runCatching { uriHandler.openUri(ref.cardmarketUrl) } }) {
-                            Text("Cardmarket")
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
+                CardTextBlock(rules.faces)
+                CardTabs(tab) { tab = it }
+                if (tab == CardTab.RULINGS) RulingsTab(rules)
+                if (tab == CardTab.VERSIONS) {
+                    decks.forEach { d ->
+                        Button(onClick = { onAddToDeck(d) }, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
+                            Text("Add to ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
+                    OutlinedButton(onClick = onWishlist, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Star, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Add to wishlist")
+                    }
+                    HorizontalDivider()
+                    PriceTable(price?.toSet(false) ?: PriceSet(trend = card.card?.fallbackEur), priceType, "Cardmarket prices")
+                    Row {
+                        TextButton(onClick = {
+                            val slug = card.name.substringBefore(" // ").lowercase().replace(Regex("[^a-z0-9 -]"), "").trim().replace(Regex("[ -]+"), "-")
+                            runCatching { uriHandler.openUri("https://edhrec.com/cards/$slug") }
+                        }) {
+                            Text("EDHREC")
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
+                        }
+                        card.card?.let { ref ->
+                            TextButton(onClick = { runCatching { uriHandler.openUri(ref.cardmarketUrl) } }) {
+                                Text("Cardmarket")
+                                Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                    Text(
+                        if (source == RecSource.EDHREC) "Recommendation data: EDHREC." else "Recommendations by recommander.cards.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                Text(
-                    if (source == RecSource.EDHREC) "Recommendation data: EDHREC." else "Recommendations by recommander.cards.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },

@@ -77,7 +77,7 @@ private fun symbolStyle(size: TextUnit, font: FontFamily? = ManaFont) = TextStyl
 
 /** One symbol on its coloured circle, as Archidekt and Scryfall show them; hybrids are split in two. */
 @Composable
-private fun ManaSymbol(s: String, size: Dp) {
+internal fun ManaSymbol(s: String, size: Dp) {
     val density = LocalDensity.current
     val big = with(density) { (size * 0.68f).toSp() }
     val small = with(density) { (size * 0.44f).toSp() }

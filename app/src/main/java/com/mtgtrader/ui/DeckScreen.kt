@@ -1434,11 +1434,13 @@ private fun DeckCardDialog(
     val item = row.item
     val owned by remember { c.db.collectionDao().observeOwned() }.collectAsStateWithLifecycle(emptyList())
     val ownedHere = owned.firstOrNull { it.scryfallId == item.card.scryfallId }?.qty ?: 0
+    val rules = rememberCardRules(item.card.scryfallId, item.card.name)
+    var tab by remember { mutableStateOf(CardTab.VERSIONS) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(item.card.displayName, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CardThumb(item.card.imageUrl, width = 72, enlargeable = true)
                     Spacer(Modifier.width(12.dp))
@@ -1459,63 +1461,68 @@ private fun DeckCardDialog(
                         }
                     }
                 }
-                // On a deck that can be edited: its category, deck or maybeboard, and copies (since 1.46).
-                editControls?.let {
-                    HorizontalDivider()
-                    it()
-                    HorizontalDivider()
-                }
-                if (tags.isNotEmpty()) BracketTags(tags)
-                combos.forEach { combo -> ComboLine(item.card.name, combo) { runCatching { uriHandler.openUri(it) } } }
-                DeckUsageLine(item.card.name, exceptDeck = item.deckId, prefix = "Also in")
-                if (original != null) {
-                    Text(
-                        "Your printing. On Archidekt: ${original.setLabel}" + (archidektCard?.takeIf { it.foil }?.let { " · " + it.card.finishName(it.finish).lowercase() } ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                // Which of your copies the deck shows.
-                val options = copies.groupBy { it.item.card.scryfallId to it.item.finish }.values.toList()
-                if (options.size > 1 || (options.size == 1 && original == null && options[0][0].item.card.scryfallId != item.card.scryfallId) || picked != null) {
-                    HorizontalDivider()
-                    Text("Show in this deck", style = MaterialTheme.typography.titleSmall)
-                    Column(Modifier.heightIn(max = 260.dp).verticalScroll(rememberScrollState())) {
-                        options.forEach { group ->
-                            val first = group.first().item
-                            val isShown = first.card.scryfallId == item.card.scryfallId && first.finish == item.finish
-                            Row(
-                                Modifier.fillMaxWidth().clickable { onPick(DeckPrintings.pickValue(first.card.scryfallId, first.finish)) }.padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(selected = isShown, onClick = { onPick(DeckPrintings.pickValue(first.card.scryfallId, first.finish)) })
-                                CardThumb(first.card.imageUrl, width = 28)
-                                Spacer(Modifier.width(8.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        SetLine(first.card)
-                                        FinishTag(first.card, first.finish)
+                CardTextBlock(rules.faces)
+                CardTabs(tab) { tab = it }
+                if (tab == CardTab.RULINGS) RulingsTab(rules)
+                if (tab == CardTab.VERSIONS) {
+                    // On a deck that can be edited: its category, deck or maybeboard, and copies (since 1.46).
+                    editControls?.let {
+                        HorizontalDivider()
+                        it()
+                        HorizontalDivider()
+                    }
+                    if (tags.isNotEmpty()) BracketTags(tags)
+                    combos.forEach { combo -> ComboLine(item.card.name, combo) { runCatching { uriHandler.openUri(it) } } }
+                    DeckUsageLine(item.card.name, exceptDeck = item.deckId, prefix = "Also in")
+                    if (original != null) {
+                        Text(
+                            "Your printing. On Archidekt: ${original.setLabel}" + (archidektCard?.takeIf { it.foil }?.let { " · " + it.card.finishName(it.finish).lowercase() } ?: ""),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    // Which of your copies the deck shows.
+                    val options = copies.groupBy { it.item.card.scryfallId to it.item.finish }.values.toList()
+                    if (options.size > 1 || (options.size == 1 && original == null && options[0][0].item.card.scryfallId != item.card.scryfallId) || picked != null) {
+                        HorizontalDivider()
+                        Text("Show in this deck", style = MaterialTheme.typography.titleSmall)
+                        Column(Modifier.heightIn(max = 260.dp).verticalScroll(rememberScrollState())) {
+                            options.forEach { group ->
+                                val first = group.first().item
+                                val isShown = first.card.scryfallId == item.card.scryfallId && first.finish == item.finish
+                                Row(
+                                    Modifier.fillMaxWidth().clickable { onPick(DeckPrintings.pickValue(first.card.scryfallId, first.finish)) }.padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    RadioButton(selected = isShown, onClick = { onPick(DeckPrintings.pickValue(first.card.scryfallId, first.finish)) })
+                                    CardThumb(first.card.imageUrl, width = 28)
+                                    Spacer(Modifier.width(8.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            SetLine(first.card)
+                                            FinishTag(first.card, first.finish)
+                                        }
+                                        Text(
+                                            "${group.sumOf { it.item.quantity }}× · " + group.map { binderName(it.item.binderId, binders) }.distinct().joinToString(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
                                     }
-                                    Text(
-                                        "${group.sumOf { it.item.quantity }}× · " + group.map { binderName(it.item.binderId, binders) }.distinct().joinToString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
                                 }
                             }
                         }
+                        Row {
+                            if (picked != DeckPrintings.ARCHIDEKT) TextButton(onClick = { onPick(DeckPrintings.ARCHIDEKT) }) { Text("Use Archidekt's printing") }
+                            if (picked != null) TextButton(onClick = { onPick(null) }) { Text("Let the app choose") }
+                        }
                     }
-                    Row {
-                        if (picked != DeckPrintings.ARCHIDEKT) TextButton(onClick = { onPick(DeckPrintings.ARCHIDEKT) }) { Text("Use Archidekt's printing") }
-                        if (picked != null) TextButton(onClick = { onPick(null) }) { Text("Let the app choose") }
-                    }
+                    HorizontalDivider()
+                    PriceTable(
+                        row.price?.toSet(item.foil) ?: PriceSet(trend = item.card.fallback(item.foil)),
+                        priceType,
+                        if (item.foil) "Cardmarket prices (${item.card.finishName(item.finish).lowercase()})" else "Cardmarket prices",
+                    )
                 }
-                HorizontalDivider()
-                PriceTable(
-                    row.price?.toSet(item.foil) ?: PriceSet(trend = item.card.fallback(item.foil)),
-                    priceType,
-                    if (item.foil) "Cardmarket prices (${item.card.finishName(item.finish).lowercase()})" else "Cardmarket prices",
-                )
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },

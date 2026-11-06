@@ -43,6 +43,8 @@ data class ScryFace(
     val toughness: String? = null,
     /** A planeswalker's starting loyalty ("4", "X"). Since 1.55, for the win turn. */
     val loyalty: String? = null,
+    /** A battle's defense. Since 1.81, for the card text. */
+    val defense: String? = null,
 )
 
 /** A card linked to another, e.g. a token it makes ("token") or a helper card like The Monarch ("combo_piece"). Since 1.44. */
@@ -110,6 +112,10 @@ data class ScryCard(
     val toughness: String? = null,
     /** A planeswalker's starting loyalty ("4", "X"). Since 1.55, for the win turn. */
     val loyalty: String? = null,
+    /** A battle's defense. Since 1.81, for the card text. */
+    val defense: String? = null,
+    /** Format → "legal", "not_legal", "banned" or "restricted". Since 1.81. */
+    val legalities: Map<String, String> = emptyMap(),
 ) {
     /** Rules text of every face. */
     val fullText: String get() = oracleText ?: cardFaces?.joinToString("\n") { it.oracleText.orEmpty() }.orEmpty()
@@ -167,6 +173,17 @@ private data class ScryList(
     @SerialName("has_more") val hasMore: Boolean = false,
     @SerialName("next_page") val nextPage: String? = null,
 )
+
+/** One of Scryfall's rulings on a card: [publishedAt] is "2024-01-01". Since 1.81. */
+@Serializable
+data class ScryRuling(
+    val source: String = "",
+    @SerialName("published_at") val publishedAt: String = "",
+    val comment: String = "",
+)
+
+@Serializable
+private data class ScryRulingList(val data: List<ScryRuling> = emptyList())
 
 @Serializable
 private data class ScryCatalog(val data: List<String> = emptyList())
@@ -350,6 +367,18 @@ class ScryfallApi(private val http: OkHttpClient) {
     suspend fun bySetNumber(set: String, number: String): ScryCard? {
         val body = call(url("cards/${set.lowercase()}/$number")) ?: return null
         return seen(json.decodeFromString<ScryCard>(body))
+    }
+
+    /** One printing by its Scryfall id; null when Scryfall doesn't know it. Since 1.81. */
+    suspend fun byId(id: String): ScryCard? {
+        val body = call(url("cards/$id")) ?: return null
+        return seen(json.decodeFromString<ScryCard>(body))
+    }
+
+    /** Scryfall's rulings on a card, in the order Scryfall sends them (oldest first); empty when none. Since 1.81. */
+    suspend fun rulings(id: String): List<ScryRuling> {
+        val body = call(url("cards/$id/rulings")) ?: return emptyList()
+        return json.decodeFromString<ScryRulingList>(body).data
     }
 
     /** The printing behind one of Cardmarket's product numbers; null when Scryfall doesn't know it. Since 1.32. */

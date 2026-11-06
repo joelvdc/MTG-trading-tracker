@@ -114,6 +114,8 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
     // Signed/altered ticked on a stack of several copies: how many (since 1.27).
     var askingMarks by remember(item.id) { mutableStateOf<Marks?>(null) }
     val dirty = v != initialFor(current)
+    val rules = rememberCardRules(card.scryfallId, card.name)
+    var tab by remember { mutableStateOf(CardTab.VERSIONS) }
 
     fun setMarks(m: Marks) {
         when {
@@ -186,142 +188,147 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                         }
                         SmallAction("Cardmarket", Icons.AutoMirrored.Filled.OpenInNew) { runCatching { uriHandler.openUri(card.cardmarketUrl) } }
                     }
+                    CardTextBlock(rules.faces)
+                    CardTabs(tab) { tab = it }
+                    if (tab == CardTab.RULINGS) RulingsTab(rules)
 
                     // What you have: compact fields, two to a row.
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        CompactBox("Quantity", Modifier.weight(1f)) {
+                    if (tab == CardTab.VERSIONS) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            CompactBox("Quantity", Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    StepButton(Icons.Default.Remove, "Less", v.quantity > 1) {
+                                        v = v.copy(quantity = v.quantity - 1, move = minOf(v.move, v.quantity - 1).coerceAtLeast(1), keepMarks = minOf(v.keepMarks, v.quantity - 2).coerceAtLeast(0))
+                                    }
+                                    Text("${v.quantity}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(36.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                    StepButton(Icons.Default.Add, "More", true) {
+                                        // A pending split keeps its count of newly marked copies; the added copy joins the rest.
+                                        v = v.copy(quantity = v.quantity + 1, keepMarks = if (v.keepMarks > 0) v.keepMarks + 1 else 0)
+                                    }
+                                }
+                            }
+                            if (finishOptions.size > 1) {
+                                CompactDropdown("Finish", v.finish, finishOptions, card::finishName, { v = v.copy(finish = it) }, Modifier.weight(1f))
+                            } else {
+                                CompactBox("Finish", Modifier.weight(1f)) {
+                                    Text(card.finishName(v.finish), color = if (v.finish.foil) FoilColor else MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                        CompactDropdown(
+                            "Binder", v.binderId, listOf(Binder.UNSORTED) + binders.map { it.id }, { binderName(it, binders) },
+                            { v = v.copy(binderId = it, move = v.quantity) }, Modifier.fillMaxWidth(),
+                        )
+                        // While only some copies get new marks the whole stack moves (both parts).
+                        if (v.binderId != item.binderId && v.quantity > 1 && v.keepMarks == 0) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                StepButton(Icons.Default.Remove, "Less", v.quantity > 1) {
-                                    v = v.copy(quantity = v.quantity - 1, move = minOf(v.move, v.quantity - 1).coerceAtLeast(1), keepMarks = minOf(v.keepMarks, v.quantity - 2).coerceAtLeast(0))
+                                Text("Copies to move", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                StepButton(Icons.Default.Remove, "Less", v.move > 1) { v = v.copy(move = v.move - 1) }
+                                Text("${v.move.coerceIn(1, v.quantity)}", Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                StepButton(Icons.Default.Add, "More", v.move < v.quantity) { v = v.copy(move = v.move + 1) }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CompactDropdown(
+                                "Condition", v.condition, CONDITIONS.map { it.first }, { c -> CONDITIONS.first { it.first == c }.second },
+                                { v = v.copy(condition = it) }, Modifier.weight(1f), menuLabel = { c -> "$c · " + CONDITIONS.first { it.first == c }.second },
+                            )
+                            CompactDropdown(
+                                "Language", v.language, LANGUAGES.map { it.first }, { l -> LANGUAGES.firstOrNull { it.first == l }?.second ?: l },
+                                { v = v.copy(language = it) }, Modifier.weight(1f),
+                            )
+                        }
+                        MarksEditor(Marks(v.signed, v.altered), item.marks, v.quantity, v.keepMarks, ::setMarks) { askingMarks = Marks(v.signed, v.altered) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CompactTextField(
+                                "Paid per copy", paidInput.text, {
+                                    paidInput.text = it
+                                    v = v.copy(purchasePrice = paidInput.eur, purchaseTyped = paidInput.typedPrice)
+                                },
+                                Modifier.weight(0.38f), placeholder = "0.00", keyboardType = KeyboardType.Decimal,
+                                note = convertedHint(paidInput),
+                            ) {
+                                // The currency it was paid in (since 1.40).
+                                CurrencyButton(paidInput.currency) { cur ->
+                                    paidInput.switchTo(cur)
+                                    TypedCurrency.pick(cur)
+                                    v = v.copy(purchasePrice = paidInput.eur, purchaseTyped = paidInput.typedPrice)
                                 }
-                                Text("${v.quantity}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.width(36.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                StepButton(Icons.Default.Add, "More", true) {
-                                    // A pending split keeps its count of newly marked copies; the added copy joins the rest.
-                                    v = v.copy(quantity = v.quantity + 1, keepMarks = if (v.keepMarks > 0) v.keepMarks + 1 else 0)
-                                }
                             }
+                            CompactTextField("Notes", v.notes ?: "", { v = v.copy(notes = it.ifBlank { null }) }, Modifier.weight(0.62f), placeholder = "Where from, condition…", singleLine = false)
                         }
-                        if (finishOptions.size > 1) {
-                            CompactDropdown("Finish", v.finish, finishOptions, card::finishName, { v = v.copy(finish = it) }, Modifier.weight(1f))
-                        } else {
-                            CompactBox("Finish", Modifier.weight(1f)) {
-                                Text(card.finishName(v.finish), color = if (v.finish.foil) FoilColor else MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
+                        val paid = v.purchasePrice
+                        val now = prices(v.finish.foil)?.get(priceType)
+                        if (paid != null && paid > 0 && now != null) {
+                            val diff = (now - paid) * v.quantity
+                            Text(
+                                "Paid ${Fmt.paid(paid * v.quantity, v.purchaseTyped?.times(v.quantity))} · now ${Fmt.money(now * v.quantity)} · " +
+                                    (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paid) / paid * 100),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (diff >= 0) TrendColors.up else TrendColors.down,
+                            )
                         }
-                    }
-                    CompactDropdown(
-                        "Binder", v.binderId, listOf(Binder.UNSORTED) + binders.map { it.id }, { binderName(it, binders) },
-                        { v = v.copy(binderId = it, move = v.quantity) }, Modifier.fillMaxWidth(),
-                    )
-                    // While only some copies get new marks the whole stack moves (both parts).
-                    if (v.binderId != item.binderId && v.quantity > 1 && v.keepMarks == 0) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Copies to move", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                            StepButton(Icons.Default.Remove, "Less", v.move > 1) { v = v.copy(move = v.move - 1) }
-                            Text("${v.move.coerceIn(1, v.quantity)}", Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                            StepButton(Icons.Default.Add, "More", v.move < v.quantity) { v = v.copy(move = v.move + 1) }
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CompactDropdown(
-                            "Condition", v.condition, CONDITIONS.map { it.first }, { c -> CONDITIONS.first { it.first == c }.second },
-                            { v = v.copy(condition = it) }, Modifier.weight(1f), menuLabel = { c -> "$c · " + CONDITIONS.first { it.first == c }.second },
-                        )
-                        CompactDropdown(
-                            "Language", v.language, LANGUAGES.map { it.first }, { l -> LANGUAGES.firstOrNull { it.first == l }?.second ?: l },
-                            { v = v.copy(language = it) }, Modifier.weight(1f),
-                        )
-                    }
-                    MarksEditor(Marks(v.signed, v.altered), item.marks, v.quantity, v.keepMarks, ::setMarks) { askingMarks = Marks(v.signed, v.altered) }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CompactTextField(
-                            "Paid per copy", paidInput.text, {
-                                paidInput.text = it
-                                v = v.copy(purchasePrice = paidInput.eur, purchaseTyped = paidInput.typedPrice)
-                            },
-                            Modifier.weight(0.38f), placeholder = "0.00", keyboardType = KeyboardType.Decimal,
-                            note = convertedHint(paidInput),
-                        ) {
-                            // The currency it was paid in (since 1.40).
-                            CurrencyButton(paidInput.currency) { cur ->
-                                paidInput.switchTo(cur)
-                                TypedCurrency.pick(cur)
-                                v = v.copy(purchasePrice = paidInput.eur, purchaseTyped = paidInput.typedPrice)
-                            }
-                        }
-                        CompactTextField("Notes", v.notes ?: "", { v = v.copy(notes = it.ifBlank { null }) }, Modifier.weight(0.62f), placeholder = "Where from, condition…", singleLine = false)
-                    }
-                    val paid = v.purchasePrice
-                    val now = prices(v.finish.foil)?.get(priceType)
-                    if (paid != null && paid > 0 && now != null) {
-                        val diff = (now - paid) * v.quantity
-                        Text(
-                            "Paid ${Fmt.paid(paid * v.quantity, v.purchaseTyped?.times(v.quantity))} · now ${Fmt.money(now * v.quantity)} · " +
-                                (if (diff >= 0) "+" else "−") + Fmt.money(kotlin.math.abs(diff)) + " (%+.0f%%)".format((now - paid) / paid * 100),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (diff >= 0) TrendColors.up else TrendColors.down,
-                        )
-                    }
-                    DeckUsageLine(card.name)
+                        DeckUsageLine(card.name)
 
-                    // Every other copy of this card you own: other printings, finishes, conditions and binders.
-                    if (others.isNotEmpty()) {
+                        // Every other copy of this card you own: other printings, finishes, conditions and binders.
+                        if (others.isNotEmpty()) {
+                            HorizontalDivider()
+                            val printings = (others.map { it.item.card.scryfallId } - card.scryfallId).toSet().size
+                            Row(
+                                Modifier.fillMaxWidth().clickable { c.settings.setCardOthersOpen(!othersOpen) }.padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("You also own ${others.sumOf { it.item.quantity }} more", style = MaterialTheme.typography.titleSmall)
+                                    Text(
+                                        listOfNotNull(
+                                            printings.takeIf { it > 0 }?.let { if (it == 1) "1 other printing" else "$it other printings" },
+                                            if (inTrade) "Swap in puts it in the trade binder instead" else "tap a card to open it",
+                                        ).joinToString(" · "),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Icon(if (othersOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore, if (othersOpen) "Show fewer" else "Show all")
+                            }
+                            val shown = if (othersOpen) others else others.take(OTHERS_FOLDED)
+                            Column {
+                                shown.forEach { o ->
+                                    OtherCopyRow(
+                                        o, priceType, binderName(o.item.binderId, binders), sameCard = o.item.card.scryfallId == card.scryfallId,
+                                        onSwap = if (inTrade && o.item.binderId != tradeId) ({ swapping = o }) else null,
+                                    ) { open(o) }
+                                }
+                            }
+                            if (others.size > OTHERS_FOLDED) {
+                                TextButton(onClick = { c.settings.setCardOthersOpen(!othersOpen) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                                    Text(if (othersOpen) "Show fewer" else "Show all ${others.size}")
+                                }
+                            }
+                        }
+
+                        // TCGplayer and Card Kingdom (since 1.29).
                         HorizontalDivider()
-                        val printings = (others.map { it.item.card.scryfallId } - card.scryfallId).toSet().size
-                        Row(
-                            Modifier.fillMaxWidth().clickable { c.settings.setCardOthersOpen(!othersOpen) }.padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                        OtherPrices(card.scryfallId, v.finish, v.condition) { url -> runCatching { uriHandler.openUri(url) } }
+
+                        // Cardmarket's numbers, folded away.
+                        HorizontalDivider()
+                        Row(Modifier.fillMaxWidth().clickable { pricesOpen = !pricesOpen }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            val p = prices(v.finish.foil)
                             Column(Modifier.weight(1f)) {
-                                Text("You also own ${others.sumOf { it.item.quantity }} more", style = MaterialTheme.typography.titleSmall)
-                                Text(
-                                    listOfNotNull(
-                                        printings.takeIf { it > 0 }?.let { if (it == 1) "1 other printing" else "$it other printings" },
-                                        if (inTrade) "Swap in puts it in the trade binder instead" else "tap a card to open it",
-                                    ).joinToString(" · "),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Text("Cardmarket prices", style = MaterialTheme.typography.titleSmall)
+                                if (!pricesOpen && p != null) {
+                                    Text(
+                                        "Trend ${Fmt.money(p.trend)} · Avg ${Fmt.money(p.avg)} · 30 days ${Fmt.money(p.avg30)} · Low ${Fmt.money(p.low)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
-                            Icon(if (othersOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore, if (othersOpen) "Show fewer" else "Show all")
+                            Icon(if (pricesOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore, if (pricesOpen) "Fewer prices" else "All prices")
                         }
-                        val shown = if (othersOpen) others else others.take(OTHERS_FOLDED)
-                        Column {
-                            shown.forEach { o ->
-                                OtherCopyRow(
-                                    o, priceType, binderName(o.item.binderId, binders), sameCard = o.item.card.scryfallId == card.scryfallId,
-                                    onSwap = if (inTrade && o.item.binderId != tradeId) ({ swapping = o }) else null,
-                                ) { open(o) }
-                            }
-                        }
-                        if (others.size > OTHERS_FOLDED) {
-                            TextButton(onClick = { c.settings.setCardOthersOpen(!othersOpen) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                                Text(if (othersOpen) "Show fewer" else "Show all ${others.size}")
-                            }
-                        }
+                        if (pricesOpen) PriceTable(prices(v.finish.foil), priceType, if (v.finish.foil) card.finishName(v.finish) else "Non-foil")
                     }
-
-                    // TCGplayer and Card Kingdom (since 1.29).
-                    HorizontalDivider()
-                    OtherPrices(card.scryfallId, v.finish, v.condition) { url -> runCatching { uriHandler.openUri(url) } }
-
-                    // Cardmarket's numbers, folded away.
-                    HorizontalDivider()
-                    Row(Modifier.fillMaxWidth().clickable { pricesOpen = !pricesOpen }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                        val p = prices(v.finish.foil)
-                        Column(Modifier.weight(1f)) {
-                            Text("Cardmarket prices", style = MaterialTheme.typography.titleSmall)
-                            if (!pricesOpen && p != null) {
-                                Text(
-                                    "Trend ${Fmt.money(p.trend)} · Avg ${Fmt.money(p.avg)} · 30 days ${Fmt.money(p.avg30)} · Low ${Fmt.money(p.low)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        Icon(if (pricesOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore, if (pricesOpen) "Fewer prices" else "All prices")
-                    }
-                    if (pricesOpen) PriceTable(prices(v.finish.foil), priceType, if (v.finish.foil) card.finishName(v.finish) else "Non-foil")
                     Spacer(Modifier.width(1.dp))
                 }
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {

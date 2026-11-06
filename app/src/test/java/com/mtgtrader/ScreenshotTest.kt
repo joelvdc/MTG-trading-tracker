@@ -1376,4 +1376,57 @@ class ScreenshotTest {
     @Test fun seatTableSixWithEnds() = seatTable("seat_table_6_ends", 6, TableView.LEFT, ends = true)
 
     @Test fun seatTableDark() = seatTable("seat_table_dark", 4, TableView.LEFT, dark = true)
+
+    private val sampleFaces = listOf(
+        com.mtgtrader.data.RuleFace(
+            "Jace, Vryn's Prodigy", "{1}{U}", "Legendary Creature — Human Wizard",
+            "{T}: Draw a card, then discard a card. If there are five or more cards in your graveyard, exile Jace, Vryn's Prodigy, then return him to the battlefield transformed under his owner's control.",
+            powerToughness = "0/2",
+        ),
+        com.mtgtrader.data.RuleFace(
+            "Jace, Telepath Unbound", "", "Legendary Planeswalker — Jace",
+            "+1: Up to one target creature gets -2/-0 until your next turn.\n−3: You may cast target instant or sorcery card from your graveyard this turn.",
+            loyalty = "5",
+        ),
+    )
+
+    /** 1.81: the card text under a card's picture; a two-faced card shows both faces with a line between. */
+    @Test fun cardTextBlock() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Column(Modifier.padding(16.dp)) { com.mtgtrader.ui.CardTextBlock(sampleFaces) }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/card_text_block.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.81: the Rulings tab: legality chips in each format, a key, and Scryfall's rulings newest first. */
+    @Test fun rulingsTab() {
+        val rules = com.mtgtrader.data.CardRules(
+            sampleFaces,
+            mapOf(
+                "standard" to "not_legal", "pioneer" to "not_legal", "modern" to "banned", "legacy" to "banned", "vintage" to "restricted",
+                "commander" to "legal", "pauper" to "not_legal", "brawl" to "legal", "historic" to "not_legal", "timeless" to "legal",
+                "oathbreaker" to "legal", "paupercommander" to "not_legal", "penny" to "not_legal", "oldschool" to "not_legal",
+            ),
+            listOf(
+                com.mtgtrader.data.Ruling("2020-01-01", "If you cast the card with {2}{U}, it still costs {1} more."),
+                com.mtgtrader.data.Ruling("2015-06-22", "Jace's first ability can be activated only if Jace is untapped; {T} is part of the cost."),
+            ),
+            0L,
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Column(Modifier.padding(16.dp)) {
+                        com.mtgtrader.ui.CardTabs(com.mtgtrader.ui.CardTab.RULINGS) {}
+                        com.mtgtrader.ui.RulingsTab(com.mtgtrader.ui.CardRulesState(rules.faces, rules, loading = false), Modifier.padding(top = 10.dp))
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/rulings_tab.png", roborazziOptions = screenshotOptions)
+    }
 }
