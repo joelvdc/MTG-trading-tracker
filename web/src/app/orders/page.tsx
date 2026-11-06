@@ -6,6 +6,7 @@ import { Dialog } from "@/components/Dialog";
 import { TopBar } from "@/components/Nav";
 import { OrderImportDialog } from "@/components/OrderImportDialog";
 import { PreconDialog } from "@/components/PreconDialog";
+import { PurchasePricesDialog } from "@/components/PurchasePricesDialog";
 import { format, type Currency } from "@/lib/money";
 import type { OrderEdit, OrderRow, OrdersView } from "@/lib/orders";
 
@@ -23,6 +24,7 @@ export default function OrdersPage() {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [precon, setPrecon] = useState(false);
+  const [pricing, setPricing] = useState(false);
   const [dating, setDating] = useState<OrderRow | null>(null);
   const [deleting, setDeleting] = useState<OrderRow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,6 +99,9 @@ export default function OrdersPage() {
           </button>
           <button className="btn" disabled={view.readOnly || busy} onClick={() => setPrecon(true)}>
             Add a precon…
+          </button>
+          <button className="btn" disabled={view.readOnly || busy} onClick={() => setPricing(true)} title="Purchase prices for cards you already have">
+            Prices from orders…
           </button>
         </div>
         {view.readOnly && <div className="bar warn">Read only: the app on a phone is newer than this website.</div>}
@@ -205,6 +210,15 @@ export default function OrdersPage() {
             setPrecon(false);
             setNotice(text);
             load();
+          }}
+        />
+      )}
+      {pricing && (
+        <PurchasePricesDialog
+          onClose={() => setPricing(false)}
+          onDone={(text) => {
+            setPricing(false);
+            setNotice(text);
           }}
         />
       )}

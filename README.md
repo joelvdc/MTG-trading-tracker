@@ -301,7 +301,8 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
 - **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
   a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
   (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon
-  from MTGJSON with the price split over its cards, like the app.
+  from MTGJSON with the price split over its cards, like the app. **Prices from orders…** sets the purchase prices of
+  cards you already have from one or more order files, asking where a line could be several piles.
 - **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
 - **Settings:** besides the sync folder, the app's shared settings (price source, price type, currency, condition
   adjustment, alert price, fair trade margin, the wishlist's choices); the phones take changes at their next sync. The
