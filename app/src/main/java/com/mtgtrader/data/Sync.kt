@@ -71,7 +71,15 @@ data class SyncDeck(val deck: Deck, val cards: List<DeckCard> = emptyList()) {
 }
 
 @Serializable
-data class SyncPrefs(val updatedAt: Long = 0, val values: Map<String, String> = emptyMap())
+data class SyncPrefs(val updatedAt: Long = 0, val values: Map<String, String> = emptyMap()) {
+    /** These settings, plus any [other] has that these don't. */
+    fun withMissing(other: SyncPrefs) = if (other.values.keys.all { it in values }) this else copy(values = other.values + values)
+
+    companion object {
+        /** The trade binder's sync id (its binder's uid). Since 1.79. */
+        const val TRADE_BINDER = "tradeBinder"
+    }
+}
 
 /** The file kept on Nextcloud. */
 @Serializable
@@ -121,7 +129,7 @@ data class SyncFile(
         fun decode(bytes: ByteArray): SyncFile {
             val text = GZIPInputStream(ByteArrayInputStream(bytes)).use { it.readBytes() }.toString(Charsets.UTF_8)
             val file = json.decodeFromString(serializer(), text)
-            if (file.format > FORMAT) throw SyncException("The Nextcloud copy was written by a newer version of the app. Update the app on this phone.")
+            if (file.format > FORMAT) throw SyncException("The synced copy was written by a newer version of the app. Update the app on this phone.")
             return file
         }
     }
@@ -178,11 +186,18 @@ object DeckMerge {
     }
 }
 
-/** What to do the first time this phone syncs and both it and Nextcloud already hold data. */
-enum class FirstSync(val label: String, val explanation: String) {
-    MERGE("Merge both", "Keep everything from this phone and from Nextcloud. The same card in the same binder is kept once."),
-    USE_REMOTE("Use the Nextcloud copy", "Replace what's on this phone with what's on Nextcloud."),
-    USE_LOCAL("Start from this phone", "Replace what's on Nextcloud (and so on your other phones) with what's on this phone."),
+/**
+ * What to do the first time this phone syncs and both it and the synced copy already hold data. In
+ * the texts, "{place}" is "Nextcloud" or "your account" (since 1.79).
+ */
+enum class FirstSync(private val labelText: String, private val explanationText: String) {
+    MERGE("Merge both", "Keep everything from this phone and from {place}. The same card in the same binder is kept once."),
+    USE_REMOTE("Use the copy in {place}", "Replace what's on this phone with the copy in {place}."),
+    USE_LOCAL("Start from this phone", "Replace the copy in {place} (and so on your other phones) with what's on this phone."),
+    ;
+
+    fun label(place: String = "Nextcloud") = labelText.replace("{place}", place)
+    fun explanation(place: String = "Nextcloud") = explanationText.replace("{place}", place)
 }
 
 /**
@@ -252,7 +267,8 @@ object SyncMerge {
             friendDecks = newest(local.friendDecks, remote.friendDecks, { it.uid }, { it.updatedAt }),
             games = newest(local.games, remote.games, { it.uid }, { it.updatedAt }),
             deletions = deletions,
-            prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs else local.prefs,
+            // The newer settings win; a setting only the other side knows (e.g. one added in a newer version) is kept. Since 1.79.
+            prefs = if (remote.prefs.updatedAt >= local.prefs.updatedAt) remote.prefs.withMissing(local.prefs) else local.prefs.withMissing(remote.prefs),
             pausedGames = newest(local.pausedGames, remote.pausedGames, { it.uid }, { it.updatedAt }),
         )
     }

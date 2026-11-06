@@ -30,7 +30,8 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             friendDecks = dao.friendDecks().map { it.copy(id = 0) },
             games = dao.games().map { it.copy(id = 0) },
             deletions = dao.deletions(),
-            prefs = settings.syncedPrefs(),
+            // Which binder is the trade binder, by its sync id (local ids differ per phone). Since 1.79.
+            prefs = settings.syncedPrefs().let { p -> binderUid[settings.tradeBinderId]?.let { p.copy(values = p.values + (SyncPrefs.TRADE_BINDER to it)) } ?: p },
             pausedGames = dao.pausedGames().map { it.copy(id = 0) },
         ).sorted() to (dao.lastChange() ?: 0L)
     }
@@ -56,7 +57,10 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             }
             true
         }
-        if (done && merged.prefs != current.prefs) settings.applySyncedPrefs(merged.prefs)
+        if (done && merged.prefs != current.prefs) {
+            settings.applySyncedPrefs(merged.prefs)
+            merged.prefs.values[SyncPrefs.TRADE_BINDER]?.let { uid -> db.binderDao().all().firstOrNull { it.uid == uid }?.let { settings.setTradeBinderFromSync(it.id) } }
+        }
         return done
     }
 

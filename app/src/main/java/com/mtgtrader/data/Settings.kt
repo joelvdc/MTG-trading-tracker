@@ -260,7 +260,10 @@ class Settings(context: Context) {
     /** The trade binder (see [TradeBinder]); 0 until it's made. Since 1.18. */
     var tradeBinderId: Long
         get() = prefs.getLong("tradeBinderId", 0)
-        set(v) = prefs.edit().putLong("tradeBinderId", v).apply()
+        set(v) { if (v != tradeBinderId) prefs.edit().putLong("tradeBinderId", v).stamp().apply() } // synced by its uid since 1.79
+
+    /** The trade binder named in synced settings (without stamping the settings as changed here). Since 1.79. */
+    fun setTradeBinderFromSync(id: Long) = prefs.edit().putLong("tradeBinderId", id).apply()
 
     var tradeRules: TradeBinderRules
         get() = TradeBinderRules(

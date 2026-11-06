@@ -81,7 +81,7 @@ export function MoveToAccountCard() {
             {busy ? "Copying…" : "Make my account and copy my data"}
           </button>
         </div>
-        <p className="muted small">Then, on each phone: Settings → Sync → MTG Trader account, and log in with it (the app version that has it).</p>
+        <p className="muted small">Then, on each phone: Settings → Sync → MTG Trader account, and log in with it (app version 1.79 or newer).</p>
       </form>
     </section>
   );

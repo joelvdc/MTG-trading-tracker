@@ -132,7 +132,7 @@ class AppContainer(context: Context) {
     val offlineImages = com.mtgtrader.data.OfflineImages(context, db, settings, network, appScope)
     private val store = SyncStore(db, settings)
     private val nextcloud = NextcloudClient(http)
-    val sync = SyncManager(context, db, store, nextcloud, network, appScope)
+    val sync = SyncManager(context, db, store, nextcloud, com.mtgtrader.data.WebAccountClient(http), network, appScope)
     val backups = com.mtgtrader.data.Backups(context, store, sync, nextcloud)
 
     /** The life tracker's games and players (since 1.47). */

@@ -56,36 +56,49 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.text.style.TextOverflow
 import com.mtgtrader.data.NextcloudAccount
 import com.mtgtrader.data.NextcloudClient
+import com.mtgtrader.data.WebAccountClient
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.IOException
 
-/** The "Sync with Nextcloud" part of Settings. */
+/** The "Sync" part of Settings: an MTG Trader account on the website (since 1.79) or Nextcloud. */
 @Composable
 fun SyncSection() {
     val c = LocalContext.current.container
     val s by c.sync.status.collectAsStateWithLifecycle()
     var connecting by rememberSaveable { mutableStateOf(false) }
+    var loggingIn by rememberSaveable { mutableStateOf(false) }
     var confirmDisconnect by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Text("Sync with Nextcloud", style = MaterialTheme.typography.titleMedium)
+    Text("Sync", style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(4.dp))
     if (!s.connected) {
         Text(
-            "Keep your collection, binders, trades, decks, scans and preferences the same on all your phones, through your " +
-                "own Nextcloud. Prices and pictures aren't synced: each phone downloads those itself.",
+            "Keep your collection, binders, trades, decks, scans and preferences the same on all your phones and on the " +
+                "website (${WebAccountClient.HOST}), through your MTG Trader account or your own Nextcloud. Prices and " +
+                "pictures aren't synced: each phone downloads those itself.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
-        Button(onClick = { connecting = true }) { Text("Connect to Nextcloud") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { loggingIn = true }) { Text("MTG Trader account") }
+            OutlinedButton(onClick = { connecting = true }) { Text("Nextcloud") }
+        }
     } else {
-        Text("Connected as ${s.user} on ${Uri.parse(s.server).host ?: s.server}")
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Folder: /${s.folder}", Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            TextButton(onClick = c.sync::changeFolder, enabled = !s.running) { Text("Change") }
+        if (s.website) {
+            Text("Logged in as ${s.user} on ${s.server}")
+        } else {
+            Text("Connected as ${s.user} on ${Uri.parse(s.server).host ?: s.server}")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Folder: /${s.folder}", Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                TextButton(onClick = c.sync::changeFolder, enabled = !s.running) { Text("Change") }
+            }
+            TextButton(onClick = { loggingIn = true }, enabled = !s.running, contentPadding = PaddingValues(0.dp)) {
+                Text("Switch to my MTG Trader account")
+            }
         }
         when {
             s.running -> Row(verticalAlignment = Alignment.CenterVertically) {
@@ -111,7 +124,7 @@ fun SyncSection() {
                     Text("Start syncing")
                 }
             }
-            OutlinedButton(onClick = { confirmDisconnect = true }, enabled = !s.running) { Text("Disconnect") }
+            OutlinedButton(onClick = { confirmDisconnect = true }, enabled = !s.running) { Text(if (s.website) "Log out" else "Disconnect") }
         }
         Spacer(Modifier.height(12.dp))
         SwitchRow(
@@ -130,21 +143,131 @@ fun SyncSection() {
     }
 
     if (connecting) ConnectDialog(onDone = { connecting = false })
+    if (loggingIn) AccountDialog(switching = s.connected, onDone = { loggingIn = false })
     if (s.choosingFolder && !connecting) FolderPickerDialog(start = if (s.ready) s.folder else "", firstTime = !s.ready)
     s.firstChoice?.let { choice ->
-        FirstSyncDialog(choice, onChoose = c.sync::chooseFirst, onLater = c.sync::cancelFirstChoice)
+        FirstSyncDialog(choice, if (s.website) "your account" else "Nextcloud", onChoose = c.sync::chooseFirst, onLater = c.sync::cancelFirstChoice)
     }
     if (confirmDisconnect) {
         AlertDialog(
             onDismissRequest = { confirmDisconnect = false },
-            title = { Text("Disconnect from Nextcloud?") },
-            text = { Text("This phone stops syncing. Its data stays on the phone, and the copy on Nextcloud stays there for your other phones.") },
+            title = { Text(if (s.website) "Log out of your account?" else "Disconnect from Nextcloud?") },
+            text = {
+                Text(
+                    "This phone stops syncing. Its data stays on the phone, and the copy " +
+                        (if (s.website) "in your account" else "on Nextcloud") + " stays there for your other phones.",
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { confirmDisconnect = false; scope.launch { c.sync.disconnect() } }) { Text("Disconnect") }
+                TextButton(onClick = { confirmDisconnect = false; scope.launch { c.sync.disconnect() } }) { Text(if (s.website) "Log out" else "Disconnect") }
             },
             dismissButton = { TextButton(onClick = { confirmDisconnect = false }) { Text("Cancel") } },
         )
     }
+}
+
+/**
+ * Logs in to an MTG Trader account on the website, or makes one with an invite code from the owner;
+ * then the first sync follows. [switching]: this phone syncs with Nextcloud now and moves over. Since 1.79.
+ */
+@Composable
+private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
+    val c = LocalContext.current.container
+    val scope = rememberCoroutineScope()
+    var newAccount by rememberSaveable { mutableStateOf(false) }
+    var invite by rememberSaveable { mutableStateOf("") }
+    var user by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var again by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    val problem = when {
+        newAccount && password.isNotEmpty() && password.length < 10 -> "At least 10 characters."
+        newAccount && again.isNotEmpty() && again != password -> "The two passwords don't match."
+        else -> null
+    }
+    val ready = user.isNotBlank() && password.isNotEmpty() && (!newAccount || (invite.isNotBlank() && password.length >= 10 && again == password))
+
+    AlertDialog(
+        onDismissRequest = { if (!busy) onDone() },
+        title = { Text(if (newAccount) "New MTG Trader account" else "MTG Trader account") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    (if (newAccount) "You need an invite code from the owner of the website. " else "The account you made on ${WebAccountClient.HOST}. ") +
+                        (if (switching) "This phone then syncs with your account instead of Nextcloud." else ""),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (newAccount) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = invite, onValueChange = { invite = it; error = null }, label = { Text("Invite code") },
+                        singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = user, onValueChange = { user = it; error = null }, label = { Text("User name") },
+                    singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = password, onValueChange = { password = it; error = null },
+                    label = { Text(if (newAccount) "Password (at least 10 characters)" else "Password") },
+                    singleLine = true, enabled = !busy, visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (newAccount) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = again, onValueChange = { again = it; error = null }, label = { Text("The password again") },
+                        singleLine = true, enabled = !busy, visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                problem?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error) }
+                if (busy) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Logging in…", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                error?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error) }
+                if (!busy) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (newAccount) "I have an account already" else "Make a new account (with an invite code)",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { newAccount = !newAccount; error = null }.padding(vertical = 8.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !busy && ready,
+                onClick = {
+                    busy = true
+                    scope.launch {
+                        // In the app scope, so leaving the screen doesn't stop the first sync.
+                        val r = c.appScope.async {
+                            runCatching {
+                                if (newAccount) c.sync.registerWeb(invite, user, password) else c.sync.loginWeb(user, password)
+                            }
+                        }.await()
+                        busy = false
+                        r.onSuccess { onDone() }.onFailure { error = message(it) }
+                    }
+                },
+            ) { Text(if (newAccount) "Make account" else "Log in") }
+        },
+        dismissButton = { TextButton(onClick = onDone, enabled = !busy) { Text("Cancel") } },
+    )
 }
 
 @Composable
@@ -403,14 +526,14 @@ private fun message(e: Throwable): String = when (e) {
 }
 
 @Composable
-private fun FirstSyncDialog(choice: FirstChoice, onChoose: (FirstSync) -> Unit, onLater: () -> Unit) {
+private fun FirstSyncDialog(choice: FirstChoice, place: String, onChoose: (FirstSync) -> Unit, onLater: () -> Unit) {
     var pick by rememberSaveable { mutableStateOf(FirstSync.MERGE) }
     AlertDialog(
         onDismissRequest = onLater,
         title = { Text("Both have data") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text("This phone: ${choice.phone}\nNextcloud: ${choice.nextcloud}")
+                Text("This phone: ${choice.phone}\n${place.replaceFirstChar { it.uppercase() }}: ${choice.nextcloud}")
                 Spacer(Modifier.height(8.dp))
                 FirstSync.entries.forEach { f ->
                     Row(
@@ -419,8 +542,8 @@ private fun FirstSyncDialog(choice: FirstChoice, onChoose: (FirstSync) -> Unit, 
                     ) {
                         RadioButton(selected = pick == f, onClick = { pick = f })
                         Column {
-                            Text(f.label)
-                            Text(f.explanation, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(f.label(place))
+                            Text(f.explanation(place), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

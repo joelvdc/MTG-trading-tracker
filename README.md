@@ -254,18 +254,23 @@ The **Games** tab keeps score in Commander games and remembers them. The tracker
   Game settings (back to the number it had, the same player starts).
 
 ## Sync between phones
-Settings → **Sync with Nextcloud** keeps the collection, binders, wishlist, trades, decks, scans, games and preferences
-the same on all your phones, through a file (`sync.json.gz`) in a folder of your own
-[Nextcloud](https://nextcloud.com/). Prices and pictures aren't synced; each phone downloads those itself.
-- **Connect:** enter your server address and log in in the browser; the app gets its own app password (revocable in
+Settings → **Sync** keeps the collection, binders (and which one is the trade binder), wishlist, trades, decks, scans,
+games and preferences the same on all your phones and the [website](#website), through one file (`sync.json.gz`):
+in your **MTG Trader account** on the website, or in a folder of your own [Nextcloud](https://nextcloud.com/). Prices
+and pictures aren't synced; each phone downloads those itself.
+- **MTG Trader account** (since 1.79): log in with the user name and password made on the website (Settings → Make my
+  account and copy my data), or make a new account with an invite code from the owner. A phone syncing with Nextcloud
+  moves over with **Switch to my MTG Trader account**. **Log out** stops syncing; the account's devices are listed (and
+  can be logged out) on the website.
+- **Nextcloud:** enter your server address and log in in the browser; the app gets its own app password (revocable in
   Nextcloud). Then pick the folder; use the same one on every phone.
-- **First sync:** when both sides hold data, choose: merge both, use the Nextcloud copy, or start from this phone.
+- **First sync:** when both sides hold data, choose: merge both, use the synced copy, or start from this phone.
 - **After that** changes are merged item by item (the most recent change wins, deletions carry over). Automatic sync
   runs when you open the app, shortly after a change, when you leave it and every hour (optionally only on Wi-Fi).
 - When the sync file's format changes with an update, older versions stop syncing until they're updated, so no data is
   lost.
 
-The password is stored encrypted with a key kept in the phone's keystore.
+The password (or the account's device token) is stored encrypted with a key kept in the phone's keystore.
 
 ## Website
 [mtgtrader.vercel.app](https://mtgtrader.vercel.app) shows and edits the **wishlist** and the **collection** from a
@@ -328,8 +333,8 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   account on the website with a copy of your data (Nextcloud then gets a backup copy every night; nothing there is
   changed). From then on you log in with that user name and password. The first account is the owner's: under Settings
   it makes invite codes for others (each works once), resets a forgotten password, and shows every device logged in.
-  The app can sync with the account instead of Nextcloud from the version that has **Settings → Sync → MTG Trader
-  account**.
+  The app can sync with the account instead of Nextcloud since 1.79 (**Settings → Sync → MTG Trader
+  account**).
 - Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in with Nextcloud. The code is in
   `web/` (Next.js on Vercel); see `web/README.md`.
 

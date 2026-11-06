@@ -43,6 +43,8 @@ data class SyncStatus(
     val choosingFolder: Boolean = false,
     /** Another phone that last synced with a version too old to read this one's file. Since 1.27. */
     val olderPhone: OlderPhone? = null,
+    /** Syncing through an MTG Trader account on the website ([server] is the website), not Nextcloud. Since 1.79. */
+    val website: Boolean = false,
 ) {
     val connected get() = server != null
 }
@@ -72,8 +74,15 @@ data class SyncSummary(val cards: Int, val binders: Int, val decks: Int, val tra
     }
 }
 
+/** Where the sync file lives: the user's Nextcloud, or their MTG Trader account on the website (since 1.79). */
+private sealed interface SyncPlace {
+    data class Cloud(val account: NextcloudAccount) : SyncPlace
+    data class Web(val login: WebLogin) : SyncPlace
+}
+
 /**
- * Keeps this phone in sync with the others through one file on the user's Nextcloud. With
+ * Keeps this phone in sync with the others through one file on the user's Nextcloud, or (since 1.79)
+ * in their MTG Trader account on the website, which works the same way. With
  * automatic sync on, it syncs when the app opens, ~30 s after a change, when the app goes to
  * the background and every hour (only on Wi-Fi if chosen). "Sync now" always runs.
  */
@@ -82,6 +91,7 @@ class SyncManager(
     private val db: AppDatabase,
     private val store: SyncStore,
     private val client: NextcloudClient,
+    private val web: WebAccountClient,
     private val network: NetworkMonitor,
     private val scope: CoroutineScope,
 ) {
@@ -101,8 +111,9 @@ class SyncManager(
 
     private fun readStatus() = SyncStatus(
         // Not connected if the password can't be read (e.g. app data restored onto another phone).
-        server = prefs.getString(K_SERVER, null)?.takeIf { account() != null },
-        user = prefs.getString(K_USER, null),
+        server = if (webLogin() != null) WebAccountClient.HOST else prefs.getString(K_SERVER, null)?.takeIf { account() != null },
+        user = webLogin()?.username ?: prefs.getString(K_USER, null),
+        website = webLogin() != null,
         lastSyncAt = prefs.getLong(K_LAST_SYNC, 0),
         lastError = prefs.getString(K_ERROR, null),
         ready = prefs.getBoolean(K_FIRST_DONE, false),
@@ -120,6 +131,26 @@ class SyncManager(
         val pw = prefs.getString(K_PASSWORD, null)?.let(SecretStore::decrypt) ?: return null
         return NextcloudAccount(server, login, pw, prefs.getString(K_USER_ID, null) ?: login, prefs.getString(K_FOLDER, null) ?: NextcloudClient.FOLDER)
     }
+
+    private fun webLogin(): WebLogin? {
+        val user = prefs.getString(K_WEB_USER, null) ?: return null
+        val token = prefs.getString(K_WEB_TOKEN, null)?.let(SecretStore::decrypt) ?: return null
+        return WebLogin(user, token)
+    }
+
+    private fun place(): SyncPlace? = webLogin()?.let { SyncPlace.Web(it) } ?: account()?.let { SyncPlace.Cloud(it) }
+
+    private suspend fun SyncPlace.get(etag: String?) = when (this) {
+        is SyncPlace.Cloud -> client.get(account, etag)
+        is SyncPlace.Web -> web.get(login, etag)
+    }
+
+    private suspend fun SyncPlace.put(bytes: ByteArray, ifMatch: String?) = when (this) {
+        is SyncPlace.Cloud -> client.put(account, bytes, ifMatch)
+        is SyncPlace.Web -> web.put(login, bytes, ifMatch)
+    }
+
+    private fun SyncPlace.name() = if (this is SyncPlace.Web) "the MTG Trader website" else "Nextcloud"
 
     private val firstDone get() = prefs.getBoolean(K_FIRST_DONE, false)
 
@@ -149,11 +180,39 @@ class SyncManager(
             .putString(K_USER_ID, checked.userId)
             .putString(K_PASSWORD, SecretStore.encrypt(checked.password))
             .putBoolean(K_REVOKE, fromLoginFlow)
+            .remove(K_WEB_USER).remove(K_WEB_TOKEN)
             .putBoolean(K_FIRST_DONE, false)
             .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR).remove(K_LAST_SYNC).remove(K_FOLDER)
             .apply()
         _status.value = readStatus()
         schedule()
+    }
+
+    /** Logs in to an MTG Trader account on the website and syncs with it from now on, instead of Nextcloud. Since 1.79. */
+    suspend fun loginWeb(username: String, password: String) = useWeb(web.login(username, password, device()))
+
+    /** Makes an MTG Trader account with an invite code and syncs with it. Since 1.79. */
+    suspend fun registerWeb(invite: String, username: String, password: String) = useWeb(web.register(invite, username, password, device()))
+
+    /** Like [connect]: forgets Nextcloud (if it was set up), then the first sync with the account follows ([prepareFirst]). */
+    private suspend fun useWeb(login: WebLogin) {
+        val old = account()
+        val revoke = prefs.getBoolean(K_REVOKE, false)
+        mutex.withLock {
+            prefs.edit()
+                .remove(K_SERVER).remove(K_USER).remove(K_USER_ID).remove(K_PASSWORD).remove(K_REVOKE).remove(K_FOLDER)
+                .putString(K_WEB_USER, login.username)
+                .putString(K_WEB_TOKEN, SecretStore.encrypt(login.token))
+                .putBoolean(K_FIRST_DONE, false)
+                .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR).remove(K_LAST_SYNC)
+                .apply()
+            changingFolder = false
+            _status.value = readStatus()
+        }
+        schedule()
+        // The app password this app made on Nextcloud isn't needed any more (the website keeps its own for its backups).
+        if (old != null && revoke) scope.launch { runCatching { client.revoke(old) } }
+        prepareFirst()
     }
 
     // ---- The folder ------------------------------------------------------------------------
@@ -197,14 +256,17 @@ class SyncManager(
 
     /** Looks at both sides before the first sync; runs it right away unless the user has to choose. */
     suspend fun prepareFirst() {
-        val account = account() ?: return
+        val place = place() ?: return
         val remote = try {
-            when (val r = client.get(account, null)) {
+            when (val r = place.get(null)) {
                 is NextcloudClient.Remote.Found -> SyncFile.decode(r.bytes).data
                 else -> null
             }
+        } catch (e: SyncException) {
+            _status.value = _status.value.copy(lastError = e.message)
+            return
         } catch (e: IOException) {
-            _status.value = _status.value.copy(lastError = "Couldn't reach Nextcloud: ${e.message ?: e.javaClass.simpleName}")
+            _status.value = _status.value.copy(lastError = "Couldn't reach ${place.name()}: ${e.message ?: e.javaClass.simpleName}")
             return
         }
         val (local, _) = store.snapshot()
@@ -232,11 +294,13 @@ class SyncManager(
     /** Forgets the account (and removes its app password from Nextcloud if this app created it). Data on the phone stays. */
     fun disconnect() {
         val account = account()
+        val login = webLogin()
         val revoke = prefs.getBoolean(K_REVOKE, false)
         prefs.edit().clear().putBoolean(K_AUTO, _status.value.autoSync).putBoolean(K_WIFI, _status.value.wifiOnly).apply()
         _status.value = readStatus()
         schedule()
         if (account != null && revoke) scope.launch { runCatching { client.revoke(account) } }
+        if (login != null) scope.launch { runCatching { web.logout(login) } }
     }
 
     fun setAutoSync(on: Boolean) {
@@ -348,18 +412,18 @@ class SyncManager(
 
     /** Syncs once; errors end up in [SyncStatus.lastError]. Returns whether it succeeded. */
     suspend fun sync(first: FirstSync? = null): Boolean = mutex.withLock {
-        val account = account() ?: return false
+        val place = place() ?: return false
         if (first == null && !firstDone) return false
         _status.value = _status.value.copy(running = true)
         val error = try {
-            runSync(account, first)
+            runSync(place, first)
             null
         } catch (e: SyncException) {
             e.message
         } catch (e: IOException) {
-            "Couldn't reach Nextcloud: ${e.message ?: e.javaClass.simpleName}"
+            "Couldn't reach ${place.name()}: ${e.message ?: e.javaClass.simpleName}"
         } catch (e: kotlinx.serialization.SerializationException) {
-            "The file on Nextcloud couldn't be read."
+            "The sync file on ${place.name()} couldn't be read."
         }
         val now = System.currentTimeMillis()
         prefs.edit().apply {
@@ -372,11 +436,11 @@ class SyncManager(
         error == null
     }
 
-    private suspend fun runSync(account: NextcloudAccount, first: FirstSync?) {
+    private suspend fun runSync(place: SyncPlace, first: FirstSync?) {
         repeat(ATTEMPTS) {
             val (local, stamp) = store.snapshot()
             val unchanged = first == null && stamp == prefs.getLong(K_STAMP, -1) && local.prefs.updatedAt == prefs.getLong(K_PREFS_AT, -1)
-            val remote = client.get(account, if (unchanged) prefs.getString(K_ETAG, null) else null)
+            val remote = place.get(if (unchanged) prefs.getString(K_ETAG, null) else null)
             if (remote is NextcloudClient.Remote.NotModified) return
             val found = remote as? NextcloudClient.Remote.Found
             val remoteFile = found?.let { f -> SyncFile.decode(f.bytes).also { checkWriter(it, f.etag) } }
@@ -389,7 +453,7 @@ class SyncManager(
             // A file from an older version is rewritten in this one's format even if nothing changed, so phones still on it stop and ask to be updated.
             if (merged != remoteData || (remoteFile != null && remoteFile.format < SyncFile.FORMAT)) {
                 val file = SyncFile(writtenAt = now, writtenBy = device(), data = merged)
-                when (val put = client.put(account, SyncFile.encode(file), found?.etag)) {
+                when (val put = place.put(SyncFile.encode(file), found?.etag)) {
                     NextcloudClient.PutResult.Conflict -> return@repeat // another phone wrote meanwhile: start over
                     is NextcloudClient.PutResult.Ok -> etag = put.etag
                 }
@@ -423,6 +487,8 @@ class SyncManager(
         const val K_OLDER = "olderPhone"
         const val K_OLDER_AT = "olderPhoneAt"
         const val K_OLDER_SEEN = "olderPhoneSeen"
+        const val K_WEB_USER = "webUser"
+        const val K_WEB_TOKEN = "webToken"
         const val WORK_PERIODIC = "nextcloud-sync"
         const val WORK_ONCE = "nextcloud-sync-once"
         const val DEBOUNCE_MS = 30_000L

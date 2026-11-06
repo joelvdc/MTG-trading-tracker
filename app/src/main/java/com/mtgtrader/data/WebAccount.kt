@@ -1,0 +1,105 @@
+package com.mtgtrader.data
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.IOException
+
+/** Logged in to an MTG Trader account on the website: the user name and this phone's device token. Since 1.79. */
+data class WebLogin(val username: String, val token: String)
+
+/**
+ * Talks to the MTG Trader website (mtgtrader.vercel.app) for syncing through a website account
+ * instead of Nextcloud: logging in or making an account (with an invite code), and reading and
+ * writing the account's sync file. The file and its ETag work like the one on Nextcloud, so
+ * [SyncManager] treats both the same way. Since 1.79.
+ */
+class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
+    private val http = http.newBuilder()
+        .addInterceptor { it.proceed(it.request().newBuilder().header("User-Agent", "MTG Trader (Android)").build()) }
+        .build()
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /** Logs this phone in ([device] names it in the website's list of devices). */
+    suspend fun login(username: String, password: String, device: String): WebLogin =
+        account("api/app/login", buildJsonObject { put("username", username.trim()); put("password", password); put("device", device) })
+
+    /** Makes a new account with an invite code from the owner, and logs this phone in. */
+    suspend fun register(invite: String, username: String, password: String, device: String): WebLogin =
+        account("api/app/register", buildJsonObject {
+            put("invite", invite.trim()); put("username", username.trim()); put("password", password); put("device", device)
+        })
+
+    /** Logs this phone out on the website (its token stops working). */
+    suspend fun logout(login: WebLogin) = call {
+        http.newCall(authed(login, "api/app/logout").post(ByteArray(0).toRequestBody()).build()).execute().close()
+    }
+
+    /** The account's sync file; [NextcloudClient.Remote.NotModified] if it's still the version with [etag]. */
+    suspend fun get(login: WebLogin, etag: String?): NextcloudClient.Remote = call {
+        val req = authed(login, "api/sync").get().apply { if (etag != null) header("If-None-Match", etag) }.build()
+        http.newCall(req).execute().use { r ->
+            when {
+                r.code == 304 -> NextcloudClient.Remote.NotModified
+                r.code == 404 -> NextcloudClient.Remote.Missing
+                r.isSuccessful -> NextcloudClient.Remote.Found(r.body!!.bytes(), r.header("ETag"))
+                else -> throw failure(r)
+            }
+        }
+    }
+
+    /** Saves the file if it's still the version with [ifMatch] (or there's none yet when null). */
+    suspend fun put(login: WebLogin, bytes: ByteArray, ifMatch: String?): NextcloudClient.PutResult = call {
+        val req = authed(login, "api/sync")
+            .put(bytes.toRequestBody("application/gzip".toMediaType()))
+            .apply { if (ifMatch != null) header("If-Match", ifMatch) else header("If-None-Match", "*") }
+            .build()
+        http.newCall(req).execute().use { r ->
+            when {
+                r.code == 412 -> NextcloudClient.PutResult.Conflict
+                r.isSuccessful -> NextcloudClient.PutResult.Ok(r.header("ETag"))
+                else -> throw failure(r)
+            }
+        }
+    }
+
+    private suspend fun account(path: String, body: JsonObject): WebLogin = call {
+        val req = Request.Builder().url(base + path).post(body.toString().toRequestBody("application/json".toMediaType())).build()
+        http.newCall(req).execute().use { r ->
+            val o = runCatching { json.parseToJsonElement(r.body!!.string()).jsonObject }.getOrNull()
+            val token = o?.get("token")?.jsonPrimitive?.content
+            if (r.isSuccessful && token != null) return@call WebLogin(o["username"]?.jsonPrimitive?.content ?: body.str("username"), token)
+            val error = o?.get("error")?.jsonPrimitive?.content
+            // The website's own words for wrong passwords, used invite codes and the like.
+            if (r.code in 400..499 && error != null) throw SyncException(error)
+            throw IOException("The website answered ${r.code}")
+        }
+    }
+
+    private fun authed(login: WebLogin, path: String) = Request.Builder().url(base + path).header("Authorization", "Bearer ${login.token}")
+
+    private fun failure(r: Response) = when (r.code) {
+        401 -> SyncException("The website no longer accepts this phone's login (a new password, or logged out there). Log out here and log in again.")
+        400 -> SyncException("The website didn't accept the sync file.")
+        else -> IOException("The website answered ${r.code}")
+    }
+
+    private fun JsonObject.str(key: String) = this[key]?.jsonPrimitive?.content.orEmpty()
+
+    private suspend fun <T> call(block: () -> T): T = withContext(Dispatchers.IO) { block() }
+
+    companion object {
+        const val BASE = "https://mtgtrader.vercel.app/"
+        const val HOST = "mtgtrader.vercel.app"
+    }
+}

@@ -12,7 +12,7 @@ const ATTEMPTS = 4;
 
 export class NoSyncFile extends Error {
   constructor() {
-    super("There's no sync file in this folder yet. Turn on Sync with Nextcloud in the app first (or check the folder name).");
+    super("There's no sync file in this folder yet. Turn on Settings → Sync → Nextcloud in the app first (or check the folder name).");
   }
 }
 

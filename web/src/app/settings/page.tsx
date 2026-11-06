@@ -129,7 +129,7 @@ export default function SettingsPage() {
                 <strong>{session.folder}</strong>
               </p>
             ) : (
-              <p>Pick the folder chosen in the app under Settings → Sync with Nextcloud.</p>
+              <p>Pick the folder chosen in the app under Settings → Sync → Nextcloud.</p>
             )}
             {saved && <div className="bar ok">Now using “{saved}”.</div>}
             {message && (

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     if (!folder) return json({ error: "That folder name can't be used." }, 400);
     const { files } = await browse(a, folder);
     if (!files.includes(SYNC_FILE)) {
-      return json({ error: "That folder has no sync file from the app. Pick the folder chosen in the app under Settings → Sync with Nextcloud." }, 400);
+      return json({ error: "That folder has no sync file from the app. Pick the folder chosen in the app under Settings → Sync → Nextcloud." }, 400);
     }
     const next: Account = { ...a, folder };
     (await cookies()).set(SESSION_COOKIE, seal(next, SESSION_DAYS * 86_400_000), cookieOptions(SESSION_DAYS * 86_400));

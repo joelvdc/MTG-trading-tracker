@@ -93,8 +93,14 @@ the scanner, package check and life tracker stay on the phone.
   - A and B done (see Done). Print cards as PDF moved to decks (phase 4a): in the app it is the deck's bracket/power card.
   - Still open from this list: the trade binder (step D, needs the app to sync which binder it is: step C's release),
     value over time and alert history (step D), trades on the website (left out for now, as decided).
-  - Step C waits for the owner: add Neon Postgres (EU) from Vercel's Storage tab, and say yes before the owner's real
-    Nextcloud data is imported. Step D follows C.
+  - Step C shipped 2026-11-06: website accounts (commit 6405b5a) and app 1.79 (Settings → Sync → MTG Trader account,
+    the trade binder's uid in the synced settings). The owner approved copying their data; they do it themselves on
+    the website (Settings → Make my account and copy my data, while logged in with Nextcloud), then switch each phone
+    the same day. Next: step D.
+  - Owner's questions 2026-11-06, still to plan: Commander Salt scores for local decks on the website ("yes, if
+    possible": Commander Salt only scores deck links; look for a link that needs no account, else the half-manual
+    flow), and categories like Archidekt's automatic ones built on the website (from Scryfall's tagger tags, falling
+    back to card type) instead of contacting Archidekt.
 
 ### 2026-11-05: website accounts instead of the Nextcloud login
 Owner: "Instead of logging into nextcloud for "opening" the website, could the website support users? Like create a
