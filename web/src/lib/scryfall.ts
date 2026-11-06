@@ -89,3 +89,22 @@ export function searchNames(text: string): Promise<FoundCard[]> {
 export function printings(name: string): Promise<FoundCard[]> {
   return search(`!"${name.replace(/["\\]/g, " ").trim()}"`, "prints");
 }
+
+/** Scryfall's /cards/collection, 75 identifiers per request (the app's ScryfallApi.collection); unknown ones are left out. */
+export async function lookupCollection(identifiers: object[]): Promise<CardRef[]> {
+  const out: CardRef[] = [];
+  for (let i = 0; i < identifiers.length; i += 75) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 100)); // Scryfall asks for 50–100 ms between requests.
+    const r = await fetch(`${API}/cards/collection`, {
+      method: "POST",
+      headers: { "User-Agent": USER_AGENT, Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ identifiers: identifiers.slice(i, i + 75) }),
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+    if (!r.ok) throw new Error(`Scryfall lookup failed (HTTP ${r.status}).`);
+    const j = (await r.json()) as { data?: ScryCard[] };
+    for (const c of j.data ?? []) out.push(toCardRef(c));
+  }
+  return out;
+}

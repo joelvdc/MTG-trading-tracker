@@ -10,6 +10,7 @@ import { ArrangeDialog, DeleteBinderDialog, MergeDialog, PaidDialog, SortDialog,
 import { Dialog } from "@/components/Dialog";
 import { ExportDialog } from "@/components/ExportDialog";
 import { FilterDialog } from "@/components/FilterDialog";
+import { ImportDialog } from "@/components/ImportDialog";
 import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
@@ -95,6 +96,8 @@ export default function CollectionPage() {
   const [adding, setAdding] = useState(false);
   const [filtering, setFiltering] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [naming, setNaming] = useState<{ uid: string | null; name: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [sorting, setSorting] = useState(false);
@@ -323,6 +326,14 @@ export default function CollectionPage() {
             Read only: the app on a phone is newer than this website (sync format {view.format}). Changes are switched off.
           </div>
         )}
+        {notice && (
+          <div className="bar ok" role="status">
+            {notice}
+            <button className="link" onClick={() => setNotice(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
         {message && (
           <div className="bar error" role="alert">
             {message}
@@ -425,6 +436,9 @@ export default function CollectionPage() {
           </a>
           <button className="btn" onClick={() => setExporting(true)}>
             Export CSV
+          </button>
+          <button className="btn" disabled={locked} onClick={() => setImporting(true)}>
+            Import CSV
           </button>
         </div>
 
@@ -618,6 +632,18 @@ export default function CollectionPage() {
       )}
       {exporting && (
         <ExportDialog rows={rows} binders={view.binders} priceType={view.priceType} binderLabel={binderLabel} onClose={() => setExporting(false)} />
+      )}
+      {importing && (
+        <ImportDialog
+          binders={view.binders}
+          startBinder={pick !== "" && pick !== "~" && view.binders.some((b) => b.uid === pick) ? pick : null}
+          onDone={(v, text) => {
+            setView(v);
+            setImporting(false);
+            setNotice(text);
+          }}
+          onClose={() => setImporting(false)}
+        />
       )}
       {sorting && (
         <SortDialog
