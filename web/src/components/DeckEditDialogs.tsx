@@ -107,7 +107,7 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
             </div>
             <div className="stack">
               <span className="muted small">Category</span>
-              <CategoryPicker view={view} value={category} onChange={setCategory} allowAuto autoLabel="Its auto category (Archidekt's)" />
+              <CategoryPicker view={view} value={category} onChange={setCategory} allowAuto autoLabel="By its card type" />
               <div className="inline">
                 <button
                   className="btn small-btn"
@@ -252,7 +252,7 @@ export function CategoriesDialog({ view, onClose, onChanged }: { view: DeckView;
                 {deleting === c.name && (
                   <div className="stack">
                     <span className="small">{c.cards > 0 ? `Its ${c.cards} card${c.cards === 1 ? "" : "s"} go to:` : "It holds no cards."}</span>
-                    {c.cards > 0 && <CategoryPicker view={{ ...view, categories: view.categories.filter((x) => x.name !== c.name) }} value={moveTo} onChange={setMoveTo} allowAuto autoLabel="Each card's auto category" />}
+                    {c.cards > 0 && <CategoryPicker view={{ ...view, categories: view.categories.filter((x) => x.name !== c.name) }} value={moveTo} onChange={setMoveTo} allowAuto autoLabel="Each card by its card type" />}
                     <div className="inline">
                       <button className="btn small-btn danger" disabled={busy || !moveTo.trim()} onClick={() => run({ action: "delete-category", name: c.name, moveTo: moveTo === AUTO ? null : moveTo.trim() }, `Category ${c.name} deleted.`)}>
                         Delete {c.name}
@@ -345,7 +345,7 @@ export function AddCardDialog({ view, onClose, onChanged }: { view: DeckView; on
             )}
           </div>
           <span className="muted small">Category</span>
-          <CategoryPicker view={view} value={category} onChange={setCategory} allowAuto autoLabel="Its auto category (Archidekt's), else its card type" />
+          <CategoryPicker view={view} value={category} onChange={setCategory} allowAuto autoLabel="By its card type" />
           {error && <div className="bar error">{error}</div>}
           <div className="dialog-actions">
             <button className="btn" disabled={busy} onClick={() => setPicked(null)}>

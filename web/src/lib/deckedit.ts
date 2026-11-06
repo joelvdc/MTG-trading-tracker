@@ -5,14 +5,13 @@
 // Sync (Sync.kt DeckMerge): a deck's decklist comes from the copy with the newest (archidektUpdatedAt, importedAt,
 // updatedAt); a local deck has no archidektUpdatedAt, so an edit wins by moving its updatedAt on, like the app's
 // database triggers do. Its lines are written whole; each keeps its lineUid.
-import type { ArchidektPrinting } from "./archidekt";
 import { primaryType, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
 import { addDeletion, bump, prefs, setPrefs, type CardRef, type Json, type SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
 
 export const MAYBEBOARD = "Maybeboard";
 export const COMMANDER = "Commander";
-/** Stands for "each card's Archidekt auto category" when moving cards (the app's DeckEditor.AUTO). */
+/** Stands for "each card's auto category" when moving cards (the app's DeckEditor.AUTO); by card type here. */
 export const AUTO = "\u0000auto";
 const MAX_QUANTITY = 999;
 const COLOURS = "WUBRG";
@@ -91,10 +90,13 @@ export function sortLines(lines: DeckCard[]): DeckCard[] {
   );
 }
 
-/** What an edit needs from outside: commanders' colour identity (null when unknown) and Archidekt's auto categories. */
+/**
+ * What an edit needs from outside: commanders' colour identity (null when unknown) and auto categories by Scryfall id
+ * (Archidekt's in the app; the website never contacts Archidekt, so it passes none and cards go by card type).
+ */
 export interface Lookups {
   identity: (scryfallIds: string[]) => string | null;
-  auto: Map<string, ArchidektPrinting>;
+  auto: Map<string, { cardId: number; category: string | null }>;
 }
 
 export const NO_LOOKUPS: Lookups = { identity: () => null, auto: new Map() };

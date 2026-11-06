@@ -62,7 +62,7 @@ export function NewDeckDialog({ onClose }: { onClose: () => void }) {
         : kind === "TEXT"
           ? { action: "from-text", name, text, useTags, commander: preview && preview.commanders.length !== 1 && commander ? commander : null }
           : { action: "from-precon", name, fileName: precon?.fileName };
-    setBusy(kind === "EMPTY" ? "Making the deck…" : "Making the deck (looking the cards up on Scryfall and Archidekt)…");
+    setBusy(kind === "EMPTY" ? "Making the deck…" : "Making the deck (looking the cards up on Scryfall)…");
     const r = await api<{ id?: number }>("/api/decks", body);
     if (r.ok && typeof r.data.id === "number") window.location.assign(`/decks/${r.data.id}`);
     else {
@@ -131,7 +131,7 @@ export function NewDeckDialog({ onClose }: { onClose: () => void }) {
                 {preview.hasTags && (
                   <label className="check">
                     <input type="checkbox" checked={useTags} onChange={(e) => setUseTags(e.target.checked)} />
-                    <span>Use the list&apos;s tags as categories (else Archidekt&apos;s auto categories)</span>
+                    <span>Use the list&apos;s tags as categories (else by card type)</span>
                   </label>
                 )}
               </div>
@@ -154,7 +154,7 @@ export function NewDeckDialog({ onClose }: { onClose: () => void }) {
               ))}
               {precons && precons.more > 0 && <li className="muted small">…and {precons.more} more: search to narrow down.</li>}
             </ul>
-            <p className="muted small">The whole deck from MTGJSON, basic lands too, in Archidekt&apos;s auto categories. Adding its cards to the collection is done on the Orders page (Add a precon).</p>
+            <p className="muted small">The whole deck from MTGJSON, basic lands too, sorted by card type. Adding its cards to the collection is done on the Orders page (Add a precon).</p>
           </>
         )}
         <label className="stack">

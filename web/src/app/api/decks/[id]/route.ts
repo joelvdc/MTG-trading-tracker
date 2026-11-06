@@ -6,7 +6,6 @@ import { deckView, missingPlan, ownedByName, syncDecks } from "@/lib/decks";
 import { loadPrices } from "@/lib/pricestore";
 import { editSync, loadSync } from "@/lib/store";
 import { applyEdit, EditError } from "@/lib/wishlist";
-import { archidektPrintings } from "@/lib/archidekt";
 import { FINISHES, resolveFinish } from "@/lib/cards";
 import {
   addCard,
@@ -91,7 +90,7 @@ type Body = {
 const str = (v: unknown, max = 200): string => (typeof v === "string" ? v.slice(0, max) : "");
 const uidList = (b: Body): string[] => (Array.isArray(b.uids) ? b.uids.filter((u) => typeof u === "string").slice(0, 2000) : typeof b.uid === "string" ? [b.uid] : []);
 
-/** What an edit needs looked up before the sync file is opened: colour identities, auto categories, a card's facts. */
+/** What an edit needs looked up before the sync file is opened: colour identities and a card's facts (Scryfall). */
 async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; facts: Record<string, DeckInfo> }> {
   const action = body.action ?? "";
   const ids = lines.map((c) => c.card.scryfallId);
@@ -102,8 +101,9 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
   } catch {
     facts = {};
   }
-  const autoFor = action === "add-card" ? (body.card?.scryfallId ? [body.card.scryfallId] : []) : ["move", "delete-category"].includes(action) ? ids : [];
-  const auto = autoFor.length ? await archidektPrintings(autoFor) : new Map();
+  // The website never contacts Archidekt (the plan's rule), so cards go by card type, as in the app with auto categories off.
+  void action;
+  const auto = new Map();
   const identity = (list: string[]) => (list.every((i) => facts[i]) ? inOrder(list.map((i) => facts[i].i)) : null);
   return { look: { identity, auto }, facts };
 }

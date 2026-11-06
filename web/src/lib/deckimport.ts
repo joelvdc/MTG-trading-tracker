@@ -1,6 +1,6 @@
 // New local decks from a pasted decklist or a preconstructed deck (the app's DeckEditor.previewText, fromText and
-// fromPrecon): the cards are looked up on Scryfall and put in their Archidekt auto categories. Server only.
-import { archidektPrintings } from "./archidekt";
+// fromPrecon): the cards are looked up on Scryfall and put in the category of their card type (the app with auto
+// categories off: the website never contacts Archidekt). Server only.
 import { COMMANDER, fallbackCategory, inOrder, MAYBEBOARD, type NewLine } from "./deckedit";
 import { hasTags, parseDeckText, type TextLine, type TextResult } from "./decktext";
 import { deckList, deckUrl } from "./precons";
@@ -9,6 +9,7 @@ import { lookupCollectionFull, type LookedUp } from "./scryfall";
 import { EditError } from "./wishlist";
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+const NO_AUTO = new Map<string, { cardId: number; category: string | null }>();
 
 export interface TextPreview {
   result: TextResult;
@@ -70,10 +71,9 @@ function lineFor(sc: LookedUp, quantity: number, foil: boolean, etched: boolean,
   };
 }
 
-/** The lines for a pasted list; categories from its tags ([useTags]) or Archidekt's auto categories. */
+/** The lines for a pasted list; categories from its tags ([useTags]) or the card types. */
 export async function textLines(preview: TextPreview, useTags: boolean, commanderOverride: string | null) {
-  const ids = preview.found.flatMap((c) => (c ? [c.card.scryfallId] : []));
-  const auto = await archidektPrintings(ids);
+  const auto = NO_AUTO;
   const names = new Set(commanderOverride ? [commanderOverride] : preview.commanders);
   const tags = useTags && hasTags(preview.result);
   const lines = preview.result.lines.flatMap((l, i): NewLine[] => {
@@ -99,7 +99,7 @@ export async function preconLines(fileName: string) {
   if (!info) throw new EditError("That deck isn't in MTGJSON's list.");
   const deck = deckList(await mtgjson(deckUrl(fileName)));
   const found = new Map((await lookupCollectionFull(deck.cards.map((c) => ({ id: c.scryfallId! })))).map((c) => [c.card.scryfallId, c]));
-  const auto = await archidektPrintings([...found.keys()]);
+  const auto = NO_AUTO;
   const commanders = new Set(deck.commanders);
   const lines = deck.cards.flatMap((c): NewLine[] => {
     const sc = found.get(c.scryfallId!);
