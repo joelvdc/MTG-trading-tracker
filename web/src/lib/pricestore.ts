@@ -22,6 +22,27 @@ export async function loadPrices(): Promise<PriceFile | null> {
   }
 }
 
+/** Whether two ETags name the same version (ignoring quotes and a weak "W/" mark). */
+export function sameEtag(a: string | null | undefined, b: string | null | undefined): boolean {
+  const norm = (e: string) => e.trim().replace(/^W\//, "").replace(/^"|"$/g, "");
+  return !!a && !!b && norm(a) === norm(b);
+}
+
+/**
+ * The price file exactly as stored (gzipped JSON, about 2 MB), for the phones (app 1.81): null when there's none yet,
+ * "same" when it's still the version with [etag].
+ */
+export async function priceBlob(etag: string | null): Promise<{ stream: ReadableStream<Uint8Array>; etag: string; size: number } | "same" | null> {
+  const res = await get(PRICE_BLOB, { access: "private", useCache: false });
+  if (!res || res.statusCode !== 200) return null;
+  const tag = `"${res.blob.etag.replace(/^W\//, "").replace(/^"|"$/g, "")}"`;
+  if (sameEtag(tag, etag)) {
+    await res.stream.cancel().catch(() => undefined);
+    return "same";
+  }
+  return { stream: res.stream, etag: tag, size: res.blob.size };
+}
+
 /** Downloads today's guide and rates and saves the compact file. Returns its size and product count. */
 export async function buildPrices(): Promise<{ products: number; bytes: number; createdAt: string; ratesDate: string }> {
   const headers = { "User-Agent": USER_AGENT };

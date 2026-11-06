@@ -650,11 +650,24 @@ class Settings(context: Context) {
     /** Marks the synced settings as changed here (the declined trade binder suggestions changed). Since 1.80. */
     fun stampSyncedPrefs() = prefs.edit().stamp().apply()
 
-    fun setPriceGuideFetched(createdAt: String?, at: Long) {
+    fun setPriceGuideFetched(createdAt: String?, at: Long, via: String? = null) {
         _lastFetch.value = at
         _guideDate.value = createdAt
-        prefs.edit().putLong("lastPriceFetch", at).putString("priceGuideDate", createdAt).apply()
+        _priceVia.value = via
+        prefs.edit().putLong("lastPriceFetch", at).putString("priceGuideDate", createdAt).putString("priceVia", via).apply()
     }
+
+    private val _priceVia = MutableStateFlow(prefs.getString("priceVia", null))
+    /** Where the Cardmarket prices came from: [PriceGuideRepository.VIA_WEBSITE] or [PriceGuideRepository.VIA_CARDMARKET] (since 1.81). */
+    val priceVia: StateFlow<String?> = _priceVia
+
+    /** The website price file's ETag and when the website made it (ms), to ask only for a newer one (since 1.81). */
+    var webPriceEtag: String?
+        get() = prefs.getString("webPriceEtag", null)
+        set(v) = prefs.edit().putString("webPriceEtag", v).apply()
+    var webPriceMadeAt: Long
+        get() = prefs.getLong("webPriceMadeAt", 0L)
+        set(v) = prefs.edit().putLong("webPriceMadeAt", v).apply()
 
     companion object {
         /** What a copy in each condition counts for until the owner changes it, in percent of the card's price. */

@@ -133,7 +133,8 @@ class SyncManager(
         return NextcloudAccount(server, login, pw, prefs.getString(K_USER_ID, null) ?: login, prefs.getString(K_FOLDER, null) ?: NextcloudClient.FOLDER)
     }
 
-    private fun webLogin(): WebLogin? {
+    /** This phone's website account login, if it syncs through one (also used for the website's prices, since 1.81). */
+    fun webLogin(): WebLogin? {
         val user = prefs.getString(K_WEB_USER, null) ?: return null
         val token = prefs.getString(K_WEB_TOKEN, null)?.let(SecretStore::decrypt) ?: return null
         return WebLogin(user, token)

@@ -93,6 +93,7 @@ fun SettingsScreen(nav: NavController) {
     val conditionPcts by c.settings.conditionPcts.collectAsStateWithLifecycle()
     val lastFetch by c.settings.lastPriceFetch.collectAsStateWithLifecycle()
     val guideDate by c.settings.priceGuideDate.collectAsStateWithLifecycle()
+    val priceVia by c.settings.priceVia.collectAsStateWithLifecycle()
     val count by c.prices.count.collectAsStateWithLifecycle(0)
     val state by c.prices.state.collectAsStateWithLifecycle()
     val autoUpdate by c.settings.autoUpdate.collectAsStateWithLifecycle()
@@ -230,6 +231,11 @@ fun SettingsScreen(nav: NavController) {
             Text("Price guide date: ${formatGuideDate(guideDate)}")
             Text("Products with prices: $count")
             Text("Last downloaded: ${if (lastFetch == 0L) "never" else Fmt.dateTime(lastFetch)}")
+            when (priceVia) {
+                com.mtgtrader.data.PriceGuideRepository.VIA_WEBSITE -> Text("From: the MTG Trader website (its nightly copy, about 2 MB)")
+                com.mtgtrader.data.PriceGuideRepository.VIA_CARDMARKET -> Text("From: Cardmarket directly (about 27 MB)")
+                else -> {}
+            }
             when (val s = state) {
                 is PriceUpdateState.Running -> Text(s.message, color = MaterialTheme.colorScheme.primary)
                 is PriceUpdateState.Failed -> Text("Last update failed: ${s.message}", color = MaterialTheme.colorScheme.error)

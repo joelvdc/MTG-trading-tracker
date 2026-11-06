@@ -219,6 +219,13 @@ class ExchangeRateStore(context: Context, private val http: OkHttpClient) {
         }
     }
 
+    /** Keeps rates that came another way (the website's price file, since 1.81), unless the saved ones are newer. */
+    suspend fun save(rates: ExchangeRates) = lock.withLock {
+        if (rates.perEuro.isEmpty() || rates.date < (_rates.value?.date ?: "")) return@withLock
+        _rates.value = rates
+        runCatching { withContext(Dispatchers.IO) { file.writeText(rates.encode()) } }
+    }
+
     companion object {
         const val ECB_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
         private const val MAX_AGE_MS = 12L * 60 * 60 * 1000

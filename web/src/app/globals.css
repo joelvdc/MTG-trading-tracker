@@ -2524,6 +2524,7 @@ details.deck-section > summary .mini-head {
 }
 .owned-badge {
   display: inline-block;
+  align-self: flex-start;
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--green);

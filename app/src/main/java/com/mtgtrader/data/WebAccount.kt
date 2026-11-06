@@ -117,6 +117,44 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
         result
     }
 
+    sealed interface PriceDownload {
+        /** The website's file is still the one with the ETag sent. */
+        data object NotModified : PriceDownload
+        data class Saved(val etag: String?) : PriceDownload
+    }
+
+    /**
+     * The website's daily Cardmarket price file (gzipped JSON, about 2 MB instead of Cardmarket's 27 MB) into [target],
+     * unless it's still the version with [etag]. [onProgress] gets the bytes done and the total (-1 if unknown). Since 1.81.
+     */
+    suspend fun prices(login: WebLogin, etag: String?, target: java.io.File, onProgress: (Long, Long) -> Unit = { _, _ -> }): PriceDownload = call {
+        val req = authed(login, "api/app/prices").get().apply { if (etag != null) header("If-None-Match", etag) }.build()
+        http.newCall(req).execute().use { r ->
+            when {
+                r.code == 304 -> PriceDownload.NotModified
+                r.isSuccessful -> {
+                    val body = r.body ?: throw IOException("The website sent no prices")
+                    val total = body.contentLength()
+                    body.byteStream().use { input ->
+                        target.outputStream().use { out ->
+                            val buf = ByteArray(64 * 1024)
+                            var done = 0L
+                            while (true) {
+                                val n = input.read(buf)
+                                if (n < 0) break
+                                out.write(buf, 0, n)
+                                done += n
+                                onProgress(done, total)
+                            }
+                        }
+                    }
+                    PriceDownload.Saved(r.header("ETag"))
+                }
+                else -> throw failure(r)
+            }
+        }
+    }
+
     private suspend fun account(path: String, body: JsonObject): WebLogin = call {
         val req = Request.Builder().url(base + path).post(body.toString().toRequestBody("application/json".toMediaType())).build()
         http.newCall(req).execute().use { r ->

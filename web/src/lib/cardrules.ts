@@ -81,8 +81,18 @@ export function orderedFormats(legalities: Record<string, Legality>): string[] {
   return [...main, ...rest];
 }
 
-/** "oldschool" → "Oldschool", "paupercommander" → "Paupercommander": Scryfall's keys have no word breaks to use. */
-export const formatName = (key: string): string => key.charAt(0).toUpperCase() + key.slice(1);
+/** A format's name from Scryfall's key ("paupercommander" → "Pauper Commander"); the keys have no word breaks to use. */
+const FORMAT_NAMES: Record<string, string> = {
+  paupercommander: "Pauper Commander",
+  competitivebrawl: "Competitive Brawl",
+  standardbrawl: "Standard Brawl",
+  oldschool: "Old School",
+  predh: "PreDH",
+  premodern: "Premodern",
+  oathbreaker: "Oathbreaker",
+};
+export const formatName = (key: string): string =>
+  FORMAT_NAMES[key] ?? (key.length <= 3 ? key.toUpperCase() : key.charAt(0).toUpperCase() + key.slice(1));
 
 /** A ruling's day like the rest of the site ("5 Nov 2026"). */
 export function rulingDate(iso: string): string {
