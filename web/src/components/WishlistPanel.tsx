@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddDialog, type AddRequest } from "@/components/AddDialog";
+import { AlertHistoryDialog } from "@/components/AlertHistoryDialog";
 import { api, formatDate } from "@/components/api";
 import { EditDialog } from "@/components/EditDialog";
 import { ReceivedDialog } from "@/components/ReceivedDialog";
@@ -42,6 +43,7 @@ export function WishlistPanel({
   const [editing, setEditing] = useState<WishRow | null>(null);
   const [adding, setAdding] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState(false);
 
   useEffect(() => {
     try {
@@ -236,6 +238,9 @@ export function WishlistPanel({
             Copy the cards to buy as a list
           </option>
         </select>
+        <button className="btn" onClick={() => setAlerts(true)}>
+          Alert history
+        </button>
         <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
           Add card
         </button>
@@ -292,6 +297,7 @@ export function WishlistPanel({
           }}
         />
       )}
+      {alerts && <AlertHistoryDialog money={(eur) => format(eur * view.perEuro, view.currency)} onClose={() => setAlerts(false)} />}
       {adding && (
         <AddDialog
           currency={view.currency}

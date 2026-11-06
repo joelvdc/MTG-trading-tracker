@@ -434,6 +434,9 @@ export default function CollectionPage() {
           <a className="btn" href={pick ? `/collection/stats?binder=${encodeURIComponent(pick)}` : "/collection/stats"}>
             Stats
           </a>
+          <a className="btn" href="/tradebinder">
+            Trade binder
+          </a>
           <button className="btn" onClick={() => setExporting(true)}>
             Export CSV
           </button>

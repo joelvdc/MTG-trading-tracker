@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
+import { ValueChart } from "@/components/ValueChart";
 import type { CollectionView } from "@/lib/collview";
 import { computeStats, deckCardNames, displayName, sourceTotals, type StatCard, type StatEntry } from "@/lib/colquery";
 import { format } from "@/lib/money";
@@ -182,6 +183,7 @@ export default function StatsPage() {
             </div>
           )}
         </div>
+        <ValueChart binder={pick} money={money} />
         {s.withoutDetails > 0 && (
           <p className="muted small">
             {s.withoutDetails} cards have no colours or types yet; open the collection once to look them up.
