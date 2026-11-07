@@ -68,7 +68,17 @@ who's calling.
 Prices download once a day when the app opens and in the background (Settings can limit this to Wi-Fi or turn it off;
 "Update prices now" always runs), with a progress bar above the tabs. The collection stays usable meanwhile. Card
 Kingdom refuses phones in some countries (HTTP 403); then the app uses a copy that a daily GitHub job
-(`.github/workflows/card-kingdom.yml`) keeps on this repository's `card-kingdom-prices` branch.
+(`.github/workflows/card-kingdom.yml`) keeps on this repository's `card-kingdom-prices` branch. Since 1.81 a phone
+logged in to an MTG Trader account gets Cardmarket's prices and the exchange rates from the website's nightly copy
+(about 2 MB instead of 27 MB), and falls back to Cardmarket's own file when the website can't be reached; Settings →
+Cardmarket price data shows where they came from.
+
+## Card windows
+Tapping a card (collection, deck, recommendations) opens its window: the picture, then the card's text (every face
+with its mana cost, type line, rules text with symbols, power/toughness or loyalty), and two tabs: **Versions** (copies,
+printing, finish, prices and the rest) and **Rulings** (where the card is legal, banned or restricted, and Scryfall's
+rulings with dates). Text and rulings are fetched from Scryfall the first time and kept on the phone for offline use.
+Since 1.81.
 
 ## Prices and currencies
 - **Price source** (Settings): Cardmarket, TCGplayer or Card Kingdom values your cards everywhere (totals, sorting,
@@ -223,7 +233,7 @@ ink saver option).
 ### Editing decks and local decks
 Local decks can be changed in the app: drag cards between categories, select several to move, put in the maybeboard
 or remove, add cards (search, scanner, Scan tab or recommendations), and manage categories (add, rename, delete,
-hide). New cards go into Archidekt's auto category (or by card type). Every edit can be undone and shows at once.
+hide). New cards go into their auto category from the website's list (since 1.81; or by card type). Every edit can be undone and shows at once.
 Archidekt decks are read only in the app (since 1.78): edit them on archidekt.com, then **Reload decklist** (⟳); or ⋮ →
 **Make it a local deck** to edit a copy in the app. Changes made on a phone before 1.78 that never reached Archidekt
 show on the deck with **Make it a local deck** (keeps them) or **Discard** (then reload). Deleting a deck in the app
@@ -323,9 +333,15 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   its categories renamed, deleted or hidden, with the same rules as the app. New cards go into their **auto
   category** (Ramp, Removal, Draw, Tutor, Recursion, Protection) from the website's own list, built weekly from
   Scryfall's card tags (a card's other categories go along), else the card type; Categories →
-  **Put every card in its auto category** sorts a whole deck that way. Any deck can be copied, a deck from
-  Archidekt made local, and the printing you own shown for a card picked. The phones get every change at their next
-  sync.
+  **Put every card in its auto category** sorts a whole deck that way. Any deck can be copied and a deck from
+  Archidekt made local. The phones get every change at their next sync.
+  A card's window on the deck page shows the card's text, a **Rulings** tab (legalities and rulings), **In your
+  collection** (copies and piles) and **In your decks**; on local decks **Change printing** lists every printing, the
+  ones you own first with a green badge. Each line has an owned icon (a tick for the printing you own, an amber ring for
+  another version, an empty ring for none) with a Collection tracker box on hover; tokens have their own section.
+  **Import from Archidekt** (a deck link, or a username to pick public decks from), **Reload decklist** and **Update
+  all decks** read Archidekt's public decks and score them on Commander Salt, like the app. The website works out every
+  deck's win turn itself (nightly and after a visit to Decks), and again only when a decklist changes.
   **Recommendations** shows EDHREC's or recommander.cards' cards for the deck, like the app, with one-click adding
   for local decks. **Winning the game** plays the deck 10,000 times with the app's own code (the same numbers as the
   phone; half a minute or so in the browser, with a bar showing the games played, then kept there until the deck

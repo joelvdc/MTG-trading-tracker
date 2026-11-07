@@ -59,13 +59,6 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   - Phase 4: porting the win-turn simulation is the largest single piece; plan it as its own step with the app's own
     test decks as the check that both give the same numbers.
 
-### 2026-11-05: next app release: sync merges signed and plain piles (bug)
-Owner: "yes, add the sync fix to the list for the next release."
-- Found while building website phase 2: `Sync.kt` `clean()` groups collection piles by card, foil, etched, condition,
-  language and binder, but not signed/altered (the database's unique index does include them). A signed and a plain pile
-  of the same card in the same binder are merged at sync and one is deleted on every phone. Since 1.27.
-- Fix: add `signed` and `altered` to the grouping key, plus a test with a signed and a plain pile. No format change.
-
 ### 2026-11-05: website: what the app can do that the website can't (yet)
 Owner: "There are some features missing on the website, like merging a binder into another and creating/updating trade
 binder. Please find and list what is missing on the website from the android app." Decks and games are phases 4 and 5;
@@ -98,8 +91,8 @@ the scanner, package check and life tracker stay on the phone.
     the website (Settings → Make my account and copy my data, while logged in with Nextcloud), then switch each phone
     the same day. Next: step D.
   - Automatic categories on the website: done 2026-11-06, from the website's own table built from Scryfall's tags
-    (owner: "can we build our own database and not rely on archidekt?"). Later, maybe: the app reads the website's
-    table for its own "Auto categories for new cards" instead of Archidekt, so both agree.
+    (owner: "can we build our own database and not rely on archidekt?"). The app reads the website's table for its
+    own "Auto categories for new cards" since 1.81.
   - Still to plan (owner agreed 2026-11-06): Commander Salt scores for local decks on the website: look for a deck
     link that needs no account, else the half-manual flow.
   - Step D shipped 2026-11-07 (owner's green light 2026-11-06): the website's nightly job, Value over time, Alert
@@ -172,16 +165,26 @@ while it is playing the deck 10,000 times?"
   - **Games on the website:** the game list, stats per deck and player, head to head, CSV export, the Games section on
     a deck page (the life tracker itself stays on the phone).
   - **Scan tab waiting list:** scans sync, but the website doesn't show them or send them to a binder, trade or deck.
-  - **Archidekt on the website:** import decks by link or profile, Reload decklist, Update all decks (the website
-    doesn't contact Archidekt today; the health check would gain a check).
   - **Commander Salt scores for local decks** (already planned above).
-- **Asked 2026-11-07, plan to be approved:** the deck page's owned/missing column like Moxfield (owner's screenshot: a
-  tick for owned cards, and on hover a "collection tracker" box with what the deck needs and which copies the
-  collection has), and a "view on hover" switch for decks. Owner's correction 2026-11-07: "the amber circle is for when
-  there is a copy in the collection, but not the version chosen for the deck." Also: "get the tokens section out of the
-  stats and make its own collapsible section, maybe before recommendations."
+  - Archidekt on the website, the owned column and the tokens section: done 2026-11-07 (see Done). The "view on hover"
+    switch for decks was dropped by the owner ("leave as it is now").
+
+### 2026-11-07: ideas noted while building 1.81
+- Prices from the website (owner: "can the website fetch the prices and the app just fetches the prices from the
+  website instead?"): done in 1.81 for Cardmarket and the exchange rates. Card Kingdom (already a compact 5 MB copy,
+  too big for one Vercel answer) and TCGplayer (fetched per owned card from Scryfall) stay as they were. The owner
+  asked whether a database would be better than a file; decided: keep the file (offline, instant, no per-card lookups).
+- The phone's "Unable to resolve host" error for every price site after logging in (owner's screenshot, VPN on): a
+  DNS/VPN problem on the phone, not the app. If it comes back with the VPN off, look again.
 
 ## Done
+- 1.81: card text and a Rulings tab (legalities, Scryfall's rulings) in the card windows; Cardmarket prices from the
+  website's 2 MB nightly copy for phones with an account; auto categories from the website; signed and plain piles no
+  longer merge at sync.
+- 2026-11-07: website: Archidekt import, Reload decklist and Update all decks (with Commander Salt); win turns worked
+  out by the website itself; owned icons with a Collection tracker box; tokens in their own section; the deck card
+  window (card text, Rulings tab, in your collection, in your decks, Change printing on local decks, no per-card
+  printing picker); card text and Rulings in the collection's card window too.
 - 2026-11-07: website tweaks from the second scan: any deck can be deleted (also from the Decks list), each stats
   section and card category folds, a progress bar while the deck is played 10,000 times, Combos (with Commander
   Spellbook links, also in a card's window), a token's printing can be chosen, Cards in several decks, Rule-zero cards
