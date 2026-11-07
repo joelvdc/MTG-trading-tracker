@@ -163,7 +163,8 @@ describe("the nightly job", () => {
       addDetails: async (ids) => void looked.push(ids),
       printingsOf: async () => null,
     };
-    const r = await runNightly(NOW, deps);
+    // The deadline is real time (the job stops before Vercel's limit), so it can't be derived from the made-up NOW.
+    const r = await runNightly(NOW, deps, Date.now() + 240_000);
     expect(r).toEqual({ day: "2026-11-07", accounts: 1, values: 1, alertsChecked: 1, alertsReached: 1, failed: 0 });
     expect(looked).toEqual([["1"]]);
     expect(await store.valuePoints(a.id, "trend", null)).toEqual([{ day: "2026-11-07", value: 20, cards: 2 }]);
