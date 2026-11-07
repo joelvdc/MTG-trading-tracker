@@ -9,16 +9,13 @@ import type { WinState } from "./useWinOdds";
 
 const KEY = "mtg.deckStats";
 
-/** A stats section that folds away (each one on its own, like the app's); remembered in this browser. */
+/** One stats section (only the whole Stats block folds, on the deck page). */
 function Fold({ title, className, children }: { title: string; className: string; children: React.ReactNode }) {
-  const [folded, setFolded] = useStored(`fold.${title}`, false);
   return (
-    <details className={`${className} fold`} open={!folded} onToggle={(e) => setFolded(!(e.currentTarget as HTMLDetailsElement).open)}>
-      <summary>
-        <h2>{title}</h2>
-      </summary>
+    <section className={className}>
+      <h2>{title}</h2>
       {children}
-    </details>
+    </section>
   );
 }
 

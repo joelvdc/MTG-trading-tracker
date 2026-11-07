@@ -173,7 +173,9 @@ export default function DeckPage() {
       >
         <span className="deck-qty num">{r.quantity}</span>
         <span className="grow deck-card-name">
-          {r.name}
+          <span className="deck-name-text" title={r.name}>
+            {r.name}
+          </span>
           {r.finish !== "NONFOIL" && <span className="foil-text" title={r.finish === "ETCHED" ? "Etched" : "Foil"}> ✦</span>}
           {r.addedInApp && (
             <span className="ok-text" title="Added in the app">
@@ -300,6 +302,14 @@ export default function DeckPage() {
                 Archidekt
               </a>
             )}
+            {d.saltId && (
+              <a className="btn small-btn" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
+                Commander Salt
+              </a>
+            )}
+            <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
+              Recommendations
+            </button>
             {!view.readOnly && (
               <details className="menu">
                 <summary className="btn small-btn">Edit ▾</summary>
@@ -317,11 +327,6 @@ export default function DeckPage() {
                   </button>
                 </div>
               </details>
-            )}
-            {d.saltId && (
-              <a className="btn small-btn" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
-                Commander Salt
-              </a>
             )}
           </div>
           {d.scoredAt && <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>}
@@ -375,9 +380,6 @@ export default function DeckPage() {
           )}
           <DeckFilterBox filter={filter} shown={shaped.matched} total={view.rows.reduce((s, r) => s + r.quantity, 0)} />
           <span className="deck-toolbar-end">
-            <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
-              Recommendations
-            </button>
             <ViewOptionsMenu prefs={prefs} onChange={setPrefs} hoverOn={hoverOn} onHover={setHoverOn} />
           </span>
         </div>
@@ -385,7 +387,7 @@ export default function DeckPage() {
           <p className="muted small">Shown in the printings you own, as in the app; the deck itself keeps its printings.</p>
         )}
 
-        <div className={shaped.maybeSections.length > 0 ? "deck-layout has-maybe" : "deck-layout"}>
+        <div className={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? "deck-layout has-maybe" : "deck-layout"}>
           <div className="deck-columns">
             {shaped.visible.map((s) => block(s.title, s.rows, s.title))}
             {shaped.hiddenRows.length > 0 && block("Hidden categories", shaped.hiddenRows, "\u0000hidden")}
@@ -410,6 +412,7 @@ export default function DeckPage() {
           decks use them).
         </p>
 
+        <div className="deck-bottom">
         <details className="card" open={showStats} onToggle={(e) => setShowStats((e.target as HTMLDetailsElement).open)}>
           <summary>
             <strong>Stats</strong>
@@ -441,6 +444,7 @@ export default function DeckPage() {
           open={!folded.has("\u0000tokens")}
           onToggle={(open) => setFold("\u0000tokens", !open)}
         />
+        </div>
       </main>
       {showRecs && (
         <SidePanel title="Recommendations" onClose={() => setShowRecs(false)}>

@@ -92,7 +92,9 @@ describe("parsePrefs", () => {
   });
   it("reads what was saved and ignores junk", () => {
     const p = parsePrefs(JSON.stringify({ cost: false, sort: "NAME", descending: true, group: "COLOUR", price: "x", owned: false }));
-    expect(p).toEqual({ cost: false, price: true, owned: false, sort: "NAME", descending: true, group: "COLOUR" });
+    expect(p).toEqual({ cost: false, price: true, owned: false, sort: "NAME", descending: true, group: "COLOUR", maybe: "SIDE" });
     expect(parsePrefs(JSON.stringify({ group: "Bogus" })).group).toBe("CATEGORY");
+    expect(parsePrefs(JSON.stringify({ maybe: "BELOW" })).maybe).toBe("BELOW");
+    expect(parsePrefs(JSON.stringify({ maybe: "Elsewhere" })).maybe).toBe("SIDE");
   });
 });

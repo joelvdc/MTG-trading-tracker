@@ -13,9 +13,11 @@ export interface DeckPrefs {
   sort: DeckSort;
   descending: boolean;
   group: DeckGroup;
+  /** Where the maybeboard goes: a third column beside the deck, or under it. */
+  maybe: "SIDE" | "BELOW";
 }
 
-export const DEFAULT_PREFS: DeckPrefs = { cost: true, price: true, owned: true, sort: "MANA_VALUE", descending: false, group: "CATEGORY" };
+export const DEFAULT_PREFS: DeckPrefs = { cost: true, price: true, owned: true, sort: "MANA_VALUE", descending: false, group: "CATEGORY", maybe: "SIDE" };
 
 /** Reads the remembered choices; anything missing or unreadable keeps its default. */
 export function parsePrefs(text: string | null): DeckPrefs {
@@ -28,6 +30,7 @@ export function parsePrefs(text: string | null): DeckPrefs {
       sort: p.sort === "NAME" || p.sort === "MANA_VALUE" ? p.sort : DEFAULT_PREFS.sort,
       descending: typeof p.descending === "boolean" ? p.descending : DEFAULT_PREFS.descending,
       group: p.group && p.group in GROUP_LABELS ? p.group : DEFAULT_PREFS.group,
+      maybe: p.maybe === "BELOW" || p.maybe === "SIDE" ? p.maybe : DEFAULT_PREFS.maybe,
     };
   } catch {
     return DEFAULT_PREFS;
@@ -101,6 +104,18 @@ export function ViewOptionsMenu({
         {item("Mana cost", prefs.cost, (v) => onChange({ cost: v }))}
         {item("Price", prefs.price, (v) => onChange({ price: v }))}
         {item("Collection info", prefs.owned, (v) => onChange({ owned: v }))}
+        <strong className="small">Maybeboard</strong>
+        {(
+          [
+            ["SIDE", "Side column"],
+            ["BELOW", "Below the deck"],
+          ] as const
+        ).map(([v, label]) => (
+          <label key={v} className="check small">
+            <input type="radio" name="deck-maybe" checked={prefs.maybe === v} onChange={() => onChange({ maybe: v })} />
+            <span>{label}</span>
+          </label>
+        ))}
         <strong className="small">Pictures</strong>
         {item("Card on hover", hoverOn, onHover)}
       </div>

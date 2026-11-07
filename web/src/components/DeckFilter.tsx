@@ -132,15 +132,27 @@ export type DeckFilterState = ReturnType<typeof useDeckFilter>;
 export function DeckFilterBox({ filter, shown, total }: { filter: DeckFilterState; shown: number | null; total: number }) {
   return (
     <div className="deck-filter">
-      <input
-        type="search"
-        className="deck-filter-input"
-        value={filter.text}
-        onChange={(e) => filter.setText(e.target.value)}
-        placeholder="Filter deck (eg: o:haste c:red)"
-        aria-label="Filter the deck with Scryfall's search words"
-        title="Scryfall's search words: t:creature, o:draw, c:rg, mv<=2, is:commander, cat:ramp, … Words only Scryfall knows (otag:, art:) are looked up there."
-      />
+      <span className="deck-filter-box">
+        <input
+          type="search"
+          className={filter.error ? "deck-filter-input bad" : "deck-filter-input"}
+          value={filter.text}
+          onChange={(e) => filter.setText(e.target.value)}
+          placeholder="Filter deck (eg: o:haste c:red)"
+          aria-label="Filter the deck with Scryfall's search words"
+          title="Scryfall's search words: t:creature, o:draw, c:rg, mv<=2, is:commander, cat:ramp, … Words only Scryfall knows (otag:, art:) are looked up there."
+        />
+        {filter.text.trim() && !filter.error && (filter.busy || shown !== null) && (
+          <span className="deck-filter-count small muted" role="status">
+            {filter.busy ? "Scryfall…" : `${shown} of ${total}`}
+          </span>
+        )}
+        {filter.error && (
+          <span className="deck-filter-error small warn-text" role="status">
+            {filter.error}
+          </span>
+        )}
+      </span>
       <div className="seg text" role="group" aria-label="Filter mode">
         <button className={filter.mode === "ONLY" ? "on" : ""} onClick={() => filter.setMode("ONLY")} title="Show only the matching cards">
           Show only
@@ -149,11 +161,6 @@ export function DeckFilterBox({ filter, shown, total }: { filter: DeckFilterStat
           Highlight
         </button>
       </div>
-      {filter.text.trim() && (
-        <span className={filter.error ? "small warn-text" : "small muted"} role="status">
-          {filter.error ?? (filter.busy ? "Asking Scryfall…" : shown !== null ? `${shown} of ${total} match` : "")}
-        </span>
-      )}
     </div>
   );
 }

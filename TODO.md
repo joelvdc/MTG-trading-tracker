@@ -178,6 +178,10 @@ while it is playing the deck 10,000 times?"
   DNS/VPN problem on the phone, not the app. If it comes back with the VPN off, look again.
 
 ## Done
+- 2026-11-07: website deck page, second round (owner's green light): compact one-line card lines (long names end in
+  "…", the cost, collection and price columns close together), a Maybeboard "Side column / Below the deck" choice in
+  the view options, Recommendations next to the other deck buttons with Edit last, the filter's Show only / Highlight
+  beside the box (match count inside it), Stats folding as one block, and a gap between Stats and Tokens.
 - 2026-11-07: website deck page redesign (owner's green light, "side panel is fine"): mana costs with the Mana font
   (as in the app), no set text on lines, a view options menu (Mana cost, Price, Collection info, Card on hover), Sort by
   (Mana value / Name, descending) and Group by (Categories, Card type, Mana value, Colour; colour from the mana cost,

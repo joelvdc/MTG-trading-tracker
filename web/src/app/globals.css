@@ -2739,17 +2739,50 @@ details.deck-section > summary .mini-head {
 /* ---- Deck syntax filter ---- */
 .deck-filter {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  flex: 1 1 320px;
+  flex: 1 1 340px;
+  min-width: 0;
+}
+/* The box holds the match count at its right end; an error shows just below it. */
+.deck-filter-box {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 140px;
+  display: flex;
 }
 .deck-filter-input {
-  flex: 1 1 200px;
+  flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 92px 4px 10px;
   font-size: 13px;
+}
+.deck-filter-input.bad {
+  border-color: var(--red);
+}
+.deck-filter-count {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.deck-filter-error {
+  position: absolute;
+  left: 4px;
+  top: calc(100% + 2px);
+  z-index: 5;
+  white-space: nowrap;
+  background: var(--bg);
+  padding: 0 4px;
+  border-radius: 4px;
+}
+.deck-filter .seg {
+  flex-shrink: 0;
 }
 .deck-row.filter-miss {
   opacity: 0.35;
@@ -2772,4 +2805,41 @@ details.deck-section > summary .mini-head {
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+/* ---- Deck lines on one line, compact ---- */
+.deck-card-name {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.deck-card-name > * {
+  flex-shrink: 0;
+}
+.deck-card-name > .deck-name-text {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deck-row {
+  gap: 6px;
+}
+.deck-cost {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.deck-own {
+  width: 22px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.deck-price {
+  width: 58px;
+  flex-shrink: 0;
+}
+
+/* The deck page's blocks after the card list keep the same gap as the banner and the scores. */
+.deck-bottom > * + * {
+  margin-top: 12px;
 }
