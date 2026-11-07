@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
+import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { SidePanel, useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
@@ -24,6 +25,7 @@ import { format } from "@/lib/money";
 type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
 
 const NO_CARDS: StatsCard[] = [];
+const NO_ROWS: DeckRow[] = [];
 
 /** The deck's folded card sections, remembered in this browser per deck. */
 function useFolded(deckId: string): [Set<string>, (key: string, folded: boolean) => void] {
@@ -78,6 +80,7 @@ export default function DeckPage() {
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
+  const filter = useDeckFilter(view?.rows ?? NO_ROWS, view?.stats ?? NO_CARDS);
   const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null, view?.winTurn ?? null);
 
   useEffect(() => {
@@ -115,7 +118,9 @@ export default function DeckPage() {
     const costs = new Map(view.stats.map((s) => [s.scryfallId, s.manaCost]));
     const coloursOf = (r: DeckRow) => costColours(costs.get(r.original?.scryfallId ?? r.card.scryfallId));
     const main = view.rows.filter((r) => !r.maybeboard);
-    const shown = onlyBracket ? main.filter((r) => r.tags.length > 0) : main;
+    const only = filter.mode === "ONLY" ? filter.test : null;
+    const bracketShown = onlyBracket ? main.filter((r) => r.tags.length > 0) : main;
+    const shown = only ? bracketShown.filter(only) : bracketShown;
     const all = layoutSections(shown, prefs.group, prefs.sort, prefs.descending, coloursOf);
     const hidden = new Set(view.hidden);
     const visible = prefs.group === "CATEGORY" ? all.filter((s) => !hidden.has(s.title.toLowerCase())) : all;
@@ -123,12 +128,12 @@ export default function DeckPage() {
       .filter((s) => !visible.includes(s))
       .flatMap((s) => s.rows)
       .sort((a, b) => caseless(a.category, b.category) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-    const maybeRows = view.rows.filter((r) => r.maybeboard);
+    const maybeRows = view.rows.filter((r) => r.maybeboard && (!only || only(r)));
     const maybeSections = layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf);
     const value = main.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0);
     const missing = main.reduce((s, r) => s + r.missing, 0);
-    return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length };
-  }, [view, prefs.group, prefs.sort, prefs.descending, onlyBracket]);
+    return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length, matched: filter.test ? view.rows.filter(filter.test).reduce((s, r) => s + r.quantity, 0) : null };
+  }, [view, prefs.group, prefs.sort, prefs.descending, onlyBracket, filter.mode, filter.test]);
 
   if (!view || !shaped) {
     return (
@@ -157,7 +162,7 @@ export default function DeckPage() {
     return (
       <li
         key={r.lineUid}
-        className="deck-row clickable"
+        className={filter.test && filter.mode === "HIGHLIGHT" ? (filter.test(r) ? "deck-row clickable filter-hit" : "deck-row clickable filter-miss") : "deck-row clickable"}
         role="button"
         tabIndex={0}
         title={view.local && !view.readOnly ? "Change this card" : "This card"}
@@ -368,12 +373,13 @@ export default function DeckPage() {
               Only bracket cards · {shaped.tagged}
             </button>
           )}
-          {/* syntax filter goes here */}
-          <span className="spacer" />
-          <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
-            Recommendations
-          </button>
-          <ViewOptionsMenu prefs={prefs} onChange={setPrefs} hoverOn={hoverOn} onHover={setHoverOn} />
+          <DeckFilterBox filter={filter} shown={shaped.matched} total={view.rows.reduce((s, r) => s + r.quantity, 0)} />
+          <span className="deck-toolbar-end">
+            <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
+              Recommendations
+            </button>
+            <ViewOptionsMenu prefs={prefs} onChange={setPrefs} hoverOn={hoverOn} onHover={setHoverOn} />
+          </span>
         </div>
         {view.myPrintings && view.rows.some((r) => r.original) && (
           <p className="muted small">Shown in the printings you own, as in the app; the deck itself keeps its printings.</p>
@@ -391,7 +397,11 @@ export default function DeckPage() {
                   Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
                 </h3>
               </summary>
-              {shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))}
+              {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
+                <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
+              ) : (
+                shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))
+              )}
             </details>
           )}
         </div>

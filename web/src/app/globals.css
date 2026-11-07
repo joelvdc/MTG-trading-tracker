@@ -2735,3 +2735,41 @@ details.deck-section > summary .mini-head {
     border-left: 0;
   }
 }
+
+/* ---- Deck syntax filter ---- */
+.deck-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 320px;
+}
+.deck-filter-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.deck-row.filter-miss {
+  opacity: 0.35;
+}
+.deck-row.filter-hit {
+  box-shadow: inset 3px 0 0 var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+.deck-filter .seg {
+  padding: 2px;
+}
+.deck-filter .seg button {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+/* Recommendations and the view options stay together at the right, also when the toolbar wraps. */
+.deck-toolbar-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}

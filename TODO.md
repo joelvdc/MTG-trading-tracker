@@ -178,6 +178,13 @@ while it is playing the deck 10,000 times?"
   DNS/VPN problem on the phone, not the app. If it comes back with the VPN off, look again.
 
 ## Done
+- 2026-11-07: website deck page redesign (owner's green light, "side panel is fine"): mana costs with the Mana font
+  (as in the app), no set text on lines, a view options menu (Mana cost, Price, Collection info, Card on hover), Sort by
+  (Mana value / Name, descending) and Group by (Categories, Card type, Mana value, Colour; colour from the mana cost,
+  so lands are colourless) dropdowns, the maybeboard as a foldable third column, Stats and Tokens at the bottom, flip
+  for double-faced cards, Recommendations in a side panel, the Edit button's height, and a syntax filter in Scryfall's
+  search words (answered in the browser; words only Scryfall knows, like otag:, go to Scryfall) with Show only /
+  Highlight.
 - 1.81: card text and a Rulings tab (legalities, Scryfall's rulings) in the card windows; Cardmarket prices from the
   website's 2 MB nightly copy for phones with an account; auto categories from the website; signed and plain piles no
   longer merge at sync.
