@@ -69,12 +69,15 @@ export async function GET(_req: Request, { params }: Params) {
     }
     const stats = deckStatsCards(synced, info);
     const tokenInfo: Record<string, { oi: string | null; pt: string | null }> = {};
+    // Scryfall's layout per printing, to tell which cards have a back face to flip to.
+    const layouts: Record<string, string> = {};
+    for (const s of stats) if (info[s.scryfallId]?.y) layouts[s.scryfallId] = info[s.scryfallId].y!;
     for (const s of stats) for (const t of s.tokens ?? []) if (info[t.id]) tokenInfo[t.id] = { oi: info[t.id].oi, pt: info[t.id].pt };
     // The Commander Salt data as the app keeps it, for the win turn (its combos) and the app's power level.
     // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
     const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
     const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
-    return json({ ...view, stats, tokenInfo, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
+    return json({ ...view, stats, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
   } catch (e) {
     return errorResponse(e);
   }

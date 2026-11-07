@@ -13,6 +13,7 @@ import { cardmarketUrlFor, cardtraderUrlFor } from "./cardLinks";
 import { CardRulesTabs } from "./CardRules";
 import type { Printing } from "./CardSearch";
 import { Dialog } from "./Dialog";
+import { FlipPicture } from "./FlipPicture";
 import { rowTags } from "./CollTable";
 
 type Update = Extract<CollectionEdit, { type: "update" }>;
@@ -172,10 +173,7 @@ export function CollCardDialog({
   return (
     <Dialog title={displayName(row.card)} onClose={onClose}>
       <div className="dialog-top">
-        {row.card.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="big-img" src={row.card.imageUrl} alt={row.card.name} />
-        )}
+        {row.card.imageUrl && <FlipPicture url={row.card.imageUrl} className="big-img" alt={row.card.name} typeLine={row.info?.t} />}
         <div className="dialog-info">
           <div className="muted">
             {row.card.setName} · {row.card.setCode.toUpperCase()} #{row.card.collectorNumber} · {row.card.rarity} · {finishName(row)}

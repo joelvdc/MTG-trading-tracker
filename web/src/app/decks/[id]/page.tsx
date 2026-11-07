@@ -6,6 +6,7 @@ import { api } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { DeckTokens } from "@/components/DeckTokens";
+import { SidePanel, useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { ColourPips, ManaCost } from "@/components/Mana";
@@ -15,11 +16,12 @@ import { RecommendationsPanel } from "@/components/RecommendationsPanel";
 import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
-import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView, type GroupBy } from "@/lib/deckshared";
+import { allCombos, bracketName, caseless, POWER_SOURCES, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { backImageUrl, costColours, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort } from "@/lib/decklayout";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
+type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
 
 const NO_CARDS: StatsCard[] = [];
 
@@ -61,9 +63,9 @@ export default function DeckPage() {
   const [folder, setFolder] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [groupBy, setGroupBy] = useState<GroupBy>("CATEGORY");
+  const [prefs, setPrefs] = useDeckPrefs();
   const [onlyBracket, setOnlyBracket] = useState(false);
-  const [maybe, setMaybe] = useState(false);
+  const [flipped, setFlipped] = useState<Set<string>>(new Set());
   const [showStats, setShowStats] = useState(true);
   const [showRecs, setShowRecs] = useState(false);
   const [missingOpen, setMissingOpen] = useState(false);
@@ -110,23 +112,23 @@ export default function DeckPage() {
 
   const shaped = useMemo(() => {
     if (!view) return null;
+    const costs = new Map(view.stats.map((s) => [s.scryfallId, s.manaCost]));
+    const coloursOf = (r: DeckRow) => costColours(costs.get(r.original?.scryfallId ?? r.card.scryfallId));
     const main = view.rows.filter((r) => !r.maybeboard);
     const shown = onlyBracket ? main.filter((r) => r.tags.length > 0) : main;
-    const all = sections(shown, groupBy);
+    const all = layoutSections(shown, prefs.group, prefs.sort, prefs.descending, coloursOf);
     const hidden = new Set(view.hidden);
-    const visible = groupBy === "CATEGORY" ? all.filter((s) => !hidden.has(s.title.toLowerCase())) : all;
+    const visible = prefs.group === "CATEGORY" ? all.filter((s) => !hidden.has(s.title.toLowerCase())) : all;
     const hiddenRows = all
       .filter((s) => !visible.includes(s))
       .flatMap((s) => s.rows)
       .sort((a, b) => caseless(a.category, b.category) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-    const maybeSections = sections(
-      view.rows.filter((r) => r.maybeboard),
-      "CATEGORY",
-    );
+    const maybeRows = view.rows.filter((r) => r.maybeboard);
+    const maybeSections = layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf);
     const value = main.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0);
     const missing = main.reduce((s, r) => s + r.missing, 0);
-    return { main, visible, hiddenRows, maybeSections, value, missing, tagged: main.filter((r) => r.tags.length > 0).length };
-  }, [view, groupBy, onlyBracket]);
+    return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length };
+  }, [view, prefs.group, prefs.sort, prefs.descending, onlyBracket]);
 
   if (!view || !shaped) {
     return (
@@ -145,6 +147,10 @@ export default function DeckPage() {
   const d = view.deck;
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
   const costOf = new Map(view.stats.map((s) => [s.scryfallId, s.manaCost]));
+  const typeLineOf = new Map(view.stats.map((s) => [s.scryfallId, s.typeLine]));
+  /** Whether a line's card has a back face, from Scryfall's layout when known. */
+  const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
+  const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
 
   const row = (r: DeckRow) => {
     const basic = BASICS.has(r.name.toLowerCase());
@@ -157,7 +163,7 @@ export default function DeckPage() {
         title={view.local && !view.readOnly ? "Change this card" : "This card"}
         onClick={() => (hover.hide(), setLine(r.lineUid))}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setLine(r.lineUid))}
-        onMouseMove={hover.follow(r.card.imageUrl)}
+        onMouseMove={hover.follow(pictureOf(r))}
         onMouseLeave={hover.hide}
       >
         <span className="deck-qty num">{r.quantity}</span>
@@ -175,19 +181,34 @@ export default function DeckPage() {
               {TAG_LABELS[t].label}
             </span>
           ))}
-          <span className="muted small">
-            {" "}
-            · {r.card.setCode.toUpperCase()}
-            {r.original ? " (yours)" : ""}
+          {flippable(r) && r.card.imageUrl && (
+            <button
+              type="button"
+              className="flip-btn"
+              title={flipped.has(r.lineUid) ? "Show the front" : "Show the back"}
+              aria-label={`Flip ${r.name}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                hover.hide();
+                setFlipped((old) => {
+                  const next = new Set(old);
+                  if (!next.delete(r.lineUid)) next.add(r.lineUid);
+                  return next;
+                });
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              ⟳
+            </button>
+          )}
+        </span>
+        {prefs.cost && (
+          <span className="deck-cost">
+            <ManaCost cost={costOf.get(r.original?.scryfallId ?? r.card.scryfallId) ?? null} size={14} />
           </span>
-        </span>
-        <span className="deck-cost">
-          <ManaCost cost={costOf.get(r.original?.scryfallId ?? r.card.scryfallId) ?? null} size={14} />
-        </span>
-        <span className="deck-own small">
-          {basic || r.maybeboard ? null : <OwnedIcon row={r} />}
-        </span>
-        <span className="num nowrap deck-price">{r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}</span>
+        )}
+        {prefs.owned && <span className="deck-own small">{basic || r.maybeboard ? null : <OwnedIcon row={r} />}</span>}
+        {prefs.price && <span className="num nowrap deck-price">{r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}</span>}
       </li>
     );
   };
@@ -302,19 +323,6 @@ export default function DeckPage() {
           {!d.scoredAt && d.scoreError && <p className="warn-text small">Not scored: {d.scoreError}</p>}
         </section>
 
-        <details className="card" open={showStats} onToggle={(e) => setShowStats((e.target as HTMLDetailsElement).open)}>
-          <summary>
-            <strong>Stats</strong>
-          </summary>
-          {showStats && (
-            <DeckStatsPanel
-              cards={view.stats}
-              identity={d.colorIdentity}
-              win={win}
-            />
-          )}
-        </details>
-
         {combos.length > 0 && (
           <details className="card" open={!folded.has("\u0000combos")} onToggle={(e) => setFold("\u0000combos", !(e.currentTarget as HTMLDetailsElement).open)}>
             <summary>
@@ -332,6 +340,78 @@ export default function DeckPage() {
             <p className="muted small">From Commander Salt&apos;s analysis. Red: counts for the bracket (two cards, or early in the game); blue: doesn&apos;t.</p>
           </details>
         )}
+
+        <div className="controls deck-toolbar">
+          <label className="inline small">
+            <span className="muted">Group by</span>
+            <select value={prefs.group} onChange={(e) => setPrefs({ group: e.target.value as DeckGroup })}>
+              {(Object.keys(GROUP_LABELS) as DeckGroup[]).map((g) => (
+                <option key={g} value={g}>
+                  {GROUP_LABELS[g]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="inline small">
+            <span className="muted">Sort by</span>
+            <select value={prefs.sort} onChange={(e) => setPrefs({ sort: e.target.value as DeckSort })}>
+              <option value="MANA_VALUE">Mana value</option>
+              <option value="NAME">Name</option>
+            </select>
+          </label>
+          <label className="check small deck-desc">
+            <input type="checkbox" checked={prefs.descending} onChange={(e) => setPrefs({ descending: e.target.checked })} />
+            <span>Order descending</span>
+          </label>
+          {shaped.tagged > 0 && (
+            <button className={onlyBracket ? "chip on" : "chip"} onClick={() => setOnlyBracket((x) => !x)}>
+              Only bracket cards · {shaped.tagged}
+            </button>
+          )}
+          {/* syntax filter goes here */}
+          <span className="spacer" />
+          <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
+            Recommendations
+          </button>
+          <ViewOptionsMenu prefs={prefs} onChange={setPrefs} hoverOn={hoverOn} onHover={setHoverOn} />
+        </div>
+        {view.myPrintings && view.rows.some((r) => r.original) && (
+          <p className="muted small">Shown in the printings you own, as in the app; the deck itself keeps its printings.</p>
+        )}
+
+        <div className={shaped.maybeSections.length > 0 ? "deck-layout has-maybe" : "deck-layout"}>
+          <div className="deck-columns">
+            {shaped.visible.map((s) => block(s.title, s.rows, s.title))}
+            {shaped.hiddenRows.length > 0 && block("Hidden categories", shaped.hiddenRows, "\u0000hidden")}
+          </div>
+          {shaped.maybeSections.length > 0 && (
+            <details className="deck-section deck-maybe" open={!folded.has("\u0000maybe")} onToggle={(e) => setFold("\u0000maybe", !(e.currentTarget as HTMLDetailsElement).open)}>
+              <summary>
+                <h3 className="mini-head">
+                  Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
+                </h3>
+              </summary>
+              {shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))}
+            </details>
+          )}
+        </div>
+        <p className="muted small">
+          Prices: {view.priceTypeLabel}, at the printings shown. Missing: copies the collection lacks in any printing (copies you own count once, however many
+          decks use them).
+        </p>
+
+        <details className="card" open={showStats} onToggle={(e) => setShowStats((e.target as HTMLDetailsElement).open)}>
+          <summary>
+            <strong>Stats</strong>
+          </summary>
+          {showStats && (
+            <DeckStatsPanel
+              cards={view.stats}
+              identity={d.colorIdentity}
+              win={win}
+            />
+          )}
+        </details>
 
         <DeckTokens
           cards={view.stats}
@@ -351,58 +431,12 @@ export default function DeckPage() {
           open={!folded.has("\u0000tokens")}
           onToggle={(open) => setFold("\u0000tokens", !open)}
         />
-
-        <details className="card" open={showRecs} onToggle={(e) => setShowRecs((e.target as HTMLDetailsElement).open)}>
-          <summary>
-            <strong>Recommendations</strong>
-          </summary>
-          {showRecs && <RecommendationsPanel view={view} hover={hover} onAdded={(t) => reload(t)} />}
-        </details>
-
-        <div className="controls">
-          <div className="seg text" role="group" aria-label="Group by">
-            <button className={groupBy === "CATEGORY" ? "on" : ""} onClick={() => setGroupBy("CATEGORY")}>
-              Category
-            </button>
-            <button className={groupBy === "TYPE" ? "on" : ""} onClick={() => setGroupBy("TYPE")}>
-              Card type
-            </button>
-          </div>
-          {shaped.tagged > 0 && (
-            <button className={onlyBracket ? "chip on" : "chip"} onClick={() => setOnlyBracket((x) => !x)}>
-              Only bracket cards · {shaped.tagged}
-            </button>
-          )}
-          {shaped.maybeSections.length > 0 && (
-            <button className={maybe ? "chip on" : "chip"} onClick={() => setMaybe((x) => !x)}>
-              Show maybeboard
-            </button>
-          )}
-          <span className="spacer" />
-          <label className="check small">
-            <input type="checkbox" checked={hoverOn} onChange={(e) => setHoverOn(e.target.checked)} />
-            <span>Card on hover</span>
-          </label>
-        </div>
-        {view.myPrintings && view.rows.some((r) => r.original) && (
-          <p className="muted small">Shown in the printings you own (&quot;yours&quot;), as in the app; the deck itself keeps its printings.</p>
-        )}
-
-        <div className="deck-columns">
-          {shaped.visible.map((s) => block(s.title, s.rows, s.title))}
-          {shaped.hiddenRows.length > 0 && block("Hidden categories", shaped.hiddenRows, "\u0000hidden")}
-        </div>
-        {maybe && (
-          <>
-            <h2 className="section-head">Maybeboard</h2>
-            <div className="deck-columns">{shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))}</div>
-          </>
-        )}
-        <p className="muted small">
-          Prices: {view.priceTypeLabel}, at the printings shown. Missing: copies the collection lacks in any printing (copies you own count once, however many
-          decks use them).
-        </p>
       </main>
+      {showRecs && (
+        <SidePanel title="Recommendations" onClose={() => setShowRecs(false)}>
+          <RecommendationsPanel view={view} hover={hover} onAdded={(t) => reload(t)} />
+        </SidePanel>
+      )}
       {hover.picture}
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
       {rz && view.salt && (
@@ -413,6 +447,8 @@ export default function DeckPage() {
           key={line + view.rows.find((r) => r.lineUid === line)!.quantity}
           view={view}
           row={view.rows.find((r) => r.lineUid === line)!}
+          layout={view.layouts?.[view.rows.find((r) => r.lineUid === line)!.card.scryfallId]}
+          typeLine={typeLineOf.get(view.rows.find((r) => r.lineUid === line)!.card.scryfallId)}
           onClose={() => setLine(null)}
           onChanged={async (t) => {
             await reload(t);

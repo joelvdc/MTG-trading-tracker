@@ -1371,7 +1371,27 @@ button.link.left {
   color: #6fcf97;
 }
 
+/* The Mana font by Andrew Gioia (SIL Open Font License, public/fonts/mana-font-licence.txt) */
+@font-face {
+  font-family: "Mana";
+  src: url("/fonts/mana.ttf") format("truetype");
+  font-display: swap;
+}
+
+.mana-glyph {
+  font-family: "Mana";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+}
+
+.mana-glyph.text {
+  font-family: inherit;
+  font-weight: 700;
+}
+
 .pip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2582,4 +2602,136 @@ details.deck-section > summary .mini-head {
 }
 .pile-list li {
   padding: 3px 0;
+}
+
+/* ---- Deck page layout: toolbar, maybeboard column, side panel ---- */
+.deck-toolbar {
+  align-items: center;
+}
+
+.deck-toolbar select {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.deck-toolbar .check {
+  min-height: 32px;
+}
+
+/* The Edit menu button is as tall as the other buttons of the row. */
+.deck-actions .btn.small-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+}
+
+.deck-actions details.menu {
+  display: flex;
+}
+
+.deck-layout {
+  display: block;
+}
+
+.deck-maybe > summary .mini-head {
+  color: var(--violet);
+}
+
+@media (min-width: 900px) {
+  /* The deck takes the first two columns and the maybeboard the third. */
+  .deck-layout.has-maybe {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: start;
+  }
+
+  .deck-layout.has-maybe > .deck-columns {
+    columns: 2 260px;
+  }
+}
+
+.view-options > summary {
+  min-width: 36px;
+  text-align: center;
+}
+
+.menu-items.options {
+  gap: 2px;
+  padding: 8px 10px;
+  min-width: 190px;
+}
+
+.menu-items.options .check {
+  min-height: 32px;
+  gap: 8px;
+}
+
+.flip-btn {
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid #4a4457;
+  border-radius: 6px;
+  background: var(--raised);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.flip-btn:hover,
+.flip-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--gold);
+}
+
+.flip-picture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 18;
+  width: 380px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid #3a3446;
+  box-shadow: -6px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+.side-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #3a3446;
+}
+
+.side-panel-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.side-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+}
+
+@media (max-width: 600px) {
+  .side-panel {
+    width: 100%;
+    border-left: 0;
+  }
 }

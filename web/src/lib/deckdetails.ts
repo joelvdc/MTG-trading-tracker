@@ -35,6 +35,8 @@ export interface DeckInfo {
   oi: string | null;
   /** On the Game Changers list. */
   g: boolean;
+  /** Scryfall's layout ("normal", "transform", "modal_dfc"…); missing in entries made before the Flip button. */
+  y?: string;
   at: number;
 }
 
@@ -56,6 +58,7 @@ interface Face {
 
 export interface ScryDeckCard extends ScryDetail {
   oracle_id?: string;
+  layout?: string;
   mana_cost?: string;
   produced_mana?: string[];
   oracle_text?: string;
@@ -108,6 +111,7 @@ export function toDeckInfo(c: ScryDeckCard, now: number): DeckInfo {
     l: loyalty,
     oi: c.oracle_id ?? faces[0]?.oracle_id ?? null,
     g: c.game_changer === true,
+    y: c.layout,
     at: now,
   };
 }

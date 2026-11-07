@@ -10,6 +10,7 @@ import { CardRulesTabs } from "./CardRules";
 import { CardSearch, type Printing } from "./CardSearch";
 import { ComboLine } from "./ComboLine";
 import { Dialog } from "./Dialog";
+import { FlipPicture } from "./FlipPicture";
 
 const COMMANDER = "Commander";
 const MAYBEBOARD = "Maybeboard";
@@ -212,7 +213,22 @@ function ChangePrintingDialog({ view, row, onBack, onClose, onChanged }: { view:
  * it, and, in the Versions tab, its quantity, category, commander and maybeboard (local decks). Local decks can change
  * the line's printing. The Rulings tab shows legality and rulings.
  */
-export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; row: DeckRow; onClose: () => void; onChanged: (notice: string | null) => void }) {
+export function LineDialog({
+  view,
+  row,
+  layout,
+  typeLine,
+  onClose,
+  onChanged,
+}: {
+  view: DeckView;
+  row: DeckRow;
+  /** Scryfall's layout and type line of the line's card, to know whether it has a back face (Flip). */
+  layout?: string | null;
+  typeLine?: string | null;
+  onClose: () => void;
+  onChanged: (notice: string | null) => void;
+}) {
   const [qty, setQty] = useState(String(row.quantity));
   const [category, setCategory] = useState(row.category);
   const cardCombos = view.salt ? allCombos(view.salt).filter((c) => c.cards.some((n) => saltKey(n) === saltKey(row.name))) : [];
@@ -235,8 +251,7 @@ export function LineDialog({ view, row, onClose, onChanged }: { view: DeckView; 
   return (
     <Dialog title={row.name} onClose={() => !busy && onClose()}>
       <div className="stack">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {row.card.imageUrl && <img src={row.card.imageUrl} alt="" className="line-picture" />}
+        {row.card.imageUrl && <FlipPicture url={row.card.imageUrl} className="line-picture" layout={layout} typeLine={typeLine ?? row.types} />}
         <p className="muted small">
           {row.types} · {row.card.setName || row.card.setCode.toUpperCase()} #{row.card.collectorNumber}
           {row.finish !== "NONFOIL" ? ` · ${FINISH_LABELS[row.finish].toLowerCase()}` : ""}
