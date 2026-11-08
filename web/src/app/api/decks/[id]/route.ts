@@ -16,6 +16,7 @@ import {
   deleteDeck,
   detachDeck,
   inOrder,
+  maybeCategoryOf,
   moveLines,
   removeLines,
   renameCategory,
@@ -72,6 +73,11 @@ export async function GET(_req: Request, { params }: Params) {
     const maybeStats = synced.cards
       .filter((c) => c.maybeboard)
       .map((c) => statsCard({ name: c.card.name, scryfallId: c.card.scryfallId, quantity: c.quantity, cmc: c.cmc, types: c.types, commander: false }, info[c.card.scryfallId]));
+    // The category each maybeboard line shows under when the maybeboard is split (display only; autoCategories
+    // answers an empty map when the table can't be read, and the lines then go by card type).
+    const maybeLines = synced.cards.filter((c) => c.maybeboard);
+    const auto = maybeLines.length ? await autoCategories(maybeLines.map((c) => ({ scryfallId: c.card.scryfallId, name: c.card.name }))) : new Map();
+    const maybeCategories = Object.fromEntries(maybeLines.map((c) => [c.lineUid, maybeCategoryOf(c, auto)]));
     const tokenInfo: Record<string, { oi: string | null; pt: string | null }> = {};
     // Scryfall's layout per printing, to tell which cards have a back face to flip to.
     const layouts: Record<string, string> = {};
@@ -81,7 +87,7 @@ export async function GET(_req: Request, { params }: Params) {
     // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
     const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
     const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
-    return json({ ...view, stats, maybeStats, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
+    return json({ ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
   } catch (e) {
     return errorResponse(e);
   }

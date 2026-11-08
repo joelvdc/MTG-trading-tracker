@@ -67,6 +67,15 @@ export function categoryList(c: DeckCard): string[] {
   return l.length ? l : [c.category];
 }
 
+/**
+ * The category a maybeboard line is shown under when the maybeboard is split into categories (display only): a
+ * category of its own besides the maybeboard's, else its first auto category (Scryfall's tags), else its card type.
+ */
+export function maybeCategoryOf(c: DeckCard, auto: Map<string, { category: string | null }>): string {
+  const own = categoryList(c).find((x) => !same(x, c.category) && !same(x, MAYBEBOARD));
+  return own ?? auto.get(c.card.scryfallId)?.category ?? fallbackCategory(c.types);
+}
+
 /** The line moved to [to] as its first category, keeping its other ones (DeckCard.inCategory). */
 function inCategory(c: DeckCard, to: string, maybe: boolean): DeckCard {
   const rest = categoryList(c)

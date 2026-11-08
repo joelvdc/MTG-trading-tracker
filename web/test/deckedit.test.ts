@@ -13,6 +13,7 @@ import {
   deleteDeck,
   detachDeck,
   MAYBEBOARD,
+  maybeCategoryOf,
   moveLines,
   NO_LOOKUPS,
   removeLines,
@@ -300,5 +301,19 @@ describe("editing local decks (the app's DeckEditor)", () => {
       ["a", true, 1],
       ["b", false, 1],
     ]);
+  });
+});
+
+describe("maybeboard categories when split (display only)", () => {
+  const line = (category: string, categories: string, types = "Creature") =>
+    ({ card: { scryfallId: "x", name: "X" }, category, categories, types }) as unknown as DeckCard;
+  const auto = new Map([["x", { category: "Ramp" }]]);
+  it("uses a category of its own besides the maybeboard's", () => {
+    expect(maybeCategoryOf(line(MAYBEBOARD, ["Maybeboard", "Draw"].join("\n")), auto)).toBe("Draw");
+    expect(maybeCategoryOf(line("Sideboard", ["Sideboard", "Maybeboard", "Removal"].join("\n")), auto)).toBe("Removal");
+  });
+  it("else its auto category, else its card type", () => {
+    expect(maybeCategoryOf(line(MAYBEBOARD, "Maybeboard"), auto)).toBe("Ramp");
+    expect(maybeCategoryOf(line(MAYBEBOARD, ""), new Map())).toBe("Creature");
   });
 });

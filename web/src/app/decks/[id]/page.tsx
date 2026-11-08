@@ -22,7 +22,7 @@ import { backImageUrl, costColours, GROUP_LABELS, hasBackFace, layoutSections, t
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[];tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
@@ -131,11 +131,21 @@ export default function DeckPage() {
       .flatMap((s) => s.rows)
       .sort((a, b) => caseless(a.category, b.category) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     const maybeRows = view.rows.filter((r) => r.maybeboard && (!only || only(r)));
-    const maybeSections = layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf);
+    // Split: grouped as the deck is, each line under its own category (the server's pick: lib/deckedit.ts
+    // maybeCategoryOf); otherwise by the maybeboard's own categories (Maybeboard, Sideboard…).
+    const maybeSections = prefs.maybeSplit
+      ? layoutSections(
+          maybeRows.map((r) => ({ ...r, category: view.maybeCategories?.[r.lineUid] ?? r.category })),
+          prefs.group,
+          prefs.sort,
+          prefs.descending,
+          coloursOf,
+        )
+      : layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf);
     const value = main.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0);
     const missing = main.reduce((s, r) => s + r.missing, 0);
     return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length, matched: filter.test ? view.rows.filter(filter.test).reduce((s, r) => s + r.quantity, 0) : null };
-  }, [view, allCards, prefs.group, prefs.sort, prefs.descending, onlyBracket, filter.mode, filter.test]);
+  }, [view, allCards, prefs.group, prefs.sort, prefs.descending, prefs.maybeSplit, onlyBracket, filter.mode, filter.test]);
 
   if (!view || !shaped) {
     return (
@@ -401,11 +411,14 @@ export default function DeckPage() {
                   Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
                 </h3>
               </summary>
-              {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
-                <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
-              ) : (
-                shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))
-              )}
+              {/* Below the deck: three columns like the deck's; beside it: one. */}
+              <div className={prefs.maybe === "BELOW" ? "deck-columns" : undefined}>
+                {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
+                  <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
+                ) : (
+                  shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))
+                )}
+              </div>
             </details>
           )}
         </div>

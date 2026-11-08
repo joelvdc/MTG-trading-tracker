@@ -15,9 +15,11 @@ export interface DeckPrefs {
   group: DeckGroup;
   /** Where the maybeboard goes: a third column beside the deck, or under it. */
   maybe: "SIDE" | "BELOW";
+  /** Whether the maybeboard is split into groups the way the deck is (Group by). */
+  maybeSplit: boolean;
 }
 
-export const DEFAULT_PREFS: DeckPrefs = { cost: true, price: true, owned: true, sort: "MANA_VALUE", descending: false, group: "CATEGORY", maybe: "SIDE" };
+export const DEFAULT_PREFS: DeckPrefs = { cost: true, price: true, owned: true, sort: "MANA_VALUE", descending: false, group: "CATEGORY", maybe: "SIDE", maybeSplit: false };
 
 /** Reads the remembered choices; anything missing or unreadable keeps its default. */
 export function parsePrefs(text: string | null): DeckPrefs {
@@ -31,6 +33,7 @@ export function parsePrefs(text: string | null): DeckPrefs {
       descending: typeof p.descending === "boolean" ? p.descending : DEFAULT_PREFS.descending,
       group: p.group && p.group in GROUP_LABELS ? p.group : DEFAULT_PREFS.group,
       maybe: p.maybe === "BELOW" || p.maybe === "SIDE" ? p.maybe : DEFAULT_PREFS.maybe,
+      maybeSplit: typeof p.maybeSplit === "boolean" ? p.maybeSplit : DEFAULT_PREFS.maybeSplit,
     };
   } catch {
     return DEFAULT_PREFS;
@@ -116,6 +119,7 @@ export function ViewOptionsMenu({
             <span>{label}</span>
           </label>
         ))}
+        {item("Split into groups", prefs.maybeSplit, (v) => onChange({ maybeSplit: v }))}
         <strong className="small">Pictures</strong>
         {item("Card on hover", hoverOn, onHover)}
       </div>

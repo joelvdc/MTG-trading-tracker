@@ -177,7 +177,16 @@ while it is playing the deck 10,000 times?"
 - The phone's "Unable to resolve host" error for every price site after logging in (owner's screenshot, VPN on): a
   DNS/VPN problem on the phone, not the app. If it comes back with the VPN off, look again.
 
+### 2026-11-08: next website steps (owner)
+Owner: "I am thinking that we could start with the scan tab on the website with the features from the android app,
+excluding the camera scanner. And then make a tab for the games recorded by the android app and stats for the games,
+players, decks, etc." Order: 1. Scan tab (the "Scan tab waiting list" item above), 2. Games tab (phase 5 above). Each
+gets its own plan and green light.
+
 ## Done
+- 2026-11-08: website deck page: the maybeboard spreads over three columns when it is below the deck, and ⚙ → Maybeboard
+  → "Split into groups" groups it the way the deck is grouped (by category: a category of its own besides Maybeboard,
+  else the website's auto category, else its card type; display only, nothing in the deck changes).
 - 2026-11-08: website deck page fix (owner: "maybeboard is missing mana cost and collection info"): maybeboard lines
   now show their mana cost and the collection tracker, and the filter reads their rules text too. The stats and win
   turn still leave the maybeboard out.
