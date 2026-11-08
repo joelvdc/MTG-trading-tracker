@@ -34,3 +34,13 @@ export interface RecResult {
 }
 
 export const inclusionPct = (c: RecCard) => (c.decks != null && c.potentialDecks != null && c.potentialDecks > 0 ? Math.floor((c.decks * 100) / c.potentialDecks) : null);
+
+/** What the source says about a card, in the app's words. */
+export const recFacts = (c: RecCard): string => {
+  const out: string[] = [];
+  const pct = inclusionPct(c);
+  if (pct !== null) out.push(`in ${pct}% of decks`);
+  if (c.synergy !== null) out.push(`synergy ${c.synergy >= 0 ? "+" : ""}${Math.round(c.synergy * 100)}%`);
+  if (c.score !== null) out.push(`score ${c.score.toFixed(2)}`);
+  return out.join(" · ");
+};

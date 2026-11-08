@@ -43,6 +43,16 @@ enum class RecSource(val key: String, val label: String) {
     }
 }
 
+/** How the recommendations are shown: as rows or as a grid of pictures. */
+enum class RecView(val key: String, val label: String) {
+    LIST("list", "List"),
+    IMAGES("images", "Images");
+
+    companion object {
+        fun fromKey(k: String?) = entries.firstOrNull { it.key == k } ?: LIST
+    }
+}
+
 /** One recommended card, with what the source says about it and what Scryfall says it is. */
 @Serializable
 data class RecCard(
