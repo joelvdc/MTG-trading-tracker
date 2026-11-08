@@ -46,6 +46,7 @@ Published on GitHub (Obtainium installs them on the owner's phones) as `MTG-Trad
   `ScreenshotOptions.kt`), so reference pictures pass, and may be re-recorded, on GitHub's Linux machines and the PC.
 
 ## Building on the owner's PC
+- The practical notes (setup, checks, what must change together, gotchas) are in `docs/DEVELOPING.md`: read it first.
 - Use JDK 18 (`C:\Program Files\Java\jdk-18.0.2`); newer JDKs are too new for this Gradle.
 - The build folder is `%LOCALAPPDATA%\mtgtrader-build` (derived from `LOCALAPPDATA` in the root `build.gradle.kts`).
   VS Code's Java extension can lock it; a separate copy of the code needs its own `LOCALAPPDATA`.
@@ -62,6 +63,17 @@ sync file as one more device.
   app release notes only when they matter to the app.
 - Vercel's secrets (`SESSION_SECRET`, `NEXTCLOUD_PASS`, `CRON_SECRET`) and the owner's Cloudflare rules: don't print or
   change them without asking, like the signing secrets.
+
+## Mistral Vibe (or another assistant) working on its own
+The owner may carry on with Mistral Vibe (on the PC, in VS Code, in a cloud session or from Mistral's web app) instead
+of Claude Code. The same agreement applies, with these differences:
+- Work on a branch `mistral/<short-topic>` made from an up-to-date `main`, never straight on `main`.
+- Release only by the pull request route (see Releases, "Cloud sessions"): open a pull request, merge it once GitHub's
+  Tests check has passed, then Actions → Release → Run workflow on `main`. Never build a release with the PC's own
+  signing key and never open its files (see "Still ask first").
+- Run the website's `npm test` and `npm run typecheck` yourself when `web/` changed (GitHub's Tests check doesn't).
+- If the owner says Claude Code will review the work, stop after committing on the branch and name the branch.
+- Never run two assistants on the same copy of the code at the same time.
 
 ## Delegated work
 If you're working from a brief given by another session (a helper such as Sonnet or Mistral), follow the brief: work
