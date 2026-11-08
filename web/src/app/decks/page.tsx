@@ -136,7 +136,7 @@ export default function DecksPage() {
             {notice}
           </div>
         )}
-        <div className="controls">
+        <div className="controls decks-controls">
           <input type="search" placeholder="Search decks, commanders, owners" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search decks" />
           <label className="inline small">
             <span className="muted">Sort</span>
