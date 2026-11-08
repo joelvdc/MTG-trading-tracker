@@ -69,6 +69,11 @@ data class Deck(
     val categoryInfo: String? = null,
     /** Where a local deck came from ("Copy of Teval", "Moxfield list"…), shown under its name. Since 1.46. */
     val origin: String? = null,
+    /**
+     * Retired (since 1.83): kept with its page, games and stats, but out of the Decks list's groups, the seat pickers,
+     * "Update all decks" and the collection checks ("in a deck", the trade binder's "keep for my decks").
+     */
+    @ColumnInfo(defaultValue = "0") val retired: Boolean = false,
 ) {
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0
@@ -115,11 +120,14 @@ data class Deck(
 enum class DeckGroup(val title: String) {
     OWN("Archidekt"),
     OTHERS("Archidekt (read only)"),
-    LOCAL("Local · in the app, synced between your phones");
+    LOCAL("Local · in the app, synced between your phones"),
+    /** Since 1.83. */
+    RETIRED("Retired · kept with their games");
 
     companion object {
         /** [owner] is the Archidekt user whose decks are "own": the one logged in, else the one decks were last imported from. */
         fun of(deck: Deck, owner: String?): DeckGroup = when {
+            deck.retired -> RETIRED
             deck.local -> LOCAL
             owner != null && deck.owner.equals(owner, ignoreCase = true) -> OWN
             else -> OTHERS

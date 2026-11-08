@@ -100,6 +100,8 @@ fun DecksScreen(nav: NavController) {
     val collapsed by c.settings.deckCollapsed.collectAsStateWithLifecycle()
     val scanCount by remember { c.db.scanDao().observeCount() }.collectAsStateWithLifecycle(0)
     fun groupKey(g: DeckGroup) = "group:${g.name}"
+    // The Retired section can be hidden altogether from ⋮ (since 1.83); folding it works like the others.
+    val hideRetired = HIDE_RETIRED in collapsed
     var sort by remember { mutableStateOf(c.settings.deckSort) }
     var reversed by remember { mutableStateOf(c.settings.deckSortReversed) }
     var sortMenu by remember { mutableStateOf(false) }
@@ -209,6 +211,13 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; nav.navigate("decks/shared") },
                         )
+                        if (decks.orEmpty().any { it.retired }) DropdownMenuItem(
+                            text = { Text(if (hideRetired) "Show retired decks" else "Hide retired decks") },
+                            onClick = {
+                                moreMenu = false
+                                c.settings.setDeckCollapsed(if (hideRetired) collapsed - HIDE_RETIRED else collapsed + HIDE_RETIRED)
+                            },
+                        )
                         HorizontalDivider()
                         val keys = DeckGroup.entries.map(::groupKey)
                         val anyOpen = keys.any { it !in collapsed }
@@ -254,11 +263,12 @@ fun DecksScreen(nav: NavController) {
                     )
                 }
             }
-            // Three sections (since 1.46): the user's own Archidekt decks, other people's, and local decks.
+            // Three sections (since 1.46): the user's own Archidekt decks, other people's, and local decks; since 1.83
+            // a fourth with the retired decks.
             val groups = list.groupBy { DeckGroup.of(it, owner) }
             for (g in DeckGroup.entries) {
                 val inGroup = groups[g].orEmpty()
-                if (inGroup.isEmpty()) continue
+                if (inGroup.isEmpty() || (g == DeckGroup.RETIRED && hideRetired)) continue
                 val folded = groupKey(g) in collapsed
                 item(key = "g_${g.name}") {
                     val title = if (g == DeckGroup.OWN && owner != null) "${g.title} · $owner" else g.title
@@ -502,3 +512,6 @@ private fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String, Boolean) 
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
+
+/** In Settings.deckCollapsed: the Decks tab leaves the Retired section out. Since 1.83. */
+private const val HIDE_RETIRED = "hide:RETIRED"

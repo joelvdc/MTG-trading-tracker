@@ -78,7 +78,7 @@ export default function DeckPage() {
   const [catsOpen, setCatsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
-  const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | null>(null);
+  const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
@@ -105,6 +105,15 @@ export default function DeckPage() {
     if (!r.ok) return setNotice(r.data.error ?? "That did not work.");
     const done = action === "reload" ? "Decklist reloaded from Archidekt." : action === "refresh" ? "Reloaded from Archidekt and scored again." : "Scored again on Commander Salt.";
     await reload(r.data.scoreError ? `${action === "reload" ? done : "Saved"}, but Commander Salt couldn't score it: ${r.data.scoreError}` : done);
+  }
+
+  /** Retires the deck or brings it back (app 1.83). */
+  async function retire(on: boolean): Promise<string | null> {
+    const r = await deckAction(Number(params.id), { action: "retire", retired: on });
+    if (r.error) return r.error;
+    setConfirm(null);
+    await reload(on ? "Retired: the deck is under Retired on the Decks page." : "Brought back.");
+    return null;
   }
 
   /** Loads the deck again after an edit (keeping the page as it is meanwhile). */
@@ -336,6 +345,7 @@ export default function DeckPage() {
                   {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
                   <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
                   {!view.local && <button onClick={() => setConfirm("DETACH")}>Make it a local deck</button>}
+                  {d.retired ? <button onClick={() => retire(false)}>Bring back</button> : <button onClick={() => setConfirm("RETIRE")}>Retire deck…</button>}
                   <button className="danger-text" onClick={() => setConfirm("DELETE")}>
                     Delete deck
                   </button>
@@ -343,6 +353,16 @@ export default function DeckPage() {
               </details>
             )}
           </div>
+          {d.retired && (
+            <p className="muted small">
+              Retired: kept with its games, but out of the seat pickers, Update all decks and the collection checks.{" "}
+              {!view.readOnly && (
+                <button className="link" onClick={() => retire(false)}>
+                  Bring back
+                </button>
+              )}
+            </p>
+          )}
           {d.scoredAt && <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>}
           {!d.scoredAt && d.scoreError && <p className="warn-text small">Not scored: {d.scoreError}</p>}
         </section>
@@ -527,12 +547,22 @@ export default function DeckPage() {
           }}
         />
       )}
+      {confirm === "RETIRE" && (
+        <ConfirmDialog
+          title="Retire the deck?"
+          text={`${d.name} moves to Retired on the Decks page, with its page, games and stats. It leaves the seat pickers, Update all decks and the collection checks (In a deck, the trade binder\u2019s keep for my decks). Bring it back at any time.`}
+          button="Retire"
+          onClose={() => setConfirm(null)}
+          onYes={() => retire(true)}
+        />
+      )}
       {confirm === "DELETE" && (
         <ConfirmDialog
           title="Delete the deck?"
-          text={`${d.name} is deleted here and, at their next sync, on the phones. This can't be undone.${view.local ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
+          text={`${view.games?.length && !d.retired ? `It played ${view.games.length} recorded game(s). The games stay either way, but retiring the deck keeps its page and stats too. ` : ""}${d.name} is deleted here and, at their next sync, on the phones. This can't be undone.${view.local ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
           button="Delete"
           danger
+          other={view.games?.length && !d.retired ? { label: "Retire instead", run: () => retire(true) } : undefined}
           onClose={() => setConfirm(null)}
           onYes={async () => {
             const r = await deckAction(view.id, { action: "delete" });

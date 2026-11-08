@@ -362,18 +362,19 @@ interface DeckDao {
     @Query("UPDATE deck_cards SET deckId = :to WHERE deckId = :from")
     suspend fun moveCards(from: Long, to: Long)
 
-    /** Copies per card name over all decks (for what the collection must keep). */
-    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards WHERE maybeboard = 0 GROUP BY name")
+    /** Copies per card name over all decks but retired ones (for what the collection must keep). */
+    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards WHERE maybeboard = 0 AND deckId NOT IN (SELECT archidektId FROM decks WHERE retired = 1) GROUP BY name")
     suspend fun cardCounts(): List<NameCount>
 
-    @Query("SELECT DISTINCT name FROM deck_cards WHERE maybeboard = 0")
+    /** The collection's "in a deck" marks; retired decks don't count (since 1.83). */
+    @Query("SELECT DISTINCT name FROM deck_cards WHERE maybeboard = 0 AND deckId NOT IN (SELECT archidektId FROM decks WHERE retired = 1)")
     fun observeCardNames(): Flow<List<String>>
 
     /** Every card name with the decks it's in (and how many copies each), for "used in several decks". */
     @Query(
         """SELECT c.name AS name, c.deckId AS deckId, d.name AS deckName, SUM(c.quantity) AS quantity, MAX(c.imageUrl) AS imageUrl
            FROM deck_cards c JOIN decks d ON d.archidektId = c.deckId
-           WHERE c.maybeboard = 0
+           WHERE c.maybeboard = 0 AND d.retired = 0
            GROUP BY c.name COLLATE NOCASE, c.deckId ORDER BY d.name COLLATE NOCASE"""
     )
     fun observeUsage(): Flow<List<DeckUse>>
@@ -389,6 +390,10 @@ interface DeckDao {
 
     @Query("DELETE FROM decks WHERE archidektId = :id")
     suspend fun delete(id: Long)
+
+    /** Retires a deck or brings it back (the sync trigger stamps it). Since 1.83. */
+    @Query("UPDATE decks SET retired = :retired WHERE archidektId = :id")
+    suspend fun setRetired(id: Long, retired: Boolean)
 
     /** Saves a freshly imported deck, replacing its Archidekt list but keeping cards added in the app. */
     @Transaction
@@ -409,7 +414,7 @@ interface DeckDao {
         WishPrice::class, CtBlueprint::class, DeckEdit::class, Player::class, FriendDeck::class, GameRecord::class,
         PausedGame::class,
     ],
-    version = 26,
+    version = 27,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -437,11 +442,21 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 27 (app 1.83): retired decks (synced; the sync file's format went to 13 with them). Every deck
+         * starts as not retired.
+         */
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `decks` ADD COLUMN `retired` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         /**
          * Version 26 (app 1.60): purchase prices and agreed trade prices remember the amount and currency they were

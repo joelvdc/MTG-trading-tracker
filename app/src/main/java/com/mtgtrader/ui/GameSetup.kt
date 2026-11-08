@@ -369,7 +369,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
             taken = s.seats.filterIndexed { j, _ -> j != i }.mapNotNull { it.playerUid }.toSet(),
             takenDecks = s.seats.filterIndexed { j, _ -> j != i }.mapNotNull { it.deckId }.toSet(),
             players = players,
-            decks = decks,
+            decks = decks.filter { !it.retired },
             friendDecks = friendDecks,
             pictures = pictures,
             onDismiss = { picking = null },

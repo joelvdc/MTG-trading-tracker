@@ -185,30 +185,12 @@ gets its own plan and green light.
 - 2 done 2026-11-08: the website's Games section (see Done).
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
-### 2026-11-08: retired decks (owner)
-Owner: "If I delete a deck that was used for games, what happens to the game log? Could it make sense to have an
-archived/retired section for decks? So that the deck is still kept on the website/app despite not being used anymore
-for games." And: "if I delete a deck imported from archidekt and then add it back to the app/website in the future, is
-it possible to remember that deck? maybe by the deck id from archidekt?"
-- Today: each game keeps its own copy of the deck's name, commander, colours and scores, so deleting a deck loses no
-  games; the game stats still list it. What goes is the deck page (with its Games section) and the deck in the seat
-  pickers.
-- Coming back already works for Archidekt decks: the app's deck id is the Archidekt deck id (Deck.archidektId, also the
-  games' deckId), so importing the same Archidekt deck again reconnects all its old games and stats (app and website).
-  Not for local decks (negative ids, made in the app or the website, or by "Make it a local deck"): a new local deck
-  gets a new id, and "Make it a local deck" starts a deck without the Archidekt deck's games.
-- Idea: a **Retired** section. Retiring a deck takes it out of the Decks list, the seat pickers and "Update all decks",
-  but keeps its page, Games section and stats, on the phone and the website; **Bring back** undoes it. One new synced
-  field on decks (both sides of the sync and `web/` in the same release).
-- Owner's answers (2026-11-08, green light for app and website): "Make it a local deck" doesn't bring the games over;
-  deleting a deck that has games suggests retiring it instead; retired decks don't count for the collection checks
-  ("in a deck" marks, the trade binder's "keep for my decks"); the Retired section is a collapsible section with a
-  show/hide option.
-- Needs Sync.FORMAT 12 → 13 (a new deck field, as with 9 in 1.46): phones on 1.82 stop syncing until they update.
-  Asked the owner first.
-- Also asked: the website's Decks list groups weren't collapsible like the app's: done 2026-11-08 (see Done).
-
 ## Done
+- 1.83: **retired decks** (app and website): deck ⋮ → Retire deck… / Bring back; a Retired section on the Decks list
+  (folds, and ⋮ / a button hides it); retired decks keep their page, games and stats but leave the seat pickers, Update
+  all decks and the collection checks; deleting a deck with games suggests retiring it. Sync.FORMAT 13 (phones on 1.82
+  pause syncing until they update). "Make it a local deck" still starts without the games (owner's choice). Archidekt
+  decks already reconnect their games when imported again (deck id = Archidekt id).
 - 2026-11-08: website Decks list: the groups (your decks, other people's, local) fold like the app's Decks tab.
 - 1.82: game stats **Overview** tab (tiles, games per month, how games were won, starting first) and a period choice
   (all time, 12 months, 3 months); friends and guests can **borrow the owner's decks** (app and website: "Your decks

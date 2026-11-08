@@ -154,7 +154,7 @@ fun PrintCardsScreen(nav: NavController) {
     val decks = all?.let { list ->
         remember(list, owner, source, com.mtgtrader.data.AppPower.readings) {
             DeckSorting.sort(list, c.settings.deckSort, c.settings.deckSortReversed, source)
-                .filter { DeckGroup.of(it, owner) != DeckGroup.OTHERS && it.scored }
+                .filter { DeckGroup.of(it, owner) !in setOf(DeckGroup.OTHERS, DeckGroup.RETIRED) && it.scored }
         }
     }
     var choice by remember { mutableStateOf(PrintChoice.entries.firstOrNull { it.name == c.settings.printCards } ?: PrintChoice.BOTH) }

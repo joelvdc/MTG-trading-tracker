@@ -493,7 +493,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
             seatIndex = seats.indexOf(old), choice = seatChoiceOf(old),
             taken = seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
             takenDecks = seats.filter { it.seat != seat }.mapNotNull { it.deckId }.toSet(),
-            players = players, decks = decks, friendDecks = friendDecks, pictures = pictures, onDismiss = { picking = null }, showLook = false,
+            players = players, decks = decks.filter { !it.retired }, friendDecks = friendDecks, pictures = pictures, onDismiss = { picking = null }, showLook = false,
         ) { ch -> seats = seats.map { if (it.seat == seat) changeSeat(it, ch, seatDeck(ch, decks, friendDecks)) else it } }
     }
     if (confirmDelete && g != null) {

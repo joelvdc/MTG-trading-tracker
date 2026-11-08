@@ -5,7 +5,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 
 /** The newest file format this website understands (the app's SyncFile.FORMAT). */
-export const WEB_FORMAT = 12;
+export const WEB_FORMAT = 13;
 /** How the website signs the files it writes (`writtenBy`). */
 export const WRITER = "MTG Trader website";
 /** Deletions older than this are forgotten by the phones (SyncMerge.KEEP_DELETIONS_MS). */

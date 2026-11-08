@@ -268,7 +268,7 @@ class Release160Test {
         assertEquals(TypedPrice(75.0, AppCurrency.DKK), back.typedPaid)
         assertEquals(10.05, back.purchasePrice!!, 0.0)
         // Older versions would write it back without, so they stop syncing until updated.
-        assertEquals(12, SyncFile.FORMAT)
+        assertEquals(13, SyncFile.FORMAT)
     }
 
     private companion object {

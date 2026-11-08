@@ -222,7 +222,7 @@ class DeckRepository(
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
         // Decks imported before 1.8 learn when they last changed on Archidekt (until 1.78 done on opening the Decks tab).
         fillMissingUpdateDates()
-        val decks = dao.all().filter { !it.local }
+        val decks = dao.all().filter { !it.local && !it.retired }
         val source = settings.powerSource.value
         val listed = archidektDates(decks)
         var updated = 0
@@ -279,7 +279,7 @@ class DeckRepository(
      * asked ([rescorePowerAll]). Can be stopped between decks.
      */
     fun rescoreAll(): Boolean = start(DeckJob(null, "Scoring your decks on Commander Salt…", canStop = true)) {
-        val decks = dao.all().filter { !it.local }
+        val decks = dao.all().filter { !it.local && !it.retired }
         var scored = 0
         val unscored = mutableListOf<String>()
         val failed = mutableListOf<String>()
@@ -312,7 +312,7 @@ class DeckRepository(
         val source = settings.powerSource.value
         if (!source.external) return false
         return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
-            val decks = dao.all().filter { !it.local }
+            val decks = dao.all().filter { !it.local && !it.retired }
             var rated = 0
             val retry = mutableListOf<Deck>()
             for ((i, d) in decks.withIndex()) {
@@ -538,7 +538,7 @@ class DeckRepository(
         if (!source.external) return false
         return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
             powerStopped = false
-            val decks = dao.all().filter { !it.local && it.power(source) == null && it.powerError(source) == null }
+            val decks = dao.all().filter { !it.local && !it.retired && it.power(source) == null && it.powerError(source) == null }
             var rated = 0
             val failed = mutableListOf<String>()
             for ((i, d) in decks.withIndex()) {
@@ -583,7 +583,7 @@ class DeckRepository(
             val waiting = dao.all().filter { !AppPower.known(it.archidektId) && it.archidektId !in appPowerTried }
             return waiting.count { d -> runCatching { !winOdds.fillKept(d) }.getOrDefault(true) } > 0
         }
-        return !powerStopped && source.external && dao.all().any { !it.local && it.power(source) == null && it.powerError(source) == null }
+        return !powerStopped && source.external && dao.all().any { !it.local && !it.retired && it.power(source) == null && it.powerError(source) == null }
     }
 
     /** Fetches the rule-zero card details for decks scored before 1.12 (without scoring them again). Quietly does nothing when offline. */

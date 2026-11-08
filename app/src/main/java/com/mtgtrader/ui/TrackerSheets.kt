@@ -158,7 +158,7 @@ internal fun ReseatPicker(g: LiveGame, seat: Int, pictures: Boolean, onDismiss: 
         choice = seatChoiceOf(s),
         taken = g.seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
         takenDecks = g.seats.filter { it.seat != seat }.mapNotNull { it.deckId }.toSet(),
-        players = players, decks = decks, friendDecks = friendDecks, pictures = pictures, onDismiss = onDismiss, showLook = false,
+        players = players, decks = decks.filter { !it.retired }, friendDecks = friendDecks, pictures = pictures, onDismiss = onDismiss, showLook = false,
     ) { choice ->
         c.games.update { reseat(it, seat, choice, seatDeck(choice, decks, friendDecks)) }
         c.games.live.value?.let { c.games.keepTable(setupOf(it, c.games.lastTable?.firstSeat)) }

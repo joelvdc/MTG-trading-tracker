@@ -239,6 +239,14 @@ Archidekt decks are read only in the app (since 1.78): edit them on archidekt.co
 show on the deck with **Make it a local deck** (keeps them) or **Discard** (then reload). Deleting a deck in the app
 never deletes it on Archidekt.
 
+### Retired decks
+A deck you don't play any more can be **retired** (deck ⋮ → **Retire deck…**, since 1.83; also on the website). It moves
+to a **Retired** section at the bottom of the Decks tab and keeps its page, games and stats, but leaves the seat
+pickers, **Update all decks** and the collection checks (the "in a deck" marks and the trade binder's "keep for my
+decks"). **Bring back** undoes it. Decks tab ⋮ → **Hide retired decks** hides the section altogether. Deleting a deck
+that played games suggests retiring it instead. An Archidekt deck that was deleted and imported again gets its old games
+back (they are linked by the Archidekt deck id); a local deck doesn't.
+
 Commander Salt has no official API: the app makes the same requests as its website, so this part may break if the site
 changes. Importing a deck adds it to commandersalt.com.
 

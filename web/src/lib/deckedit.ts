@@ -403,6 +403,14 @@ export function renameDeck(file: SyncFile, id: number, raw: string, now: number)
   touch(sd, now);
 }
 
+/** Retires a deck or brings it back (DeckDao.setRetired, app 1.83); its games and page stay either way. */
+export function setRetired(file: SyncFile, id: number, retired: boolean, now: number): void {
+  const sd = find(file, id);
+  if (!!sd.deck.retired === retired) return;
+  sd.deck.retired = retired;
+  touch(sd, now);
+}
+
 /**
  * Deletes a deck for good (DeckRepository.delete: local decks and decks from Archidekt alike, which stay on Archidekt);
  * the phones drop it at their next sync.
@@ -448,6 +456,7 @@ export function newDeck(id: number, now: number, d: Partial<Deck>): Deck {
     visibility: null,
     categoryInfo: null,
     origin: null,
+    retired: false,
     ...d,
   };
 }

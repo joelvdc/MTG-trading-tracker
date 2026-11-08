@@ -134,8 +134,9 @@ export function orderBinders(list: CollBinder[], saved: string | undefined): Col
   return byName.map((b, n) => ({ b, n })).sort((x, y) => pos(x.b) - pos(y.b) || x.n - y.n).map((x) => x.b);
 }
 
-export function decksOf(file: SyncFile): CollDeck[] {
-  const decks = (file.data.decks as Json[] | undefined) ?? [];
+/** The decks' cards by name, for "in a deck" and the trade binder; retired decks don't count (app 1.83) unless [withRetired]. */
+export function decksOf(file: SyncFile, withRetired = false): CollDeck[] {
+  const decks = ((file.data.decks as Json[] | undefined) ?? []).filter((d) => withRetired || !(d as { deck?: { retired?: boolean } }).deck?.retired);
   return decks.map((d) => {
     const deck = (d as { deck?: { name?: string; owner?: string } }).deck ?? {};
     const cards: Record<string, number> = {};

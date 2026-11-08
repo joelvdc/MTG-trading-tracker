@@ -356,7 +356,9 @@ private const val NEW_DECK = 0L
 @Composable
 private fun ToDeckDialog(count: Int, onDismiss: () -> Unit, onConfirm: (deckId: Long, name: String, keep: Boolean) -> Unit) {
     val c = LocalContext.current.container
-    val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val allDecks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    // Retired decks don't take new cards (since 1.83).
+    val decks = remember(allDecks) { allDecks.filter { !it.retired } }
     var deckId by remember { mutableStateOf<Long?>(null) }
     var keep by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("Scanned deck") }

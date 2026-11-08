@@ -14,6 +14,7 @@ import {
   copyDeck,
   deleteCategory,
   deleteDeck,
+  setRetired,
   detachDeck,
   inOrder,
   maybeCategoryOf,
@@ -108,6 +109,7 @@ type Body = {
   name?: string;
   moveTo?: string | null;
   hidden?: boolean;
+  retired?: boolean;
   value?: string | null;
   key?: string;
   card?: CardRef;
@@ -241,6 +243,9 @@ export async function POST(req: Request, { params }: Params) {
           return {};
         case "delete":
           deleteDeck(f, id, now);
+          return {};
+        case "retire":
+          setRetired(f, id, body.retired !== false, now);
           return {};
         case "copy":
           return { id: copyDeck(f, id, str(body.name) || `Copy of ${current.deck.name}`, now) };

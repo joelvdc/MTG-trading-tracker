@@ -39,6 +39,8 @@ export interface Deck {
   visibility: string | null;
   categoryInfo: string | null;
   origin: string | null;
+  /** Retired (app 1.83): kept with its games, out of the groups, the seat pickers, updates and collection checks. */
+  retired?: boolean;
 }
 
 /** One line of a deck (DeckCard). */
@@ -365,11 +367,12 @@ export function missingPlan<T extends { name: string; quantity: number }>(lines:
 
 // ---- The views ---------------------------------------------------------------------------------------------------
 
-export type DeckGroup = "OWN" | "OTHERS" | "LOCAL";
+export type DeckGroup = "OWN" | "OTHERS" | "LOCAL" | "RETIRED";
 export const GROUP_TITLES: Record<DeckGroup, string> = {
   OWN: "Archidekt",
   OTHERS: "Archidekt (read only)",
   LOCAL: "Local · in the app, synced between your phones",
+  RETIRED: "Retired · kept with their games",
 };
 
 export interface DeckSummary {
@@ -381,6 +384,8 @@ export interface DeckSummary {
   colorIdentity: string;
   cardCount: number;
   group: DeckGroup;
+  /** Recorded games it played (filled in by /api/decks). */
+  games?: number;
   folder: string | null;
   origin: string | null;
   bracketRealistic: number | null;

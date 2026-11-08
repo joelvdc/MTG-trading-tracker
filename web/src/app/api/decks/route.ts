@@ -6,6 +6,7 @@ import { createDeck, NO_LOOKUPS, newEmptyDeck } from "@/lib/deckedit";
 import { preconLines, previewText, textLines } from "@/lib/deckimport";
 import { textCardCount } from "@/lib/decktext";
 import { decksView, syncDecks } from "@/lib/decks";
+import { gamesOf } from "@/lib/games";
 import { archidektId, archidektUser, userDecks } from "@/lib/archidekt";
 import { archidektDates, loadFromArchidekt, updatePlan } from "@/lib/deckload";
 import { loadPrices } from "@/lib/pricestore";
@@ -29,6 +30,10 @@ export async function GET() {
   try {
     const [{ file }, prices, details, ck] = await Promise.all([loadSync(a), loadPrices(), loadDetails(), loadCardKingdom()]);
     const view = decksView(file, prices, details, ck);
+    // How many recorded games each deck played: deleting one that has games suggests retiring it (app 1.83).
+    const played = new Map<number, number>();
+    for (const g of gamesOf(file)) for (const id of new Set(g.seats.map((s) => s.deckId).filter((x): x is number => x != null))) played.set(id, (played.get(id) ?? 0) + 1);
+    for (const d of view.decks) d.games = played.get(d.id) ?? 0;
     if (isUser(a)) {
       const kept = await keptWins(a.accountId);
       if (view.powerSource === "APP") for (const d of view.decks) d.power = parseWin(kept.get(d.id))?.power.power ?? null;

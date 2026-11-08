@@ -30,7 +30,7 @@ function scanView(file: SyncFile, prices: PriceFile | null, details: DetailsFile
       p.binderOrder,
     ),
     decks: syncDecks(file)
-      .filter((d) => d.deck.archidektId < 0)
+      .filter((d) => d.deck.archidektId < 0 && !d.deck.retired)
       .map((d) => ({ id: d.deck.archidektId, name: d.deck.name }))
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())),
     currency: cur,

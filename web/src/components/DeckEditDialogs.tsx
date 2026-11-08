@@ -585,6 +585,7 @@ export function ConfirmDialog({
   danger,
   onYes,
   onClose,
+  other,
 }: {
   title: string;
   text: string;
@@ -592,6 +593,8 @@ export function ConfirmDialog({
   danger?: boolean;
   onYes: () => Promise<string | null>;
   onClose: () => void;
+  /** A second way out next to Cancel, e.g. "Retire instead". */
+  other?: { label: string; run: () => Promise<string | null> };
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -605,6 +608,21 @@ export function ConfirmDialog({
           <button className="btn" onClick={onClose} disabled={busy}>
             Cancel
           </button>
+          {other && (
+            <button
+              className="btn"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError(null);
+                const err = await other.run();
+                setBusy(false);
+                if (err) setError(err);
+              }}
+            >
+              {other.label}
+            </button>
+          )}
           <button
             className={danger ? "btn danger" : "btn primary"}
             disabled={busy}

@@ -135,6 +135,7 @@ export function myDecks(file: SyncFile): MyDeck[] {
       colorIdentity: d.deck.colorIdentity ?? "",
       bracket: d.deck.bracketRealistic ?? null,
       power: d.deck.powerLevel ?? null,
+      retired: !!d.deck.retired,
     }))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }

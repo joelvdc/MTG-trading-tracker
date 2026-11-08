@@ -273,7 +273,7 @@ class Recommendations(
         _job.value = RecJob(0, 0, "")
         scope.launch {
             try {
-                val decks = db.deckDao().all()
+                val decks = db.deckDao().all().filter { !it.retired }
                 decks.forEachIndexed { i, d ->
                     _job.value = RecJob(i, decks.size, d.name)
                     try {

@@ -148,7 +148,7 @@ export function GameDialog({
   const deckOptions = (s: SeatForm, i: number) => {
     const opts: [string, string][] = [["", s.who === GUEST ? "Own commander (below)" : "No deck"]];
     const taken = decksTaken(i);
-    const mine = view.myDecks.filter((d) => !taken.has(`d:${d.id}`) || s.deck === `d:${d.id}`);
+    const mine = view.myDecks.filter((d) => s.deck === `d:${d.id}` || (!taken.has(`d:${d.id}`) && !d.retired));
     if (s.who === ME) for (const d of mine) opts.push([`d:${d.id}`, d.name]);
     else {
       if (s.who !== GUEST) for (const d of view.friendDecks.filter((f) => f.playerUid === s.who)) opts.push([`f:${d.uid}`, d.name]);

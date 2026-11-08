@@ -61,6 +61,7 @@ function lineUnit(setup: PricingSetup, c: DeckCard, card: CardRef = c.card, foil
 }
 
 export function groupOf(d: Deck, owner: string | null): DeckGroup {
+  if (d.retired) return "RETIRED";
   if (d.archidektId < 0) return "LOCAL";
   return owner && d.owner.toLowerCase() === owner.toLowerCase() ? "OWN" : "OTHERS";
 }
@@ -238,7 +239,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
   }
   // The other decks' copies of each card, by name (as sharedCards matches them), main deck and maybeboard apart.
   const usesByName = new Map<string, DeckUse[]>();
-  for (const other of [...syncDecks(file)].filter((x) => x.deck.archidektId !== id).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+  for (const other of [...syncDecks(file)].filter((x) => x.deck.archidektId !== id && !x.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
     const here = new Map<string, DeckUse>();
     for (const c of other.cards) {
       if (isBasicName(c.card.name)) continue;
@@ -342,7 +343,7 @@ export interface SharedCard {
 export function sharedCards(file: SyncFile): SharedCard[] {
   const owned = ownedByName(file);
   const by = new Map<string, SharedCard>();
-  const decks = [...syncDecks(file)].sort((a, b) => caseless(a.deck.name, b.deck.name));
+  const decks = [...syncDecks(file)].filter((d) => !d.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name));
   for (const { deck, cards } of decks) {
     const here = new Map<string, { name: string; quantity: number; imageUrl: string | null }>();
     for (const c of cards) {
@@ -382,7 +383,7 @@ export interface RuleZeroDeck {
 export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[]; powerSource: PowerSource } {
   const source = powerSource(prefs(file).powerSource);
   const decks: RuleZeroDeck[] = [];
-  for (const { deck: d } of [...syncDecks(file)].sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+  for (const { deck: d } of [...syncDecks(file)].filter((x) => !x.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
     const salt = decodeSalt(d.saltCard);
     if (!salt) continue;
     const { saltCard, scrollVault, categoryInfo, ...plain } = d;

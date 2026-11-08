@@ -103,6 +103,8 @@ export interface MyDeck {
   colorIdentity: string;
   bracket: number | null;
   power: number | null;
+  /** Retired decks (app 1.83) aren't offered for new seats; a seat that has one keeps it. */
+  retired?: boolean;
 }
 
 export interface PausedLine {

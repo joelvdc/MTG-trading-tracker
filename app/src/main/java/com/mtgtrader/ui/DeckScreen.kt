@@ -28,7 +28,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -227,6 +229,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var showing by remember { mutableStateOf<RuleZeroCard?>(null) }
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmRetire by remember { mutableStateOf(false) }
 
     val matched = remember(archidektRows, owned, binders, picks, myPrintings, deck?.name) {
         if (!myPrintings) DeckPrintings.Result(archidektRows, emptyMap())
@@ -460,6 +463,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             onClick = { menu = false; addingToCollection = true },
                         )
                         DropdownMenuItem(
+                            text = { Text(if (deck?.retired == true) "Bring back" else "Retire deck…") },
+                            leadingIcon = { Icon(if (deck?.retired == true) Icons.Default.Unarchive else Icons.Default.Archive, null) },
+                            onClick = {
+                                menu = false
+                                if (deck?.retired == true) scope.launch { c.db.deckDao().setRetired(deckId, false) } else confirmRetire = true
+                            },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Delete deck") },
                             leadingIcon = { Icon(Icons.Default.Delete, null) },
                             onClick = { menu = false; confirmDelete = true },
@@ -587,6 +598,17 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
                     )
+                }
+            }
+            if (d.retired) item(key = "retired") {
+                Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Retired: kept with its games, but out of the seat pickers, \"Update all decks\" and the collection checks.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { scope.launch { c.db.deckDao().setRetired(deckId, false) } }) { Text("Bring back") }
                 }
             }
             item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
@@ -847,12 +869,32 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             }
         }
     }
+    if (confirmRetire) {
+        AlertDialog(
+            onDismissRequest = { confirmRetire = false },
+            title = { Text("Retire ${deck?.name ?: "deck"}?") },
+            text = {
+                Text(
+                    "The deck moves to Retired on the Decks tab, with its page, games and stats. It leaves the seat pickers, " +
+                        "\"Update all decks\" and the collection checks (\"in a deck\" marks, the trade binder's \"keep for my decks\"). " +
+                        "Bring it back from ⋮ at any time.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmRetire = false; scope.launch { c.db.deckDao().setRetired(deckId, true) } }) { Text("Retire") }
+            },
+            dismissButton = { TextButton(onClick = { confirmRetire = false }) { Text("Cancel") } },
+        )
+    }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete ${deck?.name ?: "deck"}?") },
             text = {
                 Text(
+                    // A deck with games: retiring keeps its page and stats (since 1.83).
+                    (if (deckGames.isNotEmpty() && deck?.retired != true) "It played ${deckGames.size} recorded game(s). The games stay either way, " +
+                        "but retiring the deck keeps its page and stats too.\n\n" else "") +
                     when {
                         deck?.local == true -> "This deck only exists in this app (and on your other phone after a sync), so it's gone for good. You can undo right after."
                         waiting > 0 -> "The deck is only removed from this app; it stays on Archidekt. Its $waiting change(s) that never reached Archidekt are lost."
@@ -869,7 +911,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = {
+                Row {
+                    if (deckGames.isNotEmpty() && deck?.retired != true) {
+                        TextButton(onClick = { confirmDelete = false; scope.launch { c.db.deckDao().setRetired(deckId, true) } }) { Text("Retire instead") }
+                    }
+                    TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                }
+            },
         )
     }
 

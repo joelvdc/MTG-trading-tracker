@@ -290,7 +290,8 @@ export function applyTrade(file: SyncFile, accepted: TradeDecision[], declined: 
   if (binder === null) binder = applyCollectionEdit(file, { type: "addBinder", name: TRADE_BINDER_NAME }, now, rates).uid!;
   setPrefs(file, { [TRADE_BINDER_PREF]: binder }, now);
   // A binder named after a deck holds that deck's cards: spare copies come from Unsorted and other binders first.
-  const deckNames = new Set(decksOf(file).map((d) => d.name.toLowerCase()));
+  // Binders named after a deck, retired ones too (TradeBinder.apply).
+  const deckNames = new Set(decksOf(file, true).map((d) => d.name.toLowerCase()));
   const deckBinders = new Set(binders(file).filter((b) => b.uid && deckNames.has(b.name.toLowerCase())).map((b) => b.uid!));
   const rank = (b: string | null) => (b === null ? 0 : deckBinders.has(b) ? 2 : 1);
   const known = new Set(binders(file).map((b) => b.uid));

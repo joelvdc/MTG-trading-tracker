@@ -18,7 +18,9 @@ const SORTS: [Sort, string][] = [
   ["BRACKET", "Bracket"],
   ["MODIFIED", "Last modified on Archidekt"],
 ];
-const GROUPS: DeckGroup[] = ["OWN", "OTHERS", "LOCAL"];
+const GROUPS: DeckGroup[] = ["OWN", "OTHERS", "LOCAL", "RETIRED"];
+/** In the folded-groups list: the Retired section is hidden altogether (app 1.83: "Hide retired decks"). */
+const HIDE_RETIRED = "hide:RETIRED";
 
 /** The app's DeckSorting.sort: decks without the value sorted on always come last, by name. */
 function sortDecks(decks: DeckSummary[], sort: Sort, reverse: boolean): DeckSummary[] {
@@ -89,8 +91,19 @@ export default function DecksPage() {
     const q = query.trim().toLowerCase();
     const list = q ? view.decks.filter((d) => `${d.name} ${d.commanders} ${d.owner} ${d.folder ?? ""}`.toLowerCase().includes(q)) : view.decks;
     const sorted = sortDecks(list, sort, reverse);
-    return GROUPS.map((g) => ({ g, decks: sorted.filter((d) => d.group === g) })).filter((x) => x.decks.length > 0);
-  }, [view, sort, reverse, query]);
+    return GROUPS.filter((g) => g !== "RETIRED" || !folded.has(HIDE_RETIRED))
+      .map((g) => ({ g, decks: sorted.filter((d) => d.group === g) }))
+      .filter((x) => x.decks.length > 0);
+  }, [view, sort, reverse, query, folded]);
+
+  /** Retires a deck from the delete question (it keeps its page and games). */
+  async function retireDeck(d: DeckSummary): Promise<string | null> {
+    const r = await deckAction(d.id, { action: "retire", retired: true });
+    if (r.error) return r.error;
+    setView((v) => (v ? { ...v, decks: v.decks.map((x) => (x.id === d.id ? { ...x, group: "RETIRED" as const } : x)) } : v));
+    setDeleting(null);
+    return null;
+  }
 
   if (!view) {
     return (
@@ -127,6 +140,11 @@ export default function DecksPage() {
             {reverse ? "▲" : "▼"}
           </button>
           <span className="spacer" />
+          {view.decks.some((d) => d.group === "RETIRED") && (
+            <button className="btn small-btn" onClick={() => setFold(HIDE_RETIRED, !folded.has(HIDE_RETIRED))}>
+              {folded.has(HIDE_RETIRED) ? "Show retired decks" : "Hide retired decks"}
+            </button>
+          )}
           <a className="btn small-btn" href="/decks/shared">
             Cards in several decks
           </a>
@@ -229,7 +247,8 @@ export default function DecksPage() {
       {deleting && (
         <ConfirmDialog
           title="Delete the deck?"
-          text={`${deleting.name} is deleted here and, at their next sync, on the phones. This can't be undone.${deleting.id < 0 ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
+          other={deleting.games && deleting.group !== "RETIRED" ? { label: "Retire instead", run: () => retireDeck(deleting) } : undefined}
+          text={`${deleting.games && deleting.group !== "RETIRED" ? `It played ${deleting.games} recorded game(s). The games stay either way, but retiring the deck keeps its page and stats too. ` : ""}${deleting.name} is deleted here and, at their next sync, on the phones. This can't be undone.${deleting.id < 0 ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
           button="Delete"
           danger
           onClose={() => setDeleting(null)}

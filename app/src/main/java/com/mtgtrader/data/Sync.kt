@@ -110,8 +110,9 @@ data class SyncFile(
          * 11 since 1.51: paused games, which an older version would write back without (so they'd vanish).
          * 12 since 1.60: purchase and agreed prices as typed in kroner or dollars, which an older version would write
          * back without.
+         * 13 since 1.83: retired decks, which an older version would write back as not retired.
          */
-        const val FORMAT = 12
+        const val FORMAT = 13
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

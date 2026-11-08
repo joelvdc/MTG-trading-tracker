@@ -86,7 +86,7 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
     val own = decks?.let { list ->
         remember(list, owner, source, com.mtgtrader.data.AppPower.readings) {
             DeckSorting.sort(list, c.settings.deckSort, c.settings.deckSortReversed, source)
-                .filter { DeckGroup.of(it, owner) != DeckGroup.OTHERS }
+                .filter { DeckGroup.of(it, owner) !in setOf(DeckGroup.OTHERS, DeckGroup.RETIRED) }
         }
     }
     val shown = own?.filter { it.scored && (kind == RuleZeroCard.BRACKET || it.power(source) != null) }

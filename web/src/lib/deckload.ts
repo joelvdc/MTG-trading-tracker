@@ -145,7 +145,7 @@ export type UpdateNeed = "changed" | "check" | "unscored";
 export function updatePlan(file: SyncFile, listed: Map<number, number | null>): { id: number; name: string; need: UpdateNeed }[] {
   const out: { id: number; name: string; need: UpdateNeed }[] = [];
   for (const { deck: d } of syncDecks(file)) {
-    if (d.archidektId < 0) continue;
+    if (d.archidektId < 0 || d.retired) continue;
     const at = listed.get(d.archidektId);
     const need: UpdateNeed | null =
       at == null ? "check" : at !== d.archidektUpdatedAt ? "changed" : d.scoredAt == null || d.scoreError != null ? "unscored" : null;
