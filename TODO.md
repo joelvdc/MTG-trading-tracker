@@ -32,8 +32,7 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
      - Deck categories on the website go by card type (or a pasted list's tags), because the website never contacts
        Archidekt. Does the owner want Archidekt's own categories for new decks (that would mean the website calling
        Archidekt)?
-  5. Games on the website: log, stats, head to head, per deck; edit and add games by hand. Life tracker stays on the
-     phone.
+  5. ~~Games on the website~~ **Done 2026-11-08** (see Done). Life tracker stays on the phone.
 - Open questions:
   - Web address (decided 2026-11-05): mtgtrader.vercel.app (mtgtracker and mtg-trader were taken). Vercel account:
     Hobby plan, user jnccola-7915, no projects yet.
@@ -162,8 +161,7 @@ while it is playing the deck 10,000 times?"
 - **Still open, each needs its own plan** (owner: "then come back for the missing todo"):
   - **Trades on the website:** make, edit, complete (update the collection), delete and export trades; today they are
     only shown.
-  - **Games on the website:** the game list, stats per deck and player, head to head, CSV export, the Games section on
-    a deck page (the life tracker itself stays on the phone).
+  - ~~**Games on the website**~~ done 2026-11-08 (see Done).
   - ~~**Scan tab waiting list**~~ done 2026-11-08 (see Done).
   - **Commander Salt scores for local decks** (already planned above).
   - Archidekt on the website, the owned column and the tokens section: done 2026-11-07 (see Done). The "view on hover"
@@ -185,12 +183,24 @@ gets its own plan and green light.
 - 1 done 2026-11-08 as a "Scanned" chip in the collection (owner: "Like a binder next to the wishlist"), see Done.
   Still open from it: "To trade" (comes with trades on the website) and sending scans to a deck from Archidekt (the
   website only adds to local decks).
-- Next: 2, the Games tab.
+- 2 done 2026-11-08: the website's Games section (see Done).
+- **Next (owner, 2026-11-08: "prepare to add that to the app as well afterwards"): the website's game stats extras in
+  the app** (an app release, needs its own plan and green light): on the app's Game stats screen, tiles (games played,
+  your win rate, average game, average turns), games per month, how games were won (with "not told"), the starting
+  player's win rate against an equal chance, and a period choice (all time, last 12 months, last 3 months) for all the
+  stats. The website's code (web/src/lib/gameshared.ts: inPeriod, overview, perMonth, winsByType, firstPlayer, with
+  tests in web/test/games.test.ts) is the model; port it to GameStats.kt with matching unit tests. No sync change.
+  Open question: where on the phone (the Stats screen's tabs, or a new first "Overview" tab).
 - Idea for later (noted 2026-11-08, owner: "Nextcloud should only be used for storing backups"): the app still offers
   "sync through Nextcloud" next to the MTG Trader account; it could become backup-only in the app too (an app
   release).
 
 ## Done
+- 2026-11-08: website: **Games** section (top bar, /games): the recorded games (search, player and deck filters, the
+  game window to change places, draw, how it was won, note, minutes, turns and who played which deck; Add a past game;
+  delete with Undo; drop a paused game; CSV export), Stats (the app's decks/players/"You against…" tables, plus tiles,
+  games per month, how games were won, starting first, and a period choice), Players (add, rename, delete; friends'
+  decks with Scryfall lookup), and a Games section on each of your deck pages. No app change.
 - 2026-11-08: website: the collection's **Scanned** chip (next to Wishlist, while scans wait) with the app's Scan tab
   list: fix a scan, send to a binder (or a new one) or a local deck (or a new one), keep them in the list or not,
   discard with Undo. Logging in with Nextcloud is gone from the website: accounts only; Settings → Nextcloud backup →

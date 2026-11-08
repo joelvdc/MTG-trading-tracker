@@ -7,6 +7,8 @@ import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog,
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
+import { DeckGamesCard } from "@/components/DeckGamesCard";
+import { deckResults, type Game } from "@/lib/gameshared";
 import { SidePanel, useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
@@ -22,7 +24,7 @@ import { backImageUrl, costColours, GROUP_LABELS, hasBackFace, layoutSections, t
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin; games?: Game[] };
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
@@ -440,6 +442,25 @@ export default function DeckPage() {
             />
           )}
         </details>
+
+        {(() => {
+          // The deck's results in the recorded games (the app's deck page "Games" section).
+          const r = view.games?.length ? deckResults(view.games).find((x) => x.deckId === view.id) : null;
+          return r ? (
+            <details className="card" open={!folded.has("\u0000games")} onToggle={(e) => setFold("\u0000games", !(e.currentTarget as HTMLDetailsElement).open)}>
+              <summary>
+                <strong>Games</strong>{" "}
+                <span className="muted small">
+                  · {r.games} played, {r.wins} won
+                </span>
+              </summary>
+              <DeckGamesCard r={r} last={view.games!} isDeck={(s) => s.deckId === view.id} onGame={(g) => window.location.assign(`/games?game=${encodeURIComponent(g.uid)}`)} />
+              <p className="small">
+                <a href="/games?view=stats">All game stats</a>
+              </p>
+            </details>
+          ) : null;
+        })()}
 
         <DeckTokens
           cards={view.stats}

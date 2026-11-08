@@ -2864,3 +2864,219 @@ details.deck-section > summary .mini-head {
   border-radius: 8px;
   align-self: center;
 }
+
+/* ---- Games ---- */
+.inline.wrap {
+  flex-wrap: wrap;
+}
+
+.game-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-line {
+  display: grid;
+  grid-template-columns: minmax(150px, 210px) 1fr;
+  gap: 4px 16px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.game-line:hover {
+  background: var(--raised);
+}
+
+.game-when {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.game-seats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  align-items: baseline;
+}
+
+.game-seat {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.game-seat.won .game-who {
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.game-place {
+  min-width: 1.4em;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-note {
+  grid-column: 2;
+}
+
+.paused-games {
+  margin-bottom: 14px;
+}
+
+.game-form select,
+.game-form input:not([type="checkbox"]) {
+  max-width: 100%;
+}
+
+.seat-form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-top: 1px solid var(--raised);
+}
+
+.seat-place {
+  width: 56px;
+  flex: none;
+}
+
+.trophy {
+  font-size: 20px;
+}
+
+.game-card {
+  background: var(--raised);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.game-big {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.game-big .big {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-facts {
+  margin: 10px 0 0;
+  border-top: 1px solid var(--surface);
+  padding-top: 8px;
+}
+
+.game-facts div {
+  display: flex;
+  gap: 12px;
+  padding: 2px 0;
+}
+
+.game-facts dt {
+  flex: 1;
+}
+
+.game-facts dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.game-last button {
+  padding: 2px 0;
+}
+
+.game-table td,
+.game-table th {
+  vertical-align: top;
+}
+
+.game-mini {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.game-mini th {
+  color: var(--muted);
+  font-weight: 500;
+  text-align: left;
+  font-size: 12px;
+}
+
+.game-mini th.num {
+  text-align: right;
+}
+
+.game-mini td,
+.game-mini th {
+  padding: 3px 4px;
+}
+
+.h2h {
+  min-width: 48px;
+}
+
+.big-line strong {
+  font-size: 24px;
+}
+
+.month-curve .curve-label {
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.player-list {
+  columns: 320px;
+  column-gap: 14px;
+}
+
+.player-card h2 {
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .game-line {
+    grid-template-columns: 1fr;
+  }
+  .game-note {
+    grid-column: 1;
+  }
+}
+
+.seat-form .inline.wrap > input,
+.seat-form .inline.wrap > select {
+  flex: 1 1 150px;
+  width: auto;
+  min-width: 0;
+}
+
+.seat-form .inline.wrap > .link {
+  flex: none;
+}
+
+.game-people {
+  margin-top: 16px;
+}
+
+.bar-fill.untold {
+  background: var(--muted);
+}

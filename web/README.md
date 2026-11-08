@@ -74,6 +74,16 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   send selected scans to a binder (Unsorted, or a new one; MtgRepository.scansToCollection) or a local deck (or a new
   one; DeckEditor.addScans / fromScans, auto categories), each with "Keep them in the scan list"; discard with Undo
   (the scans come back under new uids). The camera, "Check an order" and "To trade" stay in the app.
+- **Games** (`/games`, `lib/games.ts` with `lib/gameshared.ts`, `/api/games`): the games the app's life tracker
+  recorded (the synced `games`, `players`, `friendDecks`, `pausedGames`). **Games**: the list (search, filter by player
+  or deck, 25/50/100 per page), the game window (places, draw, how it was won, note, minutes, turns, who played which
+  deck; the app's GameDetailScreen and changeSeat rules), **Add a past game** (20:00 on the day, like the app), delete
+  with Undo, drop a paused game, **Export (CSV)** (GameStats.csv). **Stats**: the app's GameStats (decks table with its
+  sort orders and "My decks", players, "You against…") plus website extras: tiles (games, your win rate, average game
+  and turns), games per month, how games were won, the starting player's win rate against an equal chance, and a
+  period choice (all time, 12 months, 3 months). **Players**: add, rename, delete friends (their decks go, their games
+  keep their names) and their decks (commander looked up with Scryfall's fuzzy search). Each of your decks' pages has
+  a **Games** section (the app's DeckGamesCard). The life tracker itself stays on the phone.
 - `/api/health` answers `syncFormat`, price freshness, the card details and Card Kingdom stores (`cardDetails`,
   `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`), whether the accounts database answers (`database`,
   `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`), the nightly job (`nightly`

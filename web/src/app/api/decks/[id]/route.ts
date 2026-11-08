@@ -35,6 +35,8 @@ import { autoCategories } from "@/lib/autocategories";
 import { loadFromArchidekt, scoreAgain, updateOne } from "@/lib/deckload";
 import { isUser } from "@/lib/session";
 import { deckStatsCards, keptWins, parseWin } from "@/lib/winturns";
+import { gamesOf } from "@/lib/games";
+import { gamesOfDeck } from "@/lib/gameshared";
 
 export const dynamic = "force-dynamic";
 // Commander Salt can take a while (it retries its import), so up to two minutes.
@@ -87,7 +89,7 @@ export async function GET(_req: Request, { params }: Params) {
     // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
     const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
     const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
-    return json({ ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
+    return json({ ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn, games: gamesOfDeck(gamesOf(file), id!) });
   } catch (e) {
     return errorResponse(e);
   }
