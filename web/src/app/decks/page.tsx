@@ -38,6 +38,26 @@ function sortDecks(decks: DeckSummary[], sort: Sort, reverse: boolean): DeckSumm
 /** The decks (the app's Decks tab): Archidekt decks and local ones, with their scores, value and missing cards. */
 export default function DecksPage() {
   const [view, setView] = useState<DecksView | null>(null);
+  // Folded groups (your decks, other people's, local), remembered in this browser like the app's Decks tab.
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      setFolded(new Set(JSON.parse(localStorage.getItem("mtg.decksFolded") ?? "[]") as string[]));
+    } catch {
+      setFolded(new Set());
+    }
+  }, []);
+  const setFold = (g: string, fold: boolean) =>
+    setFolded((old) => {
+      if (old.has(g) === fold) return old;
+      const next = new Set(old);
+      if (fold) next.add(g);
+      else next.delete(g);
+      try {
+        localStorage.setItem("mtg.decksFolded", JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
   const [folder, setFolder] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState<Sort>("NAME");
@@ -131,10 +151,12 @@ export default function DecksPage() {
         </div>
         {view.decks.length === 0 && <p className="muted center">No decks yet. Import them in the app from Archidekt, or make a local deck here with New deck.</p>}
         {groups.map(({ g, decks }) => (
-          <section key={g} className="stack">
-            <h2 className="section-head">
-              {GROUP_TITLES[g]} <span className="muted small">· {decks.length}</span>
-            </h2>
+          <details key={g} className="stack fold" open={!folded.has(g)} onToggle={(e) => setFold(g, !(e.currentTarget as HTMLDetailsElement).open)}>
+            <summary>
+              <h2 className="section-head">
+                {GROUP_TITLES[g]} <span className="muted small">· {decks.length}</span>
+              </h2>
+            </summary>
             <div className="deck-grid">
               {decks.map((d) => (
                 <div key={d.id} className="deck-tile-wrap">
@@ -173,7 +195,7 @@ export default function DecksPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </details>
         ))}
         <p className="muted small">
           Values are the decks&apos; cards at their own printings (maybeboard left out). Missing: copies the collection lacks in any printing, basic lands left
