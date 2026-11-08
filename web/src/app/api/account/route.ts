@@ -1,6 +1,7 @@
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { fields, needStore } from "@/lib/accountweb";
-import { isUser } from "@/lib/session";
+import { revoke } from "@/lib/nextcloud";
+import { isUser, unseal } from "@/lib/session";
 import { AccountError, changePassword, makeInvite, resetPassword } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -54,9 +55,14 @@ export async function POST(req: Request) {
         await store.removeDevice(d.id);
         return json({ ok: true });
       }
-      case "backup-off":
+      case "backup-off": {
+        // The nightly copy stops and the website's app password on Nextcloud is cancelled.
+        const old = await store.backupTarget(account.id);
         await store.setBackupTarget(account.id, null);
+        const appPassword = old ? unseal<string>(old.sealedPassword, now) : null;
+        if (old && appPassword) await revoke({ server: old.server, loginName: old.loginName, userId: old.userId, appPassword, folder: old.folder });
         return json({ ok: true });
+      }
       case "invite":
         return json({ ok: true, code: await makeInvite(store, account, now) });
       case "reset": {

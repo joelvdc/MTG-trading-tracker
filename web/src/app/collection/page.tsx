@@ -14,10 +14,11 @@ import { ImportDialog } from "@/components/ImportDialog";
 import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
+import { ScansPanel } from "@/components/ScansPanel";
 import { WishlistPanel } from "@/components/WishlistPanel";
 import { CONDITIONS, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit } from "@/lib/collection";
-import { BAR_UNSORTED, BAR_WISHLIST, barKeys, type CollectionView, type CollRow } from "@/lib/collview";
+import { BAR_SCANS, BAR_UNSORTED, BAR_WISHLIST, barKeys, type CollectionView, type CollRow } from "@/lib/collview";
 import {
   comparator,
   deckCardNames,
@@ -229,12 +230,13 @@ export default function CollectionPage() {
 
   /** The binder picked still exists (it may have been deleted on a phone). */
   const pick: BinderPick =
-    view && binder && binder !== "~" && binder !== BAR_WISHLIST && !view.binders.some((b) => b.uid === binder) ? "" : binder;
+    view && binder && binder !== "~" && binder !== BAR_WISHLIST && binder !== BAR_SCANS && !view.binders.some((b) => b.uid === binder) ? "" : binder;
   const isWish = pick === BAR_WISHLIST;
+  const isScans = pick === BAR_SCANS;
 
   const inBinder = useMemo(() => {
     if (!view) return [];
-    if (pick === "" || pick === BAR_WISHLIST) return view.rows;
+    if (pick === "" || pick === BAR_WISHLIST || pick === BAR_SCANS) return view.rows;
     const want = pick === "~" ? null : pick;
     return view.rows.filter((r) => r.binder === want);
   }, [view, pick]);
@@ -354,7 +356,11 @@ export default function CollectionPage() {
               k === BAR_UNSORTED
                 ? [{ key: "~", name: "Unsorted", n: counts.get("~") ?? 0, star: false }]
                 : k === BAR_WISHLIST
-                  ? [{ key: BAR_WISHLIST, name: "Wishlist", n: view.wishCount, star: true }]
+                  ? [
+                      { key: BAR_WISHLIST, name: "Wishlist", n: view.wishCount, star: true },
+                      // The app's Scan tab list, next to the wishlist; shown while scans wait (or while it's open).
+                      ...(view.scanCount > 0 || pick === BAR_SCANS ? [{ key: BAR_SCANS, name: "Scanned", n: view.scanCount, star: false }] : []),
+                    ]
                   : view.binders
                       .filter((b) => `b:${b.uid}` === k)
                       .map((b) => ({ key: b.uid, name: b.name, n: counts.get(b.uid) ?? 0, star: false })),
@@ -374,7 +380,7 @@ export default function CollectionPage() {
           <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: null, name: "" })}>
             ＋ Binder
           </button>
-          {pick !== "" && pick !== "~" && !isWish && (
+          {pick !== "" && pick !== "~" && !isWish && !isScans && (
             <>
               <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: pick, name: binderName(pick) })}>
                 Rename
@@ -397,7 +403,9 @@ export default function CollectionPage() {
           </button>
         </div>
 
-        {isWish ? (
+        {isScans ? (
+          <ScansPanel onLoggedOut={goLogin} onChanged={refreshCounts} />
+        ) : isWish ? (
           <WishlistPanel
             layout={layout}
             onLayout={changeLayout}

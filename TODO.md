@@ -164,7 +164,7 @@ while it is playing the deck 10,000 times?"
     only shown.
   - **Games on the website:** the game list, stats per deck and player, head to head, CSV export, the Games section on
     a deck page (the life tracker itself stays on the phone).
-  - **Scan tab waiting list:** scans sync, but the website doesn't show them or send them to a binder, trade or deck.
+  - ~~**Scan tab waiting list**~~ done 2026-11-08 (see Done).
   - **Commander Salt scores for local decks** (already planned above).
   - Archidekt on the website, the owned column and the tokens section: done 2026-11-07 (see Done). The "view on hover"
     switch for decks was dropped by the owner ("leave as it is now").
@@ -182,8 +182,19 @@ Owner: "I am thinking that we could start with the scan tab on the website with 
 excluding the camera scanner. And then make a tab for the games recorded by the android app and stats for the games,
 players, decks, etc." Order: 1. Scan tab (the "Scan tab waiting list" item above), 2. Games tab (phase 5 above). Each
 gets its own plan and green light.
+- 1 done 2026-11-08 as a "Scanned" chip in the collection (owner: "Like a binder next to the wishlist"), see Done.
+  Still open from it: "To trade" (comes with trades on the website) and sending scans to a deck from Archidekt (the
+  website only adds to local decks).
+- Next: 2, the Games tab.
+- Idea for later (noted 2026-11-08, owner: "Nextcloud should only be used for storing backups"): the app still offers
+  "sync through Nextcloud" next to the MTG Trader account; it could become backup-only in the app too (an app
+  release).
 
 ## Done
+- 2026-11-08: website: the collection's **Scanned** chip (next to Wishlist, while scans wait) with the app's Scan tab
+  list: fix a scan, send to a binder (or a new one) or a local deck (or a new one), keep them in the list or not,
+  discard with Undo. Logging in with Nextcloud is gone from the website: accounts only; Settings → Nextcloud backup →
+  Connect Nextcloud sets up the nightly backup (Nextcloud's approval page, today's copy written at once).
 - 2026-11-08: website deck page: the maybeboard spreads over three columns when it is below the deck, and ⚙ → Maybeboard
   → "Split into groups" groups it the way the deck is grouped (by category: a category of its own besides Maybeboard,
   else the website's auto category, else its card type; display only, nothing in the deck changes).

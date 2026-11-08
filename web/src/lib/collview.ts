@@ -20,6 +20,7 @@ import {
   type PricingSetup,
   type Source,
 } from "./pricing";
+import { scanCount } from "./scans";
 import { binders as bindersOf, canWrite, collection, prefs, wishlist as wishlistOf, type CardRef, type Json, type SyncFile } from "./syncfile";
 
 export interface CollRow {
@@ -74,6 +75,8 @@ export interface CollectionView {
   bar: string[];
   /** Copies on the wishlist not yet received (the Wishlist chip's number). */
   wishCount: number;
+  /** Copies waiting in the scan list (the Scanned chip's number; the chip shows only when there are some). */
+  scanCount: number;
   decks: CollDeck[];
   currency: Currency;
   perEuro: number;
@@ -105,6 +108,8 @@ export function frontName(name: string): string {
 
 export const BAR_UNSORTED = "unsorted";
 export const BAR_WISHLIST = "wishlist";
+/** The scan list's chip (not a place in the binder order: the app has its scans in a tab of their own). */
+export const BAR_SCANS = "scans";
 
 /**
  * The app's BinderOrder.arrange: every place in the binder bar, those in [saved] first as arranged, then the rest in
@@ -218,6 +223,7 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
     wishCount: wishlistOf(file)
       .filter((w) => w.receivedAt == null)
       .reduce((n, w) => n + w.quantity, 0),
+    scanCount: scanCount(file),
     decks: decksOf(file),
     currency: cur,
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,

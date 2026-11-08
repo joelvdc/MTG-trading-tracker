@@ -1,10 +1,9 @@
 // The logged-in account for a request, and the checks every API route makes.
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { allowedUsers, nextcloudServer } from "./config";
 import { NextcloudError } from "./nextcloud";
 import { accountStore } from "./accounts";
-import { type Account, isUser, type NextcloudLogin, SESSION_COOKIE, unseal } from "./session";
+import { type Account, isUser, SESSION_COOKIE, unseal } from "./session";
 import { AccountError } from "./users";
 import { NoAccountFile, NoFolder, NoSyncFile, ReadOnlyFile } from "./store";
 import { EditError } from "./wishlist";
@@ -21,9 +20,8 @@ export async function currentAccount(): Promise<Account | null> {
     const acc = await store.byId(a.accountId);
     return acc ? { ...a, username: acc.username, admin: acc.admin } : null;
   }
-  // Still the server and a user allowed today (the settings may have changed since logging in).
-  if (a.server !== nextcloudServer() || !allowedUsers().includes(a.userId)) return null;
-  return a;
+  // An old Nextcloud login (before 2026-11-08): no longer a way in; Nextcloud is only the backup place now.
+  return null;
 }
 
 /** Requests that change something must come from the website's own pages (a header other sites can't send). */
@@ -44,10 +42,4 @@ export function errorResponse(e: unknown): NextResponse {
   if (e instanceof NextcloudError) return json({ error: e.message, loggedOut: e.status === 401 }, e.status === 401 ? 401 : 502);
   console.error(e);
   return json({ error: "Something went wrong on the website. Try again." }, 500);
-}
-
-/** The Nextcloud login of a request, for what only works with one (connecting Nextcloud, moving the data). */
-export async function nextcloudLogin(): Promise<NextcloudLogin | null> {
-  const a = await currentAccount();
-  return a && !isUser(a) ? a : null;
 }

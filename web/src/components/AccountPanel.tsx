@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 
 interface DeviceRow {
@@ -29,62 +29,6 @@ function usePasswordPair() {
   const [b, setB] = useState("");
   const problem = a.length > 0 && a.length < 10 ? "At least 10 characters." : b.length > 0 && a !== b ? "The two don't match." : null;
   return { a, b, setA, setB, problem, value: a.length >= 10 && a === b ? a : null };
-}
-
-/**
- * Logged in with Nextcloud: make the website account (the move). The current sync file is copied into it and
- * Nextcloud stays as the nightly backup; nothing on Nextcloud changes.
- */
-export function MoveToAccountCard() {
-  const [username, setUsername] = useState("");
-  const pw = usePasswordPair();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function move(e: React.FormEvent) {
-    e.preventDefault();
-    if (!pw.value) return;
-    setBusy(true);
-    setError(null);
-    const r = await api<{ ok?: boolean }>("/api/account/move", { username, password: pw.value });
-    if (r.ok && r.data.ok) window.location.replace("/settings");
-    else {
-      setBusy(false);
-      setError(r.data.error ?? "That did not work.");
-    }
-  }
-
-  return (
-    <section className="card stack">
-      <h2 className="section-head">Your website account</h2>
-      <p className="small">
-        Make the account you&apos;ll log in with from now on, here and in the app. Your collection, decks and everything else in this sync folder are
-        copied into it; Nextcloud then keeps a backup copy every night (web-backups/ in this folder). Nothing on Nextcloud is changed or deleted.
-      </p>
-      <form className="stack" onSubmit={move}>
-        <label className="stack">
-          <span className="muted small">User name (letters, digits, . - _)</span>
-          <input autoComplete="username" value={username} maxLength={32} onChange={(e) => setUsername(e.target.value)} />
-        </label>
-        <label className="stack">
-          <span className="muted small">Password (at least 10 characters)</span>
-          <input type="password" autoComplete="new-password" value={pw.a} onChange={(e) => pw.setA(e.target.value)} />
-        </label>
-        <label className="stack">
-          <span className="muted small">The password again</span>
-          <input type="password" autoComplete="new-password" value={pw.b} onChange={(e) => pw.setB(e.target.value)} />
-        </label>
-        {pw.problem && <p className="warn-text small">{pw.problem}</p>}
-        {error && <div className="bar error">{error}</div>}
-        <div className="inline">
-          <button className="btn primary" disabled={busy || !pw.value || username.trim().length < 3}>
-            {busy ? "Copying…" : "Make my account and copy my data"}
-          </button>
-        </div>
-        <p className="muted small">Then, on each phone: Settings → Sync → MTG Trader account, and log in with it (app version 1.79 or newer).</p>
-      </form>
-    </section>
-  );
 }
 
 /** Logged in with a website account: devices, password, the Nextcloud backup, and for the owner invite codes and resets. */
@@ -184,23 +128,7 @@ export function AccountPanel({ onLogout }: { onLogout: () => void }) {
         </form>
       </section>
 
-      <section className="card stack">
-        <h2 className="section-head">Nextcloud backup</h2>
-        {info.backup ? (
-          <>
-            <p className="small">
-              Every night a copy goes to <strong>{info.backup.folder}/web-backups</strong> on {info.backup.server} (the last 10 days).
-            </p>
-            <div className="inline">
-              <button className="btn" disabled={busy} onClick={() => act({ action: "backup-off" }, () => setNotice("The nightly Nextcloud copy is off."))}>
-                Stop the Nextcloud copy
-              </button>
-            </div>
-          </>
-        ) : (
-          <p className="muted small">Off. The website still keeps its own copy before the first change of each day (Backups, above).</p>
-        )}
-      </section>
+      <NextcloudBackupCard backup={info.backup} busy={busy} onStop={() => act({ action: "backup-off" }, () => setNotice("The nightly Nextcloud copy is off."))} onConnected={load} />
 
       {info.admin && (
         <section className="card stack">
@@ -245,5 +173,146 @@ export function AccountPanel({ onLogout }: { onLogout: () => void }) {
         </section>
       )}
     </>
+  );
+}
+
+const POLL_MS = 2000;
+const GIVE_UP_MS = 20 * 60 * 1000;
+
+/**
+ * Nextcloud as the nightly backup place (never a login): "Connect Nextcloud" opens Nextcloud's approval page in a
+ * new tab, this card waits for the approval, and the website then writes today's copy to <folder>/web-backups.
+ */
+function NextcloudBackupCard({
+  backup,
+  busy,
+  onStop,
+  onConnected,
+}: {
+  backup: AccountInfo["backup"];
+  busy: boolean;
+  onStop: () => void;
+  onConnected: () => Promise<void>;
+}) {
+  const [folder, setFolder] = useState(backup?.folder ?? "MTG Trader");
+  const [phase, setPhase] = useState<"idle" | "starting" | "waiting">("idle");
+  const [link, setLink] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const run = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      run.current++;
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  function stop(text: string | null) {
+    run.current++;
+    if (timer.current) clearTimeout(timer.current);
+    setPhase("idle");
+    setLink(null);
+    setMessage(text);
+  }
+
+  function poll(id: number, startedAt: number) {
+    timer.current = setTimeout(async () => {
+      if (id !== run.current) return;
+      if (Date.now() - startedAt > GIVE_UP_MS) return stop("Nextcloud wasn't approved in time. Please start again.");
+      const r = await api<{ status?: string; message?: string; folder?: string }>("/api/account/backup", { action: "poll" });
+      if (id !== run.current) return;
+      const status = r.data.status;
+      if (status === "done") {
+        stop(null);
+        setDone(`Connected. Today's copy is already in ${r.data.folder}/web-backups on Nextcloud.`);
+        await onConnected();
+      } else if (status === "expired") stop("Nextcloud wasn't approved in time. Please start again.");
+      else if (status === "refused") stop(r.data.message ?? "Nextcloud refused.");
+      else if (!r.ok) stop(r.data.error ?? "Connecting Nextcloud did not work.");
+      else poll(id, startedAt);
+    }, POLL_MS);
+  }
+
+  async function connect(e: React.FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    setDone(null);
+    // A blank tab now (inside the click), so the browser doesn't block it; it gets Nextcloud's address next.
+    const tab = window.open("", "_blank");
+    setPhase("starting");
+    const r = await api<{ loginUrl?: string }>("/api/account/backup", { action: "start", folder });
+    if (!r.data.loginUrl) {
+      tab?.close();
+      return stop(r.data.error ?? "Could not reach Nextcloud.");
+    }
+    if (tab) tab.location.href = r.data.loginUrl;
+    else setLink(r.data.loginUrl);
+    const id = ++run.current;
+    setPhase("waiting");
+    poll(id, Date.now());
+  }
+
+  return (
+    <section className="card stack">
+      <h2 className="section-head">Nextcloud backup</h2>
+      <p className="muted small">
+        Nextcloud only keeps backups: every night the website copies your data there (the last 10 days). Your phones and this website sync with your
+        account, not with Nextcloud.
+      </p>
+      {backup ? (
+        <p className="small">
+          On: every night a copy goes to <strong>{backup.folder}/web-backups</strong> on {backup.server}.
+        </p>
+      ) : (
+        <p className="small">Off. The website still keeps its own copy before the first change of each day (Backups, above).</p>
+      )}
+      {done && <div className="bar ok">{done}</div>}
+      {message && <div className="bar error">{message}</div>}
+      {phase === "waiting" ? (
+        <div className="stack">
+          <p className="small">Approve the website in the Nextcloud tab… This card continues by itself.</p>
+          {link && (
+            <p className="small">
+              Your browser blocked the new tab.{" "}
+              <a href={link} target="_blank" rel="noreferrer">
+                Open Nextcloud&apos;s approval page
+              </a>
+              .
+            </p>
+          )}
+          <div className="inline">
+            <button
+              className="btn"
+              onClick={() => {
+                api("/api/account/backup", { action: "cancel" });
+                stop(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form className="stack" onSubmit={connect}>
+          <label className="stack">
+            <span className="muted small">Folder on Nextcloud (made if it isn&apos;t there)</span>
+            <input value={folder} maxLength={200} onChange={(e) => setFolder(e.target.value)} />
+          </label>
+          <div className="inline">
+            <button className="btn primary" disabled={busy || phase === "starting" || !folder.trim()}>
+              {phase === "starting" ? "Starting…" : backup ? "Connect again" : "Connect Nextcloud"}
+            </button>
+            {backup && (
+              <button type="button" className="btn" disabled={busy} onClick={onStop}>
+                Stop the Nextcloud copy
+              </button>
+            )}
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
