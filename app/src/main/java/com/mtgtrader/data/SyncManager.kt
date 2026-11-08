@@ -34,17 +34,15 @@ data class SyncStatus(
     val lastError: String? = null,
     /** Set up and synced at least once; until then automatic sync waits. */
     val ready: Boolean = false,
-    /** Connected, but both this phone and Nextcloud hold data: the user picks a [FirstSync] first. */
+    /** Connected, but both this phone and the account hold data: the user picks a [FirstSync] first. */
     val firstChoice: FirstChoice? = null,
     val autoSync: Boolean = true,
     val wifiOnly: Boolean = false,
-    /** The Nextcloud folder holding the sync file. Since 1.17. */
-    val folder: String = NextcloudClient.FOLDER,
-    /** The user is picking the folder (right after connecting, or to change it). */
-    val choosingFolder: Boolean = false,
+    /** This phone synced with Nextcloud, which the app stopped doing in 1.82: it should log in to an MTG Trader account. */
+    val nextcloudEnded: Boolean = false,
     /** Another phone that last synced with a version too old to read this one's file. Since 1.27. */
     val olderPhone: OlderPhone? = null,
-    /** Syncing through an MTG Trader account on the website ([server] is the website), not Nextcloud. Since 1.79. */
+    /** Syncing through an MTG Trader account on the website ([server] is the website). Since 1.79; the only way since 1.82. */
     val website: Boolean = false,
 ) {
     val connected get() = server != null
@@ -75,15 +73,14 @@ data class SyncSummary(val cards: Int, val binders: Int, val decks: Int, val tra
     }
 }
 
-/** Where the sync file lives: the user's Nextcloud, or their MTG Trader account on the website (since 1.79). */
+/** Where the sync file lives: the user's MTG Trader account on the website (since 1.79; Nextcloud until 1.81). */
 private sealed interface SyncPlace {
-    data class Cloud(val account: NextcloudAccount) : SyncPlace
     data class Web(val login: WebLogin) : SyncPlace
 }
 
 /**
- * Keeps this phone in sync with the others through one file on the user's Nextcloud, or (since 1.79)
- * in their MTG Trader account on the website, which works the same way. With
+ * Keeps this phone in sync with the others through one file in the user's MTG Trader account on the
+ * website (since 1.79; until 1.81 also on the user's Nextcloud, which the website now backs up to). With
  * automatic sync on, it syncs when the app opens, ~30 s after a change, when the app goes to
  * the background and every hour (only on Wi-Fi if chosen). "Sync now" always runs.
  */
@@ -99,7 +96,6 @@ class SyncManager(
     private val prefs = context.getSharedPreferences("sync", Context.MODE_PRIVATE)
     private val mutex = Mutex()
     private var debounce: Job? = null
-    private var changingFolder = false
 
     private val _status = MutableStateFlow(readStatus())
     val status: StateFlow<SyncStatus> = _status
@@ -111,21 +107,20 @@ class SyncManager(
     }
 
     private fun readStatus() = SyncStatus(
-        // Not connected if the password can't be read (e.g. app data restored onto another phone).
-        server = if (webLogin() != null) WebAccountClient.HOST else prefs.getString(K_SERVER, null)?.takeIf { account() != null },
-        user = webLogin()?.username ?: prefs.getString(K_USER, null),
+        // Not connected if the token can't be read (e.g. app data restored onto another phone).
+        server = if (webLogin() != null) WebAccountClient.HOST else null,
+        user = webLogin()?.username,
         website = webLogin() != null,
+        nextcloudEnded = webLogin() == null && prefs.contains(K_SERVER),
         lastSyncAt = prefs.getLong(K_LAST_SYNC, 0),
         lastError = prefs.getString(K_ERROR, null),
         ready = prefs.getBoolean(K_FIRST_DONE, false),
         autoSync = prefs.getBoolean(K_AUTO, true),
         wifiOnly = prefs.getBoolean(K_WIFI, false),
-        folder = prefs.getString(K_FOLDER, null) ?: NextcloudClient.FOLDER,
-        // Connected but the folder was never chosen (and never synced): ask. Accounts from before 1.17 keep "MTG Trader".
-        choosingFolder = account() != null && (changingFolder || (!prefs.getBoolean(K_FIRST_DONE, false) && !prefs.contains(K_FOLDER))),
         olderPhone = prefs.getString(K_OLDER, null)?.let { OlderPhone(it, prefs.getLong(K_OLDER_AT, 0), prefs.getBoolean(K_OLDER_SEEN, false)) },
     )
 
+    /** The Nextcloud account a phone synced with before 1.82: kept only to remove the app's password from it. */
     private fun account(): NextcloudAccount? {
         val server = prefs.getString(K_SERVER, null) ?: return null
         val login = prefs.getString(K_USER, null) ?: return null
@@ -140,24 +135,19 @@ class SyncManager(
         return WebLogin(user, token)
     }
 
-    private fun place(): SyncPlace? = webLogin()?.let { SyncPlace.Web(it) } ?: account()?.let { SyncPlace.Cloud(it) }
+    private fun place(): SyncPlace? = webLogin()?.let { SyncPlace.Web(it) }
 
     private suspend fun SyncPlace.get(etag: String?) = when (this) {
-        is SyncPlace.Cloud -> client.get(account, etag)
         is SyncPlace.Web -> web.get(login, etag)
     }
 
     private suspend fun SyncPlace.put(bytes: ByteArray, ifMatch: String?) = when (this) {
-        is SyncPlace.Cloud -> client.put(account, bytes, ifMatch)
         is SyncPlace.Web -> web.put(login, bytes, ifMatch)
     }
 
-    private fun SyncPlace.name() = if (this is SyncPlace.Web) "the MTG Trader website" else "Nextcloud"
+    private fun SyncPlace.name() = "the MTG Trader website"
 
     private val firstDone get() = prefs.getBoolean(K_FIRST_DONE, false)
-
-    /** The account, once this phone has synced with it (so its folder holds this app's data). Since 1.21. */
-    fun readyAccount(): NextcloudAccount? = if (firstDone) account() else null
 
     /** Runs before the first sync with a folder changes anything on this phone (a backup). Since 1.21. */
     var beforeFirstSync: (suspend () -> Unit)? = null
@@ -170,33 +160,13 @@ class SyncManager(
 
     // ---- Connecting ------------------------------------------------------------------------
 
-    suspend fun startLogin(server: String) = client.startLogin(server)
-    suspend fun pollLogin(start: NextcloudClient.LoginStart) = client.pollLogin(start)
-
-    /** Saves the account (after checking it works); then the user picks the folder ([useFolder]) and the first sync follows. */
-    suspend fun connect(account: NextcloudAccount, fromLoginFlow: Boolean) {
-        val checked = client.verify(account)
-        prefs.edit()
-            .putString(K_SERVER, checked.server)
-            .putString(K_USER, checked.login)
-            .putString(K_USER_ID, checked.userId)
-            .putString(K_PASSWORD, SecretStore.encrypt(checked.password))
-            .putBoolean(K_REVOKE, fromLoginFlow)
-            .remove(K_WEB_USER).remove(K_WEB_TOKEN)
-            .putBoolean(K_FIRST_DONE, false)
-            .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR).remove(K_LAST_SYNC).remove(K_FOLDER)
-            .apply()
-        _status.value = readStatus()
-        schedule()
-    }
-
     /** Logs in to an MTG Trader account on the website and syncs with it from now on, instead of Nextcloud. Since 1.79. */
     suspend fun loginWeb(username: String, password: String) = useWeb(web.login(username, password, device()))
 
     /** Makes an MTG Trader account with an invite code and syncs with it. Since 1.79. */
     suspend fun registerWeb(invite: String, username: String, password: String) = useWeb(web.register(invite, username, password, device()))
 
-    /** Like [connect]: forgets Nextcloud (if it was set up), then the first sync with the account follows ([prepareFirst]). */
+    /** Forgets Nextcloud (if this phone synced there before 1.82), then the first sync with the account follows ([prepareFirst]). */
     private suspend fun useWeb(login: WebLogin) {
         val old = account()
         val revoke = prefs.getBoolean(K_REVOKE, false)
@@ -208,52 +178,12 @@ class SyncManager(
                 .putBoolean(K_FIRST_DONE, false)
                 .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR).remove(K_LAST_SYNC)
                 .apply()
-            changingFolder = false
             _status.value = readStatus()
         }
         schedule()
         // The app password this app made on Nextcloud isn't needed any more (the website keeps its own for its backups).
         if (old != null && revoke) scope.launch { runCatching { client.revoke(old) } }
         prepareFirst()
-    }
-
-    // ---- The folder ------------------------------------------------------------------------
-
-    suspend fun listFolder(path: String): FolderListing = client.list(account() ?: throw SyncException("Not connected"), path)
-
-    suspend fun createFolder(path: String) = client.makeFolder(account() ?: throw SyncException("Not connected"), path)
-
-    /** Opens the folder picker to move syncing to another folder. */
-    fun changeFolder() {
-        changingFolder = true
-        _status.value = readStatus()
-    }
-
-    /**
-     * Syncs through [path] from now on. Like connecting anew: when both this phone and the
-     * folder hold data, [SyncStatus.firstChoice] asks what to do; the old folder's file stays.
-     */
-    suspend fun useFolder(path: String) {
-        val clean = path.split('/').filter { it.isNotBlank() }.joinToString("/")
-        mutex.withLock {
-            changingFolder = false
-            prefs.edit()
-                .putString(K_FOLDER, clean)
-                .putBoolean(K_FIRST_DONE, false)
-                .remove(K_ETAG).remove(K_STAMP).remove(K_PREFS_AT).remove(K_ERROR)
-                .apply()
-            _status.value = readStatus()
-        }
-        prepareFirst()
-    }
-
-    /** The picker was closed: right after connecting that means the usual "MTG Trader" folder. */
-    fun cancelFolderChoice() {
-        if (!prefs.contains(K_FOLDER)) scope.launch { useFolder(NextcloudClient.FOLDER) }
-        else {
-            changingFolder = false
-            _status.value = readStatus()
-        }
     }
 
     /** Looks at both sides before the first sync; runs it right away unless the user has to choose. */
@@ -273,7 +203,7 @@ class SyncManager(
         }
         val (local, _) = store.snapshot()
         if (!local.isEmpty) beforeFirstSync?.invoke()
-        // Only ask when this phone holds something Nextcloud doesn't (e.g. not when reconnecting the same phone).
+        // Only ask when this phone holds something the account doesn't (e.g. not when reconnecting the same phone).
         val now = System.currentTimeMillis()
         val phoneAddsSomething = remote != null && SyncMerge.merge(local, remote, now, FirstSync.MERGE) != SyncMerge.merge(remote, null, now)
         if (remote != null && !remote.isEmpty && !local.isEmpty && phoneAddsSomething) {
@@ -293,7 +223,7 @@ class SyncManager(
         scope.launch { sync(choice) }
     }
 
-    /** Forgets the account (and removes its app password from Nextcloud if this app created it). Data on the phone stays. */
+    /** Logs out (and removes the app password from Nextcloud if this phone synced there before 1.82). Data on the phone stays. */
     fun disconnect() {
         val account = account()
         val login = webLogin()

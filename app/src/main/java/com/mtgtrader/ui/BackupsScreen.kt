@@ -1,6 +1,7 @@
 package com.mtgtrader.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.AlertDialog
@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
+import com.mtgtrader.data.WebAccountClient
 import com.mtgtrader.data.BackupDiff
 import com.mtgtrader.data.BackupFile
 import com.mtgtrader.data.BackupInfo
@@ -71,17 +72,15 @@ fun BackupsScreen(nav: NavController) {
     val lastError by c.backups.lastError.collectAsStateWithLifecycle()
     val changed by c.backups.changed.collectAsStateWithLifecycle()
     val syncStatus by c.sync.status.collectAsStateWithLifecycle()
-    val onNextcloud = syncStatus.connected && syncStatus.ready
     var list by remember { mutableStateOf<List<BackupInfo>?>(null) }
     var note by remember { mutableStateOf<String?>(null) }
-    var alsoOnPhone by remember { mutableStateOf(c.backups.alsoOnPhone) }
     var folder by remember { mutableStateOf(c.backups.folder) }
     var opened by remember { mutableStateOf<BackupInfo?>(null) }
     var preview by remember { mutableStateOf<Pair<BackupFile, BackupDiff>?>(null) }
     var busy by remember { mutableStateOf<String?>(null) }
     fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
 
-    LaunchedEffect(changed, onNextcloud, folder) {
+    LaunchedEffect(changed, folder) {
         val (l, n) = c.backups.list()
         list = l
         note = n
@@ -139,14 +138,13 @@ fun BackupsScreen(nav: NavController) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "A backup holds your collection, binders, trades, decks, scanned cards, wishlist and settings, so you can go back to it if something goes wrong. " +
-                            "The app makes one each day when something changed, and before big changes: the first Nextcloud sync, " +
+                            "The app makes one each day when something changed, and before big changes: the first sync, " +
                             "CSV imports and restoring a backup.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        if (onNextcloud) "Backups go to the “Backups” folder in your Nextcloud sync folder (“${syncStatus.folder.ifEmpty { "/" }}”), where all your phones can use them."
-                        else if (folder != null) "Backups are saved in the folder you picked on this phone."
-                        else "Backups are saved in the app's storage on this phone. They're lost if you uninstall the app: pick a folder below, or connect Nextcloud sync, to keep them safe.",
+                        if (folder != null) "Backups are saved in the folder you picked on this phone."
+                        else "Backups are saved in the app's storage on this phone. They're lost if you uninstall the app: pick a folder below to keep them safe.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -176,15 +174,8 @@ fun BackupsScreen(nav: NavController) {
                     }
                     OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }) { Text("Restore from a file…") }
 
+                    NextcloudCopyNote(syncStatus.website)
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    if (onNextcloud) {
-                        SwitchRow(
-                            title = "Also keep backups on this phone",
-                            body = "Besides Nextcloud, in case it can't be reached when you need a backup.",
-                            checked = alsoOnPhone,
-                            onChange = { alsoOnPhone = it; c.backups.alsoOnPhone = it },
-                        )
-                    }
                     Text("Backups on this phone", style = MaterialTheme.typography.titleSmall)
                     Text(
                         if (folder == null) "In the app's storage." else "In the folder you picked (they stay when the app is uninstalled).",
@@ -214,7 +205,6 @@ fun BackupsScreen(nav: NavController) {
                     ) {
                         Icon(
                             when (b.place) {
-                                BackupPlace.NEXTCLOUD -> Icons.Default.Cloud
                                 BackupPlace.PHONE -> Icons.Default.PhoneAndroid
                                 BackupPlace.FOLDER -> Icons.Default.Folder
                             },
@@ -310,7 +300,7 @@ private fun RestoreDialog(file: BackupFile, diff: BackupDiff, onDismiss: () -> U
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "Everything in the app is replaced by the backup. A backup of what you have now is made first. " +
-                        "With Nextcloud sync, your other phones get the restored data too.",
+                        "With sync, your other phones and the website get the restored data too.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -326,4 +316,29 @@ private fun size(bytes: Long): String = when {
     bytes < 1024 -> "$bytes B"
     bytes < 1024 * 1024 -> "${bytes / 1024} KB"
     else -> "%.1f MB".format(bytes / 1024.0 / 1024.0)
+}
+
+/**
+ * Since 1.82 the app keeps its backups on the phone only; the website copies the account to the owner's Nextcloud
+ * every night (its Settings page), and backups the app left in Nextcloud's "Backups" folder still restore as a file.
+ */
+@Composable
+private fun NextcloudCopyNote(website: Boolean) {
+    val context = LocalContext.current
+    Text("Nextcloud", style = MaterialTheme.typography.titleSmall)
+    Text(
+        (if (website) "The website copies your account to your Nextcloud every night; set it up or restore a copy under Settings on the website. "
+        else "With an MTG Trader account, the website copies your data to your Nextcloud every night. ") +
+            "Backups the app saved on Nextcloud before 1.82 (its “Backups” folder) can still be restored: download one, then “Restore from a file…”.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    TextButton(
+        onClick = {
+            runCatching {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://${WebAccountClient.HOST}/settings")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+        },
+        contentPadding = PaddingValues(0.dp),
+    ) { Text("Open the website's Settings") }
 }

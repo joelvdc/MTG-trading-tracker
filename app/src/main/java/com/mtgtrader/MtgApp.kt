@@ -137,7 +137,7 @@ class AppContainer(context: Context) {
     private val nextcloud = NextcloudClient(http)
     val webAccount = com.mtgtrader.data.WebAccountClient(http)
     val sync = SyncManager(context, db, store, nextcloud, webAccount, network, appScope)
-    val backups = com.mtgtrader.data.Backups(context, store, sync, nextcloud)
+    val backups = com.mtgtrader.data.Backups(context, store, sync)
 
     /** The life tracker's games and players (since 1.47). */
     val games = com.mtgtrader.data.GameStore(context, db, scryfall, appScope)

@@ -77,7 +77,7 @@ data class BackupFile(
 enum class BackupReason(val label: String) {
     MANUAL("Made by hand"),
     DAILY("Daily backup"),
-    FIRST_NEXTCLOUD("Before the first Nextcloud sync"),
+    FIRST_NEXTCLOUD("Before the first sync"),
     // The Archidekt sync made these until 1.78; kept so their backups still read with their reason.
     ARCHIDEKT("Before an Archidekt sync"),
     ARCHIDEKT_FIRST("Before the first Archidekt sync"),
@@ -87,9 +87,9 @@ enum class BackupReason(val label: String) {
     RESTORE("Before restoring a backup"),
 }
 
-enum class BackupPlace(val label: String) { NEXTCLOUD("Nextcloud"), PHONE("This phone"), FOLDER("Chosen folder") }
+enum class BackupPlace(val label: String) { PHONE("This phone"), FOLDER("Chosen folder") }
 
-/** A backup file somewhere: [ref] is its name on Nextcloud, its path on the phone or its document address in the chosen folder. */
+/** A backup file somewhere: [ref] is its path on the phone or its document address in the chosen folder. */
 data class BackupInfo(
     val place: BackupPlace,
     val name: String,
@@ -191,15 +191,15 @@ object BackupRestore {
 }
 
 /**
- * Makes, lists, prunes and restores backups: on Nextcloud (a "Backups" folder in the sync folder)
- * when this phone syncs there, otherwise on the phone (in the app's storage, or in a folder the
- * user picked so they survive uninstalling the app).
+ * Makes, lists, prunes and restores backups on the phone: in the app's storage, or in a folder the
+ * user picked so they survive uninstalling the app. (Until 1.81 they went to Nextcloud when the phone
+ * synced there; the website now copies the account to Nextcloud every night, and those older backups
+ * can still be restored as a file.)
  */
 class Backups(
     private val context: Context,
     private val store: SyncStore,
     private val sync: SyncManager,
-    private val client: NextcloudClient,
 ) {
     private val prefs = context.getSharedPreferences("backups", Context.MODE_PRIVATE)
     private val mutex = Mutex()
@@ -215,11 +215,6 @@ class Backups(
     private val _changed = MutableStateFlow(0)
     /** Bumped whenever the list of backups changes. */
     val changed: StateFlow<Int> = _changed
-
-    /** Also keep backups on the phone when they go to Nextcloud. */
-    var alsoOnPhone: Boolean
-        get() = prefs.getBoolean(K_ALSO_PHONE, false)
-        set(v) = prefs.edit().putBoolean(K_ALSO_PHONE, v).apply()
 
     /** The folder the user picked for backups on the phone (a document tree), or null for the app's own storage. */
     var folder: Uri?
@@ -242,20 +237,8 @@ class Backups(
             val file = BackupFile(createdAt = now, reason = reason.label, device = device(), manual = reason == BackupReason.MANUAL, data = data)
             val bytes = BackupFile.encode(file)
             val name = fileName(now, reason.label, file.manual)
-            val places = mutableListOf<BackupPlace>()
-            var error: String? = null
-            val account = sync.readyAccount()
-            if (account != null) {
-                try {
-                    client.putIn(account, "$DIR/$name", bytes, null)
-                    places += BackupPlace.NEXTCLOUD
-                } catch (e: Exception) {
-                    error = "Couldn't save the backup on Nextcloud (${e.message ?: e.javaClass.simpleName}), so it was saved on this phone."
-                }
-            }
-            if (account == null || alsoOnPhone || BackupPlace.NEXTCLOUD !in places) {
-                places += savePhone(name, bytes)
-            }
+            val places = listOf(savePhone(name, bytes))
+            val error: String? = null
             prefs.edit().putLong(K_LAST_AT, now).putLong(K_STAMP, stamp).putString(K_ERROR, error).apply()
             _lastError.value = error
             if (!file.manual) runCatching { prune(now) }
@@ -313,17 +296,10 @@ class Backups(
 
     // ---- Listing and pruning ---------------------------------------------------------------
 
-    /** All backups, newest first, and a note if Nextcloud couldn't be read. */
+    /** All backups, newest first, and a note if some couldn't be read (none since 1.82). */
     suspend fun list(): Pair<List<BackupInfo>, String?> {
         val out = mutableListOf<BackupInfo>()
-        var note: String? = null
-        sync.readyAccount()?.let { account ->
-            try {
-                client.filesIn(account, DIR).forEach { f -> parse(f.name)?.let { out += it.copy(place = BackupPlace.NEXTCLOUD, ref = f.name, size = f.size) } }
-            } catch (e: Exception) {
-                note = "Couldn't read the backups on Nextcloud: ${e.message ?: e.javaClass.simpleName}"
-            }
-        }
+        val note: String? = null
         withContext(Dispatchers.IO) {
             localDir.listFiles()?.forEach { f -> parse(f.name)?.let { out += it.copy(place = BackupPlace.PHONE, ref = f.absolutePath, size = f.length()) } }
             folder?.let { tree -> runCatching { out += folderFiles(tree) } }
@@ -359,7 +335,6 @@ class Backups(
 
     private suspend fun deleteFile(b: BackupInfo) {
         when (b.place) {
-            BackupPlace.NEXTCLOUD -> client.deleteIn(sync.readyAccount() ?: throw SyncException("Nextcloud isn't connected."), "$DIR/${b.ref}")
             BackupPlace.PHONE -> withContext(Dispatchers.IO) { File(b.ref).delete() }
             BackupPlace.FOLDER -> withContext(Dispatchers.IO) { DocumentsContract.deleteDocument(context.contentResolver, Uri.parse(b.ref)) }
         }
@@ -367,10 +342,6 @@ class Backups(
 
     suspend fun read(b: BackupInfo): BackupFile {
         val bytes = when (b.place) {
-            BackupPlace.NEXTCLOUD -> when (val r = client.getIn(sync.readyAccount() ?: throw SyncException("Nextcloud isn't connected."), "$DIR/${b.ref}")) {
-                is NextcloudClient.Remote.Found -> r.bytes
-                else -> throw SyncException("That backup isn't on Nextcloud any more.")
-            }
             BackupPlace.PHONE -> withContext(Dispatchers.IO) { File(b.ref).readBytes() }
             BackupPlace.FOLDER -> withContext(Dispatchers.IO) { context.contentResolver.openInputStream(Uri.parse(b.ref))!!.use { it.readBytes() } }
         }
@@ -386,7 +357,7 @@ class Backups(
 
     /**
      * Replaces the app's data with [backup]'s, after a backup of the current state. Other phones
-     * get it through the next Nextcloud sync.
+     * get it through the next sync.
      */
     suspend fun restore(backup: BackupFile) {
         before(BackupReason.RESTORE)
@@ -410,7 +381,6 @@ class Backups(
 
     companion object {
         const val DIR = "Backups"
-        private const val K_ALSO_PHONE = "alsoOnPhone"
         private const val K_FOLDER = "folder"
         private const val K_LAST_AT = "lastAt"
         private const val K_STAMP = "stamp"

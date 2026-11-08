@@ -1,7 +1,5 @@
 package com.mtgtrader.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,7 +26,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,63 +42,33 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.container
 import com.mtgtrader.data.FirstChoice
 import com.mtgtrader.data.FirstSync
-import com.mtgtrader.data.FolderListing
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CreateNewFolder
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.text.style.TextOverflow
-import com.mtgtrader.data.NextcloudAccount
-import com.mtgtrader.data.NextcloudClient
 import com.mtgtrader.data.WebAccountClient
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.IOException
 
-/** The "Sync" part of Settings: an MTG Trader account on the website (since 1.79) or Nextcloud. */
+/** The "Sync" part of Settings: an MTG Trader account on the website (since 1.79; Nextcloud sync ended in 1.82). */
 @Composable
 fun SyncSection() {
     val c = LocalContext.current.container
     val s by c.sync.status.collectAsStateWithLifecycle()
-    var connecting by rememberSaveable { mutableStateOf(false) }
     var loggingIn by rememberSaveable { mutableStateOf(false) }
     var confirmDisconnect by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Text("Sync", style = MaterialTheme.typography.titleMedium)
-    Spacer(Modifier.height(4.dp))
     if (!s.connected) {
+        if (s.nextcloudEnded) NextcloudEndedCard(onLogIn = { loggingIn = true }, onForget = { scope.launch { c.sync.disconnect() } })
         Text(
             "Keep your collection, binders, trades, decks, scans and preferences the same on all your phones and on the " +
-                "website (${WebAccountClient.HOST}), through your MTG Trader account or your own Nextcloud. Prices and " +
+                "website (${WebAccountClient.HOST}), through your MTG Trader account. Prices and " +
                 "pictures aren't synced: each phone downloads those itself.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { loggingIn = true }) { Text("MTG Trader account") }
-            OutlinedButton(onClick = { connecting = true }) { Text("Nextcloud") }
-        }
+        Button(onClick = { loggingIn = true }) { Text("Log in to my MTG Trader account") }
     } else {
-        if (s.website) {
-            Text("Logged in as ${s.user} on ${s.server}")
-        } else {
-            Text("Connected as ${s.user} on ${Uri.parse(s.server).host ?: s.server}")
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Folder: /${s.folder}", Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                TextButton(onClick = c.sync::changeFolder, enabled = !s.running) { Text("Change") }
-            }
-            TextButton(onClick = { loggingIn = true }, enabled = !s.running, contentPadding = PaddingValues(0.dp)) {
-                Text("Switch to my MTG Trader account")
-            }
-        }
+        Text("Logged in as ${s.user} on ${s.server}")
         when {
             s.running -> Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -124,7 +93,7 @@ fun SyncSection() {
                     Text("Start syncing")
                 }
             }
-            OutlinedButton(onClick = { confirmDisconnect = true }, enabled = !s.running) { Text(if (s.website) "Log out" else "Disconnect") }
+            OutlinedButton(onClick = { confirmDisconnect = true }, enabled = !s.running) { Text("Log out") }
         }
         Spacer(Modifier.height(12.dp))
         SwitchRow(
@@ -142,24 +111,17 @@ fun SyncSection() {
         )
     }
 
-    if (connecting) ConnectDialog(onDone = { connecting = false })
-    if (loggingIn) AccountDialog(switching = s.connected, onDone = { loggingIn = false })
-    if (s.choosingFolder && !connecting) FolderPickerDialog(start = if (s.ready) s.folder else "", firstTime = !s.ready)
+    if (loggingIn) AccountDialog(switching = s.nextcloudEnded, onDone = { loggingIn = false })
     s.firstChoice?.let { choice ->
-        FirstSyncDialog(choice, if (s.website) "your account" else "Nextcloud", onChoose = c.sync::chooseFirst, onLater = c.sync::cancelFirstChoice)
+        FirstSyncDialog(choice, "your account", onChoose = c.sync::chooseFirst, onLater = c.sync::cancelFirstChoice)
     }
     if (confirmDisconnect) {
         AlertDialog(
             onDismissRequest = { confirmDisconnect = false },
-            title = { Text(if (s.website) "Log out of your account?" else "Disconnect from Nextcloud?") },
-            text = {
-                Text(
-                    "This phone stops syncing. Its data stays on the phone, and the copy " +
-                        (if (s.website) "in your account" else "on Nextcloud") + " stays there for your other phones.",
-                )
-            },
+            title = { Text("Log out of your account?") },
+            text = { Text("This phone stops syncing. Its data stays on the phone, and the copy in your account stays there for your other phones.") },
             confirmButton = {
-                TextButton(onClick = { confirmDisconnect = false; scope.launch { c.sync.disconnect() } }) { Text(if (s.website) "Log out" else "Disconnect") }
+                TextButton(onClick = { confirmDisconnect = false; scope.launch { c.sync.disconnect() } }) { Text("Log out") }
             },
             dismissButton = { TextButton(onClick = { confirmDisconnect = false }) { Text("Cancel") } },
         )
@@ -168,7 +130,7 @@ fun SyncSection() {
 
 /**
  * Logs in to an MTG Trader account on the website, or makes one with an invite code from the owner;
- * then the first sync follows. [switching]: this phone syncs with Nextcloud now and moves over. Since 1.79.
+ * then the first sync follows. [switching]: this phone synced with Nextcloud (until 1.81) and moves over. Since 1.79.
  */
 @Composable
 private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
@@ -270,256 +232,6 @@ private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
     )
 }
 
-@Composable
-private fun ConnectDialog(onDone: () -> Unit) {
-    val context = LocalContext.current
-    val c = context.container
-    val scope = rememberCoroutineScope()
-    var server by rememberSaveable { mutableStateOf("") }
-    var manual by rememberSaveable { mutableStateOf(false) }
-    var user by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf<String?>(null) }
-    var login by remember { mutableStateOf<NextcloudClient.LoginStart?>(null) }
-
-    /** Checks the account and does the first sync, in the app scope so leaving the screen doesn't stop it. */
-    fun connect(account: NextcloudAccount, fromLoginFlow: Boolean) {
-        busy = "Connecting…"
-        scope.launch {
-            val r = c.appScope.async { runCatching { c.sync.connect(account, fromLoginFlow) } }.await()
-            busy = null
-            r.onSuccess { onDone() }.onFailure { error = message(it) }
-        }
-    }
-
-    // Browser login: ask Nextcloud every couple of seconds whether the user has approved it yet (for up to 20 minutes).
-    LaunchedEffect(login) {
-        val start = login ?: return@LaunchedEffect
-        repeat(600) {
-            delay(2_000)
-            val account = runCatching { c.sync.pollLogin(start) }.getOrNull()
-            if (account != null) {
-                login = null
-                connect(account, fromLoginFlow = true)
-                return@LaunchedEffect
-            }
-        }
-        login = null
-        busy = null
-        error = "The login wasn't approved in time. Try again."
-    }
-
-    AlertDialog(
-        onDismissRequest = { if (busy == null) onDone() },
-        title = { Text("Connect to Nextcloud") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(
-                    value = server,
-                    onValueChange = { server = it; error = null },
-                    label = { Text("Server address") },
-                    placeholder = { Text("cloud.example.com") },
-                    singleLine = true,
-                    enabled = busy == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                if (manual) {
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = user, onValueChange = { user = it; error = null }, label = { Text("User name") },
-                        singleLine = true, enabled = busy == null, modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = password, onValueChange = { password = it; error = null }, label = { Text("App password") },
-                        singleLine = true, enabled = busy == null, visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Text(
-                        "Make one in Nextcloud under Settings → Security → Devices & sessions.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "You'll log in to Nextcloud in your browser and allow MTG Trader access. The app gets its own app " +
-                            "password, which you can revoke in Nextcloud at any time; your own password never reaches the app.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                busy?.let {
-                    Spacer(Modifier.height(12.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(it, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                error?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error) }
-                if (busy == null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        if (manual) "Log in with the browser instead" else "Use an app password instead",
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { manual = !manual; error = null }.padding(vertical = 8.dp),
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = busy == null && server.isNotBlank() && (!manual || (user.isNotBlank() && password.isNotBlank())),
-                onClick = {
-                    val url = NextcloudClient.normalizeServer(server)
-                    if (url == null) { error = "That doesn't look like a server address."; return@TextButton }
-                    if (manual) {
-                        connect(NextcloudAccount(url, user.trim(), password.trim()), fromLoginFlow = false)
-                    } else {
-                        busy = "Opening the login page…"
-                        scope.launch {
-                            runCatching { c.sync.startLogin(url) }
-                                .onSuccess {
-                                    busy = "Approve MTG Trader in the browser, then come back here."
-                                    login = it
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.loginUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    }.onFailure { busy = null; login = null; error = "No browser found to log in with." }
-                                }
-                                .onFailure { busy = null; error = message(it) }
-                        }
-                    }
-                },
-            ) { Text(if (manual) "Connect" else "Log in") }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                login = null
-                busy = null
-                onDone()
-            }) { Text("Cancel") }
-        },
-    )
-}
-
-/**
- * Picks the Nextcloud folder for the sync file: browse into folders, make a new one, then "Use this
- * folder". All phones must use the same one. Since 1.17.
- */
-@Composable
-private fun FolderPickerDialog(start: String, firstTime: Boolean) {
-    val c = LocalContext.current.container
-    val scope = rememberCoroutineScope()
-    var path by rememberSaveable { mutableStateOf(start) }
-    var listing by remember { mutableStateOf<FolderListing?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var naming by remember { mutableStateOf(false) }
-    var reload by remember { mutableIntStateOf(0) }
-    fun child(name: String) = if (path.isEmpty()) name else "$path/$name"
-    LaunchedEffect(path, reload) {
-        listing = null
-        error = null
-        runCatching { c.sync.listFolder(path) }.onSuccess { listing = it }.onFailure { error = message(it) }
-    }
-    AlertDialog(
-        onDismissRequest = c.sync::cancelFolderChoice,
-        title = { Text("Folder for the sync file") },
-        text = {
-            Column {
-                Text(
-                    "Pick the same folder on all your phones." + if (firstTime) " Without a choice, the app uses “${NextcloudClient.FOLDER}”." else "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                Text("/$path", style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
-                if (path.isNotEmpty()) {
-                    Row(
-                        Modifier.fillMaxWidth().clickable { path = path.substringBeforeLast('/', "") }.padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Default.ArrowUpward, null)
-                        Spacer(Modifier.width(12.dp))
-                        Text("Up")
-                    }
-                }
-                val l = listing
-                when {
-                    error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error)
-                    l == null -> Row(Modifier.padding(vertical = 12.dp)) { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
-                    else -> {
-                        LazyColumn(Modifier.heightIn(max = 280.dp)) {
-                            items(l.folders) { name ->
-                                Row(
-                                    Modifier.fillMaxWidth().clickable { path = child(name) }.padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary)
-                                    Spacer(Modifier.width(12.dp))
-                                    Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                        }
-                        if (l.folders.isEmpty()) Text("No folders in here.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (l.hasSyncFile) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                "This folder already holds MTG Trader data (from another phone?). Choosing it syncs with that data.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                }
-                TextButton(onClick = { naming = true }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp)) {
-                    Icon(Icons.Default.CreateNewFolder, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("New folder here")
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { c.appScope.launch { c.sync.useFolder(path) } }, enabled = listing != null) { Text("Use this folder") }
-        },
-        dismissButton = {
-            TextButton(onClick = c.sync::cancelFolderChoice) { Text(if (firstTime) "Use “${NextcloudClient.FOLDER}”" else "Cancel") }
-        },
-    )
-    if (naming) {
-        var name by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { naming = false },
-            title = { Text("New folder") },
-            text = {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it.replace("/", "") },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            },
-            confirmButton = {
-                TextButton(enabled = name.isNotBlank(), onClick = {
-                    naming = false
-                    val target = child(name.trim())
-                    scope.launch {
-                        runCatching { c.sync.createFolder(target) }
-                            .onSuccess { path = target; reload++ }
-                            .onFailure { error = message(it) }
-                    }
-                }) { Text("Create") }
-            },
-            dismissButton = { TextButton(onClick = { naming = false }) { Text("Cancel") } },
-        )
-    }
-}
-
 private fun message(e: Throwable): String = when (e) {
     is IOException -> "Couldn't reach the server: ${e.message ?: e.javaClass.simpleName}"
     else -> e.message ?: "Something went wrong"
@@ -552,6 +264,32 @@ private fun FirstSyncDialog(choice: FirstChoice, place: String, onChoose: (First
         confirmButton = { TextButton(onClick = { onChoose(pick) }) { Text("Start syncing") } },
         dismissButton = { TextButton(onClick = onLater) { Text("Later") } },
     )
+}
+
+/**
+ * On a phone that synced with Nextcloud before 1.82: sync now goes through the MTG Trader account, which holds the
+ * same data. Logging in moves this phone over (the first sync merges, nothing on Nextcloud is deleted).
+ */
+@Composable
+private fun NextcloudEndedCard(onLogIn: () -> Unit, onForget: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Nextcloud sync has ended: log in with your MTG Trader account", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
+            Text(
+                "This phone isn't syncing any more. Your account on ${WebAccountClient.HOST} keeps your phones and the website " +
+                    "in sync, and the website copies it to your Nextcloud every night. Nothing on Nextcloud is deleted.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onLogIn) { Text("Switch to my account") }
+                TextButton(onClick = onForget) { Text("Forget Nextcloud") }
+            }
+        }
+    }
 }
 
 /** The note in Settings while [name] still runs a version from before 1.27. */
