@@ -123,39 +123,12 @@ class MtgRepository(
     var deckUndo: (suspend (Long) -> Boolean)? = null
 
     /**
-     * Adds one copy to a deck as a card "Added in app" (Archidekt isn't changed; it's kept when the deck
-     * is reloaded), next to an identical one if it's there. Its card type, which groups it in the deck,
-     * comes from the details saved for it or from Scryfall. Since 1.42.
+     * Adds to a local deck, in its auto category (null for a deck from Archidekt: those are read only, also in the
+     * app, since 1.85; before, cards were added to them as "Added in app").
      */
-    suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1, category: String? = null): AddResult {
-        // Decks that can be edited (since 1.46) get the card straight into the deck, in its auto category.
-        deckAdder?.invoke(deckId, card, finish, qty, category)?.let { return it }
-        val f = card.resolveFinish(finish)
-        val decks = db.deckDao()
-        val same = decks.cardsAddedInApp(deckId).firstOrNull { it.card.scryfallId == card.scryfallId && it.foil == f.foil && it.etched == f.etched }
-        if (same != null) {
-            decks.addQuantity(same.id, qty)
-            return AddResult(same.id, AddedTo.DECK)
-        }
-        val info = db.cardInfoDao().getMany(listOf(card.scryfallId)).firstOrNull()?.takeIf { it.typeLine.isNotEmpty() }
-            ?: runCatching { scryfall.collection(listOf(ScryfallApi.idIdentifier(card.scryfallId))).firstOrNull()?.toInfo() }.getOrNull()
-                ?.also { db.cardInfoDao().putAll(listOf(it)) }
-        val id = decks.insertCard(
-            DeckCard(
-                deckId = deckId,
-                card = card,
-                quantity = qty,
-                category = DeckToCollection.ADDED_IN_APP,
-                types = info?.typeLine?.substringBefore(" — ") ?: "",
-                cmc = info?.cmc ?: 0.0,
-                commander = false,
-                foil = f.foil,
-                etched = f.etched,
-                addedInApp = true,
-            )
-        )
-        return AddResult(id, AddedTo.DECK)
-    }
+    suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1, category: String? = null): AddResult? =
+        deckAdder?.invoke(deckId, card, finish, qty, category)
+
 
     suspend fun addToTrade(
         tradeId: Long, side: String, card: CardRef, finish: Finish, language: String = "EN", qty: Int = 1, condition: String = "NM",

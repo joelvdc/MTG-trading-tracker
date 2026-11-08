@@ -372,19 +372,4 @@ class Recommendations(
         )
     }
 
-    /** Adds a recommended card to the deck (kept when the deck is reloaded from Archidekt). */
-    suspend fun addToDeck(deckId: Long, rec: RecCard): Boolean {
-        val card = rec.card ?: return false
-        db.withTransaction {
-            val same = db.deckDao().cardsAddedInApp(deckId).firstOrNull { it.card.scryfallId == card.scryfallId && !it.foil }
-            if (same != null) db.deckDao().addQuantity(same.id, 1)
-            else db.deckDao().insertCard(
-                DeckCard(
-                    deckId = deckId, card = card, quantity = 1, category = DeckToCollection.ADDED_IN_APP,
-                    types = rec.typeLine.substringBefore(" — "), cmc = rec.cmc, commander = false, foil = false, addedInApp = true,
-                )
-            )
-        }
-        return true
-    }
 }

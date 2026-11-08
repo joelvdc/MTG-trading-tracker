@@ -656,54 +656,6 @@ class DeckRepository(
         return added.sumOf { it.second } to undo
     }
 
-    /**
-     * Adds scanned cards to a deck as cards "Added in app" (Archidekt itself isn't changed); they're
-     * kept when the deck is refreshed. Unless [keep], the scans leave the scan list.
-     */
-    suspend fun scansToDeck(scanIds: List<Long>, deckId: Long, keep: Boolean): UndoAction {
-        val scans = repo.scansById(scanIds)
-        // Card types group the cards in the deck; the scan doesn't have them, Scryfall does.
-        val info = runCatching {
-            scryfall.collection(scans.map { it.card.scryfallId }.distinct().map(ScryfallApi::idIdentifier)).associateBy { it.id }
-        }.getOrDefault(emptyMap())
-        val inserted = mutableListOf<Long>()
-        val grown = mutableListOf<Pair<Long, Int>>()
-        db.withTransaction {
-            val existing = dao.cardsAddedInApp(deckId)
-            for (s in scans) {
-                val same = existing.firstOrNull { it.card.scryfallId == s.card.scryfallId && it.foil == s.foil && it.etched == s.etched }
-                if (same != null) {
-                    dao.addQuantity(same.id, s.quantity)
-                    grown += same.id to s.quantity
-                } else {
-                    val sc = info[s.card.scryfallId]
-                    inserted += dao.insertCard(
-                        DeckCard(
-                            deckId = deckId,
-                            card = s.card,
-                            quantity = s.quantity,
-                            category = DeckToCollection.ADDED_IN_APP,
-                            types = sc?.typeLine?.substringBefore(" — ") ?: "",
-                            cmc = sc?.cmc ?: 0.0,
-                            commander = false,
-                            foil = s.foil,
-                            etched = s.etched,
-                            addedInApp = true,
-                        )
-                    )
-                }
-            }
-            if (!keep) repo.deleteScans(scanIds)
-        }
-        return {
-            db.withTransaction {
-                dao.deleteCardsById(inserted)
-                for ((id, n) in grown) dao.addQuantity(id, -n)
-                if (!keep) repo.restoreScans(scans)
-            }
-        }
-    }
-
     /** Removes a card that was added to the deck in the app. */
     suspend fun removeAddedCard(cardId: Long) = dao.deleteCard(cardId)
 }

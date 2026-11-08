@@ -360,7 +360,10 @@ object DeckUsage {
         uses.filterNot { DeckToCollection.isBasic(it.name) }.groupBy { it.name.lowercase() }
 }
 
-enum class DeckGroupBy(val label: String) { CATEGORY("Category"), TYPE("Card type") }
+enum class DeckGroupBy(val label: String) { CATEGORY("Category"), TYPE("Card type"), MANA_VALUE("Mana value"), COLOUR("Colour") }
+
+/** How cards are ordered within a deck page's section (since 1.85, like the website). */
+enum class DeckCardSort(val label: String) { MANA_VALUE("Mana value"), NAME("Name") }
 
 data class DeckSection(val title: String, val rows: List<DeckCardRow>) {
     val count get() = rows.sumOf { it.item.quantity }
@@ -381,19 +384,58 @@ object DeckGrouping {
         return TYPE_ORDER.firstOrNull { it in words } ?: "Other"
     }
 
-    /** Commander(s) first, then the categories alphabetically or the card types in [TYPE_ORDER]; cards by name. */
-    fun sections(rows: List<DeckCardRow>, by: DeckGroupBy): List<DeckSection> {
-        val (commanders, rest) = rows.partition { it.item.commander }
+    private val COLOUR_ORDER = listOf('W', 'U', 'B', 'R', 'G')
+    private val COLOUR_TITLES = mapOf('W' to "White", 'U' to "Blue", 'B' to "Black", 'R' to "Red", 'G' to "Green")
+    const val MULTICOLOUR = "Multicolour"
+    const val COLOURLESS = "Colourless"
+
+    /** The colours in a mana cost ("{2}{W}{U/B}" gives "WUB", in WUBRG order), like the website's costColours. */
+    fun costColours(cost: String?): String {
+        val found = Regex("""\{([^}]+)\}""").findAll(cost ?: "")
+            .flatMap { m -> m.groupValues[1].uppercase().split('/').asSequence() }
+            .mapNotNull { p -> p.singleOrNull()?.takeIf { it in COLOUR_ORDER } }
+            .toSet()
+        return COLOUR_ORDER.filter { it in found }.joinToString("")
+    }
+
+    /** One colour by name, several as Multicolour, none as Colourless. */
+    fun colourTitle(colours: String): String =
+        if (colours.isEmpty()) COLOURLESS else if (colours.length == 1) COLOUR_TITLES.getValue(colours[0]) else MULTICOLOUR
+
+    /** A section's cards by mana value (then name) or by name; [descending] turns it round. */
+    fun sortRows(rows: List<DeckCardRow>, sort: DeckCardSort, descending: Boolean): List<DeckCardRow> {
         val byName = compareBy<DeckCardRow, String>(String.CASE_INSENSITIVE_ORDER) { it.item.card.name }
+        val cmp = if (sort == DeckCardSort.MANA_VALUE) compareBy<DeckCardRow> { it.item.cmc }.then(byName) else byName
+        return rows.sortedWith(if (descending) cmp.reversed() else cmp)
+    }
+
+    /**
+     * Commander(s) first, then the categories alphabetically, the card types in [TYPE_ORDER], mana values rising, or
+     * colours in WUBRG order then multicolour and colourless (from [colours], a card's mana cost colours); each
+     * section sorted by [sort]. The same layout as the website's deck page.
+     */
+    fun sections(
+        rows: List<DeckCardRow>,
+        by: DeckGroupBy,
+        sort: DeckCardSort = DeckCardSort.NAME,
+        descending: Boolean = false,
+        colours: (DeckCardRow) -> String = { "" },
+    ): List<DeckSection> {
+        val (commanders, rest) = rows.partition { it.item.commander }
         val groups = when (by) {
             DeckGroupBy.CATEGORY -> rest.groupBy { it.item.category }.toSortedMap(String.CASE_INSENSITIVE_ORDER).toList()
             DeckGroupBy.TYPE -> rest.groupBy { it.item.primaryType }.toList()
                 .sortedBy { (type, _) -> TYPE_ORDER.indexOf(type).let { if (it < 0) TYPE_ORDER.size else it } }
                 .map { (type, list) -> (plural[type] ?: type) to list }
+            DeckGroupBy.MANA_VALUE -> rest.groupBy { maxOf(0, kotlin.math.floor(it.item.cmc).toInt()) }.toSortedMap().toList()
+                .map { (v, list) -> "Mana value $v" to list }
+            DeckGroupBy.COLOUR -> rest.groupBy { colours(it) }.toList()
+                .sortedBy { (c, _) -> if (c.length == 1) COLOUR_ORDER.indexOf(c[0]) else if (c.isEmpty()) COLOUR_ORDER.size + 1 else COLOUR_ORDER.size }
+                .groupBy({ colourTitle(it.first) }, { it.second }).map { (title, lists) -> title to lists.flatten() }
         }
         return buildList {
-            if (commanders.isNotEmpty()) add(DeckSection(if (commanders.size > 1) "Commanders" else "Commander", commanders.sortedWith(byName)))
-            groups.forEach { (title, list) -> add(DeckSection(title, list.sortedWith(byName))) }
+            if (commanders.isNotEmpty()) add(DeckSection(if (commanders.size > 1) "Commanders" else "Commander", sortRows(commanders, sort, descending)))
+            groups.forEach { (title, list) -> add(DeckSection(title, sortRows(list, sort, descending))) }
         }
     }
 }

@@ -10,6 +10,7 @@ import com.mtgtrader.data.DeckSorting
 import com.mtgtrader.data.DeckToCollection
 import com.mtgtrader.data.DeckCard
 import com.mtgtrader.data.DeckCardRow
+import com.mtgtrader.data.DeckCardSort
 import com.mtgtrader.data.DeckGroupBy
 import com.mtgtrader.data.DeckGrouping
 import com.mtgtrader.data.DeckLinks
@@ -85,14 +86,14 @@ class DeckToCollectionTest {
 }
 
 class DeckGroupingTest {
-    private fun row(name: String, category: String, types: String, commander: Boolean = false, qty: Int = 1) = DeckCardRow(
+    private fun row(name: String, category: String, types: String, commander: Boolean = false, qty: Int = 1, cmc: Double = 0.0) = DeckCardRow(
         DeckCard(
             deckId = 1,
             card = CardRef(name, name, "tst", "Test", "1", "rare", null, null, null, null, true, false),
             quantity = qty,
             category = category,
             types = types,
-            cmc = 0.0,
+            cmc = cmc,
             commander = commander,
             foil = false,
         ),
@@ -134,6 +135,48 @@ class DeckGroupingTest {
         )
         val titles = DeckGrouping.sections(rows, DeckGroupBy.TYPE).map { it.title }
         assertEquals(listOf("Commander", "Creatures", "Lands", "Instants", "Artifacts"), titles)
+    }
+
+    // Since 1.85, like the website's deck page (lib/decklayout.ts).
+    private val mixed = listOf(
+        row("Swamp", "Land", "Land"),
+        row("Sol Ring", "Ramp", "Artifact", cmc = 1.0),
+        row("Arcane Signet", "Ramp", "Artifact", cmc = 2.0),
+        row("Auntie Ool", "Commander", "Creature", commander = true, cmc = 5.0),
+        row("Blight Mound", "Creatures", "Creature", cmc = 3.0),
+        row("Malakir Rebirth", "Removal", "Instant", cmc = 3.0),
+        row("Mind Stone", "Ramp", "Artifact", cmc = 2.0),
+    )
+    private val costs = mapOf(
+        "Blight Mound" to "{2}{B}", "Malakir Rebirth" to "{2}{B} // {B}", "Auntie Ool" to "{1}{B/G}{B/G}{R/G}",
+        "Sol Ring" to "{1}", "Arcane Signet" to "{2}", "Mind Stone" to "{2}",
+    )
+
+    @Test
+    fun sortsByManaValueThenName() {
+        val ramp = DeckGrouping.sections(mixed, DeckGroupBy.CATEGORY, DeckCardSort.MANA_VALUE, false).first { it.title == "Ramp" }
+        assertEquals(listOf("Sol Ring", "Arcane Signet", "Mind Stone"), ramp.rows.map { it.item.card.name })
+        val down = DeckGrouping.sections(mixed, DeckGroupBy.CATEGORY, DeckCardSort.MANA_VALUE, true).first { it.title == "Ramp" }
+        assertEquals(listOf("Mind Stone", "Arcane Signet", "Sol Ring"), down.rows.map { it.item.card.name })
+        val byName = DeckGrouping.sections(mixed, DeckGroupBy.CATEGORY, DeckCardSort.NAME, true).first { it.title == "Ramp" }
+        assertEquals(listOf("Sol Ring", "Mind Stone", "Arcane Signet"), byName.rows.map { it.item.card.name })
+    }
+
+    @Test
+    fun groupsByManaValue() {
+        val sections = DeckGrouping.sections(mixed, DeckGroupBy.MANA_VALUE, DeckCardSort.NAME, false)
+        assertEquals(listOf("Commander", "Mana value 0", "Mana value 1", "Mana value 2", "Mana value 3"), sections.map { it.title })
+        assertEquals(listOf("Blight Mound", "Malakir Rebirth"), sections[4].rows.map { it.item.card.name })
+    }
+
+    @Test
+    fun groupsByColour() {
+        assertEquals("BRG", DeckGrouping.costColours("{1}{B/G}{B/G}{R/G}"))
+        assertEquals("", DeckGrouping.costColours("{2}"))
+        assertEquals("", DeckGrouping.costColours(null))
+        val sections = DeckGrouping.sections(mixed, DeckGroupBy.COLOUR, DeckCardSort.NAME, false) { DeckGrouping.costColours(costs[it.item.card.name]) }
+        assertEquals(listOf("Commander", "Black", "Colourless"), sections.map { it.title })
+        assertEquals(listOf("Arcane Signet", "Mind Stone", "Sol Ring", "Swamp"), sections[2].rows.map { it.item.card.name })
     }
 }
 

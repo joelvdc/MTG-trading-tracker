@@ -224,7 +224,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
     val source by c.settings.powerSource.collectAsStateWithLifecycle()
-    var groupBy by rememberSaveable { mutableStateOf(DeckGroupBy.CATEGORY) }
+    val groupBy by c.settings.deckGroup.collectAsStateWithLifecycle()
+    val cardSort by c.settings.deckCardSort.collectAsStateWithLifecycle()
+    val descending by c.settings.deckDescending.collectAsStateWithLifecycle()
+    var layoutOptions by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var showing by remember { mutableStateOf<RuleZeroCard?>(null) }
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
@@ -264,8 +267,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     // Categories switched off in "Manage categories" (since 1.47): their cards go to one folded section at the bottom.
     val hiddenAll by c.settings.deckHidden.collectAsStateWithLifecycle()
     val hidden = hiddenAll[deckId].orEmpty().keys
-    val allSections = remember(rows, groupBy, onlyBracket, tagged) {
-        DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy)
+    val allSections = remember(rows, groupBy, cardSort, descending, onlyBracket, tagged, costs) {
+        DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy, cardSort, descending) {
+            DeckGrouping.costColours(costs[it.item.card.name])
+        }
     }
     val sections = remember(allSections, hidden, groupBy) {
         if (groupBy != DeckGroupBy.CATEGORY) allSections else allSections.filter { it.title.lowercase() !in hidden }
@@ -274,7 +279,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         (allSections - sections.toSet()).flatMap { s -> s.rows }.sortedWith(compareBy({ it.item.category.lowercase() }, { it.item.card.name }))
     }
     // The maybeboard (and any other category left out of the deck on Archidekt), by its categories.
-    val maybeSections = remember(maybeRows) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY) }
+    val maybeSections = remember(maybeRows, cardSort, descending) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY, cardSort, descending) }
     // Headings are folded by their title, for every deck; the maybeboard's apart from the deck's.
     val shownKeys = remember(sections, maybeSections, showMaybeboard) {
         sections.map { it.title } + if (showMaybeboard) maybeSections.map { maybeKey(it.title) } else emptyList()
@@ -399,11 +404,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             onClick = { menu = false; c.settings.setDeckShowsMyPrintings(deckId, !myPrintings) },
                         )
                         HorizontalDivider()
-                        val other = if (groupBy == DeckGroupBy.CATEGORY) DeckGroupBy.TYPE else DeckGroupBy.CATEGORY
                         DropdownMenuItem(
-                            text = { Text("Group by ${other.label.lowercase()}") },
+                            text = { Text("Group and sort…") },
                             leadingIcon = { Icon(Icons.Default.ViewList, null) },
-                            onClick = { menu = false; groupBy = other },
+                            onClick = { menu = false; layoutOptions = true },
                         )
                         DropdownMenuItem(
                             text = { Text(if (compact) "Show cards with pictures" else "Compact view") },
@@ -481,7 +485,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
-            if (deck != null) {
+            // Only local decks take new cards: decks from Archidekt are read only (since 1.85).
+            if (deck?.local == true) {
                 ExtendedFloatingActionButton(
                     onClick = { nav.openSearch(CardTarget.ToDeck(deckId)) },
                     icon = { Icon(Icons.Default.Add, null) },
@@ -868,6 +873,13 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 }
             }
         }
+    }
+    if (layoutOptions) {
+        DeckLayoutDialog(
+            groupBy, cardSort, descending,
+            onApply = { g, s, d -> layoutOptions = false; c.settings.setDeckLayout(g, s, d) },
+            onDismiss = { layoutOptions = false },
+        )
     }
     if (confirmRetire) {
         AlertDialog(

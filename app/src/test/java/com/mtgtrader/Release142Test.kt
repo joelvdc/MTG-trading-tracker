@@ -158,38 +158,13 @@ class Release142Test {
     }
 
     @Test
-    fun addingFromTheDeckPageMakesACardAddedInTheApp() = runBlocking {
+    fun aDeckFromArchidektTakesNoNewCards() = runBlocking {
+        // Since 1.85 decks from Archidekt are read only in the app too: no more cards "Added in app".
         db.deckDao().upsert(deck())
-        // Its type groups it in the deck; it comes from the details saved for the card (else from Scryfall).
-        db.cardInfoDao().putAll(listOf(CardInfo("arcane-signet", null, "", "", "Artifact — Equipment", 2.0, null)))
-        val first = repo.add(CardTarget.ToDeck(7), ref("Arcane Signet"), Finish.NONFOIL)!!
-        val again = repo.add(CardTarget.ToDeck(7), ref("Arcane Signet"), Finish.NONFOIL)!!
-        assertEquals(first.itemId, again.itemId)
-        val added = db.deckDao().cardsAddedInApp(7).single()
-        assertEquals(2, added.quantity)
-        assertEquals(DeckToCollection.ADDED_IN_APP, added.category)
-        assertEquals("Artifact", added.types)
-        assertEquals(2.0, added.cmc, 0.0)
-        assertFalse(added.maybeboard)
-        // A foil copy is its own line.
-        repo.add(CardTarget.ToDeck(7), ref("Arcane Signet"), Finish.FOIL)
-        assertEquals(2, db.deckDao().cardsAddedInApp(7).size)
-        // The scanner's undo takes one copy off, then the line.
-        repo.undoAdd(again)
-        assertEquals(1, db.deckDao().card(first.itemId)!!.quantity)
-        repo.undoAdd(first)
-        assertNull(db.deckDao().card(first.itemId))
-        assertNull(first.replaceTarget)
-    }
-
-    @Test
-    fun aCardAddedInTheAppDoesntJoinAMaybeboardCopy() = runBlocking {
-        db.deckDao().upsert(deck())
-        db.cardInfoDao().putAll(listOf(CardInfo("the-ozolith", null, "", "", "Legendary Artifact", 1.0, null)))
-        db.deckDao().insertCards(listOf(card("The Ozolith", maybeboard = true, addedInApp = false)))
-        repo.add(CardTarget.ToDeck(7), ref("The Ozolith"), Finish.NONFOIL)
-        assertEquals(1, db.deckDao().cards(7).size)
-        assertEquals(1, db.deckDao().observeMaybeboard(7).first().size)
+        db.cardInfoDao().putAll(listOf(CardInfo("arcane-signet", null, "", "", "Artifact", 2.0, null)))
+        assertNull(repo.add(CardTarget.ToDeck(7), ref("Arcane Signet"), Finish.NONFOIL))
+        assertEquals(0, db.deckDao().cards(7).size)
+        assertEquals(0, db.deckDao().cardsAddedInApp(7).size)
     }
 
     // ---- Settings for the deck page --------------------------------------------------------------------
@@ -206,6 +181,14 @@ class Release142Test {
         assertTrue(again.deckCompact.value)
         assertTrue(again.deckMaybeboard.value)
         assertEquals(setOf("Lands", "maybeboard:Maybeboard"), again.deckCollapsed.value)
+        // Grouping and sorting (since 1.85).
+        assertEquals(com.mtgtrader.data.DeckGroupBy.CATEGORY, again.deckGroup.value)
+        assertEquals(com.mtgtrader.data.DeckCardSort.NAME, again.deckCardSort.value)
+        again.setDeckLayout(com.mtgtrader.data.DeckGroupBy.MANA_VALUE, com.mtgtrader.data.DeckCardSort.MANA_VALUE, true)
+        val third = Settings(context)
+        assertEquals(com.mtgtrader.data.DeckGroupBy.MANA_VALUE, third.deckGroup.value)
+        assertEquals(com.mtgtrader.data.DeckCardSort.MANA_VALUE, third.deckCardSort.value)
+        assertTrue(third.deckDescending.value)
     }
 
     // ---- Sync, backups and the update -------------------------------------------------------------------

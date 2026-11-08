@@ -253,8 +253,9 @@ fun ScansScreen(nav: NavController) {
                     return@launch
                 }
                 val deck = c.db.deckDao().get(deckId)
-                val undo = if (deck != null && c.deckEditor.canEdit(deck)) c.deckEditor.addScans(ids, deckId, keep)
-                else c.decks.scansToDeck(ids, deckId, keep)
+                // Only local decks take cards (decks from Archidekt are read only since 1.85).
+                if (deck == null || !c.deckEditor.canEdit(deck)) return@launch
+                val undo = c.deckEditor.addScans(ids, deckId, keep)
                 report("Added $selectedCount card(s) to $deckName", undo)
             }
         }
@@ -357,8 +358,8 @@ private const val NEW_DECK = 0L
 private fun ToDeckDialog(count: Int, onDismiss: () -> Unit, onConfirm: (deckId: Long, name: String, keep: Boolean) -> Unit) {
     val c = LocalContext.current.container
     val allDecks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
-    // Retired decks don't take new cards (since 1.83).
-    val decks = remember(allDecks) { allDecks.filter { !it.retired } }
+    // Retired decks don't take new cards (since 1.83), nor decks from Archidekt (read only since 1.85).
+    val decks = remember(allDecks) { allDecks.filter { !it.retired && it.local } }
     var deckId by remember { mutableStateOf<Long?>(null) }
     var keep by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("Scanned deck") }
@@ -371,10 +372,9 @@ private fun ToDeckDialog(count: Int, onDismiss: () -> Unit, onConfirm: (deckId: 
                 Text(
                     when {
                         deckId == NEW_DECK -> "A new local deck with these cards, each in its auto category."
-                        picked != null && c.deckEditor.canEdit(picked) -> "The cards go into the deck, each in its auto category" +
-                            (if (picked.local) "." else ", and to Archidekt.")
-                        else -> "The cards are added to the deck in this app only (Archidekt isn't changed), listed under " +
-                            "“Added in app”. They stay when the deck is refreshed."
+                        picked != null -> "The cards go into the deck, each in its auto category."
+                        else -> "Pick one of your local decks or make a new one. Decks from Archidekt are read only: " +
+                            "make a local copy first (deck ⋮ → Make it a local deck)."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

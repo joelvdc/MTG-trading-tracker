@@ -86,6 +86,25 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("deckCompact", on).apply()
     }
 
+    /** How deck pages group and sort their cards (this phone only). Since 1.85, like the website's deck page. */
+    private val _deckGroup = MutableStateFlow(
+        runCatching { DeckGroupBy.valueOf(prefs.getString("deckGroup", null) ?: "") }.getOrDefault(DeckGroupBy.CATEGORY)
+    )
+    val deckGroup: StateFlow<DeckGroupBy> = _deckGroup
+    private val _deckCardSort = MutableStateFlow(
+        runCatching { DeckCardSort.valueOf(prefs.getString("deckCardSort", null) ?: "") }.getOrDefault(DeckCardSort.NAME)
+    )
+    val deckCardSort: StateFlow<DeckCardSort> = _deckCardSort
+    private val _deckDescending = MutableStateFlow(prefs.getBoolean("deckDescending", false))
+    val deckDescending: StateFlow<Boolean> = _deckDescending
+
+    fun setDeckLayout(group: DeckGroupBy, sort: DeckCardSort, descending: Boolean) {
+        _deckGroup.value = group
+        _deckCardSort.value = sort
+        _deckDescending.value = descending
+        prefs.edit().putString("deckGroup", group.name).putString("deckCardSort", sort.name).putBoolean("deckDescending", descending).apply()
+    }
+
     /** Deck pages list the maybeboard under the deck (this phone only). Since 1.42. */
     private val _deckMaybeboard = MutableStateFlow(prefs.getBoolean("deckMaybeboard", false))
     val deckMaybeboard: StateFlow<Boolean> = _deckMaybeboard

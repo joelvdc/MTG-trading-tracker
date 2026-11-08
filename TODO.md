@@ -186,6 +186,8 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-08: 1.85: decks from Archidekt read only in the app too (no more cards "Added in app"); the deck page groups
+  by category, card type, mana value or colour and sorts by mana value or name (like the website).
 - 2026-11-08: website: the deck page's Collection tracker lists the other decks using the card; Retire / Bring back
   buttons on the Decks page tiles; **Check an order** on the Scanned page (the app's PackageCheck, with It's here, the
   problem report and Add to collection); the Scanned list one line per card with list/pictures and Card on hover; the

@@ -227,8 +227,8 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
             onAddToDeck = { d ->
                 opened = null
                 scope.launch {
-                    c.recommendations.addToDeck(d.archidektId, card)
-                    snackbar.showSnackbar("${card.name} added to ${d.name} (in the app; kept when the deck reloads)")
+                    val added = card.card?.let { c.repo.addToDeck(d.archidektId, it, com.mtgtrader.data.Finish.NONFOIL) }
+                    snackbar.showSnackbar(if (added != null) "${card.name} added to ${d.name}" else "${d.name} can't take new cards here")
                 }
             },
             onWishlist = {
@@ -370,8 +370,8 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
             onAddToDeck = { d ->
                 opened = null
                 scope.launch {
-                    c.recommendations.addToDeck(d.archidektId, card)
-                    snackbar.showSnackbar("${card.name} added to ${d.name}")
+                    val added = card.card?.let { c.repo.addToDeck(d.archidektId, it, com.mtgtrader.data.Finish.NONFOIL) }
+                    snackbar.showSnackbar(if (added != null) "${card.name} added to ${d.name}" else "${d.name} can't take new cards here")
                 }
             },
             onWishlist = {
@@ -509,10 +509,18 @@ private fun RecCardDialog(
                 CardTabs(tab) { tab = it }
                 if (tab == CardTab.RULINGS) RulingsTab(rules)
                 if (tab == CardTab.VERSIONS) {
-                    decks.forEach { d ->
+                    // Decks from Archidekt are read only (since 1.85): only local decks take a card.
+                    decks.filter { it.local && !it.retired }.forEach { d ->
                         Button(onClick = { onAddToDeck(d) }, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
                             Text("Add to ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
+                    }
+                    if (decks.any { !it.local }) {
+                        Text(
+                            "Decks from Archidekt are read only: edit them on archidekt.com, or make a local copy (deck ⋮ → Make it a local deck).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     OutlinedButton(onClick = onWishlist, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Star, null, Modifier.size(18.dp))

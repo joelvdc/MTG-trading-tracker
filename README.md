@@ -48,7 +48,8 @@ nightly backups; accounts need an invite code for now.
 - Price alerts when a card drops to your price.
 
 **Commander decks**
-- Import a deck from a link or a pasted list, add a precon, or build one in the app or on the website.
+- Import a deck from a link (read only) or a pasted list, add a precon, or build one in the app or on the website.
+- Group a deck by category, card type, mana value or colour, sorted by mana value or name.
 - Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
   win turn.
 - Printable **bracket and power level cards** for rule zero, recommendations, cards you're missing (to the wishlist),
