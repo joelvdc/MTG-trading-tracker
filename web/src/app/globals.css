@@ -636,11 +636,6 @@ button.tile-in:hover:not(:disabled) {
   height: 92vh;
 }
 
-.dialog.full .big-img {
-  width: 320px;
-  max-width: 40%;
-}
-
 .dialog-top {
   display: flex;
   flex-direction: column;
@@ -1308,7 +1303,7 @@ main h2 {
 /* The card picture that follows the mouse in the list view */
 .hover-card {
   position: fixed;
-  z-index: 20;
+  z-index: 30;
   width: 240px;
   aspect-ratio: 488 / 680;
   border-radius: 12px;

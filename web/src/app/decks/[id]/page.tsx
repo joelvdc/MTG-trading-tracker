@@ -9,7 +9,7 @@ import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
 import { deckResults, type Game } from "@/lib/gameshared";
-import { SidePanel, useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
+import { useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { ColourPips, ManaCost } from "@/components/Mana";
@@ -503,9 +503,9 @@ export default function DeckPage() {
         </div>
       </main>
       {showRecs && (
-        <SidePanel title="Recommendations" onClose={() => setShowRecs(false)}>
-          <RecommendationsPanel view={view} hover={hover} onAdded={(t) => reload(t)} />
-        </SidePanel>
+        <Dialog full title="Recommendations" onClose={() => setShowRecs(false)}>
+          <RecommendationsPanel view={view} hover={hover} onAdded={(t) => reload(t)} onClose={() => setShowRecs(false)} />
+        </Dialog>
       )}
       {hover.picture}
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
