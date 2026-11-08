@@ -243,6 +243,9 @@ fun AppNav() {
                 arguments = listOf(navArgument("local") { type = NavType.BoolType; defaultValue = false }),
             ) { PreconScreen(nav, it.arguments?.getBoolean("local") == true) }
             composable("settings") { SettingsScreen(nav) }
+            composable("settings/{cat}") { e ->
+                SettingsCategory.of(e.arguments?.getString("cat"))?.let { SettingsCategoryScreen(nav, it) }
+            }
             composable("backups") { BackupsScreen(nav) }
             composable("trade/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 TradeEditorScreen(nav, it.arguments?.getLong("id") ?: 0L)

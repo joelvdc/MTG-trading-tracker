@@ -2,8 +2,8 @@
 
 Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
 Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
-binders, scan piles of cards before deciding where they go, and sync it all between your phones through your own
-Nextcloud. Decks come from Archidekt's public decklists; the collection goes to Archidekt as a CSV file.
+binders, scan piles of cards before deciding where they go, and sync it all between your phones and the website
+through your MTG Trader account. Decks come from Archidekt's public decklists; the collection goes to Archidekt as a CSV file.
 
 | Trade | Collection | Scan tab | Commander decks |
 |:---:|:---:|:---:|:---:|
@@ -71,7 +71,7 @@ Kingdom refuses phones in some countries (HTTP 403); then the app uses a copy th
 (`.github/workflows/card-kingdom.yml`) keeps on this repository's `card-kingdom-prices` branch. Since 1.81 a phone
 logged in to an MTG Trader account gets Cardmarket's prices and the exchange rates from the website's nightly copy
 (about 2 MB instead of 27 MB), and falls back to Cardmarket's own file when the website can't be reached; Settings →
-Cardmarket price data shows where they came from.
+Prices shows where they came from.
 
 ## Card windows
 Tapping a card (collection, deck, recommendations) opens its window: the picture, then the card's text (every face
@@ -174,7 +174,7 @@ trade**, **to a deck** or discard them.
 **New deck** (Decks tab): paste or share an Archidekt link, pick decks from someone's Archidekt profile, or make a
 **local deck** (empty, from a precon, from scanned cards, a copy of one of yours, or a pasted Moxfield list). The tab
 has three sections: **Archidekt** (your own decks), **Archidekt (read only)** (other people's) and **Local**. Your own
-decks are those of the Archidekt username under Settings → Archidekt.
+decks are those of the Archidekt username under Settings → Decks.
 
 The deck page shows the list by your Archidekt categories (or card type) with mana costs and prices, as cards with
 pictures or one line per card. Labels mark game changers, combos, extra turns and land denial (red: they count for
@@ -245,7 +245,7 @@ changes. Importing a deck adds it to commandersalt.com.
 ## Games: life tracker and game records
 The **Games** tab keeps score in Commander games and remembers them. The tracker's layout is inspired by the Lifetap app.
 - **New game:** 2 to 6 players, their seats and decks (yours, friends' with a commander from Scryfall, or a guest's
-  commander), and who starts (picked or at random). The seats are drawn as a little table, as you see it with the phone
+  commander; friends and guests can also borrow one of your decks, since 1.82), and who starts (picked or at random). The seats are drawn as a little table, as you see it with the phone
   tilted left, tilted right or upright: tap a seat to pick the player and deck, hold one and drag it onto another to
   swap them. **Rematch** sets up the last table again.
 - **The table:** each player's panel faces them, in a colour or their commander's picture, with life, − and +, and a
@@ -255,8 +255,11 @@ The **Games** tab keeps score in Commander games and remembers them. The tracker
 - **The middle bar:** end the game, game settings, the round and game clock, history (with undo), the mana pool and
   **Dice & random** (dice, a coin, a random player or opponent; hold the die for a quick-roll ring).
 - **Turns** (optional) with a gold frame for the active player; **pause** a game to continue later, on either phone.
-- **Ending a game:** who won and how, then save and rematch. **Stats:** wins, win rates and lengths per deck and
-  player, head to head, and a **Games** section on each deck page. Games can be edited, added by hand and exported as
+- **Ending a game:** who won and how, then save and rematch. **Stats:** an **Overview** (games played, your win rate,
+  average game and turns, games per month, how games were won, how the starting player does), wins, win rates and
+  lengths per deck and player, head to head, for all time, the last 12 months or the last 3 months, and a **Games**
+  section on each deck page. A deck you lend counts for the deck (marked "N lent", "played by Kim"); the result goes to
+  the player who borrowed it. Games can be edited, added by hand and exported as
   CSV.
 - **Seats during a game:** Game settings show the same table; swapping seats during a game moves everything with the player (life,
   damage, counters, the turn, the monarch), and undo puts them back.
@@ -265,16 +268,16 @@ The **Games** tab keeps score in Commander games and remembers them. The tracker
   Game settings (back to the number it had, the same player starts).
 
 ## Sync between phones
-Settings → **Sync** keeps the collection, binders (and which one is the trade binder), wishlist, trades, decks, scans,
-games and preferences the same on all your phones and the [website](#website), through one file (`sync.json.gz`):
-in your **MTG Trader account** on the website, or in a folder of your own [Nextcloud](https://nextcloud.com/). Prices
-and pictures aren't synced; each phone downloads those itself.
+Settings → **Account & sync** keeps the collection, binders (and which one is the trade binder), wishlist, trades,
+decks, scans, games and preferences the same on all your phones and the [website](#website), through one file
+(`sync.json.gz`) in your **MTG Trader account** on the website. Prices and pictures aren't synced; each phone downloads
+those itself.
 - **MTG Trader account** (since 1.79): log in with the user name and password made on the website (Settings → Make my
-  account and copy my data), or make a new account with an invite code from the owner. A phone syncing with Nextcloud
-  moves over with **Switch to my MTG Trader account**. **Log out** stops syncing; the account's devices are listed (and
-  can be logged out) on the website.
-- **Nextcloud:** enter your server address and log in in the browser; the app gets its own app password (revocable in
-  Nextcloud). Then pick the folder; use the same one on every phone.
+  account and copy my data), or make a new account with an invite code from the owner. **Log out** stops syncing; the
+  account's devices are listed (and can be logged out) on the website.
+- **Nextcloud** (until 1.81 the app could sync there too): since 1.82 Nextcloud only holds the website's nightly backup
+  copy. A phone that still synced with Nextcloud shows "Nextcloud sync has ended" with **Switch to my account**;
+  nothing on Nextcloud is deleted.
 - **First sync:** when both sides hold data, choose: merge both, use the synced copy, or start from this phone.
 - **After that** changes are merged item by item (the most recent change wins, deletions carry over). Automatic sync
   runs when you open the app, shortly after a change, when you leave it and every hour (optionally only on Wi-Fi).
@@ -367,15 +370,14 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   account on the website with a copy of your data (Nextcloud then gets a backup copy every night; nothing there is
   changed). From then on you log in with that user name and password. The first account is the owner's: under Settings
   it makes invite codes for others (each works once), resets a forgotten password, and shows every device logged in.
-  The app can sync with the account instead of Nextcloud since 1.79 (**Settings → Sync → MTG Trader
-  account**).
+  The app syncs with the account since 1.79 (**Settings → Account & sync**), and only with it since 1.82.
 - Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in with Nextcloud. The code is in
   `web/` (Next.js on Vercel); see `web/README.md`.
 
 ## Archidekt
 The app reads public [Archidekt](https://archidekt.com/) decklists, and only when you ask: adding a deck, **Reload
 decklist** or **Update all decks**. It doesn't log in to Archidekt (since 1.78; the collection sync and sending deck
-edits are gone). Settings → Archidekt holds your Archidekt username, which marks your own decks. To bring the
+edits are gone). Settings → Decks holds your Archidekt username, which marks your own decks. To bring the
 collection to Archidekt, use Collection → ⋮ → **Export CSV** → Archidekt and import the file on archidekt.com with the
 "ManaBox – Single folder" preset.
 
@@ -389,14 +391,19 @@ Anything missing or unreadable counts as on.
 
 ## Backups and restore points
 Settings → **Backups** keeps restore points of everything the app syncs.
-- Made **every day** when something changed, and before big changes (the first Nextcloud sync, CSV and
+- Made **every day** when something changed, and before big changes (the first sync, CSV and
   order imports, restoring). **Back up now** makes one you keep.
-- Stored next to the Nextcloud sync file (for all your phones), or on the phone or in a folder you choose; **Save to a
-  file…** and **Restore from a file…** work with any file.
+- Stored on the phone, or in a folder you choose (it survives uninstalling the app); **Save to a file…** and **Restore
+  from a file…** work with any file, also the backups the app kept on Nextcloud before 1.82. The website copies your
+  account to your Nextcloud every night (the Backups page links to the website's Settings).
 - Kept: the latest 10 automatic backups and one per week for 8 weeks.
 - **Restoring** shows what differs, backs up the current state first, then replaces the app's data.
 
-Settings → **Appearance**: same as the phone, light or dark.
+Settings → **Appearance & offline**: same as the phone, light or dark, and saving deck and wishlist pictures for
+offline use.
+
+Settings is a list of categories since 1.82 (Account & sync, Prices, Collection & trades, Wishlist, Decks, Games,
+Backups, Appearance & offline, About), each with a line saying what it is set to; the settings themselves are the same.
 
 ## Rebuilding
 Requires JDK 17 or 18 (newer JDKs are too new for this Gradle version) and the Android SDK (point `sdk.dir` in

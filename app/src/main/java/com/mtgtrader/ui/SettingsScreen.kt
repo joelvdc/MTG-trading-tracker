@@ -31,6 +31,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Euro
+import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
@@ -79,8 +89,119 @@ private val typeHelp = mapOf(
     PriceType.LOW to "Cheapest current listing (any condition) — tends to be low.",
 )
 
+/**
+ * The groups of Settings (since 1.82): the main page lists them with a summary of their current values, and each
+ * opens its own page ("settings/<key>"). Games and Backups open their existing pages.
+ */
+enum class SettingsCategory(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val route: String) {
+    ACCOUNT("Account & sync", Icons.Default.AccountCircle, "settings/account"),
+    PRICES("Prices", Icons.Default.Euro, "settings/prices"),
+    COLLECTION("Collection & trades", Icons.Default.Style, "settings/collection"),
+    WISHLIST("Wishlist", Icons.Default.Favorite, "settings/wishlist"),
+    DECKS("Decks", Icons.Default.ViewAgenda, "settings/decks"),
+    GAMES("Games", Icons.Default.Casino, "games/settings"),
+    BACKUPS("Backups", Icons.Default.Restore, "backups"),
+    APPEARANCE("Appearance & offline", Icons.Default.Palette, "settings/appearance"),
+    ABOUT("About", Icons.Default.Info, "settings/about"),
+    ;
+
+    companion object {
+        fun of(key: String?) = entries.firstOrNull { it.route == "settings/$key" }
+    }
+}
+
+/** One line per category with what it's set to now, for the main Settings page. */
+@Composable
+internal fun settingsSummaries(): Map<SettingsCategory, String> {
+    val c = LocalContext.current.container
+    val sync by c.sync.status.collectAsStateWithLifecycle()
+    val priceSource by c.settings.priceSource.collectAsStateWithLifecycle()
+    val priceType by c.settings.priceType.collectAsStateWithLifecycle()
+    val currency by c.settings.currency.collectAsStateWithLifecycle()
+    val autoUpdate by c.settings.autoUpdate.collectAsStateWithLifecycle()
+    val swipeRight by c.settings.swipeRight.collectAsStateWithLifecycle()
+    val tolerance by c.settings.tolerancePct.collectAsStateWithLifecycle()
+    val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
+    val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
+    val powerSource by c.settings.powerSource.collectAsStateWithLifecycle()
+    val ownArchidekt by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val themeMode by c.settings.themeMode.collectAsStateWithLifecycle()
+    val offlineImages by c.settings.offlineImages.collectAsStateWithLifecycle()
+    return SettingsSummary(
+        account = when {
+            sync.connected -> "Logged in as ${sync.user}" + if (sync.autoSync) ", syncs automatically" else ", sync by hand"
+            sync.nextcloudEnded -> "Nextcloud sync has ended: log in with your MTG Trader account"
+            else -> "Not syncing: log in with your MTG Trader account"
+        },
+        prices = listOf(priceSource.label, priceType.label, currency.name, if (autoUpdate) "daily updates" else "updates by hand").joinToString(" · "),
+        collection = "Swipe right: ${swipeRight.label.replaceFirstChar { it.lowercase() }} · fair trade ±$tolerance%",
+        wishlist = "Price alerts on ${alertType.label}" + if (ctOn) " · CardTrader" else "",
+        decks = "Power level: ${powerSource.label}" + (ownArchidekt.takeIf { it.isNotBlank() }?.let { " · Archidekt: $it" } ?: ""),
+        games = "Life tracker controls, look and vibration",
+        backups = if (c.backups.lastBackupAt == 0L) "Restore points of all your data" else "Last backup: ${Fmt.dateTime(c.backups.lastBackupAt)}",
+        appearance = themeMode.label + if (offlineImages) " · pictures saved for offline use" else "",
+        about = "Version ${BuildConfig.VERSION_NAME}, data sources",
+    ).map
+}
+
+/** The texts of [settingsSummaries], also used by the screenshot test. */
+internal data class SettingsSummary(
+    val account: String, val prices: String, val collection: String, val wishlist: String, val decks: String,
+    val games: String, val backups: String, val appearance: String, val about: String,
+) {
+    val map get() = mapOf(
+        SettingsCategory.ACCOUNT to account, SettingsCategory.PRICES to prices, SettingsCategory.COLLECTION to collection,
+        SettingsCategory.WISHLIST to wishlist, SettingsCategory.DECKS to decks, SettingsCategory.GAMES to games,
+        SettingsCategory.BACKUPS to backups, SettingsCategory.APPEARANCE to appearance, SettingsCategory.ABOUT to about,
+    )
+}
+
 @Composable
 fun SettingsScreen(nav: NavController) {
+    val summaries = settingsSummaries()
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings") },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+            )
+        },
+    ) { pad ->
+        SettingsCategoryList(summaries, Modifier.padding(pad)) { nav.navigate(it.route) { launchSingleTop = true } }
+    }
+}
+
+/** The main Settings page: each category with its icon, name and current values. */
+@Composable
+internal fun SettingsCategoryList(summaries: Map<SettingsCategory, String>, modifier: Modifier = Modifier, onOpen: (SettingsCategory) -> Unit) {
+    Column(modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
+        SettingsCategory.entries.forEach { cat ->
+            Row(
+                Modifier.fillMaxWidth().clickable { onOpen(cat) }.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(cat.icon, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(20.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(cat.title, style = MaterialTheme.typography.titleMedium)
+                    summaries[cat]?.let {
+                        Text(
+                            it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** One category's page: the settings that used to sit in the long Settings list (all unchanged). Since 1.82. */
+@Composable
+fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
+
     val c = LocalContext.current.container
     val ownArchidekt by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
@@ -106,285 +227,272 @@ fun SettingsScreen(nav: NavController) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(cat.title) },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
         },
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(16.dp)) {
-            PriceSourceSection(priceSource, sourceStatus, c.settings::setPriceSource)
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text(if (priceSource == PriceSource.CARDMARKET) "Price used for valuing cards" else "Cardmarket price", style = MaterialTheme.typography.titleMedium)
-            if (priceSource != PriceSource.CARDMARKET) {
-                Text(
-                    "Used for cards ${priceSource.label} has no price for (shown with ≈), and in the comparisons.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            PriceType.entries.forEach { t ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { c.settings.setPriceType(t) }.padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = t == priceType, onClick = { c.settings.setPriceType(t) })
-                    Column {
-                        Text(t.label)
-                        Text(typeHelp[t] ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+            when (cat) {
+                SettingsCategory.ACCOUNT -> {
+                    SyncSection()
                 }
-            }
+                SettingsCategory.PRICES -> {
+                    PriceSourceSection(priceSource, sourceStatus, c.settings::setPriceSource)
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    Text(if (priceSource == PriceSource.CARDMARKET) "Price used for valuing cards" else "Cardmarket price", style = MaterialTheme.typography.titleMedium)
+                    if (priceSource != PriceSource.CARDMARKET) {
+                        Text(
+                            "Used for cards ${priceSource.label} has no price for (shown with ≈), and in the comparisons.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    PriceType.entries.forEach { t ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { c.settings.setPriceType(t) }.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = t == priceType, onClick = { c.settings.setPriceType(t) })
+                            Column {
+                                Text(t.label)
+                                Text(typeHelp[t] ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
 
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            ConditionSection(conditionAdjust, conditionPcts, priceSource, c.settings::setConditionAdjust, c.settings::setConditionPct)
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
-            val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
-            val ctStatus by c.cardTrader.status.collectAsStateWithLifecycle()
-            val ctLanguage by c.settings.ctLanguage.collectAsStateWithLifecycle()
-            val ctCondition by c.settings.ctCondition.collectAsStateWithLifecycle()
-            val ctZeroOnly by c.settings.ctZeroOnly.collectAsStateWithLifecycle()
-            // Asked again whenever the screen comes back (e.g. from the phone's notification settings).
-            var allowed by remember { mutableStateOf(c.wishWatch.notifier.allowed()) }
-            androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
-                allowed = c.wishWatch.notifier.allowed()
-                onPauseOrDispose {}
-            }
-            val context = LocalContext.current
-            val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
-                allowed = c.wishWatch.notifier.allowed()
-                // Asked before and refused: only the phone's settings can turn them on now.
-                if (!allowed) runCatching {
-                    context.startActivity(
-                        android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    ConditionSection(conditionAdjust, conditionPcts, priceSource, c.settings::setConditionAdjust, c.settings::setConditionPct)
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    CurrencySection(currency, rates, c.settings::setCurrency)
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    Text("Cardmarket price data", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Price guide date: ${formatGuideDate(guideDate)}")
+                    Text("Products with prices: $count")
+                    Text("Last downloaded: ${if (lastFetch == 0L) "never" else Fmt.dateTime(lastFetch)}")
+                    when (priceVia) {
+                        com.mtgtrader.data.PriceGuideRepository.VIA_WEBSITE -> Text("From: the MTG Trader website (its nightly copy, about 2 MB)")
+                        com.mtgtrader.data.PriceGuideRepository.VIA_CARDMARKET -> Text("From: Cardmarket directly (about 27 MB)")
+                        else -> {}
+                    }
+                    when (val s = state) {
+                        is PriceUpdateState.Running -> Text(s.message, color = MaterialTheme.colorScheme.primary)
+                        is PriceUpdateState.Failed -> Text("Last update failed: ${s.message}", color = MaterialTheme.colorScheme.error)
+                        PriceUpdateState.Idle -> {}
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            c.appScope.launch {
+                                val ok = c.prices.refresh()
+                                runCatching { c.priceSources.refresh() }
+                                if (ok) c.updater.afterUpdate()
+                            }
+                        },
+                        enabled = state !is PriceUpdateState.Running && !sourceStatus.running,
+                    ) { Text("Update prices now") }
+                    Spacer(Modifier.height(12.dp))
+                    SwitchRow(
+                        title = "Update automatically",
+                        body = "Prices once a day (about 26 MB), when you open the app and in the background.",
+                        checked = autoUpdate,
+                        onChange = { c.settings.setAutoUpdate(it); c.updater.schedule() },
+                    )
+                    SwitchRow(
+                        title = "Only on Wi-Fi",
+                        body = "Automatic updates wait for Wi-Fi, so they don't use mobile data. “Update prices now” always works.",
+                        checked = wifiOnly,
+                        enabled = autoUpdate,
+                        onChange = { c.settings.setWifiOnly(it); c.updater.schedule() },
+                    )
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Cards that already sit in a trade keep the price they had when added — use “Refresh prices” in a trade to update them.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-            val recheck = { c.wishWatch.checkSoon(c.appScope) }
-            WishlistAlertsSection(
-                AlertSettings(priceSource, alertType, autoUpdate, allowed, ctOn, ctStatus, ctLanguage, ctCondition, ctZeroOnly),
-                AlertSettingsActions(
-                    onAlertType = { c.settings.setAlertPriceType(it); recheck() },
-                    onAllowNotifications = {
-                        if (android.os.Build.VERSION.SDK_INT >= 33) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                        else runCatching {
+                SettingsCategory.COLLECTION -> {
+                    val swipeRight by c.settings.swipeRight.collectAsStateWithLifecycle()
+                    val swipeLeft by c.settings.swipeLeft.collectAsStateWithLifecycle()
+                    SwipeSection(swipeRight, swipeLeft, c.settings::setSwipe)
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    Text("Fair trade margin: ±$tolerance%", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Trades whose sides differ by no more than this are shown as fair.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Slider(
+                        value = tolerance.toFloat(),
+                        onValueChange = { c.settings.setTolerance(it.roundToInt()) },
+                        valueRange = 0f..20f,
+                        steps = 19,
+                    )
+                }
+                SettingsCategory.WISHLIST -> {
+                    val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
+                    val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
+                    val ctStatus by c.cardTrader.status.collectAsStateWithLifecycle()
+                    val ctLanguage by c.settings.ctLanguage.collectAsStateWithLifecycle()
+                    val ctCondition by c.settings.ctCondition.collectAsStateWithLifecycle()
+                    val ctZeroOnly by c.settings.ctZeroOnly.collectAsStateWithLifecycle()
+                    // Asked again whenever the screen comes back (e.g. from the phone's notification settings).
+                    var allowed by remember { mutableStateOf(c.wishWatch.notifier.allowed()) }
+                    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+                        allowed = c.wishWatch.notifier.allowed()
+                        onPauseOrDispose {}
+                    }
+                    val context = LocalContext.current
+                    val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+                        allowed = c.wishWatch.notifier.allowed()
+                        // Asked before and refused: only the phone's settings can turn them on now.
+                        if (!allowed) runCatching {
                             context.startActivity(
                                 android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                                     .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
                             )
                         }
-                    },
-                    onCardTrader = { c.settings.setCardTraderOn(it); recheck() },
-                    onToken = { t ->
-                        c.cardTrader.check(t).onSuccess {
-                            c.cardTrader.setToken(t)
-                            recheck()
-                        }
-                    },
-                    onForgetToken = { c.cardTrader.setToken(null) },
-                    onLanguage = { c.settings.setCtLanguage(it); recheck() },
-                    onCondition = { c.settings.setCtCondition(it); recheck() },
-                    onZeroOnly = { c.settings.setCtZeroOnly(it); recheck() },
-                ),
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            val receivedClear by c.settings.receivedClear.collectAsStateWithLifecycle()
-            val receivedToCollection by c.settings.receivedToCollection.collectAsStateWithLifecycle()
-            ReceivedCardsSection(
-                receivedClear, receivedToCollection,
-                onClear = { v -> c.settings.setReceivedClear(v); c.appScope.launch { runCatching { c.repo.autoClearReceived(v) } } },
-                onToCollection = c.settings::setReceivedToCollection,
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            val swipeRight by c.settings.swipeRight.collectAsStateWithLifecycle()
-            val swipeLeft by c.settings.swipeLeft.collectAsStateWithLifecycle()
-            SwipeSection(swipeRight, swipeLeft, c.settings::setSwipe)
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            TrackerSection(nav)
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            CurrencySection(currency, rates, c.settings::setCurrency)
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Fair trade margin: ±$tolerance%", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Trades whose sides differ by no more than this are shown as fair.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Slider(
-                value = tolerance.toFloat(),
-                onValueChange = { c.settings.setTolerance(it.roundToInt()) },
-                valueRange = 0f..20f,
-                steps = 19,
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Cardmarket price data", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text("Price guide date: ${formatGuideDate(guideDate)}")
-            Text("Products with prices: $count")
-            Text("Last downloaded: ${if (lastFetch == 0L) "never" else Fmt.dateTime(lastFetch)}")
-            when (priceVia) {
-                com.mtgtrader.data.PriceGuideRepository.VIA_WEBSITE -> Text("From: the MTG Trader website (its nightly copy, about 2 MB)")
-                com.mtgtrader.data.PriceGuideRepository.VIA_CARDMARKET -> Text("From: Cardmarket directly (about 27 MB)")
-                else -> {}
-            }
-            when (val s = state) {
-                is PriceUpdateState.Running -> Text(s.message, color = MaterialTheme.colorScheme.primary)
-                is PriceUpdateState.Failed -> Text("Last update failed: ${s.message}", color = MaterialTheme.colorScheme.error)
-                PriceUpdateState.Idle -> {}
-            }
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    c.appScope.launch {
-                        val ok = c.prices.refresh()
-                        runCatching { c.priceSources.refresh() }
-                        if (ok) c.updater.afterUpdate()
                     }
-                },
-                enabled = state !is PriceUpdateState.Running && !sourceStatus.running,
-            ) { Text("Update prices now") }
-            Spacer(Modifier.height(12.dp))
-            SwitchRow(
-                title = "Update automatically",
-                body = "Prices once a day (about 26 MB), when you open the app and in the background.",
-                checked = autoUpdate,
-                onChange = { c.settings.setAutoUpdate(it); c.updater.schedule() },
-            )
-            SwitchRow(
-                title = "Only on Wi-Fi",
-                body = "Automatic updates wait for Wi-Fi, so they don't use mobile data. “Update prices now” always works.",
-                checked = wifiOnly,
-                enabled = autoUpdate,
-                onChange = { c.settings.setWifiOnly(it); c.updater.schedule() },
-            )
-            SwitchRow(
-                title = "Save deck and wishlist pictures for offline use",
-                body = "On Wi-Fi, the app saves the pictures of your decks (their cards and covers) and of your wishlist, " +
-                    "so they show without internet too. About 10–15 MB per deck.",
-                checked = offlineImages,
-                onChange = c.settings::setOfflineImages,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Cards that already sit in a trade keep the price they had when added — use “Refresh prices” in a trade to update them.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Appearance", style = MaterialTheme.typography.titleMedium)
-            ThemeMode.entries.forEach { m ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { c.settings.setThemeMode(m) }.padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = m == themeMode, onClick = { c.settings.setThemeMode(m) })
-                    Text(m.label)
-                }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Commander deck power level", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Where the power level on the Decks tab, the deck pages and the power card comes from (also used for sorting). " +
-                    "Brackets and everything else on the rule-zero cards come from Commander Salt.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            PowerSource.entries.forEach { src ->
-                val pick = {
-                    if (src != powerSource) {
-                        c.settings.setPowerSource(src)
-                        if (src.separate) c.decks.rateMissingPower()
-                    }
-                }
-                Row(
-                    Modifier.fillMaxWidth().clickable(onClick = pick).padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = src == powerSource, onClick = pick)
-                    Column {
-                        Text(src.label)
-                        Text(
-                            when (src) {
-                                PowerSource.COMMANDER_SALT -> "commandersalt.com scores the deck when it's imported."
-                                PowerSource.EDH_POWER_LEVEL -> "The app has edhpowerlevel.com work out each deck's power level (a few seconds per deck)."
-                                PowerSource.SCROLLVAULT -> "The app has ScrollVault's bracket calculator analyse each deck (about 10 seconds per deck). " +
-                                    "Its power level comes with a margin, a typical winning turn and a line to tell your pod."
-                                PowerSource.APP -> "Worked out on this phone from the win turn: the turn by which the deck wins half its games, " +
-                                    "on the turn scale of the r/EDH power level guide, plus Commander Salt's interaction, consistency, " +
-                                    "efficiency and mana base ratings (up to a point either way). A whole number from 1 to 10."
+                    val recheck = { c.wishWatch.checkSoon(c.appScope) }
+                    WishlistAlertsSection(
+                        AlertSettings(priceSource, alertType, autoUpdate, allowed, ctOn, ctStatus, ctLanguage, ctCondition, ctZeroOnly),
+                        AlertSettingsActions(
+                            onAlertType = { c.settings.setAlertPriceType(it); recheck() },
+                            onAllowNotifications = {
+                                if (android.os.Build.VERSION.SDK_INT >= 33) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                else runCatching {
+                                    context.startActivity(
+                                        android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+                                    )
+                                }
                             },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                            onCardTrader = { c.settings.setCardTraderOn(it); recheck() },
+                            onToken = { t ->
+                                c.cardTrader.check(t).onSuccess {
+                                    c.cardTrader.setToken(t)
+                                    recheck()
+                                }
+                            },
+                            onForgetToken = { c.cardTrader.setToken(null) },
+                            onLanguage = { c.settings.setCtLanguage(it); recheck() },
+                            onCondition = { c.settings.setCtCondition(it); recheck() },
+                            onZeroOnly = { c.settings.setCtZeroOnly(it); recheck() },
+                        ),
+                    )
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    val receivedClear by c.settings.receivedClear.collectAsStateWithLifecycle()
+                    val receivedToCollection by c.settings.receivedToCollection.collectAsStateWithLifecycle()
+                    ReceivedCardsSection(
+                        receivedClear, receivedToCollection,
+                        onClear = { v -> c.settings.setReceivedClear(v); c.appScope.launch { runCatching { c.repo.autoClearReceived(v) } } },
+                        onToCollection = c.settings::setReceivedToCollection,
+                    )
                 }
+                SettingsCategory.DECKS -> {
+                    Text("Commander deck power level", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Where the power level on the Decks tab, the deck pages and the power card comes from (also used for sorting). " +
+                            "Brackets and everything else on the rule-zero cards come from Commander Salt.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PowerSource.entries.forEach { src ->
+                        val pick = {
+                            if (src != powerSource) {
+                                c.settings.setPowerSource(src)
+                                if (src.separate) c.decks.rateMissingPower()
+                            }
+                        }
+                        Row(
+                            Modifier.fillMaxWidth().clickable(onClick = pick).padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = src == powerSource, onClick = pick)
+                            Column {
+                                Text(src.label)
+                                Text(
+                                    when (src) {
+                                        PowerSource.COMMANDER_SALT -> "commandersalt.com scores the deck when it's imported."
+                                        PowerSource.EDH_POWER_LEVEL -> "The app has edhpowerlevel.com work out each deck's power level (a few seconds per deck)."
+                                        PowerSource.SCROLLVAULT -> "The app has ScrollVault's bracket calculator analyse each deck (about 10 seconds per deck). " +
+                                            "Its power level comes with a margin, a typical winning turn and a line to tell your pod."
+                                        PowerSource.APP -> "Worked out on this phone from the win turn: the turn by which the deck wins half its games, " +
+                                            "on the turn scale of the r/EDH power level guide, plus Commander Salt's interaction, consistency, " +
+                                            "efficiency and mana base ratings (up to a point either way). A whole number from 1 to 10."
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+
+                    // Editing decks (since 1.46).
+                    val autoCategories by c.settings.deckAutoCategories.collectAsStateWithLifecycle()
+                    SwitchRow(
+                        "Auto categories for new cards",
+                        "Cards added to a deck you can edit go into the website's auto categories for them (built from Scryfall's card tags, " +
+                            "as on the website: Ramp, Removal, Draw…), the first as their category and the others as extra categories; " +
+                            "by card type when they have none or the website can't be reached. Off: by card type.",
+                        autoCategories,
+                        c.settings::setDeckAutoCategories,
+                    )
+                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
+                    Text("Archidekt", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "The app reads public Archidekt decks; it doesn't log in to Archidekt (since 1.78). Your username marks " +
+                            "which decks are your own. To bring the collection to Archidekt, use Collection → Export CSV → Archidekt.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    var archidektName by remember(ownArchidekt) { mutableStateOf(ownArchidekt) }
+                    OutlinedTextField(
+                        value = archidektName,
+                        onValueChange = { archidektName = it; c.settings.setOwnArchidektUser(it) },
+                        label = { Text("Your Archidekt username") },
+                        placeholder = { Text(c.settings.archidektUser.ifBlank { "e.g. from archidekt.com/u/username" }) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                SettingsCategory.APPEARANCE -> {
+                    Text("Theme", style = MaterialTheme.typography.titleMedium)
+                    ThemeMode.entries.forEach { m ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { c.settings.setThemeMode(m) }.padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = m == themeMode, onClick = { c.settings.setThemeMode(m) })
+                            Text(m.label)
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    SwitchRow(
+                        title = "Save deck and wishlist pictures for offline use",
+                        body = "On Wi-Fi, the app saves the pictures of your decks (their cards and covers) and of your wishlist, " +
+                            "so they show without internet too. About 10–15 MB per deck.",
+                        checked = offlineImages,
+                        onChange = c.settings::setOfflineImages,
+                    )
+                }
+                SettingsCategory.ABOUT -> {
+                    Text(
+                        "Card data and pictures: Scryfall. Prices: Cardmarket's public daily price guide (EUR). " +
+                            "Decklists: Archidekt. Brackets and deck scores: Commander Salt; power level from the source chosen under Decks.\n\n" +
+                            "All of it is looked up live, so new sets show up without an app update.\n\n" +
+                            "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall, Cardmarket, CardTrader, Archidekt, Commander Salt, " +
+                            "EDH Power Level or ScrollVault.\n\nVersion ${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SettingsCategory.GAMES, SettingsCategory.BACKUPS -> {}
             }
-
-            // Editing decks (since 1.46).
-            val autoCategories by c.settings.deckAutoCategories.collectAsStateWithLifecycle()
-            SwitchRow(
-                "Auto categories for new cards",
-                "Cards added to a deck you can edit go into the website's auto categories for them (built from Scryfall's card tags, " +
-                    "as on the website: Ramp, Removal, Draw…), the first as their category and the others as extra categories; " +
-                    "by card type when they have none or the website can't be reached. Off: by card type.",
-                autoCategories,
-                c.settings::setDeckAutoCategories,
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            SyncSection()
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Archidekt", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "The app reads public Archidekt decks; it doesn't log in to Archidekt (since 1.78). Your username marks " +
-                    "which decks are your own. To bring the collection to Archidekt, use Collection → Export CSV → Archidekt.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            var archidektName by remember(ownArchidekt) { mutableStateOf(ownArchidekt) }
-            OutlinedTextField(
-                value = archidektName,
-                onValueChange = { archidektName = it; c.settings.setOwnArchidektUser(it) },
-                label = { Text("Your Archidekt username") },
-                placeholder = { Text(c.settings.archidektUser.ifBlank { "e.g. from archidekt.com/u/username" }) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("Backups", style = MaterialTheme.typography.titleMedium)
-            Text(
-                if (c.backups.lastBackupAt == 0L) "Restore points of all your data, on Nextcloud or on this phone." else "Last backup: ${Fmt.dateTime(c.backups.lastBackupAt)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { nav.navigate("backups") }) { Text("Backups and restore…") }
-
-            HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            Text("About", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Card data and pictures: Scryfall. Prices: Cardmarket's public daily price guide (EUR). " +
-                    "Decklists: Archidekt. Brackets and deck scores: Commander Salt; power level from the source chosen above.\n\n" +
-                    "All of it is looked up live, so new sets show up without an app update.\n\n" +
-                    "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall, Cardmarket, CardTrader, Archidekt, Commander Salt, " +
-                    "EDH Power Level or ScrollVault.\n\nVersion ${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -742,21 +850,6 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
         checked = toCollection,
         onChange = onToCollection,
     )
-}
-
-/** Settings → Life tracker (since 1.47): since 1.48 its settings are in the game itself; since 1.58 also here. */
-@Composable
-internal fun TrackerSection(nav: NavController) {
-    Text("Life tracker", style = MaterialTheme.typography.titleMedium)
-    Text(
-        "Controls, look and vibration for every game. A game's own choices (players, starting life, turns) are in the game: tap ⚙ in the bar across the middle.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Row {
-        TextButton(onClick = { nav.navigate("games/settings") }) { Text("Life tracker settings") }
-        TextButton(onClick = { nav.navigate("games/players") }) { Text("Players and their decks") }
-    }
 }
 
 /** Settings → Swiping cards in the collection: what a swipe to the right and to the left does. Since 1.38. */

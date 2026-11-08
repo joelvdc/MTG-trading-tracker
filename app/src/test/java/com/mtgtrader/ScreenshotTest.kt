@@ -664,6 +664,42 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/collection_selection.png", roborazziOptions = screenshotOptions)
     }
 
+    /** 1.82: the main Settings page as a list of categories, each with what it's set to now. */
+    @Test fun settingsCategories() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    com.mtgtrader.ui.SettingsCategoryList(
+                        com.mtgtrader.ui.SettingsSummary(
+                            account = "Logged in as joelvdc, syncs automatically",
+                            prices = "Cardmarket · Trend · EUR · daily updates",
+                            collection = "Swipe right: move to a binder… · fair trade ±5%",
+                            wishlist = "Price alerts on Trend · CardTrader",
+                            decks = "Power level: Commander Salt · Archidekt: joelvdc",
+                            games = "Life tracker controls, look and vibration",
+                            backups = "Last backup: 8 Nov 2026, 09:12",
+                            appearance = "Follow the phone · pictures saved for offline use",
+                            about = "Version 1.82, data sources",
+                        ).map,
+                    ) {}
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/settings_categories.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.82: Account & sync on a phone that still synced with Nextcloud. */
+    @Test fun nextcloudEnded() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(16.dp)) { com.mtgtrader.ui.NextcloudEndedCard({}, {}) }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/nextcloud_ended.png", roborazziOptions = screenshotOptions)
+    }
+
     /** 1.38: Settings for received wishlist cards and for swiping, and what's behind each swipe action. */
     @Test fun receivedAndSwipeSettings() {
         compose.setContent {

@@ -29,9 +29,8 @@ Owner: "a wishlist web page, where I can edit my wishlist in the app from a comp
   4. ~~Decks on the website~~ **Done 2026-11-06** (4a–4d, see Done). Still open from it:
      - Commander Salt scoring for local decks (owner's decision: should the website ask Commander Salt to score
        local decks, as the app can?).
-     - Deck categories on the website go by card type (or a pasted list's tags), because the website never contacts
-       Archidekt. Does the owner want Archidekt's own categories for new decks (that would mean the website calling
-       Archidekt)?
+     - ~~Archidekt's own categories for new decks~~ dropped by the owner 2026-11-08 (the website's auto categories
+       stay).
   5. ~~Games on the website~~ **Done 2026-11-08** (see Done). Life tracker stays on the phone.
 - Open questions:
   - Web address (decided 2026-11-05): mtgtrader.vercel.app (mtgtracker and mtg-trader were taken). Vercel account:
@@ -184,18 +183,34 @@ gets its own plan and green light.
   Still open from it: "To trade" (comes with trades on the website) and sending scans to a deck from Archidekt (the
   website only adds to local decks).
 - 2 done 2026-11-08: the website's Games section (see Done).
-- **Next (owner, 2026-11-08: "prepare to add that to the app as well afterwards"): the website's game stats extras in
-  the app** (an app release, needs its own plan and green light): on the app's Game stats screen, tiles (games played,
-  your win rate, average game, average turns), games per month, how games were won (with "not told"), the starting
-  player's win rate against an equal chance, and a period choice (all time, last 12 months, last 3 months) for all the
-  stats. The website's code (web/src/lib/gameshared.ts: inPeriod, overview, perMonth, winsByType, firstPlayer, with
-  tests in web/test/games.test.ts) is the model; port it to GameStats.kt with matching unit tests. No sync change.
-  Open question: where on the phone (the Stats screen's tabs, or a new first "Overview" tab).
-- Idea for later (noted 2026-11-08, owner: "Nextcloud should only be used for storing backups"): the app still offers
-  "sync through Nextcloud" next to the MTG Trader account; it could become backup-only in the app too (an app
-  release).
+- The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
+
+### 2026-11-08: retired decks (owner)
+Owner: "If I delete a deck that was used for games, what happens to the game log? Could it make sense to have an
+archived/retired section for decks? So that the deck is still kept on the website/app despite not being used anymore
+for games." And: "if I delete a deck imported from archidekt and then add it back to the app/website in the future, is
+it possible to remember that deck? maybe by the deck id from archidekt?"
+- Today: each game keeps its own copy of the deck's name, commander, colours and scores, so deleting a deck loses no
+  games; the game stats still list it. What goes is the deck page (with its Games section) and the deck in the seat
+  pickers.
+- Coming back already works for Archidekt decks: the app's deck id is the Archidekt deck id (Deck.archidektId, also the
+  games' deckId), so importing the same Archidekt deck again reconnects all its old games and stats (app and website).
+  Not for local decks (negative ids, made in the app or the website, or by "Make it a local deck"): a new local deck
+  gets a new id, and "Make it a local deck" starts a deck without the Archidekt deck's games.
+- Idea: a **Retired** section. Retiring a deck takes it out of the Decks list, the seat pickers and "Update all decks",
+  but keeps its page, Games section and stats, on the phone and the website; **Bring back** undoes it. One new synced
+  field on decks (both sides of the sync and `web/` in the same release).
+- Open questions: should "Make it a local deck" carry the Archidekt deck's games over to the local copy? Should
+  deleting a deck that has games suggest retiring it instead? Should retired decks still count in the collection's
+  "in a deck" marks and the trade binder's "keep for my decks"?
 
 ## Done
+- 1.82: game stats **Overview** tab (tiles, games per month, how games were won, starting first) and a period choice
+  (all time, 12 months, 3 months); friends and guests can **borrow the owner's decks** (app and website: "Your decks
+  (lent)", counted for the deck as "N lent", results to the borrower); **Nextcloud only for backups** (the app syncs
+  through the MTG Trader account only, a card on phones still on Nextcloud, app backups on the phone); **Settings in
+  categories** (Account & sync, Prices, Collection & trades, Wishlist, Decks, Games, Backups, Appearance & offline,
+  About).
 - 2026-11-08: website: **Games** section (top bar, /games): the recorded games (search, player and deck filters, the
   game window to change places, draw, how it was won, note, minutes, turns and who played which deck; Add a past game;
   delete with Undo; drop a paused game; CSV export), Stats (the app's decks/players/"You against…" tables, plus tiles,

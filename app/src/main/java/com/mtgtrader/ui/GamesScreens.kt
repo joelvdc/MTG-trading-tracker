@@ -549,7 +549,7 @@ fun GameStatsScreen(nav: NavController) {
             }
             item(key = "tabs") {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-                    listOf("Overview", "Decks", "Players", "Head to head").forEachIndexed { i, t ->
+                    listOf("Overview", "Decks", "Players", "Versus").forEachIndexed { i, t ->
                         SegmentedButton(tab == i, { tab = i }, SegmentedButtonDefaults.itemShape(i, 4), icon = {}) {
                             Text(t, maxLines = 1, style = MaterialTheme.typography.labelMedium)
                         }

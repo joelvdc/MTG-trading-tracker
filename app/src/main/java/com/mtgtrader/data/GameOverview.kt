@@ -8,8 +8,8 @@ import java.time.ZoneId
 /** The period the game stats look at (the website's Period). */
 enum class StatsPeriod(val label: String) {
     ALL("All time"),
-    YEAR("Last 12 months"),
-    QUARTER("Last 3 months"),
+    YEAR("12 months"),
+    QUARTER("3 months"),
 }
 
 data class Overview(val games: Int, val myWinRate: Double?, val avgMs: Long?, val avgRounds: Double?)

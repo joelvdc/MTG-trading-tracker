@@ -271,7 +271,7 @@ private fun FirstSyncDialog(choice: FirstChoice, place: String, onChoose: (First
  * same data. Logging in moves this phone over (the first sync merges, nothing on Nextcloud is deleted).
  */
 @Composable
-private fun NextcloudEndedCard(onLogIn: () -> Unit, onForget: () -> Unit) {
+internal fun NextcloudEndedCard(onLogIn: () -> Unit, onForget: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
