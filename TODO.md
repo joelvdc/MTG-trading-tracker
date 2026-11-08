@@ -186,6 +186,10 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-08: website: the deck page's Collection tracker lists the other decks using the card; Retire / Bring back
+  buttons on the Decks page tiles; **Check an order** on the Scanned page (the app's PackageCheck, with It's here, the
+  problem report and Add to collection); the Scanned list one line per card with list/pictures and Card on hover; the
+  collection's tabs All · Wishlist · Scanned · Binder list · ＋ Binder · Arrange.
 - 1.83: **retired decks** (app and website): deck ⋮ → Retire deck… / Bring back; a Retired section on the Decks list
   (folds, and ⋮ / a button hides it); retired decks keep their page, games and stats but leave the seat pickers, Update
   all decks and the collection checks; deleting a deck with games suggests retiring it. Sync.FORMAT 13 (phones on 1.82

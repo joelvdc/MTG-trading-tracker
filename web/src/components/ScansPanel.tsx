@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, formatDate } from "@/components/api";
 import type { Printing } from "@/components/CardSearch";
 import { Dialog } from "@/components/Dialog";
+import { useHoverCard } from "@/components/HoverCard";
+import { OrderCheckDialog } from "@/components/OrderCheckDialog";
+import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
 import { CONDITIONS, finishesOf, LANGUAGES } from "@/lib/cards";
 import { format } from "@/lib/money";
 import type { Finish } from "@/lib/pricing";
@@ -16,7 +19,21 @@ type Answer = ScanView & { result?: ScanEditResult };
  * The app's Scan tab list, shown in the collection when its "Scanned" chip is picked: cards scanned on a phone wait
  * here until they go to a binder or a deck, or are discarded. Every card starts selected, as in the app.
  */
-export function ScansPanel({ onLoggedOut, onChanged }: { onLoggedOut: () => void; onChanged: () => void }) {
+export function ScansPanel({
+  layout,
+  onLayout,
+  hover,
+  onHover,
+  onLoggedOut,
+  onChanged,
+}: {
+  layout: Layout;
+  onLayout: (l: Layout) => void;
+  hover: boolean;
+  onHover: (on: boolean) => void;
+  onLoggedOut: () => void;
+  onChanged: () => void;
+}) {
   const [view, setView] = useState<ScanView | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -25,6 +42,8 @@ export function ScansPanel({ onLoggedOut, onChanged }: { onLoggedOut: () => void
   const [unselected, setUnselected] = useState<Set<string>>(new Set());
   const [action, setAction] = useState<"BINDER" | "DECK" | null>(null);
   const [editing, setEditing] = useState<ScanRow | null>(null);
+  const [checking, setChecking] = useState(false);
+  const { follow, hide, picture } = useHoverCard(hover && layout === "list");
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -58,6 +77,18 @@ export function ScansPanel({ onLoggedOut, onChanged }: { onLoggedOut: () => void
     setMessage(r.data.error ?? "That change did not work.");
     return null;
   }
+
+  const toggle = (uid: string) =>
+    setUnselected((s) => {
+      const n = new Set(s);
+      if (n.has(uid)) n.delete(uid);
+      else n.add(uid);
+      return n;
+    });
+  const open = (r: ScanRow) => {
+    hide();
+    setEditing(r);
+  };
 
   const picked = useMemo(() => (view ? view.rows.filter((r) => !unselected.has(r.uid)) : []), [view, unselected]);
 
@@ -142,56 +173,114 @@ export function ScansPanel({ onLoggedOut, onChanged }: { onLoggedOut: () => void
             <button className="btn small-btn" onClick={() => setUnselected(new Set(view.rows.map((r) => r.uid)))}>
               Select none
             </button>
+            <span className="spacer" />
+            <button className="btn small-btn" disabled={locked} onClick={() => setChecking(true)} title="Compare the scanned cards with an order's file">
+              Check an order
+            </button>
+            <ViewSwitch layout={layout} onLayout={onLayout} hover={hover} onHover={onHover} />
           </div>
-          <table className="wish-table coll-table scan-table">
-            <tbody>
+          {layout === "list" ? (
+            <div className="table-wrap">
+              <table className="wish-table scan-table">
+                <thead>
+                  <tr>
+                    <th className="center" aria-label="Selected" />
+                    <th>Card</th>
+                    <th className="wide-only">Set</th>
+                    <th>Finish</th>
+                    <th className="wide-only">Cond.</th>
+                    <th className="wide-only">Lang.</th>
+                    <th className="num">Qty</th>
+                    <th className="num">Price</th>
+                    <th className="wide-only">Scanned</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {view.rows.map((r) => {
+                    const on = !unselected.has(r.uid);
+                    return (
+                      <tr
+                        key={r.uid}
+                        className={on ? "wish-row clickable picked" : "wish-row clickable"}
+                        onClick={() => open(r)}
+                        onMouseEnter={follow(r.card.imageUrl)}
+                        onMouseMove={follow(r.card.imageUrl)}
+                        onMouseLeave={hide}
+                      >
+                        <td className="center" onClick={(e) => e.stopPropagation()}>
+                          <input type="checkbox" className="tick" aria-label={`Select ${r.card.name}`} checked={on} onChange={() => toggle(r.uid)} />
+                        </td>
+                        <td className="card-cell">
+                          <button
+                            className="row-title linkish"
+                            title="Fix the printing, finish, condition or copies"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              open(r);
+                            }}
+                          >
+                            {r.card.name}
+                          </button>
+                          {!r.exactPrinting && (
+                            <span className="warn-text small" title="The scanner only read the name: check the set">
+                              {" "}· printing guessed
+                            </span>
+                          )}
+                        </td>
+                        <td className="wide-only muted nowrap">
+                          {r.card.setCode.toUpperCase()} #{r.card.collectorNumber}
+                        </td>
+                        <td className="nowrap">
+                          <span className={r.finish !== "NONFOIL" ? "foil-text" : "muted"}>{FINISH_WORDS[r.finish]}</span>
+                        </td>
+                        <td className={r.condition !== "NM" ? "wide-only" : "wide-only muted"}>{r.condition}</td>
+                        <td className={r.language !== "EN" ? "wide-only" : "wide-only muted"}>{r.language}</td>
+                        <td className="num">{r.quantity}</td>
+                        <td className="num nowrap">
+                          {r.unitEur != null ? money(r.unitEur * r.quantity) : <span className="muted">–</span>}
+                          {r.approx && <span className="muted" title="Cardmarket's price standing in"> *</span>}
+                        </td>
+                        <td className="wide-only muted nowrap small">{r.scannedAt > 0 ? formatDate(r.scannedAt) : "–"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {picture}
+            </div>
+          ) : (
+            <ul className="wish-grid">
               {view.rows.map((r) => {
                 const on = !unselected.has(r.uid);
                 return (
-                  <tr key={r.uid} className={on ? "picked" : undefined}>
-                    <td className="center">
-                      <input
-                        type="checkbox"
-                        className="tick"
-                        aria-label={`Select ${r.card.name}`}
-                        checked={on}
-                        onChange={() =>
-                          setUnselected((s) => {
-                            const n = new Set(s);
-                            if (n.has(r.uid)) n.delete(r.uid);
-                            else n.add(r.uid);
-                            return n;
-                          })
-                        }
-                      />
-                    </td>
-                    <td className="grow">
-                      <button className="link scan-name" onClick={() => setEditing(r)} title="Fix the printing, finish, condition or copies">
-                        {r.quantity > 1 ? `${r.quantity}× ` : ""}
-                        {r.card.name}
-                      </button>
-                      <div className="muted small">
-                        {r.card.setCode.toUpperCase()} #{r.card.collectorNumber}
-                        {r.finish !== "NONFOIL" && <span className="tag">{FINISH_WORDS[r.finish]}</span>}
-                        {r.condition !== "NM" && <span className="tag">{r.condition}</span>}
-                        {r.language !== "EN" && <span className="tag">{r.language}</span>}
-                        {r.scannedAt > 0 && <> · scanned {formatDate(r.scannedAt)}</>}
+                  <li key={r.uid} className={on ? "tile scan-tile picked" : "tile scan-tile"}>
+                    <input type="checkbox" className="tick scan-tile-tick" aria-label={`Select ${r.card.name}`} checked={on} onChange={() => toggle(r.uid)} />
+                    <button className="tile-in" onClick={() => open(r)}>
+                      <div className="tile-img">
+                        {r.card.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.card.imageUrl} alt={r.card.name} loading="lazy" />
+                        ) : (
+                          <span className="tile-noimg">{r.card.name}</span>
+                        )}
+                        {r.quantity > 1 && <span className="tile-qty">×{r.quantity}</span>}
+                        {!r.exactPrinting && <span className="tile-flag">Printing guessed</span>}
                       </div>
-                      {!r.exactPrinting && (
-                        <button className="link small scan-guess" onClick={() => setEditing(r)}>
-                          Printing guessed: check the set
-                        </button>
-                      )}
-                    </td>
-                    <td className="num nowrap">
-                      {r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}
-                      {r.approx && <span className="muted" title="Cardmarket's price standing in"> *</span>}
-                    </td>
-                  </tr>
+                      <div className="tile-name" title={r.card.name}>
+                        {r.card.name}
+                      </div>
+                      <div>{r.unitEur != null ? money(r.unitEur * r.quantity) : <span className="muted">No price</span>}</div>
+                      <div className="muted small">
+                        {[`${r.card.setCode.toUpperCase()} #${r.card.collectorNumber}`, r.finish !== "NONFOIL" ? FINISH_WORDS[r.finish] : null, r.condition !== "NM" ? r.condition : null, r.language !== "EN" ? r.language : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </button>
+                  </li>
                 );
               })}
-            </tbody>
-          </table>
+            </ul>
+          )}
         </>
       )}
 
@@ -241,6 +330,17 @@ export function ScansPanel({ onLoggedOut, onChanged }: { onLoggedOut: () => void
               const n = res.copies ?? pickedCopies;
               setNote({ text: `Added ${n} card${n === 1 ? "" : "s"} to the deck.`, href: res.deckId != null ? `/decks/${res.deckId}` : undefined });
             }
+          }}
+        />
+      )}
+      {checking && (
+        <OrderCheckDialog
+          onClose={() => setChecking(false)}
+          onDone={(summary) => {
+            setChecking(false);
+            setNote({ text: summary });
+            load();
+            onChanged();
           }}
         />
       )}

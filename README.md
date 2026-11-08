@@ -306,8 +306,14 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   removed. **More…** marks all ordered cards or the cards you now own as received, clears received cards, or copies the
   cards to buy as a list. Prices are Cardmarket's (updated daily), shown
   in the app's currency and price type.
-- **Wishlist:** it sits in the collection, as the **★ Wishlist** chip in the binder bar (the binders follow the app's
-  order).
+- **Wishlist:** it sits in the collection, as the **★ Wishlist** tab. The collection's tabs are **All**, **★ Wishlist**,
+  **Scanned** (while scanned cards wait), a **Binder** list to open Unsorted or a binder (in the app's order), **＋ Binder**
+  and **Arrange**.
+- **Scanned:** the cards scanned on a phone, one line each (or as pictures, with Card on hover), to fix and send to a
+  binder or a local deck. **Check an order** compares them with an order's file, like the app: missing cards, wrong
+  language or printing, cards nobody ordered and what to check by hand, **It's here** for a card the scanner missed, a
+  problem report to copy for the shop, and **Add to collection…** with the order's prices, condition and finish (the
+  order goes into Orders).
 - **Views:** a list with columns (click a column title to sort) or card pictures; the choice is remembered. With a
   mouse, the list shows a card's picture when you point at a row; the **Card on hover** button beside the view buttons
   switches that off and on. A card's window links to the card on Cardmarket (that printing) and CardTrader (a name search).
@@ -349,7 +355,8 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   A card's window on the deck page shows the card's text, a **Rulings** tab (legalities and rulings), **In your
   collection** (copies and piles) and **In your decks**; on local decks **Change printing** lists every printing, the
   ones you own first with a green badge. Each line has an owned icon (a tick for the printing you own, an amber ring for
-  another version, an empty ring for none) with a Collection tracker box on hover; tokens have their own section.
+  another version, an empty ring for none) with a Collection tracker box on hover (what the deck needs, the copies you
+  own and the other decks that use the card); tokens have their own section.
   **Import from Archidekt** (a deck link, or a username to pick public decks from), **Reload decklist** and **Update
   all decks** read Archidekt's public decks and score them on Commander Salt, like the app. The website works out every
   deck's win turn itself (nightly and after a visit to Decks), and again only when a decklist changes.
@@ -359,7 +366,7 @@ Nextcloud sync as one more device, so its changes reach the phones at their next
   changes), and fills in the bracket card's speed and the app's own power level. Each stats section and card category
   folds away; **Combos** lists Commander Salt's combos (what they do, whether they count for the bracket, a link to
   Commander Spellbook), also in a card's window; a token's printing can be chosen (the phones show it too). Any deck
-  can be deleted (never on Archidekt). The Decks page also has **Cards in several decks** and **Rule-zero cards of all
+  can be retired or deleted (never on Archidekt), from its page or from the buttons on its tile. The Decks page also has **Cards in several decks** and **Rule-zero cards of all
   decks** (every bracket and power card, to print together).
 - **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
   a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones

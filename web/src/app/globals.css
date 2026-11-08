@@ -567,6 +567,20 @@ button.tile-in:hover:not(:disabled) {
   color: #fff;
 }
 
+/* Scanned cards as pictures: a tick in the corner selects. */
+.scan-tile {
+  position: relative;
+}
+.scan-tile.picked {
+  border-color: var(--violet);
+}
+.scan-tile-tick {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+}
+
 .tile-name {
   font-weight: 600;
   white-space: nowrap;
@@ -855,6 +869,19 @@ a.btn {
   font-weight: 600;
 }
 
+/* The collection's Binder dropdown, shaped like the other tabs. */
+select.chip.binder-pick {
+  width: auto;
+  max-width: 260px;
+  min-height: 0;
+  padding-right: 28px;
+}
+select.chip.binder-pick option {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 400;
+}
+
 .chip.add {
   background: transparent;
   border-style: dashed;
@@ -893,7 +920,8 @@ a.btn {
   width: auto;
 }
 
-.coll-table tr.picked td {
+.coll-table tr.picked td,
+.scan-table tr.picked td {
   background: rgba(179, 157, 219, 0.12);
 }
 
@@ -1237,6 +1265,7 @@ main h2 {
 
 .set-cell {
   max-width: 260px;
+  min-height: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1327,6 +1356,20 @@ main h2 {
 }
 
 /* Orders */
+/* Check an order: the counts, and one line per order line. */
+.check-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.check-lines li.check-line {
+  align-items: flex-start;
+}
+.check-lines li.problem {
+  border-left: 3px solid var(--gold);
+  padding-left: 8px;
+}
+
 .order-review {
   max-height: 46vh;
   overflow-y: auto;
@@ -2408,6 +2451,13 @@ details.deck-section > summary .mini-head {
 }
 .tile-delete:hover {
   background: #b3261e;
+}
+/* The retire button sits left of the bin. */
+.tile-delete.tile-retire {
+  right: 48px;
+}
+.tile-delete.tile-retire:hover {
+  background: rgba(0, 0, 0, 0.85);
 }
 @media (hover: none) {
   .tile-delete {

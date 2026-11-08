@@ -73,7 +73,9 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   wait): the app's Scan tab list (the synced `scans`). Fix a scan's printing, finish, condition, language and copies;
   send selected scans to a binder (Unsorted, or a new one; MtgRepository.scansToCollection) or a local deck (or a new
   one; DeckEditor.addScans / fromScans, auto categories), each with "Keep them in the scan list"; discard with Undo
-  (the scans come back under new uids). The camera, "Check an order" and "To trade" stay in the app.
+  (the scans come back under new uids). **Check an order** (`lib/packagecheck.ts`, a copy of the app's PackageCheck.kt,
+  `/api/scans/check`; the file is read by `/api/orders/read`) compares the scans with an order's file and adds them with
+  the order's details (MtgRepository.addCheckedPackage), recording the order. The camera and "To trade" stay in the app.
 - **Games** (`/games`, `lib/games.ts` with `lib/gameshared.ts`, `/api/games`): the games the app's life tracker
   recorded (the synced `games`, `players`, `friendDecks`, `pausedGames`). **Games**: the list (search, filter by player
   or deck, 25/50/100 per page), the game window (places, draw, how it was won, note, minutes, turns, who played which

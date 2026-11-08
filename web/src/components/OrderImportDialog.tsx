@@ -6,36 +6,36 @@ import type { Candidate, OrderFile } from "@/lib/orders";
 import { FORMAT_LABELS, shopOf } from "@/lib/orders";
 import { Dialog } from "./Dialog";
 
-interface ReadAnswer {
+export interface ReadAnswer {
   file: OrderFile;
   candidates: Candidate[];
   owned: Record<string, number>;
   binders: { uid: string; name: string }[];
 }
 
-const NEW = "__new__";
+export const NEW = "__new__";
 
-function today(): string {
+export function today(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** The app's suggested binder: "CardTrader 23 Jun 2026" (the day in CardTrader's file name), else today. */
-function suggestedBinder(fileName: string, shop: string): string {
+export function suggestedBinder(fileName: string, shop: string): string {
   const m = shop === "CardTrader" ? /(20\d{2})(\d{2})(\d{2})/.exec(fileName) : null;
   const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date();
   const ok = !Number.isNaN(d.getTime()) ? d : new Date();
   return `${shop} ${ok.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
-async function base64(f: File): Promise<string> {
+export async function base64(f: File): Promise<string> {
   const bytes = new Uint8Array(await f.arrayBuffer());
   let s = "";
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(s);
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /**
  * Import an order (CardTrader's Excel export, or a Cardmarket file), like the app: every card is looked up on

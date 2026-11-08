@@ -89,6 +89,18 @@ export function OwnedIcon({ row }: { row: DeckRow }) {
               You own {row.exact} of {row.quantity} in this printing{row.owned > 0 ? ` (${row.owned} in any printing)` : ""}.
             </span>
           )}
+          {row.held.length > 0 || row.otherDecks.length > 0 ? (
+            <>
+              <span className="own-part">In your decks</span>
+              <span>This deck ×{row.quantity}</span>
+              {row.otherDecks.map((d, i) => (
+                <span key={i}>
+                  {d.deckName} ×{d.quantity}
+                  {d.maybeboard ? " (maybeboard)" : ""}
+                </span>
+              ))}
+            </>
+          ) : null}
           {tapped && (
             <a className="own-link" href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}>
               Show in collection

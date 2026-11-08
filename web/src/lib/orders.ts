@@ -5,7 +5,7 @@ import { resolveFinish } from "./cards";
 import { applyCollectionEdit } from "./collection";
 import { parseCondition, parseLanguage } from "./csvimport";
 import type { PriceFile } from "./prices";
-import { unitPrice, type PricingSetup } from "./pricing";
+import { unitPrice, type Finish, type PricingSetup } from "./pricing";
 import { best } from "./prices";
 import { addDeletion, bump, collection, compareUid, newUid, type CardRef, type Json, type SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
@@ -574,7 +574,7 @@ export function applyOrderEdit(file: SyncFile, edit: OrderEdit, now: number): vo
  */
 export function addBought(
   file: SyncFile,
-  b: { card: CardRef; foil: boolean; condition: string; language: string; quantity: number; binder: string | null; signed?: boolean; altered?: boolean; price: number | null; typed?: { amount: number; currency: string } | null },
+  b: { card: CardRef; foil: boolean; finish?: Finish; condition: string; language: string; quantity: number; binder: string | null; signed?: boolean; altered?: boolean; price: number | null; typed?: { amount: number; currency: string } | null },
   now: number,
   rates: PriceFile["rates"] | null,
   makeUid: () => string = newUid,
@@ -586,7 +586,7 @@ export function addBought(
       type: "add",
       card: b.card,
       quantity: b.quantity,
-      finish: resolveFinish(b.card, b.foil ? "FOIL" : "NONFOIL"),
+      finish: resolveFinish(b.card, b.finish ?? (b.foil ? "FOIL" : "NONFOIL")),
       condition: b.condition,
       language: b.language,
       binder: b.binder,

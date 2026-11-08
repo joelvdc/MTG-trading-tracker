@@ -148,6 +148,22 @@ function drop(file: SyncFile, list: ScannedCard[], gone: ScannedCard[], now: num
   );
 }
 
+/** Takes [use] copies (by scan uid) off the scan list, as the app's addCheckedPackage does: fewer copies, or gone. */
+export function useScans(file: SyncFile, use: Map<string, number>, now: number): void {
+  const list = scansOf(file);
+  const gone: ScannedCard[] = [];
+  for (const s of list) {
+    const n = s.uid ? (use.get(s.uid) ?? 0) : 0;
+    if (n <= 0) continue;
+    const left = (s.quantity ?? 1) - n;
+    if (left > 0) {
+      s.quantity = left;
+      s.updatedAt = bump(s.updatedAt ?? 0, now);
+    } else gone.push(s);
+  }
+  drop(file, list, gone, now);
+}
+
 function checkQuantity(q: unknown): number {
   if (typeof q !== "number" || !Number.isInteger(q) || q < 1 || q > MAX_QUANTITY) throw new EditError(`Copies must be a whole number from 1 to ${MAX_QUANTITY}.`);
   return q;

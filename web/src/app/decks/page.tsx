@@ -67,6 +67,7 @@ export default function DecksPage() {
   const [query, setQuery] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [deleting, setDeleting] = useState<DeckSummary | null>(null);
+  const [retiring, setRetiring] = useState<DeckSummary | null>(null);
   const [archidekt, setArchidekt] = useState<"import" | "update" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
@@ -102,7 +103,18 @@ export default function DecksPage() {
     if (r.error) return r.error;
     setView((v) => (v ? { ...v, decks: v.decks.map((x) => (x.id === d.id ? { ...x, group: "RETIRED" as const } : x)) } : v));
     setDeleting(null);
+    setRetiring(null);
     return null;
+  }
+
+  /** Brings a retired deck back (its group comes from the server, so the list loads again). */
+  async function bringBack(d: DeckSummary) {
+    const r = await deckAction(d.id, { action: "retire", retired: false });
+    if (r.error) setError(r.error);
+    else {
+      setNotice(`${d.name} is back.`);
+      setReloads((n) => n + 1);
+    }
   }
 
   if (!view) {
@@ -204,6 +216,22 @@ export default function DecksPage() {
                   </div>
                 </a>
                 {!view.readOnly && (
+                  <button
+                    className="tile-delete tile-retire"
+                    title={d.group === "RETIRED" ? `Bring back ${d.name}` : `Retire ${d.name}`}
+                    aria-label={d.group === "RETIRED" ? `Bring back ${d.name}` : `Retire ${d.name}`}
+                    onClick={() => (d.group === "RETIRED" ? bringBack(d) : setRetiring(d))}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      {d.group === "RETIRED" ? (
+                        <path fill="currentColor" d="M20.55 5.22l-1.39-1.68A1.45 1.45 0 0 0 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.22A2 2 0 0 0 3 6.5V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.5c0-.48-.17-.93-.45-1.28zM12 9.5l5.5 5.5H14v2h-4v-2H6.5L12 9.5zM5.12 5l.82-1h12l.93 1H5.12z" />
+                      ) : (
+                        <path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z" />
+                      )}
+                    </svg>
+                  </button>
+                )}
+                {!view.readOnly && (
                   <button className="tile-delete" title={`Delete ${d.name}`} aria-label={`Delete ${d.name}`} onClick={() => setDeleting(d)}>
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                       <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 12H7L6 9zm4 2v8h2v-8h-2zm4 0v8h2v-8h-2z" />
@@ -242,6 +270,15 @@ export default function DecksPage() {
             setNotice(text);
             setReloads((n) => n + 1);
           }}
+        />
+      )}
+      {retiring && (
+        <ConfirmDialog
+          title="Retire the deck?"
+          text={`${retiring.name} moves to Retired, with its page, games and stats. It leaves the seat pickers, Update all decks and the collection checks (In a deck, the trade binder’s keep for my decks). Bring it back at any time.`}
+          button="Retire"
+          onClose={() => setRetiring(null)}
+          onYes={() => retireDeck(retiring)}
         />
       )}
       {deleting && (

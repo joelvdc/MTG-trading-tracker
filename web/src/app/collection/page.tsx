@@ -298,6 +298,13 @@ export default function CollectionPage() {
   const value = rows.reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
   const locked = view.readOnly || busy;
   const nFilter = filterCount(filter);
+  // The Binder dropdown: Unsorted and the binders in the bar's order (Arrange).
+  const binderChoices = view.bar.flatMap((k) =>
+    k === BAR_UNSORTED
+      ? [{ key: "~", name: "Unsorted", n: counts.get("~") ?? 0 }]
+      : view.binders.filter((b) => `b:${b.uid}` === k).map((b) => ({ key: b.uid, name: b.name, n: counts.get(b.uid) ?? 0 })),
+  );
+  const binderPicked = pick !== "" && !isWish && !isScans;
   const sort = sorts[0];
   const sets = (() => {
     const m = new Map<string, { code: string; name: string; copies: number }>();
@@ -349,22 +356,12 @@ export default function CollectionPage() {
         )}
         {lookup && <div className="bar">{lookup}</div>}
 
-        <div className="binder-bar" role="tablist" aria-label="Binders">
+        <div className="binder-bar" role="tablist" aria-label="Collection">
           {[
             { key: "", name: "All", n: [...counts.values()].reduce((a, b) => a + b, 0), star: false },
-            ...view.bar.flatMap((k) =>
-              k === BAR_UNSORTED
-                ? [{ key: "~", name: "Unsorted", n: counts.get("~") ?? 0, star: false }]
-                : k === BAR_WISHLIST
-                  ? [
-                      { key: BAR_WISHLIST, name: "Wishlist", n: view.wishCount, star: true },
-                      // The app's Scan tab list, next to the wishlist; shown while scans wait (or while it's open).
-                      ...(view.scanCount > 0 || pick === BAR_SCANS ? [{ key: BAR_SCANS, name: "Scanned", n: view.scanCount, star: false }] : []),
-                    ]
-                  : view.binders
-                      .filter((b) => `b:${b.uid}` === k)
-                      .map((b) => ({ key: b.uid, name: b.name, n: counts.get(b.uid) ?? 0, star: false })),
-            ),
+            { key: BAR_WISHLIST, name: "Wishlist", n: view.wishCount, star: true },
+            // The app's Scan tab list; shown while scans wait (or while it's open).
+            ...(view.scanCount > 0 || pick === BAR_SCANS ? [{ key: BAR_SCANS, name: "Scanned", n: view.scanCount, star: false }] : []),
           ].map((b) => (
             <button
               key={b.key || "all"}
@@ -377,6 +374,22 @@ export default function CollectionPage() {
               {b.name} <span className="count">{b.n}</span>
             </button>
           ))}
+          {/* Unsorted and the binders, in the order Arrange sets (the phones' binder bar). */}
+          <select
+            aria-label="Open a binder"
+            className={binderPicked ? "chip binder-pick on" : "chip binder-pick"}
+            value={binderPicked ? pick : ""}
+            onChange={(e) => e.target.value && changeBinder(e.target.value)}
+          >
+            <option value="" disabled>
+              Binder…
+            </option>
+            {binderChoices.map((b) => (
+              <option key={b.key} value={b.key}>
+                {b.name} ({b.n})
+              </option>
+            ))}
+          </select>
           <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: null, name: "" })}>
             ＋ Binder
           </button>
@@ -404,7 +417,7 @@ export default function CollectionPage() {
         </div>
 
         {isScans ? (
-          <ScansPanel onLoggedOut={goLogin} onChanged={refreshCounts} />
+          <ScansPanel layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} onLoggedOut={goLogin} onChanged={refreshCounts} />
         ) : isWish ? (
           <WishlistPanel
             layout={layout}
