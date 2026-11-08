@@ -46,7 +46,8 @@ export function RecommendationsPanel({
   const [added, setAdded] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
   const [hoverOn, setHoverOn] = useHoverSetting();
-  const cacheKey = `mtg.recs.${view.id}.${source}`;
+  // v2: results cached before manaCost existed are fetched again.
+  const cacheKey = `mtg.recs.v2.${view.id}.${source}`;
   const money = (eur: number | null) => (eur == null ? "–" : format(eur * view.perEuro, view.currency));
   const priceOf = (c: RecCard) => {
     const card = c.card;
@@ -138,7 +139,7 @@ export function RecommendationsPanel({
           </button>
         </div>
         <button
-          className="btn small-btn"
+          className="btn small-btn rec-refresh"
           onClick={load}
           disabled={busy}
           title={busy ? "Getting them…" : result ? "Refresh" : "Get recommendations"}

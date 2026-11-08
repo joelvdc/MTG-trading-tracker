@@ -243,6 +243,7 @@ function withScry(base: RecCard, s: ScryRec | undefined, since: string): RecCard
     card: toCardRef(s as Parameters<typeof toCardRef>[0]),
     typeLine: s.type_line || (s.card_faces ?? []).map((f) => f.type_line ?? "").join(" // "),
     cmc: s.cmc ?? 0,
+    manaCost: s.mana_cost ?? s.card_faces?.[0]?.mana_cost ?? null,
     isNew: !s.reprint && (s.released_at ?? "") >= since,
     releasedAt: s.released_at ?? null,
   };

@@ -2312,6 +2312,11 @@ details.menu > summary::-webkit-details-marker {
   text-align: center;
 }
 
+/* The ⟳ refresh button: wide enough for the arrow not to feel cramped. */
+.rec-refresh {
+  min-width: 44px;
+}
+
 .rec-cost {
   flex: none;
 }
