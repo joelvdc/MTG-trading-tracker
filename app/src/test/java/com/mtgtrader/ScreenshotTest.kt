@@ -18,6 +18,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.mtgtrader.ui.gameOverviewTab
 import androidx.compose.ui.graphics.asImageBitmap
 import com.mtgtrader.data.AlertEvent
 import com.mtgtrader.data.AppCurrency
@@ -1262,6 +1263,33 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/deck_games.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** The Game stats screen's Overview tab. */
+    @Test fun gameStatsOverview() {
+        fun seat(i: Int, name: String, place: Int, started: Boolean) = com.mtgtrader.data.GameSeat(i, "p$i", name, me = i == 0, place = place, started = started)
+        fun rec(day: Long, minutes: Long, rounds: Int?, winner: Int, started: Int, win: com.mtgtrader.data.WinType?): com.mtgtrader.data.GameRecord {
+            val at = 1_790_000_000_000 + day * 86_400_000
+            return com.mtgtrader.data.GameRecord(
+                startedAt = at, endedAt = at, durationMs = minutes * 60_000, turnsOn = rounds != null, rounds = rounds, winType = win?.key, uid = "u$day",
+                seats = com.mtgtrader.data.Games.encodeSeats((0 until 4).map { seat(it, listOf("Robin", "Mads", "Anna", "Bo")[it], if (it == winner) 1 else 2 + (it + 4 - winner) % 3, it == started) }),
+            )
+        }
+        val games = listOf(
+            rec(0, 74, 11, 0, 0, com.mtgtrader.data.WinType.COMBO), rec(9, 52, null, 1, 1, null), rec(40, 58, 8, 0, 2, com.mtgtrader.data.WinType.COMBAT),
+            rec(44, 66, 9, 2, 2, com.mtgtrader.data.WinType.COMBO), rec(52, 81, 12, 3, 0, com.mtgtrader.data.WinType.COMMANDER), rec(60, 47, 7, 0, 0, com.mtgtrader.data.WinType.COMBO),
+            rec(130, 70, 10, 1, 3, com.mtgtrader.data.WinType.DRAIN), rec(131, 63, 9, 0, 0, com.mtgtrader.data.WinType.COMBAT),
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    androidx.compose.foundation.lazy.LazyColumn(Modifier.height(720.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp)) {
+                        gameOverviewTab(games, com.mtgtrader.data.StatsPeriod.ALL, true)
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/game_stats_overview.png", roborazziOptions = screenshotOptions)
     }
 
     // 1.65: the cards as an A4 PDF to print and cut (Magic card size), the choices and the preview.

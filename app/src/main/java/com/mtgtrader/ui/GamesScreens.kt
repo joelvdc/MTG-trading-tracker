@@ -94,6 +94,7 @@ import com.mtgtrader.container
 import com.mtgtrader.data.DeckOrder
 import com.mtgtrader.data.DeckResult
 import com.mtgtrader.data.FriendDeck
+import com.mtgtrader.data.GameOverview
 import com.mtgtrader.data.GameRecord
 import com.mtgtrader.data.GameSeat
 import com.mtgtrader.data.GameStats
@@ -105,6 +106,7 @@ import com.mtgtrader.data.OutReason
 import com.mtgtrader.data.PausedGame
 import com.mtgtrader.data.Player
 import com.mtgtrader.data.PlayerResult
+import com.mtgtrader.data.StatsPeriod
 import com.mtgtrader.data.WinType
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -514,6 +516,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
 }
 
 /** Game stats (since 1.47): decks (sortable), players, and the owner against each other player. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GameStatsScreen(nav: NavController) {
     val c = LocalContext.current.container
@@ -522,9 +525,11 @@ fun GameStatsScreen(nav: NavController) {
     var order by rememberSaveable { mutableStateOf(DeckOrder.WIN_RATE) }
     var onlyMine by rememberSaveable { mutableStateOf(false) }
     var sortMenu by remember { mutableStateOf(false) }
-    val decks = remember(games) { GameStats.decks(games) }
-    val players = remember(games) { GameStats.players(games) }
-    val h2h = remember(games) { GameStats.headToHead(games) }
+    var period by rememberSaveable { mutableStateOf(StatsPeriod.ALL) }
+    val shown = remember(games, period) { GameOverview.inPeriod(games, period, System.currentTimeMillis()) }
+    val decks = remember(shown) { GameStats.decks(shown) }
+    val players = remember(shown) { GameStats.players(shown) }
+    val h2h = remember(shown) { GameStats.headToHead(shown) }
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -535,15 +540,25 @@ fun GameStatsScreen(nav: NavController) {
         },
     ) { pad ->
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 24.dp)) {
+            item(key = "period") {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatsPeriod.entries.forEach { p ->
+                        FilterChip(period == p, { period = p }, label = { Text(p.label, maxLines = 1) })
+                    }
+                }
+            }
             item(key = "tabs") {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-                    listOf("Decks", "Players", "Head to head").forEachIndexed { i, t ->
-                        SegmentedButton(tab == i, { tab = i }, SegmentedButtonDefaults.itemShape(i, 3), icon = {}) { Text(t, maxLines = 1) }
+                    listOf("Overview", "Decks", "Players", "Head to head").forEachIndexed { i, t ->
+                        SegmentedButton(tab == i, { tab = i }, SegmentedButtonDefaults.itemShape(i, 4), icon = {}) {
+                            Text(t, maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                        }
                     }
                 }
             }
             when (tab) {
-                0 -> {
+                0 -> gameOverviewTab(shown, period, games.isNotEmpty())
+                1 -> {
                     item(key = "sort") {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Sorted by", style = MaterialTheme.typography.bodySmall)
@@ -570,7 +585,7 @@ fun GameStatsScreen(nav: NavController) {
                         )
                     }
                 }
-                1 -> items(players, key = { it.key }) { p -> PlayerRow(p); HorizontalDivider() }
+                2 -> items(players, key = { it.key }) { p -> PlayerRow(p); HorizontalDivider() }
                 else -> {
                     item(key = "h2h_h") { Text("You against …", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(vertical = 6.dp)) }
                     items(h2h, key = { it.key }) { h -> HeadToHeadRow(h) }
