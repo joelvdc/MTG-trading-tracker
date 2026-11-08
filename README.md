@@ -1,9 +1,8 @@
-# MTG Trader (Android)
+# MTG Trader
 
-Track Magic: The Gathering trades, check they're fair using Cardmarket prices, and keep your collection up to date.
-Keep your Commander decks at hand too, with their power level, brackets and rule-zero cards, organise the collection in
-binders, scan piles of cards before deciding where they go, and sync it all between your phones and the website
-through your MTG Trader account. Decks come from Archidekt's public decklists; the collection goes to Archidekt as a CSV file.
+An Android app and a website for Magic: The Gathering players: keep your collection and its value up to date, make
+fair trades, follow your wishlist and orders, manage your Commander decks and keep score in your games. The phones
+and the website stay in sync through your MTG Trader account.
 
 | Trade | Collection | Scan tab | Commander decks |
 |:---:|:---:|:---:|:---:|
@@ -13,441 +12,73 @@ through your MTG Trader account. Decks come from Archidekt's public decklists; t
 |:---:|:---:|:---:|:---:|
 | <img src="docs/screenshots/games.png" width="200" alt="The Games tab: last games, who won and stats"> | <img src="docs/screenshots/lifetracker.png" width="200" alt="The life tracker for four players, each panel facing its player"> | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: the color pie and color identities"> |
 
-## Contents
-- [Install](#install)
-- [Where the data comes from](#where-the-data-comes-from)
-- [Prices and currencies](#prices-and-currencies)
-- [Trades](#trades)
-- [Collection and binders](#collection-and-binders)
-- [Orders and purchase prices](#orders-and-purchase-prices)
-- [Trade binder](#trade-binder)
-- [Wishlist](#wishlist)
-- [Scan tab](#scan-tab)
-- [Commander decks](#commander-decks)
-  - [Deck stats, win turn and power level](#deck-stats-win-turn-and-power-level)
-  - [Rule-zero cards](#rule-zero-cards)
-  - [Editing decks and local decks](#editing-decks-and-local-decks)
-- [Games: life tracker and game records](#games-life-tracker-and-game-records)
-- [Sync between phones](#sync-between-phones)
-- [Website](#website)
-- [Archidekt](#archidekt)
-- [Backups and restore points](#backups-and-restore-points)
-- [Rebuilding](#rebuilding)
-- [License and disclaimer](#license-and-disclaimer)
-
 ## Install
 [<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/joelvdc/MTG-trading-tracker)
 
-**With [Obtainium](https://github.com/ImranR98/Obtainium)** (recommended): tap the button above on your phone, or add
-`https://github.com/joelvdc/MTG-trading-tracker` as an app in Obtainium. It installs the app from this page's releases
-and tells you when there's a new version. Pick `MTG-Trader-<version>.apk` (or the `-universal` one if that doesn't
-install).
+- **With [Obtainium](https://github.com/ImranR98/Obtainium)** (recommended): tap the button above on your phone. It
+  installs the app and tells you when there's a new version.
+- **By hand:** download `MTG-Trader-<version>.apk` from the
+  [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest) and open it on your phone. Use the
+  `-universal` file if that one doesn't install. Updates install over the old version and keep your data.
 
-**By hand:** download `MTG-Trader-<version>.apk` from the [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest)
-and open it on your phone (allow "install unknown apps" when asked). It's built for 64-bit ARM phones (practically every
-phone from the last ~6 years); `MTG-Trader-<version>-universal.apk` runs on any device. A new version installs over
-the old one and keeps your data.
+The app works on its own, without an account. An **MTG Trader account** adds sync between phones, the website and
+nightly backups; accounts need an invite code for now.
 
-## Where the data comes from
-Everything is looked up live, so new sets show up without an app update.
-- **Cards and pictures:** Scryfall. Pictures you've seen stay on the phone; on Wi-Fi the app also saves your decks' and
-  wishlist's pictures for offline use (Settings, on by default, at most 600 MB).
-- **Prices:** Cardmarket's public daily price guide (~26 MB a day), plus TCGplayer's market prices (with Scryfall's
-  card data) and Card Kingdom's public price list (~10 MB a day). Cardmarket's weekly product list fills in the
-  printings Scryfall doesn't link (The List, some surge foils, special foils' separate products).
-- **Decks:** Archidekt (public decklists, read only), [Commander Salt](https://www.commandersalt.com/)
-  (brackets, scores and rule-zero card data), and optionally [EDH Power Level](https://edhpowerlevel.com/) or
-  [ScrollVault](https://scrollvault.net/tools/commander-bracket/) for the power level. Mana symbols use the
-  [Mana font](https://mana.andrewgioia.com) by Andrew Gioia (SIL Open Font License; symbols © Wizards of the Coast).
-- **Recommendations:** [EDHREC](https://edhrec.com/) and [recommander.cards](https://recommander.cards/).
-- **Preconstructed decks:** [MTGJSON](https://mtgjson.com/). **Exchange rates:** the European Central Bank.
+## What it does
+**Collection**
+- Cards with their printing, finish, condition, language, purchase price, signed and altered, sorted into binders.
+- Prices from Cardmarket, TCGplayer or Card Kingdom, in euros, Danish kroner or US dollars, optionally adjusted for
+  condition. Value over time, value by set, biggest risers and fallers, what you paid against what it's worth.
+- List, compact or picture views; sort in up to three layers; filter by almost anything. Home-screen widgets.
+- Stats: colours, identities, rarity, types, mana curve, sets, finish, condition, language and more.
+- CSV import and export.
 
-The app introduces itself to the sites it calls directly (not the power level calculators it opens out of sight) as `MTGTraderAndroid/<version>` with a link to this page, so they can see
-who's calling.
+**Scanning and orders**
+- Scan a pile of cards with the camera, then send them to a binder, a trade or a deck.
+- Import a CardTrader or Cardmarket order with its prices, or a Commander precon.
+- **Check an order:** compare the scanned cards with the order file to find missing cards, wrong languages or
+  printings, with a problem report for the shop.
 
-Prices download once a day when the app opens and in the background (Settings can limit this to Wi-Fi or turn it off;
-"Update prices now" always runs), with a progress bar above the tabs. The collection stays usable meanwhile. Card
-Kingdom refuses phones in some countries (HTTP 403); then the app uses a copy that a daily GitHub job
-(`.github/workflows/card-kingdom.yml`) keeps on this repository's `card-kingdom-prices` branch. Since 1.81 a phone
-logged in to an MTG Trader account gets Cardmarket's prices and the exchange rates from the website's nightly copy
-(about 2 MB instead of 27 MB), and falls back to Cardmarket's own file when the website can't be reached; Settings →
-Prices shows where they came from.
+**Trades**
+- Both sides with their value and whether the trade is fair; completing it updates the collection.
+- A **trade binder** suggests spare copies to trade, keeping what your decks need.
 
-## Card windows
-Tapping a card (collection, deck, recommendations) opens its window: the picture, then the card's text (every face
-with its mana cost, type line, rules text with symbols, power/toughness or loyalty), and two tabs: **Versions** (copies,
-printing, finish, prices and the rest) and **Rulings** (where the card is legal, banned or restricted, and Scryfall's
-rulings with dates). Text and rulings are fetched from Scryfall the first time and kept on the phone for offline use.
-Since 1.81.
+**Wishlist**
+- To buy, ordered, received; swipe a card along and into the collection.
+- Price alerts when a card drops to your price.
 
-## Prices and currencies
-- **Price source** (Settings): Cardmarket, TCGplayer or Card Kingdom values your cards everywhere (totals, sorting,
-  filters, trades). A card the source has no price for gets Cardmarket's, shown with "≈". Card Kingdom follows each
-  copy's condition. Each card's page and the stats compare all three.
-- **Condition-adjusted values** (Settings, off by default): a copy counts for a share of the price by condition
-  (Near Mint 100%, Excellent 85%, Good 70%, Light Played 60%, Played 45%, Poor 30%, each adjustable), marked e.g.
-  "EX 85%".
-- **Currency** (Settings): show prices in euros, Danish kroner or US dollars, at the ECB's daily rates.
-- **Typing a price in the currency you paid in:** every price field has a **€ ▾ / kr. ▾ / $ ▾** button. The amount is
-  kept as typed (75 kr. stays 75,00 kr.) and in euros for totals, Archidekt and CSV files. When copies paid in
-  different currencies join one stack, the app asks which currency the average is kept in.
+**Commander decks**
+- Import a deck from a link or a pasted list, add a precon, or build one in the app or on the website.
+- Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
+  win turn.
+- Printable **bracket and power level cards** for rule zero, recommendations, cards you're missing (to the wishlist),
+  and retiring decks you no longer play.
 
-## Trades
-A trade has two sides, **You give** and **You get**, each with its cards, their value and the difference; add cards by
-search or the scanner. The sides can show one above the other or side by side. Wishlist cards on the "You get" side get
-a ★. **Complete** the trade to update the collection: given cards are taken from Unsorted first, and you choose the
-binder for the received ones. Trades can be shared as text, and an agreed price can be set per card.
+**Games**
+- A life tracker for 2 to 6 players with commander damage, poison, counters, turns, dice and a game clock.
+- Every game is saved, with win rates per deck and player, head to head and an overview.
 
-## Collection and binders
-- **Binders:** the bar above the list shows **All**, **Unsorted** and each binder with its card count. Create, rename,
-  delete, **merge** and **arrange** binders from the ⋮ menu; the order syncs.
-- **Views:** list, compact (one line per card) or a grid of card pictures.
-- **Sort** in up to three layers (e.g. colour, then name), by name, colour, type, mana value, rarity, set, number,
-  value, date added, copies, or the latest price change (in % or money).
-- **Filter** by colours, type, rarity, sets, finish, signed or altered, condition, language, value and whether the card
-  is in a deck. The search field finds names, sets and foil types.
-- **Selecting:** press and hold a card, tap more, then move them to a binder, add them to a trade, delete them, edit
-  condition, language or price, or share, copy or export them. **Swiping** a card moves it or adds it to a trade (each
-  direction can be changed in Settings). Everything can be undone right after.
-- **Card page:** picture, price and trend, quantity, finish, binder, condition, language, **purchase price**, notes,
-  **Signed** and **Altered**, the decks it's in and the other copies you own. Tap a picture to see it full screen;
-  double-faced cards flip.
-- **Value over time:** tap the total above the list for a chart per day (per binder too), the **value by set** (with
-  each set's recent change; tap one to see its cards), the biggest risers and fallers, and **Paid and worth** (what
-  you paid against today's value).
-- **Home-screen widgets:** "Collection value" shows the total and the change over 7 days, and with a wider widget a
-  7-day chart and the biggest movers; "Wishlist" shows the cards closest to their alert price. They refresh whenever
-  the app updates prices.
-- **Stats:** totals, the colour pie, colour identities, rarity, types, mana curve, sets, release years, finish,
-  condition, language, value per binder, your most valuable and most played cards and your Game Changers. Tap a slice
-  to see those cards.
-- **CSV import and export** with binders, purchase prices (as typed), signed and altered (ManaBox's columns are read).
-  **Export CSV** asks for the format: the app's full file, or **Archidekt** (for Archidekt's importer, preset
-  "ManaBox – Single folder"; binders merged) with everything or **only the cards added since the last export** from
-  this phone (new cards and extra copies; cards removed since are removed on Archidekt by hand).
+**Website** ([mtgtrader.vercel.app](https://mtgtrader.vercel.app))
+- The collection, wishlist, scanned cards, orders, decks and trades on a computer, with the same prices and stats as the
+  app. Changes reach the phones at their next sync.
 
-## Orders and purchase prices
-- **Import an order** (⋮ menu): a CardTrader order (Excel) or a Cardmarket shipment or monthly CSV. The app finds each
-  card on Scryfall and shows the order first; cards it isn't sure about say **Check the printing**. The cards keep the
-  order's finish, condition, language and price paid. Afterwards, wishlist cards in the order can be marked received.
-- **Purchase prices from orders:** fills in what you paid for cards already in the collection (the average per card),
-  showing every change first, with a choice where the file can't tell which copy it was.
-- **Orders:** the history of your orders, checked packages and precons, with what you paid and what they're worth now.
-  Older order files can be added to the list without changing the collection.
-- **Add a preconstructed deck:** any Commander precon, its cards in their own printing, the price split over them by
-  value.
+## Data
+Card data and pictures from [Scryfall](https://scryfall.com); prices from Cardmarket, TCGplayer and Card Kingdom;
+brackets and combos from [Commander Salt](https://www.commandersalt.com/); recommendations from
+[EDHREC](https://edhrec.com/) and [recommander.cards](https://recommander.cards/); precons from
+[MTGJSON](https://mtgjson.com/); exchange rates from the European Central Bank; mana symbols from the
+[Mana font](https://mana.andrewgioia.com) by Andrew Gioia.
 
-## Trade binder
-⋮ → **Make a trade binder** suggests spare copies to trade (what your decks use, wishlist cards and basic lands stay
-home), ranked by value and by how much Commander players want them, with a nudge for rising prices. Set the maximum
-number of cards, a minimum value and whether to keep one copy of each card; by default your decks keep their best copy.
-**Swap** picks another copy of a card. Later, **Update trade binder** shows what to put in and take out, with the reason
-for each. Signed and altered copies are never suggested. Nothing changes until you apply. The rules and the declined
-suggestions sync to your other phones and the [website](#website) (since 1.80), which has a trade binder page too.
-
-## Wishlist
-The **★ Wishlist** in the binder bar holds the cards you want: any printing, or one printing and finish. It's in three
-sections, **To buy**, **Ordered** and **Received**.
-- **Swipe right** moves a card on: To buy → Ordered → Received → into the collection (asking printing, finish,
-  condition, language, binder and price). **Swipe left** deletes. Every swipe can be undone.
-- The ⋮ menu marks all ordered cards, or the cards you now own, as received, and clears received cards (also
-  automatically after 1–12 months).
-- **Price alerts:** set "Notify me at or below" on a card; you get a notification when it costs that much or less, once
-  per drop. Compares the chosen price source and, with your own CardTrader API token, CardTrader's cheapest offer
-  (optionally CardTrader Zero only). Each phone keeps a year's **alert history** (when, at what price and where):
-  the last ones in the card's window, all of them under ⋮ → Alert history.
-- **Change printing** in the card's window: pick another printing (with pictures and prices) of the same card.
-- **Offline:** "Add card" suggests names from Cardmarket's list on the phone; the details follow once online.
-
-## Scan tab
-Scan a pile of cards (or add them by name) into a waiting list, then send some or all of them **to a binder**, **to a
-trade**, **to a deck** or discard them.
-- The newest card is on top with its price. When only the name was readable, **Choose printing** lists all printings
-  with pictures and prices, and sets the finish.
-- Cards from before 2015 are matched by their **set symbol**; when two symbols look alike, you choose.
-- **Language:** "auto" (as printed) or one you choose for all scanned cards.
-- **Check an order:** compares the scanned cards with the order's file: missing cards, wrong language or printing,
-  extra cards and what to check by hand, with a problem report to copy for the shop and **Add to collection…** with
-  the order's prices, condition and finish.
-
-## Commander decks
-**New deck** (Decks tab): paste or share an Archidekt link, pick decks from someone's Archidekt profile, or make a
-**local deck** (empty, from a precon, from scanned cards, a copy of one of yours, or a pasted Moxfield list). The tab
-has three sections: **Archidekt** (your own decks), **Archidekt (read only)** (other people's) and **Local**. Your own
-decks are those of the Archidekt username under Settings → Decks.
-
-The deck page shows the list by your Archidekt categories (or card type) with mana costs and prices, as cards with
-pictures or one line per card. Labels mark game changers, combos, extra turns and land denial (red: they count for
-the bracket) and tutors and fast mana (grey). Sections fold away. Each card is shown in a printing you own when you
-have one (tap it to choose). Also on the deck page and its ⋮ menu:
-- **Maybeboard**, **Cards I'm missing** (with their cost; to the wishlist or as a list), **Add to collection**.
-- **Recommendations** from EDHREC or recommander.cards, filtered by type, owned and new cards; also for all decks at
-  once. **Cards in several decks** shows which cards your decks share.
-- **Combos:** every combo Commander Salt finds is flagged (COMBO 2 / COMBO 3+, red when it counts for the bracket),
-  with what it does and a link to Commander Spellbook.
-- **Refresh bracket and power level**, **Reload decklist from Archidekt**, and on the Decks tab **Update all decks from
-  Archidekt** and **Re-score all decks**. The deck list sorts by name, power level, bracket or last change.
-
-### Deck stats, win turn and power level
-Folding **Stats** and **Tokens** sections on the deck page:
-- **Mana curve**, **mana cost** by colour and **mana production** (each card counted once per colour it can make; fetch
-  lands for what they can find in the deck).
-- **Tokens** the deck makes, with the printing of your choice.
-- **Casting the commander:** the chance per turn (1–7) that the commander can be cast and each colour is there, from
-  10,000 games played alone (Frank Karsten's method with the deck's own cards: Commander mulligans, a land a turn, mana
-  rocks, mana creatures and ramp; lands like Lotus Field or Ancient Tomb make what they tap for). The land played is the
-  one adding a missing colour, and a tapped land goes down when an untapped one's mana wouldn't be used that turn;
-  "enters tapped unless …" lands (slow, fast, check and battle lands, Game Trail, Dwarven Mine, Mines of Moria once
-  the commander is out) check their condition. A ramp spell's basic counts as the one colour the deck lacks most.
-- **Winning the game:** the first turn the deck wins (green), the turn it has won by in 4 of 10 games (gold) and in 9
-  of 10, and the share of games won each turn. The app plays the deck alone 10,000 times for up to 15 turns against
-  three players at 40 life, nobody blocking: it casts its cards (most expensive first), attacks with everything, and
-  reads from the cards' text what they do: damage, drain, tokens, pumps, counters, equipment, card draw, ramp,
-  Treasures, the graveyard, reanimation, copies, polymorph, cascade, planeswalkers, sacrifice payoffs, abilities that
-  cost a sacrifice or blight, death triggers, spree, Sagas, Vehicles, poison and toxic, and Commander Salt's **combos** (with tutors fetching
-  a missing piece). It wins when all three opponents are out (life,
-  21 commander damage, poison, a combo, Maze's End). **How?** in the app lists what was counted. No removal or blockers,
-  so it's a best case to compare decks by. Worked out in the background and kept until the deck changes.
-
-**Power level source** (Settings): Commander Salt, EDH Power Level, ScrollVault or **This app**. It's used everywhere:
-the Decks tab, sorting, the deck page, the power card and the printed cards. Brackets always come from Commander Salt.
-- **EDH Power Level and ScrollVault** have no API, so the app opens their calculator out of sight and reads the result
-  (a few seconds per deck). ScrollVault adds a margin (e.g. 6.2 ±0.5), its typical winning turn and a line for your pod.
-- **This app:** a whole number from 1 to 10, worked out on the phone. **Speed** is the turn by which half the
-  simulated games are won (with decimals: 38% by turn 8 and 62% by turn 9 is turn 8.5), on the turn scale of the
-  r/EDH "Guide to Power Levels in EDH": turn 1 is 10, turn 3 is 9, turn 6 is 8, turn 8 is 7, turn 10.5 is 6, turn 13
-  is 5, turn 15 is 4.5 (in between, it slides). Decks winning under half their games by turn 15 get 4 (35% or more),
-  3 (15% or more), 2 (any) or 1. Then **what the win turn can't see**, from Commander Salt's 0–1 ratings, at most one
-  point either way: (interaction − 0.25) × 2 + (consistency − 0.45) + (efficiency − 0.30) × 1.5 + (mana base − 0.90).
-  The deck page shows how the number came about.
-
-### Rule-zero cards
-The **bracket** and **power level cards**, drawn by the app from Commander Salt's analysis: the brackets and their
-criteria (game changers, combos, extra turns, land denial), the speed (the win turn), how the deck plays, saltiness,
-mana base, interaction and win conditions. "Wins by T10" on a bracket card is the turn the deck has won by in 4 of 10
-games (see **Winning the game** above). They show full screen to show your table, can be shared as pictures and
-work offline. Decks tab ⋮ → **Bracket cards of all decks** / **Power level cards of all decks** shows every deck's card;
-the 🖨 button there prints them as an **A4 PDF** at the size of a Magic card (nine per page, with cut marks, and an
-ink saver option).
-
-### Editing decks and local decks
-Local decks can be changed in the app: drag cards between categories, select several to move, put in the maybeboard
-or remove, add cards (search, scanner, Scan tab or recommendations), and manage categories (add, rename, delete,
-hide). New cards go into their auto category from the website's list (since 1.81; or by card type). Every edit can be undone and shows at once.
-Archidekt decks are read only in the app (since 1.78): edit them on archidekt.com, then **Reload decklist** (⟳); or ⋮ →
-**Make it a local deck** to edit a copy in the app. Changes made on a phone before 1.78 that never reached Archidekt
-show on the deck with **Make it a local deck** (keeps them) or **Discard** (then reload). Deleting a deck in the app
-never deletes it on Archidekt.
-
-### Retired decks
-A deck you don't play any more can be **retired** (deck ⋮ → **Retire deck…**, since 1.83; also on the website). It moves
-to a **Retired** section at the bottom of the Decks tab and keeps its page, games and stats, but leaves the seat
-pickers, **Update all decks** and the collection checks (the "in a deck" marks and the trade binder's "keep for my
-decks"). **Bring back** undoes it. Decks tab ⋮ → **Hide retired decks** hides the section altogether. Deleting a deck
-that played games suggests retiring it instead. An Archidekt deck that was deleted and imported again gets its old games
-back (they are linked by the Archidekt deck id); a local deck doesn't.
-
-Commander Salt has no official API: the app makes the same requests as its website, so this part may break if the site
-changes. Importing a deck adds it to commandersalt.com.
-
-## Games: life tracker and game records
-The **Games** tab keeps score in Commander games and remembers them. The tracker's layout is inspired by the Lifetap app.
-- **New game:** 2 to 6 players, their seats and decks (yours, friends' with a commander from Scryfall, or a guest's
-  commander; friends and guests can also borrow one of your decks, since 1.82), and who starts (picked or at random). The seats are drawn as a little table, as you see it with the phone
-  tilted left, tilted right or upright: tap a seat to pick the player and deck, hold one and drag it onto another to
-  swap them. **Rematch** sets up the last table again.
-- **The table:** each player's panel faces them, in a colour or their commander's picture, with life, − and +, and a
-  **commander damage mini-grid** (partners split in two). Tap for ±1, hold for ±10. At 0 life, 10 poison or 21
-  commander damage the app asks **Dead?**. A player's sheet has commander damage, poison, commander tax, the monarch,
-  the initiative, day/night, energy and other counters.
-- **The middle bar:** end the game, game settings, the round and game clock, history (with undo), the mana pool and
-  **Dice & random** (dice, a coin, a random player or opponent; hold the die for a quick-roll ring).
-- **Turns** (optional) with a gold frame for the active player; **pause** a game to continue later, on either phone.
-- **Ending a game:** who won and how, then save and rematch. **Stats:** an **Overview** (games played, your win rate,
-  average game and turns, games per month, how games were won, how the starting player does), wins, win rates and
-  lengths per deck and player, head to head, for all time, the last 12 months or the last 3 months, and a **Games**
-  section on each deck page. A deck you lend counts for the deck (marked "N lent", "played by Kim"); the result goes to
-  the player who borrowed it. Games can be edited, added by hand and exported as
-  CSV.
-- **Seats during a game:** Game settings show the same table; swapping seats during a game moves everything with the player (life,
-  damage, counters, the turn, the monarch), and undo puts them back.
-- **Game settings** (starting life, layout, commander damage, controls, vibration, look) are kept for the next games
-  and sync between phones. A new number of players there starts a new game; who starts is picked once you close
-  Game settings (back to the number it had, the same player starts).
-
-## Sync between phones
-Settings → **Account & sync** keeps the collection, binders (and which one is the trade binder), wishlist, trades,
-decks, scans, games and preferences the same on all your phones and the [website](#website), through one file
-(`sync.json.gz`) in your **MTG Trader account** on the website. Prices and pictures aren't synced; each phone downloads
-those itself.
-- **MTG Trader account** (since 1.79): log in with the user name and password made on the website (Settings → Make my
-  account and copy my data), or make a new account with an invite code from the owner. **Log out** stops syncing; the
-  account's devices are listed (and can be logged out) on the website.
-- **Nextcloud** (until 1.81 the app could sync there too): since 1.82 Nextcloud only holds the website's nightly backup
-  copy. A phone that still synced with Nextcloud shows "Nextcloud sync has ended" with **Switch to my account**;
-  nothing on Nextcloud is deleted.
-- **First sync:** when both sides hold data, choose: merge both, use the synced copy, or start from this phone.
-- **After that** changes are merged item by item (the most recent change wins, deletions carry over). Automatic sync
-  runs when you open the app, shortly after a change, when you leave it and every hour (optionally only on Wi-Fi).
-- When the sync file's format changes with an update, older versions stop syncing until they're updated, so no data is
-  lost.
-
-The password (or the account's device token) is stored encrypted with a key kept in the phone's keystore.
-
-## Website
-[mtgtrader.vercel.app](https://mtgtrader.vercel.app) shows and edits the **wishlist** and the **collection** from a
-computer, and shows the **trades**. It joins the
-Nextcloud sync as one more device, so its changes reach the phones at their next sync, and the other way round.
-- **Log in** with your Nextcloud (the website gets its own app password; logging out removes it). Then pick the sync
-  folder under **Settings**, the same one the app uses; **Change folder** switches it later.
-- **What it does:** add cards (any printing or a specific one, foil or not), change the printing, quantity, notes and
-  price alerts, tick *Ordered*, remove cards. **Mark received** (adding the copies to the collection when the app's
-  setting says so); a received card can go into the collection with the details you pick, back on the wishlist, or be
-  removed. **More…** marks all ordered cards or the cards you now own as received, clears received cards, or copies the
-  cards to buy as a list. Prices are Cardmarket's (updated daily), shown
-  in the app's currency and price type.
-- **Wishlist:** it sits in the collection, as the **★ Wishlist** tab. The collection's tabs are **All**, **★ Wishlist**,
-  **Scanned** (while scanned cards wait), a **Binder** list to open Unsorted or a binder (in the app's order), **＋ Binder**
-  and **Arrange**.
-- **Scanned:** the cards scanned on a phone, one line each (or as pictures, with Card on hover), to fix and send to a
-  binder or a local deck. **Check an order** compares them with an order's file, like the app: missing cards, wrong
-  language or printing, cards nobody ordered and what to check by hand, **It's here** for a card the scanner missed, a
-  problem report to copy for the shop, and **Add to collection…** with the order's prices, condition and finish (the
-  order goes into Orders).
-- **Views:** a list with columns (click a column title to sort) or card pictures; the choice is remembered. With a
-  mouse, the list shows a card's picture when you point at a row; the **Card on hover** button beside the view buttons
-  switches that off and on. A card's window links to the card on Cardmarket (that printing) and CardTrader (a name search).
-- **Collection:** the same cards, prices and values as the app (its price source, price type, currency and condition
-  adjustment). Pick a binder at the top; search, filter (colors, type, rarity, set, finish, condition, language, price,
-  decks, signed/altered) and sort, in up to three levels ("Color, then name"). The list shows 25, 50 or 100 rows per
-  page. A card's window changes copies, finish, condition, language, binder (all or some copies), purchase price,
-  notes, signed/altered (for some of the copies too) and the printing, shows every price source and the decks it's in,
-  and deletes it. Tick several cards to move them, set their condition, language or purchase price, copy them as a list, or delete
-  them.
-  **Add card** is there too, and the binders: new, rename, merge into another, delete (keeping the cards in Unsorted or
-  not), move all Unsorted cards, and **Arrange** the binder bar (the phones get that order too).
-- **Stats:** all of the app's collection stats (colors, identity, rarity, types, mana curve, finish, condition,
-  language, decks, binders, sets, years, most valuable, rising and falling, Game Changers, EDHREC) plus paid against
-  worth, the value at every price source and **Value by set** (with each set's latest change); click a bar to see those cards. **Value over time** (with an MTG Trader
-  account) charts the value per day for the whole collection or a binder over a month, three months, a year or all:
-  the website saves it every night, and the app sends the phone's earlier history once (since 1.80).
-- **Trade binder:** Collection → **Trade binder** shows the app's suggestions (same rules, same ranking): put each card
-  in, take it out, decline it or leave it for later, then apply; the binder is made if there is none. **Rules** changes
-  the maximum, minimum value and which copies stay home; declined cards can be suggested again. The phones get it all
-  at their next sync.
-- **Price alerts at night:** with an MTG Trader account the website checks the wishlist's alert levels every night
-  against Cardmarket (at the app's alert price type; "any printing" cards at their cheapest printing) and lists the
-  ones reached under **Alert history** on the wishlist. The phones still send the notifications. **Export CSV** saves the shown cards as the app's full CSV or for Archidekt. **Import CSV** reads a collection file
-  (ManaBox, Moxfield, Archidekt, Deckbox or the app's own) the way the app does: cards found on Scryfall, binders made by
-  name, purchase prices and notes kept.
-- **Decks:** the decks list (Archidekt and local decks, with bracket, power level, value and missing cards) and a page
-  per deck: its cards by category or card type (in the printings you own, like the app), owned and missing copies,
-  bracket tags, the maybeboard, the stats (mana curve, colours in the costs, mana production, tokens) and the
-  commander-casting odds from the app's own shuffling model (the same numbers as the phone). **Cards I'm missing**
-  puts them on the wishlist or copies them as a list; the **Bracket card** and **Power card** print like the app's.
-  **New deck** makes a local deck from a pasted list (Moxfield, Archidekt, Arena), a precon or nothing; a local deck's
-  cards can be added, removed, counted, moved between categories, made commander or sent to the maybeboard, and
-  its categories renamed, deleted or hidden, with the same rules as the app. New cards go into their **auto
-  category** (Ramp, Removal, Draw, Tutor, Recursion, Protection) from the website's own list, built weekly from
-  Scryfall's card tags (a card's other categories go along), else the card type; Categories →
-  **Put every card in its auto category** sorts a whole deck that way. Any deck can be copied and a deck from
-  Archidekt made local. The phones get every change at their next sync.
-  A card's window on the deck page shows the card's text, a **Rulings** tab (legalities and rulings), **In your
-  collection** (copies and piles) and **In your decks**; on local decks **Change printing** lists every printing, the
-  ones you own first with a green badge. Each line has an owned icon (a tick for the printing you own, an amber ring for
-  another version, an empty ring for none) with a Collection tracker box on hover (what the deck needs, the copies you
-  own and the other decks that use the card); tokens have their own section.
-  **Import from Archidekt** (a deck link, or a username to pick public decks from), **Reload decklist** and **Update
-  all decks** read Archidekt's public decks and score them on Commander Salt, like the app. The website works out every
-  deck's win turn itself (nightly and after a visit to Decks), and again only when a decklist changes.
-  **Recommendations** shows EDHREC's or recommander.cards' cards for the deck, like the app, with one-click adding
-  for local decks. **Winning the game** plays the deck 10,000 times with the app's own code (the same numbers as the
-  phone; half a minute or so in the browser, with a bar showing the games played, then kept there until the deck
-  changes), and fills in the bracket card's speed and the app's own power level. Each stats section and card category
-  folds away; **Combos** lists Commander Salt's combos (what they do, whether they count for the bracket, a link to
-  Commander Spellbook), also in a card's window; a token's printing can be chosen (the phones show it too). Any deck
-  can be retired or deleted (never on Archidekt), from its page or from the buttons on its tile. The Decks page also has **Cards in several decks** and **Rule-zero cards of all
-  decks** (every bracket and power card, to print together).
-- **Orders:** the order history with what each order cost and what its cards are worth now. **Import an order…** reads
-  a CardTrader order (Excel) or a Cardmarket shipment or monthly file, finds the cards on Scryfall and adds the ticked ones
-  (tokens and basic lands left out unless you tick them) with their prices; **Add a precon…** adds a Commander precon
-  from MTGJSON with the price split over its cards, like the app. **Prices from orders…** sets the purchase prices of
-  cards you already have from one or more order files, asking where a line could be several piles.
-- **Trades:** the app's trades with both sides, their totals and whether they are fair; made and applied in the app.
-- **Settings:** besides the sync folder, the app's shared settings (price source, price type, currency, condition
-  adjustment, alert price, fair trade margin, the wishlist's choices, the power level source and your Archidekt
-  username); the phones take changes at their next sync. The
-  website's backups are listed there to download; restore one in the app (Settings → Backups → Restore from a file…).
-- **Safety:** before its first change of a day the website keeps a copy of the sync file in `web-backups/` in the sync
-  folder (the last 10 days). It never overwrites a change made at the same moment by a phone, and when the app's sync
-  file format is newer than the website knows it only shows the data.
-- **Website account:** logged in with Nextcloud, Settings → **Make my account and copy my data** makes your own
-  account on the website with a copy of your data (Nextcloud then gets a backup copy every night; nothing there is
-  changed). From then on you log in with that user name and password. The first account is the owner's: under Settings
-  it makes invite codes for others (each works once), resets a forgotten password, and shows every device logged in.
-  The app syncs with the account since 1.79 (**Settings → Account & sync**), and only with it since 1.82.
-- Only the Nextcloud users listed in the website's settings (`ALLOWED_USERS`) can log in with Nextcloud. The code is in
-  `web/` (Next.js on Vercel); see `web/README.md`.
-
-## Archidekt
-The app reads public [Archidekt](https://archidekt.com/) decklists, and only when you ask: adding a deck, **Reload
-decklist** or **Update all decks**. It doesn't log in to Archidekt (since 1.78; the collection sync and sending deck
-edits are gone). Settings → Decks holds your Archidekt username, which marks your own decks. To bring the
-collection to Archidekt, use Collection → ⋮ → **Export CSV** → Archidekt and import the file on archidekt.com with the
-"ManaBox – Single folder" preset.
-
-**Going easy on Archidekt:** every request to Archidekt waits until 1.5 seconds after the previous one, so the app
-never sends more than 40 a minute; it names itself and backs off when Archidekt asks.
-
-**Switches:** the app reads [`remote-switches.json`](remote-switches.json) from this repository once a day.
-`"archidektDecks": false` stops reading public decks on every installed copy (`"archidektAccount"` only mattered
-before 1.78); `"message"` is shown in the app.
-Anything missing or unreadable counts as on.
-
-## Backups and restore points
-Settings → **Backups** keeps restore points of everything the app syncs.
-- Made **every day** when something changed, and before big changes (the first sync, CSV and
-  order imports, restoring). **Back up now** makes one you keep.
-- Stored on the phone, or in a folder you choose (it survives uninstalling the app); **Save to a file…** and **Restore
-  from a file…** work with any file, also the backups the app kept on Nextcloud before 1.82. The website copies your
-  account to your Nextcloud every night (the Backups page links to the website's Settings).
-- Kept: the latest 10 automatic backups and one per week for 8 weeks.
-- **Restoring** shows what differs, backs up the current state first, then replaces the app's data.
-
-Settings → **Appearance & offline**: same as the phone, light or dark, and saving deck and wishlist pictures for
-offline use.
-
-Settings is a list of categories since 1.82 (Account & sync, Prices, Collection & trades, Wishlist, Decks, Games,
-Backups, Appearance & offline, About), each with a line saying what it is set to; the settings themselves are the same.
-
-## Rebuilding
-Requires JDK 17 or 18 (newer JDKs are too new for this Gradle version) and the Android SDK (point `sdk.dir` in
-`local.properties` at it).
-```
-gradlew assembleDebug
-```
-The build output goes to `mtgtrader-build` in your local app data folder (`%LOCALAPPDATA%` on Windows, see the root
-`build.gradle.kts`), outside the project, so synced folders don't fill up with build files.
-
-**Release builds** are signed with a private key in `keystore/` and `keystore.properties`, which aren't in this
-repository. Android only installs an update over the existing app if it's signed with the same key, so an APK you build
-yourself can't be installed over the official app: you'd have to uninstall it first, which deletes the app's data.
-
-- **Tests:** `gradlew testDebugUnitTest` (logic) and `gradlew connectedDebugAndroidTest` (scanner, needs a device).
-- **Screenshot tests:** `ScreenshotTest.kt` draws parts of screens with sample data (Robolectric and Roborazzi) and
-  compares them with `app/src/test/screenshots`. `gradlew verifyRoborazziDebug` compares, `gradlew
-  recordRoborazziDebug` redraws after an intended change.
-- **Releases:** `.github/workflows/release.yml` builds, signs and publishes a release with the keystore in the
-  repository's Actions secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`): Actions → Release
-  → Run workflow releases the `versionName` in `app/build.gradle.kts` with `release-notes/<version>.md` as the notes.
-  Every pull request runs the unit tests (`tests.yml`).
+## Building
+Needs JDK 17 or 18 and the Android SDK; run `gradlew assembleDebug`. Tests: `gradlew testDebugUnitTest
+verifyRoborazziDebug`. The website is in `web/` (see `web/README.md`); developer notes are in `docs/DEVELOPING.md`.
+Release builds are signed with a private key that isn't in this repository, so a build of your own can't update the
+official app.
 
 ## License and disclaimer
-The code is released under the [MIT License](LICENSE). That covers this app's code only, not the card data, names or
-images it shows.
+The code is under the [MIT License](LICENSE); that covers this app's code only, not the card data, names or images it
+shows.
 
 MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions
-of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
-
-The app isn't affiliated with or endorsed by Scryfall, Cardmarket, CardTrader, Archidekt, Commander Salt, EDH Power
-Level or ScrollVault; it uses their public data. Prices are for guidance only.
+of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Not affiliated with or endorsed
+by any of the data sources above. Prices are for guidance only.
