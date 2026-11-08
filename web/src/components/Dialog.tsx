@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
-/** A centered modal that closes with Esc or a click on the dark background. */
-export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+/** A centered modal that closes with Esc or a click on the dark background. With [full], it takes (nearly) the whole screen, like Archidekt's and Moxfield's card views. */
+export function Dialog({ title, onClose, children, full = false }: { title: string; onClose: () => void; children: React.ReactNode; full?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -25,7 +25,7 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
 
   return (
     <div className="backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-label={title} ref={box} tabIndex={-1}>
+      <div className={full ? "dialog full" : "dialog"} role="dialog" aria-modal="true" aria-label={title} ref={box} tabIndex={-1}>
         <h2>{title}</h2>
         {children}
       </div>

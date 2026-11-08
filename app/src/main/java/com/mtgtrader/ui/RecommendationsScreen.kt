@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -68,7 +71,10 @@ import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.RecCard
 import com.mtgtrader.data.RecResult
 import com.mtgtrader.data.RecSection
+import com.mtgtrader.data.DeckUse
+import com.mtgtrader.data.DeckUsage
 import com.mtgtrader.data.RecSource
+import com.mtgtrader.data.RecView
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.aspectRatio
@@ -117,6 +123,9 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
     val snackbar = remember { SnackbarHostState() }
     val deck by remember { c.db.deckDao().observe(deckId) }.collectAsStateWithLifecycle(null)
     val source by c.settings.recSource.collectAsStateWithLifecycle()
+    val recView by c.settings.recView.collectAsStateWithLifecycle()
+    val usage by remember { c.db.deckDao().observeUsage() }.collectAsStateWithLifecycle(emptyList())
+    val usageByName = remember(usage) { DeckUsage.byName(usage) }
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val ownedList by remember { c.db.collectionDao().observeOwnedByName() }.collectAsStateWithLifecycle(emptyList())
     val owned = remember(ownedList) { ownedList.groupBy { nameKey(it.name) }.mapValues { (_, v) -> v.sumOf { it.qty } } }
@@ -165,30 +174,42 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.padding(pad)) {
-            SourceAndFilters(source, { c.settings.setRecSource(it) }, filter) { filter = it }
+            SourceAndFilters(source, { c.settings.setRecSource(it) }, filter, { filter = it }, recView) { c.settings.setRecView(it) }
             val r = result
             when {
                 loading -> Loading(if (source == RecSource.EDHREC) "Asking EDHREC…" else "Asking recommander.cards…")
                 r == null -> EmptyState("No recommendations", error ?: "Pull them with the ⟳ button.")
                 else -> {
                     val sections = r.sections.map { s -> s.copy(cards = s.cards.filter { filter.keep(it, owned.keys) }) }.filter { it.cards.isNotEmpty() }
-                    LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp)) {
-                        item(key = "about") {
-                            Text(
-                                (error?.let { "$it — showing the ones from ${Fmt.dateTime(r.fetchedAt)}. " } ?: "From ${Fmt.dateTime(r.fetchedAt)}. ") +
-                                    (r.note?.let { "$it " } ?: "") +
-                                    if (source == RecSource.EDHREC) "Cards in the deck are left out; the share is of the EDHREC decks with this commander that could play the card."
-                                    else "recommander.cards ranks cards for this decklist; cards in the deck are left out.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 6.dp),
-                            )
+                    val about = (error?.let { "$it — showing the ones from ${Fmt.dateTime(r.fetchedAt)}. " } ?: "From ${Fmt.dateTime(r.fetchedAt)}. ") +
+                        (r.note?.let { "$it " } ?: "") +
+                        if (source == RecSource.EDHREC) "Cards in the deck are left out; the share is of the EDHREC decks with this commander that could play the card."
+                        else "recommander.cards ranks cards for this decklist; cards in the deck are left out."
+                    // Swiping through enlarged pictures goes through the cards in the order shown.
+                    val flat = sections.flatMap { it.cards }.distinctBy { it.name }
+                    if (recView == RecView.IMAGES) {
+                        Column {
+                            Text(about, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                            if (sections.isEmpty()) EmptyState("Nothing left", "No recommendation matches these filters.")
+                            else LazyVerticalGrid(
+                                columns = GridCells.Adaptive(110.dp),
+                                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                items(flat, key = { nameKey(it.name) }) { card -> RecImageTile(card, owned[nameKey(card.name)] ?: 0) { opened = card } }
+                            }
                         }
-                        if (sections.isEmpty()) item(key = "none") { EmptyState("Nothing left", "No recommendation matches these filters.") }
-                        // Swiping through enlarged pictures goes through the cards in the order shown.
-                        val flat = sections.flatMap { it.cards }.distinctBy { it.name }
-                        sections.forEach { s ->
-                            recSection(s, owned, prices, priceType, onImage = { card -> gallery = flat to flat.indexOfFirst { it.name == card.name }.coerceAtLeast(0) }) { opened = it }
+                    } else {
+                        LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp)) {
+                            item(key = "about") {
+                                Text(about, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 6.dp))
+                            }
+                            if (sections.isEmpty()) item(key = "none") { EmptyState("Nothing left", "No recommendation matches these filters.") }
+                            sections.forEach { s ->
+                                recSection(s, owned, prices, priceType, onImage = { card -> gallery = flat to flat.indexOfFirst { it.name == card.name }.coerceAtLeast(0) }) { opened = it }
+                            }
                         }
                     }
                 }
@@ -201,6 +222,7 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
         RecCardDialog(
             card, source, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType,
             decks = deck?.let { listOf(it) }.orEmpty(),
+            using = usageByName[nameKey(card.name)] ?: emptyList(),
             onDismiss = { opened = null },
             onAddToDeck = { d ->
                 opened = null
@@ -227,6 +249,9 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val source by c.settings.recSource.collectAsStateWithLifecycle()
+    val recView by c.settings.recView.collectAsStateWithLifecycle()
+    val usage by remember { c.db.deckDao().observeUsage() }.collectAsStateWithLifecycle(emptyList())
+    val usageByName = remember(usage) { DeckUsage.byName(usage) }
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
     val job by c.recommendations.job.collectAsStateWithLifecycle()
@@ -253,7 +278,7 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.padding(pad)) {
-            SourceAndFilters(source, { c.settings.setRecSource(it) }, filter) { filter = it }
+            SourceAndFilters(source, { c.settings.setRecSource(it) }, filter, { filter = it }, recView) { c.settings.setRecView(it) }
             job?.let { j ->
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                     Text("Getting recommendations: ${j.current} (${j.done + 1} of ${j.total})", style = MaterialTheme.typography.bodySmall)
@@ -302,21 +327,34 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
                 )
                 return@Column
             }
-            LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp)) {
-                item(key = "count") {
-                    Text(
-                        "${shown.size} cards" + if (filter.owned == Owned.MINE) " you own that fit your decks" else "",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(vertical = 6.dp),
-                    )
-                }
-                items(shown, key = { nameKey(it.first.name) }) { (card, forDecks) ->
-                    RecRow(
-                        card, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, "For " + forDecks.joinToString { it.name },
-                        onImage = { gallery = shown.map { it.first } to shown.indexOfFirst { it.first.name == card.name }.coerceAtLeast(0) },
+            val countText = "${shown.size} cards" + if (filter.owned == Owned.MINE) " you own that fit your decks" else ""
+            if (recView == RecView.IMAGES) {
+                Column {
+                    Text(countText, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(110.dp),
+                        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f),
                     ) {
-                        opened = card to forDecks
+                        items(shown, key = { nameKey(it.first.name) }) { (card, forDecks) ->
+                            RecImageTile(card, owned[nameKey(card.name)] ?: 0) { opened = card to forDecks }
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 32.dp)) {
+                    item(key = "count") {
+                        Text(countText, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 6.dp))
+                    }
+                    items(shown, key = { nameKey(it.first.name) }) { (card, forDecks) ->
+                        RecRow(
+                            card, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, "For " + forDecks.joinToString { it.name },
+                            onImage = { gallery = shown.map { it.first } to shown.indexOfFirst { it.first.name == card.name }.coerceAtLeast(0) },
+                        ) {
+                            opened = card to forDecks
+                        }
                     }
                 }
             }
@@ -327,6 +365,7 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
     opened?.let { (card, forDecks) ->
         RecCardDialog(
             card, source, owned[nameKey(card.name)] ?: 0, prices[card.card?.cardmarketId], priceType, forDecks,
+            using = usageByName[nameKey(card.name)] ?: emptyList(),
             onDismiss = { opened = null },
             onAddToDeck = { d ->
                 opened = null
@@ -359,10 +398,15 @@ private fun rememberPrices(result: RecResult?): Map<Int, PriceEntity> {
 }
 
 @Composable
-private fun SourceAndFilters(source: RecSource, onSource: (RecSource) -> Unit, filter: RecFilter, onFilter: (RecFilter) -> Unit) {
+private fun SourceAndFilters(
+    source: RecSource, onSource: (RecSource) -> Unit, filter: RecFilter, onFilter: (RecFilter) -> Unit,
+    view: RecView, onView: (RecView) -> Unit,
+) {
     Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         LazyRow(contentPadding = PaddingValues(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(RecSource.entries) { s -> FilterChip(selected = s == source, onClick = { onSource(s) }, label = { Text(s.label) }) }
+            item { Spacer(Modifier.width(8.dp)) }
+            items(RecView.entries) { v -> FilterChip(selected = v == view, onClick = { onView(v) }, label = { Text(v.label) }) }
             item { Spacer(Modifier.width(8.dp)) }
             item { FilterChip(selected = filter.newOnly, onClick = { onFilter(filter.copy(newOnly = !filter.newOnly)) }, label = { Text("New cards") }) }
             items(Owned.entries) { o -> FilterChip(selected = filter.owned == o, onClick = { onFilter(filter.copy(owned = o)) }, label = { Text(o.label) }) }
@@ -435,6 +479,8 @@ private fun RecCardDialog(
     price: PriceEntity?,
     priceType: PriceType,
     decks: List<Deck>,
+    /** The decks that play this card, with how many copies each (DeckUsage). */
+    using: List<DeckUse>,
     onDismiss: () -> Unit,
     onAddToDeck: (Deck) -> Unit,
     onWishlist: () -> Unit,
@@ -454,6 +500,8 @@ private fun RecCardDialog(
                         Text(card.typeLine, style = MaterialTheme.typography.bodySmall)
                         Text(card.stats(), style = MaterialTheme.typography.bodySmall)
                         Text(if (owned > 0) "You own $owned" else "Not in your collection", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (using.isEmpty()) Text("Not in any deck.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        else Text("In ${using.size} ${if (using.size == 1) "deck" else "decks"}: " + using.joinToString { "${it.deckName} ×${it.quantity}" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         card.releasedAt?.let { Text("Released $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
@@ -498,6 +546,20 @@ private fun RecCardDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+/** A recommendation as a picture (the Images view): the card's image and name; a tap opens its window. */
+@Composable
+private fun RecImageTile(card: RecCard, owned: Int, onOpen: () -> Unit) {
+    Column(Modifier.clickable(onClick = onOpen), horizontalAlignment = Alignment.CenterHorizontally) {
+        AsyncImage(
+            model = card.card?.imageUrl?.let(::largeImageUrl),
+            contentDescription = card.name,
+            modifier = Modifier.fillMaxWidth().aspectRatio(63f / 88f).padding(2.dp),
+        )
+        Text(card.name, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (owned > 0) Text("✓ $owned", style = MaterialTheme.typography.labelSmall, color = TrendColors.up)
+    }
 }
 
 /**

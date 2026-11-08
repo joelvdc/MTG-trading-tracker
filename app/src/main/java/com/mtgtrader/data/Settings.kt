@@ -282,6 +282,15 @@ class Settings(context: Context) {
         prefs.edit().putString("recSource", v.key).stamp().apply()
     }
 
+    /** How the recommendations are shown: as a list or as pictures. */
+    private val _recView = MutableStateFlow(RecView.fromKey(prefs.getString("recView", null)))
+    val recView: StateFlow<RecView> = _recView
+
+    fun setRecView(v: RecView) {
+        _recView.value = v
+        prefs.edit().putString("recView", v.key).stamp().apply()
+    }
+
     /** The collection's sort levels. Since 1.18. */
     private val _collectionSort = MutableStateFlow(SortSpec.decode(prefs.getString("collectionSort", null)))
     val collectionSort: StateFlow<SortSpec> = _collectionSort

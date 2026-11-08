@@ -368,6 +368,32 @@ export function sharedCards(file: SyncFile): SharedCard[] {
     .map(([, s]) => s);
 }
 
+/** A card's use (a recommended card's window): the decks that play it and how many copies you own. */
+export interface CardUse {
+  owned: number;
+  uses: { deckId: number; deckName: string; quantity: number }[];
+}
+
+/**
+ * The decks with a card in the main deck (basic lands left out, retired decks don't count, like [sharedCards]),
+ * in deck name order, and your copies of it by name.
+ */
+export function cardUse(file: SyncFile, name: string): CardUse {
+  const k = name.toLowerCase();
+  const uses: CardUse["uses"] = [];
+  for (const { deck, cards } of syncDecks(file)) {
+    if (deck.retired) continue;
+    let quantity = 0;
+    for (const c of cards) {
+      if (c.maybeboard || isBasicName(c.card.name)) continue;
+      if (c.card.name.toLowerCase() === k) quantity += c.quantity;
+    }
+    if (quantity > 0) uses.push({ deckId: deck.archidektId, deckName: deck.name, quantity });
+  }
+  uses.sort((a, b) => caseless(a.deckName, b.deckName));
+  return { owned: ownedByName(file).get(k) ?? 0, uses };
+}
+
 /** What the rule-zero cards of one deck need (the deck page's RuleZeroDialog), for "Rule-zero cards of all decks". */
 export interface RuleZeroDeck {
   id: number;

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { DeckView } from "@/lib/deckshared";
-import { inclusionPct, REC_SOURCES, type RecCard, type RecResult, type RecSource } from "@/lib/recshared";
+import { recFacts, REC_SOURCES, type RecCard, type RecResult, type RecSource } from "@/lib/recshared";
 import { api } from "./api";
 import { deckAction } from "./DeckEditDialogs";
+import { RecCardDialog } from "./RecCardDialog";
 
 const SOURCE_KEY = "mtg.recSource";
+const VIEW_KEY = "mtg.recView";
 
 function store(): Storage | null {
   try {
@@ -14,16 +16,6 @@ function store(): Storage | null {
   } catch {
     return null;
   }
-}
-
-/** What the source says about a card, in the app's words. */
-function facts(c: RecCard): string {
-  const out: string[] = [];
-  const pct = inclusionPct(c);
-  if (pct !== null) out.push(`in ${pct}% of decks`);
-  if (c.synergy !== null) out.push(`synergy ${c.synergy >= 0 ? "+" : ""}${Math.round(c.synergy * 100)}%`);
-  if (c.score !== null) out.push(`score ${c.score.toFixed(2)}`);
-  return out.join(" · ");
 }
 
 /**
@@ -40,6 +32,8 @@ export function RecommendationsPanel({
   onAdded: (notice: string) => void;
 }) {
   const [source, setSource] = useState<RecSource>("edhrec");
+  const [mode, setMode] = useState<"images" | "list">("images");
+  const [open, setOpen] = useState<RecCard | null>(null);
   const [result, setResult] = useState<RecResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +45,8 @@ export function RecommendationsPanel({
     try {
       const s = localStorage.getItem(SOURCE_KEY);
       if (s === "edhrec" || s === "recommander") setSource(s);
+      const m = localStorage.getItem(VIEW_KEY);
+      if (m === "images" || m === "list") setMode(m);
     } catch {
       // Storage unavailable.
     }
@@ -66,6 +62,15 @@ export function RecommendationsPanel({
     setSource(s);
     try {
       localStorage.setItem(SOURCE_KEY, s);
+    } catch {
+      // Not remembered.
+    }
+  }
+
+  function pickMode(m: "images" | "list") {
+    setMode(m);
+    try {
+      localStorage.setItem(VIEW_KEY, m);
     } catch {
       // Not remembered.
     }
@@ -95,6 +100,7 @@ export function RecommendationsPanel({
     if (r.error) setError(r.error);
     else {
       setAdded((s) => new Set(s).add(c.name));
+      if (open?.name === c.name) setOpen(null);
       onAdded(`${c.name} added to the deck.`);
     }
   }
@@ -110,6 +116,14 @@ export function RecommendationsPanel({
             </button>
           ))}
         </div>
+        <div className="seg text" role="group" aria-label="View as">
+          <button className={mode === "images" ? "on" : ""} onClick={() => pickMode("images")}>
+            Images
+          </button>
+          <button className={mode === "list" ? "on" : ""} onClick={() => pickMode("list")}>
+            List
+          </button>
+        </div>
         <button className="btn small-btn" onClick={load} disabled={busy}>
           {busy ? "Getting them…" : result ? "Refresh" : "Get recommendations"}
         </button>
@@ -119,22 +133,43 @@ export function RecommendationsPanel({
       {error && <div className="bar error">{error}</div>}
       {result?.note && <p className="warn-text small">{result.note}</p>}
       {result && result.sections.length === 0 && <p className="muted small">Nothing to recommend that isn&apos;t in the deck already.</p>}
-      {result?.sections.map((s, i) => (
-        <details key={s.key} open={i < 2}>
+      {result?.sections.map((s) => (
+        <details key={s.key} open>
           <summary>
             <strong>{s.title}</strong> <span className="muted small">· {s.cards.filter((c) => !added.has(c.name)).length}</span>
           </summary>
-          <ul className="rec-grid">
+          <ul className={mode === "list" ? "rec-grid list" : "rec-grid"}>
             {s.cards
               .filter((c) => !added.has(c.name))
               .map((c) => (
-                <li key={c.name} onMouseMove={hover.follow(c.card?.imageUrl ?? null)} onMouseLeave={hover.hide}>
+                <li
+                  key={c.name}
+                  className={c.card ? "clickable" : undefined}
+                  role={c.card ? "button" : undefined}
+                  tabIndex={c.card ? 0 : undefined}
+                  title={c.card ? "Open this card" : undefined}
+                  onClick={(e) => {
+                    if (!c.card || (e.target as HTMLElement).closest("button")) return;
+                    hover.hide();
+                    setOpen(c);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!c.card || e.target !== e.currentTarget) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      hover.hide();
+                      setOpen(c);
+                    }
+                  }}
+                  onMouseMove={hover.follow(c.card?.imageUrl ?? null)}
+                  onMouseLeave={hover.hide}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {c.card?.imageUrl ? <img src={c.card.imageUrl.replace("/normal/", "/small/")} alt="" loading="lazy" /> : <span className="rec-noimg" />}
                   <span className="rec-text small">
                     <strong>{c.name}</strong>
                     {c.isNew && <span className="tag">New</span>}
-                    <span className="muted">{facts(c)}</span>
+                    <span className="muted">{recFacts(c)}</span>
                   </span>
                   {canAdd && c.card && (
                     <button className="btn small-btn" disabled={adding !== null} onClick={() => add(c)} title="Add one copy to the deck">
@@ -151,6 +186,17 @@ export function RecommendationsPanel({
           {result.source === "edhrec" ? "From EDHREC's page for this commander." : "From recommander.cards for this commander and decklist."} Cards already in the deck are left out; &quot;New&quot; means
           first printed in the last year.
         </p>
+      )}
+      {open && (
+        <RecCardDialog
+          view={view}
+          rec={open}
+          source={source}
+          canAdd={canAdd}
+          adding={adding === open.name}
+          onAdd={() => add(open)}
+          onClose={() => setOpen(null)}
+        />
       )}
     </div>
   );
