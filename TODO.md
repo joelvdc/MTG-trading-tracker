@@ -200,11 +200,16 @@ it possible to remember that deck? maybe by the deck id from archidekt?"
 - Idea: a **Retired** section. Retiring a deck takes it out of the Decks list, the seat pickers and "Update all decks",
   but keeps its page, Games section and stats, on the phone and the website; **Bring back** undoes it. One new synced
   field on decks (both sides of the sync and `web/` in the same release).
-- Open questions: should "Make it a local deck" carry the Archidekt deck's games over to the local copy? Should
-  deleting a deck that has games suggest retiring it instead? Should retired decks still count in the collection's
-  "in a deck" marks and the trade binder's "keep for my decks"?
+- Owner's answers (2026-11-08, green light for app and website): "Make it a local deck" doesn't bring the games over;
+  deleting a deck that has games suggests retiring it instead; retired decks don't count for the collection checks
+  ("in a deck" marks, the trade binder's "keep for my decks"); the Retired section is a collapsible section with a
+  show/hide option.
+- Needs Sync.FORMAT 12 → 13 (a new deck field, as with 9 in 1.46): phones on 1.82 stop syncing until they update.
+  Asked the owner first.
+- Also asked: the website's Decks list groups weren't collapsible like the app's: done 2026-11-08 (see Done).
 
 ## Done
+- 2026-11-08: website Decks list: the groups (your decks, other people's, local) fold like the app's Decks tab.
 - 1.82: game stats **Overview** tab (tiles, games per month, how games were won, starting first) and a period choice
   (all time, 12 months, 3 months); friends and guests can **borrow the owner's decks** (app and website: "Your decks
   (lent)", counted for the deck as "N lent", results to the borrower); **Nextcloud only for backups** (the app syncs
