@@ -266,7 +266,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     const t = [...(tags.get(saltKey(c.card.name)) ?? [])];
     if (c.gameChanger && !t.includes("GAME_CHANGER")) t.unshift("GAME_CHANGER");
     const shown = finishOf(foil, etched);
-    const held = !isBasicName(key) && !c.maybeboard ? (pilesByName.get(c.card.name.toLowerCase()) ?? []) : [];
+    const held = !isBasicName(key) ? (pilesByName.get(c.card.name.toLowerCase()) ?? []) : [];
     return {
       lineUid: c.lineUid,
       name: c.card.name,

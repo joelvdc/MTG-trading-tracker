@@ -22,7 +22,7 @@ import { backImageUrl, costColours, GROUP_LABELS, hasBackFace, layoutSections, t
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[];tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin };
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
@@ -80,7 +80,9 @@ export default function DeckPage() {
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
-  const filter = useDeckFilter(view?.rows ?? NO_ROWS, view?.stats ?? NO_CARDS);
+  // The main deck's and the maybeboard's cards with their details: the lines' mana costs and the filter use both.
+  const allCards = useMemo(() => (view ? [...view.stats, ...(view.maybeStats ?? [])] : NO_CARDS), [view]);
+  const filter = useDeckFilter(view?.rows ?? NO_ROWS, allCards);
   const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null, view?.winTurn ?? null);
 
   useEffect(() => {
@@ -115,7 +117,7 @@ export default function DeckPage() {
 
   const shaped = useMemo(() => {
     if (!view) return null;
-    const costs = new Map(view.stats.map((s) => [s.scryfallId, s.manaCost]));
+    const costs = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
     const coloursOf = (r: DeckRow) => costColours(costs.get(r.original?.scryfallId ?? r.card.scryfallId));
     const main = view.rows.filter((r) => !r.maybeboard);
     const only = filter.mode === "ONLY" ? filter.test : null;
@@ -133,7 +135,7 @@ export default function DeckPage() {
     const value = main.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0);
     const missing = main.reduce((s, r) => s + r.missing, 0);
     return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length, matched: filter.test ? view.rows.filter(filter.test).reduce((s, r) => s + r.quantity, 0) : null };
-  }, [view, prefs.group, prefs.sort, prefs.descending, onlyBracket, filter.mode, filter.test]);
+  }, [view, allCards, prefs.group, prefs.sort, prefs.descending, onlyBracket, filter.mode, filter.test]);
 
   if (!view || !shaped) {
     return (
@@ -151,8 +153,8 @@ export default function DeckPage() {
 
   const d = view.deck;
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
-  const costOf = new Map(view.stats.map((s) => [s.scryfallId, s.manaCost]));
-  const typeLineOf = new Map(view.stats.map((s) => [s.scryfallId, s.typeLine]));
+  const costOf = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
+  const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
   /** Whether a line's card has a back face, from Scryfall's layout when known. */
   const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
@@ -214,7 +216,7 @@ export default function DeckPage() {
             <ManaCost cost={costOf.get(r.original?.scryfallId ?? r.card.scryfallId) ?? null} size={14} />
           </span>
         )}
-        {prefs.owned && <span className="deck-own small">{basic || r.maybeboard ? null : <OwnedIcon row={r} />}</span>}
+        {prefs.owned && <span className="deck-own small">{basic ? null : <OwnedIcon row={r} />}</span>}
         {prefs.price && <span className="num nowrap deck-price">{r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}</span>}
       </li>
     );

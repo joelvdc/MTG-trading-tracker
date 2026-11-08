@@ -178,6 +178,9 @@ while it is playing the deck 10,000 times?"
   DNS/VPN problem on the phone, not the app. If it comes back with the VPN off, look again.
 
 ## Done
+- 2026-11-08: website deck page fix (owner: "maybeboard is missing mana cost and collection info"): maybeboard lines
+  now show their mana cost and the collection tracker, and the filter reads their rules text too. The stats and win
+  turn still leave the maybeboard out.
 - 2026-11-07: website deck page, second round (owner's green light): compact one-line card lines (long names end in
   "…", the cost, collection and price columns close together), a Maybeboard "Side column / Below the deck" choice in
   the view options, Recommendations next to the other deck buttons with Edit last, the filter's Show only / Highlight

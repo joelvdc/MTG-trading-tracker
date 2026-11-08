@@ -1,7 +1,7 @@
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
-import { ensureDeckDetails, type DeckInfo } from "@/lib/deckdetails";
+import { ensureDeckDetails, statsCard, type DeckInfo } from "@/lib/deckdetails";
 import { deckView, missingPlan, ownedByName, syncDecks } from "@/lib/decks";
 import { loadPrices } from "@/lib/pricestore";
 import { editSync, loadSync } from "@/lib/store";
@@ -59,25 +59,29 @@ export async function GET(_req: Request, { params }: Params) {
     const view = id === null ? null : deckView(file, id, prices, details, ck);
     if (!view) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
     const synced = syncDecks(file).find((d) => d.deck.archidektId === id)!;
-    const lines = synced.cards.filter((c) => !c.maybeboard);
     let info: Awaited<ReturnType<typeof ensureDeckDetails>> = {};
     let detailsError: string | null = null;
     try {
-      info = await ensureDeckDetails(lines.map((c) => c.card.scryfallId));
+      // The maybeboard's cards too: their lines show the mana cost and the filter reads their rules text.
+      info = await ensureDeckDetails([...new Set(synced.cards.map((c) => c.card.scryfallId))]);
     } catch (e) {
       detailsError = e instanceof Error ? e.message : "Scryfall couldn't be reached.";
     }
     const stats = deckStatsCards(synced, info);
+    // The maybeboard's cards with their details, apart: the stats and the win turn leave them out.
+    const maybeStats = synced.cards
+      .filter((c) => c.maybeboard)
+      .map((c) => statsCard({ name: c.card.name, scryfallId: c.card.scryfallId, quantity: c.quantity, cmc: c.cmc, types: c.types, commander: false }, info[c.card.scryfallId]));
     const tokenInfo: Record<string, { oi: string | null; pt: string | null }> = {};
     // Scryfall's layout per printing, to tell which cards have a back face to flip to.
     const layouts: Record<string, string> = {};
-    for (const s of stats) if (info[s.scryfallId]?.y) layouts[s.scryfallId] = info[s.scryfallId].y!;
+    for (const s of [...stats, ...maybeStats]) if (info[s.scryfallId]?.y) layouts[s.scryfallId] = info[s.scryfallId].y!;
     for (const s of stats) for (const t of s.tokens ?? []) if (info[t.id]) tokenInfo[t.id] = { oi: info[t.id].oi, pt: info[t.id].pt };
     // The Commander Salt data as the app keeps it, for the win turn (its combos) and the app's power level.
     // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
     const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
     const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
-    return json({ ...view, stats, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
+    return json({ ...view, stats, maybeStats, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn });
   } catch (e) {
     return errorResponse(e);
   }

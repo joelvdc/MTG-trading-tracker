@@ -199,7 +199,7 @@ describe("decks pages", () => {
     expect(split.held.map((h) => h.setCode)).toEqual(["cmr"]);
   });
 
-  it("gives no piles for basic lands and the maybeboard", () => {
+  it("gives no piles for basic lands; the maybeboard gets its piles too", () => {
     const f = fixture();
     const sd = syncDecks(f)[0];
     const card = sd.cards[0].card;
@@ -213,6 +213,10 @@ describe("decks pages", () => {
     ] as unknown as Json;
     const rows = deckView(f, sd.deck.archidektId, null, null, null)!.rows;
     expect(rows.find((r) => r.lineUid === "basic")).toMatchObject({ held: [], exact: 0 });
-    expect(rows.find((r) => r.lineUid === "maybe")).toMatchObject({ held: [], exact: 0 });
+    const maybe = rows.find((r) => r.lineUid === "maybe")!;
+    expect(maybe.held).toHaveLength(1);
+    expect(maybe.exact).toBe(1);
+    // The maybeboard still gets no printing of your own and no printing choices.
+    expect(maybe).toMatchObject({ original: null, choices: [] });
   });
 });

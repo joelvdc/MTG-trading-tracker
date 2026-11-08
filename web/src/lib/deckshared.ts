@@ -452,7 +452,7 @@ export interface DeckRow {
   owned: number;
   /** Copies owned of the printing and finish shown on the line (the same Scryfall id and finish). */
   exact: number;
-  /** Every pile of the card in the collection, for the "Collection tracker" box; empty for basics and the maybeboard. */
+  /** Every pile of the card in the collection, for the "Collection tracker" box; empty for basics. */
   held: HeldPile[];
   /** The other decks that have the card (by name; basics left out), in deck-name order. */
   otherDecks: DeckUse[];
