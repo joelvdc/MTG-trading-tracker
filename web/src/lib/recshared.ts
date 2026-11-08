@@ -9,6 +9,8 @@ export interface RecCard {
   card: CardRef | null;
   typeLine: string;
   cmc: number;
+  /** The mana cost, e.g. "{2}{U}" (the front face's for double-faced cards). */
+  manaCost: string | null;
   /** recommander.cards' score (0.7 and up). */
   score: number | null;
   /** EDHREC: how much more often the card is played with this commander than elsewhere (−1…1). */

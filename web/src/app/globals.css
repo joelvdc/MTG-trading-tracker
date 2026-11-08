@@ -1597,6 +1597,11 @@ button.link.left {
   margin: 0;
 }
 
+/* The card right under the scores section (combos) gets the same gap as the cards in .deck-bottom. */
+.deck-scores + .card {
+  margin-top: 12px;
+}
+
 .score {
   display: flex;
   flex-direction: column;
@@ -2295,14 +2300,24 @@ details.menu > summary::-webkit-details-marker {
   outline: 2px solid var(--violet);
 }
 
-/* The recommendations as a list: one column, no pictures (the hover preview still shows them). */
-.rec-grid.list {
-  grid-template-columns: 1fr;
-}
-
+/* The recommendations as a list: same columns as the images view, but no pictures (the hover preview still shows them). */
 .rec-grid.list img,
 .rec-grid.list .rec-noimg {
   display: none;
+}
+
+/* The recommendations window's toolbar: the fetched date sits centered between the controls and Close. */
+.rec-date {
+  flex: 1;
+  text-align: center;
+}
+
+.rec-cost {
+  flex: none;
+}
+
+.rec-price {
+  text-align: right;
 }
 
 .rec-grid img,
