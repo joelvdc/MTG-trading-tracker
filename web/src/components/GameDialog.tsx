@@ -129,7 +129,7 @@ export function GameDialog({
             s.who === ME
               ? { playerUid: me?.uid ?? null, name: "", me: true, deckId, friendDeckUid, guest: null }
               : s.who === GUEST
-                ? { playerUid: null, name: s.name.trim(), me: false, deckId: null, friendDeckUid: null, guest: await guestOf(s) }
+                ? { playerUid: null, name: s.name.trim(), me: false, deckId, friendDeckUid: null, guest: deckId != null ? null : await guestOf(s) }
                 : { playerUid: s.who, name: "", me: false, deckId, friendDeckUid, guest: null };
           return { seat: s.seat, choice, place: s.place };
         }),
@@ -143,10 +143,18 @@ export function GameDialog({
     await onSave({ type: "saveGame", uid: game?.uid ?? null, startedAt: at ?? undefined, minutes: m, rounds: t, draw, winType: draw ? null : winType, note: note.trim() || null, seats: inputs });
   }
 
-  const deckOptions = (s: SeatForm) => {
-    const opts: [string, string][] = [["", "No deck"]];
-    if (s.who === ME) for (const d of view.myDecks) opts.push([`d:${d.id}`, d.name]);
-    else if (s.who !== GUEST) for (const d of view.friendDecks.filter((f) => f.playerUid === s.who)) opts.push([`f:${d.uid}`, d.name]);
+  /** The owner's decks other seats play: a deck is at one seat only. */
+  const decksTaken = (i: number) => new Set(seats.filter((_, j) => j !== i).map((s) => s.deck));
+  const deckOptions = (s: SeatForm, i: number) => {
+    const opts: [string, string][] = [["", s.who === GUEST ? "Own commander (below)" : "No deck"]];
+    const taken = decksTaken(i);
+    const mine = view.myDecks.filter((d) => !taken.has(`d:${d.id}`) || s.deck === `d:${d.id}`);
+    if (s.who === ME) for (const d of mine) opts.push([`d:${d.id}`, d.name]);
+    else {
+      if (s.who !== GUEST) for (const d of view.friendDecks.filter((f) => f.playerUid === s.who)) opts.push([`f:${d.uid}`, d.name]);
+      // Friends and guests can borrow the owner's decks (app 1.82).
+      for (const d of mine) opts.push([`d:${d.id}`, `Your deck (lent): ${d.name}`]);
+    }
     // A deck recorded but deleted since (or another player's): still shown, so the seat can stay as it was.
     if (s.deck && !opts.some((o) => o[0] === s.deck)) opts.push([s.deck, `${s.recorded?.deckName || s.recorded?.commander || "Deck"} (as recorded)`]);
     return opts;
@@ -203,24 +211,23 @@ export function GameDialog({
                     {s.who !== ME && s.who !== GUEST && !view.players.some((p) => p.uid === s.who) && <option value={s.who}>{s.recorded?.name ?? "Player"} (deleted)</option>}
                     <option value={GUEST}>A guest…</option>
                   </select>
-                  {s.who === GUEST ? (
+                  {s.who === GUEST && (
                     <input aria-label={`Guest name ${i + 1}`} placeholder={`Player ${i + 1}`} value={s.name} maxLength={60} onChange={(e) => change(i, { name: e.target.value })} />
-                  ) : (
-                    <select aria-label={`Deck of player ${i + 1}`} value={s.deck} onChange={(e) => change(i, { deck: e.target.value })}>
-                      {deckOptions(s).map(([v, l]) => (
-                        <option key={v} value={v}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
                   )}
+                  <select aria-label={`Deck of player ${i + 1}`} value={s.deck} onChange={(e) => change(i, { deck: e.target.value })}>
+                    {deckOptions(s, i).map(([v, l]) => (
+                      <option key={v} value={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
                   {!game && seats.length > 2 && (
                     <button className="link" disabled={locked} onClick={() => setSeats((all) => all.filter((_, j) => j !== i))} aria-label={`Remove player ${i + 1}`}>
                       Remove
                     </button>
                   )}
                 </div>
-                {s.who === GUEST && (
+                {s.who === GUEST && !s.deck && (
                   <div className="inline wrap">
                     <input aria-label={`Commander of player ${i + 1}`} placeholder="Commander (optional)" value={s.commander} maxLength={120} onChange={(e) => change(i, { commander: e.target.value })} />
                     <input aria-label={`Partner of player ${i + 1}`} placeholder="Partner" value={s.partner} maxLength={120} onChange={(e) => change(i, { partner: e.target.value })} />

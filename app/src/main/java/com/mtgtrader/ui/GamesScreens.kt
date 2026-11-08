@@ -490,6 +490,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
         else SeatPickerSheet(
             seatIndex = seats.indexOf(old), choice = seatChoiceOf(old),
             taken = seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
+            takenDecks = seats.filter { it.seat != seat }.mapNotNull { it.deckId }.toSet(),
             players = players, decks = decks, friendDecks = friendDecks, pictures = pictures, onDismiss = { picking = null }, showLook = false,
         ) { ch -> seats = seats.map { if (it.seat == seat) changeSeat(it, ch, seatDeck(ch, decks, friendDecks)) else it } }
     }
@@ -603,7 +604,10 @@ private fun DeckTableRow(d: DeckResult, onClick: () -> Unit) {
                 }
             } else SeatPicture(GameStore.artCrop(d.scryfallId), 0, 28.dp)
             Spacer(Modifier.width(6.dp))
-            Text(d.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Column {
+                Text(d.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (d.lentGames > 0) Text("${d.lentGames} lent", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         listOf(
             "${d.games}" to 1f, "${d.wins} · ${(d.winRate * 100).roundToInt()} %" to 1.25f,
@@ -665,6 +669,7 @@ internal fun DeckGamesCard(r: DeckResult, last: List<GameRecord>, deckId: Long, 
                     r.usualWinRound?.let { "Usually wins on" to "turn $it" },
                     r.winTypes.takeIf { it.isNotEmpty() }?.let { l -> "Wins by" to l.joinToString(" · ") { "${it.first.label.lowercase()} ${it.second}" } },
                     r.startedGames.takeIf { it > 0 }?.let { "Started first" to "$it games, ${r.startedWins} won" },
+                    r.lentGames.takeIf { it > 0 }?.let { "Lent" to "$it games, ${r.lentWins} won" },
                 ).forEach { (k, v) ->
                     Row {
                         Text(k, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
@@ -688,7 +693,10 @@ internal fun DeckGamesCard(r: DeckResult, last: List<GameRecord>, deckId: Long, 
                 Icon(if (won) Icons.Default.EmojiEvents else Icons.Default.Remove, null, Modifier.size(18.dp), tint = if (won) Trophy else MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    listOfNotNull(gameDate(g.startedAt), if (won) "won" else mine?.place?.let { ordinal(it) }, Games.duration(g.durationMs), g.rounds?.takeIf { won }?.let { "turn $it" }).joinToString(" · "),
+                    listOfNotNull(
+                        gameDate(g.startedAt), if (won) "won" else mine?.place?.let { ordinal(it) }, Games.duration(g.durationMs), g.rounds?.takeIf { won }?.let { "turn $it" },
+                        mine?.takeIf { GameStats.lent(it) }?.let { "played by ${it.name}" },
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }

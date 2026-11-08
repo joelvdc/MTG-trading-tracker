@@ -232,6 +232,21 @@ describe("changing games on the website", () => {
     expect(gamesView(f).games.every((g) => g.seats.some((s) => s.name === "Anna"))).toBe(true);
   });
 
+  it("lends one of the owner's decks to a guest or friend, once per game, and counts it for the deck", () => {
+    const f = file();
+    const lentTo = (name: string, playerUid: string | null = null): SeatChoice => ({ playerUid, name, me: false, deckId: 10710772, friendDeckUid: null, guest: null });
+    const { uid } = applyGameEdit(f, { type: "saveGame", uid: null, startedAt: NOW - DAY, minutes: 40, rounds: null, draw: false, winType: null, note: null, seats: [{ choice: lentTo("Kim"), place: 1 }, { choice: guest("Lee", "Krenko, Mob Boss"), place: 2 }] }, NOW, uids);
+    expect(JSON.parse(gameRecords(f).find((x) => x.uid === uid)!.seats)[0]).toEqual({ seat: 0, name: "Kim", deckId: 10710772, deckName: "Vohar Danse", commander: "Vohar", colorIdentity: "UB", place: 1 });
+    expect(() =>
+      applyGameEdit(f, { type: "saveGame", uid: null, startedAt: NOW - DAY, minutes: 40, rounds: null, draw: false, winType: null, note: null, seats: [{ choice: mine, place: 1 }, { choice: lentTo("Anna", ANNA), place: 2 }] }, NOW, uids),
+    ).toThrow(/two seats/);
+    const g = gamesView(f).games;
+    const vohar = deckResults(g).find((d) => d.deckId === 10710772)!;
+    expect([vohar.games, vohar.wins, vohar.lentGames, vohar.lentWins, vohar.mine]).toEqual([4, 3, 1, 1, true]);
+    expect(playerResults(g).find((p) => p.name === "Kim")!.wins).toBe(1);
+    expect(myWinRate(g)).toBeCloseTo(2 / 3);
+  });
+
   it("makes the owner's player when there is none yet", () => {
     const f = file();
     f.data.players = [] as unknown as Json;

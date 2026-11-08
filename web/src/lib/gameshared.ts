@@ -208,6 +208,9 @@ export interface DeckResult {
   oppPower: number | null;
   lastPlayed: number;
   anonymous: boolean;
+  /** Games one of the owner's decks was lent to a friend or guest in, and how many of those it won. */
+  lentGames: number;
+  lentWins: number;
 }
 
 export interface PlayerResult {
@@ -246,6 +249,11 @@ export function playerKey(s: GameSeat): string {
 }
 
 const won = (g: Game, s: GameSeat) => !g.draw && s.place === 1;
+
+/** One of the owner's decks played by someone else (app 1.82: friends and guests can borrow them). */
+export function lent(s: GameSeat): boolean {
+  return s.deckId != null && !s.me;
+}
 const avg = (xs: number[]): number | null => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 /** Kotlin's List<Long>.average().toLong(): rounds towards zero. */
 const avgLong = (xs: number[]): number => (xs.length ? Math.trunc(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
@@ -297,7 +305,8 @@ export function deckResults(games: Game[]): DeckResult[] {
       commander: ls.commander ?? "",
       scryfallId: ls.scryfallId ?? null,
       colorIdentity: ls.colorIdentity ?? "",
-      mine: !!ls.me,
+      // One of the owner's decks, whoever played it.
+      mine: ls.deckId != null,
       deckId: ls.deckId ?? null,
       games: list.length,
       wins: wins.length,
@@ -317,6 +326,8 @@ export function deckResults(games: Game[]): DeckResult[] {
       oppPower: avg(oppP),
       lastPlayed: latest[0].startedAt,
       anonymous: key === ANONYMOUS_KEY,
+      lentGames: list.filter(([, s]) => lent(s)).length,
+      lentWins: wins.filter(([, s]) => lent(s)).length,
     };
   });
 }

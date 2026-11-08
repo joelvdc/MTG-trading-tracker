@@ -217,6 +217,7 @@ export function GameStatsPanel({ games, onGame }: { games: Game[]; onGame: (g: G
                       <button className="link left" onClick={() => setDeck(d)}>
                         {d.colorIdentity && <ColourPips identity={d.colorIdentity} size={12} />} {d.name}
                         {d.mine && <span className="tag">mine</span>}
+                        {d.lentGames > 0 && <span className="tag">{d.lentGames} lent</span>}
                       </button>
                       {d.commander && d.commander !== d.name && <div className="muted small">{d.commander}</div>}
                     </td>

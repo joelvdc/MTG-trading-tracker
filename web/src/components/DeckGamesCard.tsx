@@ -1,6 +1,6 @@
 "use client";
 
-import { duration, ordinal, winTypeLabel, type DeckResult, type Game } from "@/lib/gameshared";
+import { duration, lent, ordinal, winTypeLabel, type DeckResult, type Game } from "@/lib/gameshared";
 
 /**
  * A deck's results in the recorded games and its last games (the app's DeckGamesCard, on the deck page and in the
@@ -14,6 +14,7 @@ export function DeckGamesCard({ r, last, isDeck, onGame }: { r: DeckResult; last
     ...(r.usualWinRound != null ? ([["Usually wins on", `turn ${r.usualWinRound}`]] as [string, string][]) : []),
     ...(r.winTypes.length ? ([["Wins by", r.winTypes.map(([k, n]) => `${winTypeLabel(k)!.toLowerCase()} ${n}`).join(" · ")]] as [string, string][]) : []),
     ...(r.startedGames > 0 ? ([["Started first", `${r.startedGames} games, ${r.startedWins} won`]] as [string, string][]) : []),
+    ...(r.lentGames > 0 ? ([["Lent", `${r.lentGames} games, ${r.lentWins} won`]] as [string, string][]) : []),
   ];
   const scores = [r.bracket != null ? `Bracket ${r.bracket}` : null, r.power != null ? `power ${r.power.toFixed(1)}` : null].filter(Boolean).join(" · ");
   const opp = [r.oppBracket != null ? `bracket ${r.oppBracket.toFixed(1)}` : null, r.oppPower != null ? `power ${r.oppPower.toFixed(1)}` : null].filter(Boolean).join(" · ");
@@ -63,6 +64,7 @@ export function DeckGamesCard({ r, last, isDeck, onGame }: { r: DeckResult; last
                   won ? "won" : s?.place != null ? ordinal(s.place) : null,
                   duration(g.durationMs),
                   won && g.rounds != null ? `turn ${g.rounds}` : null,
+                  s && lent(s) ? `played by ${s.name}` : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}

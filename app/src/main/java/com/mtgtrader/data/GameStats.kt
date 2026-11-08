@@ -34,6 +34,9 @@ data class DeckResult(
     val oppBracket: Double?,
     val oppPower: Double?,
     val lastPlayed: Long,
+    /** Games one of the owner's decks was lent to a friend or guest in (since 1.82), and how many of them it won. */
+    val lentGames: Int = 0,
+    val lentWins: Int = 0,
 ) {
     /** The seats where no deck and no commander was picked, together (since 1.58 called "Anonymous"). */
     val anonymous get() = key == GameStats.ANONYMOUS_KEY
@@ -71,6 +74,9 @@ object GameStats {
 
     private fun won(g: GameRecord, s: GameSeat) = !g.draw && s.place == 1
 
+    /** One of the owner's decks played by someone else (since 1.82). */
+    fun lent(s: GameSeat) = s.deckId != null && !s.me
+
     fun decks(games: List<GameRecord>): List<DeckResult> {
         val rows = games.flatMap { g -> g.seatList.map { g to it } }
         return rows.groupBy { deckKey(it.second) }.map { (key, list) ->
@@ -86,7 +92,8 @@ object GameStats {
                 commander = latest.second.commander,
                 scryfallId = latest.second.scryfallId,
                 colorIdentity = latest.second.colorIdentity,
-                mine = latest.second.me,
+                // One of the owner's decks, whoever played it (since 1.82 friends and guests can borrow them).
+                mine = latest.second.deckId != null,
                 deckId = latest.second.deckId,
                 games = list.size,
                 wins = wins.size,
@@ -103,6 +110,8 @@ object GameStats {
                 oppBracket = opponents.mapNotNull { it.bracket?.toDouble() }.takeIf { it.isNotEmpty() }?.average(),
                 oppPower = opponents.mapNotNull { it.power }.takeIf { it.isNotEmpty() }?.average(),
                 lastPlayed = latest.first.startedAt,
+                lentGames = list.count { lent(it.second) },
+                lentWins = wins.count { lent(it.second) },
             )
         }
     }

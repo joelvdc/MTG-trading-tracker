@@ -59,6 +59,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -366,6 +367,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
             seatIndex = i,
             choice = s.seats[i],
             taken = s.seats.filterIndexed { j, _ -> j != i }.mapNotNull { it.playerUid }.toSet(),
+            takenDecks = s.seats.filterIndexed { j, _ -> j != i }.mapNotNull { it.deckId }.toSet(),
             players = players,
             decks = decks,
             friendDecks = friendDecks,
@@ -393,6 +395,8 @@ internal fun SeatPickerSheet(
     seatIndex: Int,
     choice: SeatChoice,
     taken: Set<String>,
+    /** The owner's decks other seats play (a deck is at one seat only). */
+    takenDecks: Set<Long>,
     players: List<Player>,
     decks: List<Deck>,
     friendDecks: List<FriendDeck>,
@@ -422,19 +426,29 @@ internal fun SeatPickerSheet(
             }
             Text("Deck", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
             @Composable
-            fun deckRow(selected: Boolean, title: String, sub: String, art: String?, onClick: () -> Unit) = ListItem(
+            fun deckRow(selected: Boolean, title: String, sub: String, art: String?, enabled: Boolean = true, onClick: () -> Unit) = ListItem(
                 headlineContent = { Text(title, fontWeight = if (selected) FontWeight.Bold else null, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 supportingContent = { Text(sub, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 leadingContent = { SeatPicture(art, seatIndex, 40.dp) },
                 colors = ListItemDefaults.colors(containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).alpha(if (enabled) 1f else 0.4f).clickable(enabled = enabled, onClick = onClick),
             )
-            if (choice.me) {
-                decks.sortedBy { it.name.lowercase() }.forEach { d ->
-                    deckRow(choice.deckId == d.archidektId, d.name, d.commanders.ifBlank { "No commander" }, GameStore.artCrop(d.commanderScryfallId) ?: d.artUrl) {
-                        onChange(choice.copy(deckId = d.archidektId, friendDeckUid = null, guest = null)); onDismiss()
-                    }
+            /** The owner's decks; one another seat plays is greyed out (since 1.82 friends and guests can borrow them). */
+            @Composable
+            fun ownDecks() = decks.sortedBy { it.name.lowercase() }.forEach { d ->
+                val busy = d.archidektId in takenDecks && choice.deckId != d.archidektId
+                deckRow(choice.deckId == d.archidektId, d.name, if (busy) "Played by another seat" else d.commanders.ifBlank { "No commander" }, GameStore.artCrop(d.commanderScryfallId) ?: d.artUrl, enabled = !busy) {
+                    onChange(choice.copy(deckId = d.archidektId, friendDeckUid = null, guest = null)); onDismiss()
                 }
+            }
+            @Composable
+            fun lentDecks() {
+                if (decks.isEmpty()) return
+                Text("Your decks (lent)", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                ownDecks()
+            }
+            if (choice.me) {
+                ownDecks()
                 if (decks.isEmpty()) Text("Your decks are the app's decks (the Decks tab).", style = MaterialTheme.typography.bodySmall)
             } else if (choice.playerUid != null) {
                 friendDecks.filter { it.playerUid == choice.playerUid }.forEach { f ->
@@ -443,6 +457,7 @@ internal fun SeatPickerSheet(
                     }
                 }
                 TextButton(onClick = { newDeck = true }) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(4.dp)); Text("New deck for ${choice.name}") }
+                lentDecks()
             } else {
                 // A guest picks just a commander (since 1.58); the stats count it like a deck.
                 choice.guest?.let { gc ->
@@ -452,6 +467,7 @@ internal fun SeatPickerSheet(
                     Icon(Icons.Default.Add, null); Spacer(Modifier.width(4.dp)); Text(if (choice.guest == null) "Pick a commander" else "Another commander")
                 }
                 Text("A guest plays without decks of their own; add them as a player to keep their decks.", style = MaterialTheme.typography.bodySmall)
+                lentDecks()
             }
             if (choice.deckId != null || choice.friendDeckUid != null || choice.guest != null) {
                 TextButton(onClick = { onChange(choice.copy(deckId = null, friendDeckUid = null, guest = null)) }) { Text(if (choice.guest != null) "No commander" else "No deck") }

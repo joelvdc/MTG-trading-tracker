@@ -294,7 +294,12 @@ function saveGame(file: SyncFile, e: Extract<GameEdit, { type: "saveGame" }>, no
   const note = optText(e.note, 1000);
   const decks = myDecks(file);
   const all = gameRecords(file);
-  const result = (seats: GameSeat[]) => ({ draw: !!e.draw || !seats.some((s) => s.place === 1) });
+  const result = (seats: GameSeat[]) => {
+    // One of the owner's decks is played at one seat only (it can be lent to a friend or guest).
+    const ids = seats.map((s) => s.deckId).filter((d): d is number => d != null);
+    if (new Set(ids).size !== ids.length) throw new EditError("One of your decks is at two seats.");
+    return { draw: !!e.draw || !seats.some((s) => s.place === 1) };
+  };
 
   if (e.uid) {
     const r = all.find((x) => x.uid === e.uid);
