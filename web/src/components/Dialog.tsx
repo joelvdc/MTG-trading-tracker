@@ -12,7 +12,11 @@ export function Dialog({ title, onClose, children, full = false }: { title: stri
     const previous = document.activeElement as HTMLElement | null;
     box.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close.current();
+      if (e.key !== "Escape") return;
+      // With dialogs stacked (a card page over the recommendations window), only the top one closes.
+      const backdrops = document.querySelectorAll(".backdrop");
+      if (backdrops.length > 0 && backdrops[backdrops.length - 1] !== box.current?.closest(".backdrop")) return;
+      close.current();
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";

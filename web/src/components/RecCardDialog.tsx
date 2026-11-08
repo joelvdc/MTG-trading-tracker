@@ -57,7 +57,7 @@ export function RecCardDialog({
   const money = (eur: number | null) => (eur == null ? "–" : format(eur * view.perEuro, view.currency));
   if (!card) return null;
   return (
-    <Dialog full title={rec.name} onClose={onClose}>
+    <Dialog title={rec.name} onClose={onClose}>
       <div className="dialog-top">
         {card.imageUrl && <FlipPicture url={card.imageUrl} className="big-img" alt={rec.name} typeLine={rec.typeLine} />}
         <div className="dialog-info">

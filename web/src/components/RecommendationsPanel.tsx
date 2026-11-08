@@ -26,10 +26,13 @@ export function RecommendationsPanel({
   view,
   hover,
   onAdded,
+  onClose,
 }: {
   view: DeckView;
   hover: { follow: (url: string | null) => (e: React.MouseEvent) => void; hide: () => void };
   onAdded: (notice: string) => void;
+  /** Shown in the window's toolbar (the deck page opens the recommendations as a full-screen window). */
+  onClose?: () => void;
 }) {
   const [source, setSource] = useState<RecSource>("edhrec");
   const [mode, setMode] = useState<"images" | "list">("images");
@@ -128,6 +131,11 @@ export function RecommendationsPanel({
           {busy ? "Getting them…" : result ? "Refresh" : "Get recommendations"}
         </button>
         {result && <span className="muted small">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span>}
+        {onClose && (
+          <button className="btn small-btn" onClick={onClose}>
+            Close
+          </button>
+        )}
       </div>
       {!canAdd && view.local === false && <p className="muted small">To add cards from here, make the deck a local deck first (Edit ▾).</p>}
       {error && <div className="bar error">{error}</div>}
