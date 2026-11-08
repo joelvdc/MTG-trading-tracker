@@ -274,6 +274,12 @@ p.small {
   width: auto;
 }
 
+/* The decks list row is full of buttons: its search box may shrink further so they stay on one line. */
+.decks-controls input[type="search"] {
+  flex: 1 1 90px;
+  min-width: 80px;
+}
+
 .section-head {
   font-size: 17px;
   color: var(--violet);
