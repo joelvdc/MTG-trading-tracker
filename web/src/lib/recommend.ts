@@ -174,7 +174,8 @@ interface ScryRec {
   name: string;
   set: string;
   type_line?: string;
-  card_faces?: { type_line?: string; oracle_text?: string; image_uris?: { normal?: string } }[];
+  mana_cost?: string;
+  card_faces?: { type_line?: string; oracle_text?: string; mana_cost?: string; image_uris?: { normal?: string } }[];
   oracle_text?: string;
   cmc?: number;
   reprint?: boolean;
@@ -252,6 +253,7 @@ const blank = (name: string, o: Partial<RecCard> = {}): RecCard => ({
   card: null,
   typeLine: "",
   cmc: 0,
+  manaCost: null,
   score: null,
   synergy: null,
   decks: null,

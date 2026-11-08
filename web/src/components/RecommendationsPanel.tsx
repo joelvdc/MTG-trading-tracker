@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { DeckView } from "@/lib/deckshared";
+import { format } from "@/lib/money";
 import { recFacts, REC_SOURCES, type RecCard, type RecResult, type RecSource } from "@/lib/recshared";
 import { api } from "./api";
 import { deckAction } from "./DeckEditDialogs";
+import { useHoverSetting } from "./HoverCard";
+import { ManaCost } from "./Mana";
 import { RecCardDialog } from "./RecCardDialog";
 
 const SOURCE_KEY = "mtg.recSource";
@@ -42,7 +45,14 @@ export function RecommendationsPanel({
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
+  const [hoverOn, setHoverOn] = useHoverSetting();
   const cacheKey = `mtg.recs.${view.id}.${source}`;
+  const money = (eur: number | null) => (eur == null ? "–" : format(eur * view.perEuro, view.currency));
+  const priceOf = (c: RecCard) => {
+    const card = c.card;
+    if (!card) return "";
+    return card.fallbackEurFoil != null ? `${money(card.fallbackEur)} / ${money(card.fallbackEurFoil)}` : money(card.fallbackEur);
+  };
 
   useEffect(() => {
     try {
@@ -127,10 +137,21 @@ export function RecommendationsPanel({
             List
           </button>
         </div>
-        <button className="btn small-btn" onClick={load} disabled={busy}>
-          {busy ? "Getting them…" : result ? "Refresh" : "Get recommendations"}
+        <button
+          className="btn small-btn"
+          onClick={load}
+          disabled={busy}
+          title={busy ? "Getting them…" : result ? "Refresh" : "Get recommendations"}
+          aria-label={busy ? "Getting recommendations…" : result ? "Refresh recommendations" : "Get recommendations"}
+        >
+          {busy ? "…" : "⟳"}
         </button>
-        {result && <span className="muted small">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span>}
+        {result && <span className="muted small rec-date">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span>}
+        {mode === "list" && (
+          <button className={hoverOn ? "chip on" : "chip"} onClick={() => setHoverOn(!hoverOn)} title="Show the card's picture when you hover it in the list">
+            Card on hover
+          </button>
+        )}
         {onClose && (
           <button className="btn small-btn" onClick={onClose}>
             Close
@@ -169,16 +190,22 @@ export function RecommendationsPanel({
                       setOpen(c);
                     }
                   }}
-                  onMouseMove={hover.follow(c.card?.imageUrl ?? null)}
+                  onMouseMove={hoverOn ? hover.follow(c.card?.imageUrl ?? null) : hover.hide}
                   onMouseLeave={hover.hide}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {c.card?.imageUrl ? <img src={c.card.imageUrl.replace("/normal/", "/small/")} alt="" loading="lazy" /> : <span className="rec-noimg" />}
+                  {c.manaCost && (
+                    <span className="rec-cost">
+                      <ManaCost cost={c.manaCost} size={14} />
+                    </span>
+                  )}
                   <span className="rec-text small">
                     <strong>{c.name}</strong>
                     {c.isNew && <span className="tag">New</span>}
                     <span className="muted">{recFacts(c)}</span>
                   </span>
+                  {c.card && <span className="num nowrap rec-price small">{priceOf(c)}</span>}
                   {canAdd && c.card && (
                     <button className="btn small-btn" disabled={adding !== null} onClick={() => add(c)} title="Add one copy to the deck">
                       {adding === c.name ? "…" : "Add"}
