@@ -27,7 +27,7 @@ export async function GET(req: Request, { params }: Params) {
     for (const s of result.sections) for (const c of s.cards) Object.assign(c, { owned: owned.get(c.name.toLowerCase()) ?? 0, wished: wished.has(c.name.toLowerCase()) });
     return json(result);
   } catch (e) {
-    if (e instanceof RecError) return json({ error: e.message }, 502);
+    if (e instanceof RecError) return json({ error: e.message, busy: e.busy, retryAfter: e.retryAfter }, e.busy ? 503 : 502);
     return errorResponse(e);
   }
 }

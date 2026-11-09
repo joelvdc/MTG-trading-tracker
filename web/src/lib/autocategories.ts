@@ -5,6 +5,7 @@
 // (lib/deckedit.ts fallbackCategory). The website doesn't ask Archidekt (owner's decision, 2026-11-06).
 import { accountStore } from "./accounts";
 import { USER_AGENT } from "./config";
+import { scryFetch } from "./scrylimit";
 
 /** A card's auto categories by Scryfall printing id: [category] first, then the [extra] ones. */
 export type AutoMap = Map<string, { cardId: number | null; category: string | null; extra?: string[] }>;
@@ -83,7 +84,7 @@ const pause = () => new Promise((r) => setTimeout(r, 100)); // Scryfall asks for
  * Every card's categories from Scryfall: one tag search per category (paged, 175 cards a page), in CATEGORY_ORDER.
  * Fails as a whole if any page fails, so a half-built table never replaces the last good one.
  */
-export async function fetchTagCategories(f: Fetch = fetch, deadline = Date.now() + 240_000): Promise<{ name: string; categories: string[] }[]> {
+export async function fetchTagCategories(f: Fetch = scryFetch, deadline = Date.now() + 240_000): Promise<{ name: string; categories: string[] }[]> {
   const byKey = new Map<string, { name: string; categories: string[] }>();
   for (const g of TAG_GROUPS) {
     const q = g.tags.map((t) => `otag:${t}`).join(" or ");
@@ -111,7 +112,7 @@ export async function fetchTagCategories(f: Fetch = fetch, deadline = Date.now()
  * The weekly job: rebuilds the table from Scryfall when it is older than REBUILD_AFTER_MS (or empty). Rows are by
  * name; a double-faced card also gets one under its front face.
  */
-export async function rebuildTagCategories(now = Date.now(), f: Fetch = fetch, deadline = now + 270_000): Promise<{ rebuilt: boolean; cards: number; updatedAt: number | null }> {
+export async function rebuildTagCategories(now = Date.now(), f: Fetch = scryFetch, deadline = now + 270_000): Promise<{ rebuilt: boolean; cards: number; updatedAt: number | null }> {
   const store = accountStore();
   if (!store) throw new Error("No database.");
   const before = await store.tagCategoryStats();

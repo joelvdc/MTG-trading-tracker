@@ -5,6 +5,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { get, put } from "@vercel/blob";
 import { USER_AGENT } from "./config";
+import { scryFetch } from "./scrylimit";
 
 export const DETAILS_BLOB = "cards/details.json.gz";
 /** Scryfall's /cards/collection takes at most this many cards per request. */
@@ -101,7 +102,7 @@ export function validIds(ids: unknown): string[] {
 /** Looks up to [BATCH] printings on Scryfall. Printings it doesn't know are left out. */
 export async function fetchScryfall(ids: string[]): Promise<ScryDetail[]> {
   if (ids.length === 0) return [];
-  const r = await fetch("https://api.scryfall.com/cards/collection", {
+  const r = await scryFetch("https://api.scryfall.com/cards/collection", {
     method: "POST",
     headers: { "User-Agent": USER_AGENT, Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify({ identifiers: ids.slice(0, BATCH).map((id) => ({ id })) }),

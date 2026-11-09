@@ -5,11 +5,21 @@
 import { USER_AGENT } from "./config";
 import { primaryType } from "./deckshared";
 import { toCardRef } from "./scryfall";
+import { scryFetch } from "./scrylimit";
 import type { RecCard, RecResult, RecSection, RecSource } from "./recshared";
 
 export * from "./recshared";
 
-export class RecError extends Error {}
+/** Why recommendations failed; [busy] when a source asked the website to slow down (try again in [retryAfter] seconds). */
+export class RecError extends Error {
+  constructor(
+    message: string,
+    readonly busy = false,
+    readonly retryAfter = 0,
+  ) {
+    super(message);
+  }
+}
 
 const recPrimaryType = (c: RecCard) => primaryType(c.typeLine.split(" // ")[0].split(" — ")[0]);
 
@@ -120,6 +130,7 @@ async function edhrecPage(commanders: string[]) {
     cache: "no-store",
   });
   if (r.status === 404 || r.status === 403) throw new RecError(`EDHREC has no page for ${commanders.join(" & ")} yet`);
+  if (r.status === 429) throw new RecError("EDHREC is busy; try again in a minute", true, 60);
   if (!r.ok) throw new RecError(`EDHREC answered ${r.status}`);
   return parseEdhrec(await r.json());
 }
@@ -154,7 +165,7 @@ async function recommander(commanders: string[], deck: string[], candidates: str
   const code = o?.result_code;
   if (code !== "success") {
     if (code === "error_invalid_cards") throw new RecError("recommander.cards doesn't know this commander yet");
-    if (code === "error_rate_limited") throw new RecError("recommander.cards is busy; try again in a minute");
+    if (code === "error_rate_limited") throw new RecError("recommander.cards is busy; try again in a minute", true, 60);
     if (code === "error_booting" || code === "error_model_loading") throw new RecError("recommander.cards is starting up; try again shortly");
     if (!r.ok) throw new RecError(`recommander.cards answered ${r.status}`);
     throw new RecError("recommander.cards sent something unexpected");
@@ -185,10 +196,9 @@ interface ScryRec {
 }
 
 const fullText = (c: ScryRec) => c.oracle_text ?? (c.card_faces ?? []).map((f) => f.oracle_text ?? "").join("\n");
-const pause = () => new Promise((r) => setTimeout(r, 100));
 
 async function scryJson(url: string, body?: unknown): Promise<unknown | null> {
-  const r = await fetch(url, {
+  const r = await scryFetch(url, {
     method: body ? "POST" : "GET",
     headers: { "User-Agent": USER_AGENT, Accept: "application/json", ...(body ? { "Content-Type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
@@ -196,6 +206,10 @@ async function scryJson(url: string, body?: unknown): Promise<unknown | null> {
     cache: "no-store",
   });
   if (r.status === 404) return null;
+  if (r.status === 429) {
+    const after = Number(r.headers.get("retry-after"));
+    throw new RecError("Scryfall is busy (too many requests); try again in half a minute", true, Number.isFinite(after) && after > 0 ? after : 30);
+  }
   if (!r.ok) throw new RecError(`Scryfall answered ${r.status}`);
   return r.json();
 }
@@ -203,7 +217,6 @@ async function scryJson(url: string, body?: unknown): Promise<unknown | null> {
 async function scryCollection(identifiers: object[]): Promise<ScryRec[]> {
   const out: ScryRec[] = [];
   for (let i = 0; i < identifiers.length; i += 75) {
-    if (i > 0) await pause();
     const j = (await scryJson("https://api.scryfall.com/cards/collection", { identifiers: identifiers.slice(i, i + 75) })) as { data?: ScryRec[] } | null;
     out.push(...(j?.data ?? []));
   }
@@ -215,7 +228,6 @@ async function searchAll(query: string, maxPages = 6): Promise<ScryRec[]> {
   const out: ScryRec[] = [];
   let next: string | null = `https://api.scryfall.com/cards/search?${new URLSearchParams({ q: `${query} game:paper`, unique: "cards" })}`;
   for (let pages = 0; next && pages < maxPages; pages++) {
-    if (pages > 0) await pause();
     const j = (await scryJson(next)) as { data?: ScryRec[]; has_more?: boolean; next_page?: string } | null;
     if (!j) break;
     out.push(...(j.data ?? []));

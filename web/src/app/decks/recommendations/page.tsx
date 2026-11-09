@@ -11,13 +11,20 @@ import type { DecksView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
 import { NO_REC_FILTER, recKeep, recsByCard, REC_SOURCES, type RecAcross, type RecResult, type RecSource } from "@/lib/recshared";
 
-/** Where a fetch-all run is: the deck being asked about, how many are done, how many failed. */
+/** Where a fetch-all run is: the deck being asked about, how many are done, and a pause asked for by a source. */
 interface Job {
   current: string;
   done: number;
   total: number;
-  failed: number;
+  /** While waiting because a source said it's busy: until when, and why. */
+  waitUntil?: number;
+  waitWhy?: string;
 }
+
+/** Between two decks, so the sources (Scryfall above all: 2 lookups a second) aren't asked too fast. */
+const BETWEEN_MS = 1_500;
+/** How often one deck is tried again after a source said it's busy. */
+const BUSY_RETRIES = 2;
 
 /**
  * Recommendations for all decks (the app's RecommendationsAllScreen): every deck's recommendations from EDHREC or
@@ -37,6 +44,9 @@ export default function AllRecommendationsPage() {
   const [several, setSeveral] = useState(false);
   const [results, setResults] = useState<Map<number, RecResult> | null>(null);
   const [job, setJob] = useState<Job | null>(null);
+  // The decks the last run got nothing for, with the reason.
+  const [failures, setFailures] = useState<{ deck: RecDeck; why: string }[]>([]);
+  const [, tick] = useState(0);
   const stop = useRef(false);
   const [open, setOpen] = useState<RecAcross | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
@@ -77,22 +87,49 @@ export default function AllRecommendationsPage() {
   const money = (eur: number | null) => (eur == null || !view ? "–" : format(eur * view.perEuro, view.currency));
   const readOnly = view?.readOnly ?? true;
 
-  async function fetchAll() {
+  /** Waits [ms] (showing a countdown), or less when Stop is pressed. */
+  async function waitFor(ms: number, show: Job | null) {
+    const until = Date.now() + ms;
+    while (!stop.current && Date.now() < until) {
+      if (show) setJob({ ...show, waitUntil: until });
+      tick((n) => n + 1);
+      await new Promise((r) => setTimeout(r, Math.min(1_000, until - Date.now())));
+    }
+  }
+
+  /** Asks about [list] (every deck, or the ones that failed last time) one at a time. */
+  async function fetchAll(list: RecDeck[] = decks) {
     stop.current = false;
     setError(null);
-    const run: Job = { current: "", done: 0, total: decks.length, failed: 0 };
-    for (const d of decks) {
+    setFailures([]);
+    const failed: { deck: RecDeck; why: string }[] = [];
+    let done = 0;
+    for (const d of list) {
       if (stop.current) break;
-      setJob({ ...run, current: d.name });
-      const r = await api<RecResult>(`/api/decks/${d.id}/recommendations?source=${source}`);
-      if (r.ok && Array.isArray(r.data.sections)) {
-        await keepRecs(d.id, source, r.data);
-        setResults((old) => new Map(old ?? []).set(d.id, r.data));
-      } else run.failed++;
-      run.done++;
+      if (done > 0) await waitFor(BETWEEN_MS, null);
+      for (let attempt = 0; !stop.current; attempt++) {
+        const now: Job = { current: d.name, done, total: list.length };
+        setJob(now);
+        const r = await api<RecResult & { busy?: boolean; retryAfter?: number }>(`/api/decks/${d.id}/recommendations?source=${source}`);
+        if (r.ok && Array.isArray(r.data.sections)) {
+          await keepRecs(d.id, source, r.data);
+          setResults((old) => new Map(old ?? []).set(d.id, r.data));
+          break;
+        }
+        const why = r.status === 504 ? "the website took too long" : (r.data.error ?? `the website answered ${r.status || "nothing"}`);
+        // A source asked to slow down: wait as long as it asked (plus a little) and try the same deck again.
+        if (r.data.busy && attempt < BUSY_RETRIES) {
+          await waitFor(((r.data.retryAfter ?? 30) + 3) * 1000, { ...now, waitWhy: why });
+          continue;
+        }
+        failed.push({ deck: d, why });
+        break;
+      }
+      done++;
     }
     setJob(null);
-    if (run.failed) setError(`${run.failed} of ${run.done} decks got no recommendations (try again later; the source may be busy or not know the commander).`);
+    setFailures(failed);
+    if (failed.length) setError(`${failed.length} of ${done} decks got no recommendations this time:`);
   }
 
   async function send(x: RecAcross, to: RecTarget, deckId: number | null) {
@@ -152,18 +189,38 @@ export default function AllRecommendationsPage() {
                   Stop
                 </button>
               ) : (
-                <button className="btn small-btn primary" onClick={fetchAll} disabled={decks.length === 0 || results === null}>
+                <button className="btn small-btn primary" onClick={() => fetchAll()} disabled={decks.length === 0 || results === null}>
                   {have.length === 0 ? "Get them" : "Refresh all"}
                 </button>
               )}
             </div>
             {job && (
               <div className="rec-job small">
-                Getting recommendations: {job.current} ({job.done + 1} of {job.total}) · keep this page open
+                {job.waitUntil
+                  ? `${job.current}: ${job.waitWhy ?? "the source is busy"}. Trying again in ${Math.max(0, Math.ceil((job.waitUntil - Date.now()) / 1000))} s (${job.done + 1} of ${job.total}) · keep this page open`
+                  : `Getting recommendations: ${job.current} (${job.done + 1} of ${job.total}) · keep this page open`}
                 <progress max={job.total} value={job.done} />
               </div>
             )}
-            {error && <div className="bar error">{error}</div>}
+            {error && (
+              <div className="bar error">
+                {error}
+                {failures.length > 0 && (
+                  <ul className="rec-failures">
+                    {failures.map((f) => (
+                      <li key={f.deck.id}>
+                        {f.deck.name}: {f.why}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {failures.length > 0 && !job && (
+                  <button className="btn small-btn" onClick={() => fetchAll(failures.map((f) => f.deck))}>
+                    Try these {failures.length === 1 ? "" : `${failures.length} `}again
+                  </button>
+                )}
+              </div>
+            )}
             {notice && (
               <div className="bar ok" role="status">
                 {notice}

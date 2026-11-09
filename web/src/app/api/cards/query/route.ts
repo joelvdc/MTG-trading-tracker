@@ -1,6 +1,7 @@
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { scryfallBatches } from "@/lib/cardquery";
 import { USER_AGENT } from "@/lib/config";
+import { scryFetch } from "@/lib/scrylimit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ class BadQuery extends Error {}
 
 /** One Scryfall search page; null for "no cards found". */
 async function page(url: string): Promise<{ data?: { name: string }[]; has_more?: boolean; next_page?: string } | null> {
-  const r = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(20_000), cache: "no-store" });
+  const r = await scryFetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(20_000), cache: "no-store" });
   if (r.status === 404) return null;
   if (r.status === 400) {
     const j = (await r.json().catch(() => null)) as { details?: string } | null;

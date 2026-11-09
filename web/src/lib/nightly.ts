@@ -8,6 +8,7 @@ import { addDetails, loadDetails, type DetailsFile } from "./carddetails";
 import { loadCardKingdom, type CkFile } from "./cardkingdom";
 import { displayName } from "./colquery";
 import { USER_AGENT } from "./config";
+import { scryFetch } from "./scrylimit";
 import { toEur } from "./money";
 import { loadPrices } from "./pricestore";
 import { PRICE_TYPES, priceType, type PriceFile, type PriceType } from "./prices";
@@ -122,7 +123,7 @@ export async function checkAlerts(file: SyncFile, prices: PriceFile | null, leve
 type Fetch = typeof fetch;
 
 /** Scryfall's paper printings of [name] (as the app's ScryfallApi.prints), at most 5 pages; null when the lookup fails. */
-export function scryfallPrintings(f: Fetch = fetch): PrintingsOf {
+export function scryfallPrintings(f: Fetch = scryFetch): PrintingsOf {
   const cache = new Map<string, WishPrinting[] | null>();
   const exact = async (name: string): Promise<WishPrinting[] | null> => {
     const out: WishPrinting[] = [];

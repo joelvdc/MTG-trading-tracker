@@ -1,6 +1,7 @@
 // Card search on Scryfall, turned into the app's CardRef (Scryfall.kt toRef).
 import { parseCardRules, type CardRules } from "./cardrules";
 import { USER_AGENT } from "./config";
+import { scryFetch } from "./scrylimit";
 import type { CardRef } from "./syncfile";
 
 const API = "https://api.scryfall.com";
@@ -69,7 +70,7 @@ export function toCardRef(c: ScryCard): CardRef {
 
 async function search(q: string, unique: "cards" | "prints"): Promise<FoundCard[]> {
   const url = `${API}/cards/search?${new URLSearchParams({ q: `${q} game:paper`, unique, order: unique === "prints" ? "released" : "name" })}`;
-  const r = await fetch(url, {
+  const r = await scryFetch(url, {
     headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
     signal: AbortSignal.timeout(15_000),
     next: { revalidate: 3600 },
@@ -97,7 +98,7 @@ export function printings(name: string): Promise<FoundCard[]> {
 /** A card's rules text, legalities and rulings by Scryfall id; null when Scryfall doesn't know the card. Cached for a day. */
 export async function rulesOf(id: string): Promise<CardRules | null> {
   const get = async (path: string) => {
-    const r = await fetch(`${API}${path}`, {
+    const r = await scryFetch(`${API}${path}`, {
       headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
       signal: AbortSignal.timeout(15_000),
       next: { revalidate: 86_400 },
@@ -135,7 +136,7 @@ const looked = (c: ScryCard): LookedUp => ({
 });
 
 async function getJson(url: string, init: RequestInit = {}): Promise<unknown | null> {
-  const r = await fetch(url, {
+  const r = await scryFetch(url, {
     ...init,
     headers: { "User-Agent": USER_AGENT, Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}) },
     signal: AbortSignal.timeout(20_000),
