@@ -125,3 +125,19 @@ export function splitColumns<T extends { weight: number }>(items: T[], n: number
   }
   return cols;
 }
+
+/** Where a dragged card or category would land on a deck section: its key, the category a card goes to, and above or below. */
+export interface DropTarget {
+  key: string;
+  category: string | null;
+  after: boolean;
+}
+
+/**
+ * The drop spot for a dragged [kind] over a section (its key, the category a card dropped there goes to, whether
+ * categories can land next to it, its top and height) with the pointer at [y]; null when it can't land there.
+ */
+export function dropSpot(kind: "cat" | "card", s: { key: string; category: string | null; orderable: boolean; top: number; height: number }, y: number): DropTarget | null {
+  if (kind === "cat" ? !s.orderable : s.category === null) return null;
+  return { key: s.key, category: s.category, after: y > s.top + s.height / 2 };
+}

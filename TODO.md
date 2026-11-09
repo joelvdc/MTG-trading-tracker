@@ -186,6 +186,9 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-09: website: dragging cards and categories on the deck page is done by the page itself (no longer the
+  browser's drag and drop), so the mouse wheel scrolls while dragging, as well as the window's edges; a label follows
+  the pointer, Esc cancels.
 - 2026-11-09: website: the deck page scrolls by itself while dragging a card or category near the window's top or
   bottom edge (the browser's drag ignores the mouse wheel on Windows).
 - 2026-11-09: website: Recommendations for all decks gets a deck picker (Decks: 7 of 19 ▾; All / None / Without

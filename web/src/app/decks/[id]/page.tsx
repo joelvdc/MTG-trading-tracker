@@ -18,11 +18,11 @@ import { TopBar } from "@/components/Nav";
 import { OwnedIcon } from "@/components/OwnedIcon";
 import { RecommendationsPanel } from "@/components/RecommendationsPanel";
 import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
-import { useDragScroll } from "@/components/useDragScroll";
+import { usePointerDrag } from "@/components/useDragScroll";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { allCombos, bracketName, caseless, POWER_SOURCES, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
-import { backImageUrl, categoryOrder, costColours, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort } from "@/lib/decklayout";
+import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
@@ -33,6 +33,9 @@ const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
 
 /** The deck's folded card sections, remembered in this browser per deck. */
+/** What is being dragged on the deck page: a category (to order them) or, in a local deck, a card (to another category). */
+type DragItem = { kind: "cat"; title: string } | { kind: "card"; uid: string; from: string };
+
 function useFolded(deckId: string): [Set<string>, (key: string, folded: boolean) => void] {
   const key = `mtg.deckFolded.${deckId}`;
   const [folded, setFolded] = useState<Set<string>>(new Set());
@@ -85,10 +88,27 @@ export default function DeckPage() {
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   // Dragging a category (to order them) or, in a local deck, a card (to another category), and where it would land.
-  const [drag, setDrag] = useState<{ kind: "cat"; title: string } | { kind: "card"; uid: string; from: string } | null>(null);
-  // The page scrolls when a dragged card or category nears the window's top or bottom edge.
-  useDragScroll(drag !== null);
+  const [drag, setDrag] = useState<DragItem | null>(null);
   const [dropAt, setDropAt] = useState<{ key: string; after: boolean } | null>(null);
+  // The page's own dragging (the mouse wheel and the window's edges scroll the page meanwhile; see usePointerDrag).
+  const dnd = usePointerDrag<DragItem, DropTarget>({
+    begin: (p) => {
+      hover.hide();
+      setDrag(p);
+    },
+    over: (p, x, y) => {
+      const t = dropAtPoint(p, x, y);
+      setDropAt((old) => (t ? (old?.key === t.key && old.after === t.after ? old : { key: t.key, after: t.after }) : null));
+      return t;
+    },
+    drop: (p, t) => {
+      endDrag();
+      if (!t) return;
+      if (p.kind === "cat") void orderCategory(p.title, t.key, t.after);
+      else if (t.category !== null) void moveCard(p.uid, p.from, t.category);
+    },
+    cancel: () => endDrag(),
+  });
   const hover = useHoverCard(hoverOn);
   // The main deck's and the maybeboard's cards with their details: the lines' mana costs and the filter use both.
   const allCards = useMemo(() => (view ? [...view.stats, ...(view.maybeStats ?? [])] : NO_CARDS), [view]);
@@ -198,6 +218,18 @@ export default function DeckPage() {
     setDropAt(null);
   };
 
+  /** Where [p] would land with the pointer at (x, y): the innermost section under it that takes it. */
+  function dropAtPoint(p: DragItem, x: number, y: number): DropTarget | null {
+    let el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-drop-key]") ?? null;
+    while (el) {
+      const box = el.getBoundingClientRect();
+      const spot = dropSpot(p.kind, { key: el.dataset.dropKey ?? "", category: el.dataset.dropCat ?? null, orderable: el.dataset.dropOrder === "1", top: box.top, height: box.height }, y);
+      if (spot) return spot;
+      el = el.parentElement?.closest<HTMLElement>("[data-drop-key]") ?? null;
+    }
+    return null;
+  }
+
   /** Puts the dragged category before or after [target] and saves the deck's own order (any deck). */
   async function orderCategory(dragged: string, target: string, after: boolean) {
     if (!view || !shaped || dragged.toLowerCase() === target.toLowerCase()) return;
@@ -222,26 +254,11 @@ export default function DeckPage() {
     else await reload(null);
   }
 
-  /** Drag-and-drop on a section: [category] is where a card dropped there goes; [orderable] whether categories can land here. */
+  /** A section a dragged card or category can land on: [category] is where a card dropped there goes; [orderable] whether categories can land next to it. */
   const dropProps = (key: string, category: string | null, orderable: boolean) => ({
-    onDragOver: (e: React.DragEvent<HTMLElement>) => {
-      if (!drag || (drag.kind === "cat" && !orderable) || (drag.kind === "card" && category === null)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const box = e.currentTarget.getBoundingClientRect();
-      const after = e.clientY > box.top + box.height / 2;
-      if (dropAt?.key !== key || dropAt.after !== after) setDropAt({ key, after });
-    },
-    onDrop: (e: React.DragEvent<HTMLElement>) => {
-      if (!drag) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const d = drag;
-      const after = dropAt?.after ?? false;
-      endDrag();
-      if (d.kind === "cat" && orderable) void orderCategory(d.title, key, after);
-      if (d.kind === "card" && category !== null) void moveCard(d.uid, d.from, category);
-    },
+    "data-drop-key": key,
+    ...(category !== null ? { "data-drop-cat": category } : {}),
+    "data-drop-order": orderable ? "1" : "0",
   });
   const dropClass = (key: string) =>
     dropAt?.key !== key || !drag ? "" : drag.kind === "cat" ? (dropAt.after ? " drop-after" : " drop-before") : " drop-into";
@@ -251,18 +268,9 @@ export default function DeckPage() {
     return (
       <li
         key={r.lineUid}
-        draggable={canMoveCards}
-        onDragStart={
-          canMoveCards
-            ? (e) => {
-                hover.hide();
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", r.name);
-                setDrag({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category });
-              }
-            : undefined
-        }
-        onDragEnd={endDrag}
+        data-movable={canMoveCards ? "1" : undefined}
+        onPointerDown={canMoveCards ? dnd.press({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category }, r.name) : undefined}
+        onDragStart={canMoveCards ? (e) => e.preventDefault() : undefined}
         className={filter.test && filter.mode === "HIGHLIGHT" ? (filter.test(r) ? "deck-row clickable filter-hit" : "deck-row clickable filter-miss") : "deck-row clickable"}
         role="button"
         tabIndex={0}
@@ -340,16 +348,10 @@ export default function DeckPage() {
           {orderable && canOrder && (
             <span
               className="cat-handle"
-              draggable
               title="Drag to move this category"
               aria-label={`Move ${title}`}
               onClick={(e) => e.preventDefault()}
-              onDragStart={(e) => {
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", title);
-                setDrag({ kind: "cat", title });
-              }}
-              onDragEnd={endDrag}
+              onPointerDown={dnd.press({ kind: "cat", title }, title)}
             >
               ⠿
             </span>
@@ -635,6 +637,7 @@ export default function DeckPage() {
         </Dialog>
       )}
       {hover.picture}
+      {dnd.ghost}
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
       {rz && view.salt && (
         <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} win={win} power={power} />
