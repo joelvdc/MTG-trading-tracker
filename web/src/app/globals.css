@@ -3470,3 +3470,29 @@ details.deck-section > summary .mini-head {
   padding-top: 0;
   padding-bottom: 0;
 }
+
+/* Recommendations for all decks: "For deck A, deck B" under the name, the fetch progress, the card window's deck rows. */
+.rec-note {
+  color: var(--violet);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-job {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rec-job progress {
+  width: 100%;
+}
+.rec-deck-rows {
+  margin: 4px 0;
+}
+.rec-deck-rows li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--raised);
+}

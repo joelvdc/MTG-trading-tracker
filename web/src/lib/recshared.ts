@@ -81,3 +81,36 @@ export const recType = (c: RecCard) => primaryType(c.typeLine.split(" // ")[0].s
 /** Whether a recommendation passes the filter (the app's RecFilter.keep). */
 export const recKeep = (f: RecFilter, c: RecCard): boolean =>
   (f.type === null || recType(c) === f.type) && (!f.newOnly || c.isNew) && (f.owned === "all" || (f.owned === "mine") === (c.owned ?? 0) > 0);
+
+/** A card recommended for one or more of your decks (the all-decks page; the app's RecommendationsAllScreen). */
+export interface RecAcross {
+  card: RecCard;
+  /** The decks it's recommended for, in the order the decks were given. */
+  deckIds: number[];
+}
+
+/** The app's name key: the front face's name, lower case. */
+export const recNameKey = (name: string) => name.split(" // ")[0].trim().toLowerCase();
+
+/**
+ * Every card recommended for the given decks, once, with the decks it's recommended for, the ones for the most decks
+ * first ([several]: only those for two decks or more). A card's owned / wished come from its newest fetch, and the
+ * filter ([keep]) is applied to that.
+ */
+export function recsByCard(results: { deckId: number; result: RecResult }[], keep: (c: RecCard) => boolean, several = false): RecAcross[] {
+  const byName = new Map<string, { card: RecCard; at: number; deckIds: number[] }>();
+  for (const { deckId, result } of results)
+    for (const s of result.sections)
+      for (const c of s.cards) {
+        const k = recNameKey(c.name);
+        const had = byName.get(k);
+        if (!had) byName.set(k, { card: c, at: result.fetchedAt, deckIds: [deckId] });
+        else {
+          if (!had.deckIds.includes(deckId)) had.deckIds.push(deckId);
+          if (result.fetchedAt > had.at) Object.assign(had, { card: { ...had.card, owned: c.owned, wished: c.wished }, at: result.fetchedAt });
+        }
+      }
+  // Filtered after merging, so "I own" goes by the newest count.
+  const all = [...byName.values()].filter((x) => keep(x.card)).map(({ card, deckIds }) => ({ card, deckIds }));
+  return (several ? all.filter((x) => x.deckIds.length > 1) : all).sort((a, b) => b.deckIds.length - a.deckIds.length);
+}

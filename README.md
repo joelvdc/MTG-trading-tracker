@@ -53,8 +53,9 @@ nightly backups; accounts need an invite code for now.
   categories into your own order (the app follows it) and drag cards between categories of your own decks.
 - Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
   win turn.
-- Recommendations with the cards you already own marked, sent straight to the deck, its maybeboard or the wishlist (a
-  deck from a link keeps a maybeboard of its own in the app and on the website).
+- Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the
+  deck, its maybeboard or the wishlist (a deck from a link keeps a maybeboard of its own in the app and on the
+  website); also for all decks at once, to find cards that fit several of them.
 - Printable **bracket and power level cards** for rule zero, cards you're missing (to the wishlist),
   and retiring decks you no longer play.
 

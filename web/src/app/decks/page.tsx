@@ -157,6 +157,9 @@ export default function DecksPage() {
               {folded.has(HIDE_RETIRED) ? "Show retired decks" : "Hide retired decks"}
             </button>
           )}
+          <a className="btn small-btn" href="/decks/recommendations">
+            Recommendations
+          </a>
           <a className="btn small-btn" href="/decks/shared">
             Cards in several decks
           </a>

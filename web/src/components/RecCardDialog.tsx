@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { CardUse } from "@/lib/decks";
-import type { DeckView } from "@/lib/deckshared";
-import { format } from "@/lib/money";
 import { recFacts, type RecCard, type RecSource } from "@/lib/recshared";
 import { api } from "./api";
 import { cardmarketUrlFor, cardtraderUrlFor } from "./cardLinks";
 import { CardRulesTabs } from "./CardRules";
 import { Dialog } from "./Dialog";
 import { FlipPicture } from "./FlipPicture";
-import type { RecTarget } from "./RecommendationsPanel";
+import { addKey, type RecDeck, type RecTarget } from "./RecTiles";
 
 /** The card's page on EDHREC (the app's RecCardDialog link). */
 function edhrecCardSlug(name: string): string {
@@ -25,32 +23,41 @@ function edhrecCardSlug(name: string): string {
 /**
  * A recommended card's window (the app's RecCardDialog), near-full-screen: its picture, what the source says,
  * whether you own it and which decks use it, the card text and rulings, its price and shop links, and the buttons
- * that put it in the deck (a local deck), its maybeboard (a deck from Archidekt: its local one) or the wishlist.
+ * that put it in a deck (a local deck), a deck's maybeboard (a deck from Archidekt: its local one) or the wishlist.
+ * With one deck the buttons are plain; with several (the all-decks page) each deck gets a row of its own.
  */
 export function RecCardDialog({
-  view,
   rec,
   source,
-  canDeck,
-  canMaybe,
+  money,
+  readOnly,
+  decks,
+  named = false,
   onWishlist,
   inMaybe,
+  inDeck,
   adding,
   onSend,
   onClose,
 }: {
-  view: DeckView;
   rec: RecCard;
   source: RecSource;
-  canDeck: boolean;
-  canMaybe: boolean;
+  money: (eur: number | null) => string;
+  /** The sync file can't be changed (no buttons that save). */
+  readOnly: boolean;
+  /** The decks it's recommended for. */
+  decks: RecDeck[];
+  /** Name the deck(s) even when there's one (the all-decks page). */
+  named?: boolean;
   /** Already on the wishlist. */
   onWishlist: boolean;
-  /** Put in the maybeboard on this visit. */
-  inMaybe: boolean;
-  /** "deck:Name", "maybe:Name" or "wish:Name" while that is being saved. */
+  /** Put in that deck's maybeboard on this visit. */
+  inMaybe: (deckId: number) => boolean;
+  /** Put in that (local) deck on this visit. */
+  inDeck: (deckId: number) => boolean;
+  /** addKey(…) while that is being saved. */
   adding: string | null;
-  onSend: (to: RecTarget) => void;
+  onSend: (to: RecTarget, deckId: number | null) => void;
   onClose: () => void;
 }) {
   const [use, setUse] = useState<CardUse | null>(null);
@@ -64,8 +71,26 @@ export function RecCardDialog({
       live = false;
     };
   }, [rec.name]);
-  const money = (eur: number | null) => (eur == null ? "–" : format(eur * view.perEuro, view.currency));
   if (!card) return null;
+  const busy = adding !== null;
+  const rows = named || decks.length > 1;
+  const deckButtons = (d: RecDeck, named: boolean) => (
+    <>
+      {d.local && (
+        <button className="btn small-btn primary" disabled={busy || inDeck(d.id)} onClick={() => onSend("deck", d.id)} title="Add one copy to the deck">
+          {adding === addKey("deck", d.id, rec.name) ? "Adding…" : inDeck(d.id) ? "✓ In the deck" : named ? "+ Deck" : "Add to deck"}
+        </button>
+      )}
+      <button
+        className="btn small-btn"
+        disabled={busy || inMaybe(d.id)}
+        onClick={() => onSend("maybe", d.id)}
+        title={d.local ? "Add one copy to the maybeboard" : "Add one copy to the deck's local maybeboard (Archidekt doesn't see it)"}
+      >
+        {adding === addKey("maybe", d.id, rec.name) ? "Adding…" : inMaybe(d.id) ? "✓ In the maybeboard" : named ? "+ Maybe" : "Add to maybeboard"}
+      </button>
+    </>
+  );
   return (
     <Dialog title={rec.name} onClose={onClose}>
       <div className="dialog-top">
@@ -87,28 +112,26 @@ export function RecCardDialog({
                 : `In ${use.uses.length === 1 ? "1 deck" : `${use.uses.length} decks`}: ${use.uses.map((u) => `${u.deckName} ×${u.quantity}`).join(", ")}`}
             </div>
           )}
+          {!readOnly && rows && (
+            <ul className="plain-list rec-deck-rows">
+              {decks.map((d) => (
+                <li key={d.id}>
+                  <a href={`/decks/${d.id}`} className="grow">
+                    {d.name}
+                  </a>
+                  {deckButtons(d, true)}
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="price-line">
             <strong>{money(card.fallbackEur)}</strong>
             {card.fallbackEurFoil != null && <span className="muted"> · foil {money(card.fallbackEurFoil)}</span>}
           </div>
           <div className="shop-links">
-            {canDeck && (
-              <button className="btn small-btn primary" disabled={adding !== null} onClick={() => onSend("deck")} title="Add one copy to the deck">
-                {adding === `deck:${rec.name}` ? "Adding…" : "Add to deck"}
-              </button>
-            )}
-            {canMaybe && (
-              <button
-                className="btn small-btn"
-                disabled={adding !== null || inMaybe}
-                onClick={() => onSend("maybe")}
-                title={view.local ? "Add one copy to the maybeboard" : "Add one copy to the deck's local maybeboard (Archidekt doesn't see it)"}
-              >
-                {adding === `maybe:${rec.name}` ? "Adding…" : inMaybe ? "✓ In the maybeboard" : "Add to maybeboard"}
-              </button>
-            )}
-            <button className="btn small-btn" disabled={adding !== null || onWishlist || view.readOnly} onClick={() => onSend("wish")}>
-              {adding === `wish:${rec.name}` ? "Adding…" : onWishlist ? "★ On the wishlist" : "☆ Add to wishlist"}
+            {!readOnly && !rows && decks.length === 1 && deckButtons(decks[0], false)}
+            <button className="btn small-btn" disabled={busy || onWishlist || readOnly} onClick={() => onSend("wish", null)}>
+              {adding === addKey("wish", null, rec.name) ? "Adding…" : onWishlist ? "★ On the wishlist" : "☆ Add to wishlist"}
             </button>
             <a className="btn small-btn" href={`https://edhrec.com/cards/${edhrecCardSlug(rec.name)}`} target="_blank" rel="noreferrer">
               EDHREC ↗
@@ -124,7 +147,8 @@ export function RecCardDialog({
       </div>
       <CardRulesTabs scryfallId={card.scryfallId}>
         <p className="muted small">
-          {source === "edhrec" ? "Recommended by EDHREC for this commander." : "Recommended by recommander.cards for this commander and decklist."}
+          {source === "edhrec" ? "Recommended by EDHREC for " : "Recommended by recommander.cards for "}
+          {!rows ? (source === "edhrec" ? "this commander." : "this commander and decklist.") : `${decks.map((d) => d.name).join(", ")}.`}
         </p>
       </CardRulesTabs>
       <div className="dialog-actions">

@@ -186,6 +186,10 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-09: website: the recommendation filters (New cards, Owned or not / I own / I don't own, card type) and
+  **Recommendations for all decks** (/decks/recommendations, like the app's: By card / For several decks, Get them /
+  Refresh all one deck at a time, the card window with + Deck / + Maybe per deck); recommendations kept in the
+  browser (IndexedDB) and shared with each deck's window. Retired decks left out.
 - 2026-11-09: 1.86: recommendations to a deck's maybeboard (a local maybeboard for decks from Archidekt, kept on reload)
   and the wishlist; the website's recommendations get + Deck / + Maybe / ☆ buttons, a green corner on cards you own,
   one price, "New" beside the name, small/medium/large pictures (also in the collection) and a working Card on hover;
