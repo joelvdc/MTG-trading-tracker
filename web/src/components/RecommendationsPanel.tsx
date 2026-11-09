@@ -139,13 +139,17 @@ export function RecommendationsPanel({
           </button>
         </div>
         <button
-          className="btn small-btn rec-refresh"
+          className={`rec-refresh${result ? "" : " wide"}${busy ? " busy" : ""}`}
           onClick={load}
           disabled={busy}
-          title={busy ? "Getting them…" : result ? "Refresh" : "Get recommendations"}
+          title={busy ? "Getting recommendations…" : result ? "Refresh recommendations" : "Get recommendations"}
           aria-label={busy ? "Getting recommendations…" : result ? "Refresh recommendations" : "Get recommendations"}
         >
-          {busy ? "…" : "⟳"}
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M20 4v5h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {!result && <span>Get recommendations</span>}
         </button>
         {result && <span className="muted small rec-date">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span>}
         {mode === "list" && (
@@ -196,17 +200,21 @@ export function RecommendationsPanel({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {c.card?.imageUrl ? <img src={c.card.imageUrl.replace("/normal/", "/small/")} alt="" loading="lazy" /> : <span className="rec-noimg" />}
-                  {c.manaCost && (
-                    <span className="rec-cost">
-                      <ManaCost cost={c.manaCost} size={14} />
-                    </span>
-                  )}
                   <span className="rec-text small">
                     <strong>{c.name}</strong>
                     {c.isNew && <span className="tag">New</span>}
                     <span className="muted">{recFacts(c)}</span>
                   </span>
-                  {c.card && <span className="num nowrap rec-price small">{priceOf(c)}</span>}
+                  {(c.manaCost || c.card) && (
+                    <span className="rec-side small">
+                      {c.manaCost && (
+                        <span className="rec-cost">
+                          <ManaCost cost={c.manaCost} size={14} />
+                        </span>
+                      )}
+                      {c.card && <span className="num nowrap rec-price">{priceOf(c)}</span>}
+                    </span>
+                  )}
                   {canAdd && c.card && (
                     <button className="btn small-btn" disabled={adding !== null} onClick={() => add(c)} title="Add one copy to the deck">
                       {adding === c.name ? "…" : "Add"}

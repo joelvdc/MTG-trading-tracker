@@ -2312,13 +2312,61 @@ details.menu > summary::-webkit-details-marker {
   text-align: center;
 }
 
-/* The ⟳ refresh button: wide enough for the arrow not to feel cramped. */
+/* The refresh button: a round grey button the height of the pill groups beside it; the arrow spins while loading.
+   Before the first fetch it is a pill reading "Get recommendations". */
 .rec-refresh {
-  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--raised);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  flex: none;
+}
+.rec-refresh.wide {
+  width: auto;
+  padding: 0 18px 0 14px;
+}
+.rec-refresh:hover:not(:disabled) {
+  background: #3a3446;
+  color: var(--gold);
+}
+.rec-refresh:focus-visible {
+  outline: 2px solid var(--violet);
+}
+.rec-refresh:disabled {
+  cursor: default;
+}
+.rec-refresh.busy svg {
+  animation: rec-spin 0.9s linear infinite;
+  color: var(--gold);
+}
+@keyframes rec-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The right side of a recommendation: mana cost on top, price underneath, both right-aligned. */
+.rec-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: none;
 }
 
 .rec-cost {
-  flex: none;
+  display: inline-flex;
+  white-space: nowrap;
 }
 
 .rec-price {
