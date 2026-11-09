@@ -3458,3 +3458,15 @@ details.deck-section > summary .mini-head {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The recommendation filters (the app's chips: New cards, owned, card type). */
+.rec-filters {
+  align-items: center;
+}
+.rec-filters select {
+  width: auto;
+  height: 32px;
+  min-height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+}

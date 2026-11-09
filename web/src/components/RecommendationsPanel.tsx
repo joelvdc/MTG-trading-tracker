@@ -3,7 +3,19 @@
 import { useEffect, useState } from "react";
 import type { DeckView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
-import { recFacts, REC_SOURCES, type RecCard, type RecResult, type RecSource } from "@/lib/recshared";
+import {
+  NO_REC_FILTER,
+  recFacts,
+  recKeep,
+  REC_OWNED,
+  REC_SOURCES,
+  REC_TYPES,
+  type RecCard,
+  type RecFilter,
+  type RecOwned,
+  type RecResult,
+  type RecSource,
+} from "@/lib/recshared";
 import { api } from "./api";
 import { deckAction } from "./DeckEditDialogs";
 import { RefreshButton } from "./Icons";
@@ -13,6 +25,7 @@ import { ViewSwitch, type Layout } from "./ViewSwitch";
 
 const SOURCE_KEY = "mtg.recSource";
 const VIEW_KEY = "mtg.recView";
+const FILTER_KEY = "mtg.recFilter";
 
 function store(): Storage | null {
   try {
@@ -58,6 +71,7 @@ export function RecommendationsPanel({
   const [maybe, setMaybe] = useState<Set<string>>(new Set());
   const [wished, setWished] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
+  const [filter, setFilter] = useState<RecFilter>(NO_REC_FILTER);
   // v3: results cached before owned / wished existed are fetched again.
   const cacheKey = `mtg.recs.v3.${view.id}.${source}`;
   const money = (eur: number | null) => (eur == null ? "–" : format(eur * view.perEuro, view.currency));
@@ -75,6 +89,8 @@ export function RecommendationsPanel({
       if (s === "edhrec" || s === "recommander") setSource(s);
       const m = localStorage.getItem(VIEW_KEY);
       if (m === "images" || m === "list") setMode(m);
+      const f = localStorage.getItem(FILTER_KEY);
+      if (f) setFilter({ ...NO_REC_FILTER, ...(JSON.parse(f) as Partial<RecFilter>) });
     } catch {
       // Storage unavailable.
     }
@@ -102,6 +118,18 @@ export function RecommendationsPanel({
     } catch {
       // Not remembered.
     }
+  }
+
+  function pickFilter(change: Partial<RecFilter>) {
+    setFilter((old) => {
+      const next = { ...old, ...change };
+      try {
+        localStorage.setItem(FILTER_KEY, JSON.stringify(next));
+      } catch {
+        // Not remembered.
+      }
+      return next;
+    });
   }
 
   async function load() {
@@ -153,6 +181,11 @@ export function RecommendationsPanel({
   const canMaybe = !view.readOnly;
   const onWish = (c: RecCard) => !!c.wished || wished.has(c.name);
   const inMaybe = (c: RecCard) => maybe.has(c.name);
+
+  // The sections as shown: without the cards added to the deck on this visit, filtered, empty ones left out.
+  const shown = (result?.sections ?? [])
+    .map((s) => ({ ...s, cards: s.cards.filter((c) => !added.has(c.name) && recKeep(filter, c)) }))
+    .filter((s) => s.cards.length > 0);
 
   /** The buttons shown on a card when the mouse is over it (always on a touch screen). */
   const actions = (c: RecCard) =>
@@ -211,20 +244,40 @@ export function RecommendationsPanel({
           </button>
         )}
       </div>
+      {result && (
+        <div className="chips rec-filters" role="group" aria-label="Filters">
+          <button type="button" className={filter.newOnly ? "chip on" : "chip"} aria-pressed={filter.newOnly} onClick={() => pickFilter({ newOnly: !filter.newOnly })}>
+            New cards
+          </button>
+          {(Object.keys(REC_OWNED) as RecOwned[]).map((o) => (
+            <button key={o} type="button" className={filter.owned === o ? "chip on" : "chip"} aria-pressed={filter.owned === o} onClick={() => pickFilter({ owned: o })}>
+              {REC_OWNED[o]}
+            </button>
+          ))}
+          <select value={filter.type ?? ""} onChange={(e) => pickFilter({ type: e.target.value || null })} aria-label="Card type">
+            <option value="">All types</option>
+            {REC_TYPES.map(([t, label]) => (
+              <option key={t} value={t}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {!view.local && !view.readOnly && (
         <p className="muted small">Decks from Archidekt are read only: + Maybe puts a card in the deck&apos;s local maybeboard, kept here and in the app (Archidekt doesn&apos;t see it).</p>
       )}
       {error && <div className="bar error">{error}</div>}
       {result?.note && <p className="warn-text small">{result.note}</p>}
       {result && result.sections.length === 0 && <p className="muted small">Nothing to recommend that isn&apos;t in the deck already.</p>}
-      {result?.sections.map((s) => (
+      {result && result.sections.length > 0 && shown.length === 0 && <p className="muted small">No recommendation matches these filters.</p>}
+      {shown.map((s) => (
         <details key={s.key} open>
           <summary>
-            <strong>{s.title}</strong> <span className="muted small">· {s.cards.filter((c) => !added.has(c.name)).length}</span>
+            <strong>{s.title}</strong> <span className="muted small">· {s.cards.length}</span>
           </summary>
           <ul className={mode === "list" ? "rec-grid list" : "rec-grid images"}>
             {s.cards
-              .filter((c) => !added.has(c.name))
               .map((c) => {
                 const owned = c.owned ?? 0;
                 const price = priceOf(c);

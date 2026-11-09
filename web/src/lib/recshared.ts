@@ -1,4 +1,5 @@
 // Recommendation types shared by the server (recommend.ts) and the deck page.
+import { primaryType } from "./deckshared";
 import type { CardRef } from "./syncfile";
 
 export type RecSource = "edhrec" | "recommander";
@@ -50,3 +51,33 @@ export const recFacts = (c: RecCard): string => {
   if (c.score !== null) out.push(`score ${c.score.toFixed(2)}`);
   return out.join(" · ");
 };
+
+/** The card types to filter recommendations by, as the app's TYPE_FILTERS (RecommendationsScreen.kt). */
+export const REC_TYPES: [string, string][] = [
+  ["Creature", "Creatures"],
+  ["Instant", "Instants"],
+  ["Sorcery", "Sorceries"],
+  ["Artifact", "Artifacts"],
+  ["Enchantment", "Enchantments"],
+  ["Planeswalker", "Planeswalkers"],
+  ["Land", "Lands"],
+  ["Battle", "Battles"],
+];
+
+export type RecOwned = "all" | "mine" | "notMine";
+export const REC_OWNED: Record<RecOwned, string> = { all: "Owned or not", mine: "I own", notMine: "I don't own" };
+
+/** What the recommendation lists are filtered by (the app's RecFilter). */
+export interface RecFilter {
+  type: string | null;
+  owned: RecOwned;
+  newOnly: boolean;
+}
+export const NO_REC_FILTER: RecFilter = { type: null, owned: "all", newOnly: false };
+
+/** The card's main type, as the app's RecCard.primaryType (front face, before the subtypes). */
+export const recType = (c: RecCard) => primaryType(c.typeLine.split(" // ")[0].split(" — ")[0]);
+
+/** Whether a recommendation passes the filter (the app's RecFilter.keep). */
+export const recKeep = (f: RecFilter, c: RecCard): boolean =>
+  (f.type === null || recType(c) === f.type) && (!f.newOnly || c.isNew) && (f.owned === "all" || (f.owned === "mine") === (c.owned ?? 0) > 0);
