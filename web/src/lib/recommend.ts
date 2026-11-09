@@ -167,6 +167,10 @@ async function recommander(commanders: string[], deck: string[], candidates: str
     if (code === "error_invalid_cards") throw new RecError("recommander.cards doesn't know this commander yet");
     if (code === "error_rate_limited") throw new RecError("recommander.cards is busy; try again in a minute", true, 60);
     if (code === "error_booting" || code === "error_model_loading") throw new RecError("recommander.cards is starting up; try again shortly");
+    if (r.status === 429) {
+      const after = Number(r.headers.get("retry-after"));
+      throw new RecError("recommander.cards is busy (too many requests); try again in a minute", true, Number.isFinite(after) && after > 0 ? after : 60);
+    }
     if (!r.ok) throw new RecError(`recommander.cards answered ${r.status}`);
     throw new RecError("recommander.cards sent something unexpected");
   }

@@ -186,6 +186,10 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-09: website fix: Recommendations for all decks failed for most decks because the website asked Scryfall
+  10 times a second (its limit is 2 for searches and card lookups; a refusal blocks for 30 s). Every Scryfall request
+  now keeps to the limits; the page spaces decks, waits and retries when a source is busy, and lists why a deck failed
+  with "Try these again".
 - 2026-11-09: website: the recommendation filters (New cards, Owned or not / I own / I don't own, card type) and
   **Recommendations for all decks** (/decks/recommendations, like the app's: By card / For several decks, Get them /
   Refresh all one deck at a time, the card window with + Deck / + Maybe per deck); recommendations kept in the

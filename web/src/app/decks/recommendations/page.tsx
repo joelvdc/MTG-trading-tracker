@@ -27,7 +27,7 @@ const BETWEEN_MS = 1_500;
 const BUSY_RETRIES = 2;
 
 /**
- * Recommendations for all decks (the app's RecommendationsAllScreen): every deck's recommendations from EDHREC or
+ * Recommendations for all decks (website only): every deck's recommendations from EDHREC or
  * recommander.cards, each card once with the decks it fits, "By card" or only "For several decks". The decks are asked
  * one at a time from this page; the results are kept in this browser, shared with each deck's own window. Retired
  * decks are left out.
@@ -119,7 +119,7 @@ export default function AllRecommendationsPage() {
         const why = r.status === 504 ? "the website took too long" : (r.data.error ?? `the website answered ${r.status || "nothing"}`);
         // A source asked to slow down: wait as long as it asked (plus a little) and try the same deck again.
         if (r.data.busy && attempt < BUSY_RETRIES) {
-          await waitFor(((r.data.retryAfter ?? 30) + 3) * 1000, { ...now, waitWhy: why });
+          await waitFor(((r.data.retryAfter ?? 30) + 3) * 1000, { ...now, waitWhy: why.split(";")[0] });
           continue;
         }
         failed.push({ deck: d, why });
