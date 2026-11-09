@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { backImageUrl, hasBackFace } from "@/lib/decklayout";
+import { FlipIcon } from "./Icons";
 
 /**
  * A card's picture with a Flip button under it when the card has a back face (a double-faced card). If the back
@@ -40,8 +41,8 @@ export function FlipPicture({
         }}
       />
       {canFlip && (
-        <button type="button" className="btn small-btn" onClick={() => setBack((b) => !b)}>
-          ⟳ Flip
+        <button type="button" className="btn small-btn flip-text-btn" onClick={() => setBack((b) => !b)} title={back ? "Show the front" : "Show the back"}>
+          <FlipIcon /> Flip
         </button>
       )}
     </div>

@@ -2312,9 +2312,9 @@ details.menu > summary::-webkit-details-marker {
   text-align: center;
 }
 
-/* The refresh button: a round grey button the height of the pill groups beside it; the arrow spins while loading.
-   Before the first fetch it is a pill reading "Get recommendations". */
-.rec-refresh {
+/* The refresh button (Icons.tsx RefreshButton): a round grey button the height of the .seg pills; the arrow spins while
+   loading. With a label (nothing loaded yet) it is a pill with the arrow and the label. */
+.refresh-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2331,25 +2331,25 @@ details.menu > summary::-webkit-details-marker {
   cursor: pointer;
   flex: none;
 }
-.rec-refresh.wide {
+.refresh-btn.wide {
   width: auto;
   padding: 0 18px 0 14px;
 }
-.rec-refresh:hover:not(:disabled) {
+.refresh-btn:hover:not(:disabled) {
   background: #3a3446;
   color: var(--gold);
 }
-.rec-refresh:focus-visible {
+.refresh-btn:focus-visible {
   outline: 2px solid var(--violet);
 }
-.rec-refresh:disabled {
+.refresh-btn:disabled {
   cursor: default;
 }
-.rec-refresh.busy svg {
-  animation: rec-spin 0.9s linear infinite;
+.refresh-btn.busy svg {
+  animation: refresh-spin 0.9s linear infinite;
   color: var(--gold);
 }
-@keyframes rec-spin {
+@keyframes refresh-spin {
   to {
     transform: rotate(360deg);
   }
@@ -2821,23 +2821,32 @@ details.deck-section > summary .mini-head {
   gap: 8px;
 }
 
+/* The deck line's flip button: a small round grey button, like the bigger round buttons elsewhere. */
 .flip-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
   margin-left: 6px;
-  padding: 0 5px;
-  border: 1px solid #4a4457;
-  border-radius: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   background: var(--raised);
-  color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--violet);
+  vertical-align: middle;
   cursor: pointer;
+}
+
+.flip-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .flip-btn:hover,
 .flip-btn:focus-visible {
-  color: var(--text);
-  border-color: var(--gold);
+  background: #3a3446;
+  color: var(--gold);
 }
 
 .flip-picture {
@@ -3232,4 +3241,17 @@ details.deck-section > summary .mini-head {
 
 .bar-fill.untold {
   background: var(--muted);
+}
+
+/* In the deck page's compact toolbar the round "Card on hover" switch is scaled down to the height of its neighbours. */
+.deck-toolbar-end .seg {
+  padding: 2px;
+}
+.deck-toolbar-end .seg button {
+  width: 30px;
+  height: 30px;
+}
+.deck-toolbar-end .seg svg {
+  width: 17px;
+  height: 17px;
 }

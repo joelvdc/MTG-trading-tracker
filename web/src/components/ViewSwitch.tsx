@@ -1,8 +1,10 @@
 "use client";
 
+import { HoverToggle } from "./Icons";
+
 export type Layout = "list" | "images";
 
-/** The list / pictures buttons and, for the list, the "Card on hover" switch (shared by the collection and the wishlist). */
+/** The list / pictures buttons and, for the list, the "Card on hover" switch (collection, wishlist, scans, recommendations). */
 export function ViewSwitch({
   layout,
   onLayout,
@@ -42,21 +44,7 @@ export function ViewSwitch({
           <rect x="4" y="5" width="11" height="15" rx="2" fill="currentColor" />
         </svg>
       </button>
-      {layout === "list" && (
-        <button
-          className={hover ? "on hover-toggle" : "hover-toggle"}
-          aria-pressed={hover}
-          aria-label="Card on hover"
-          title={hover ? "Card on hover: on" : "Card on hover: off"}
-          onClick={() => onHover(!hover)}
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <rect x="11" y="6" width="10" height="14" rx="1.8" fill="currentColor" opacity={hover ? 1 : 0.45} />
-            <path d="M3 3l4.2 11 1.6-4.4L13 8z" fill="currentColor" stroke="var(--raised)" strokeWidth="1" strokeLinejoin="round" />
-            {!hover && <path d="M3 21L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />}
-          </svg>
-        </button>
-      )}
+      {layout === "list" && <HoverToggle on={hover} onChange={onHover} />}
     </div>
   );
 }

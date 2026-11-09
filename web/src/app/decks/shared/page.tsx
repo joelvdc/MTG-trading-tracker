@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
+import { HoverSwitch } from "@/components/Icons";
 import { TopBar } from "@/components/Nav";
 import type { SharedCard } from "@/lib/decks";
 
@@ -49,10 +50,7 @@ export default function SharedCardsPage() {
                 Only cards I don&apos;t have enough of
               </button>
               <span className="spacer" />
-              <label className="check small">
-                <input type="checkbox" checked={hoverOn} onChange={(e) => setHoverOn(e.target.checked)} />
-                <span>Card on hover</span>
-              </label>
+              <HoverSwitch on={hoverOn} onChange={setHoverOn} />
             </div>
             {shown.length === 0 ? (
               <p className="muted center">{cards.length === 0 ? "No card is in more than one of your decks." : "You own enough copies of every shared card."}</p>

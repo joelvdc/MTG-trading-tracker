@@ -7,8 +7,10 @@ import { recFacts, REC_SOURCES, type RecCard, type RecResult, type RecSource } f
 import { api } from "./api";
 import { deckAction } from "./DeckEditDialogs";
 import { useHoverSetting } from "./HoverCard";
+import { RefreshButton } from "./Icons";
 import { ManaCost } from "./Mana";
 import { RecCardDialog } from "./RecCardDialog";
+import { ViewSwitch, type Layout } from "./ViewSwitch";
 
 const SOURCE_KEY = "mtg.recSource";
 const VIEW_KEY = "mtg.recView";
@@ -38,7 +40,7 @@ export function RecommendationsPanel({
   onClose?: () => void;
 }) {
   const [source, setSource] = useState<RecSource>("edhrec");
-  const [mode, setMode] = useState<"images" | "list">("images");
+  const [mode, setMode] = useState<Layout>("images");
   const [open, setOpen] = useState<RecCard | null>(null);
   const [result, setResult] = useState<RecResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -81,7 +83,7 @@ export function RecommendationsPanel({
     }
   }
 
-  function pickMode(m: "images" | "list") {
+  function pickMode(m: Layout) {
     setMode(m);
     try {
       localStorage.setItem(VIEW_KEY, m);
@@ -130,33 +132,14 @@ export function RecommendationsPanel({
             </button>
           ))}
         </div>
-        <div className="seg text" role="group" aria-label="View as">
-          <button className={mode === "images" ? "on" : ""} onClick={() => pickMode("images")}>
-            Images
-          </button>
-          <button className={mode === "list" ? "on" : ""} onClick={() => pickMode("list")}>
-            List
-          </button>
-        </div>
-        <button
-          className={`rec-refresh${result ? "" : " wide"}${busy ? " busy" : ""}`}
+        <ViewSwitch layout={mode} onLayout={pickMode} hover={hoverOn} onHover={setHoverOn} />
+        <RefreshButton
           onClick={load}
-          disabled={busy}
+          busy={busy}
+          label={result ? undefined : "Get recommendations"}
           title={busy ? "Getting recommendations…" : result ? "Refresh recommendations" : "Get recommendations"}
-          aria-label={busy ? "Getting recommendations…" : result ? "Refresh recommendations" : "Get recommendations"}
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            <path d="M20 4v5h-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {!result && <span>Get recommendations</span>}
-        </button>
-        {result && <span className="muted small rec-date">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span>}
-        {mode === "list" && (
-          <button className={hoverOn ? "chip on" : "chip"} onClick={() => setHoverOn(!hoverOn)} title="Show the card's picture when you hover it in the list">
-            Card on hover
-          </button>
-        )}
+        />
+        {result ? <span className="muted small rec-date">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span> : <span className="spacer" />}
         {onClose && (
           <button className="btn small-btn" onClick={onClose}>
             Close

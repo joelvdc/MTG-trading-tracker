@@ -67,13 +67,9 @@ export function useDeckPrefs(): [DeckPrefs, (change: Partial<DeckPrefs>) => void
 export function ViewOptionsMenu({
   prefs,
   onChange,
-  hoverOn,
-  onHover,
 }: {
   prefs: DeckPrefs;
   onChange: (change: Partial<DeckPrefs>) => void;
-  hoverOn: boolean;
-  onHover: (on: boolean) => void;
 }) {
   const box = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -120,8 +116,6 @@ export function ViewOptionsMenu({
           </label>
         ))}
         {item("Split into groups", prefs.maybeSplit, (v) => onChange({ maybeSplit: v }))}
-        <strong className="small">Pictures</strong>
-        {item("Card on hover", hoverOn, onHover)}
       </div>
     </details>
   );

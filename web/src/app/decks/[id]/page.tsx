@@ -12,6 +12,7 @@ import { deckResults, type Game } from "@/lib/gameshared";
 import { useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
+import { FlipIcon, HoverSwitch } from "@/components/Icons";
 import { ColourPips, ManaCost } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { OwnedIcon } from "@/components/OwnedIcon";
@@ -228,7 +229,7 @@ export default function DeckPage() {
               }}
               onKeyDown={(e) => e.stopPropagation()}
             >
-              ⟳
+              <FlipIcon size={14} />
             </button>
           )}
         </span>
@@ -414,7 +415,8 @@ export default function DeckPage() {
           )}
           <DeckFilterBox filter={filter} shown={shaped.matched} total={view.rows.reduce((s, r) => s + r.quantity, 0)} />
           <span className="deck-toolbar-end">
-            <ViewOptionsMenu prefs={prefs} onChange={setPrefs} hoverOn={hoverOn} onHover={setHoverOn} />
+            <HoverSwitch on={hoverOn} onChange={setHoverOn} />
+            <ViewOptionsMenu prefs={prefs} onChange={setPrefs} />
           </span>
         </div>
         {view.myPrintings && view.rows.some((r) => r.original) && (
