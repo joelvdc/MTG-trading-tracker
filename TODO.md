@@ -186,6 +186,8 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-09: website: the deck page scrolls by itself while dragging a card or category near the window's top or
+  bottom edge (the browser's drag ignores the mouse wheel on Windows).
 - 2026-11-09: website: Recommendations for all decks gets a deck picker (Decks: 7 of 19 ▾; All / None / Without
   recommendations / only this one) for both getting and viewing; decks whose list is unchanged and whose
   recommendations are newer than Settings → Recommendations → "Up to date for" (1 day by default) are skipped; what

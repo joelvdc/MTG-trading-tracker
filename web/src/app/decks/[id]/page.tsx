@@ -18,6 +18,7 @@ import { TopBar } from "@/components/Nav";
 import { OwnedIcon } from "@/components/OwnedIcon";
 import { RecommendationsPanel } from "@/components/RecommendationsPanel";
 import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
+import { useDragScroll } from "@/components/useDragScroll";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { allCombos, bracketName, caseless, POWER_SOURCES, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
@@ -85,6 +86,8 @@ export default function DeckPage() {
   const [hoverOn, setHoverOn] = useHoverSetting();
   // Dragging a category (to order them) or, in a local deck, a card (to another category), and where it would land.
   const [drag, setDrag] = useState<{ kind: "cat"; title: string } | { kind: "card"; uid: string; from: string } | null>(null);
+  // The page scrolls when a dragged card or category nears the window's top or bottom edge.
+  useDragScroll(drag !== null);
   const [dropAt, setDropAt] = useState<{ key: string; after: boolean } | null>(null);
   const hover = useHoverCard(hoverOn);
   // The main deck's and the maybeboard's cards with their details: the lines' mana costs and the filter use both.
