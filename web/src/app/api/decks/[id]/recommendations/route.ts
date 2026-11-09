@@ -1,7 +1,7 @@
 import { currentAccount, errorResponse, json } from "@/lib/auth";
 import { ownedByName, syncDecks } from "@/lib/decks";
 import { wishlist } from "@/lib/syncfile";
-import { RecError, recommendations, type RecSource } from "@/lib/recommend";
+import { RecError, recListKey, recommendations, type RecSource } from "@/lib/recommend";
 import { loadSync } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export const maxDuration = 60;
 
 type Params = { params: Promise<{ id: string }> };
 
-/** ?source=edhrec|recommander: the deck's recommendations, fetched fresh (the browser keeps them for the visit). */
+/** ?source=edhrec|recommander: the deck's recommendations, fetched fresh, with the list's fingerprint (the browser keeps them). */
 export async function GET(req: Request, { params }: Params) {
   const a = await currentAccount();
   if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
@@ -25,7 +25,7 @@ export async function GET(req: Request, { params }: Params) {
     const owned = ownedByName(file);
     const wished = new Set(wishlist(file).filter((w) => w.receivedAt == null).map((w) => w.card.name.toLowerCase()));
     for (const s of result.sections) for (const c of s.cards) Object.assign(c, { owned: owned.get(c.name.toLowerCase()) ?? 0, wished: wished.has(c.name.toLowerCase()) });
-    return json(result);
+    return json({ ...result, listKey: recListKey(lines) });
   } catch (e) {
     if (e instanceof RecError) return json({ error: e.message, busy: e.busy, retryAfter: e.retryAfter }, e.busy ? 503 : 502);
     return errorResponse(e);

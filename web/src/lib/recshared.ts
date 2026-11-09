@@ -38,6 +38,50 @@ export interface RecResult {
   fetchedAt: number;
   sections: RecSection[];
   note: string | null;
+  /** The deck's list when fetched (recListKey; missing in results kept before 2026-11-09). */
+  listKey?: string;
+}
+
+/**
+ * A short fingerprint of a deck's list (its cards without the maybeboard, and which are commanders): when it's the same,
+ * the deck's recommendations needn't be fetched again until they're older than the "up to date" period.
+ */
+export function recListKey(lines: { name: string; commander: boolean }[]): string {
+  const text = lines
+    .map((c) => (c.commander ? "*" : "") + c.name.trim().toLowerCase())
+    .sort()
+    .join("\n");
+  // FNV-1a, 32 bits, plus the number of cards: enough to tell a changed list.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${lines.length}-${h.toString(36)}`;
+}
+
+/** Where a deck's kept recommendations stand: none, up to date, too old, or fetched for a list that changed since. */
+export type RecState = "none" | "fresh" | "old" | "changed";
+
+export function recState(r: RecResult | null | undefined, listKey: string | null | undefined, keepMs: number, now = Date.now()): RecState {
+  if (!r) return "none";
+  if (!r.listKey || !listKey || r.listKey !== listKey) return "changed";
+  return now - r.fetchedAt < keepMs ? "fresh" : "old";
+}
+
+/** The "up to date" periods offered in Settings, in days (1 day by default). */
+export const REC_KEEP_DAYS = [1, 3, 7, 30] as const;
+export const DEFAULT_REC_KEEP_DAYS = 1;
+
+/** [r] with what you own and want as they are now (the marks kept with it are from when it was fetched). */
+export function withRecMarks(r: RecResult, owned: Record<string, number>, wished: Set<string>): RecResult {
+  return {
+    ...r,
+    sections: r.sections.map((s) => ({
+      ...s,
+      cards: s.cards.map((c) => ({ ...c, owned: owned[c.name.toLowerCase()] ?? 0, wished: wished.has(c.name.toLowerCase()) })),
+    })),
+  };
 }
 
 export const inclusionPct = (c: RecCard) => (c.decks != null && c.potentialDecks != null && c.potentialDecks > 0 ? Math.floor((c.decks * 100) / c.potentialDecks) : null);

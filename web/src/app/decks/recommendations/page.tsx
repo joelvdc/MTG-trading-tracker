@@ -5,11 +5,26 @@ import { api } from "@/components/api";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { RecCardDialog } from "@/components/RecCardDialog";
-import { addKey, allCachedRecs, keepRecs, RecFilters, RecTile, sendRec, useRecFilter, useRecLayout, useRecSource, type RecDeck, type RecTarget } from "@/components/RecTiles";
+import {
+  addKey,
+  allCachedRecs,
+  keepRecs,
+  RecFilters,
+  RecTile,
+  sendRec,
+  useRecFilter,
+  useRecKeepDays,
+  useRecLayout,
+  useRecLeftOut,
+  useRecSource,
+  withFreshMarks,
+  type RecDeck,
+  type RecTarget,
+} from "@/components/RecTiles";
 import { ViewSwitch } from "@/components/ViewSwitch";
 import type { DecksView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
-import { NO_REC_FILTER, recKeep, recsByCard, REC_SOURCES, type RecAcross, type RecResult, type RecSource } from "@/lib/recshared";
+import { NO_REC_FILTER, recKeep, recsByCard, REC_SOURCES, recState, type RecAcross, type RecResult, type RecSource, type RecState } from "@/lib/recshared";
 
 /** Where a fetch-all run is: the deck being asked about, how many are done, and a pause asked for by a source. */
 interface Job {
@@ -26,11 +41,14 @@ const BETWEEN_MS = 1_500;
 /** How often one deck is tried again after a source said it's busy. */
 const BUSY_RETRIES = 2;
 
+const STATE_TEXT: Record<RecState, string> = { none: "none yet", fresh: "up to date", old: "older than the up-to-date period", changed: "the list changed since" };
+const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
 /**
- * Recommendations for all decks (website only): every deck's recommendations from EDHREC or
- * recommander.cards, each card once with the decks it fits, "By card" or only "For several decks". The decks are asked
- * one at a time from this page; the results are kept in this browser, shared with each deck's own window. Retired
- * decks are left out.
+ * Recommendations for all decks (website only): the chosen decks' recommendations from EDHREC or recommander.cards,
+ * each card once with the decks it fits, "By card" or only "For several decks". The decks are asked one at a time from
+ * this page, skipping those that are up to date (list unchanged, newer than the period in Settings); the results are
+ * kept in this browser, shared with each deck's own window, and show what you own now. Retired decks are left out.
  */
 export default function AllRecommendationsPage() {
   const [folder, setFolder] = useState("");
@@ -42,6 +60,10 @@ export default function AllRecommendationsPage() {
   // Starts at "I own", as in the app: cards you already have that fit your decks.
   const [filter, pickFilter] = useRecFilter("mtg.recAllFilter", { ...NO_REC_FILTER, owned: "mine" });
   const [several, setSeveral] = useState(false);
+  const [keepDays] = useRecKeepDays();
+  const [leftOut, setLeftOut] = useRecLeftOut();
+  const [picking, setPicking] = useState(false);
+  const [force, setForce] = useState(false);
   const [results, setResults] = useState<Map<number, RecResult> | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   // The decks the last run got nothing for, with the reason.
@@ -71,17 +93,29 @@ export default function AllRecommendationsPage() {
   useEffect(() => {
     let live = true;
     setResults(null);
-    allCachedRecs(source).then((r) => {
-      if (live) setResults(r);
-    });
+    // The kept recommendations, with what you own and want now.
+    allCachedRecs(source)
+      .then(withFreshMarks)
+      .then((r) => {
+        if (live) setResults(r);
+      });
     return () => {
       live = false;
     };
   }, [source]);
 
-  const decks: RecDeck[] = useMemo(() => (view?.decks ?? []).filter((d) => d.group !== "RETIRED").map((d) => ({ id: d.id, name: d.name, local: d.id < 0 })), [view]);
+  const active = useMemo(() => (view?.decks ?? []).filter((d) => d.group !== "RETIRED"), [view]);
+  const decks: RecDeck[] = useMemo(() => active.map((d) => ({ id: d.id, name: d.name, local: d.id < 0 })), [active]);
   const deckById = useMemo(() => new Map(decks.map((d) => [d.id, d])), [decks]);
-  const have = useMemo(() => decks.filter((d) => results?.has(d.id)).map((d) => ({ deckId: d.id, result: results!.get(d.id)! })), [decks, results]);
+  const keepMs = keepDays * 86_400_000;
+  const states = useMemo(() => new Map(active.map((d) => [d.id, recState(results?.get(d.id), d.recKey, keepMs)])), [active, results, keepMs]);
+  const out = useMemo(() => new Set(leftOut), [leftOut]);
+  const chosen = useMemo(() => decks.filter((d) => !out.has(d.id)), [decks, out]);
+  const toFetch = chosen.filter((d) => force || states.get(d.id) !== "fresh");
+  const upToDate = chosen.length - chosen.filter((d) => states.get(d.id) !== "fresh").length;
+  const have = useMemo(() => chosen.filter((d) => results?.has(d.id)).map((d) => ({ deckId: d.id, result: results!.get(d.id)! })), [chosen, results]);
+  const pick = (ids: number[]) => setLeftOut(decks.filter((d) => !ids.includes(d.id)).map((d) => d.id));
+  const toggle = (id: number) => setLeftOut((old) => (old.includes(id) ? old.filter((x) => x !== id) : [...old, id]));
   const shown = useMemo(() => recsByCard(have, (c) => recKeep(filter, c), several), [have, filter, several]);
   const oldest = have.length ? Math.min(...have.map((h) => h.result.fetchedAt)) : null;
   const money = (eur: number | null) => (eur == null || !view ? "–" : format(eur * view.perEuro, view.currency));
@@ -98,7 +132,7 @@ export default function AllRecommendationsPage() {
   }
 
   /** Asks about [list] (every deck, or the ones that failed last time) one at a time. */
-  async function fetchAll(list: RecDeck[] = decks) {
+  async function fetchAll(list: RecDeck[]) {
     stop.current = false;
     setError(null);
     setFailures([]);
@@ -129,6 +163,7 @@ export default function AllRecommendationsPage() {
     }
     setJob(null);
     setFailures(failed);
+    setForce(false);
     if (failed.length) setError(`${failed.length} of ${done} decks got no recommendations this time:`);
   }
 
@@ -178,22 +213,74 @@ export default function AllRecommendationsPage() {
               <ViewSwitch layout={mode} onLayout={setMode} hover={hoverOn} onHover={setHoverOn} />
             </div>
             <div className="controls">
+              <button type="button" className="btn small-btn" aria-expanded={picking} onClick={() => setPicking((p) => !p)} disabled={decks.length === 0}>
+                Decks: {chosen.length === decks.length ? `all ${decks.length}` : `${chosen.length} of ${decks.length}`} {picking ? "▴" : "▾"}
+              </button>
               <span className="small grow">
                 {decks.length === 0
                   ? "No decks yet."
-                  : `${have.length} of ${decks.length} decks have ${REC_SOURCES[source]} recommendations` +
-                    (oldest ? ` (oldest ${new Date(oldest).toLocaleDateString("en-GB", { dateStyle: "medium" })})` : "")}
+                  : `${have.length} of ${chosen.length === decks.length ? "" : "the chosen "}${chosen.length} deck${chosen.length === 1 ? "" : "s"} ${have.length === 1 ? "has" : "have"} ${REC_SOURCES[source]} recommendations` +
+                    (oldest ? ` (oldest ${new Date(oldest).toLocaleDateString("en-GB", { dateStyle: "medium" })})` : "") +
+                    (upToDate ? `; ${upToDate} up to date` : "")}
               </span>
               {job ? (
                 <button className="btn small-btn" onClick={() => (stop.current = true)}>
                   Stop
                 </button>
               ) : (
-                <button className="btn small-btn primary" onClick={() => fetchAll()} disabled={decks.length === 0 || results === null}>
-                  {have.length === 0 ? "Get them" : "Refresh all"}
+                <button className="btn small-btn primary" onClick={() => fetchAll(toFetch)} disabled={toFetch.length === 0 || results === null}>
+                  {chosen.length === 0
+                    ? "No decks chosen"
+                    : toFetch.length === 0
+                      ? "All up to date"
+                      : `${toFetch.every((d) => states.get(d.id) === "none") ? "Get" : "Refresh"} ${toFetch.length === 1 ? "1 deck" : `${toFetch.length} decks`}`}
                 </button>
               )}
             </div>
+            {upToDate > 0 && !job && (
+              <label className="small rec-force">
+                <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} /> Also refresh the {upToDate === 1 ? "deck that is" : `${upToDate} decks that are`} up to
+                date
+              </label>
+            )}
+            {picking && (
+              <div className="rec-picker card">
+                <div className="chips">
+                  <button type="button" className="chip" onClick={() => pick(decks.map((d) => d.id))}>
+                    All
+                  </button>
+                  <button type="button" className="chip" onClick={() => pick([])}>
+                    None
+                  </button>
+                  <button type="button" className="chip" onClick={() => pick(decks.filter((d) => states.get(d.id) === "none").map((d) => d.id))}>
+                    Without recommendations
+                  </button>
+                </div>
+                <ul>
+                  {[...active]
+                    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }))
+                    .map((d) => {
+                      const st = states.get(d.id) ?? "none";
+                      const r = results?.get(d.id);
+                      return (
+                        <li key={d.id}>
+                          <label>
+                            <input type="checkbox" checked={!out.has(d.id)} onChange={() => toggle(d.id)} />
+                            <span className="rec-picker-name">{d.name}</span>
+                          </label>
+                          <span className={st === "fresh" ? "small ok-text" : "muted small"}>
+                            {r ? `${shortDate(r.fetchedAt)} · ` : ""}
+                            {STATE_TEXT[st]}
+                          </span>
+                          <button type="button" className="linkish small" onClick={() => pick([d.id])}>
+                            only this one
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
+              </div>
+            )}
             {job && (
               <div className="rec-job small">
                 {job.waitUntil
@@ -240,7 +327,9 @@ export default function AllRecommendationsPage() {
             ) : shown.length === 0 ? (
               <p className="muted center">
                 {have.length === 0
-                  ? `Press “Get them” to ask ${REC_SOURCES[source]} about every deck (a few seconds per deck).`
+                  ? chosen.length === 0
+                    ? "No decks chosen: pick some under “Decks”."
+                    : `Press “Get” to ask ${REC_SOURCES[source]} about the chosen decks (a few seconds per deck).`
                   : filter.owned === "mine"
                     ? "None of the recommended cards are in your collection. Change the filter to see the others."
                     : "No recommendation matches these filters."}
@@ -287,8 +376,8 @@ export default function AllRecommendationsPage() {
             )}
             <p className="muted small">
               Each deck&apos;s list leaves out the cards already in that deck; &quot;New&quot; means first printed in the last year; a green corner or ✓ means you own the card. Open a
-              card to put it in one of its decks or a maybeboard. The recommendations are kept in this browser (each deck&apos;s own window uses them too); retired decks
-              are left out.
+              card to put it in one of its decks or a maybeboard. The recommendations are kept in this browser (each deck&apos;s own window uses them too) and show what you own
+              now; a deck whose list hasn&apos;t changed isn&apos;t asked about again while its recommendations are up to date (Settings). Retired decks are left out.
             </p>
           </div>
         )}

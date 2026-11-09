@@ -3478,6 +3478,44 @@ details.deck-section > summary .mini-head {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.rec-force {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rec-picker ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.rec-picker li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--raised);
+}
+
+.rec-picker label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 200px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.rec-picker-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .rec-failures {
   margin: 6px 0 8px;
   padding-left: 20px;

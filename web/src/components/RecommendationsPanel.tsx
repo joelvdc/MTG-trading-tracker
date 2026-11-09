@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import type { DeckView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
-import { NO_REC_FILTER, recKeep, REC_SOURCES, type RecCard, type RecResult, type RecSource } from "@/lib/recshared";
+import { NO_REC_FILTER, recKeep, REC_SOURCES, recState, type RecCard, type RecResult, type RecSource } from "@/lib/recshared";
 import { api } from "./api";
 import { RefreshButton } from "./Icons";
 import { RecCardDialog } from "./RecCardDialog";
-import { addKey, cachedRecs, keepRecs, RecFilters, RecTile, sendRec, useRecFilter, useRecLayout, useRecSource, type RecDeck, type RecTarget } from "./RecTiles";
+import { addKey, cachedRecs, keepRecs, RecFilters, RecTile, sendRec, useRecFilter, useRecKeepDays, useRecLayout, useRecSource, withFreshMarks, type RecDeck, type RecTarget } from "./RecTiles";
 import { ViewSwitch } from "./ViewSwitch";
 
 /**
@@ -36,6 +36,7 @@ export function RecommendationsPanel({
   const [source, setSource] = useRecSource();
   const [mode, setMode] = useRecLayout();
   const [filter, pickFilter] = useRecFilter("mtg.recFilter", NO_REC_FILTER);
+  const [keepDays] = useRecKeepDays();
   const [open, setOpen] = useState<RecCard | null>(null);
   const [result, setResult] = useState<RecResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -52,9 +53,12 @@ export function RecommendationsPanel({
     let live = true;
     setResult(null);
     setError(null);
-    cachedRecs(view.id, source).then((r) => {
-      if (live) setResult(r);
-    });
+    // The kept recommendations, with what you own and want now.
+    cachedRecs(view.id, source)
+      .then(async (r) => (r ? ((await withFreshMarks(new Map([[0, r]]))).get(0) ?? r) : null))
+      .then((r) => {
+        if (live) setResult(r);
+      });
     return () => {
       live = false;
     };
@@ -92,6 +96,7 @@ export function RecommendationsPanel({
     }
   }
 
+  const state = recState(result, view.recKey, keepDays * 86_400_000);
   const canDeck = view.local && !view.readOnly;
   const canMaybe = !view.readOnly;
   const onWish = (c: RecCard) => !!c.wished || wished.has(c.name);
@@ -150,9 +155,24 @@ export function RecommendationsPanel({
           onClick={load}
           busy={busy}
           label={result ? undefined : "Get recommendations"}
-          title={busy ? "Getting recommendations…" : result ? "Refresh recommendations" : "Get recommendations"}
+          title={
+            busy
+              ? "Getting recommendations…"
+              : state === "fresh"
+                ? "Up to date (the list hasn't changed since); refresh anyway"
+                : result
+                  ? "Refresh recommendations"
+                  : "Get recommendations"
+          }
         />
-        {result ? <span className="muted small rec-date">{new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span> : <span className="spacer" />}
+        {result ? (
+          <span className="muted small rec-date">
+            {new Date(result.fetchedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+            {state === "fresh" ? " · up to date" : state === "changed" ? " · the list changed since" : " · older than " + (keepDays === 1 ? "a day" : `${keepDays} days`)}
+          </span>
+        ) : (
+          <span className="spacer" />
+        )}
         {onClose && (
           <button className="btn small-btn" onClick={onClose}>
             Close

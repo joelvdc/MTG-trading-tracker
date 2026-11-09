@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AccountPanel } from "@/components/AccountPanel";
 import { AppSettingsPanel, BackupsPanel } from "@/components/AppSettingsPanel";
 import { TopBar } from "@/components/Nav";
+import { RecSettingsPanel } from "@/components/RecTiles";
 import { api } from "@/components/api";
 
 interface Session {
@@ -36,6 +37,7 @@ export default function SettingsPage() {
       <main className="page narrow">
         <div className="stack">
           <AppSettingsPanel />
+          <RecSettingsPanel />
           <BackupsPanel />
           <AccountPanel onLogout={logout} />
         </div>

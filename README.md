@@ -55,7 +55,8 @@ nightly backups; accounts need an invite code for now.
   win turn.
 - Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the
   deck, its maybeboard or the wishlist (a deck from a link keeps a maybeboard of its own in the app and on the
-  website); also for all decks at once, to find cards that fit several of them.
+  website); on the website also for the decks you pick at once, to find cards that fit several of them (decks whose
+  list hasn't changed aren't asked about again while their recommendations are up to date; 1 day by default).
 - Printable **bracket and power level cards** for rule zero, cards you're missing (to the wishlist),
   and retiring decks you no longer play.
 

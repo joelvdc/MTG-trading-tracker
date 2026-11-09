@@ -3,6 +3,7 @@
 // DeckPrintings), bracket tags (SaltCard.tagsByCard) and prices. Shared pieces: deckshared.ts.
 import { frontName } from "./collview";
 import { categories, included } from "./deckedit";
+import { recListKey } from "./recshared";
 import {
   caseless,
   coverUrl,
@@ -106,6 +107,7 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
           owned,
           true,
         ).reduce((s, [, n]) => s + n, 0),
+        recKey: recListKey(main.map((c) => ({ name: c.card.name, commander: c.commander }))),
       };
     }),
     currency: cur,
@@ -312,6 +314,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     salt,
     scrollVault: sv,
     rows,
+    recKey: recListKey(sd.cards.filter((c) => !c.maybeboard).map((c) => ({ name: c.card.name, commander: c.commander }))),
     hidden: Object.keys(decodePicks(p.deckHidden)[String(id)] ?? {}),
     tokenPicks: decodePicks(p.deckTokenPicks)[String(id)] ?? {},
     categories: categoriesOf(sd),

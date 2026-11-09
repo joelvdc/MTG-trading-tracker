@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_REC_FILTER, recKeep, recsByCard, recType, type RecCard } from "@/lib/recshared";
+import { NO_REC_FILTER, recKeep, recListKey, recsByCard, recState, recType, withRecMarks, type RecCard } from "@/lib/recshared";
 
 // The recommendation filters, as the app's RecFilter.keep (RecommendationsScreen.kt).
 const rec = (name: string, typeLine: string, isNew = false, owned = 0): RecCard => ({
@@ -75,6 +75,43 @@ describe("recommendations for all decks (recsByCard)", () => {
     expect(recsByCard(all, () => true, true).map((x) => x.card.name)).toEqual(["Sol Ring", "Mind Stone"]);
     expect(recsByCard(all, (c) => recKeep({ ...NO_REC_FILTER, owned: "notMine" }, c)).map((x) => [x.card.name, x.deckIds])).toEqual([
       ["Fellwar Stone", [-2]],
+    ]);
+  });
+});
+
+describe("kept recommendations: up to date or not", () => {
+  const list = [
+    { name: "Tawnos, Urza's Apprentice", commander: true },
+    { name: "Sol Ring", commander: false },
+    { name: "Island", commander: false },
+  ];
+  const key = recListKey(list);
+  const day = 86_400_000;
+  const kept = (fetchedAt: number, listKey?: string) => ({ source: "edhrec" as const, fetchedAt, note: null, sections: [], listKey });
+
+  it("fingerprints the list, not its order", () => {
+    expect(recListKey([...list].reverse())).toBe(key);
+    expect(recListKey([...list, { name: "Mind Stone", commander: false }])).not.toBe(key);
+    expect(recListKey(list.map((c) => ({ ...c, commander: !c.commander })))).not.toBe(key);
+  });
+
+  it("is up to date only for the same list within the period", () => {
+    const now = 10 * day;
+    expect(recState(null, key, day, now)).toBe("none");
+    expect(recState(kept(now - day / 2, key), key, day, now)).toBe("fresh");
+    expect(recState(kept(now - 2 * day, key), key, day, now)).toBe("old");
+    expect(recState(kept(now - 2 * day, key), key, 7 * day, now)).toBe("fresh");
+    expect(recState(kept(now - 60_000, "other"), key, day, now)).toBe("changed");
+    // Kept before lists had fingerprints: fetched once more.
+    expect(recState(kept(now - 60_000), key, day, now)).toBe("changed");
+  });
+
+  it("shows what you own and want now", () => {
+    const r = { ...kept(0, key), sections: [{ key: "a", title: "A", cards: [rec("Sol Ring", "Artifact", false, 0), rec("Mind Stone", "Artifact", false, 2)] }] };
+    const now = withRecMarks(r, { "sol ring": 3 }, new Set(["mind stone"]));
+    expect(now.sections[0].cards.map((c) => [c.name, c.owned, c.wished])).toEqual([
+      ["Sol Ring", 3, false],
+      ["Mind Stone", 0, true],
     ]);
   });
 });

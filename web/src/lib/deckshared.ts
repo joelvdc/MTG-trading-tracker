@@ -400,6 +400,8 @@ export interface DeckSummary {
   valueEur: number;
   /** Copies missing from the collection (any printing counts; basics left out). */
   missing: number;
+  /** The list's fingerprint for recommendations (recListKey). */
+  recKey: string;
 }
 
 export interface DecksView {
@@ -504,4 +506,6 @@ export interface DeckView {
   power: number | null;
   powerError: string | null;
   readOnly: boolean;
+  /** The list's fingerprint for recommendations (recListKey). */
+  recKey: string;
 }

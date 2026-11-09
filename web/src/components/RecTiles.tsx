@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { recFacts, REC_OWNED, REC_TYPES, type RecCard, type RecFilter, type RecOwned, type RecResult, type RecSource } from "@/lib/recshared";
+import { DEFAULT_REC_KEEP_DAYS, recFacts, REC_KEEP_DAYS, REC_OWNED, REC_TYPES, withRecMarks, type RecCard, type RecFilter, type RecOwned, type RecResult, type RecSource } from "@/lib/recshared";
 import { api } from "./api";
 import { deckAction } from "./DeckEditDialogs";
 import { ManaCost } from "./Mana";
@@ -97,6 +97,19 @@ export async function allCachedRecs(source: RecSource): Promise<Map<number, RecR
     };
     r.onerror = () => resolve(out);
   });
+}
+
+/**
+ * [results] with what you own and want now (the marks kept with them are from when they were fetched): one quick
+ * question to the website for all their cards. Answers [results] unchanged when the website can't be reached.
+ */
+export async function withFreshMarks<K>(results: Map<K, RecResult>): Promise<Map<K, RecResult>> {
+  const names = [...new Set([...results.values()].flatMap((r) => r.sections.flatMap((s) => s.cards.map((c) => c.name))))];
+  if (names.length === 0) return results;
+  const r = await api<{ owned: Record<string, number>; wished: string[] }>("/api/decks/recmarks", { names });
+  if (!r.ok || !r.data.owned) return results;
+  const wished = new Set(r.data.wished ?? []);
+  return new Map([...results].map(([k, v]) => [k, withRecMarks(v, r.data.owned, wished)]));
 }
 
 // ---- One recommended card in the list or pictures view ----------------------------------------------------------
@@ -235,6 +248,7 @@ export function RecFilters({ filter, onFilter }: { filter: RecFilter; onFilter: 
 }
 
 const SOURCE_KEY = "mtg.recSource";
+const KEEP_KEY = "mtg.recKeepDays";
 const VIEW_KEY = "mtg.recView";
 
 /** A value kept in this browser's localStorage (read after the first render; storage may be unavailable). */
@@ -273,4 +287,42 @@ export const useRecLayout = () => useKept<Layout>(VIEW_KEY, "images", (s) => (s 
 export function useRecFilter(key: string, start: RecFilter): [RecFilter, (change: Partial<RecFilter>) => void] {
   const [f, setF] = useKept<RecFilter>(key, start, (s) => ({ ...start, ...(JSON.parse(s) as Partial<RecFilter>) }));
   return [f, (change) => setF((old) => ({ ...old, ...change }))];
+}
+
+/** How many days kept recommendations count as up to date (Settings; this browser only; 1 day by default). */
+export const useRecKeepDays = () =>
+  useKept<number>(KEEP_KEY, DEFAULT_REC_KEEP_DAYS, (s) => {
+    const n = Number(s);
+    return (REC_KEEP_DAYS as readonly number[]).includes(n) ? n : null;
+  });
+
+/** The decks left out on the all-decks page (so a new deck is in by itself). */
+export const useRecLeftOut = () =>
+  useKept<number[]>("mtg.recDecksOut", [], (s) => {
+    const v = JSON.parse(s) as unknown;
+    return Array.isArray(v) ? v.filter((x): x is number => typeof x === "number") : null;
+  });
+
+/** Settings → Recommendations: how long kept recommendations count as up to date (this browser). */
+export function RecSettingsPanel() {
+  const [days, setDays] = useRecKeepDays();
+  return (
+    <section className="card stack">
+      <h2 className="section-head">Recommendations</h2>
+      <label className="field">
+        <span>Up to date for</span>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+          {REC_KEEP_DAYS.map((d) => (
+            <option key={d} value={d}>
+              {d === 1 ? "1 day" : `${d} days`}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="muted small">
+        Recommendations are kept in this browser. A deck whose list hasn&apos;t changed and whose recommendations are newer than this isn&apos;t asked about
+        again (you can still refresh it by hand); older ones stay visible until they&apos;re fetched again. What you own is always checked afresh.
+      </p>
+    </section>
+  );
 }
