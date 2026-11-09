@@ -20,6 +20,10 @@ export interface RecCard {
   potentialDecks: number | null;
   isNew: boolean;
   releasedAt: string | null;
+  /** Copies in the collection, any printing (filled in by the website's route). */
+  owned?: number;
+  /** Whether the card is on the wishlist and not received yet (filled in by the website's route). */
+  wished?: boolean;
 }
 
 export interface RecSection {

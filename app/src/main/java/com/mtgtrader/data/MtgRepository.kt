@@ -129,6 +129,42 @@ class MtgRepository(
     suspend fun addToDeck(deckId: Long, card: CardRef, finish: Finish, qty: Int = 1, category: String? = null): AddResult? =
         deckAdder?.invoke(deckId, card, finish, qty, category)
 
+    /**
+     * Adds one copy to a deck's maybeboard (since 1.86): a local deck's own maybeboard; for a deck from Archidekt its
+     * local maybeboard, cards "added in the app" that Archidekt never sees and that stay when the deck is reloaded.
+     * Null for a deck that isn't there.
+     */
+    suspend fun addToMaybeboard(deckId: Long, card: CardRef, finish: Finish): AddResult? {
+        val decks = db.deckDao()
+        val deck = decks.get(deckId) ?: return null
+        if (deck.local) return deckAdder?.invoke(deckId, card, finish, 1, DeckEdits.MAYBEBOARD)
+        val f = card.resolveFinish(finish)
+        val same = decks.cardsAddedInApp(deckId).firstOrNull { it.maybeboard && it.card.scryfallId == card.scryfallId && it.foil == f.foil && it.etched == f.etched }
+        if (same != null) {
+            decks.addQuantity(same.id, 1)
+            return AddResult(same.id, AddedTo.DECK)
+        }
+        val info = db.cardInfoDao().getMany(listOf(card.scryfallId)).firstOrNull()?.takeIf { it.typeLine.isNotEmpty() }
+            ?: runCatching { scryfall.collection(listOf(ScryfallApi.idIdentifier(card.scryfallId))).firstOrNull()?.toInfo() }.getOrNull()
+                ?.also { db.cardInfoDao().putAll(listOf(it)) }
+        val id = decks.insertCard(
+            DeckCard(
+                deckId = deckId,
+                card = card,
+                quantity = 1,
+                category = DeckEdits.MAYBEBOARD,
+                types = info?.typeLine?.substringBefore(" — ") ?: "",
+                cmc = info?.cmc ?: 0.0,
+                commander = false,
+                foil = f.foil,
+                etched = f.etched,
+                addedInApp = true,
+                maybeboard = true,
+            )
+        )
+        return AddResult(id, AddedTo.DECK)
+    }
+
 
     suspend fun addToTrade(
         tradeId: Long, side: String, card: CardRef, finish: Finish, language: String = "EN", qty: Int = 1, condition: String = "NM",

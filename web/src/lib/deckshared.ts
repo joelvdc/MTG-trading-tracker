@@ -41,6 +41,8 @@ export interface Deck {
   origin: string | null;
   /** Retired (app 1.83): kept with its games, out of the groups, the seat pickers, updates and collection checks. */
   retired?: boolean;
+  /** The deck's own category order, one name per line (Deck.categoryOrder, app 1.86); the rest alphabetically. */
+  categoryOrder?: string | null;
 }
 
 /** One line of a deck (DeckCard). */

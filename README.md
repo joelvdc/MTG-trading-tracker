@@ -49,10 +49,13 @@ nightly backups; accounts need an invite code for now.
 
 **Commander decks**
 - Import a deck from a link (read only) or a pasted list, add a precon, or build one in the app or on the website.
-- Group a deck by category, card type, mana value or colour, sorted by mana value or name.
+- Group a deck by category, card type, mana value or colour, sorted by mana value or name; on the website, drag
+  categories into your own order (the app follows it) and drag cards between categories of your own decks.
 - Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
   win turn.
-- Printable **bracket and power level cards** for rule zero, recommendations, cards you're missing (to the wishlist),
+- Recommendations with the cards you already own marked, sent straight to the deck, its maybeboard or the wishlist (a
+  deck from a link keeps a maybeboard of its own in the app and on the website).
+- Printable **bracket and power level cards** for rule zero, cards you're missing (to the wishlist),
   and retiring decks you no longer play.
 
 **Games**

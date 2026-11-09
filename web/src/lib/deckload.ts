@@ -108,7 +108,9 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
   };
   if (source !== "EDH_POWER_LEVEL") deck = { ...deck, edhPowerLevel: null, edhPowerAt: null, edhPowerError: null };
   if (source !== "SCROLLVAULT") deck = { ...deck, svPowerLevel: null, scrollVault: null, svAt: null, svError: null };
-  const sd: SyncDeck = { deck, cards: sortLines([...a.cards.map((c) => line(r, c, false)), ...a.maybeboard.map((c) => line(r, c, true))]) };
+  // Cards added in the app (an old deck's "Added in app" ones and, since 1.86, its local maybeboard) stay, as in the app.
+  const kept = (all.find((d) => d.deck.archidektId === a.id)?.cards ?? []).filter((c) => c.addedInApp);
+  const sd: SyncDeck = { deck, cards: sortLines([...a.cards.map((c) => line(r, c, false)), ...a.maybeboard.map((c) => line(r, c, true)), ...kept]) };
   file.data.decks = all.filter((d) => d.deck.archidektId !== a.id) as unknown as Json;
   addDeck(file, sd);
   return sd;

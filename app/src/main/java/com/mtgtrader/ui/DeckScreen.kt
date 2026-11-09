@@ -267,8 +267,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     // Categories switched off in "Manage categories" (since 1.47): their cards go to one folded section at the bottom.
     val hiddenAll by c.settings.deckHidden.collectAsStateWithLifecycle()
     val hidden = hiddenAll[deckId].orEmpty().keys
-    val allSections = remember(rows, groupBy, cardSort, descending, onlyBracket, tagged, costs) {
-        DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy, cardSort, descending) {
+    // The deck's own category order (set on the website, since 1.86); the rest alphabetically.
+    val categoryOrder = remember(deck?.categoryOrder) { DeckGrouping.categoryOrder(deck?.categoryOrder) }
+    val allSections = remember(rows, groupBy, cardSort, descending, onlyBracket, tagged, costs, categoryOrder) {
+        DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy, cardSort, descending, categoryOrder) {
             DeckGrouping.costColours(costs[it.item.card.name])
         }
     }
@@ -279,7 +281,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         (allSections - sections.toSet()).flatMap { s -> s.rows }.sortedWith(compareBy({ it.item.category.lowercase() }, { it.item.card.name }))
     }
     // The maybeboard (and any other category left out of the deck on Archidekt), by its categories.
-    val maybeSections = remember(maybeRows, cardSort, descending) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY, cardSort, descending) }
+    val maybeSections = remember(maybeRows, cardSort, descending, categoryOrder) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY, cardSort, descending, categoryOrder) }
     // Headings are folded by their title, for every deck; the maybeboard's apart from the deck's.
     val shownKeys = remember(sections, maybeSections, showMaybeboard) {
         sections.map { it.title } + if (showMaybeboard) maybeSections.map { maybeKey(it.title) } else emptyList()

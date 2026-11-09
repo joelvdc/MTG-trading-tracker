@@ -125,6 +125,24 @@ class DeckGroupingTest {
     }
 
     @Test
+    fun aDecksOwnCategoryOrderComesFirst() {
+        // Since 1.86: the order set on the website; categories it doesn't name follow alphabetically.
+        val rows = listOf(
+            row("Swamp", "Land", "Land"),
+            row("Sol Ring", "Ramp", "Artifact"),
+            row("Auntie Ool", "Commander", "Creature", commander = true),
+            row("Blight Mound", "Creatures", "Creature"),
+            row("Malakir Rebirth", "Removal", "Instant"),
+        )
+        val order = DeckGrouping.categoryOrder("ramp\nLand\n\nnot used")
+        assertEquals(listOf("ramp", "land", "not used"), order)
+        val titles = DeckGrouping.sections(rows, DeckGroupBy.CATEGORY, order = order).map { it.title }
+        assertEquals(listOf("Commander", "Ramp", "Land", "Creatures", "Removal"), titles)
+        assertEquals("Ramp\nLand", DeckGrouping.encodeCategoryOrder(listOf("Ramp", " Land ", "ramp", "")))
+        assertEquals(null, DeckGrouping.encodeCategoryOrder(emptyList()))
+    }
+
+    @Test
     fun typeGroupingUsesTypeOrder() {
         val rows = listOf(
             row("Swamp", "Land", "Land"),

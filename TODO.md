@@ -186,6 +186,12 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-09: 1.86: recommendations to a deck's maybeboard (a local maybeboard for decks from Archidekt, kept on reload)
+  and the wishlist; the website's recommendations get + Deck / + Maybe / ☆ buttons, a green corner on cards you own,
+  one price, "New" beside the name, small/medium/large pictures (also in the collection) and a working Card on hover;
+  deck page: categories in fixed columns that don't jump when folded, drag categories into order (synced field
+  categoryOrder, sync format 14; the app follows it), drag cards between categories of local decks, the hover picture
+  stays when flipping, bracket buttons beside the scores.
 - 2026-11-08: 1.85: decks from Archidekt read only in the app too (no more cards "Added in app"); the deck page groups
   by category, card type, mana value or colour and sorts by mana value or name (like the website).
 - 2026-11-08: website: the deck page's Collection tracker lists the other decks using the card; Retire / Bring back

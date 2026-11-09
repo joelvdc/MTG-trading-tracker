@@ -21,7 +21,8 @@ import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { allCombos, bracketName, caseless, POWER_SOURCES, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
-import { backImageUrl, costColours, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort } from "@/lib/decklayout";
+import { backImageUrl, categoryOrder, costColours, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort } from "@/lib/decklayout";
+import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
@@ -82,6 +83,9 @@ export default function DeckPage() {
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
+  // Dragging a category (to order them) or, in a local deck, a card (to another category), and where it would land.
+  const [drag, setDrag] = useState<{ kind: "cat"; title: string } | { kind: "card"; uid: string; from: string } | null>(null);
+  const [dropAt, setDropAt] = useState<{ key: string; after: boolean } | null>(null);
   const hover = useHoverCard(hoverOn);
   // The main deck's and the maybeboard's cards with their details: the lines' mana costs and the filter use both.
   const allCards = useMemo(() => (view ? [...view.stats, ...(view.maybeStats ?? [])] : NO_CARDS), [view]);
@@ -135,7 +139,8 @@ export default function DeckPage() {
     const only = filter.mode === "ONLY" ? filter.test : null;
     const bracketShown = onlyBracket ? main.filter((r) => r.tags.length > 0) : main;
     const shown = only ? bracketShown.filter(only) : bracketShown;
-    const all = layoutSections(shown, prefs.group, prefs.sort, prefs.descending, coloursOf);
+    const order = categoryOrder(view.deck.categoryOrder);
+    const all = layoutSections(shown, prefs.group, prefs.sort, prefs.descending, coloursOf, order);
     const hidden = new Set(view.hidden);
     const visible = prefs.group === "CATEGORY" ? all.filter((s) => !hidden.has(s.title.toLowerCase())) : all;
     const hiddenRows = all
@@ -152,8 +157,9 @@ export default function DeckPage() {
           prefs.sort,
           prefs.descending,
           coloursOf,
+          order,
         )
-      : layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf);
+      : layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf, order);
     const value = main.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0);
     const missing = main.reduce((s, r) => s + r.missing, 0);
     return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length, matched: filter.test ? view.rows.filter(filter.test).reduce((s, r) => s + r.quantity, 0) : null };
@@ -181,11 +187,79 @@ export default function DeckPage() {
   const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
 
+  const byCategory = prefs.group === "CATEGORY";
+  const canOrder = byCategory && !view.readOnly;
+  const canMoveCards = byCategory && view.local && !view.readOnly;
+  const endDrag = () => {
+    setDrag(null);
+    setDropAt(null);
+  };
+
+  /** Puts the dragged category before or after [target] and saves the deck's own order (any deck). */
+  async function orderCategory(dragged: string, target: string, after: boolean) {
+    if (!view || !shaped || dragged.toLowerCase() === target.toLowerCase()) return;
+    const titles = shaped.visible.filter((s) => !s.rows.every((r) => r.commander)).map((s) => s.title);
+    const list = titles.filter((t) => t.toLowerCase() !== dragged.toLowerCase());
+    const at = list.findIndex((t) => t.toLowerCase() === target.toLowerCase());
+    if (at < 0) return;
+    list.splice(at + (after ? 1 : 0), 0, dragged);
+    // Categories not shown now (hidden, or only in the maybeboard) keep their place after these.
+    const rest = categoryOrder(view.deck.categoryOrder).filter((n) => !list.some((t) => t.toLowerCase() === n));
+    const names = [...list, ...rest];
+    setView({ ...view, deck: { ...view.deck, categoryOrder: names.join("\n") } });
+    const r = await deckAction(view.id, { action: "category-order", names });
+    if (r.error) await reload(null).then(() => setError(r.error));
+  }
+
+  /** Moves a dragged card into [category] (local decks). */
+  async function moveCard(uid: string, from: string, category: string) {
+    if (!view || from.toLowerCase() === category.toLowerCase()) return;
+    const r = await deckAction(view.id, { action: "move", uids: [uid], category });
+    if (r.error) setError(r.error);
+    else await reload(null);
+  }
+
+  /** Drag-and-drop on a section: [category] is where a card dropped there goes; [orderable] whether categories can land here. */
+  const dropProps = (key: string, category: string | null, orderable: boolean) => ({
+    onDragOver: (e: React.DragEvent<HTMLElement>) => {
+      if (!drag || (drag.kind === "cat" && !orderable) || (drag.kind === "card" && category === null)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const box = e.currentTarget.getBoundingClientRect();
+      const after = e.clientY > box.top + box.height / 2;
+      if (dropAt?.key !== key || dropAt.after !== after) setDropAt({ key, after });
+    },
+    onDrop: (e: React.DragEvent<HTMLElement>) => {
+      if (!drag) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const d = drag;
+      const after = dropAt?.after ?? false;
+      endDrag();
+      if (d.kind === "cat" && orderable) void orderCategory(d.title, key, after);
+      if (d.kind === "card" && category !== null) void moveCard(d.uid, d.from, category);
+    },
+  });
+  const dropClass = (key: string) =>
+    dropAt?.key !== key || !drag ? "" : drag.kind === "cat" ? (dropAt.after ? " drop-after" : " drop-before") : " drop-into";
+
   const row = (r: DeckRow) => {
     const basic = BASICS.has(r.name.toLowerCase());
     return (
       <li
         key={r.lineUid}
+        draggable={canMoveCards}
+        onDragStart={
+          canMoveCards
+            ? (e) => {
+                hover.hide();
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", r.name);
+                setDrag({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category });
+              }
+            : undefined
+        }
+        onDragEnd={endDrag}
         className={filter.test && filter.mode === "HIGHLIGHT" ? (filter.test(r) ? "deck-row clickable filter-hit" : "deck-row clickable filter-miss") : "deck-row clickable"}
         role="button"
         tabIndex={0}
@@ -220,7 +294,9 @@ export default function DeckPage() {
               aria-label={`Flip ${r.name}`}
               onClick={(e) => {
                 e.stopPropagation();
-                hover.hide();
+                // The hover picture stays and turns to the other face.
+                const toBack = !flipped.has(r.lineUid);
+                if (r.card.imageUrl) hover.follow(toBack ? backImageUrl(r.card.imageUrl) : r.card.imageUrl)(e);
                 setFlipped((old) => {
                   const next = new Set(old);
                   if (!next.delete(r.lineUid)) next.add(r.lineUid);
@@ -244,16 +320,46 @@ export default function DeckPage() {
     );
   };
 
-  const block = (title: string, rows: DeckRow[], key: string) => (
-    <details key={key} className="deck-section" open={!folded.has(key)} onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}>
+  /**
+   * A section. [category]: where a card dropped on it goes (null: nowhere); [orderable]: a category of the deck, which
+   * can be dragged to another place (and others dropped next to it).
+   */
+  const block = (title: string, rows: DeckRow[], key: string, category: string | null = null, orderable = false) => (
+    <details
+      key={key}
+      className={"deck-section" + dropClass(orderable ? title : key)}
+      open={!folded.has(key)}
+      onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}
+      {...(canOrder || canMoveCards ? dropProps(orderable ? title : key, canMoveCards ? category : null, orderable && canOrder) : {})}
+    >
       <summary>
         <h3 className="mini-head">
+          {orderable && canOrder && (
+            <span
+              className="cat-handle"
+              draggable
+              title="Drag to move this category"
+              aria-label={`Move ${title}`}
+              onClick={(e) => e.preventDefault()}
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", title);
+                setDrag({ kind: "cat", title });
+              }}
+              onDragEnd={endDrag}
+            >
+              ⠿
+            </span>
+          )}
           {title} <span className="muted small">· {rows.reduce((s, r) => s + r.quantity, 0)} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
         </h3>
       </summary>
       <ul className="plain-list deck-list">{rows.map(row)}</ul>
     </details>
   );
+  /** A section's size for the columns: its lines plus the heading, folded or not. */
+  const weight = (rows: DeckRow[]) => rows.length + 2;
+  const isCommanders = (rows: DeckRow[]) => rows.length > 0 && rows.every((r) => r.commander);
   const combos = view.salt ? allCombos(view.salt) : [];
   const counted = combos.filter((c) => c.counts).length;
 
@@ -424,25 +530,41 @@ export default function DeckPage() {
         )}
 
         <div className={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? "deck-layout has-maybe" : "deck-layout"}>
-          <div className="deck-columns">
-            {shaped.visible.map((s) => block(s.title, s.rows, s.title))}
-            {shaped.hiddenRows.length > 0 && block("Hidden categories", shaped.hiddenRows, "\u0000hidden")}
-          </div>
+          <DeckColumns
+            max={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 2 : 3}
+            minWidth={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 260 : 320}
+            items={[
+              ...shaped.visible.map((s) => {
+                const commanders = isCommanders(s.rows);
+                return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders) };
+              }),
+              ...(shaped.hiddenRows.length > 0 ? [{ key: "\u0000hidden", weight: weight(shaped.hiddenRows), node: block("Hidden categories", shaped.hiddenRows, "\u0000hidden") }] : []),
+            ]}
+          />
           {shaped.maybeSections.length > 0 && (
-            <details className="deck-section deck-maybe" open={!folded.has("\u0000maybe")} onToggle={(e) => setFold("\u0000maybe", !(e.currentTarget as HTMLDetailsElement).open)}>
+            <details
+              className={"deck-section deck-maybe" + dropClass("\u0000maybe")}
+              open={!folded.has("\u0000maybe")}
+              onToggle={(e) => setFold("\u0000maybe", !(e.currentTarget as HTMLDetailsElement).open)}
+              {...(canMoveCards ? dropProps("\u0000maybe", "Maybeboard", false) : {})}
+            >
               <summary>
                 <h3 className="mini-head">
                   Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
                 </h3>
               </summary>
               {/* Below the deck: three columns like the deck's; beside it: one. */}
-              <div className={prefs.maybe === "BELOW" ? "deck-columns" : undefined}>
-                {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
-                  <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
-                ) : (
-                  shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`))
-                )}
-              </div>
+              {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
+                <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
+              ) : prefs.maybe === "BELOW" ? (
+                <DeckColumns
+                  max={3}
+                  minWidth={320}
+                  items={shaped.maybeSections.map((s) => ({ key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title) }))}
+                />
+              ) : (
+                shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title))
+              )}
             </details>
           )}
         </div>
@@ -506,7 +628,7 @@ export default function DeckPage() {
       </main>
       {showRecs && (
         <Dialog full title="Recommendations" onClose={() => setShowRecs(false)}>
-          <RecommendationsPanel view={view} hover={hover} onAdded={(t) => reload(t)} onClose={() => setShowRecs(false)} />
+          <RecommendationsPanel view={view} hover={hover} hoverOn={hoverOn} onHoverOn={setHoverOn} onAdded={(t) => reload(t)} onClose={() => setShowRecs(false)} />
         </Dialog>
       )}
       {hover.picture}

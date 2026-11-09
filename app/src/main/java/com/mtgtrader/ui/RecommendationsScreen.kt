@@ -231,6 +231,13 @@ fun RecommendationsScreen(nav: NavController, deckId: Long) {
                     snackbar.showSnackbar(if (added != null) "${card.name} added to ${d.name}" else "${d.name} can't take new cards here")
                 }
             },
+            onAddToMaybe = { d ->
+                opened = null
+                scope.launch {
+                    val added = card.card?.let { c.repo.addToMaybeboard(d.archidektId, it, com.mtgtrader.data.Finish.NONFOIL) }
+                    snackbar.showSnackbar(if (added != null) "${card.name} added to ${d.name}'s maybeboard" else "${d.name} can't take new cards here")
+                }
+            },
             onWishlist = {
                 opened = null
                 scope.launch {
@@ -374,6 +381,13 @@ fun AllDeckRecommendationsScreen(nav: NavController) {
                     snackbar.showSnackbar(if (added != null) "${card.name} added to ${d.name}" else "${d.name} can't take new cards here")
                 }
             },
+            onAddToMaybe = { d ->
+                opened = null
+                scope.launch {
+                    val added = card.card?.let { c.repo.addToMaybeboard(d.archidektId, it, com.mtgtrader.data.Finish.NONFOIL) }
+                    snackbar.showSnackbar(if (added != null) "${card.name} added to ${d.name}'s maybeboard" else "${d.name} can't take new cards here")
+                }
+            },
             onWishlist = {
                 opened = null
                 scope.launch {
@@ -483,6 +497,8 @@ private fun RecCardDialog(
     using: List<DeckUse>,
     onDismiss: () -> Unit,
     onAddToDeck: (Deck) -> Unit,
+    /** Into the deck's maybeboard: a local deck's own, or a deck from Archidekt's local maybeboard (since 1.86). */
+    onAddToMaybe: (Deck) -> Unit,
     onWishlist: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -509,15 +525,23 @@ private fun RecCardDialog(
                 CardTabs(tab) { tab = it }
                 if (tab == CardTab.RULINGS) RulingsTab(rules)
                 if (tab == CardTab.VERSIONS) {
-                    // Decks from Archidekt are read only (since 1.85): only local decks take a card.
-                    decks.filter { it.local && !it.retired }.forEach { d ->
-                        Button(onClick = { onAddToDeck(d) }, enabled = card.card != null, modifier = Modifier.fillMaxWidth()) {
-                            Text("Add to ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Decks from Archidekt are read only (since 1.85): only local decks take a card into the deck. Every
+                    // deck takes it into its maybeboard; a deck from Archidekt into its local maybeboard (since 1.86).
+                    decks.filter { !it.retired }.forEach { d ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            if (d.local) {
+                                Button(onClick = { onAddToDeck(d) }, enabled = card.card != null, modifier = Modifier.weight(1f)) {
+                                    Text("Add to ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                            OutlinedButton(onClick = { onAddToMaybe(d) }, enabled = card.card != null, modifier = Modifier.weight(1f)) {
+                                Text(if (d.local) "Maybeboard" else "Maybeboard of ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
-                    if (decks.any { !it.local }) {
+                    if (decks.any { !it.local && !it.retired }) {
                         Text(
-                            "Decks from Archidekt are read only: edit them on archidekt.com, or make a local copy (deck ⋮ → Make it a local deck).",
+                            "Decks from Archidekt are read only: a card goes to the deck's local maybeboard, kept in the app and on the website (Archidekt doesn't see it).",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

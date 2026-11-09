@@ -74,6 +74,11 @@ data class Deck(
      * "Update all decks" and the collection checks ("in a deck", the trade binder's "keep for my decks").
      */
     @ColumnInfo(defaultValue = "0") val retired: Boolean = false,
+    /**
+     * The order the categories are shown in, one name per line (set by dragging them on the website, since 1.86);
+     * categories not in it follow alphabetically. Kept when the deck is reloaded from Archidekt. Synced.
+     */
+    val categoryOrder: String? = null,
 ) {
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0
@@ -409,21 +414,32 @@ object DeckGrouping {
         return rows.sortedWith(if (descending) cmp.reversed() else cmp)
     }
 
+    /** A deck's [Deck.categoryOrder] as a list (lower case, for matching). */
+    fun categoryOrder(raw: String?): List<String> =
+        raw.orEmpty().split("\n").map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct()
+
+    /** [Deck.categoryOrder] for these category names, in this order (null when empty). */
+    fun encodeCategoryOrder(names: List<String>): String? =
+        names.map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }.joinToString("\n").ifEmpty { null }
+
     /**
-     * Commander(s) first, then the categories alphabetically, the card types in [TYPE_ORDER], mana values rising, or
-     * colours in WUBRG order then multicolour and colourless (from [colours], a card's mana cost colours); each
-     * section sorted by [sort]. The same layout as the website's deck page.
+     * Commander(s) first, then the categories in [order] (a deck's own order, see [categoryOrder]) and the rest
+     * alphabetically, the card types in [TYPE_ORDER], mana values rising, or colours in WUBRG order then multicolour
+     * and colourless (from [colours], a card's mana cost colours); each section sorted by [sort]. The same layout as
+     * the website's deck page.
      */
     fun sections(
         rows: List<DeckCardRow>,
         by: DeckGroupBy,
         sort: DeckCardSort = DeckCardSort.NAME,
         descending: Boolean = false,
+        order: List<String> = emptyList(),
         colours: (DeckCardRow) -> String = { "" },
     ): List<DeckSection> {
         val (commanders, rest) = rows.partition { it.item.commander }
         val groups = when (by) {
             DeckGroupBy.CATEGORY -> rest.groupBy { it.item.category }.toSortedMap(String.CASE_INSENSITIVE_ORDER).toList()
+                .sortedBy { (name, _) -> order.indexOf(name.lowercase()).let { if (it < 0) order.size else it } }
             DeckGroupBy.TYPE -> rest.groupBy { it.item.primaryType }.toList()
                 .sortedBy { (type, _) -> TYPE_ORDER.indexOf(type).let { if (it < 0) TYPE_ORDER.size else it } }
                 .map { (type, list) -> (plural[type] ?: type) to list }

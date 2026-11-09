@@ -10,6 +10,8 @@ import { FINISHES, resolveFinish } from "@/lib/cards";
 import {
   addCard,
   addCategory,
+  addToMaybeboard,
+  setCategoryOrder,
   AUTO,
   copyDeck,
   deleteCategory,
@@ -114,6 +116,7 @@ type Body = {
   key?: string;
   card?: CardRef;
   finish?: Finish;
+  names?: string[];
 };
 
 const str = (v: unknown, max = 200): string => (typeof v === "string" ? v.slice(0, max) : "");
@@ -152,7 +155,9 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
  * Deck actions. Decks from Archidekt: "reload" (the list), "refresh" (the list and Commander Salt), "rescore"
  * (Commander Salt only), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
  * "copy", "detach" (a deck from Archidekt becomes a local deck), "hide-category", "pick" (the printing you own to
- * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself). Local decks only: "set-quantity", "printing" (another printing of a line's card), "remove", "move", "auto-all",
+ * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself), "category-order" (the deck's own
+ * category order), "add-maybe" (into the maybeboard; a deck from Archidekt's local one), "remove" (on a deck from
+ * Archidekt only its local maybeboard's cards). Local decks only: "set-quantity", "printing" (another printing of a line's card), "remove", "move", "auto-all",
  * "add-card", "rename-category", "delete-category", "add-category", "rename".
  */
 export async function POST(req: Request, { params }: Params) {
@@ -220,6 +225,17 @@ export async function POST(req: Request, { params }: Params) {
           const uid = addCard(f, id, card, fin !== "NONFOIL", fin === "ETCHED", Number(body.quantity) || 1, str(body.category) || null, info ? { typeLine: info.t, cmc: info.v } : null, now, look);
           return { uid };
         }
+        case "add-maybe": {
+          // Into the maybeboard: a local deck's own, a deck from Archidekt's local one (app 1.86).
+          const card = body.card;
+          if (!card || typeof card.scryfallId !== "string" || typeof card.name !== "string") throw new EditError("Pick a card first.");
+          const fin = resolveFinish(card, FINISHES.includes(body.finish as Finish) ? (body.finish as Finish) : "NONFOIL");
+          const info = facts[card.scryfallId];
+          return { uid: addToMaybeboard(f, id, card, fin !== "NONFOIL", fin === "ETCHED", info ? { typeLine: info.t, cmc: info.v } : null, now, look) };
+        }
+        case "category-order":
+          setCategoryOrder(f, id, Array.isArray(body.names) ? body.names.filter((n) => typeof n === "string").map((n) => n.slice(0, 200)).slice(0, 300) : [], now);
+          return {};
         case "rename-category":
           renameCategory(f, id, str(body.from), str(body.to), now, look);
           return {};

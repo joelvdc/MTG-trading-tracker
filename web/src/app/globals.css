@@ -594,12 +594,21 @@ button.tile-in:hover:not(:disabled) {
   text-overflow: ellipsis;
 }
 
-@media (max-width: 420px) {
-  .wish-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
+/* Picture size (ViewSwitch's small / medium / large, set on html as data-pic-size). */
+html[data-pic-size="s"] .wish-grid {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 }
+html[data-pic-size="l"] .wish-grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+html[data-pic-size="s"] .coll-grid {
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+}
+html[data-pic-size="l"] .coll-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+
 
 /* Dialogs */
 .backdrop {
@@ -1613,10 +1622,13 @@ button.link.left {
   line-height: 1.2;
 }
 
+/* The deck's buttons sit to the right of the scores, wrapping onto two rows there rather than going below them. */
 .deck-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
+  flex: 1 1 340px;
   margin-left: auto;
   align-self: center;
 }
@@ -1747,9 +1759,41 @@ details.card > summary {
   border-radius: 4px;
 }
 
-.deck-columns {
-  columns: 3 320px;
+/* The deck's sections in fixed columns (DeckColumns): folding one doesn't move the others. */
+.deck-cols {
+  display: grid;
   column-gap: 18px;
+  align-items: start;
+}
+
+.deck-col {
+  min-width: 0;
+}
+
+/* Dragging a category (⠿) to order them, or a card to another category: where it would land. */
+.cat-handle {
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+}
+.cat-handle:hover {
+  color: var(--gold);
+}
+.deck-section.drop-before {
+  box-shadow: 0 -3px 0 var(--gold);
+}
+.deck-section.drop-after {
+  box-shadow: 0 3px 0 var(--gold);
+}
+.deck-section.drop-into {
+  outline: 2px dashed var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.deck-row[draggable="true"] {
+  cursor: grab;
 }
 
 .deck-section {
@@ -2280,12 +2324,161 @@ details.menu > summary::-webkit-details-marker {
 }
 
 .rec-grid li {
+  position: relative;
   display: flex;
   gap: 8px;
   align-items: center;
   background: var(--raised);
   border-radius: 8px;
   padding: 6px;
+}
+
+/* The pictures view: big card pictures (small / medium / large, html[data-pic-size]), name and facts underneath with
+   the mana cost and price on the right. */
+.rec-grid.images {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+html[data-pic-size="s"] .rec-grid.images {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+html[data-pic-size="l"] .rec-grid.images {
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+}
+.rec-grid.images li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "pic pic" "text side";
+  align-items: start;
+  gap: 6px 8px;
+}
+.rec-pic {
+  grid-area: pic;
+  position: relative;
+  display: block;
+}
+.rec-pic img,
+.rec-pic .rec-noimg {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 488 / 680;
+  border-radius: 4.75% / 3.5%;
+  background: var(--surface);
+  text-align: center;
+  padding: 0;
+}
+.rec-grid.images .rec-text {
+  grid-area: text;
+}
+.rec-grid.images .rec-side {
+  grid-area: side;
+}
+
+/* You own it: a green corner on the picture, a green edge and "✓ n" in the list. */
+.own-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 46px;
+  height: 46px;
+  border-top-right-radius: 9px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.own-ribbon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--green);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+.own-ribbon > span {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.rec-grid.list li.owned {
+  box-shadow: inset 3px 0 0 var(--green);
+}
+.own-tag {
+  flex: none;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* The buttons on a card (wishlist, maybeboard, deck): shown when the mouse is over it, always on a touch screen. */
+.rec-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.rec-grid li:hover .rec-actions,
+.rec-grid li:focus-within .rec-actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .rec-actions {
+    opacity: 1;
+  }
+}
+.rec-pic .rec-actions {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 8px;
+  justify-content: center;
+}
+.rec-grid.list .rec-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(30, 27, 37, 0.92);
+}
+.rec-act {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--green);
+  border-radius: 999px;
+  background: rgba(20, 18, 26, 0.88);
+  color: #8fe0ae;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.rec-act.deck {
+  background: var(--green);
+  color: #fff;
+}
+.rec-act.wish {
+  padding: 0;
+  width: 30px;
+  border-color: var(--gold);
+  color: var(--gold);
+  font-size: 15px;
+}
+.rec-act:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+.rec-act:disabled {
+  cursor: default;
+}
+.rec-act.on {
+  opacity: 0.85;
 }
 
 .rec-grid li.clickable {
@@ -2300,11 +2493,6 @@ details.menu > summary::-webkit-details-marker {
   outline: 2px solid var(--violet);
 }
 
-/* The recommendations as a list: same columns as the images view, but no pictures (the hover preview still shows them). */
-.rec-grid.list img,
-.rec-grid.list .rec-noimg {
-  display: none;
-}
 
 /* The recommendations window's toolbar: the fetched date sits centered between the controls and Close. */
 .rec-date {
@@ -2373,15 +2561,6 @@ details.menu > summary::-webkit-details-marker {
   text-align: right;
 }
 
-.rec-grid img,
-.rec-noimg {
-  width: 44px;
-  height: 61px;
-  border-radius: 4px;
-  flex: none;
-  background: var(--surface);
-}
-
 .rec-text {
   display: flex;
   flex-direction: column;
@@ -2389,14 +2568,23 @@ details.menu > summary::-webkit-details-marker {
   min-width: 0;
 }
 
-.rec-text strong {
+/* The name with "New" (and, in the list, "✓ n") on the same line. */
+.rec-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rec-name strong {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.rec-text .tag {
-  align-self: flex-start;
+.rec-name .tag {
+  flex: none;
   font-size: 10px;
 }
 
@@ -2800,9 +2988,6 @@ details.deck-section > summary .mini-head {
     align-items: start;
   }
 
-  .deck-layout.has-maybe > .deck-columns {
-    columns: 2 260px;
-  }
 }
 
 .view-options > summary {
@@ -3254,4 +3439,22 @@ details.deck-section > summary .mini-head {
 .deck-toolbar-end .seg svg {
   width: 17px;
   height: 17px;
+}
+
+/* Phones: the picture grids in 2 columns (3 for small pictures, 1 for large); after the size rules so it wins. */
+@media (max-width: 420px) {
+  .wish-grid,
+  html[data-pic-size] .wish-grid,
+  html[data-pic-size] .rec-grid.images {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  html[data-pic-size="s"] .wish-grid,
+  html[data-pic-size="s"] .rec-grid.images {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  html[data-pic-size="l"] .wish-grid,
+  html[data-pic-size="l"] .rec-grid.images {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

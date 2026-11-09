@@ -134,7 +134,7 @@ class DeckEditor(
 
     /** "Send to maybeboard": the cards "Added in app" become maybeboard cards (on Archidekt too). */
     suspend fun addedToMaybeboard(deckId: Long): UndoAction =
-        move(deckId, dao.cardsAddedInApp(deckId).map { it.lineUid }, DeckEdits.MAYBEBOARD)
+        move(deckId, dao.cardsAddedInApp(deckId).filter { !it.maybeboard }.map { it.lineUid }, DeckEdits.MAYBEBOARD)
 
     /**
      * Renames a category: its cards move to [to]. On Archidekt the category itself is renamed first (since 1.47), so

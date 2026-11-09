@@ -111,8 +111,10 @@ data class SyncFile(
          * 12 since 1.60: purchase and agreed prices as typed in kroner or dollars, which an older version would write
          * back without.
          * 13 since 1.83: retired decks, which an older version would write back as not retired.
+         * 14 since 1.86: decks' own category order, which an older version would write back without; and the local
+         * maybeboard of decks from Archidekt (cards added in the app), which an older version drops on a reload.
          */
-        const val FORMAT = 13
+        const val FORMAT = 14
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

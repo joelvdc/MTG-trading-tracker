@@ -38,12 +38,25 @@ export function colourTitle(colours: string): string {
   return colours.length === 0 ? COLOURLESS : colours.length === 1 ? COLOUR_TITLES[colours] : MULTICOLOUR;
 }
 
+/** A deck's categoryOrder as lower-case names (DeckGrouping.categoryOrder). */
+export function categoryOrder(raw: string | null | undefined): string[] {
+  return [...new Set((raw ?? "").split("\n").map((s) => s.trim().toLowerCase()).filter(Boolean))];
+}
+
 /**
- * The deck's lines in groups, each sorted. Commander(s) come first (as in the app), then the groups: categories
- * alphabetically, card types in the app's order, mana values rising, or colours in WUBRG order, then multicolour and
- * colourless. [colours] gives a line's colours (e.g. from its mana cost).
+ * The deck's lines in groups, each sorted. Commander(s) come first (as in the app), then the groups: categories in
+ * [order] (the deck's own order, lower case) and the rest alphabetically, card types in the app's order, mana values
+ * rising, or colours in WUBRG order, then multicolour and colourless. [colours] gives a line's colours (e.g. from its
+ * mana cost).
  */
-export function layoutSections<T extends Line>(rows: T[], group: DeckGroup, sort: DeckSort, descending: boolean, colours: (row: T) => string): Section<T>[] {
+export function layoutSections<T extends Line>(
+  rows: T[],
+  group: DeckGroup,
+  sort: DeckSort,
+  descending: boolean,
+  colours: (row: T) => string,
+  order: string[] = [],
+): Section<T>[] {
   let out: Section<T>[];
   if (group === "CATEGORY" || group === "TYPE") out = sections(rows, group);
   else {
@@ -68,6 +81,10 @@ export function layoutSections<T extends Line>(rows: T[], group: DeckGroup, sort
     }
     for (const [title, g] of [...groups.entries()].sort((a, b) => a[1].order - b[1].order)) out.push({ title, rows: g.rows });
   }
+  if (group === "CATEGORY" && order.length) {
+    const rank = (s: Section<T>) => (s.rows.every((r) => r.commander) ? -1 : ((i) => (i < 0 ? order.length : i))(order.indexOf(s.title.toLowerCase())));
+    out = out.map((s, i) => ({ s, i })).sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).map((x) => x.s);
+  }
   return out.map((s) => ({ title: s.title, rows: sortRows(s.rows, sort, descending) }));
 }
 
@@ -87,4 +104,24 @@ export function hasBackFace(layout: string | null | undefined, typeLine: string 
 /** The picture of the back face: Scryfall's image address with /front/ replaced by /back/. */
 export function backImageUrl(url: string): string {
   return url.replace("/front/", "/back/");
+}
+
+/**
+ * Splits [items] into [n] columns in order (top to bottom, then left to right), each column about the same total
+ * [weight]: an item goes to the column its middle falls in. Weights are the sections' full sizes, so the split
+ * doesn't change when one is folded.
+ */
+export function splitColumns<T extends { weight: number }>(items: T[], n: number): T[][] {
+  const cols: T[][] = Array.from({ length: Math.max(1, n) }, () => []);
+  const total = items.reduce((s, x) => s + x.weight, 0);
+  const per = total / cols.length || 1;
+  let acc = 0;
+  let last = 0;
+  for (const x of items) {
+    const c = Math.max(last, Math.min(cols.length - 1, Math.floor((acc + x.weight / 2) / per)));
+    cols[c].push(x);
+    acc += x.weight;
+    last = c;
+  }
+  return cols;
 }

@@ -34,6 +34,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -167,6 +168,25 @@ class Release142Test {
         assertEquals(0, db.deckDao().cardsAddedInApp(7).size)
     }
 
+    @Test
+    fun aDeckFromArchidektKeepsItsLocalMaybeboard() = runBlocking {
+        // Since 1.86: a card goes to the local maybeboard of a deck from Archidekt and stays through a reload.
+        db.deckDao().upsert(deck())
+        db.cardInfoDao().putAll(listOf(CardInfo("arcane-signet", null, "", "", "Artifact", 2.0, null)))
+        val added = repo.addToMaybeboard(7, ref("Arcane Signet"), Finish.NONFOIL)
+        assertNotNull(added)
+        repo.addToMaybeboard(7, ref("Arcane Signet"), Finish.NONFOIL)
+        val line = db.deckDao().cardsAddedInApp(7).single()
+        assertTrue(line.maybeboard && line.addedInApp)
+        assertEquals(2, line.quantity)
+        assertEquals("Artifact", line.types)
+        // A reload from Archidekt replaces its list but keeps the local maybeboard.
+        db.deckDao().replace(deck(), listOf(card("Sol Ring")))
+        assertEquals(listOf("Sol Ring"), db.deckDao().cards(7).map { it.card.name })
+        assertEquals(listOf("Arcane Signet"), db.deckDao().observeMaybeboard(7).first().map { it.item.card.name })
+        assertNull(repo.addToMaybeboard(99, ref("Arcane Signet"), Finish.NONFOIL))
+    }
+
     // ---- Settings for the deck page --------------------------------------------------------------------
 
     @Test
@@ -232,7 +252,7 @@ class Release142Test {
         createVersion18(file)
         // Room checks the updated database against what this version expects, and refuses it if it differs.
         val updated = Room.databaseBuilder(context, AppDatabase::class.java, "update-142.db")
-            .addMigrations(AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25, AppDatabase.MIGRATION_25_26, AppDatabase.MIGRATION_26_27)
+            .addMigrations(AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22, AppDatabase.MIGRATION_22_23, AppDatabase.MIGRATION_23_24, AppDatabase.MIGRATION_24_25, AppDatabase.MIGRATION_25_26, AppDatabase.MIGRATION_26_27, AppDatabase.MIGRATION_27_28)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
             })

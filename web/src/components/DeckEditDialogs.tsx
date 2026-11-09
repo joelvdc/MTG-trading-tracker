@@ -305,7 +305,12 @@ export function LineDialog({
             </div>
           </>
         ) : (
-          !view.local && <p className="muted small">Cards of a deck from Archidekt are changed on Archidekt, or make it a local deck first.</p>
+          !view.local &&
+          (row.addedInApp && row.maybeboard ? (
+            <p className="muted small">In the deck&apos;s local maybeboard: kept here and in the app, Archidekt doesn&apos;t see it.</p>
+          ) : (
+            <p className="muted small">Cards of a deck from Archidekt are changed on Archidekt, or make it a local deck first.</p>
+          ))
         )}
         {cardCombos.length > 0 && (
           <ul className="combo-list">
@@ -317,7 +322,7 @@ export function LineDialog({
         </CardRulesTabs>
         {error && <div className="bar error">{error}</div>}
         <div className="dialog-actions">
-          {editable && (
+          {(editable || (!view.readOnly && !view.local && row.addedInApp)) && (
             <button className="btn danger" disabled={busy} onClick={() => run({ action: "remove", uids: [row.lineUid] }, `${row.name} removed.`)}>
               Remove
             </button>

@@ -50,7 +50,7 @@ class Release183Test {
     }
 
     @Test fun theSyncFileCarriesRetired() {
-        assertEquals(13, SyncFile.FORMAT)
+        assertEquals(14, SyncFile.FORMAT)
         val json = kotlinx.serialization.json.Json { encodeDefaults = true }.encodeToString(Deck.serializer(), Deck(2, "Old Krenko", "", "", null, null, "R", 1, retired = true))
         assertTrue(json.contains("\"retired\":true"))
     }

@@ -1,10 +1,74 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { HoverToggle } from "./Icons";
 
 export type Layout = "list" | "images";
+export type PicSize = "s" | "m" | "l";
 
-/** The list / pictures buttons and, for the list, the "Card on hover" switch (collection, wishlist, scans, recommendations). */
+const SIZE_KEY = "mtg.picSize";
+const SIZE_EVENT = "mtg-pic-size";
+const SIZES: { size: PicSize; label: string; box: number }[] = [
+  { size: "s", label: "Small pictures", box: 8 },
+  { size: "m", label: "Medium pictures", box: 12 },
+  { size: "l", label: "Large pictures", box: 16 },
+];
+
+/**
+ * The picture size of the Images views (collection, wishlist, scans, recommendations), remembered per browser and
+ * set on the page as html[data-pic-size], which the picture grids' CSS reads.
+ */
+export function usePicSize(): [PicSize, (s: PicSize) => void] {
+  const [size, setSize] = useState<PicSize>("m");
+  useEffect(() => {
+    const read = () => {
+      let s: PicSize = "m";
+      try {
+        const v = localStorage.getItem(SIZE_KEY);
+        if (v === "s" || v === "m" || v === "l") s = v;
+      } catch {
+        // Storage unavailable: medium.
+      }
+      setSize(s);
+      document.documentElement.dataset.picSize = s;
+    };
+    read();
+    window.addEventListener(SIZE_EVENT, read);
+    return () => window.removeEventListener(SIZE_EVENT, read);
+  }, []);
+  const set = (s: PicSize) => {
+    try {
+      localStorage.setItem(SIZE_KEY, s);
+    } catch {
+      // Not remembered.
+    }
+    document.documentElement.dataset.picSize = s;
+    setSize(s);
+    window.dispatchEvent(new Event(SIZE_EVENT));
+  };
+  return [size, set];
+}
+
+/** Small / medium / large pictures, as three round buttons with a growing square. */
+function SizeSwitch() {
+  const [size, setSize] = usePicSize();
+  return (
+    <div className="seg" role="group" aria-label="Picture size">
+      {SIZES.map((s) => (
+        <button key={s.size} type="button" className={size === s.size ? "on" : undefined} aria-pressed={size === s.size} aria-label={s.label} title={s.label} onClick={() => setSize(s.size)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <rect x={12 - s.box / 2} y={12 - s.box / 2} width={s.box} height={s.box} rx="2" fill="currentColor" />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The list / pictures buttons with, for the list, the "Card on hover" switch and, for the pictures, the picture size
+ * (collection, wishlist, scans, recommendations).
+ */
 export function ViewSwitch({
   layout,
   onLayout,
@@ -17,6 +81,7 @@ export function ViewSwitch({
   onHover: (on: boolean) => void;
 }) {
   return (
+    <>
     <div className="seg" role="group" aria-label="View">
       <button
         className={layout === "list" ? "on" : undefined}
@@ -46,5 +111,7 @@ export function ViewSwitch({
       </button>
       {layout === "list" && <HoverToggle on={hover} onChange={onHover} />}
     </div>
+    {layout === "images" && <SizeSwitch />}
+    </>
   );
 }

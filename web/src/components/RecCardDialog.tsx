@@ -10,6 +10,7 @@ import { cardmarketUrlFor, cardtraderUrlFor } from "./cardLinks";
 import { CardRulesTabs } from "./CardRules";
 import { Dialog } from "./Dialog";
 import { FlipPicture } from "./FlipPicture";
+import type { RecTarget } from "./RecommendationsPanel";
 
 /** The card's page on EDHREC (the app's RecCardDialog link). */
 function edhrecCardSlug(name: string): string {
@@ -23,24 +24,33 @@ function edhrecCardSlug(name: string): string {
 
 /**
  * A recommended card's window (the app's RecCardDialog), near-full-screen: its picture, what the source says,
- * whether you own it and which decks use it, the card text and rulings, its price and shop links, and Add to deck
- * for a local deck.
+ * whether you own it and which decks use it, the card text and rulings, its price and shop links, and the buttons
+ * that put it in the deck (a local deck), its maybeboard (a deck from Archidekt: its local one) or the wishlist.
  */
 export function RecCardDialog({
   view,
   rec,
   source,
-  canAdd,
+  canDeck,
+  canMaybe,
+  onWishlist,
+  inMaybe,
   adding,
-  onAdd,
+  onSend,
   onClose,
 }: {
   view: DeckView;
   rec: RecCard;
   source: RecSource;
-  canAdd: boolean;
-  adding: boolean;
-  onAdd: () => void;
+  canDeck: boolean;
+  canMaybe: boolean;
+  /** Already on the wishlist. */
+  onWishlist: boolean;
+  /** Put in the maybeboard on this visit. */
+  inMaybe: boolean;
+  /** "deck:Name", "maybe:Name" or "wish:Name" while that is being saved. */
+  adding: string | null;
+  onSend: (to: RecTarget) => void;
   onClose: () => void;
 }) {
   const [use, setUse] = useState<CardUse | null>(null);
@@ -82,11 +92,24 @@ export function RecCardDialog({
             {card.fallbackEurFoil != null && <span className="muted"> · foil {money(card.fallbackEurFoil)}</span>}
           </div>
           <div className="shop-links">
-            {canAdd && (
-              <button className="btn small-btn primary" disabled={adding} onClick={onAdd} title="Add one copy to the deck">
-                {adding ? "Adding…" : "Add to deck"}
+            {canDeck && (
+              <button className="btn small-btn primary" disabled={adding !== null} onClick={() => onSend("deck")} title="Add one copy to the deck">
+                {adding === `deck:${rec.name}` ? "Adding…" : "Add to deck"}
               </button>
             )}
+            {canMaybe && (
+              <button
+                className="btn small-btn"
+                disabled={adding !== null || inMaybe}
+                onClick={() => onSend("maybe")}
+                title={view.local ? "Add one copy to the maybeboard" : "Add one copy to the deck's local maybeboard (Archidekt doesn't see it)"}
+              >
+                {adding === `maybe:${rec.name}` ? "Adding…" : inMaybe ? "✓ In the maybeboard" : "Add to maybeboard"}
+              </button>
+            )}
+            <button className="btn small-btn" disabled={adding !== null || onWishlist || view.readOnly} onClick={() => onSend("wish")}>
+              {adding === `wish:${rec.name}` ? "Adding…" : onWishlist ? "★ On the wishlist" : "☆ Add to wishlist"}
+            </button>
             <a className="btn small-btn" href={`https://edhrec.com/cards/${edhrecCardSlug(rec.name)}`} target="_blank" rel="noreferrer">
               EDHREC ↗
             </a>

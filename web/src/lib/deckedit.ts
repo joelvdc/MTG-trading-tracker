@@ -187,9 +187,71 @@ export function setPrinting(file: SyncFile, id: number, uid: string, card: CardR
 }
 
 export function removeLines(file: SyncFile, id: number, uids: string[], now: number, look: Lookups): void {
-  const sd = local(file, id);
   const gone = new Set(uids);
+  const sd = find(file, id);
+  if (sd.deck.archidektId >= 0) {
+    // A deck from Archidekt: only its cards added in the app (its local maybeboard) can go (DeckRepository.removeAddedCard).
+    if (sd.cards.some((c) => gone.has(c.lineUid) && !c.addedInApp)) throw new EditError("Decks from Archidekt are edited on Archidekt. Make it a local deck first.");
+    sd.cards = sd.cards.filter((c) => !gone.has(c.lineUid));
+    touch(sd, now);
+    return;
+  }
   save(sd, sd.cards.filter((c) => !gone.has(c.lineUid)), now, look);
+}
+
+/**
+ * Adds one copy to the deck's maybeboard (MtgRepository.addToMaybeboard, app 1.86): a local deck's own maybeboard; a
+ * deck from Archidekt's local maybeboard, cards added in the app that Archidekt never sees and that a reload keeps.
+ */
+export function addToMaybeboard(file: SyncFile, id: number, card: CardRef, foil: boolean, etched: boolean, facts: CardFacts | null, now: number, look: Lookups): string {
+  const sd = find(file, id);
+  if (sd.deck.archidektId < 0) return addCard(file, id, card, foil, etched, 1, MAYBEBOARD, facts, now, look);
+  const there = sd.cards.find((c) => c.addedInApp && c.maybeboard && c.card.scryfallId === card.scryfallId && c.foil === foil && c.etched === etched);
+  if (there) {
+    sd.cards = sd.cards.map((c) => (c === there ? { ...c, quantity: Math.min(MAX_QUANTITY, c.quantity + 1) } : c));
+    touch(sd, now);
+    return there.lineUid;
+  }
+  const line: DeckCard = {
+    id: 0,
+    deckId: id,
+    card,
+    quantity: 1,
+    category: MAYBEBOARD,
+    types: (facts?.typeLine ?? "").split(" — ")[0],
+    cmc: facts?.cmc ?? 0,
+    commander: false,
+    foil,
+    etched,
+    gameChanger: false,
+    addedInApp: true,
+    maybeboard: true,
+    categories: "",
+    archidektCardId: null,
+    relationId: null,
+    label: null,
+    lineUid: crypto.randomUUID(),
+  };
+  sd.cards = sortLines([...sd.cards, line]);
+  touch(sd, now);
+  return line.lineUid;
+}
+
+/** The deck's own category order (Deck.categoryOrder, app 1.86): any deck, also one from Archidekt. Empty for alphabetical. */
+export function setCategoryOrder(file: SyncFile, id: number, names: string[], now: number): void {
+  const sd = find(file, id);
+  const seen = new Set<string>();
+  const list: string[] = [];
+  for (const raw of names) {
+    const n = raw.trim();
+    if (!n || seen.has(n.toLowerCase())) continue;
+    seen.add(n.toLowerCase());
+    list.push(n);
+  }
+  const value = list.length ? list.join("\n") : null;
+  if ((sd.deck.categoryOrder ?? null) === value) return;
+  sd.deck.categoryOrder = value;
+  touch(sd, now);
 }
 
 function moved(sd: SyncDeck, uids: Set<string>, category: string, look: Lookups, skip: string | null = null): DeckCard[] {
@@ -457,6 +519,7 @@ export function newDeck(id: number, now: number, d: Partial<Deck>): Deck {
     categoryInfo: null,
     origin: null,
     retired: false,
+    categoryOrder: null,
     ...d,
   };
 }
