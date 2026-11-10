@@ -64,10 +64,11 @@ sync file as one more device.
 - Vercel's secrets (`SESSION_SECRET`, `NEXTCLOUD_PASS`, `CRON_SECRET`) and the owner's Cloudflare rules: don't print or
   change them without asking, like the signing secrets.
 
-## Mistral Vibe (or another assistant) working on its own
-The owner may carry on with Mistral Vibe (on the PC, in VS Code, in a cloud session or from Mistral's web app) instead
-of Claude Code. The same agreement applies, with these differences:
-- Work on a branch `mistral/<short-topic>` made from an up-to-date `main`, never straight on `main`.
+## Another assistant working on its own
+The owner may carry on with another assistant (for example Cline, on the PC or in VS Code) instead of Claude Code.
+The same agreement applies, with these differences:
+- Work on a branch `<assistant>/<short-topic>` (for example `cline/<short-topic>`) made from an up-to-date `main`,
+  never straight on `main`.
 - Release only by the pull request route (see Releases, "Cloud sessions"): open a pull request, merge it once GitHub's
   Tests check has passed, then Actions → Release → Run workflow on `main`. Never build a release with the PC's own
   signing key and never open its files (see "Still ask first").
@@ -76,11 +77,11 @@ of Claude Code. The same agreement applies, with these differences:
 - Never run two assistants on the same copy of the code at the same time.
 
 ## Delegated work
-If you're working from a brief given by another session (a helper such as Sonnet or Mistral), follow the brief: work
+If you're working from a brief given by another session (a helper such as Haiku or Sonnet), follow the brief: work
 only in your own copy of the code; don't commit, merge, release, change versions or touch signing. The session that
 delegated does that after reviewing your work.
-- After a green light, Opus may hand jobs to helpers on its own judgment (`/delegate`: Haiku, Sonnet or Mistral, picked
-  per job); the plan lists each job with its helper, so the green light covers that choice.
+- After a green light, Opus may hand jobs to helpers on its own judgment (`/delegate`: Haiku or Sonnet, picked per
+  job); the plan lists each job with its helper, so the green light covers that choice.
 
 ## After a release
 The owner clears the conversation after every release. Before the final report, make sure everything worth keeping is

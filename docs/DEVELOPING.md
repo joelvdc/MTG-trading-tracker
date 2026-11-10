@@ -1,6 +1,6 @@
 # Developing MTG Trader: the hands-on notes
 
-For any assistant (Claude Code, Mistral Vibe, …) or person working on this repository. The working agreement is
+For any assistant (Claude Code, Cline, …) or person working on this repository. The working agreement is
 `AGENTS.md` / `CLAUDE.md`; this file holds the practical facts and gotchas learned along the way.
 
 ## The two parts
