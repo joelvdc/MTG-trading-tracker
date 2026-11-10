@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One-colour "Card Swap" for Android 13+ themed icons (only the shape counts; the system picks the colour).
+     Same layout as ic_launcher_foreground.xml, but the back card is an outline and the front card's art box is a
+     hole, so the two cards stay apart instead of merging into one blob. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.84"
+        android:scaleY="0.84"
+        android:translateX="12"
+        android:translateY="12">
+        <!-- back card, outline -->
+        <group android:rotation="10" android:pivotX="58" android:pivotY="44">
+            <path
+                android:strokeColor="#FFFFFFFF"
+                android:strokeWidth="3.5"
+                android:pathData="M47,24.75 h22 a2.25,2.25 0 0 1 2.25,2.25 v34 a2.25,2.25 0 0 1 -2.25,2.25 h-22 a2.25,2.25 0 0 1 -2.25,-2.25 v-34 a2.25,2.25 0 0 1 2.25,-2.25 z" />
+        </group>
+        <!-- front card, solid with the art box cut out -->
+        <group android:rotation="-10" android:pivotX="42" android:pivotY="56">
+            <path
+                android:fillColor="#FFFFFFFF"
+                android:fillType="evenOdd"
+                android:pathData="M31,35 h22 a4,4 0 0 1 4,4 v34 a4,4 0 0 1 -4,4 h-22 a4,4 0 0 1 -4,-4 v-34 a4,4 0 0 1 4,-4 z M32.5,39 h19 a1.5,1.5 0 0 1 1.5,1.5 v13 a1.5,1.5 0 0 1 -1.5,1.5 h-19 a1.5,1.5 0 0 1 -1.5,-1.5 v-13 a1.5,1.5 0 0 1 1.5,-1.5 z" />
+        </group>
+        <!-- swap arrows -->
+        <path
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M80,58 A31,31 0 0 1 62,80 M68,82 L62,80 L64,74" />
+        <path
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M20,42 A31,31 0 0 1 38,20 M32,18 L38,20 L36,26" />
+    </group>
+</vector>

@@ -186,6 +186,9 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 1.87 (2026-11-10): new "Card Swap" logo: app icon with its own themed (one-colour) version; on the website the
+  browser-tab icon, iPhone/iPad home-screen icon, top bar and login page. Drafts of the four other directions:
+  https://claude.ai/artifact/CtAVMkn2uwvQMyHDL5Aisj (private).
 - 2026-11-09: website: dragging cards and categories on the deck page is done by the page itself (no longer the
   browser's drag and drop), so the mouse wheel scrolls while dragging, as well as the window's edges; a label follows
   the pointer, Esc cancels.

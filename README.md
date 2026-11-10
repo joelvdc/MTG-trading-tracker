@@ -1,4 +1,4 @@
-# MTG Trader
+# <img src="docs/logo.svg" width="40" height="40" alt=""> MTG Trader
 
 An Android app and a website for Magic: The Gathering players: keep your collection and its value up to date, make
 fair trades, follow your wishlist and orders, manage your Commander decks and keep score in your games. The phones
