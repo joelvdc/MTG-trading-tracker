@@ -812,6 +812,27 @@ a.btn {
   overflow-wrap: anywhere;
 }
 
+.brand-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-name .logo,
+.login-title .logo {
+  flex: none;
+}
+
+.brand-accent {
+  color: var(--gold);
+}
+
+.login-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .nav {
   display: flex;
   gap: 4px;

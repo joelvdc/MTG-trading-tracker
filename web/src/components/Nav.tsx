@@ -1,5 +1,7 @@
 "use client";
 
+import { Logo } from "./Logo";
+
 /** The top bar on every page after logging in: the website's sections and Settings. */
 export function TopBar({ page, folder }: { page: "collection" | "stats" | "decks" | "games" | "orders" | "trades" | "settings"; folder?: string }) {
   const link = (href: string, label: string, on: boolean) => (
@@ -11,7 +13,12 @@ export function TopBar({ page, folder }: { page: "collection" | "stats" | "decks
     <header className="topbar">
       <div className="topbar-in wide">
         <div className="brand">
-          <strong>MTG Trader</strong>
+          <div className="brand-name">
+            <Logo size={28} />
+            <strong>
+              MTG <span className="brand-accent">Trader</span>
+            </strong>
+          </div>
           {folder && <div className="muted small">{folder}</div>}
         </div>
         <nav className="nav" aria-label="Sections">

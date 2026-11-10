@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Logo } from "@/components/Logo";
 import { api } from "@/components/api";
 
 /** Logging in with a website account (or making one with an invite code). Nextcloud is only a backup place now. */
@@ -38,7 +39,10 @@ export default function LoginPage() {
   return (
     <main className="page narrow">
       <div className="card login-card">
-        <h1>MTG Trader</h1>
+        <h1 className="login-title">
+          <Logo size={44} />
+          MTG Trader
+        </h1>
         {message && <div className="bar error">{message}</div>}
         {accounts === false && <div className="bar error">Logging in isn&apos;t available right now (the website&apos;s database isn&apos;t reachable). Try again later.</div>}
         <form onSubmit={accountLogin} className="stack">
