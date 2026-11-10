@@ -245,7 +245,7 @@ class ArchidektParseTest {
 
 class DeckSortingTest {
     private fun deck(name: String, power: Double?, realistic: Int?, baseline: Int?, updated: Long?) =
-        Deck(archidektId = name.hashCode().toLong(), name = name, owner = "", commanders = "", commanderScryfallId = null,
+        Deck(archidektId = name.hashCode().toLong().let { if (it < 0) -it else it } + 1, name = name, owner = "", commanders = "", commanderScryfallId = null,
             artUrl = null, colorIdentity = "", cardCount = 100, powerLevel = power, bracketRealistic = realistic,
             bracketBaseline = baseline, archidektUpdatedAt = updated)
 
@@ -268,6 +268,20 @@ class DeckSortingTest {
         assertEquals(listOf("Baba", "Taranika", "Auntie Plague", "Unscored"), names(DeckSort.BRACKET))
         assertEquals(listOf("Baba", "Auntie Plague", "Unscored", "Taranika"), names(DeckSort.MODIFIED))
         assertEquals(listOf("Unscored", "Auntie Plague", "Baba", "Taranika"), names(DeckSort.MODIFIED, reverse = true))
+    }
+
+    @Test
+    fun lastModifiedUsesTheAppsChangeTimeForLocalDecks() {
+        val local = Deck(archidektId = -5, name = "Local new", owner = "", commanders = "", commanderScryfallId = null,
+            artUrl = null, colorIdentity = "", cardCount = 100, archidektUpdatedAt = 999, updatedAt = 250)
+        val localUnknown = local.copy(archidektId = -6, name = "Local unknown", updatedAt = 0)
+        assertEquals(250L, local.modifiedAt)
+        assertEquals(null, localUnknown.modifiedAt)
+        assertEquals(300L, decks[0].modifiedAt)
+        assertEquals(
+            listOf("Baba", "Local new", "Auntie Plague", "Unscored", "Local unknown", "Taranika"),
+            DeckSorting.sort(decks + local + localUnknown, DeckSort.MODIFIED, false).map { it.name },
+        )
     }
 
     @Test

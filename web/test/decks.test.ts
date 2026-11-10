@@ -160,6 +160,16 @@ describe("decks pages", () => {
     expect(deckView(f, 123, null, null, null)).toBeNull();
   });
 
+  it("dates Archidekt decks by Archidekt and local decks by their last change (Last modified sort)", () => {
+    const f = fixture();
+    const decks = (f.data as { decks: { deck: Record<string, Json> }[] }).decks;
+    decks[0].deck.archidektUpdatedAt = 1_700_000_900_000;
+    decks.push({ ...decks[0], deck: { ...decks[0].deck, archidektId: -3, name: "Local", archidektUpdatedAt: null, updatedAt: 1_700_000_500_000 } });
+    const v = decksView(f, null, null, null);
+    expect(v.decks.find((d) => d.id === 10710772)?.modifiedAt).toBe(1_700_000_900_000);
+    expect(v.decks.find((d) => d.id === -3)?.modifiedAt).toBe(1_700_000_500_000);
+  });
+
   it("shows a deck in the printing you own", () => {
     const f = fixture();
     const sol = syncDecks(f)[0].cards[0].card;

@@ -101,6 +101,7 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
         saltPercent: d.saltPercent ?? null,
         archetype: d.archetype ?? null,
         archidektUpdatedAt: d.archidektUpdatedAt ?? null,
+        modifiedAt: d.archidektId < 0 ? (d.updatedAt > 0 ? d.updatedAt : null) : (d.archidektUpdatedAt ?? null),
         valueEur: main.reduce((s, c) => s + (lineUnit(setup, c) ?? 0) * c.quantity, 0),
         missing: missingPlan(
           main.map((c) => ({ name: c.card.name, quantity: c.quantity })),

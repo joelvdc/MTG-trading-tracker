@@ -403,9 +403,12 @@ internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, wai
                 if (deck.local && deck.scored) {
                     Text(listOfNotNull("Local deck", deck.origin).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                if (showModified && !deck.local) {
+                if (showModified) {
                     Text(
-                        deck.archidektUpdatedAt?.let { "Changed on Archidekt ${Fmt.date(it)}" } ?: "Last change unknown (refresh the deck)",
+                        when {
+                            deck.local -> deck.modifiedAt?.let { "Changed ${Fmt.date(it)}" } ?: "Last change unknown"
+                            else -> deck.archidektUpdatedAt?.let { "Changed on Archidekt ${Fmt.date(it)}" } ?: "Last change unknown (refresh the deck)"
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

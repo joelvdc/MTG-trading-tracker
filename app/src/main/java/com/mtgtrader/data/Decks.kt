@@ -83,6 +83,12 @@ data class Deck(
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0
 
+    /**
+     * When the deck was last changed, for the "Last modified" sort: Archidekt's date for an Archidekt deck,
+     * the last change in the app or on the website for a local one (any change counts, a re-score too).
+     */
+    val modifiedAt: Long? get() = if (local) updatedAt.takeIf { it > 0 } else archidektUpdatedAt
+
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
     val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
     val scored get() = powerLevel != null || bracketRealistic != null
@@ -290,7 +296,7 @@ enum class DeckSort(val label: String) {
     NAME("Name"),
     POWER("Power level"),
     BRACKET("Bracket"),
-    MODIFIED("Last modified on Archidekt");
+    MODIFIED("Last modified");
 
     companion object {
         fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: NAME
@@ -318,7 +324,7 @@ object DeckSorting {
                 { it.bracketRealistic },
                 compareByDescending<Deck> { it.bracketBaseline ?: 0 }.thenByDescending { it.power(source) ?: 0.0 }.thenBy { it.name.lowercase() },
             )
-            DeckSort.MODIFIED -> by({ it.archidektUpdatedAt })
+            DeckSort.MODIFIED -> by({ it.modifiedAt })
         }
     }
 

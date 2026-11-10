@@ -16,7 +16,7 @@ const SORTS: [Sort, string][] = [
   ["NAME", "Name"],
   ["POWER", "Power level"],
   ["BRACKET", "Bracket"],
-  ["MODIFIED", "Last modified on Archidekt"],
+  ["MODIFIED", "Last modified"],
 ];
 const GROUPS: DeckGroup[] = ["OWN", "OTHERS", "LOCAL", "RETIRED"];
 /** In the folded-groups list: the Retired section is hidden altogether (app 1.83: "Hide retired decks"). */
@@ -26,7 +26,7 @@ const HIDE_RETIRED = "hide:RETIRED";
 function sortDecks(decks: DeckSummary[], sort: Sort, reverse: boolean): DeckSummary[] {
   const byName = (a: DeckSummary, b: DeckSummary) => caseless(a.name, b.name);
   if (sort === "NAME") return [...decks].sort((a, b) => (reverse ? -byName(a, b) : byName(a, b)));
-  const key = (d: DeckSummary): number | null => (sort === "POWER" ? d.power : sort === "BRACKET" ? d.bracketRealistic : d.archidektUpdatedAt);
+  const key = (d: DeckSummary): number | null => (sort === "POWER" ? d.power : sort === "BRACKET" ? d.bracketRealistic : d.modifiedAt);
   const known = decks.filter((d) => key(d) !== null);
   const unknown = decks.filter((d) => key(d) === null).sort(byName);
   const then =

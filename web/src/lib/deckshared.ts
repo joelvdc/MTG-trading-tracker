@@ -396,6 +396,8 @@ export interface DeckSummary {
   saltPercent: number | null;
   archetype: string | null;
   archidektUpdatedAt: number | null;
+  /** For the "Last modified" sort: Archidekt's date for an Archidekt deck, the last change anywhere for a local one (the app's Deck.modifiedAt). */
+  modifiedAt: number | null;
   /** The deck's cards at their printings, in euros (maybeboard left out). */
   valueEur: number;
   /** Copies missing from the collection (any printing counts; basics left out). */
