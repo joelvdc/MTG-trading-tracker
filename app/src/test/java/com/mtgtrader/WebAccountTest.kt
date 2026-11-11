@@ -35,6 +35,7 @@ class WebAccountTest {
         var version = 0
         val seen = mutableListOf<Request>()
         var valueHistory: String? = null
+        var shared: String? = null
 
         override fun intercept(chain: Interceptor.Chain): Response {
             val req = chain.request()
@@ -54,6 +55,12 @@ class WebAccountTest {
             if (path == "/api/app/valuehistory") {
                 valueHistory = Buffer().also { req.body!!.writeTo(it) }.readUtf8()
                 return answer(200, """{"ok":true}""")
+            }
+            if (path == "/api/app/share") {
+                val sent = Buffer().also { req.body!!.writeTo(it) }.readUtf8()
+                shared = sent
+                return if (sent.contains("\"target\":\"10710772\"")) answer(200, """{"url":"https://web.test/s/abc","on":true}""")
+                else answer(404, """{"error":"The website doesn't have that deck yet."}""")
             }
             val tag = "\"v$version\""
             return when (req.method) {
@@ -138,6 +145,28 @@ class WebAccountTest {
         assertEquals("2026-11-01", day["day"]!!.jsonPrimitive.content)
         assertEquals(20, day["cards"]!!.jsonPrimitive.content.toInt())
         assertEquals(10.5, day["values"]!!.jsonObject["b:B7:trend"]!!.jsonPrimitive.content.toDouble(), 0.0)
+    }
+
+    @Test
+    fun asksForShareLinks() = runBlocking {
+        val login = WebLogin("joel", "tok123")
+        val link = client.share(login, "deck", "10710772")
+        assertEquals(WebAccountClient.ShareLink("https://web.test/s/abc", true), link)
+        val sent = Json.parseToJsonElement(site.shared!!).jsonObject
+        assertEquals("deck", sent["kind"]!!.jsonPrimitive.content)
+        assertEquals("10710772", sent["target"]!!.jsonPrimitive.content)
+        try {
+            client.share(login, "deck", "-5")
+            fail()
+        } catch (e: SyncException) {
+            assertEquals("The website doesn't have that deck yet.", e.message)
+        }
+        try {
+            client.share(WebLogin("joel", "old-token"), "collection", "")
+            fail()
+        } catch (e: SyncException) {
+            assertTrue(e.message!!.contains("no longer accepts"))
+        }
     }
 
     @Test

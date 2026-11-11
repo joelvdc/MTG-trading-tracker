@@ -169,10 +169,15 @@ import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.DeckSection
 import com.mtgtrader.data.CardInfo
 import com.mtgtrader.data.DeckStats
+import com.mtgtrader.data.DeckLegality
+import com.mtgtrader.data.LegalLine
+import com.mtgtrader.data.LegalRule
+import com.mtgtrader.data.Legality
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
-    val c = LocalContext.current.container
+    val context = LocalContext.current
+    val c = context.container
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -233,6 +238,18 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRetire by remember { mutableStateOf(false) }
+    var sharing by remember { mutableStateOf(false) }
+    // The Commander legality of the main deck. The rules kept on the phone show at once when they cover every card;
+    // otherwise (null) it says it's checking until Scryfall has answered, offline or not.
+    val legalLines = remember(archidektRows) { archidektRows.map { LegalLine(it.item.card.name, it.item.quantity, it.item.commander) } }
+    val legalIds = remember(archidektRows) { archidektRows.associate { it.item.card.name to it.item.card.scryfallId } }
+    var legalRules by remember { mutableStateOf<Map<String, LegalRule>?>(null) }
+    LaunchedEffect(legalIds) {
+        if (legalIds.isEmpty()) return@LaunchedEffect
+        if (c.legalRules.hasAll(legalIds.keys)) legalRules = c.legalRules.saved(legalIds.keys)
+        legalRules = c.legalRules.forDeck(legalIds)
+    }
+    val legality = remember(legalRules, legalLines) { legalRules?.let { DeckLegality.checkLegality(legalLines, it) } }
 
     val matched = remember(archidektRows, owned, binders, picks, myPrintings, deck?.name) {
         if (!myPrintings) DeckPrintings.Result(archidektRows, emptyMap())
@@ -469,6 +486,19 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             onClick = { menu = false; addingToCollection = true },
                         )
                         DropdownMenuItem(
+                            text = { Text("Share a link to this deck") },
+                            leadingIcon = { Icon(Icons.Default.Share, null) },
+                            enabled = !sharing && deck != null,
+                            onClick = {
+                                menu = false
+                                sharing = true
+                                scope.launch {
+                                    shareLink(context, c, "deck", deckId.toString(), "MTG Trader: ${deck?.name.orEmpty()}")?.let { snackbar.showSnackbar(it) }
+                                    sharing = false
+                                }
+                            },
+                        )
+                        DropdownMenuItem(
                             text = { Text(if (deck?.retired == true) "Bring back" else "Retire deck…") },
                             leadingIcon = { Icon(if (deck?.retired == true) Icons.Default.Unarchive else Icons.Default.Archive, null) },
                             onClick = {
@@ -663,6 +693,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
                 }
             }
+            if (archidektRows.isNotEmpty()) item(key = "legality") { LegalityCard(legality) }
             if (tagged.isNotEmpty()) {
                 item(key = "bracketcards") { BracketSummary(tagged.values, saltCard?.allCombos.orEmpty(), onlyBracket) { onlyBracket = it } }
             }
@@ -1079,6 +1110,25 @@ internal fun appPowerText(r: com.mtgtrader.data.AppPowerReading): String {
         ?: "under half the games won by the last turn, ${r.wonByEnd}% ($speed)"
     val salt = r.adjust?.let { ", Commander Salt's ratings " + String.format(Locale.getDefault(), "%+.1f", it) } ?: ", no Commander Salt ratings"
     return "Power level from the app's win turn: $turn$salt."
+}
+
+/** The deck's Commander legality: "Commander legal ✓", or each problem on its own line; null while it's being checked. */
+@Composable
+private fun LegalityCard(legality: Legality?) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Legality", style = MaterialTheme.typography.titleSmall)
+            when {
+                legality == null -> Text("Checking legality…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                legality.problems.isEmpty() -> Text("Commander legal ✓", style = MaterialTheme.typography.bodyMedium)
+                else -> legality.problems.forEach { Text(it.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+            }
+            if (legality != null && legality.unchecked.isNotEmpty()) {
+                val n = legality.unchecked.size
+                Text("Couldn't check $n card" + (if (n == 1) "" else "s") + ".", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
 }
 
 @Composable

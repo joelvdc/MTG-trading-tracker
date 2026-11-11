@@ -93,6 +93,28 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
         http.newCall(req).execute().use { r -> if (!r.isSuccessful) throw failure(r) }
     }
 
+    /** A read-only page on the website for something shared from the app ([on] is whether the link works). */
+    data class ShareLink(val url: String, val on: Boolean)
+
+    /**
+     * Asks the website for the share link of a deck, game, binder or the whole collection ([kind]: "deck", "game",
+     * "binder" or "collection"; [target]: the deck's id, the game's or binder's uid, "~" for Unsorted, "" for the
+     * collection). Throws [SyncException] with the website's own words when it has nothing to share yet.
+     */
+    suspend fun share(login: WebLogin, kind: String, target: String): ShareLink = call {
+        val body = buildJsonObject { put("kind", kind); put("target", target) }
+        val req = authed(login, "api/app/share").post(body.toString().toRequestBody("application/json".toMediaType())).build()
+        http.newCall(req).execute().use { r ->
+            val o = runCatching { json.parseToJsonElement(r.body!!.string()).jsonObject }.getOrNull()
+            val url = o?.get("url")?.jsonPrimitive?.content
+            if (r.isSuccessful && url != null) return@call ShareLink(url, o["on"]?.jsonPrimitive?.content != "false")
+            if (r.code == 401) throw failure(r)
+            val error = o?.get("error")?.jsonPrimitive?.content
+            if (error != null) throw SyncException(error)
+            throw IOException("The website answered ${r.code}")
+        }
+    }
+
     /**
      * The website's auto categories for cards, by card name (no login needed): the first of each list is the card's
      * category, the others are extra categories. Cards the website doesn't know are left out. Throws when the website

@@ -48,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -419,7 +420,8 @@ private fun ResultsForm(
 /** A recorded game: its players and results, to change or delete. */
 @Composable
 fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
-    val c = LocalContext.current.container
+    val context = LocalContext.current
+    val c = context.container
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val games by c.games.games.collectAsStateWithLifecycle(emptyList())
@@ -438,13 +440,23 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
     var minutes by remember(g?.id) { mutableStateOf(g?.durationMs?.let { (it / 60_000).toString() }.orEmpty()) }
     var rounds by remember(g?.id) { mutableStateOf(g?.rounds?.toString().orEmpty()) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var sharing by remember { mutableStateOf(false) }
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(g?.let { gameDate(it.startedAt) } ?: "Game") },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                actions = { IconButton(onClick = { confirmDelete = true }, enabled = g != null) { Icon(Icons.Default.Delete, "Delete the game") } },
+                actions = {
+                    IconButton(onClick = {
+                        sharing = true
+                        scope.launch {
+                            shareLink(context, c, "game", uid, "MTG Trader: game of ${g?.let { gameDate(it.startedAt) }.orEmpty()}")?.let { snackbar.showSnackbar(it) }
+                            sharing = false
+                        }
+                    }, enabled = g != null && !sharing) { Icon(Icons.Default.Share, "Share a link to the game") }
+                    IconButton(onClick = { confirmDelete = true }, enabled = g != null) { Icon(Icons.Default.Delete, "Delete the game") }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
