@@ -13,6 +13,11 @@ How to use this file:
 
 ## Collecting
 
+### 2026-11-11: ideas offered by Claude, not yet chosen
+Offered in the chat; the owner picked share links, the legality check, the weekly email and printing (built in 1.89).
+Still only ideas: trade matching between friends' accounts (my trade binder against their wishlist), "what should we
+play tonight?" deck suggestions in the Games tab, a game-night planner website, a website for Poké Trader.
+
 ### 2026-11-05: website on Vercel (approved outline; each phase gets its own detailed plan and green light)
 Owner: "a wishlist web page, where I can edit my wishlist in the app from a computer browser", growing into an
 "archidekt lite website for editing/viewing the collection and decks", plus games.
@@ -186,6 +191,12 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 1.89 (2026-11-12): share links for a deck, game, binder or the whole collection (app and website; Settings → Shared
+  links switches them off), the Commander legality check (app and website, shared test cases), Print to PDF on the
+  website's Collection and deck pages, and the weekly email (Settings → Weekly email; value against a week ago, top 5
+  gainers and losers, wishlist alerts, deck changes). Still open: the owner makes the Resend account and adds
+  `RESEND_API_KEY` and `EMAIL_FROM` in Vercel (plus Resend's DNS records for the sending domain in Cloudflare); until
+  then the website sends no email.
 - 2026-11-11: website: the Collection page's "Import CSV" became "Import ▾" (CSV file… / Preconstructed deck…; the
   precon starts in the binder on show). Trade binder page catches up with the app: price per suggestion, Swap
   (offer another copy; synced like the phone's), clicking a card opens its window, quick minimum values in Rules.

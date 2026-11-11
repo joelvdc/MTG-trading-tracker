@@ -91,6 +91,36 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`), the nightly job (`nightly`
   counts, `nightlyAgeHours`, `nightlyFresh`) and whether the settings are complete (no secrets).
 
+- **Shared links** (`lib/shares.ts`, `lib/shareweb.ts`, since app 1.89): Share on the deck page, the game window and
+  the Collection page (whole collection, or the binder picked), and in the app (`POST /api/app/share` with
+  `{kind, target}`: deck id, game uid, binder uid or `~` for Unsorted, `""` for the collection). One link per item
+  (table `share_links`, a random 22-character code); Settings → Shared links switches a link off and on (the same
+  address comes back) or deletes it. `/s/<code>` reads `GET /api/share/<code>` (no login; `noindex`): the item as it is
+  now, priced in the owner's source and currency with the source stated, never purchase prices, notes or a game's
+  note; "off", "gone" or "unknown" otherwise. Each opening is counted.
+- **Commander legality** (`lib/legality.ts`, the same rules as the app's `data/DeckLegality.kt`; both are tested against
+  `test/fixtures/legality-cases.json`): banned or not legal (Scryfall's `legalities.commander`), outside the
+  commanders' colour identity, more copies than allowed (basics and "a deck can have any number / up to seven…"), not
+  exactly 100 cards, a commander that can't lead or two that can't pair (partner, partner with, partner groups,
+  friends forever, Background, Doctor's companion). The maybeboard doesn't count. The cards' rules are kept in the
+  table `legal_rules` by front-face name and asked from Scryfall's `/cards/collection` (by Scryfall id) when missing
+  or a week old (`lib/legalstore.ts`): the deck page looks up for 6 seconds at most, the Decks page only reads the
+  table ("⚠ Not legal" when all of a deck's cards are known), a shared deck page for 8.
+- **Print** (`lib/printlist.ts`, `components/PrintLists.tsx`): an A4 list without pictures, drawn under `<body>` and
+  printed with `body.printing-list` (the "Printing a list" rules in `globals.css`); the collection prints what the page
+  shows (all pages), optionally with purchase prices; the deck prints its main deck by category or card type.
+- **Weekly email** (`lib/weekly.ts`, `lib/weeklyjob.ts`, `lib/mailer.ts`, Settings → Weekly email,
+  `/api/account/email`): an address confirmed by a link (`/api/email/confirm?t=`), a weekday and on/off, in the table
+  `email_settings`. The nightly job also keeps every pile's price (one copy, in euros, owner's source) for 9 days
+  (`card_price_days`). `/api/cron/weekly` (07:30 UTC every day) sends the email to accounts whose weekday it is in
+  Copenhagen (not twice within 20 hours): collection value against the value-history day a week back, the 5 piles up
+  and down most against their price a week ago (from 5 cents), wishlist alerts reached in the last 7 days, and per
+  deck game changers added or removed (Scryfall's `is:gamechanger`) and new legality problems against the state kept
+  from the last email (the first email lists the problems there are). Sent through Resend (`RESEND_API_KEY`,
+  `EMAIL_FROM`); without them nothing is sent, Settings says so, and `/api/health` has `emailReady: false`. Every email
+  has a stop link (`/api/email/stop?t=`: a page with a button, plus `List-Unsubscribe` one-click). "Send a test email
+  now" sends this week's email without moving "last week" on.
+
 ## Settings (Vercel environment variables)
 | Name | What |
 |---|---|
@@ -99,6 +129,9 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 | `ALLOWED_USERS` | Nextcloud user ids that may be connected as a backup place, comma separated. Empty: nobody. |
 | `NEXTCLOUD_PASS` | Sent as header `X-MTG-Trader-Pass` to Nextcloud, so Cloudflare rules can let the website through. |
 | `CRON_SECRET` | Vercel sends it to the crons. |
+| `RESEND_API_KEY` | Resend's API key for the weekly email (a secret; the owner adds it). Unset: no email is sent. |
+| `EMAIL_FROM` | The sender, e.g. `MTG Trader <mtgtrader@mail.nocar.me>`, on a domain verified at Resend. |
+| `SITE_URL` | Optional: the address used in emails (default `https://mtgtrader.vercel.app`). |
 | `BLOB_READ_WRITE_TOKEN` | Set by Vercel for the Blob store. |
 | `DATABASE_URL` (and the other `PG*`/`POSTGRES_*`) | Set by Vercel for the Neon database (preview and production only). `memory` keeps accounts in memory, for tests and local runs. |
 
@@ -106,8 +139,8 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 The owner's Nextcloud is behind Cloudflare, which challenges or blocks servers. What makes the website work:
 - Bot Fight Mode **off** (on the free plan no rule can skip it).
 - Custom rule "MTG Trader website" (first in the list): host is `cloud.nocar.me` and header `x-mtg-trader-pass` equals
-  the secret → **Skip** managed rules, Super Bot Fight Mode, rate limiting, Security Level, Browser Integrity Check.
-  ("All remaining custom rules" can't be ticked together with those.)
+  the secret → **Skip** all remaining custom rules and rate limiting (since 2026-11-11 not the managed rules, so the
+  php2shell protection still checks these requests).
 - The "Geo filter" rule (blocks outside Denmark; Vercel's servers are in Sweden) has the exception
   `and not any(http.request.headers["x-mtg-trader-pass"][*] eq "<secret>")`.
 When Cloudflare still blocks, the website says "Cloudflare … blocked the website" and logs `Cloudflare blocked <method>

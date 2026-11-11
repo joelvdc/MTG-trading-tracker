@@ -53,6 +53,8 @@ nightly backups; accounts need an invite code for now.
   categories into your own order (the app follows it) and drag cards between categories of your own decks.
 - Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
   win turn.
+- A **Commander legality check**: banned cards, cards outside the commander's colours, extra copies, the card count,
+  and whether the commander (or a pair of partners, a Background, a Doctor and companion) may lead.
 - Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the
   deck, its maybeboard or the wishlist (a deck from a link keeps a maybeboard of its own in the app and on the
   website); on the website also for the decks you pick at once, to find cards that fit several of them (decks whose
@@ -67,6 +69,11 @@ nightly backups; accounts need an invite code for now.
 **Website** ([mtgtrader.vercel.app](https://mtgtrader.vercel.app))
 - The collection, wishlist, scanned cards, orders, decks and trades on a computer, with the same prices and stats as the
   app. Changes reach the phones at their next sync.
+- **Share links** (from the app or the website) for a deck, a game, a binder or the whole collection: a read-only page
+  for anyone with the link, with your prices but never what you paid. Switch links off in the website's Settings.
+- **Print** the collection, a binder or a deck as a list (save it as PDF).
+- A **weekly email** on the day you choose: your collection's value against a week ago, the week's biggest gainers and
+  losers, wishlist cards at your price, and changes in your decks.
 
 ## Data
 Card data and pictures from [Scryfall](https://scryfall.com); prices from Cardmarket, TCGplayer and Card Kingdom;
