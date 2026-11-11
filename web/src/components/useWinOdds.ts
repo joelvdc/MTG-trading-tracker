@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { StatsCard } from "@/lib/deckstats";
-import { fingerprint, winInput, type WinResult } from "@/lib/winodds";
-import { WIN_ODDS_VERSION } from "@/lib/winodds-js/version";
+import { winInput, winKey, type WinResult } from "@/lib/winodds";
 import { api } from "./api";
 
 /** The win turn's state: being worked out, worked out (null: no commander or too few cards), or failed. */
@@ -20,7 +19,7 @@ export type KeptWin = { key: string; win: WinResult | null } | null;
  * The deck's win turn (the app's WinOddsStore): the one the website worked out for this list ([kept], when its key is
  * this list's), or kept in this browser until the deck's cards, colours or combos change, else worked out in a Web
  * Worker (half a minute or so) and handed to the website to keep. [ready] is false while card details are missing.
- * The key is lib/winturns.ts winKey (the same text, so the server and the browser agree).
+ * The key is lib/winodds.ts winKey (the same one the server uses, so they agree).
  */
 export function useWinOdds(deckId: number, cards: StatsCard[], identity: string, saltCard: string | null, ready: boolean, kept: KeptWin = null): WinState {
   const [state, setState] = useState<WinState>({ status: "off" });
@@ -30,7 +29,7 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
       return;
     }
     const input = winInput(cards);
-    const key = `${WIN_ODDS_VERSION}|${fingerprint(`${input}|${identity}|${saltCard ?? ""}`)}`;
+    const key = winKey(input, identity, saltCard);
     if (kept?.key === key) {
       setState({ status: "done", win: kept.win });
       return;

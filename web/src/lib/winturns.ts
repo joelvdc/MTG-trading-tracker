@@ -10,14 +10,10 @@ import type { SyncDeck } from "./deckshared";
 import type { StatsCard } from "./deckstats";
 import { syncDecks } from "./decks";
 import { decode, type SyncFile } from "./syncfile";
-import { fingerprint, winInput, type WinResult } from "./winodds";
+import { winInput, winKey, type WinResult } from "./winodds";
 import { winOddsJson } from "./winodds-js/winodds-kt.mjs";
-import { WIN_ODDS_VERSION } from "./winodds-js/version";
 
-/** The key of what a win turn is worked out from: the same in the browser (components/useWinOdds.ts) and here. */
-export function winKey(input: string, identity: string, saltCard: string | null): string {
-  return `${WIN_ODDS_VERSION}|${fingerprint(`${input}|${identity}|${saltCard ?? ""}`)}`;
-}
+export { winKey };
 
 /** A deck's main-deck lines as the stats and the win turn take them. */
 export function deckStatsCards(sd: SyncDeck, info: Record<string, DeckInfo>): StatsCard[] {

@@ -1,4 +1,5 @@
 import type { StatsCard } from "./deckstats";
+import { WIN_ODDS_VERSION } from "./winodds-js/version";
 
 /** What the win turn counted in the deck, for its "How?" (the app's WinCounted). */
 export interface WinCounted {
@@ -76,6 +77,28 @@ export function winInput(cards: StatsCard[]): string {
       loyalty: c.loyalty ?? null,
     })),
   );
+}
+
+/**
+ * The part of Commander Salt's answer (the deck's saltCard) a win result is worked out from: the combos the games play
+ * (SaltCard.allCombos, made from these three lists) and the ratings the power level reads (axes). The rest (notes,
+ * play style, salt, effects, tutors…) can change on a new scoring without changing the result, so it's left out and
+ * refreshing a deck keeps its win turn (owner, 2026-11-11). Unreadable or no data: "".
+ */
+export function winSaltPart(saltCard: string | null): string {
+  if (!saltCard) return "";
+  try {
+    const s = JSON.parse(saltCard) as { combos?: unknown; twoCardCombos?: unknown; earlyCombos?: unknown; axes?: Record<string, number> };
+    const axes = Object.entries(s.axes ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return JSON.stringify([s.combos ?? [], s.twoCardCombos ?? [], s.earlyCombos ?? [], axes]);
+  } catch {
+    return saltCard;
+  }
+}
+
+/** The key of what a win turn is worked out from: the same in the browser (components/useWinOdds.ts) and on the server (lib/winturns.ts). */
+export function winKey(input: string, identity: string, saltCard: string | null): string {
+  return `${WIN_ODDS_VERSION}|${fingerprint(`${input}|${identity}|${winSaltPart(saltCard)}`)}`;
 }
 
 /** A short fingerprint of a text (cyrb53), for keeping a deck's result until its cards change. */
