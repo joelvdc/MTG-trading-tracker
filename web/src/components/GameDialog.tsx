@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/components/api";
 import { Dialog } from "@/components/Dialog";
 import { ColourPips } from "@/components/Mana";
+import { ShareDialog } from "@/components/SharePanel";
 import {
   choiceOf,
   clock,
@@ -89,6 +90,7 @@ export function GameDialog({
   const friends = view.players.filter((p) => !p.me);
   const [seats, setSeats] = useState<SeatForm[]>(() => (game ? [...game.seats].sort((a, b) => a.seat - b.seat).map(formOf) : [blank(ME), blank(GUEST), blank(GUEST), blank(GUEST)]));
   const [draw, setDraw] = useState(game?.draw ?? false);
+  const [sharing, setSharing] = useState(false);
   const [winType, setWinType] = useState<string | null>(game?.winType ?? null);
   const [note, setNote] = useState(game?.note ?? "");
   const [minutes, setMinutes] = useState(game ? String(Math.floor(game.durationMs / 60_000)) : "");
@@ -297,11 +299,17 @@ export function GameDialog({
         </button>
         <span className="spacer" />
         {game && (
+          <button className="btn" onClick={() => setSharing(true)}>
+            Share
+          </button>
+        )}
+        {game && (
           <button className="btn danger" disabled={locked} onClick={() => onDelete(game)}>
             Delete…
           </button>
         )}
       </div>
+      {sharing && game && <ShareDialog kind="game" target={game.uid} what="this game (its note stays private)" onClose={() => setSharing(false)} />}
     </Dialog>
   );
 }

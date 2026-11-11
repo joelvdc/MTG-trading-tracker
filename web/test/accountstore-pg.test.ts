@@ -152,4 +152,44 @@ describe.each([
     await s.setJob("nightly", NOW + 1, { accounts: 2, alerts: 0 });
     expect(await s.job("nightly")).toEqual({ at: NOW + 1, info: { accounts: 2, alerts: 0 } });
   });
+  it("shared links, card rules, the weekly email and daily card prices", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    const link = { code: "c".repeat(22), accountId: a.id, kind: "deck" as const, target: "-3", on: true, createdAt: NOW, opened: 0, lastOpened: null };
+    expect(await s.addShare(link)).toEqual(link);
+    expect(await s.addShare({ ...link, code: "d".repeat(22) })).toEqual(link);
+    expect(await s.share(a.id, "deck", "-3")).toEqual(link);
+    expect(await s.share(a.id, "deck", "-4")).toBeNull();
+    expect(await s.setShareOn(a.id, link.code, false)).toBe(true);
+    expect(await s.setShareOn(a.id + 1, link.code, true)).toBe(false);
+    await s.openedShare(link.code, NOW + 5);
+    expect(await s.shareByCode(link.code)).toEqual({ ...link, on: false, opened: 1, lastOpened: NOW + 5 });
+    await s.addShare({ ...link, code: "e".repeat(22), kind: "collection", target: "", createdAt: NOW + 1 });
+    expect((await s.shares(a.id)).map((l) => l.code)).toEqual(["e".repeat(22), link.code]);
+    expect(await s.removeShare(a.id, link.code)).toBe(true);
+    expect(await s.removeShare(a.id, link.code)).toBe(false);
+
+    await s.putLegalRules([{ key: "sol ring", rule: '{"ci":""}' }, { key: "nothing", rule: null }], NOW);
+    expect(await s.legalRules(["sol ring", "nothing", "other"])).toEqual(new Map([["sol ring", { rule: '{"ci":""}', at: NOW }], ["nothing", { rule: null, at: NOW }]]));
+    expect(await s.legalRules([])).toEqual(new Map());
+
+    const mail = { address: "a@b.c", confirmed: false, enabled: true, day: 2, confirmToken: "t1", stopToken: "s1", lastSent: null, state: { decks: { "1": ["sol ring"] } } };
+    await s.setEmailSettings(a.id, mail);
+    expect(await s.emailSettings(a.id)).toEqual(mail);
+    expect(await s.emailByToken("confirm", "t1")).toEqual({ accountId: a.id, settings: mail });
+    expect(await s.emailByToken("stop", "t1")).toBeNull();
+    expect(await s.emailAccounts()).toEqual([]);
+    await s.setEmailSettings(a.id, { ...mail, confirmed: true, confirmToken: null });
+    expect((await s.emailAccounts()).map((x) => x.accountId)).toEqual([a.id]);
+    expect(await s.emailByToken("stop", "s1")).toMatchObject({ accountId: a.id });
+    await s.setEmailSettings(a.id, null);
+    expect(await s.emailSettings(a.id)).toBeNull();
+
+    for (const [i, day] of ["2026-11-01", "2026-11-02", "2026-11-03"].entries()) await s.putPriceDay(a.id, day, { [`x|NONFOIL|NM`]: i + 0.5 }, 2);
+    await s.putPriceDay(a.id, "2026-11-03", { "x|NONFOIL|NM": 9 }, 2);
+    expect(await s.priceDays(a.id)).toEqual([
+      { day: "2026-11-02", prices: { "x|NONFOIL|NM": 1.5 } },
+      { day: "2026-11-03", prices: { "x|NONFOIL|NM": 9 } },
+    ]);
+  });
 });

@@ -22,6 +22,7 @@ import { usePointerDrag } from "@/components/useDragScroll";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { PrintDeckDialog } from "@/components/PrintLists";
+import { ShareDialog } from "@/components/SharePanel";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { DeckColumns } from "@/components/DeckColumns";
@@ -81,6 +82,7 @@ export default function DeckPage() {
   const [showRecs, setShowRecs] = useState(false);
   const [missingOpen, setMissingOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [rz, setRz] = useState<"BRACKET" | "POWER" | null>(null);
   const [line, setLine] = useState<string | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
@@ -447,6 +449,9 @@ export default function DeckPage() {
             <button className="btn small-btn" onClick={() => setPrintOpen(true)}>
               Print
             </button>
+            <button className="btn small-btn" onClick={() => setSharing(true)}>
+              Share
+            </button>
             <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
               Recommendations
             </button>
@@ -644,6 +649,7 @@ export default function DeckPage() {
       {hover.picture}
       {dnd.ghost}
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
+      {sharing && <ShareDialog kind="deck" target={String(view.id)} what="this deck" onClose={() => setSharing(false)} />}
       {printOpen && (
         <PrintDeckDialog
           name={d.name}

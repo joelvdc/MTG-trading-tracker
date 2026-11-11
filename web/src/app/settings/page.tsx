@@ -5,6 +5,7 @@ import { AccountPanel } from "@/components/AccountPanel";
 import { AppSettingsPanel, BackupsPanel } from "@/components/AppSettingsPanel";
 import { TopBar } from "@/components/Nav";
 import { RecSettingsPanel } from "@/components/RecTiles";
+import { SharedLinksPanel } from "@/components/SharePanel";
 import { api } from "@/components/api";
 
 interface Session {
@@ -38,6 +39,7 @@ export default function SettingsPage() {
         <div className="stack">
           <AppSettingsPanel />
           <RecSettingsPanel />
+          <SharedLinksPanel />
           <BackupsPanel />
           <AccountPanel onLogout={logout} />
         </div>

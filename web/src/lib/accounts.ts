@@ -137,6 +137,73 @@ export interface AccountStore {
   putWinTurn(accountId: number, deckId: number, win: StoredWinTurn): Promise<void>;
   /** Forgets the win turns of decks that are gone. */
   dropWinTurns(accountId: number, deckIds: number[]): Promise<void>;
+  /** The account's link for this item, if it has one. */
+  share(accountId: number, kind: ShareKind, target: string): Promise<ShareLink | null>;
+  /** Adds a link; if the item has one already, that one is kept and answered. */
+  addShare(link: ShareLink): Promise<ShareLink>;
+  shareByCode(code: string): Promise<ShareLink | null>;
+  /** The account's links, newest first. */
+  shares(accountId: number): Promise<ShareLink[]>;
+  /** False when the account has no such link. */
+  setShareOn(accountId: number, code: string, on: boolean): Promise<boolean>;
+  removeShare(accountId: number, code: string): Promise<boolean>;
+  /** Counts an opening of a shared page. */
+  openedShare(code: string, now: number): Promise<void>;
+  /** The Commander rules of these cards (lib/legality.ts LegalRule as JSON; null: Scryfall doesn't know it), by name key. */
+  legalRules(keys: string[]): Promise<Map<string, { rule: string | null; at: number }>>;
+  putLegalRules(rows: { key: string; rule: string | null }[], now: number): Promise<void>;
+  emailSettings(accountId: number): Promise<EmailSettings | null>;
+  setEmailSettings(accountId: number, s: EmailSettings | null): Promise<void>;
+  /** The account whose confirmation or stop link this is. */
+  emailByToken(kind: "confirm" | "stop", token: string): Promise<{ accountId: number; settings: EmailSettings } | null>;
+  /** Accounts with the weekly email on and confirmed. */
+  emailAccounts(): Promise<{ accountId: number; settings: EmailSettings }[]>;
+  /** Saves (or replaces) a day's card prices, keeping the newest [keep] days. */
+  putPriceDay(accountId: number, day: string, prices: Record<string, number>, keep: number): Promise<void>;
+  /** The saved days, oldest first. */
+  priceDays(accountId: number): Promise<PriceDay[]>;
+}
+
+/** What a shared link opens (the share pages, /s/<code>). */
+export type ShareKind = "deck" | "game" | "binder" | "collection";
+
+/**
+ * A shared link: a page anyone with the address can open without logging in. [target] is the deck id, the game uid,
+ * the binder uid ("~": Unsorted) or "" for the whole collection. Switched off links keep their code, so switching one
+ * on again brings the same address back.
+ */
+export interface ShareLink {
+  code: string;
+  accountId: number;
+  kind: ShareKind;
+  target: string;
+  on: boolean;
+  createdAt: number;
+  opened: number;
+  lastOpened: number | null;
+}
+
+type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
+
+/** The weekly email of an account (Settings → Weekly email). [day]: 0 Monday … 6 Sunday. */
+export interface EmailSettings {
+  address: string;
+  confirmed: boolean;
+  enabled: boolean;
+  day: number;
+  /** The token of the confirmation link (null once confirmed). */
+  confirmToken: string | null;
+  /** The token of every email's "Stop these emails" link. */
+  stopToken: string;
+  lastSent: number | null;
+  /** What last week's email saw (the decks' game changers and problems), to tell what changed. */
+  state: Record<string, Json>;
+}
+
+/** One day's price of every pile the account owns: "<scryfallId>|<finish>|<condition>" → one copy in euros. */
+export interface PriceDay {
+  day: string;
+  prices: Record<string, number>;
 }
 
 /** A deck's win turn: [key] names the decklist it belongs to; [result] is the app's JSON answer ("null": none). */
@@ -223,6 +290,11 @@ export function memoryStore(): AccountStore {
   const alerts = new Map<number, AlertEvent[]>();
   const jobs = new Map<string, { at: number; info: Record<string, unknown> }>();
   const wins = new Map<number, Map<number, StoredWinTurn>>();
+  const shareList: ShareLink[] = [];
+  const rules = new Map<string, { rule: string | null; at: number }>();
+  const emails = new Map<number, EmailSettings>();
+  const priceDays = new Map<number, Map<string, Record<string, number>>>();
+  const copyEmail = (s: EmailSettings): EmailSettings => ({ ...s, state: JSON.parse(JSON.stringify(s.state)) });
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
   return {
@@ -349,6 +421,52 @@ export function memoryStore(): AccountStore {
       wins.get(id)!.set(deckId, { ...w });
     },
     dropWinTurns: async (id, deckIds) => deckIds.forEach((d) => wins.get(id)?.delete(d)),
+    share: async (id, kind, target) => {
+      const l = shareList.find((x) => x.accountId === id && x.kind === kind && x.target === target);
+      return l ? { ...l } : null;
+    },
+    addShare: async (link) => {
+      const had = shareList.find((x) => x.accountId === link.accountId && x.kind === link.kind && x.target === link.target);
+      if (had) return { ...had };
+      shareList.push({ ...link });
+      return { ...link };
+    },
+    shareByCode: async (code) => {
+      const l = shareList.find((x) => x.code === code);
+      return l ? { ...l } : null;
+    },
+    shares: async (id) => shareList.filter((x) => x.accountId === id).sort((a, b) => b.createdAt - a.createdAt).map((x) => ({ ...x })),
+    setShareOn: async (id, code, on) => {
+      const l = shareList.find((x) => x.accountId === id && x.code === code);
+      if (l) l.on = on;
+      return !!l;
+    },
+    removeShare: async (id, code) => {
+      const i = shareList.findIndex((x) => x.accountId === id && x.code === code);
+      if (i >= 0) shareList.splice(i, 1);
+      return i >= 0;
+    },
+    openedShare: async (code, now) => {
+      const l = shareList.find((x) => x.code === code);
+      if (l) Object.assign(l, { opened: l.opened + 1, lastOpened: now });
+    },
+    legalRules: async (keys) => new Map(keys.flatMap((k) => (rules.has(k) ? [[k, { ...rules.get(k)! }] as [string, { rule: string | null; at: number }]] : []))),
+    putLegalRules: async (rows, now) => rows.forEach((r) => rules.set(r.key, { rule: r.rule, at: now })),
+    emailSettings: async (id) => (emails.has(id) ? copyEmail(emails.get(id)!) : null),
+    setEmailSettings: async (id, s) => void (s ? emails.set(id, copyEmail(s)) : emails.delete(id)),
+    emailByToken: async (kind, token) => {
+      for (const [accountId, s] of emails) if (token && (kind === "confirm" ? s.confirmToken : s.stopToken) === token) return { accountId, settings: copyEmail(s) };
+      return null;
+    },
+    emailAccounts: async () => [...emails.entries()].filter(([, s]) => s.enabled && s.confirmed).map(([accountId, s]) => ({ accountId, settings: copyEmail(s) })),
+    putPriceDay: async (id, day, prices, keep) => {
+      const m = priceDays.get(id) ?? new Map<string, Record<string, number>>();
+      priceDays.set(id, m);
+      m.set(day, { ...prices });
+      const days = [...m.keys()].sort();
+      for (const old of days.slice(0, Math.max(0, days.length - keep))) m.delete(old);
+    },
+    priceDays: async (id) => [...(priceDays.get(id)?.entries() ?? [])].sort((a, b) => a[0].localeCompare(b[0])).map(([day, prices]) => ({ day, prices: { ...prices } })),
   };
 }
 
@@ -424,6 +542,29 @@ const SCHEMA = [
      result TEXT NOT NULL,
      at BIGINT NOT NULL,
      PRIMARY KEY (account_id, deck_id))`,
+  // 2026-11-12: shared links, the cards' Commander rules, the weekly email and the daily card prices behind it.
+  `CREATE TABLE IF NOT EXISTS share_links (
+     code TEXT PRIMARY KEY,
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL,
+     target TEXT NOT NULL,
+     is_on BOOLEAN NOT NULL,
+     created_at BIGINT NOT NULL,
+     opened INTEGER NOT NULL DEFAULT 0,
+     last_opened BIGINT,
+     UNIQUE (account_id, kind, target))`,
+  `CREATE TABLE IF NOT EXISTS legal_rules (
+     name_key TEXT PRIMARY KEY,
+     rule TEXT,
+     at BIGINT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS email_settings (
+     account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+     settings JSONB NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS card_price_days (
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     day TEXT NOT NULL,
+     prices JSONB NOT NULL,
+     PRIMARY KEY (account_id, day))`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -611,8 +752,80 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
     dropWinTurns: async (id, deckIds) => {
       if (deckIds.length) await q("DELETE FROM win_turns WHERE account_id = $1 AND deck_id = ANY($2::bigint[])", [id, deckIds]);
     },
+    share: async (id, kind, target) => {
+      const r = (await q("SELECT * FROM share_links WHERE account_id = $1 AND kind = $2 AND target = $3", [id, kind, target]))[0];
+      return r ? shareRow(r) : null;
+    },
+    addShare: async (l) => {
+      await q(
+        "INSERT INTO share_links (code, account_id, kind, target, is_on, created_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (account_id, kind, target) DO NOTHING",
+        [l.code, l.accountId, l.kind, l.target, l.on, l.createdAt],
+      );
+      return shareRow((await q("SELECT * FROM share_links WHERE account_id = $1 AND kind = $2 AND target = $3", [l.accountId, l.kind, l.target]))[0]);
+    },
+    shareByCode: async (code) => {
+      const r = (await q("SELECT * FROM share_links WHERE code = $1", [code]))[0];
+      return r ? shareRow(r) : null;
+    },
+    shares: async (id) => (await q("SELECT * FROM share_links WHERE account_id = $1 ORDER BY created_at DESC", [id])).map(shareRow),
+    setShareOn: async (id, code, on) => (await q("UPDATE share_links SET is_on = $3 WHERE account_id = $1 AND code = $2 RETURNING code", [id, code, on])).length === 1,
+    removeShare: async (id, code) => (await q("DELETE FROM share_links WHERE account_id = $1 AND code = $2 RETURNING code", [id, code])).length === 1,
+    openedShare: async (code, now) => void (await q("UPDATE share_links SET opened = opened + 1, last_opened = $2 WHERE code = $1", [code, now])),
+    legalRules: async (keys) =>
+      new Map(
+        keys.length === 0
+          ? []
+          : (await q("SELECT name_key, rule, at FROM legal_rules WHERE name_key = ANY($1::text[])", [keys])).map((r) => [
+              String(r.name_key),
+              { rule: r.rule === null ? null : String(r.rule), at: num(r.at) },
+            ]),
+      ),
+    putLegalRules: async (rows, now) => {
+      for (let i = 0; i < rows.length; i += 1000) {
+        const part = rows.slice(i, i + 1000);
+        await q(
+          `INSERT INTO legal_rules (name_key, rule, at) SELECT k, r, $3::bigint FROM unnest($1::text[], $2::text[]) AS t(k, r)
+           ON CONFLICT (name_key) DO UPDATE SET rule = EXCLUDED.rule, at = EXCLUDED.at`,
+          [part.map((r) => r.key), part.map((r) => r.rule), now],
+        );
+      }
+    },
+    emailSettings: async (id) => {
+      const r = (await q("SELECT settings FROM email_settings WHERE account_id = $1", [id]))[0];
+      return r ? (r.settings as EmailSettings) : null;
+    },
+    setEmailSettings: async (id, s) =>
+      void (s
+        ? await q("INSERT INTO email_settings (account_id, settings) VALUES ($1, $2::jsonb) ON CONFLICT (account_id) DO UPDATE SET settings = EXCLUDED.settings", [id, JSON.stringify(s)])
+        : await q("DELETE FROM email_settings WHERE account_id = $1", [id])),
+    emailByToken: async (kind, token) => {
+      if (!token) return null;
+      const r = (await q("SELECT account_id, settings FROM email_settings WHERE settings->>$1 = $2", [kind === "confirm" ? "confirmToken" : "stopToken", token]))[0];
+      return r ? { accountId: num(r.account_id), settings: r.settings as EmailSettings } : null;
+    },
+    emailAccounts: async () =>
+      (await q("SELECT account_id, settings FROM email_settings WHERE (settings->>'enabled')::boolean AND (settings->>'confirmed')::boolean ORDER BY account_id")).map((r) => ({
+        accountId: num(r.account_id),
+        settings: r.settings as EmailSettings,
+      })),
+    putPriceDay: async (id, day, prices, keep) => {
+      await q("INSERT INTO card_price_days (account_id, day, prices) VALUES ($1, $2, $3::jsonb) ON CONFLICT (account_id, day) DO UPDATE SET prices = EXCLUDED.prices", [id, day, JSON.stringify(prices)]);
+      await q("DELETE FROM card_price_days WHERE account_id = $1 AND day NOT IN (SELECT day FROM card_price_days WHERE account_id = $1 ORDER BY day DESC LIMIT $2)", [id, keep]);
+    },
+    priceDays: async (id) => (await q("SELECT day, prices FROM card_price_days WHERE account_id = $1 ORDER BY day", [id])).map((r) => ({ day: String(r.day), prices: r.prices as Record<string, number> })),
   };
 }
+
+const shareRow = (r: Row): ShareLink => ({
+  code: String(r.code),
+  accountId: num(r.account_id),
+  kind: String(r.kind) as ShareKind,
+  target: String(r.target),
+  on: Boolean(r.is_on),
+  createdAt: num(r.created_at),
+  opened: num(r.opened),
+  lastOpened: r.last_opened === null || r.last_opened === undefined ? null : num(r.last_opened),
+});
 
 let store: AccountStore | null = null;
 

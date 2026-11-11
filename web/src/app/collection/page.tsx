@@ -13,6 +13,7 @@ import { FilterDialog } from "@/components/FilterDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { PreconDialog } from "@/components/PreconDialog";
 import { PrintCollectionDialog } from "@/components/PrintLists";
+import { ShareDialog } from "@/components/SharePanel";
 import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
@@ -101,6 +102,7 @@ export default function CollectionPage() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [precon, setPrecon] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [naming, setNaming] = useState<{ uid: string | null; name: string } | null>(null);
@@ -471,6 +473,9 @@ export default function CollectionPage() {
           <button className="btn" disabled={rows.length === 0} onClick={() => setPrinting(true)}>
             Print
           </button>
+          <button className="btn" onClick={() => setSharing(true)} title={pick === "" ? "Share the whole collection" : `Share ${binderLabel}`}>
+            Share
+          </button>
           {locked ? (
             <button className="btn" disabled>
               Import ▾
@@ -676,6 +681,14 @@ export default function CollectionPage() {
       )}
       {exporting && (
         <ExportDialog rows={rows} binders={view.binders} priceType={view.priceType} binderLabel={binderLabel} onClose={() => setExporting(false)} />
+      )}
+      {sharing && !isWish && !isScans && (
+        <ShareDialog
+          kind={pick === "" ? "collection" : "binder"}
+          target={pick === "" ? "" : pick}
+          what={pick === "" ? "your whole collection (not your wishlist, orders or trades)" : `the binder ${binderLabel}`}
+          onClose={() => setSharing(false)}
+        />
       )}
       {printing && !isWish && !isScans && (
         <PrintCollectionDialog
