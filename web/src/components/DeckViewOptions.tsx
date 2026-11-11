@@ -71,22 +71,7 @@ export function ViewOptionsMenu({
   prefs: DeckPrefs;
   onChange: (change: Partial<DeckPrefs>) => void;
 }) {
-  const box = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    // A click elsewhere (or Esc) closes the menu.
-    const away = (e: Event) => {
-      if (box.current?.open && !box.current.contains(e.target as Node)) box.current.open = false;
-    };
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && box.current) box.current.open = false;
-    };
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", key);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", key);
-    };
-  }, []);
+  // A click elsewhere (or Esc) closes the menu: MenuCloser, for every menu.
   const item = (label: string, on: boolean, set: (v: boolean) => void) => (
     <label className="check small">
       <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} />
@@ -94,7 +79,7 @@ export function ViewOptionsMenu({
     </label>
   );
   return (
-    <details className="menu view-options" ref={box}>
+    <details className="menu view-options">
       <summary className="btn small-btn" aria-label="View options" title="View options">
         ⚙
       </summary>

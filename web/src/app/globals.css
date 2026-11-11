@@ -3026,6 +3026,16 @@ details.deck-section > summary .mini-head {
   display: flex;
 }
 
+/* A menu button in a row of buttons (the Collection page's Import ▾) is as tall as the others. */
+.controls details.menu {
+  display: flex;
+}
+
+.controls details.menu > summary.btn {
+  display: inline-flex;
+  align-items: center;
+}
+
 .deck-layout {
   display: block;
 }
