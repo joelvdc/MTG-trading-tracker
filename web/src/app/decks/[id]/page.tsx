@@ -22,6 +22,7 @@ import { usePointerDrag } from "@/components/useDragScroll";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { PrintDeckDialog } from "@/components/PrintLists";
+import type { Legality } from "@/lib/legality";
 import { ShareDialog } from "@/components/SharePanel";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
@@ -29,7 +30,7 @@ import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin; games?: Game[] };
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin; games?: Game[]; legality?: Legality | null };
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
@@ -487,6 +488,31 @@ export default function DeckPage() {
           )}
           {d.scoredAt && <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>}
           {!d.scoredAt && d.scoreError && <p className="warn-text small">Not scored: {d.scoreError}</p>}
+          {view.legality && (
+            <div className="share-legal">
+              {view.legality.problems.length === 0 ? (
+                <p className="ok-text small">
+                  <strong>Commander legal ✓</strong>
+                </p>
+              ) : (
+                <>
+                  <p className="small">
+                    <strong>Legality</strong>
+                  </p>
+                  {view.legality.problems.map((p) => (
+                    <p key={p.kind + p.text} className="warn-text small">
+                      {p.text}
+                    </p>
+                  ))}
+                </>
+              )}
+              {view.legality.unchecked.length > 0 && (
+                <p className="muted small" title={view.legality.unchecked.join(", ")}>
+                  Couldn&apos;t check {view.legality.unchecked.length} card(s) yet.
+                </p>
+              )}
+            </div>
+          )}
         </section>
 
         {combos.length > 0 && (

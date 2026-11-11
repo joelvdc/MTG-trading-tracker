@@ -4,6 +4,7 @@ import { loadDetails } from "@/lib/carddetails";
 import { ensureDeckDetails, statsCard, type DeckInfo } from "@/lib/deckdetails";
 import { deckView, missingPlan, ownedByName, syncDecks } from "@/lib/decks";
 import { loadPrices } from "@/lib/pricestore";
+import { deckLegality } from "@/lib/legalstore";
 import { editSync, loadSync } from "@/lib/store";
 import { applyEdit, EditError } from "@/lib/wishlist";
 import { FINISHES, resolveFinish } from "@/lib/cards";
@@ -92,7 +93,9 @@ export async function GET(_req: Request, { params }: Params) {
     // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
     const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
     const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
-    return json({ ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn, games: gamesOfDeck(gamesOf(file), id!) });
+    // Commander legality, looking up the rules of cards the website doesn't know yet (a few seconds at most).
+    const legality = await deckLegality(synced, true, Date.now(), Date.now() + 6_000).catch(() => null);
+    return json({ ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn, games: gamesOfDeck(gamesOf(file), id!), legality });
   } catch (e) {
     return errorResponse(e);
   }

@@ -213,6 +213,11 @@ export default function DecksPage() {
                   </div>
                   <div className="deck-facts muted small">
                     {d.missing > 0 ? <span className="warn-text">{d.missing} missing</span> : <span className="ok-text">All owned</span>}
+                    {d.legalProblems ? (
+                      <span className="warn-text" title="Not Commander legal: see the deck page">
+                        · ⚠ Not legal
+                      </span>
+                    ) : null}
                     {d.folder && <span>· {d.folder}</span>}
                     {d.origin && <span>· {d.origin}</span>}
                     {g === "OTHERS" && d.owner && <span>· {d.owner}</span>}

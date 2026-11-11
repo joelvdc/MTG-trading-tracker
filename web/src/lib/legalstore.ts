@@ -43,7 +43,9 @@ export async function rulesFor(cards: RuleCard[], lookUp: boolean, now = Date.no
     if (!h || now - h.at > RULES_MAX_AGE_MS) stale.push(c);
   }
   if (!lookUp) return out;
-  for (let i = 0; i < stale.length && Date.now() < deadline; i += BATCH) {
+  // [now] may be a test's clock: the time allowed is measured from the real start.
+  const started = Date.now();
+  for (let i = 0; i < stale.length && Date.now() - started < deadline - now; i += BATCH) {
     const part = stale.slice(i, i + BATCH);
     const found = await lookupRules(part, f);
     if (!found) break;

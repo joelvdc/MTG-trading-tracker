@@ -7,6 +7,8 @@ import { preconLines, previewText, textLines } from "@/lib/deckimport";
 import { textCardCount } from "@/lib/decktext";
 import { decksView, syncDecks } from "@/lib/decks";
 import { gamesOf } from "@/lib/games";
+import { checkLegality } from "@/lib/legality";
+import { deckLines, rulesFor } from "@/lib/legalstore";
 import { archidektId, archidektUser, userDecks } from "@/lib/archidekt";
 import { archidektDates, loadFromArchidekt, updatePlan } from "@/lib/deckload";
 import { loadPrices } from "@/lib/pricestore";
@@ -34,6 +36,15 @@ export async function GET() {
     const played = new Map<number, number>();
     for (const g of gamesOf(file)) for (const id of new Set(g.seats.map((s) => s.deckId).filter((x): x is number => x != null))) played.set(id, (played.get(id) ?? 0) + 1);
     for (const d of view.decks) d.games = played.get(d.id) ?? 0;
+    // Commander legality from the rules the website already knows (no lookups here): problems, or null when some
+    // cards' rules aren't known yet (the deck page looks them up).
+    const decks = syncDecks(file);
+    const rules = await rulesFor(decks.flatMap(deckLines), false).catch(() => new Map());
+    for (const d of view.decks) {
+      const sd = decks.find((x) => x.deck.archidektId === d.id);
+      const r = sd ? checkLegality(deckLines(sd), rules) : null;
+      d.legalProblems = r && r.unchecked.length === 0 ? r.problems.length : null;
+    }
     if (isUser(a)) {
       const kept = await keptWins(a.accountId);
       if (view.powerSource === "APP") for (const d of view.decks) d.power = parseWin(kept.get(d.id))?.power.power ?? null;

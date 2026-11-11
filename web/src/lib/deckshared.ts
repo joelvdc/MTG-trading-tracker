@@ -388,6 +388,8 @@ export interface DeckSummary {
   group: DeckGroup;
   /** Recorded games it played (filled in by /api/decks). */
   games?: number;
+  /** Commander legality problems found (filled in by /api/decks); null while some cards' rules aren't known. */
+  legalProblems?: number | null;
   folder: string | null;
   origin: string | null;
   bracketRealistic: number | null;
