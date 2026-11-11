@@ -267,6 +267,16 @@ fun CollectionScreen(nav: NavController) {
     }
     val currentBinder = binders.firstOrNull { it.id == selected }
     val wish = selected == WISHLIST
+    var sharing by remember { mutableStateOf(false) }
+    // Syncs, gets the website's share link and opens the share sheet; a snackbar says what went wrong.
+    fun shareFromWebsite(kind: String, target: String, subject: String) {
+        if (sharing) return
+        sharing = true
+        scope.launch {
+            shareLink(context, c, kind, target, subject)?.let { snackbar.showSnackbar(it) }
+            sharing = false
+        }
+    }
     LaunchedEffect(selected) { stopSelecting() }
     val addTarget = if (wish) CardTarget.Wishlist else CardTarget.Collection(selected ?: Binder.UNSORTED)
     val wishOwned = remember(wishRows, rows) { c.repo.wishlistOwned(wishRows.map { it.item }, rows.orEmpty().map { it.item }) }
@@ -556,6 +566,22 @@ fun CollectionScreen(nav: NavController) {
                             )
                         }
                         if (!wish) HorizontalDivider()
+                        // Read-only pages on the website (the link comes from there; switched off in its Settings).
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Share collection") },
+                            leadingIcon = { Icon(Icons.Default.Share, null) },
+                            onClick = { menu = false; shareFromWebsite("collection", "", "MTG Trader: my collection") },
+                        )
+                        if (!wish && (currentBinder != null || selected == Binder.UNSORTED)) DropdownMenuItem(
+                            text = { Text("Share this binder") },
+                            leadingIcon = { Icon(Icons.Default.Share, null) },
+                            onClick = {
+                                menu = false
+                                val target = if (selected == Binder.UNSORTED) "~" else currentBinder?.uid
+                                if (target == null) scope.launch { snackbar.showSnackbar("This binder isn't synced yet. Sync (Settings → Sync), then try again.") }
+                                else shareFromWebsite("binder", target, "MTG Trader: ${currentBinder?.name ?: Binder.UNSORTED_NAME}")
+                            },
+                        )
                         if (!wish) DropdownMenuItem(
                             text = { Text(if (tradeBinderId > 0) "Update trade binder…" else "Make a trade binder…") },
                             leadingIcon = { Icon(Icons.Default.SwapHoriz, null) },

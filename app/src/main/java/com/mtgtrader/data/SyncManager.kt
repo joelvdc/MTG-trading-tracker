@@ -342,6 +342,16 @@ class SyncManager(
         scope.launch { sync() }
     }
 
+    /**
+     * The website's share link for a deck, game, binder or the collection (see [WebAccountClient.share]), after syncing
+     * so the website has the latest data. Throws [SyncException] with a message for the user when that can't be done.
+     */
+    suspend fun share(kind: String, target: String): WebAccountClient.ShareLink {
+        val login = webLogin() ?: throw SyncException("Sharing needs an MTG Trader account (Settings → Sync).")
+        if (!sync()) throw SyncException(_status.value.lastError ?: "Sync first (Settings → Sync), then share.")
+        return web.share(login, kind, target)
+    }
+
     /** Syncs once; errors end up in [SyncStatus.lastError]. Returns whether it succeeded. */
     suspend fun sync(first: FirstSync? = null): Boolean = mutex.withLock {
         val place = place() ?: return false

@@ -57,6 +57,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -76,11 +77,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
 import com.mtgtrader.data.Deck
+import com.mtgtrader.data.DeckLegality
+import com.mtgtrader.data.LegalLine
 import com.mtgtrader.data.DeckJob
 import com.mtgtrader.data.DeckLinks
 import com.mtgtrader.data.DeckGroup
 import androidx.compose.material.icons.filled.CloudUpload
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 @Composable
@@ -89,6 +94,17 @@ fun DecksScreen(nav: NavController) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(null)
+    // Decks whose last legality check (the rules kept on the phone, no network here) found problems.
+    val illegal by produceState(emptySet<Long>(), decks) {
+        value = withContext(Dispatchers.IO) {
+            decks.orEmpty().filter { d ->
+                val lines = c.db.deckDao().cards(d.archidektId)
+                val names = lines.map { it.card.name }
+                lines.isNotEmpty() && c.legalRules.hasAll(names) &&
+                    DeckLegality.checkLegality(lines.map { LegalLine(it.card.name, it.quantity, it.commander) }, c.legalRules.saved(names)).problems.isNotEmpty()
+            }.map { it.archidektId }.toSet()
+        }
+    }
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
     var importing by rememberSaveable { mutableStateOf(false) }
@@ -278,7 +294,7 @@ fun DecksScreen(nav: NavController) {
                 }
                 if (!folded) {
                     items(inGroup, key = { it.archidektId }) { deck ->
-                        DeckRow(deck, source, showModified = sort == DeckSort.MODIFIED, waiting = waiting[deck.archidektId] ?: 0) { nav.navigate("deck/${deck.archidektId}") }
+                        DeckRow(deck, source, showModified = sort == DeckSort.MODIFIED, waiting = waiting[deck.archidektId] ?: 0, illegal = deck.archidektId in illegal) { nav.navigate("deck/${deck.archidektId}") }
                     }
                 }
             }
@@ -359,13 +375,17 @@ private fun reverseLabel(sort: DeckSort) = when (sort) {
 }
 
 @Composable
-internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, waiting: Int, onClick: () -> Unit) {
+internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, waiting: Int, illegal: Boolean = false, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             DeckArt(deck, Modifier.width(88.dp).height(64.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(deck.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(deck.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    // The last legality check found problems (open the deck to see them).
+                    if (illegal) Text("  ⚠", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ColorPips(deck.colorIdentity)
                     Spacer(Modifier.width(6.dp))

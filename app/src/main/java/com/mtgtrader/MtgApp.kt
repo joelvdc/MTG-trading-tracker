@@ -213,6 +213,9 @@ class AppContainer(context: Context) {
 
     val gameChangers = com.mtgtrader.data.GameChangers(context, scryfall)
 
+    /** The Commander rules of the cards in decks, for the legality check on the deck page. */
+    val legalRules = com.mtgtrader.data.LegalRules(context, scryfall)
+
     /** A filtered view of the collection the stats screen asked for, until the collection screen shows it. Since 1.21. */
     val collectionJump = MutableStateFlow<CollectionJump?>(null)
 
