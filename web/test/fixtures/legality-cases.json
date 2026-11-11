@@ -1,0 +1,163 @@
+{
+  "about": "Commander legality cases shared by the website (test/legality.test.ts) and the app (DeckLegalityTest.kt). 'cards': a Scryfall card and the rule read from it. 'decks': deck lines, the rules by front-face name, and the problems expected (kind and cards, in order) plus the unchecked cards.",
+  "cards": [
+    {
+      "scryfall": { "name": "Atraxa, Praetors' Voice", "type_line": "Legendary Creature — Phyrexian Angel Horror", "oracle_text": "Flying, vigilance, deathtouch, lifelink\nAt the beginning of your end step, proliferate.", "color_identity": ["G", "W", "U", "B"], "keywords": ["Flying", "Vigilance", "Deathtouch", "Lifelink", "Proliferate"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "WUBG", "type": "Legendary Creature — Phyrexian Angel Horror", "legal": "legal", "copies": 1, "command": true, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Thrasios, Triton Hero", "type_line": "Legendary Creature — Merfolk Wizard", "oracle_text": "{4}: Scry 1, then reveal the top card of your library. If it's a land card, put it onto the battlefield tapped. Otherwise, draw a card.\nPartner (You can have two commanders if both have partner.)", "color_identity": ["G", "U"], "keywords": ["Partner", "Scry"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "UG", "type": "Legendary Creature — Merfolk Wizard", "legal": "legal", "copies": 1, "command": true, "pair": ["partner"] }
+    },
+    {
+      "scryfall": { "name": "Pir, Imaginative Rascal", "type_line": "Legendary Creature — Human", "oracle_text": "Partner with Toothy, Imaginary Friend (When this creature enters, target player may put Toothy into their hand from their library, then shuffle.)\nIf one or more counters would be put on a permanent your team controls, that many plus one of each of those kinds of counters are put on that permanent instead.", "color_identity": ["G"], "keywords": ["Partner with"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "G", "type": "Legendary Creature — Human", "legal": "legal", "copies": 1, "command": true, "pair": ["with:toothy, imaginary friend"] }
+    },
+    {
+      "scryfall": { "name": "Wilson, Refined Grizzly", "type_line": "Legendary Creature — Bear Warrior", "oracle_text": "Choose a Background (You can have a Background as a second commander.)\nReach, trample, ward {2}", "color_identity": ["G"], "keywords": ["Reach", "Trample", "Ward"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "G", "type": "Legendary Creature — Bear Warrior", "legal": "legal", "copies": 1, "command": true, "pair": ["choose-bg"] }
+    },
+    {
+      "scryfall": { "name": "Raised by Giants", "type_line": "Legendary Enchantment — Background", "oracle_text": "Commander creatures you own have base power and toughness 10/10 and are Giants in addition to their other types.", "color_identity": ["G"], "keywords": [], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "G", "type": "Legendary Enchantment — Background", "legal": "legal", "copies": 1, "command": false, "pair": ["bg"] }
+    },
+    {
+      "scryfall": { "name": "Relentless Rats", "type_line": "Creature — Rat", "oracle_text": "Relentless Rats gets +1/+1 for each other creature on the battlefield named Relentless Rats.\nA deck can have any number of cards named Relentless Rats.", "color_identity": ["B"], "keywords": [], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "B", "type": "Creature — Rat", "legal": "legal", "copies": 0, "command": false, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Seven Dwarves", "type_line": "Creature — Dwarf", "oracle_text": "Seven Dwarves gets +1/+1 for each other creature named Seven Dwarves you control.\nA deck can have up to seven cards named Seven Dwarves.", "color_identity": ["R"], "keywords": [], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "R", "type": "Creature — Dwarf", "legal": "legal", "copies": 7, "command": false, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Grist, the Hunger Tide", "type_line": "Legendary Planeswalker — Grist", "oracle_text": "As long as Grist, the Hunger Tide isn't on the battlefield, it's a 1/1 Insect creature in addition to its other types.\n+1: Create a 1/1 black and green Insect creature token, then mill a card. If an Insect card was milled this way, put a loyalty counter on Grist and repeat this process.\nGrist, the Hunger Tide can be your commander.", "color_identity": ["B", "G"], "keywords": ["Mill"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "BG", "type": "Legendary Planeswalker — Grist", "legal": "legal", "copies": 1, "command": true, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Black Lotus", "type_line": "Artifact", "oracle_text": "{T}, Sacrifice Black Lotus: Add three mana of any one color.", "color_identity": [], "keywords": [], "legalities": { "commander": "banned" } },
+      "rule": { "ci": "", "type": "Artifact", "legal": "banned", "copies": 1, "command": false, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Delver of Secrets // Insectile Aberration", "color_identity": ["U"], "keywords": ["Transform"], "legalities": { "commander": "legal" }, "card_faces": [ { "name": "Delver of Secrets", "type_line": "Creature — Human Wizard", "oracle_text": "At the beginning of your upkeep, look at the top card of your library. You may reveal that card. If an instant or sorcery card is revealed this way, transform Delver of Secrets." }, { "name": "Insectile Aberration", "type_line": "Creature — Human Insect", "oracle_text": "Flying" } ] },
+      "rule": { "ci": "U", "type": "Creature — Human Wizard", "legal": "legal", "copies": 1, "command": false, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Snow-Covered Island", "type_line": "Basic Snow Land — Island", "oracle_text": "({T}: Add {U}.)", "color_identity": ["U"], "keywords": [], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "U", "type": "Basic Snow Land — Island", "legal": "legal", "copies": 0, "command": false, "pair": [] }
+    },
+    {
+      "scryfall": { "name": "Example Survivor", "type_line": "Legendary Creature — Human Survivor", "oracle_text": "Partner—Survivors (You can have two commanders if both have this ability.)\nVigilance", "color_identity": ["W"], "keywords": ["Partner", "Vigilance"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "W", "type": "Legendary Creature — Human Survivor", "legal": "legal", "copies": 1, "command": true, "pair": ["group:survivors"] }
+    },
+    {
+      "scryfall": { "name": "Rose Tyler", "type_line": "Legendary Creature — Human", "oracle_text": "At the beginning of your end step, investigate.\nDoctor's companion (You can have two commanders if the other is the Doctor.)", "color_identity": ["W"], "keywords": ["Investigate", "Doctor's companion"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "W", "type": "Legendary Creature — Human", "legal": "legal", "copies": 1, "command": true, "pair": ["companion"] }
+    },
+    {
+      "scryfall": { "name": "The Tenth Doctor", "type_line": "Legendary Creature — Time Lord Doctor", "oracle_text": "Allons-y! — Whenever you cast a spell, put a time counter on it.", "color_identity": ["U", "R", "G"], "keywords": [], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "URG", "type": "Legendary Creature — Time Lord Doctor", "legal": "legal", "copies": 1, "command": true, "pair": ["doctor"] }
+    },
+    {
+      "scryfall": { "name": "Will, the Wise", "type_line": "Legendary Creature — Human Wizard", "oracle_text": "Friends forever (You can have two commanders if both have friends forever.)\nWhenever Will attacks, scry 1.", "color_identity": ["U"], "keywords": ["Friends forever", "Scry"], "legalities": { "commander": "legal" } },
+      "rule": { "ci": "U", "type": "Legendary Creature — Human Wizard", "legal": "legal", "copies": 1, "command": true, "pair": ["friends"] }
+    }
+  ],
+  "rules": {
+    "atraxa, praetors' voice": { "ci": "WUBG", "type": "Legendary Creature — Phyrexian Angel Horror", "legal": "legal", "copies": 1, "command": true, "pair": [] },
+    "thrasios, triton hero": { "ci": "UG", "type": "Legendary Creature — Merfolk Wizard", "legal": "legal", "copies": 1, "command": true, "pair": ["partner"] },
+    "tymna the weaver": { "ci": "WB", "type": "Legendary Creature — Human Cleric", "legal": "legal", "copies": 1, "command": true, "pair": ["partner"] },
+    "pir, imaginative rascal": { "ci": "G", "type": "Legendary Creature — Human", "legal": "legal", "copies": 1, "command": true, "pair": ["with:toothy, imaginary friend"] },
+    "toothy, imaginary friend": { "ci": "U", "type": "Legendary Creature — Illusion", "legal": "legal", "copies": 1, "command": true, "pair": ["with:pir, imaginative rascal"] },
+    "wilson, refined grizzly": { "ci": "G", "type": "Legendary Creature — Bear Warrior", "legal": "legal", "copies": 1, "command": true, "pair": ["choose-bg"] },
+    "raised by giants": { "ci": "G", "type": "Legendary Enchantment — Background", "legal": "legal", "copies": 1, "command": false, "pair": ["bg"] },
+    "rose tyler": { "ci": "W", "type": "Legendary Creature — Human", "legal": "legal", "copies": 1, "command": true, "pair": ["companion"] },
+    "the tenth doctor": { "ci": "URG", "type": "Legendary Creature — Time Lord Doctor", "legal": "legal", "copies": 1, "command": true, "pair": ["doctor"] },
+    "grist, the hunger tide": { "ci": "BG", "type": "Legendary Planeswalker — Grist", "legal": "legal", "copies": 1, "command": true, "pair": [] },
+    "relentless rats": { "ci": "B", "type": "Creature — Rat", "legal": "legal", "copies": 0, "command": false, "pair": [] },
+    "seven dwarves": { "ci": "R", "type": "Creature — Dwarf", "legal": "legal", "copies": 7, "command": false, "pair": [] },
+    "black lotus": { "ci": "", "type": "Artifact", "legal": "banned", "copies": 1, "command": false, "pair": [] },
+    "lightning bolt": { "ci": "R", "type": "Instant", "legal": "legal", "copies": 1, "command": false, "pair": [] },
+    "sol ring": { "ci": "", "type": "Artifact", "legal": "legal", "copies": 1, "command": false, "pair": [] },
+    "chaos orb": { "ci": "", "type": "Artifact", "legal": "not_legal", "copies": 1, "command": false, "pair": [] },
+    "delver of secrets": { "ci": "U", "type": "Creature — Human Wizard", "legal": "legal", "copies": 1, "command": false, "pair": [] },
+    "island": { "ci": "U", "type": "Basic Land — Island", "legal": "legal", "copies": 0, "command": false, "pair": [] },
+    "swamp": { "ci": "B", "type": "Basic Land — Swamp", "legal": "legal", "copies": 0, "command": false, "pair": [] },
+    "mountain": { "ci": "R", "type": "Basic Land — Mountain", "legal": "legal", "copies": 0, "command": false, "pair": [] },
+    "forest": { "ci": "G", "type": "Basic Land — Forest", "legal": "legal", "copies": 0, "command": false, "pair": [] },
+    "plains": { "ci": "W", "type": "Basic Land — Plains", "legal": "legal", "copies": 0, "command": false, "pair": [] }
+  },
+  "decks": [
+    {
+      "about": "a legal deck",
+      "lines": [ { "name": "Atraxa, Praetors' Voice", "quantity": 1, "commander": true }, { "name": "Sol Ring", "quantity": 1, "commander": false }, { "name": "Island", "quantity": 60, "commander": false }, { "name": "Island", "quantity": 38, "commander": false } ],
+      "problems": [],
+      "unchecked": []
+    },
+    {
+      "about": "99 cards, no commander marked",
+      "lines": [ { "name": "Atraxa, Praetors' Voice", "quantity": 1, "commander": false }, { "name": "Island", "quantity": 98, "commander": false } ],
+      "problems": [ { "kind": "commander", "cards": [] }, { "kind": "count", "cards": [] } ],
+      "unchecked": []
+    },
+    {
+      "about": "banned, not legal, outside the colours, too many copies; maybeboard lines are left out by the caller",
+      "lines": [ { "name": "Atraxa, Praetors' Voice", "quantity": 1, "commander": true }, { "name": "Black Lotus", "quantity": 1, "commander": false }, { "name": "Chaos Orb", "quantity": 1, "commander": false }, { "name": "Lightning Bolt", "quantity": 1, "commander": false }, { "name": "Sol Ring", "quantity": 1, "commander": false }, { "name": "Sol Ring", "quantity": 1, "commander": false }, { "name": "Mountain", "quantity": 2, "commander": false }, { "name": "Island", "quantity": 92, "commander": false } ],
+      "problems": [ { "kind": "banned", "cards": ["Black Lotus"] }, { "kind": "notlegal", "cards": ["Chaos Orb"] }, { "kind": "colour", "cards": ["Lightning Bolt", "Mountain"] }, { "kind": "copies", "cards": ["Sol Ring"] } ],
+      "unchecked": []
+    },
+    {
+      "about": "two partners",
+      "lines": [ { "name": "Thrasios, Triton Hero", "quantity": 1, "commander": true }, { "name": "Tymna the Weaver", "quantity": 1, "commander": true }, { "name": "Swamp", "quantity": 49, "commander": false }, { "name": "Island", "quantity": 49, "commander": false } ],
+      "problems": [],
+      "unchecked": []
+    },
+    {
+      "about": "a partner with a commander without partner",
+      "lines": [ { "name": "Thrasios, Triton Hero", "quantity": 1, "commander": true }, { "name": "Atraxa, Praetors' Voice", "quantity": 1, "commander": true }, { "name": "Island", "quantity": 98, "commander": false } ],
+      "problems": [ { "kind": "pair", "cards": ["Atraxa, Praetors' Voice", "Thrasios, Triton Hero"] } ],
+      "unchecked": []
+    },
+    {
+      "about": "two commanders that partner with each other",
+      "lines": [ { "name": "Pir, Imaginative Rascal", "quantity": 1, "commander": true }, { "name": "Toothy, Imaginary Friend", "quantity": 1, "commander": true }, { "name": "Forest", "quantity": 98, "commander": false } ],
+      "problems": [],
+      "unchecked": []
+    },
+    {
+      "about": "a Background with a commander that chooses one",
+      "lines": [ { "name": "Wilson, Refined Grizzly", "quantity": 1, "commander": true }, { "name": "Raised by Giants", "quantity": 1, "commander": true }, { "name": "Forest", "quantity": 98, "commander": false } ],
+      "problems": [],
+      "unchecked": []
+    },
+    {
+      "about": "a Background alone can't lead",
+      "lines": [ { "name": "Raised by Giants", "quantity": 1, "commander": true }, { "name": "Forest", "quantity": 99, "commander": false } ],
+      "problems": [ { "kind": "commander", "cards": ["Raised by Giants"] } ],
+      "unchecked": []
+    },
+    {
+      "about": "a Doctor and a companion",
+      "lines": [ { "name": "The Tenth Doctor", "quantity": 1, "commander": true }, { "name": "Rose Tyler", "quantity": 1, "commander": true }, { "name": "Plains", "quantity": 98, "commander": false } ],
+      "problems": [],
+      "unchecked": []
+    },
+    {
+      "about": "any number of Relentless Rats, but at most seven Seven Dwarves; a card not looked up is left out",
+      "lines": [ { "name": "Grist, the Hunger Tide", "quantity": 1, "commander": true }, { "name": "Relentless Rats", "quantity": 30, "commander": false }, { "name": "Seven Dwarves", "quantity": 8, "commander": false }, { "name": "Mystery Card", "quantity": 1, "commander": false }, { "name": "Swamp", "quantity": 60, "commander": false } ],
+      "problems": [ { "kind": "colour", "cards": ["Seven Dwarves"] }, { "kind": "copies", "cards": ["Seven Dwarves"] } ],
+      "unchecked": ["Mystery Card"]
+    },
+    {
+      "about": "three commanders, and a legendary non-creature card that can't lead",
+      "lines": [ { "name": "Thrasios, Triton Hero", "quantity": 1, "commander": true }, { "name": "Tymna the Weaver", "quantity": 1, "commander": true }, { "name": "Atraxa, Praetors' Voice", "quantity": 1, "commander": true }, { "name": "Island", "quantity": 97, "commander": false } ],
+      "problems": [ { "kind": "commander", "cards": ["Atraxa, Praetors' Voice", "Thrasios, Triton Hero", "Tymna the Weaver"] } ],
+      "unchecked": []
+    },
+    {
+      "about": "a card that can't be a commander, front-face names for double-faced cards",
+      "lines": [ { "name": "Delver of Secrets // Insectile Aberration", "quantity": 1, "commander": true }, { "name": "Island", "quantity": 99, "commander": false } ],
+      "problems": [ { "kind": "commander", "cards": ["Delver of Secrets // Insectile Aberration"] } ],
+      "unchecked": []
+    }
+  ]
+}
