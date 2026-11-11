@@ -12,6 +12,7 @@ import { ExportDialog } from "@/components/ExportDialog";
 import { FilterDialog } from "@/components/FilterDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { PreconDialog } from "@/components/PreconDialog";
+import { PrintCollectionDialog } from "@/components/PrintLists";
 import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
@@ -99,6 +100,7 @@ export default function CollectionPage() {
   const [filtering, setFiltering] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [precon, setPrecon] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [naming, setNaming] = useState<{ uid: string | null; name: string } | null>(null);
@@ -466,6 +468,9 @@ export default function CollectionPage() {
           <button className="btn" onClick={() => setExporting(true)}>
             Export CSV
           </button>
+          <button className="btn" disabled={rows.length === 0} onClick={() => setPrinting(true)}>
+            Print
+          </button>
           {locked ? (
             <button className="btn" disabled>
               Import ▾
@@ -671,6 +676,16 @@ export default function CollectionPage() {
       )}
       {exporting && (
         <ExportDialog rows={rows} binders={view.binders} priceType={view.priceType} binderLabel={binderLabel} onClose={() => setExporting(false)} />
+      )}
+      {printing && !isWish && !isScans && (
+        <PrintCollectionDialog
+          rows={rows}
+          title={pick === "" ? "Collection" : binderLabel}
+          filterText={[search.trim() && `Filtered: ${search.trim()}`, nFilter > 0 && "Filters on"].filter(Boolean).join(" · ")}
+          pricesNote={view.pricesNote}
+          money={money}
+          onClose={() => setPrinting(false)}
+        />
       )}
       {importing && (
         <ImportDialog
