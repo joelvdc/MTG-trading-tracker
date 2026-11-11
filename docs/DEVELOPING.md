@@ -18,7 +18,11 @@ For any assistant (Claude Code, Cline, …) or person working on this repository
 - VS Code's Java extension runs Gradle in the same build folder and can lock files ("Failed to delete …"): close VS
   Code or build with another `LOCALAPPDATA` as above. A stale `generated/ksp/...` folder (DAO methods missing) is fixed
   by deleting it.
-- Node 22 for `web/`: on this PC it is in `%LOCALAPPDATA%\nodejs` (Git Bash: `export PATH="$LOCALAPPDATA/nodejs:$PATH"`).
+- Node 22 for `web/`: on this PC it is in `%LOCALAPPDATA%\nodejs` (the official zip, v22.23.4, installed 2026-11-11;
+  that folder is on the user PATH, so new terminals find `node` and `npm`). A terminal or tool started before that
+  may not: in Git Bash use `export PATH="/c/Users/JC/AppData/Local/nodejs:$PATH"` (not `$LOCALAPPDATA`, which gives a
+  Windows path that Git Bash's PATH can't use). To update: download the newest `node-v22.*-win-x64.zip` from
+  nodejs.org/dist/latest-v22.x, check it against `SHASUMS256.txt`, and replace the folder's contents.
 - GitHub CLI `gh` is signed in as joelvdc.
 - Memory: the PC has 24 GB. Gradle (~4–5 GB) plus the emulator (~3.5 GB) slows it down badly. Never run both at once;
   run `./gradlew --stop` after a build.
