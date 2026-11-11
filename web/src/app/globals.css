@@ -2268,6 +2268,80 @@ body.pointer-dragging * {
   }
 }
 
+/* ---- Printing a list (the Print buttons on the Collection and deck pages) ---- */
+/* The list is drawn straight under <body> (PrintLists.tsx); on screen it is hidden. */
+.print-only {
+  display: none;
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  /* While a list prints, everything else on the page goes away. */
+  body.printing-list > *:not(.print-only) {
+    display: none !important;
+  }
+  body.printing-list {
+    overflow: visible !important;
+    background: #fff;
+  }
+  body.printing-list .print-only {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-size: 9.5pt;
+  }
+  .print-only,
+  .print-only * {
+    visibility: visible;
+  }
+  .print-only h1 {
+    font-size: 15pt;
+    margin: 0 0 2mm;
+  }
+  .print-only p {
+    margin: 0 0 1mm;
+  }
+  .print-only table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 3mm;
+  }
+  .print-only thead {
+    display: table-header-group;
+  }
+  .print-only tfoot {
+    display: table-row-group;
+    font-weight: 700;
+  }
+  .print-only tr {
+    break-inside: avoid;
+  }
+  .print-only th,
+  .print-only td {
+    padding: 0.8mm 1.5mm;
+    text-align: left;
+    border-bottom: 0.2mm solid #bbb;
+  }
+  .print-only thead th {
+    border-bottom: 0.4mm solid #000;
+  }
+  .print-only tfoot td {
+    border-top: 0.4mm solid #000;
+  }
+  .print-only .num {
+    text-align: right;
+  }
+  .print-only .print-section th {
+    padding-top: 3mm;
+    border-bottom: 0.4mm solid #000;
+    break-after: avoid;
+  }
+}
+
 @media (max-width: 600px) {
   .deck-own {
     width: auto;

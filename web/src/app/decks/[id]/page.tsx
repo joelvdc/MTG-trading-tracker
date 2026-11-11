@@ -21,7 +21,8 @@ import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/
 import { usePointerDrag } from "@/components/useDragScroll";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
-import { allCombos, bracketName, caseless, POWER_SOURCES, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { PrintDeckDialog } from "@/components/PrintLists";
+import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
@@ -79,6 +80,7 @@ export default function DeckPage() {
   const [showStats, setShowStats] = useState(true);
   const [showRecs, setShowRecs] = useState(false);
   const [missingOpen, setMissingOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
   const [rz, setRz] = useState<"BRACKET" | "POWER" | null>(null);
   const [line, setLine] = useState<string | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
@@ -442,6 +444,9 @@ export default function DeckPage() {
                 Commander Salt
               </a>
             )}
+            <button className="btn small-btn" onClick={() => setPrintOpen(true)}>
+              Print
+            </button>
             <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
               Recommendations
             </button>
@@ -639,6 +644,21 @@ export default function DeckPage() {
       {hover.picture}
       {dnd.ghost}
       {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
+      {printOpen && (
+        <PrintDeckDialog
+          name={d.name}
+          commanders={d.commanders}
+          details={[
+            `${d.cardCount} cards`,
+            ...(d.bracketRealistic != null ? [`Bracket ${d.bracketRealistic}`] : []),
+            ...(power != null ? [`Power ${formatPower(power, source)}`] : []),
+          ]}
+          sections={sections(shaped.main, prefs.group === "TYPE" ? "TYPE" : "CATEGORY")}
+          priceLine={`Prices: ${view.priceTypeLabel}, in ${view.currency}`}
+          money={money}
+          onClose={() => setPrintOpen(false)}
+        />
+      )}
       {rz && view.salt && (
         <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} win={win} power={power} />
       )}
