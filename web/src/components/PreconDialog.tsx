@@ -22,9 +22,9 @@ function today(): string {
 /**
  * Add a preconstructed Commander deck (the app's Precon screen): pick the deck, then the binder, the price paid and
  * the day. Its cards (no basic lands) go into the binder, each with its share of the price, and the deck is
- * remembered as an order.
+ * remembered as an order. [binder] picks the binder to start with ("" for Unsorted; none: a new binder).
  */
-export function PreconDialog({ onDone, onClose }: { onDone: (summary: string) => void; onClose: () => void }) {
+export function PreconDialog({ binder: startBinder, onDone, onClose }: { binder?: string; onDone: (summary: string) => void; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [list, setList] = useState<{ decks: PreconInfo[]; more: number } | null>(null);
   const [deck, setDeck] = useState<DeckAnswer | null>(null);
@@ -32,7 +32,7 @@ export function PreconDialog({ onDone, onClose }: { onDone: (summary: string) =>
   const [currency, setCurrency] = useState("EUR");
   const [date, setDate] = useState(today());
   const [binders, setBinders] = useState<{ uid: string; name: string }[]>([]);
-  const [binder, setBinder] = useState(NEW);
+  const [binder, setBinder] = useState(startBinder ?? NEW);
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

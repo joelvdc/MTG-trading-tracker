@@ -9,8 +9,12 @@ import { binders, prefs, setPrefs, type SyncFile } from "@/lib/syncfile";
 import {
   applyTrade,
   forgetDeclined,
+  kindKey,
+  kindOf,
+  otherCopies,
   plan,
   planInputs,
+  preferCopy,
   rulesOf,
   rulesPrefs,
   skipsOf,
@@ -32,7 +36,17 @@ function tradeView(file: SyncFile, [prices, details, ck]: Loaded) {
   const binder = tradeBinderOf(file);
   const skipped = skipsOf(p);
   const rules = rulesOf(p);
-  const changes = plan({ rows: view.rows, ...planInputs(file), binder, rules, skipped, cardmarket: view.source === "cardmarket", money });
+  const names = new Map(view.binders.map((b) => [b.uid, b.name]));
+  const binderName = (uid: string | null) => (uid === null ? "Unsorted" : (names.get(uid) ?? "Unsorted"));
+  // A stack of each copy-kind, for opening the card's window.
+  const stackOf = new Map<string, string>();
+  for (const r of view.rows) if (!stackOf.has(kindKey(kindOf(r)))) stackOf.set(kindKey(kindOf(r)), r.uid);
+  // Swap (put-in suggestions only, as in the app): your other copies of the card.
+  const changes = plan({ rows: view.rows, ...planInputs(file), binder, rules, skipped, cardmarket: view.source === "cardmarket", money }).map((c) => ({
+    ...c,
+    uid: stackOf.get(c.key) ?? null,
+    others: c.add ? otherCopies(view.rows, c, binderName) : [],
+  }));
   const inBinder = binder ? view.rows.filter((r) => r.binder === binder) : [];
   return {
     changes,
@@ -81,14 +95,23 @@ function cleanRules(r: Partial<TradeRules> | undefined): TradeRules | null {
 
 /**
  * { action: "apply", accepted, declined } moves the accepted copies and remembers the declined suggestions;
- * { action: "rules", rules } saves the rules; { action: "forget" } suggests the declined cards again.
+ * { action: "rules", rules } saves the rules; { action: "forget" } suggests the declined cards again;
+ * { action: "prefer", name, key, insteadOf } offers another copy of a card instead (the app's Swap).
  */
 export async function POST(req: Request) {
   if (!fromOurPages(req)) return json({ error: "Not allowed." }, 403);
   const a = await currentAccount();
   if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
   try {
-    const body = (await req.json()) as { action?: string; accepted?: unknown; declined?: unknown; rules?: Partial<TradeRules> };
+    const body = (await req.json()) as {
+      action?: string;
+      accepted?: unknown;
+      declined?: unknown;
+      rules?: Partial<TradeRules>;
+      name?: unknown;
+      key?: unknown;
+      insteadOf?: unknown;
+    };
     const loaded = await loadAll();
     const rates = loaded[0]?.rates ?? null;
     let change: (file: SyncFile, now: number) => void;
@@ -101,6 +124,11 @@ export async function POST(req: Request) {
       const rules = cleanRules(body.rules);
       if (!rules) return json({ error: "Those rules can't be used." }, 400);
       change = (f, now) => setPrefs(f, rulesPrefs(rules), now);
+    } else if (body?.action === "prefer") {
+      const ok = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 500 && !/[\n\r]/.test(v);
+      const { name, key, insteadOf } = body;
+      if (!ok(name) || !ok(key) || !ok(insteadOf) || key === insteadOf) return json({ error: "That copy can't be picked." }, 400);
+      change = (f, now) => preferCopy(f, name, key, insteadOf, now);
     } else if (body?.action === "forget") {
       change = (f, now) => forgetDeclined(f, now);
     } else return json({ error: "Unknown action." }, 400);

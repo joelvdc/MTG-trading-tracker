@@ -318,7 +318,47 @@ export function applyTrade(file: SyncFile, accepted: TradeDecision[], declined: 
   return binder;
 }
 
-/** Suggests the declined cards again (keeps the copies picked with Swap on the phone). */
+/** Another copy-kind of a suggested card that Swap can offer instead: where its copies are and what one is worth. */
+export interface OtherCopy {
+  key: string;
+  kind: CardKind;
+  card: CollRow["card"];
+  copies: number;
+  unitPrice: number | null;
+  /** The binders holding it ("Unsorted" for none), in the order first seen. */
+  binders: string[];
+}
+
+/** The app's TradeBinderScreen.others: your other copy-kinds of [change]'s card (not signed or altered), cheapest last. */
+export function otherCopies(rows: CollRow[], change: Pick<TradeChange, "key" | "card">, binderName: (uid: string | null) => string): OtherCopy[] {
+  const name = nameKey(change.card.name);
+  const byKey = new Map<string, OtherCopy>();
+  for (const r of rows) {
+    if (nameKey(r.card.name) !== name || r.signed || r.altered) continue;
+    const key = kindKey(kindOf(r));
+    if (key === change.key) continue;
+    const o = byKey.get(key) ?? { key, kind: kindOf(r), card: r.card, copies: 0, unitPrice: r.unitEur, binders: [] };
+    o.copies += r.quantity;
+    const b = binderName(r.binder);
+    if (!o.binders.includes(b)) o.binders.push(b);
+    byKey.set(key, o);
+  }
+  return [...byKey.values()].sort((a, b) => (b.unitPrice ?? -1) - (a.unitPrice ?? -1));
+}
+
+/**
+ * TradeBinder.prefer (Swap): offer copy-kind [key] of card [name] from now on, instead of [insteadOf], which is
+ * declined so it isn't suggested again.
+ */
+export function preferCopy(file: SyncFile, name: string, key: string, insteadOf: string, now: number): void {
+  const prefix = `prefer|${nameKey(name)}|`;
+  const skips = new Set([...skipsOf(prefs(file))].filter((k) => !k.startsWith(prefix)));
+  skips.add(prefix + key);
+  skips.add(`add|${insteadOf}`);
+  setPrefs(file, { [TRADE_SKIPS_PREF]: [...skips].join("\n") }, now);
+}
+
+/** Suggests the declined cards again (keeps the copies picked with Swap). */
 export function forgetDeclined(file: SyncFile, now: number): void {
   const keep = [...skipsOf(prefs(file))].filter((k) => k.startsWith("prefer|"));
   setPrefs(file, { [TRADE_SKIPS_PREF]: keep.join("\n") }, now);

@@ -11,6 +11,7 @@ import { Dialog } from "@/components/Dialog";
 import { ExportDialog } from "@/components/ExportDialog";
 import { FilterDialog } from "@/components/FilterDialog";
 import { ImportDialog } from "@/components/ImportDialog";
+import { PreconDialog } from "@/components/PreconDialog";
 import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
@@ -98,6 +99,7 @@ export default function CollectionPage() {
   const [filtering, setFiltering] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [precon, setPrecon] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [naming, setNaming] = useState<{ uid: string | null; name: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -464,9 +466,19 @@ export default function CollectionPage() {
           <button className="btn" onClick={() => setExporting(true)}>
             Export CSV
           </button>
-          <button className="btn" disabled={locked} onClick={() => setImporting(true)}>
-            Import CSV
-          </button>
+          {locked ? (
+            <button className="btn" disabled>
+              Import ▾
+            </button>
+          ) : (
+            <details className="menu">
+              <summary className="btn">Import ▾</summary>
+              <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
+                <button onClick={() => setImporting(true)}>CSV file…</button>
+                <button onClick={() => setPrecon(true)}>Preconstructed deck…</button>
+              </div>
+            </details>
+          )}
         </div>
 
         <p className="muted small showing">
@@ -670,6 +682,18 @@ export default function CollectionPage() {
             setNotice(text);
           }}
           onClose={() => setImporting(false)}
+        />
+      )}
+      {precon && (
+        <PreconDialog
+          // Starts with the binder on show: Unsorted, or a binder (not the whole collection, the wishlist or the scans).
+          binder={pick === "~" ? "" : view.binders.some((b) => b.uid === pick) ? pick : undefined}
+          onClose={() => setPrecon(false)}
+          onDone={(text) => {
+            setPrecon(false);
+            setNotice(text);
+            load();
+          }}
         />
       )}
       {sorting && (

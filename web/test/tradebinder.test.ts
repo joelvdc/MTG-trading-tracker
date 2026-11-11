@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { CollRow } from "@/lib/collview";
 import { collection, prefs, type CardRef, type SyncFile } from "@/lib/syncfile";
-import { applyTrade, DEFAULT_RULES, forgetDeclined, kindKey, plan, planInputs, rulesOf, rulesPrefs, skipsOf, tradeBinderOf, type PlanInput } from "@/lib/tradebinder";
+import {
+  applyTrade,
+  DEFAULT_RULES,
+  forgetDeclined,
+  kindKey,
+  kindOf,
+  otherCopies,
+  plan,
+  planInputs,
+  preferCopy,
+  rulesOf,
+  rulesPrefs,
+  skipsOf,
+  tradeBinderOf,
+  type PlanInput,
+} from "@/lib/tradebinder";
 
 const card = (name: string, id = name.toLowerCase().replace(/\W/g, "")): CardRef => ({
   scryfallId: id,
@@ -158,5 +173,40 @@ describe("applying the trade binder (TradeBinder.apply)", () => {
     expect(collection(f).map((s) => [s.binder, s.item.quantity])).toContainEqual([null, 1]);
     forgetDeclined(f, 3000);
     expect(skipsOf(prefs(f)).size).toBe(0);
+  });
+});
+
+describe("Swap: offering another copy (TradeBinder.prefer)", () => {
+  it("lists your other copies of the card, with where they are, most valuable first", () => {
+    const a = row("Rhystic Study", 30, { id: "rs1", qty: 2 });
+    const b = { ...row("Rhystic Study", 40, { id: "rs2", binder: "B1" }), finish: "FOIL" as const };
+    const c = row("Rhystic Study", 40, { id: "rs2", binder: "B2" });
+    const signed = row("Rhystic Study", 90, { id: "rs3", signed: true });
+    const other = row("Sol Ring", 2);
+    const names: Record<string, string> = { B1: "Blue", B2: "Spares" };
+    const change = { key: kindKey(kindOf(a)), card: a.card };
+    const list = otherCopies([a, b, c, signed, other], change, (uid) => (uid === null ? "Unsorted" : names[uid]));
+    expect(list.map((o) => [o.key, o.copies, o.binders])).toEqual([
+      ["rs2|true|false|NM|EN", 1, ["Blue"]],
+      ["rs2|false|false|NM|EN", 1, ["Spares"]],
+    ]);
+    expect(list[0].unitPrice).toBe(40);
+  });
+
+  it("remembers the picked copy, declines the suggested one, and the plan follows", () => {
+    const f = file();
+    preferCopy(f, "Rhystic Study", "x|true|false|NM|EN", "y|false|false|NM|EN", 1000);
+    preferCopy(f, "Rhystic Study", "z|false|false|NM|EN", "y|false|false|NM|EN", 2000);
+    expect([...skipsOf(prefs(f))].sort()).toEqual(["add|y|false|false|NM|EN", "prefer|rhystic study|z|false|false|NM|EN"]);
+    // Suggesting declined cards again keeps the pick.
+    forgetDeclined(f, 3000);
+    expect([...skipsOf(prefs(f))]).toEqual(["prefer|rhystic study|z|false|false|NM|EN"]);
+
+    // Two copies, one spare: the picked (cheaper) copy goes in instead of the more valuable one.
+    const cheap = row("Rhystic Study", 20, { id: "cheap" });
+    const dear = row("Rhystic Study", 30, { id: "dear" });
+    const skipped = new Set([`prefer|rhystic study|${kindKey(kindOf(cheap))}`, `add|${kindKey(kindOf(dear))}`]);
+    const out = plan(input([cheap, dear], { binder: null, skipped }));
+    expect(out.map((c) => [c.key, c.add])).toEqual([[kindKey(kindOf(cheap)), true]]);
   });
 });

@@ -186,6 +186,9 @@ gets its own plan and green light.
 - The game stats extras in the app, lending decks and Nextcloud only for backups: shipped in 1.82 (see Done).
 
 ## Done
+- 2026-11-11: website: the Collection page's "Import CSV" became "Import ▾" (CSV file… / Preconstructed deck…; the
+  precon starts in the binder on show). Trade binder page catches up with the app: price per suggestion, Swap
+  (offer another copy; synced like the phone's), clicking a card opens its window, quick minimum values in Rules.
 - 1.87 (2026-11-10): new "Card Swap" logo: app icon with its own themed (one-colour) version; on the website the
   browser-tab icon, iPhone/iPad home-screen icon, top bar and login page. Drafts of the four other directions:
   https://claude.ai/artifact/CtAVMkn2uwvQMyHDL5Aisj (private).

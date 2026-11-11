@@ -2653,6 +2653,14 @@ html[data-pic-size="l"] .rec-grid.images {
 .trade-list li .grow { flex: 1 1 220px; min-width: 0; }
 .trade-list li .seg { margin-left: auto; }
 .trade-list li.faded > :not(.seg) { opacity: 0.5; }
+.trade-list li .trade-open {
+  display: flex; gap: 10px; align-items: center; text-align: left;
+  background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer;
+}
+.trade-list li .trade-open:hover:not(:disabled) .grow,
+.trade-list li .trade-open:focus-visible .grow { text-decoration: underline; }
+.trade-list li .trade-open:disabled { cursor: default; }
+.trade-list li .trade-price { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---- Folding sections on the deck page ---- */
 details.fold > summary,
