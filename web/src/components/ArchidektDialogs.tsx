@@ -76,7 +76,12 @@ export function ArchidektImportDialog({ user, onClose, onDone }: { user: string 
     setBusy(null);
     if (!a.ok || !a.data.decks) return setError(a.data.error ?? "That did not work.");
     setList({ username: a.data.username ?? text, decks: a.data.decks });
-    setPicked(new Set(a.data.decks.filter((d) => !d.imported && d.commanderFormat).map((d) => d.id)));
+    setPicked(notImported(a.data.decks));
+  }
+
+  /** The decks ticked at first: the Commander ones not imported yet. */
+  function notImported(decks: Listed[]): Set<number> {
+    return new Set(decks.filter((d) => !d.imported && d.commanderFormat).map((d) => d.id));
   }
 
   async function importPicked() {
@@ -135,6 +140,17 @@ export function ArchidektImportDialog({ user, onClose, onDone }: { user: string 
             <p className="small">
               {list.decks.length} public deck{list.decks.length === 1 ? "" : "s"} of {list.username}. Ticked: not imported yet{list.decks.some((d) => !d.commanderFormat) ? ", Commander only" : ""}.
             </p>
+            <div className="inline wrap">
+              <button className="btn small-btn" disabled={running} onClick={() => setPicked(new Set())}>
+                Select none
+              </button>
+              <button className="btn small-btn" disabled={running} onClick={() => setPicked(new Set(list.decks.map((d) => d.id)))}>
+                Select all
+              </button>
+              <button className="btn small-btn" disabled={running} onClick={() => setPicked(notImported(list.decks))}>
+                Not imported
+              </button>
+            </div>
             <ul className="plain-list arch-list">
               {list.decks.map((d) => (
                 <li key={d.id}>
