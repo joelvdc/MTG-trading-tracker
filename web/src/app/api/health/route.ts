@@ -3,6 +3,7 @@ import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
 import { accountStore } from "@/lib/accounts";
 import { loadPrices } from "@/lib/pricestore";
+import { mailReady } from "@/lib/mailer";
 import { WEB_FORMAT } from "@/lib/syncfile";
 
 
@@ -22,6 +23,7 @@ export async function GET() {
   const tags = store ? await store.tagCategoryStats().catch(() => null) : null;
   const nightly = store ? await store.job("nightly").catch(() => null) : null;
   const winturns = store ? await store.job("winturns").catch(() => null) : null;
+  const weekly = store ? await store.job("weekly").catch(() => null) : null;
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -52,6 +54,11 @@ export async function GET() {
     // The daily win-turn job (decks' win turns worked out on the website): when it last ran and its counts.
     winTurnsAgeHours: hours(winturns?.at),
     winTurns: winturns?.info ?? null,
+    // The weekly email (app 1.89): whether sending is set up (Resend key and sender), and the daily job's last run.
+    emailReady: mailReady(),
+    weeklyAgeHours: hours(weekly?.at),
+    weeklyFresh: weekly ? Date.now() - weekly.at < 36 * 3_600_000 : false,
+    weekly: weekly?.info ?? null,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

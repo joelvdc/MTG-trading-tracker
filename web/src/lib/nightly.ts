@@ -1,6 +1,7 @@
 // The nightly job (/api/cron/nightly, 06:30 UTC, after the price jobs), for every account with a collection:
 // - the day's collection value, with the same numbers and keys as the app's ValueHistory.snapshotValues, so the
-//   phone's history (sent once by the app) and the website's days make one chart;
+//   phone's history (sent once by the app) and the website's days make one chart, and each pile's price (9 days,
+//   for the weekly email's gainers and losers);
 // - the wishlist's price alerts against Cardmarket at the alert price type (the app's PriceAlerts rules), with
 //   the levels reached written to the account's alert history. CardTrader is left to the phones.
 import { accountStore, type AlertEvent, type ValueDay } from "./accounts";
@@ -14,6 +15,7 @@ import { loadPrices } from "./pricestore";
 import { PRICE_TYPES, priceType, type PriceFile, type PriceType } from "./prices";
 import { cardKingdomPays, cardmarketPrice, finishOf, priceAt, pricingSetup, type Source } from "./pricing";
 import { binders, collection, decode, prefs, wishlist, type CardRef, type SyncFile } from "./syncfile";
+import { pilePrices, PRICE_DAYS_KEPT } from "./weekly";
 
 const SOURCES: Source[] = ["cardmarket", "tcgplayer", "cardkingdom"];
 
@@ -234,6 +236,8 @@ export async function runNightly(now = Date.now(), deps: NightlyDeps = defaultDe
           const d: ValueDay = { day, cards, values };
           await store.putValueDays(id, [d], true);
           result.values++;
+          // Each pile's price, for the weekly email's gainers and losers.
+          await store.putPriceDay(id, day, pilePrices(file, prices, details, ck), PRICE_DAYS_KEPT);
         }
       }
       if (prices && Date.now() < deadline) {
