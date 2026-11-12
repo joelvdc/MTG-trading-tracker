@@ -196,5 +196,13 @@ describe.each([
     expect(await s.priceHistory(a.id, "y|FOIL|NM")).toEqual([{ day: "2026-11-03", eur: 2 }]);
     expect((await s.priceHistory(a.id, "x|NONFOIL|NM")).map((p) => p.eur)).toEqual([1.5, 3.5, 4.5, 9]);
     expect(await s.priceDayStats()).toEqual({ oldest: "2026-01-19", newest: "2026-11-03", rows: 4 });
+
+    expect(await s.savedViews(a.id)).toEqual([]);
+    await s.setSavedViews(a.id, [{ id: "v1", name: "Trade fodder" }]);
+    await s.setSavedViews(a.id, [{ id: "v1", name: "Renamed" }]);
+    expect(await s.savedViews(a.id)).toEqual([{ id: "v1", name: "Renamed" }]);
+    expect(await s.savedViewAccounts()).toBe(1);
+    await s.setSavedViews(a.id, []);
+    expect(await s.savedViewAccounts()).toBe(0);
   });
 });

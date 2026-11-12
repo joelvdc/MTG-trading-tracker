@@ -167,6 +167,11 @@ export interface AccountStore {
   priceHistory(accountId: number, key: string): Promise<PricePoint[]>;
   /** The oldest and newest saved day over every account, and how many days are saved (the health check). */
   priceDayStats(): Promise<{ oldest: string | null; newest: string | null; rows: number }>;
+  /** The Collection page's saved views (lib/savedviews.ts; cleaned by the caller), empty when none. */
+  savedViews(accountId: number): Promise<unknown[]>;
+  setSavedViews(accountId: number, views: unknown[]): Promise<void>;
+  /** How many accounts have saved views (the health check; also shows the table is there). */
+  savedViewAccounts(): Promise<number>;
 }
 
 /** What a shared link opens (the share pages, /s/<code>). */
@@ -299,6 +304,7 @@ export function memoryStore(): AccountStore {
   const rules = new Map<string, { rule: string | null; at: number }>();
   const emails = new Map<number, EmailSettings>();
   const priceDays = new Map<number, Map<string, Record<string, number>>>();
+  const views = new Map<number, unknown[]>();
   const copyEmail = (s: EmailSettings): EmailSettings => ({ ...s, state: JSON.parse(JSON.stringify(s.state)) });
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
@@ -480,6 +486,9 @@ export function memoryStore(): AccountStore {
         .filter(([, p]) => p[key] != null)
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([day, p]) => ({ day, eur: p[key] })),
+    savedViews: async (id) => JSON.parse(JSON.stringify(views.get(id) ?? [])),
+    setSavedViews: async (id, v) => void (v.length ? views.set(id, JSON.parse(JSON.stringify(v))) : views.delete(id)),
+    savedViewAccounts: async () => views.size,
     priceDayStats: async () => {
       const days = [...priceDays.values()].flatMap((m) => [...m.keys()]).sort();
       return { oldest: days[0] ?? null, newest: days[days.length - 1] ?? null, rows: days.length };
@@ -577,6 +586,9 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS email_settings (
      account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
      settings JSONB NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS saved_views (
+     account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+     views JSONB NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS card_price_days (
      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
      day TEXT NOT NULL,
@@ -841,6 +853,15 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
         day: String(r.day),
         eur: Number(r.eur),
       })),
+    savedViews: async (id) => {
+      const r = (await q("SELECT views FROM saved_views WHERE account_id = $1", [id]))[0];
+      return Array.isArray(r?.views) ? (r.views as unknown[]) : [];
+    },
+    setSavedViews: async (id, v) => {
+      if (v.length === 0) await q("DELETE FROM saved_views WHERE account_id = $1", [id]);
+      else await q("INSERT INTO saved_views (account_id, views) VALUES ($1, $2::jsonb) ON CONFLICT (account_id) DO UPDATE SET views = EXCLUDED.views", [id, JSON.stringify(v)]);
+    },
+    savedViewAccounts: async () => num((await q("SELECT COUNT(*) AS n FROM saved_views"))[0].n),
     priceDayStats: async () => {
       const r = (await q("SELECT MIN(day) AS oldest, MAX(day) AS newest, COUNT(*) AS n FROM card_price_days"))[0];
       return { oldest: r.oldest == null ? null : String(r.oldest), newest: r.newest == null ? null : String(r.newest), rows: num(r.n) };

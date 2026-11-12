@@ -2444,6 +2444,19 @@ details.menu > summary::-webkit-details-marker {
 .menu-items button:focus-visible {
   background: var(--surface);
 }
+/* A menu that opens from a button on the left of a row (Views ▾), so it doesn't run off the screen's left edge. */
+.menu-items.from-left {
+  left: 0;
+  right: auto;
+}
+.menu-items button:disabled {
+  color: var(--muted);
+  cursor: default;
+  background: none;
+}
+.menu-note {
+  padding: 8px 10px;
+}
 
 .menu-items button.danger-text {
   color: #ff8a80;

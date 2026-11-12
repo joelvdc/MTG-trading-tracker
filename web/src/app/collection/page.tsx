@@ -18,12 +18,14 @@ import { ShareDialog } from "@/components/SharePanel";
 import { useHoverSetting } from "@/components/HoverCard";
 import { TopBar } from "@/components/Nav";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
+import { ViewsMenu } from "@/components/ViewsMenu";
 import { ScansPanel } from "@/components/ScansPanel";
 import { WishlistPanel } from "@/components/WishlistPanel";
 import { CONDITIONS, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit } from "@/lib/collection";
 import { DEFAULT_COLUMNS, readColumns, type ColumnId } from "@/lib/collcolumns";
 import { groupRows } from "@/lib/collgroup";
+import type { SavedView } from "@/lib/savedviews";
 import { BAR_SCANS, BAR_UNSORTED, BAR_WISHLIST, barKeys, type CollectionView, type CollRow } from "@/lib/collview";
 import {
   comparator,
@@ -106,6 +108,8 @@ export default function CollectionPage() {
   const [choosingColumns, setChoosingColumns] = useState(false);
   const [grouped, setGrouped] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [views, setViews] = useState<SavedView[]>([]);
+  const [viewsOn, setViewsOn] = useState(false);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<CollRow | null>(null);
@@ -194,7 +198,24 @@ export default function CollectionPage() {
 
   useEffect(() => {
     load();
+    api<{ views?: SavedView[]; available?: boolean }>("/api/collection/views").then((r) => {
+      if (r.ok && Array.isArray(r.data.views)) {
+        setViews(r.data.views);
+        setViewsOn(r.data.available !== false);
+      }
+    });
   }, [load]);
+
+  /** Stores the whole list of saved views; false (with a message) when that didn't work. */
+  async function saveViews(list: SavedView[]): Promise<boolean> {
+    const r = await api<{ views?: SavedView[] }>("/api/collection/views", { views: list });
+    if (r.ok && Array.isArray(r.data.views)) {
+      setViews(r.data.views);
+      return true;
+    }
+    setMessage(r.data.error ?? "The views could not be saved.");
+    return false;
+  }
 
   /** Sends one edit; returns the uid it ended in, or null when it didn't work (the old view stays). */
   async function edit(e: CollectionEdit): Promise<string | null> {
@@ -239,6 +260,24 @@ export default function CollectionPage() {
     setFilter(next);
     setPage(0);
     writeSaved({ filter: next });
+  }
+  function changeGrouped(next: boolean) {
+    setGrouped(next);
+    setExpanded(new Set());
+    setPage(0);
+    writeSaved({ grouped: next });
+  }
+  /** Opens a saved view: everything it holds at once. */
+  function applyView(v: SavedView) {
+    changeBinder(v.binder);
+    setSearch(v.search);
+    changeFilter(v.filter);
+    changeSort(v.sorts);
+    setColumns(v.columns);
+    writeSaved({ columns: v.columns });
+    changeGrouped(v.grouped);
+    changeLayout(v.layout);
+    setNotice(`View “${v.name}”.`);
   }
 
   const deckNames = useMemo(() => deckCardNames(view?.decks ?? []), [view]);
@@ -479,6 +518,14 @@ export default function CollectionPage() {
           <button className={sorts.length > 1 ? "btn on" : "btn"} title={`Sorted by ${sortText(sorts)}`} onClick={() => setSorting(true)}>
             Sort{sorts.length > 1 ? ` (${sorts.length})` : ""}
           </button>
+          {viewsOn && (
+            <ViewsMenu
+              views={views}
+              current={{ binder: pick, search: search.trim(), filter, sorts, columns, grouped, layout }}
+              onApply={applyView}
+              onSave={saveViews}
+            />
+          )}
           <ViewSwitch layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} />
           {layout === "list" && (
             <button className={columns.join() !== DEFAULT_COLUMNS.join() ? "btn on" : "btn"} title="Choose the table's columns" onClick={() => setChoosingColumns(true)}>
@@ -490,12 +537,7 @@ export default function CollectionPage() {
               className={grouped ? "btn on" : "btn"}
               aria-pressed={grouped}
               title="One line per card name, whatever its set, finish, condition or binder; click a line to see its piles"
-              onClick={() => {
-                setGrouped(!grouped);
-                setExpanded(new Set());
-                setPage(0);
-                writeSaved({ grouped: !grouped });
-              }}
+              onClick={() => changeGrouped(!grouped)}
             >
               Group printings
             </button>

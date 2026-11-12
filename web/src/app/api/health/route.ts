@@ -25,6 +25,7 @@ export async function GET() {
   const winturns = store ? await store.job("winturns").catch(() => null) : null;
   const weekly = store ? await store.job("weekly").catch(() => null) : null;
   const priceDays = store ? await store.priceDayStats().catch(() => null) : null;
+  const viewAccounts = store ? await store.savedViewAccounts().catch(() => null) : null;
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -65,6 +66,8 @@ export async function GET() {
     priceHistoryRows: priceDays?.rows ?? null,
     priceHistoryOldest: priceDays?.oldest ?? null,
     priceHistoryNewest: priceDays?.newest ?? null,
+    // The Collection page's saved views (2026-11-13): the table answers (null: it doesn't), and how many accounts use it.
+    savedViewAccounts: viewAccounts,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }
