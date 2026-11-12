@@ -21,10 +21,10 @@ history, the release notes and `web/README.md`.)
 - **Expected to look odd:** in grouped view, Change stays blank when the piles' changes differ, and the picture view is
   never grouped (on purpose). Right after updating to 1.90, the app looks up the collection's card details once more
   (about a minute); until then the Faces filter shows nothing.
-- **Weekly email:** waiting for the owner to click the confirmation link (Friday chosen). Gainers and losers appear once
-  the nightly job has saved 7 days of pile prices (from about 2026-11-20). `/api/health` shows `weeklyFresh: false`
-  until `/api/cron/weekly` first runs (2026-11-13, 07:30 UTC).
-- **Next:** the owner picks from "Collecting"; mention Group printings in the next app release notes.
+- **Weekly email:** working; the owner confirmed it (2026-11-13). Gainers and losers fill in once the nightly job has
+  7 days of pile prices.
+- **Next:** a plan (2026-11-13) for trades on the website, saved views, a Spare filter, a price chart in the card
+  window and a wishlist share link waits for the owner's green light. Mention Group printings in the next app release notes.
 
 ## Collecting
 
@@ -48,6 +48,16 @@ Owner: "could we in the future expand the sync, so that the user can choose betw
 onedrive?" Since 1.82 Nextcloud is only a nightly backup (syncing goes through the MTG Trader account), so this is now
 about where to back up.
 - Open questions: each service needs its own sign-in and an app registration there; which ones the owner wants first.
+
+### Planned 2026-11-13, waiting for a green light
+Owner liked: trades on the website (make, edit, apply, undo, delete, export), saved views on the Collection page, a
+Spare filter ("especially spare copies not being used in any decks"), a price chart in the card window, and a share
+link for the wishlist. The plan is in the conversation of 2026-11-13; once approved, it replaces "Trades on the
+website" above and the wishlist line under "Smaller loose ends".
+
+### Group printings in the app (2026-11-13)
+Owner: "not needed for now, add it to the todo as a potential future task". The website's Group printings (one line
+per card name, opens to its piles) for the app's collection list.
 
 ### Smaller loose ends
 - The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
