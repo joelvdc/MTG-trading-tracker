@@ -24,6 +24,7 @@ export async function GET() {
   const nightly = store ? await store.job("nightly").catch(() => null) : null;
   const winturns = store ? await store.job("winturns").catch(() => null) : null;
   const weekly = store ? await store.job("weekly").catch(() => null) : null;
+  const priceDays = store ? await store.priceDayStats().catch(() => null) : null;
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
@@ -59,6 +60,11 @@ export async function GET() {
     weeklyAgeHours: hours(weekly?.at),
     weeklyFresh: weekly ? Date.now() - weekly.at < 36 * 3_600_000 : false,
     weekly: weekly?.info ?? null,
+    // Each pile's daily price (since 2026-11-13 kept up to a year, for the card window's chart): saved days over all
+    // accounts, the oldest (moves back over time) and the newest (should be today or yesterday).
+    priceHistoryRows: priceDays?.rows ?? null,
+    priceHistoryOldest: priceDays?.oldest ?? null,
+    priceHistoryNewest: priceDays?.newest ?? null,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

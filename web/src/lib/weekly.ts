@@ -13,7 +13,6 @@ import type { PriceFile } from "./prices";
 import type { Json, SyncFile } from "./syncfile";
 
 /** Days of card prices the nightly job keeps (a week back, plus slack for a missed night). */
-export const PRICE_DAYS_KEPT = 9;
 export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_MS = 86_400_000;
 const TOP = 5;

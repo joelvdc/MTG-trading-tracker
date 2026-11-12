@@ -15,7 +15,7 @@ import { loadPrices } from "./pricestore";
 import { PRICE_TYPES, priceType, type PriceFile, type PriceType } from "./prices";
 import { cardKingdomPays, cardmarketPrice, finishOf, priceAt, pricingSetup, type Source } from "./pricing";
 import { binders, collection, decode, prefs, wishlist, type CardRef, type SyncFile } from "./syncfile";
-import { pilePrices, PRICE_DAYS_KEPT } from "./weekly";
+import { pilePrices } from "./weekly";
 
 const SOURCES: Source[] = ["cardmarket", "tcgplayer", "cardkingdom"];
 
@@ -236,8 +236,8 @@ export async function runNightly(now = Date.now(), deps: NightlyDeps = defaultDe
           const d: ValueDay = { day, cards, values };
           await store.putValueDays(id, [d], true);
           result.values++;
-          // Each pile's price, for the weekly email's gainers and losers.
-          await store.putPriceDay(id, day, pilePrices(file, prices, details, ck), PRICE_DAYS_KEPT);
+          // Each pile's price, for the weekly email's gainers and losers and the card window's chart.
+          await store.putPriceDay(id, day, pilePrices(file, prices, details, ck));
         }
       }
       if (prices && Date.now() < deadline) {

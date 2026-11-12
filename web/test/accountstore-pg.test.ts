@@ -185,11 +185,16 @@ describe.each([
     await s.setEmailSettings(a.id, null);
     expect(await s.emailSettings(a.id)).toBeNull();
 
-    for (const [i, day] of ["2026-11-01", "2026-11-02", "2026-11-03"].entries()) await s.putPriceDay(a.id, day, { [`x|NONFOIL|NM`]: i + 0.5 }, 2);
-    await s.putPriceDay(a.id, "2026-11-03", { "x|NONFOIL|NM": 9 }, 2);
-    expect(await s.priceDays(a.id)).toEqual([
-      { day: "2026-11-02", prices: { "x|NONFOIL|NM": 1.5 } },
-      { day: "2026-11-03", prices: { "x|NONFOIL|NM": 9 } },
+    // Older than a year goes; between 3 months and a year one day a week stays (2026-01-19 and -20 share a week).
+    for (const [i, day] of ["2025-01-01", "2026-01-19", "2026-01-20", "2026-11-01", "2026-11-02"].entries()) await s.putPriceDay(a.id, day, { [`x|NONFOIL|NM`]: i + 0.5 });
+    await s.putPriceDay(a.id, "2026-11-03", { "x|NONFOIL|NM": 9, "y|FOIL|NM": 2 });
+    expect((await s.priceDays(a.id)).map((d) => d.day)).toEqual(["2026-01-19", "2026-11-01", "2026-11-02", "2026-11-03"]);
+    expect(await s.priceDays(a.id, "2026-11-02")).toEqual([
+      { day: "2026-11-02", prices: { "x|NONFOIL|NM": 4.5 } },
+      { day: "2026-11-03", prices: { "x|NONFOIL|NM": 9, "y|FOIL|NM": 2 } },
     ]);
+    expect(await s.priceHistory(a.id, "y|FOIL|NM")).toEqual([{ day: "2026-11-03", eur: 2 }]);
+    expect((await s.priceHistory(a.id, "x|NONFOIL|NM")).map((p) => p.eur)).toEqual([1.5, 3.5, 4.5, 9]);
+    expect(await s.priceDayStats()).toEqual({ oldest: "2026-01-19", newest: "2026-11-03", rows: 4 });
   });
 });

@@ -12,6 +12,7 @@ import { sendMail, mailReady, type Send } from "./mailer";
 import { sourceKey } from "./nightly";
 import type { PriceFile } from "./prices";
 import { loadPrices } from "./pricestore";
+import { weeklySince } from "./pricehistory";
 import { scryFetch } from "./scrylimit";
 import { decode } from "./syncfile";
 import { copenhagenDay, DAY_NAMES, weeklyMail, weeklyReport } from "./weekly";
@@ -66,7 +67,7 @@ export async function buildWeekly(store: AccountStore, accountId: number, settin
   const setup = setupFor(file, s.prices, s.details, s.ck);
   const lines = syncDecks(file).filter((d) => !d.deck.retired).flatMap(deckLines);
   const [priceDays, valuePoints, alerts, rules] = await Promise.all([
-    store.priceDays(accountId),
+    store.priceDays(accountId, weeklySince(copenhagenDay(now).day)),
     store.valuePoints(accountId, sourceKey(setup.type, setup.source), null),
     store.alertEvents(accountId),
     deps.rules(lines, true, now, now + 15_000),

@@ -3,6 +3,7 @@
 import { createHash, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { neon } from "@neondatabase/serverless";
+import { daysToDrop, type PricePoint } from "./pricehistory";
 
 const scrypt = promisify(scryptCb) as (password: string, salt: Buffer, keylen: number, options: { N: number; r: number; p: number; maxmem: number }) => Promise<Buffer>;
 
@@ -158,10 +159,14 @@ export interface AccountStore {
   emailByToken(kind: "confirm" | "stop", token: string): Promise<{ accountId: number; settings: EmailSettings } | null>;
   /** Accounts with the weekly email on and confirmed. */
   emailAccounts(): Promise<{ accountId: number; settings: EmailSettings }[]>;
-  /** Saves (or replaces) a day's card prices, keeping the newest [keep] days. */
-  putPriceDay(accountId: number, day: string, prices: Record<string, number>, keep: number): Promise<void>;
-  /** The saved days, oldest first. */
-  priceDays(accountId: number): Promise<PriceDay[]>;
+  /** Saves (or replaces) a day's pile prices, then thins out the older days (pricehistory.ts daysToDrop). */
+  putPriceDay(accountId: number, day: string, prices: Record<string, number>): Promise<void>;
+  /** The saved days from [since] on (all when null), oldest first. */
+  priceDays(accountId: number, since?: string | null): Promise<PriceDay[]>;
+  /** One pile's saved prices (key: weekly.ts pileKey), oldest first (the card window's chart). */
+  priceHistory(accountId: number, key: string): Promise<PricePoint[]>;
+  /** The oldest and newest saved day over every account, and how many days are saved (the health check). */
+  priceDayStats(): Promise<{ oldest: string | null; newest: string | null; rows: number }>;
 }
 
 /** What a shared link opens (the share pages, /s/<code>). */
@@ -459,14 +464,26 @@ export function memoryStore(): AccountStore {
       return null;
     },
     emailAccounts: async () => [...emails.entries()].filter(([, s]) => s.enabled && s.confirmed).map(([accountId, s]) => ({ accountId, settings: copyEmail(s) })),
-    putPriceDay: async (id, day, prices, keep) => {
+    putPriceDay: async (id, day, prices) => {
       const m = priceDays.get(id) ?? new Map<string, Record<string, number>>();
       priceDays.set(id, m);
       m.set(day, { ...prices });
-      const days = [...m.keys()].sort();
-      for (const old of days.slice(0, Math.max(0, days.length - keep))) m.delete(old);
+      for (const old of daysToDrop([...m.keys()], day)) m.delete(old);
     },
-    priceDays: async (id) => [...(priceDays.get(id)?.entries() ?? [])].sort((a, b) => a[0].localeCompare(b[0])).map(([day, prices]) => ({ day, prices: { ...prices } })),
+    priceDays: async (id, since) =>
+      [...(priceDays.get(id)?.entries() ?? [])]
+        .filter(([day]) => !since || day >= since)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([day, prices]) => ({ day, prices: { ...prices } })),
+    priceHistory: async (id, key) =>
+      [...(priceDays.get(id)?.entries() ?? [])]
+        .filter(([, p]) => p[key] != null)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([day, p]) => ({ day, eur: p[key] })),
+    priceDayStats: async () => {
+      const days = [...priceDays.values()].flatMap((m) => [...m.keys()]).sort();
+      return { oldest: days[0] ?? null, newest: days[days.length - 1] ?? null, rows: days.length };
+    },
   };
 }
 
@@ -808,11 +825,26 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
         accountId: num(r.account_id),
         settings: r.settings as EmailSettings,
       })),
-    putPriceDay: async (id, day, prices, keep) => {
+    putPriceDay: async (id, day, prices) => {
       await q("INSERT INTO card_price_days (account_id, day, prices) VALUES ($1, $2, $3::jsonb) ON CONFLICT (account_id, day) DO UPDATE SET prices = EXCLUDED.prices", [id, day, JSON.stringify(prices)]);
-      await q("DELETE FROM card_price_days WHERE account_id = $1 AND day NOT IN (SELECT day FROM card_price_days WHERE account_id = $1 ORDER BY day DESC LIMIT $2)", [id, keep]);
+      const days = (await q("SELECT day FROM card_price_days WHERE account_id = $1", [id])).map((r) => String(r.day));
+      const drop = daysToDrop(days, day);
+      if (drop.length) await q("DELETE FROM card_price_days WHERE account_id = $1 AND day = ANY($2::text[])", [id, drop]);
     },
-    priceDays: async (id) => (await q("SELECT day, prices FROM card_price_days WHERE account_id = $1 ORDER BY day", [id])).map((r) => ({ day: String(r.day), prices: r.prices as Record<string, number> })),
+    priceDays: async (id, since) =>
+      (await q("SELECT day, prices FROM card_price_days WHERE account_id = $1 AND day >= $2 ORDER BY day", [id, since ?? ""])).map((r) => ({
+        day: String(r.day),
+        prices: r.prices as Record<string, number>,
+      })),
+    priceHistory: async (id, key) =>
+      (await q("SELECT day, prices->>$2 AS eur FROM card_price_days WHERE account_id = $1 AND prices->>$2 IS NOT NULL ORDER BY day", [id, key])).map((r) => ({
+        day: String(r.day),
+        eur: Number(r.eur),
+      })),
+    priceDayStats: async () => {
+      const r = (await q("SELECT MIN(day) AS oldest, MAX(day) AS newest, COUNT(*) AS n FROM card_price_days"))[0];
+      return { oldest: r.oldest == null ? null : String(r.oldest), newest: r.newest == null ? null : String(r.newest), rows: num(r.n) };
+    },
   };
 }
 
