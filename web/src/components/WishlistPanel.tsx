@@ -6,6 +6,7 @@ import { AlertHistoryDialog } from "@/components/AlertHistoryDialog";
 import { api, formatDate } from "@/components/api";
 import { EditDialog } from "@/components/EditDialog";
 import { ReceivedDialog } from "@/components/ReceivedDialog";
+import { ShareDialog } from "@/components/SharePanel";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
 import { WishGrid } from "@/components/WishGrid";
 import { type Section, WishTable } from "@/components/WishTable";
@@ -44,6 +45,7 @@ export function WishlistPanel({
   const [adding, setAdding] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [alerts, setAlerts] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     try {
@@ -238,6 +240,9 @@ export function WishlistPanel({
             Copy the cards to buy as a list
           </option>
         </select>
+        <button className="btn" onClick={() => setSharing(true)} title="A link that shows the cards you still want (not your notes, alerts or orders)">
+          Share
+        </button>
         <button className="btn" onClick={() => setAlerts(true)}>
           Alert history
         </button>
@@ -304,6 +309,7 @@ export function WishlistPanel({
           }}
         />
       )}
+      {sharing && <ShareDialog kind="wishlist" target="" what="the cards you still want (not your notes, alerts, orders or received cards)" onClose={() => setSharing(false)} />}
       {alerts && <AlertHistoryDialog money={(eur) => format(eur * view.perEuro, view.currency)} onClose={() => setAlerts(false)} />}
       {adding && (
         <AddDialog

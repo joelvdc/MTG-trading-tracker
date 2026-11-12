@@ -6,7 +6,7 @@ import { decode } from "@/lib/syncfile";
 export const dynamic = "force-dynamic";
 
 /**
- * A phone's Share button (app 1.89): {kind: "deck"|"game"|"binder"|"collection", target} → {url, on: true}. The
+ * A phone's Share button (app 1.89): {kind: "deck"|"game"|"binder"|"collection"|"wishlist" (app 1.91), target} → {url, on: true}. The
  * item's link is made, or switched on again; 404 when the website doesn't have the item (the phone syncs first).
  */
 export async function POST(req: Request) {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, formatDate } from "./api";
 import { Dialog } from "./Dialog";
 
-type Kind = "deck" | "game" | "binder" | "collection";
+type Kind = "deck" | "game" | "binder" | "collection" | "wishlist";
 
 async function copy(text: string): Promise<boolean> {
   try {

@@ -129,4 +129,23 @@ describe("shared links", () => {
     expect(await store.removeShare(accountId, lines[0].code)).toBe(true);
     expect(await store.shares(accountId)).toHaveLength(2);
   });
+
+  it("shares the wishlist: still-wanted cards only, without notes, alerts or orders", async () => {
+    const f = sample();
+    expect(hasTarget(f, "wishlist", "")).toBe(true);
+    expect(shareTitle(f, "wishlist", "")).toBe("Wishlist");
+    const v = sharedView(f, { kind: "wishlist", target: "" }, "joel", null, null, null)!;
+    expect(v.kind).toBe("wishlist");
+    if (v.kind !== "wishlist") return;
+    // Rhystic Study is ordered, so it's left out; Sol Ring (any printing) stays.
+    expect(v.wants.map((w) => w.name)).not.toContain("Rhystic Study");
+    const sol = v.wants.find((w) => w.name === "Sol Ring")!;
+    expect(sol).toMatchObject({ quantity: 2, set: null, foil: false });
+    const text = JSON.stringify(v);
+    expect(text).not.toContain("for Vohar");
+    expect(text).not.toContain("alert");
+    const { link } = await makeShare(store, accountId, f, "wishlist", "anything", NOW);
+    expect(link.target).toBe("");
+    expect(shareLines(req, [link], f)[0].title).toBe("Wishlist");
+  });
 });

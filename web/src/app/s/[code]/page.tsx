@@ -6,7 +6,7 @@ import { useHoverCard } from "@/components/HoverCard";
 import { Logo } from "@/components/Logo";
 import { duration, ordinal, outReasonLabel, winTypeLabel } from "@/lib/gameshared";
 import { format } from "@/lib/money";
-import type { SharedDeck, SharedPile, SharedPrices, SharedView } from "@/lib/shares";
+import type { SharedDeck, SharedPile, SharedPrices, SharedView, SharedWant } from "@/lib/shares";
 
 type Answer = { state: "ok"; view: SharedView } | { state: "off" | "gone" | "unknown" } | { state: "error"; error?: string };
 
@@ -17,7 +17,7 @@ const STATE_TEXT: Record<string, string> = {
   unknown: "This link doesn't exist. Check that it was copied whole.",
 };
 
-/** A shared deck, game, binder or collection (/s/<code>): read only, for anyone with the link. */
+/** A shared deck, game, binder, collection or wishlist (/s/<code>): read only, for anyone with the link. */
 export default function SharedPage() {
   const { code } = useParams<{ code: string }>();
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -63,6 +63,7 @@ export default function SharedPage() {
 function Shared({ view }: { view: SharedView }) {
   if (view.kind === "game") return <SharedGame view={view} />;
   if (view.kind === "deck") return <SharedDeckView deck={view.deck} prices={view.prices} />;
+  if (view.kind === "wishlist") return <SharedWishlist owner={view.owner} wants={view.wants} prices={view.prices} />;
   return <SharedPiles title={view.kind === "collection" ? "Collection" : view.title} piles={view.piles} binders={view.binders} prices={view.prices} />;
 }
 
@@ -245,6 +246,83 @@ function SharedPiles({ title, piles, binders, prices }: { title: string; piles: 
         <button className="btn" onClick={() => setShown((n) => n + PAGE * 5)}>
           Show more ({rows.length - shown} left)
         </button>
+      )}
+      {hover.picture}
+    </div>
+  );
+}
+
+/** A shared wishlist: the cards still wanted, with Cardmarket's price, and a button to copy them as a list. */
+function SharedWishlist({ owner, wants, prices }: { owner: string; wants: SharedWant[]; prices: SharedPrices }) {
+  const money = moneyOf(prices);
+  const hover = useHoverCard(true);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"NAME" | "VALUE">("NAME");
+  const [copied, setCopied] = useState(false);
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = wants.filter((w) => !q || w.name.toLowerCase().includes(q) || (w.setName ?? "").toLowerCase().includes(q) || w.set === q);
+    const byName = (a: SharedWant, b: SharedWant) => a.name.localeCompare(b.name);
+    return sort === "NAME" ? list.sort(byName) : list.sort((a, b) => (b.unitEur ?? -1) - (a.unitEur ?? -1) || byName(a, b));
+  }, [wants, search, sort]);
+  const copies = wants.reduce((n, w) => n + w.quantity, 0);
+  return (
+    <div className="stack">
+      <div>
+        <h1 className="share-title">{owner ? `${owner}'s wishlist` : "Wishlist"}</h1>
+        <p className="summary">{copies} cards wanted</p>
+        <p className="muted small">{prices.line}</p>
+      </div>
+      <div className="controls">
+        <input type="search" aria-label="Search the cards" placeholder="Search name or set" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as "NAME" | "VALUE")}>
+          <option value="NAME">By name</option>
+          <option value="VALUE">Most valuable first</option>
+        </select>
+        <button
+          className="btn"
+          disabled={wants.length === 0}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(rows.map((w) => `${w.quantity} ${w.name}${w.set ? ` (${w.set.toUpperCase()}) ${w.number}` : ""}${w.foil ? " *F*" : ""}`).join("\n"));
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              // The browser didn't allow it.
+            }
+          }}
+        >
+          {copied ? "Copied ✓" : "Copy as list"}
+        </button>
+      </div>
+      {wants.length === 0 ? (
+        <p className="muted">Nothing on the wishlist right now.</p>
+      ) : (
+        <div className="table-wrap">
+          <table className="wish-table">
+            <thead>
+              <tr>
+                <th className="num">Copies</th>
+                <th>Card</th>
+                <th>Printing</th>
+                <th className="num">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((w, i) => (
+                <tr key={i} onMouseMove={hover.follow(w.image) as never} onMouseLeave={hover.hide}>
+                  <td className="num">{w.quantity}</td>
+                  <td>
+                    {w.name}
+                    {w.foil && <span className="muted small"> · Foil</span>}
+                  </td>
+                  <td className="muted">{w.set ? `${w.setName} (${w.set.toUpperCase()} ${w.number})` : "Any printing"}</td>
+                  <td className="num">{w.unitEur != null ? money(w.unitEur) : "–"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {hover.picture}
     </div>

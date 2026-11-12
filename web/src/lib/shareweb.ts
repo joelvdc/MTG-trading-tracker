@@ -19,7 +19,7 @@ export function shareUrl(req: Request, code: string): string {
 export async function makeShare(store: AccountStore, accountId: number, file: SyncFile, kind: string, target: string, now: number): Promise<{ link: ShareLink; turnedOn: boolean }> {
   if (!SHARE_KINDS.includes(kind as ShareKind)) throw new EditError("That can't be shared.");
   const k = kind as ShareKind;
-  const t = k === "collection" ? "" : target.trim();
+  const t = k === "collection" || k === "wishlist" ? "" : target.trim();
   if (!hasTarget(file, k, t)) throw new NotSynced();
   const had = await store.share(accountId, k, t);
   if (had) {
@@ -50,12 +50,12 @@ export interface ShareLine {
   url: string;
 }
 
-const KIND_LABELS: Record<ShareKind, string> = { deck: "Deck", game: "Game", binder: "Binder", collection: "Whole collection" };
+const KIND_LABELS: Record<ShareKind, string> = { deck: "Deck", game: "Game", binder: "Binder", collection: "Whole collection", wishlist: "Wishlist" };
 
 export function shareLines(req: Request, links: ShareLink[], file: SyncFile | null): ShareLine[] {
   return links.map((l) => {
     const t = file ? shareTitle(file, l.kind, l.target) : null;
-    const title = t === null ? null : l.kind === "collection" ? KIND_LABELS.collection : l.kind === "game" ? t : `${KIND_LABELS[l.kind]}: ${t}`;
+    const title = t === null ? null : l.kind === "collection" || l.kind === "wishlist" ? KIND_LABELS[l.kind] : l.kind === "game" ? t : `${KIND_LABELS[l.kind]}: ${t}`;
     return { code: l.code, kind: l.kind, title, on: l.on, createdAt: l.createdAt, opened: l.opened, lastOpened: l.lastOpened, url: shareUrl(req, l.code) };
   });
 }

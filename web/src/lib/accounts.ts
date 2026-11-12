@@ -170,7 +170,7 @@ export interface AccountStore {
 }
 
 /** What a shared link opens (the share pages, /s/<code>). */
-export type ShareKind = "deck" | "game" | "binder" | "collection";
+export type ShareKind = "deck" | "game" | "binder" | "collection" | "wishlist";
 
 /**
  * A shared link: a page anyone with the address can open without logging in. [target] is the deck id, the game uid,

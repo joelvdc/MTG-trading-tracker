@@ -1,4 +1,4 @@
-// Shared links (/s/<code>): read-only pages of a deck, a game, a binder or the whole collection that anyone with the
+// Shared links (/s/<code>): read-only pages of a deck, a game, a binder, the whole collection or the wishlist that anyone with the
 // address can open. They show the owner's prices in their chosen price source, never purchase prices, notes or anything
 // else private, and are always worked out from the sync file as it is now. Switched off links answer "off".
 import { randomBytes } from "node:crypto";
@@ -14,9 +14,10 @@ import type { Currency } from "./money";
 import type { PriceFile } from "./prices";
 import type { Finish } from "./pricing";
 import { binders, type SyncFile } from "./syncfile";
+import { wishView } from "./view";
 import type { ShareKind, ShareLink } from "./accounts";
 
-export const SHARE_KINDS: ShareKind[] = ["deck", "game", "binder", "collection"];
+export const SHARE_KINDS: ShareKind[] = ["deck", "game", "binder", "collection", "wishlist"];
 /** The binder target that means Unsorted. */
 export const UNSORTED_TARGET = "~";
 
@@ -56,6 +57,20 @@ export interface SharedPile {
   image: string | null;
 }
 
+/** A card still wanted on a shared wishlist (not ordered or received; no notes, alert levels or dates). */
+export interface SharedWant {
+  name: string;
+  /** The printing asked for; null when any printing will do. */
+  set: string | null;
+  setName: string | null;
+  number: string | null;
+  foil: boolean;
+  quantity: number;
+  /** Cardmarket's price of one copy (the printing on the list), in euros. */
+  unitEur: number | null;
+  image: string | null;
+}
+
 export interface SharedDeckLine {
   name: string;
   quantity: number;
@@ -70,7 +85,8 @@ export interface SharedDeckLine {
 export type SharedView =
   | { kind: "deck"; owner: string; title: string; prices: SharedPrices; deck: SharedDeck }
   | { kind: "collection" | "binder"; owner: string; title: string; prices: SharedPrices; piles: SharedPile[]; binders: string[] }
-  | { kind: "game"; owner: string; title: string; game: Game };
+  | { kind: "game"; owner: string; title: string; game: Game }
+  | { kind: "wishlist"; owner: string; title: string; prices: SharedPrices; wants: SharedWant[] };
 
 export interface SharedDeck {
   name: string;
@@ -93,6 +109,7 @@ export function pricesOf(v: Pick<CollectionView, "currency" | "perEuro" | "sourc
 export function hasTarget(file: SyncFile, kind: ShareKind, target: string): boolean {
   switch (kind) {
     case "collection":
+    case "wishlist":
       return target === "";
     case "binder":
       return target === UNSORTED_TARGET || binders(file).some((b) => b.uid === target);
@@ -108,6 +125,8 @@ export function shareTitle(file: SyncFile, kind: ShareKind, target: string): str
   switch (kind) {
     case "collection":
       return "Collection";
+    case "wishlist":
+      return "Wishlist";
     case "binder":
       if (target === UNSORTED_TARGET) return "Unsorted";
       return binders(file).find((b) => b.uid === target)?.name ?? null;
@@ -139,6 +158,27 @@ export function sharedView(
     const g = gamesOf(file).find((x) => x.uid === link.target)!;
     // The note may be private; the turn times stay (the page shows only the totals).
     return { kind: "game", owner, title, game: { ...g, note: null } };
+  }
+  if (link.kind === "wishlist") {
+    const w = wishView(file, prices);
+    return {
+      kind: "wishlist",
+      owner,
+      title,
+      prices: { currency: w.currency, perEuro: w.perEuro, line: `Prices: Cardmarket ${w.priceTypeLabel.toLowerCase()}, in ${w.currency}${w.pricesDate ? ` · price list from ${w.pricesDate.slice(0, 10)}` : ""}` },
+      wants: w.rows
+        .filter((r) => r.receivedAt == null && r.orderedAt == null)
+        .map((r) => ({
+          name: r.card.name,
+          set: r.anyPrinting ? null : r.card.setCode,
+          setName: r.anyPrinting ? null : r.card.setName,
+          number: r.anyPrinting ? null : r.card.collectorNumber,
+          foil: r.foil,
+          quantity: r.quantity,
+          unitEur: r.unitEur,
+          image: r.card.imageUrl,
+        })),
+    };
   }
   const cv = collectionView(file, prices, details, ck);
   const p = pricesOf(cv);
