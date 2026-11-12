@@ -23,7 +23,6 @@ history, the release notes and `web/README.md`.)
   prices (from about 2026-11-20).
 - **Expected for now:** `/api/health` shows `weeklyFresh: false` and `weekly: null` until `/api/cron/weekly` first
   runs (2026-11-13, 07:30 UTC).
-- **Keep:** the five `mistral/*` branches stay (owner, 2026-11-12: Mistral may pick this project up again on its own).
 - **Next:** the owner picks from "Collecting".
 
 ## Collecting
