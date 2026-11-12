@@ -3820,3 +3820,59 @@ details.deck-section > summary .mini-head {
     display: none;
   }
 }
+
+/* Trades on the website (2026-11-13): actions under a trade, and the trade editor's card lines. */
+.trade-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.trade-line {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--raised);
+}
+.trade-line-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+.trade-line-total {
+  margin-left: auto;
+}
+.trade-line-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.trade-line-fields select,
+.trade-line-fields input,
+.trade-line-fields .btn {
+  width: auto;
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 14px;
+}
+.trade-line-fields .qty {
+  width: 56px;
+}
+.trade-line-fields .price {
+  width: 96px;
+}
+.trade-side > .btn {
+  margin-top: 8px;
+}
+.pick-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.row-pick {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  text-align: left;
+  padding: 6px 4px;
+}

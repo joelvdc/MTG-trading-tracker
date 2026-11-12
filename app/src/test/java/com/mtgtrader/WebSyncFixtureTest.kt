@@ -5,6 +5,8 @@ import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CollectionItem
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
+import com.mtgtrader.data.PriceSet
+import com.mtgtrader.data.Side
 import com.mtgtrader.data.SyncData
 import com.mtgtrader.data.SyncDeck
 import com.mtgtrader.data.SyncDeletion
@@ -12,6 +14,10 @@ import com.mtgtrader.data.SyncFile
 import com.mtgtrader.data.SyncMerge
 import com.mtgtrader.data.SyncPrefs
 import com.mtgtrader.data.SyncStack
+import com.mtgtrader.data.SyncTrade
+import com.mtgtrader.data.SyncTradeItem
+import com.mtgtrader.data.Trade
+import com.mtgtrader.data.TradeItem
 import com.mtgtrader.data.WishlistItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -45,7 +51,10 @@ class WebSyncFixtureTest {
     private val rhystic = card("22222222-2222-2222-2222-222222222222", "Rhystic Study", "jmp", "175", 489000, 30.0, 45.0)
     private val rift = card("33333333-3333-3333-3333-333333333333", "Cyclonic Rift", "mm3", "35", 300000, 20.0, 60.0)
 
-    /** A phone's data: a binder, a card, three wishlist entries (to buy, ordered with an alert, received), a deck. */
+    /**
+     * A phone's data: a binder, a card, three wishlist entries (to buy, ordered with an alert, received), a deck, and a
+     * trade not yet applied (one card given, one received at an agreed price; since the website's trades, 2026-11-13).
+     */
     private fun appData() = SyncData(
         binders = listOf(Binder(name = "Main", createdAt = 1_700_000_000_000, uid = "b0000000000000000000000000000001", updatedAt = 1_700_000_000_000)),
         collection = listOf(
@@ -69,6 +78,20 @@ class WebSyncFixtureTest {
             WishlistItem(
                 card = rift, quantity = 1, addedAt = 1_700_000_400_000, receivedAt = 1_700_000_500_000, receivedFrom = "added to the collection",
                 uid = "a0000000000000000000000000000003", updatedAt = 1_700_000_500_000,
+            ),
+        ),
+        trades = listOf(
+            SyncTrade(
+                Trade(createdAt = 1_700_000_700_000, partner = "Bob", notes = "at the club", uid = "t0000000000000000000000000000001", updatedAt = 1_700_000_700_000),
+                items = listOf(
+                    SyncTradeItem(TradeItem(tradeId = 0, side = Side.GIVE, card = solRing, foil = false, quantity = 1, prices = PriceSet(trend = 1.4, avg = 1.5), addedAt = 1_700_000_700_000)),
+                    SyncTradeItem(
+                        TradeItem(
+                            tradeId = 0, side = Side.GET, card = rhystic, foil = false, quantity = 1, prices = PriceSet(trend = 29.0, avg30 = 31.0),
+                            customPrice = 26.81, customTyped = 200.0, customCurrency = "DKK", addedAt = 1_700_000_700_001,
+                        ),
+                    ),
+                ),
             ),
         ),
         deletions = listOf(SyncDeletion("a0000000000000000000000000000009", 1_700_000_000_000)),
@@ -117,17 +140,40 @@ class WebSyncFixtureTest {
         // Collection edits (website phase 2): a new binder with a new stack, and the Sol Ring stack changed.
         val trades = merged.binders.single { it.name == "Trades" }
         assertEquals("b0000000000000000000000000000002", trades.uid)
-        val boltStack = merged.collection.single { it.item.card.name == "Lightning Bolt" }
+        val boltStack = merged.collection.single { it.item.card.name == "Lightning Bolt" && it.item.foil }
         assertEquals(trades.uid, boltStack.binder)
         assertEquals(2, boltStack.item.quantity)
         assertTrue(boltStack.item.foil && boltStack.item.signed && !boltStack.item.etched)
         assertEquals("EX", boltStack.item.condition)
         assertEquals("DE", boltStack.item.language)
         val solStack = merged.collection.single { it.item.card.name == "Sol Ring" }
-        assertEquals(3, solStack.item.quantity)
+        // 3 after the edit, then 1 given away in the trade with Anna below.
+        assertEquals(2, solStack.item.quantity)
         assertEquals("from the website", solStack.item.notes)
         assertEquals(1.25, solStack.item.purchasePrice)
         assertEquals("b0000000000000000000000000000001", solStack.binder)
+        // Trades (website, 2026-11-13): a new trade with Anna completed into "Trades", and Bob's trade changed.
+        assertEquals(2, merged.trades.size)
+        val anna = merged.trades.single { it.trade.partner == "Anna" }
+        assertEquals("e0000000000000000000000000000001", anna.trade.uid)
+        assertTrue(anna.trade.applied)
+        assertEquals(1_750_000_000_000, anna.trade.appliedAt)
+        assertEquals(trades.uid, anna.binder)
+        val got = anna.items.single { it.item.side == Side.GET }
+        assertEquals("Lightning Bolt", got.item.card.name)
+        assertEquals(2, got.item.appliedDelta)
+        assertEquals(1.2, got.item.prices.trend)
+        val gave = anna.items.single { it.item.side == Side.GIVE }
+        assertEquals(-1, gave.item.appliedDelta)
+        assertEquals("b0000000000000000000000000000001", gave.appliedBinder)
+        val boltIn = merged.collection.single { it.item.card.name == "Lightning Bolt" && !it.item.foil }
+        assertEquals(2, boltIn.item.quantity)
+        assertEquals(trades.uid, boltIn.binder)
+        val bob = merged.trades.single { it.trade.uid == "t0000000000000000000000000000001" }
+        assertEquals("Bob B.", bob.trade.partner)
+        assertEquals(2, bob.items.single { it.item.card.name == "Rhystic Study" }.item.quantity)
+        assertEquals(26.81, bob.items.single { it.item.card.name == "Rhystic Study" }.item.customPrice)
+        assertTrue(bob.trade.updatedAt > phone.trades.single().trade.updatedAt)
         // Syncing again changes nothing.
         assertEquals(merged, SyncMerge.merge(merged, merged, now = 1_750_000_100_000))
     }

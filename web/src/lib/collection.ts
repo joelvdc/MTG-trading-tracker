@@ -221,6 +221,48 @@ function checkBinderName(file: SyncFile, name: unknown, except?: string): string
 }
 
 /** Applies [edit] to [file] at [now]. ([makeUid] is for tests.) */
+/**
+ * Takes up to [qty] copies of a printing out of the collection, as the app's removeFromCollection does for a trade's
+ * given cards: plain copies before signed or altered ones, the exact condition and language first, and within those
+ * the [prefer] binder (null: Unsorted) first. Emptied stacks are deleted (and recorded). Returns how many copies were
+ * taken and the binder the first ones came from ([prefer] when none were).
+ */
+export function takeCopies(
+  file: SyncFile,
+  scryfallId: string,
+  finish: Finish,
+  condition: string,
+  language: string,
+  qty: number,
+  prefer: string | null,
+  now: number,
+): { removed: number; from: string | null } {
+  const stacks = collection(file);
+  const foil = finish !== "NONFOIL";
+  const etched = finish === "ETCHED";
+  const rank = (s: SyncStack) => [s.item.signed || s.item.altered ? 1 : 0, s.item.condition === condition && s.item.language === language ? 0 : 1, s.binder === prefer ? 0 : 1];
+  const candidates = stacks
+    .filter((s) => s.item.card.scryfallId === scryfallId && s.item.foil === foil && !!s.item.etched === etched)
+    .map((s, i) => ({ s, i, r: rank(s) }))
+    .sort((a, b) => a.r[0] - b.r[0] || a.r[1] - b.r[1] || a.r[2] - b.r[2] || a.i - b.i)
+    .map((x) => x.s);
+  let remaining = qty;
+  let from: string | null | undefined;
+  for (const c of candidates) {
+    if (remaining === 0) break;
+    const take = Math.min(remaining, c.item.quantity);
+    if (c.item.quantity - take <= 0) removeStack(file, stacks, c.item.uid!, now);
+    else {
+      c.item.quantity -= take;
+      c.item.updatedAt = bump(c.item.updatedAt, now);
+    }
+    remaining -= take;
+    if (from === undefined) from = c.binder;
+  }
+  setList(file, stacks);
+  return { removed: qty - remaining, from: from === undefined ? prefer : from };
+}
+
 export function applyCollectionEdit(
   file: SyncFile,
   edit: CollectionEdit,

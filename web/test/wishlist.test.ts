@@ -1,9 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { canWrite, decode, deletions, encode, parse, stamp, wishlist, type CardRef, type SyncFile } from "@/lib/syncfile";
+import { canWrite, collection, decode, deletions, encode, parse, stamp, wishlist, type CardRef, type SyncFile } from "@/lib/syncfile";
 import { applyCollectionEdit } from "@/lib/collection";
 import { applyEdit, EditError, ownedFor } from "@/lib/wishlist";
+import { applyTradeEdit, lineKeys, trades as tradesOf } from "@/lib/tradeedit";
 
 const fixtures = path.join(__dirname, "fixtures");
 /** A sync file as the app writes it (made by the app's WebSyncFixtureTest). */
@@ -42,6 +43,16 @@ function webEdits(file: SyncFile): void {
   const trades = applyCollectionEdit(file, { type: "addBinder", name: "Trades" }, NOW, null, () => "b0000000000000000000000000000002").uid;
   applyCollectionEdit(file, { type: "add", card: bolt, quantity: 2, finish: "FOIL", condition: "EX", language: "DE", binder: trades, signed: true }, NOW, null, () => "c0000000000000000000000000000002");
   applyCollectionEdit(file, { type: "update", uid: "c0000000000000000000000000000001", quantity: 3, notes: "from the website", paid: { amount: 1.25, currency: "EUR" } }, NOW);
+  // Trades (2026-11-13): a new trade with Anna, completed into "Trades"; Bob's trade renamed with 2 Rhystic Studies.
+  const anna = applyTradeEdit(file, { type: "new", partner: "Anna" }, NOW, null, () => "e0000000000000000000000000000001").uid!;
+  applyTradeEdit(file, { type: "addLine", uid: anna, side: "GET", card: bolt, finish: "NONFOIL", quantity: 2 }, NOW, null);
+  const sol = collection(file).find((s) => s.item.uid === "c0000000000000000000000000000001")!.item.card;
+  applyTradeEdit(file, { type: "addLine", uid: anna, side: "GIVE", card: sol, finish: "NONFOIL" }, NOW, null);
+  applyTradeEdit(file, { type: "apply", uid: anna, binder: trades }, NOW, null, () => "c0000000000000000000000000000003");
+  const bob = tradesOf(file).find((t) => t.trade.uid === "t0000000000000000000000000000001")!;
+  const rhysticLine = lineKeys(bob)[bob.items.findIndex((i) => i.item.card.name === "Rhystic Study")];
+  applyTradeEdit(file, { type: "update", uid: bob.trade.uid, partner: "Bob B." }, NOW, null);
+  applyTradeEdit(file, { type: "updateLine", uid: bob.trade.uid, line: rhysticLine, quantity: 2 }, NOW, null);
   stamp(file, NOW);
 }
 
