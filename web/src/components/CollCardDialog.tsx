@@ -10,6 +10,7 @@ import { PRICE_TYPE_LABELS, PRICE_TYPES } from "@/lib/prices";
 import { SOURCE_LABELS, type Finish } from "@/lib/pricing";
 import { api } from "./api";
 import { cardmarketUrlFor, cardtraderUrlFor } from "./cardLinks";
+import { PriceChart } from "./PriceChart";
 import { CardRulesTabs } from "./CardRules";
 import type { Printing } from "./CardSearch";
 import { Dialog } from "./Dialog";
@@ -321,6 +322,7 @@ export function CollCardDialog({
           ) : (
             <div className="muted small">Loading prices…</div>
           )}
+          {prices?.history && <PriceChart points={prices.history} money={(eur) => money(eur)} />}
           {prices?.cardmarket && (
             <>
               <h3 className="mini-head">Cardmarket prices{row.finish !== "NONFOIL" ? " (foil)" : ""}</h3>

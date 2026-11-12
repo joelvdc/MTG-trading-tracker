@@ -99,6 +99,8 @@ export interface CardPrices {
   cardmarket: (number | null)[] | null;
   sources: { source: Source; eur: number | null; url: string | null }[];
   cardKingdomPays: number | null;
+  /** One copy of this pile (printing, finish, condition) as the nightly job saved it, oldest first (the chart). */
+  history?: { day: string; eur: number }[];
 }
 
 /** "Fire // Ice" → "fire" (decks and the stats compare front-face names). */
