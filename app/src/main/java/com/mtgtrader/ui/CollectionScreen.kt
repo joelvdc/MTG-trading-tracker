@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.SwapVert
@@ -515,13 +516,20 @@ fun CollectionScreen(nav: NavController) {
                                 onClick = { menu = false; undoable({ "$it received card(s) cleared" }) { c.repo.clearReceived() } },
                             )
                             DropdownMenuItem(
-                                text = { Text("Share the wishlist") },
+                                text = { Text("Share the wishlist as text") },
                                 leadingIcon = { Icon(Icons.Default.Share, null) },
                                 enabled = wanted.any { it.item.orderedAt == null },
                                 onClick = {
                                     menu = false
                                     shareText(context, "MTG wishlist", wishShareText(wishRows))
                                 },
+                            )
+                            // Since 1.91: a read-only page on the website (cards still wanted, with prices; no notes,
+                            // alerts or orders), switched off in the website's Settings → Shared links.
+                            DropdownMenuItem(
+                                text = { Text("Share wishlist link") },
+                                leadingIcon = { Icon(Icons.Default.Link, null) },
+                                onClick = { menu = false; shareFromWebsite("wishlist", "", "MTG Trader: my wishlist") },
                             )
                             // Since 1.77: the alerts this phone has seen reached.
                             DropdownMenuItem(

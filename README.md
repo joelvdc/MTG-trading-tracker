@@ -70,10 +70,14 @@ nightly backups; accounts need an invite code for now.
 **Website** ([mtgtrader.vercel.app](https://mtgtrader.vercel.app))
 - The collection, wishlist, scanned cards, orders, decks and trades on a computer, with the same prices and stats as the
   app. Changes reach the phones at their next sync.
-- **Share links** (from the app or the website) for a deck, a game, a binder or the whole collection: a read-only page
-  for anyone with the link, with your prices but never what you paid. Switch links off in the website's Settings.
+- **Share links** (from the app or the website) for a deck, a game, a binder, the whole collection or the wishlist: a
+  read-only page for anyone with the link, with your prices but never what you paid. Switch links off in the website's Settings.
 - **Columns:** choose and order the collection table's columns, among them how many decks use each card, the copies
   they use and the copies to spare, every price source, what you paid and the profit.
+- **Trades** made, edited, completed, undone and exported on the computer too, with the app's rules.
+- **Saved views** of the collection (binder, search, filter, sort, columns, grouping, layout) kept with the account;
+  **Group printings** shows one line per card name; a **Spare** filter finds copies your decks don't use.
+- A **price chart** in the card window, from the prices saved every night (a year back at most).
 - **Print** the collection, a binder or a deck as a list (save it as PDF).
 - A **weekly email** on the day you choose: your collection's value against a week ago, the week's biggest gainers and
   losers, wishlist cards at your price, and changes in your decks.

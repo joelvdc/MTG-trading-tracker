@@ -482,11 +482,16 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                 }
                 SettingsCategory.ABOUT -> {
                     Text(
-                        "Card data and pictures: Scryfall. Prices: Cardmarket's public daily price guide (EUR). " +
-                            "Decklists: Archidekt. Brackets and deck scores: Commander Salt; power level from the source chosen under Decks.\n\n" +
-                            "All of it is looked up live, so new sets show up without an app update.\n\n" +
-                            "Unofficial fan app, not affiliated with Wizards of the Coast, Scryfall, Cardmarket, CardTrader, Archidekt, Commander Salt, " +
-                            "EDH Power Level or ScrollVault.\n\nVersion ${BuildConfig.VERSION_NAME}",
+                        "Card data and pictures: Scryfall (also EDHREC ranks and TCGplayer prices). Prices: Cardmarket's public daily price " +
+                            "guide (EUR), TCGplayer, Card Kingdom and CardTrader. Recommendations: EDHREC and recommander.cards. " +
+                            "Decklists: Archidekt. Brackets, deck scores and combos: Commander Salt and Commander Spellbook; power level from " +
+                            "the source chosen under Decks (EDH Power Level or ScrollVault). Preconstructed decks: MTGJSON. Exchange rates: " +
+                            "the European Central Bank.\n\n" +
+                            "All of it is looked up live, so new sets show up without an app update. Not affiliated with or endorsed by " +
+                            "any of these; prices are for guidance only.\n\n" +
+                            "MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved or endorsed by Wizards. " +
+                            "Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.\n\n" +
+                            "Privacy and attribution: mtgtrader.vercel.app/privacy and mtgtrader.vercel.app/legal.\n\nVersion ${BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

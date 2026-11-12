@@ -1,7 +1,7 @@
 # MTG Trader website
 
 The website at [mtgtrader.vercel.app](https://mtgtrader.vercel.app): the wishlist, collection (with stats and CSV
-export) and trades (view only) of the MTG Trader app, from a computer. Next.js (App Router) on Vercel, project `mtgtrader`, root folder `web/`, region `arn1` (Stockholm).
+export) and trades of the MTG Trader app, from a computer. Next.js (App Router) on Vercel, project `mtgtrader`, root folder `web/`, region `arn1` (Stockholm).
 Pushes to `main` that touch `web/` deploy to production; other branches get a preview address.
 
 ## How it works
@@ -98,7 +98,8 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 
 - **Shared links** (`lib/shares.ts`, `lib/shareweb.ts`, since app 1.89): Share on the deck page, the game window and
   the Collection page (whole collection, or the binder picked), and in the app (`POST /api/app/share` with
-  `{kind, target}`: deck id, game uid, binder uid or `~` for Unsorted, `""` for the collection). One link per item
+  `{kind, target}`: deck id, game uid, binder uid or `~` for Unsorted, `""` for the collection or the wishlist; the
+  wishlist page shows the still-wanted cards with prices, never notes, alerts or orders). One link per item
   (table `share_links`, a random 22-character code); Settings → Shared links switches a link off and on (the same
   address comes back) or deletes it. `/s/<code>` reads `GET /api/share/<code>` (no login; `noindex`): the item as it is
   now, priced in the owner's source and currency with the source stated, never purchase prices, notes or a game's
@@ -111,13 +112,24 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
   table `legal_rules` by front-face name and asked from Scryfall's `/cards/collection` (by Scryfall id) when missing
   or a week old (`lib/legalstore.ts`): the deck page looks up for 6 seconds at most, the Decks page only reads the
   table ("⚠ Not legal" when all of a deck's cards are known), a shared deck page for 8.
+- **Trades** (`lib/tradeedit.ts`, `/api/trades` POST, `components/TradeDialogs.tsx`, since 2026-11-13): the app's
+  addToTrade, snapshot, applyTrade (`takeCopies` in `lib/collection.ts`, the app's removeFromCollection order) and
+  revertTrade ported; trades travel whole in the sync file (newest `updatedAt` wins), deletions get a record and an
+  Undo puts the trade back newer than it. CSV export (`lib/tradecsv.ts`) has the app's columns. The shared sample
+  files carry a trade each way.
+- **Saved views** (`lib/savedviews.ts`, `/api/collection/views`, `components/ViewsMenu.tsx`): up to 30 per account in
+  the table `saved_views`; **Group printings** (`lib/collgroup.ts`) folds the list view by card name; the Decks
+  filter has SPARE (owned more than the decks use, `lib/colquery.ts`).
+- **Footer and pages** (`components/SiteFooter.tsx`, `/privacy`, `/legal`): data sources, the Fan Content Policy
+  wording, Contact = the GitHub issues page.
 - **Print** (`lib/printlist.ts`, `components/PrintLists.tsx`): an A4 list without pictures, drawn under `<body>` and
   printed with `body.printing-list` (the "Printing a list" rules in `globals.css`); the collection prints what the page
   shows (all pages), optionally with purchase prices; the deck prints its main deck by category or card type.
 - **Weekly email** (`lib/weekly.ts`, `lib/weeklyjob.ts`, `lib/mailer.ts`, Settings → Weekly email,
   `/api/account/email`): an address confirmed by a link (`/api/email/confirm?t=`), a weekday and on/off, in the table
-  `email_settings`. The nightly job also keeps every pile's price (one copy, in euros, owner's source) for 9 days
-  (`card_price_days`). `/api/cron/weekly` (07:30 UTC every day) sends the email to accounts whose weekday it is in
+  `email_settings`. The nightly job also keeps every pile's price (one copy, in euros, owner's source) in
+  `card_price_days` (`lib/pricehistory.ts`): every day for 92 days, then one day a week (the Monday) up to 366 days;
+  the card window's price chart (`components/PriceChart.tsx`) reads it through `/api/collection/prices`. `/api/cron/weekly` (07:30 UTC every day) sends the email to accounts whose weekday it is in
   Copenhagen (not twice within 20 hours): collection value against the value-history day a week back, the 5 piles up
   and down most against their price a week ago (from 5 cents), wishlist alerts reached in the last 7 days, and per
   deck game changers added or removed (Scryfall's `is:gamechanger`) and new legality problems against the state kept

@@ -6,7 +6,7 @@ import com.mtgtrader.AppContainer
 import kotlinx.coroutines.CancellationException
 
 /**
- * Syncs, asks the website for the share link of a deck, game, binder or the collection ([kind] and [target] as in
+ * Syncs, asks the website for the share link of a deck, game, binder, the collection or the wishlist ([kind] and [target] as in
  * [com.mtgtrader.data.WebAccountClient.share]) and opens Android's share sheet with it. Returns a message for the
  * snackbar when that didn't work (not logged in, the website has nothing to share yet, offline…), else null.
  */

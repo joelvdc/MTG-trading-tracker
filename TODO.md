@@ -14,25 +14,18 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-12, after 1.90 and the website's Group printings)
-- **Latest:** website only, 2026-11-12: **Group printings** button on the Collection page (list view): one line per
-  card name, click a line to see its piles. No app release needed. Before that, app 1.90: Faces filter, Retry on failed
-  prices, the website's Columns dialog and Ordered ticks on wishlist pictures.
-- **Expected to look odd:** in grouped view, Change stays blank when the piles' changes differ, and the picture view is
-  never grouped (on purpose). Right after updating to 1.90, the app looks up the collection's card details once more
-  (about a minute); until then the Faces filter shows nothing.
-- **Weekly email:** working; the owner confirmed it (2026-11-13). Gainers and losers fill in once the nightly job has
-  7 days of pile prices.
-- **Next:** a plan (2026-11-13) for trades on the website, saved views, a Spare filter, a price chart in the card
-  window and a wishlist share link waits for the owner's green light. Mention Group printings in the next app release notes.
+## Right now (2026-11-13, after 1.91)
+- **Latest:** app 1.91 (2026-11-13): "Share wishlist link" in the app and a fuller About text. The website gained, the
+  same night: trades made/edited/completed/undone/deleted/exported, saved views, Group printings, the Spare filter, a
+  price chart in the card window, a wishlist share link, and a footer with Privacy and Legal & attribution pages.
+- **Expected to look odd:** the price chart only has the days the nightly job has saved so far (from about
+  2026-11-05), so 3M/6M/1Y look the same as 1M for a while. Trades completed on the website reach the phones at their
+  next sync. Saved views store the columns too, so applying an old view can change the table's columns.
+- **Weekly email:** working (confirmed 2026-11-13).
+- **Waiting on the owner:** nothing. Ideas still collecting: Commander Salt scores for local decks, more backup places,
+  Group printings in the app.
 
 ## Collecting
-
-### Trades on the website (2026-11-05, again 2026-11-06)
-Owner, listing what the website lacks: trades are only shown there. Still to build: make, edit, complete (update the
-collection), undo, delete and export trades. Left out for now, as decided; needs its own plan. Two Scanned-page extras
-wait on it or are small: "To trade" for scans, and sending scans to an Archidekt deck (the website only adds to local
-decks).
 
 ### Commander Salt scores for local decks (2026-11-05)
 Owner's idea: a copy of the decklist on a site Commander Salt accepts. Every site it accepts (Moxfield, Archidekt,
@@ -49,20 +42,14 @@ onedrive?" Since 1.82 Nextcloud is only a nightly backup (syncing goes through t
 about where to back up.
 - Open questions: each service needs its own sign-in and an app registration there; which ones the owner wants first.
 
-### Planned 2026-11-13, waiting for a green light
-Owner liked: trades on the website (make, edit, apply, undo, delete, export), saved views on the Collection page, a
-Spare filter ("especially spare copies not being used in any decks"), a price chart in the card window, and a share
-link for the wishlist. The plan is in the conversation of 2026-11-13; once approved, it replaces "Trades on the
-website" above and the wishlist line under "Smaller loose ends".
-
 ### Group printings in the app (2026-11-13)
 Owner: "not needed for now, add it to the todo as a potential future task". The website's Group printings (one line
 per card name, opens to its piles) for the app's collection list.
 
 ### Smaller loose ends
 - The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
-- Share links cover decks, games, binders and the collection; the wishlist has none yet (it was on the 2026-11-05 list
-  of things the website lacks).
+- Scanned page on the website: "To trade" for scans, and sending scans to an Archidekt deck (the website only adds to
+  local decks). Small; left from the 2026-11-05 list.
 - The phone's "Unable to resolve host" for every price site (2026-11-07, VPN on) was a DNS/VPN problem on the phone,
   not the app. Look again only if it comes back with the VPN off.
 
@@ -76,6 +63,10 @@ per card name, opens to its piles) for the app's collection list.
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.91 (2026-11-13): "Share wishlist link" in the app, About text with every source and the Fan Content Policy;
+  website: trades (make, edit, complete, undo, delete with Undo, CSV export, the app's rules), saved views, Spare
+  filter, price chart (prices kept a year: daily 92 days, then weekly), wishlist share link, footer with Privacy and
+  Legal & attribution pages (Contact = GitHub issues).
 - Website (2026-11-12): Group printings on the collection table (one line per card name, opens to its piles).
 - 1.90 (2026-11-12): Faces filter (MDFC, Transforming, Split / Adventure; Scryfall's layout now kept in the app's card
   details, database 29, and the website's details blob), Retry on the app's failed-price notes, and the website's

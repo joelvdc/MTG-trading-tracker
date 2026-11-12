@@ -97,9 +97,9 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
     data class ShareLink(val url: String, val on: Boolean)
 
     /**
-     * Asks the website for the share link of a deck, game, binder or the whole collection ([kind]: "deck", "game",
-     * "binder" or "collection"; [target]: the deck's id, the game's or binder's uid, "~" for Unsorted, "" for the
-     * collection). Throws [SyncException] with the website's own words when it has nothing to share yet.
+     * Asks the website for the share link of a deck, game, binder, the whole collection or the wishlist ([kind]: "deck",
+     * "game", "binder", "collection" or "wishlist" (since 1.91); [target]: the deck's id, the game's or binder's uid, "~"
+     * for Unsorted, "" for the collection and the wishlist). Throws [SyncException] with the website's own words when it has nothing to share yet.
      */
     suspend fun share(login: WebLogin, kind: String, target: String): ShareLink = call {
         val body = buildJsonObject { put("kind", kind); put("target", target) }
