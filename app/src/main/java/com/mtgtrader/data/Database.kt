@@ -49,7 +49,7 @@ interface CollectionDao {
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil,
-           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt
+           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt, ci.layout AS ci_layout
            FROM collection c LEFT JOIN prices p ON p.idProduct =
              CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
            LEFT JOIN card_info ci ON ci.scryfallId = c.scryfallId
@@ -62,7 +62,7 @@ interface CollectionDao {
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil,
-           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt
+           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt, ci.layout AS ci_layout
            FROM collection c LEFT JOIN prices p ON p.idProduct =
              CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
            LEFT JOIN card_info ci ON ci.scryfallId = c.scryfallId
@@ -76,7 +76,7 @@ interface CollectionDao {
            p.avg1 AS pr_avg1, p.avg7 AS pr_avg7, p.avg30 AS pr_avg30, p.avgFoil AS pr_avgFoil,
            p.lowFoil AS pr_lowFoil, p.trendFoil AS pr_trendFoil, p.avg1Foil AS pr_avg1Foil,
            p.avg7Foil AS pr_avg7Foil, p.avg30Foil AS pr_avg30Foil,
-           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt
+           ci.scryfallId AS ci_scryfallId, ci.oracleId AS ci_oracleId, ci.colors AS ci_colors, ci.colorIdentity AS ci_colorIdentity, ci.typeLine AS ci_typeLine, ci.cmc AS ci_cmc, ci.edhrecRank AS ci_edhrecRank, ci.fetchedAt AS ci_fetchedAt, ci.layout AS ci_layout
            FROM collection c LEFT JOIN prices p ON p.idProduct =
              CASE WHEN c.foil = 1 AND c.cardmarketFoilId IS NOT NULL THEN c.cardmarketFoilId ELSE c.cardmarketId END
            LEFT JOIN card_info ci ON ci.scryfallId = c.scryfallId
@@ -415,7 +415,7 @@ interface DeckDao {
         WishPrice::class, CtBlueprint::class, DeckEdit::class, Player::class, FriendDeck::class, GameRecord::class,
         PausedGame::class,
     ],
-    version = 28,
+    version = 29,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -443,11 +443,21 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "mtgtrader.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29)
                 .addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
                 })
                 .build()
+
+        /**
+         * Version 29 (app 1.90): the card's layout from Scryfall in the card details (not synced), for the collection's
+         * Faces filter (MDFC, transforming, split). Saved details start without it and are looked up once more.
+         */
+        val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `card_info` ADD COLUMN `layout` TEXT")
+            }
+        }
 
         /**
          * Version 28 (app 1.86): a deck's own category order (synced; the sync file's format went to 14 with it).

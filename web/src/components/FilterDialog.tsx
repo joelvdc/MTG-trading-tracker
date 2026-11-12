@@ -5,6 +5,7 @@ import { CONDITIONS, FINISH_LABELS, FINISHES, LANGUAGES } from "@/lib/cards";
 import {
   COLOR_MATCH_LABELS,
   EMPTY_FILTER,
+  FACE_KINDS,
   FILTER_RARITIES,
   FILTER_TYPES,
   type ColorMatch,
@@ -86,6 +87,10 @@ export function FilterDialog({
         <div className="field">
           <span>Type</span>
           <Chips options={FILTER_TYPES.map((t) => [t, t] as [string, string])} value={f.types} onChange={(types) => setF({ ...f, types })} />
+        </div>
+        <div className="field">
+          <span>Faces</span>
+          <Chips options={FACE_KINDS} value={f.faces ?? []} onChange={(faces) => setF({ ...f, faces })} />
         </div>
         <div className="field">
           <span>Rarity</span>

@@ -3,6 +3,10 @@ package com.mtgtrader.ui
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -156,9 +160,17 @@ fun AppNav() {
         bottomBar = {
             if (topLevel) {
                 Column {
-                    PriceStatusStrip(priceState)
                     val sourceState by c.priceSources.status.collectAsStateWithLifecycle()
-                    SourceStatusStrip(sourceState)
+                    // Retry on a failed download does what Settings' "Update prices now" does (since 1.90).
+                    val retry: () -> Unit = {
+                        c.appScope.launch {
+                            val ok = c.prices.refresh()
+                            runCatching { c.priceSources.refresh() }
+                            if (ok) c.updater.afterUpdate()
+                        }
+                    }
+                    PriceStatusStrip(priceState, onRetry = retry.takeIf { !sourceState.running })
+                    SourceStatusStrip(sourceState, onRetry = retry.takeIf { priceState !is PriceUpdateState.Running })
                     NavigationBar {
                         tabs.forEach { tab ->
                             NavigationBarItem(
@@ -275,7 +287,7 @@ fun AppNav() {
 
 /** TCGplayer's and Card Kingdom's download, like [PriceStatusStrip]: progress while it runs, a note when it failed. Since 1.30. */
 @Composable
-internal fun SourceStatusStrip(state: com.mtgtrader.data.PriceSourceStore.SourceStatus) {
+internal fun SourceStatusStrip(state: com.mtgtrader.data.PriceSourceStore.SourceStatus, onRetry: (() -> Unit)? = null) {
     when {
         state.running -> Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
@@ -285,19 +297,12 @@ internal fun SourceStatusStrip(state: com.mtgtrader.data.PriceSourceStore.Source
                 else LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 4.dp))
             }
         }
-        state.error != null -> Surface(color = MaterialTheme.colorScheme.errorContainer) {
-            Text(
-                "Price download failed (${state.error}). It tries again in a few hours, or retry in Settings.",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-            )
-        }
+        state.error != null -> FailedStrip("Price download failed (${state.error}). It tries again in a few hours.", onRetry)
     }
 }
 
 @Composable
-private fun PriceStatusStrip(state: PriceUpdateState) {
+private fun PriceStatusStrip(state: PriceUpdateState, onRetry: (() -> Unit)?) {
     when (state) {
         is PriceUpdateState.Running -> Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
@@ -305,14 +310,25 @@ private fun PriceStatusStrip(state: PriceUpdateState) {
                 LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 4.dp))
             }
         }
-        is PriceUpdateState.Failed -> Surface(color = MaterialTheme.colorScheme.errorContainer) {
+        is PriceUpdateState.Failed -> FailedStrip("Price update failed: ${state.message}.", onRetry)
+        PriceUpdateState.Idle -> {}
+    }
+}
+
+/** A failed price download's note, with a Retry button (while another download runs, [onRetry] is null: no button). Since 1.90. */
+@Composable
+private fun FailedStrip(message: String, onRetry: (() -> Unit)?) {
+    Surface(color = MaterialTheme.colorScheme.errorContainer) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Price update failed: ${state.message}. Retry in Settings.",
+                message,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.weight(1f).padding(vertical = 6.dp),
             )
+            if (onRetry != null) {
+                TextButton(onClick = onRetry, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)) { Text("Retry") }
+            }
         }
-        PriceUpdateState.Idle -> {}
     }
 }

@@ -259,7 +259,14 @@ export function WishlistPanel({
           hover={hover}
         />
       ) : (
-        <WishGrid sections={sections} currency={view.currency} perEuro={view.perEuro} disabled={locked} onOpen={setEditing} />
+        <WishGrid
+          sections={sections}
+          currency={view.currency}
+          perEuro={view.perEuro}
+          disabled={locked}
+          onOpen={setEditing}
+          onToggleOrdered={(row, ordered) => edit({ type: "update", uid: row.uid, ordered })}
+        />
       )}
       {view.rows.length === 0 && <p className="muted center">The wishlist is empty.</p>}
       {view.rows.length > 0 && sections.every((x) => x.rows.length === 0) && <p className="muted center">No cards match your search.</p>}

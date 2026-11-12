@@ -6,6 +6,7 @@ import { CollAddDialog } from "@/components/CollAddDialog";
 import { CollCardDialog } from "@/components/CollCardDialog";
 import { CollGrid } from "@/components/CollGrid";
 import { CollTable } from "@/components/CollTable";
+import { ColumnsDialog } from "@/components/ColumnsDialog";
 import { ArrangeDialog, DeleteBinderDialog, MergeDialog, PaidDialog, SortDialog, sortText } from "@/components/CollectionDialogs";
 import { Dialog } from "@/components/Dialog";
 import { ExportDialog } from "@/components/ExportDialog";
@@ -21,10 +22,12 @@ import { ScansPanel } from "@/components/ScansPanel";
 import { WishlistPanel } from "@/components/WishlistPanel";
 import { CONDITIONS, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit } from "@/lib/collection";
+import { DEFAULT_COLUMNS, readColumns, type ColumnId } from "@/lib/collcolumns";
 import { BAR_SCANS, BAR_UNSORTED, BAR_WISHLIST, barKeys, type CollectionView, type CollRow } from "@/lib/collview";
 import {
   comparator,
   deckCardNames,
+  deckUse,
   EMPTY_FILTER,
   filterCount,
   matchesFilter,
@@ -51,6 +54,8 @@ interface Saved {
   binder?: BinderPick;
   filter?: Filter;
   perPage?: number;
+  /** The table's columns (since 1.90). */
+  columns?: ColumnId[];
 }
 
 function readSaved(): Saved {
@@ -94,6 +99,8 @@ export default function CollectionPage() {
   const [binder, setBinder] = useState<BinderPick>("");
   const [filter, setFilter] = useState<Filter>(EMPTY_FILTER);
   const [perPage, setPerPage] = useState(50);
+  const [columns, setColumns] = useState<ColumnId[]>(DEFAULT_COLUMNS);
+  const [choosingColumns, setChoosingColumns] = useState(false);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<CollRow | null>(null);
@@ -122,6 +129,7 @@ export default function CollectionPage() {
     else if (known(s.sort)) setSorts([s.sort!]);
     if (s.layout === "images") setLayout("images");
     if (s.perPage && PER_PAGE.includes(s.perPage)) setPerPage(s.perPage);
+    if (s.columns) setColumns(readColumns(s.columns));
     const params = new URLSearchParams(window.location.search);
     const fromUrl = filterFrom(params.get("filter"));
     const binderUrl = params.get("binder");
@@ -228,6 +236,8 @@ export default function CollectionPage() {
   }
 
   const deckNames = useMemo(() => deckCardNames(view?.decks ?? []), [view]);
+  /** Each card's use in the decks against the whole collection (the Decks, In decks and Spare columns and sorts). */
+  const use = useMemo(() => deckUse(view?.rows ?? [], view?.decks ?? []), [view]);
 
   const binderName = useCallback(
     (uid: string | null) => (uid ? (view?.binders.find((b) => b.uid === uid)?.name ?? "Unsorted") : "Unsorted"),
@@ -250,8 +260,8 @@ export default function CollectionPage() {
   const rows = useMemo(() => {
     const words = search.trim();
     const out = inBinder.filter((r) => (!words || matchesText(r, words)) && matchesFilter(filter, r, deckNames));
-    return out.sort(comparator(sorts));
-  }, [inBinder, search, filter, deckNames, sorts]);
+    return out.sort(comparator(sorts, use));
+  }, [inBinder, search, filter, deckNames, sorts, use]);
 
   // A selection only holds piles that are still there and still shown.
   const shownUids = useMemo(() => new Set(rows.map((r) => r.uid)), [rows]);
@@ -458,6 +468,11 @@ export default function CollectionPage() {
             Sort{sorts.length > 1 ? ` (${sorts.length})` : ""}
           </button>
           <ViewSwitch layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} />
+          {layout === "list" && (
+            <button className={columns.join() !== DEFAULT_COLUMNS.join() ? "btn on" : "btn"} title="Choose the table's columns" onClick={() => setChoosingColumns(true)}>
+              Columns
+            </button>
+          )}
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
@@ -582,6 +597,8 @@ export default function CollectionPage() {
         {layout === "list" ? (
           <CollTable
             rows={pageRows}
+            columns={columns}
+            use={use}
             currency={view.currency}
             perEuro={view.perEuro}
             binderName={binderName}
@@ -663,6 +680,17 @@ export default function CollectionPage() {
           onClose={() => setAdding(false)}
           onAdd={async (e) => {
             if ((await edit(e)) != null) setAdding(false);
+          }}
+        />
+      )}
+      {choosingColumns && (
+        <ColumnsDialog
+          columns={columns}
+          onClose={() => setChoosingColumns(false)}
+          onSave={(c) => {
+            setColumns(c);
+            writeSaved({ columns: c });
+            setChoosingColumns(false);
           }}
         />
       )}

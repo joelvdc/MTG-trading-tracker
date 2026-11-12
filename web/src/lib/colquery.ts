@@ -38,6 +38,32 @@ export function matchesText(r: CollRow, text: string): boolean {
 export type ColorMatch = "ANY" | "EXACT" | "WITHIN" | "IDENTITY";
 export type DeckFilter = "ANY" | "IN" | "OUT";
 export type MarkFilter = "SIGNED" | "ALTERED" | "PLAIN";
+/** Two-faced and two-part cards (the app's FaceKind, 1.90). */
+export type FaceKind = "MDFC" | "TRANSFORM" | "SPLIT";
+
+export const FACE_KINDS: [FaceKind, string][] = [
+  ["MDFC", "MDFC"],
+  ["TRANSFORM", "Transforming"],
+  ["SPLIT", "Split / Adventure"],
+];
+
+/** The app's FaceKind.of: the kind from Scryfall's layout; null for an ordinary card or an unknown layout. */
+export function faceKind(layout: string | null | undefined): FaceKind | null {
+  switch (layout) {
+    case "modal_dfc":
+      return "MDFC";
+    case "transform":
+    case "meld":
+      return "TRANSFORM";
+    case "split":
+    case "adventure":
+    case "flip":
+    case "prepare":
+      return "SPLIT";
+    default:
+      return null;
+  }
+}
 
 export const COLOR_MATCH_LABELS: Record<ColorMatch, string> = {
   ANY: "Has any of them",
@@ -62,6 +88,8 @@ export interface Filter {
   maxPrice: number | null;
   decks: DeckFilter;
   marks: MarkFilter[];
+  /** MDFC, transforming, split (since 1.90; filters saved before have none). */
+  faces: FaceKind[];
 }
 
 export const EMPTY_FILTER: Filter = {
@@ -77,6 +105,7 @@ export const EMPTY_FILTER: Filter = {
   maxPrice: null,
   decks: "ANY",
   marks: [],
+  faces: [],
 };
 
 export const FILTER_TYPES = ["Creature", "Instant", "Sorcery", "Artifact", "Enchantment", "Planeswalker", "Land", "Battle", "Legendary"];
@@ -101,6 +130,7 @@ export function filterCount(f: Filter): number {
     f.minPrice != null || f.maxPrice != null,
     f.decks !== "ANY",
     f.marks.length > 0,
+    (f.faces ?? []).length > 0,
   ].filter(Boolean).length;
 }
 
@@ -113,6 +143,43 @@ export function deckCardNames(decks: CollDeck[]): Set<string> {
 
 export function front(r: CollRow): string {
   return r.card.name.split(" // ")[0].toLowerCase();
+}
+
+/** How a card (by front-face name) is used in the decks, for the Decks, In decks and Spare columns. */
+export interface DeckUse {
+  /** The decks that use it, by name. */
+  decks: string[];
+  /** Copies the decks use, all together. */
+  copies: number;
+  /** Copies owned, every printing and binder together. */
+  owned: number;
+}
+
+const NO_USE: DeckUse = { decks: [], copies: 0, owned: 0 };
+
+/** Every card name's use in [decks] (retired decks and maybeboards are already left out) against the whole collection. */
+export function deckUse(rows: CollRow[], decks: CollDeck[]): Map<string, DeckUse> {
+  const out = new Map<string, DeckUse>();
+  for (const r of rows) {
+    const k = front(r);
+    const u = out.get(k) ?? { decks: [], copies: 0, owned: 0 };
+    u.owned += r.quantity;
+    out.set(k, u);
+  }
+  for (const d of decks) {
+    for (const [k, n] of Object.entries(d.cards)) {
+      const u = out.get(k);
+      if (!u) continue;
+      u.copies += n;
+      if (d.name && !u.decks.includes(d.name)) u.decks.push(d.name);
+    }
+  }
+  for (const u of out.values()) u.decks.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  return out;
+}
+
+export function useOf(use: Map<string, DeckUse> | undefined, r: CollRow): DeckUse {
+  return use?.get(front(r)) ?? NO_USE;
 }
 
 const WUBRG = "WUBRG";
@@ -147,6 +214,10 @@ export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>): bo
     const t = r.info?.t;
     if (!t || !f.types.some((x) => t.includes(x))) return false;
   }
+  if ((f.faces ?? []).length > 0) {
+    const k = faceKind(r.info?.l);
+    if (!k || !f.faces.includes(k)) return false;
+  }
   if (f.rarities.length > 0 && !f.rarities.includes(r.card.rarity)) return false;
   if (f.sets.length > 0 && !f.sets.includes(r.card.setCode.toLowerCase())) return false;
   if (f.finishes.length > 0 && !f.finishes.includes(r.finish)) return false;
@@ -170,7 +241,22 @@ export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>): bo
 
 // ---- Sorting (SortSpec) ----
 
-export type SortField = "NAME" | "COLOR" | "TYPE" | "MANA_VALUE" | "RARITY" | "SET" | "NUMBER" | "VALUE" | "RECENT" | "QUANTITY" | "CHANGE_PCT" | "CHANGE_MONEY";
+export type SortField =
+  | "NAME"
+  | "COLOR"
+  | "TYPE"
+  | "MANA_VALUE"
+  | "RARITY"
+  | "SET"
+  | "NUMBER"
+  | "VALUE"
+  | "RECENT"
+  | "QUANTITY"
+  | "CHANGE_PCT"
+  | "CHANGE_MONEY"
+  | "DECKS"
+  | "SPARE"
+  | "EDHREC";
 
 export const SORT_FIELDS: { field: SortField; label: string; forward: string; backward: string }[] = [
   { field: "NAME", label: "Name", forward: "A to Z", backward: "Z to A" },
@@ -185,6 +271,9 @@ export const SORT_FIELDS: { field: SortField; label: string; forward: string; ba
   { field: "QUANTITY", label: "Copies", forward: "Most first", backward: "Fewest first" },
   { field: "CHANGE_PCT", label: "Change in %", forward: "Biggest rise first", backward: "Biggest fall first" },
   { field: "CHANGE_MONEY", label: "Change in money", forward: "Biggest rise first", backward: "Biggest fall first" },
+  { field: "DECKS", label: "Decks using it", forward: "Most first", backward: "Fewest first" },
+  { field: "SPARE", label: "Spare copies", forward: "Most first", backward: "Fewest first" },
+  { field: "EDHREC", label: "EDHREC rank", forward: "Most played first", backward: "Least played first" },
 ];
 
 export interface SortLevel {
@@ -225,7 +314,7 @@ function number(n: string): number {
 
 type Cmp = (a: CollRow, b: CollRow) => number;
 
-function fieldCmp(f: SortField): Cmp {
+function fieldCmp(f: SortField, use?: Map<string, DeckUse>): Cmp {
   switch (f) {
     case "NAME":
       return (a, b) => nocase(a.card.name, b.card.name);
@@ -252,6 +341,14 @@ function fieldCmp(f: SortField): Cmp {
     case "CHANGE_PCT":
     case "CHANGE_MONEY":
       return changeCmp(f, false);
+    case "DECKS":
+      return (a, b) => useOf(use, b).decks.length - useOf(use, a).decks.length;
+    case "SPARE": {
+      const spare = (r: CollRow) => useOf(use, r).owned - useOf(use, r).copies;
+      return (a, b) => spare(b) - spare(a);
+    }
+    case "EDHREC":
+      return (a, b) => (a.info?.r ?? Number.MAX_SAFE_INTEGER) - (b.info?.r ?? Number.MAX_SAFE_INTEGER);
   }
 }
 
@@ -268,11 +365,11 @@ function changeCmp(f: SortField, fallersFirst: boolean): Cmp {
   };
 }
 
-/** Sorts in layers; the name breaks remaining ties. */
-export function comparator(levels: SortLevel[]): Cmp {
+/** Sorts in layers; the name breaks remaining ties. [use]: the decks' use of each card (for Decks and Spare). */
+export function comparator(levels: SortLevel[], use?: Map<string, DeckUse>): Cmp {
   const parts: Cmp[] = levels.map((l) => {
     if (l.field === "CHANGE_PCT" || l.field === "CHANGE_MONEY") return changeCmp(l.field, l.reversed);
-    const c = fieldCmp(l.field);
+    const c = fieldCmp(l.field, use);
     return l.reversed ? (a, b) => c(b, a) : c;
   });
   parts.push((a, b) => nocase(a.card.name, b.card.name));

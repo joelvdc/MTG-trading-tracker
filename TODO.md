@@ -14,15 +14,15 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-12)
-- **Latest:** app 1.89 and the website (commit c444a30), both 2026-11-12: share links, Commander legality check,
-  Print, weekly email.
-- **Weekly email:** Resend set up by the owner on 2026-11-12 (sender `mtgtrader@mail.nocar.me`, a sending-only key;
-  `RESEND_API_KEY` and `EMAIL_FROM` in Vercel; `/api/health` says `emailReady: true`). The owner chose Friday; waiting
-  for them to click the confirmation link. Gainers and losers appear once the nightly job has saved 7 days of pile
-  prices (from about 2026-11-20).
-- **Expected for now:** `/api/health` shows `weeklyFresh: false` and `weekly: null` until `/api/cron/weekly` first
-  runs (2026-11-13, 07:30 UTC).
+## Right now (2026-11-12, after 1.90)
+- **Latest:** app 1.90 and the website, 2026-11-12: Faces filter (MDFC / Transforming / Split) in the app and on the
+  website, Retry on the app's failed-price notes, the website's Columns dialog (Decks, In decks, Spare and more) and Ordered tick boxes on its wishlist pictures.
+- **Expected to look odd:** right after updating, the app looks up the collection's card details once more (about a
+  minute); until then the Faces filter shows nothing. On the website, cards looked up before 1.90 get their layout on
+  the first Collection visit (the page fetches them, 75 at a time) or at the nightly refresh.
+- **Weekly email:** waiting for the owner to click the confirmation link (Friday chosen). Gainers and losers appear once
+  the nightly job has saved 7 days of pile prices (from about 2026-11-20). `/api/health` shows `weeklyFresh: false`
+  until `/api/cron/weekly` first runs (2026-11-13, 07:30 UTC).
 - **Next:** the owner picks from "Collecting".
 
 ## Collecting
@@ -65,6 +65,10 @@ about where to back up.
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.90 (2026-11-12): Faces filter (MDFC, Transforming, Split / Adventure; Scryfall's layout now kept in the app's card
+  details, database 29, and the website's details blob), Retry on the app's failed-price notes, and the website's
+  Columns dialog with Decks, In decks, Spare, profit, every price source and more (sortable by Decks, Spare, EDHREC);
+  the Ordered tick box in the website wishlist's picture view.
 - 1.89 (2026-11-12): share links for a deck, game, binder or the whole collection (app and website; Settings → Shared
   links switches them off), the Commander legality check (app and website, shared test cases), Print to PDF on the
   website's Collection and deck pages, and the weekly email (Settings → Weekly email; value against a week ago, top 5

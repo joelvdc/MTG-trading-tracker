@@ -118,12 +118,14 @@ data class CollectionFilter(
     val decks: DeckFilter = DeckFilter.ANY,
     /** Since 1.27. */
     val marks: Set<MarkFilter> = emptySet(),
+    /** MDFC, transforming, split (Scryfall's layout). Since 1.90. */
+    val faces: Set<FaceKind> = emptySet(),
 ) {
     val isEmpty get() = this == CollectionFilter()
 
     val count: Int
         get() = listOf(colors.isNotEmpty(), types.isNotEmpty(), rarities.isNotEmpty(), sets.isNotEmpty(), finishes.isNotEmpty(),
-            conditions.isNotEmpty(), languages.isNotEmpty(), minPrice != null || maxPrice != null, decks != DeckFilter.ANY, marks.isNotEmpty()).count { it }
+            conditions.isNotEmpty(), languages.isNotEmpty(), minPrice != null || maxPrice != null, decks != DeckFilter.ANY, marks.isNotEmpty(), faces.isNotEmpty()).count { it }
 
     fun encode(): String = json.encodeToString(serializer(), this)
 
@@ -134,6 +136,7 @@ data class CollectionFilter(
             val t = row.info?.typeLine ?: return false
             if (types.none { it in t }) return false
         }
+        if (faces.isNotEmpty() && row.info?.faces !in faces) return false
         if (rarities.isNotEmpty() && i.card.rarity !in rarities) return false
         if (sets.isNotEmpty() && i.card.setCode.lowercase() !in sets) return false
         if (finishes.isNotEmpty() && i.finish !in finishes) return false

@@ -516,6 +516,15 @@ button.tile-in {
   cursor: pointer;
 }
 
+/* The wishlist pictures' Ordered tick box (under the card, outside its button). */
+.tile-tick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 8px;
+  cursor: pointer;
+}
+
 button.tile-in:hover:not(:disabled) {
   background: #272331;
 }
@@ -1383,6 +1392,23 @@ main h2 {
   gap: 6px;
   padding: 4px 0;
   border-bottom: 1px solid #2c2836;
+}
+
+.columns-list {
+  max-height: none;
+}
+
+.columns-list label {
+  flex: 1;
+  gap: 8px;
+}
+
+.coll-table .type-cell {
+  min-width: 140px;
+}
+
+.coll-table .notes-cell {
+  max-width: 220px;
 }
 
 /* Value by price source (stats) */

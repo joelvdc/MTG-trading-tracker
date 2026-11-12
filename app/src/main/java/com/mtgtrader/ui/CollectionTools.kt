@@ -43,6 +43,7 @@ import com.mtgtrader.data.CONDITIONS
 import com.mtgtrader.data.CollectionFilter
 import com.mtgtrader.data.ColorMatch
 import com.mtgtrader.data.DeckFilter
+import com.mtgtrader.data.FaceKind
 import com.mtgtrader.data.Finish
 import com.mtgtrader.data.MarkFilter
 import com.mtgtrader.data.Money
@@ -171,6 +172,10 @@ fun FilterDialog(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CollectionFilter.TYPES.forEach { t -> FilterChip(selected = t in f.types, onClick = { f = f.copy(types = f.types.toggle(t)) }, label = { Text(t) }) }
                 }
+                Part("Faces")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FaceKind.entries.forEach { k -> FilterChip(selected = k in f.faces, onClick = { f = f.copy(faces = f.faces.toggle(k)) }, label = { Text(k.label) }) }
+                }
                 Part("Rarity")
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CollectionFilter.RARITIES.forEach { (k, label) -> FilterChip(selected = k in f.rarities, onClick = { f = f.copy(rarities = f.rarities.toggle(k)) }, label = { Text(label) }) }
@@ -264,6 +269,7 @@ fun ActiveFilterChips(f: CollectionFilter, sets: List<OwnedSet>, onChange: (Coll
             add((if (f.colorMatch == ColorMatch.ANY) names else "${f.colorMatch.label}: $names") to f.copy(colors = emptySet()))
         }
         if (f.types.isNotEmpty()) add(f.types.joinToString(", ") to f.copy(types = emptySet()))
+        if (f.faces.isNotEmpty()) add(FaceKind.entries.filter { it in f.faces }.joinToString(", ") { it.label } to f.copy(faces = emptySet()))
         if (f.rarities.isNotEmpty()) add(CollectionFilter.RARITIES.filter { it.first in f.rarities }.joinToString(", ") { it.second } to f.copy(rarities = emptySet()))
         if (f.sets.isNotEmpty()) add(f.sets.joinToString(", ") { code -> sets.firstOrNull { it.code == code }?.code?.uppercase() ?: code.uppercase() } to f.copy(sets = emptySet()))
         if (f.finishes.isNotEmpty()) add(f.finishes.joinToString(", ") { it.name.lowercase().replaceFirstChar(Char::uppercase).replace("Nonfoil", "Normal") } to f.copy(finishes = emptySet()))

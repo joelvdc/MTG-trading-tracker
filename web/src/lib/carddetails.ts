@@ -27,6 +27,8 @@ export interface CardInfo {
   d: string;
   /** On Wizards' Game Changers list. */
   g: boolean;
+  /** Scryfall's layout ("normal", "modal_dfc", "transform", "split"…); "" when unknown, missing in entries saved before app 1.90. */
+  l?: string;
   /** TCGplayer market prices in US dollars: normal, foil, etched. */
   u: [number | null, number | null, number | null];
   /** The printing's TCGplayer page (Scryfall's purchase link), or null. */
@@ -55,6 +57,7 @@ export interface ScryDetail {
   edhrec_rank?: number;
   released_at?: string;
   game_changer?: boolean;
+  layout?: string;
   prices?: { usd?: string | null; usd_foil?: string | null; usd_etched?: string | null };
   purchase_uris?: { tcgplayer?: string };
 }
@@ -81,6 +84,7 @@ export function toInfo(c: ScryDetail, now: number): CardInfo {
     r: c.edhrec_rank ?? null,
     d: c.released_at ?? "",
     g: c.game_changer === true,
+    l: c.layout ?? "",
     u: [usd(c.prices?.usd), usd(c.prices?.usd_foil), usd(c.prices?.usd_etched)],
     tu: c.purchase_uris?.tcgplayer ?? null,
     at: now,
@@ -89,7 +93,7 @@ export function toInfo(c: ScryDetail, now: number): CardInfo {
 
 /** An empty entry for a printing Scryfall no longer knows, so it isn't asked for again and again (like the app). */
 export function unknownInfo(now: number): CardInfo {
-  return { c: "", i: "", t: "", v: 0, r: null, d: "", g: false, u: [null, null, null], tu: null, at: now };
+  return { c: "", i: "", t: "", v: 0, r: null, d: "", g: false, l: "", u: [null, null, null], tu: null, at: now };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -148,10 +152,15 @@ export function mergeDetails(file: DetailsFile, ids: string[], found: ScryDetail
   file.madeAt = now;
 }
 
+/** Whether a printing needs looking up: not there yet, or saved before the layout was kept (app 1.90). */
+export function needsLookup(d: CardInfo | undefined): boolean {
+  return !d || d.l === undefined;
+}
+
 /** Looks up the printings in [ids] the store doesn't have yet (at most one Scryfall request) and saves them. */
 export async function addDetails(ids: string[]): Promise<Record<string, CardInfo>> {
   const file = await loadDetails(true);
-  const missing = ids.filter((id) => !file.cards[id]).slice(0, BATCH);
+  const missing = ids.filter((id) => needsLookup(file.cards[id])).slice(0, BATCH);
   if (missing.length > 0) {
     const found = await fetchScryfall(missing);
     mergeDetails(file, missing, found, Date.now());

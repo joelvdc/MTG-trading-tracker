@@ -29,7 +29,8 @@ nightly backups; accounts need an invite code for now.
 - Cards with their printing, finish, condition, language, purchase price, signed and altered, sorted into binders.
 - Prices from Cardmarket, TCGplayer or Card Kingdom, in euros, Danish kroner or US dollars, optionally adjusted for
   condition. Value over time, value by set, biggest risers and fallers, what you paid against what it's worth.
-- List, compact or picture views; sort in up to three layers; filter by almost anything. Home-screen widgets.
+- List, compact or picture views; sort in up to three layers; filter by almost anything (MDFCs, transforming and
+  split cards included). Home-screen widgets.
 - Stats: colours, identities, rarity, types, mana curve, sets, finish, condition, language and more.
 - CSV import and export.
 
@@ -71,6 +72,8 @@ nightly backups; accounts need an invite code for now.
   app. Changes reach the phones at their next sync.
 - **Share links** (from the app or the website) for a deck, a game, a binder or the whole collection: a read-only page
   for anyone with the link, with your prices but never what you paid. Switch links off in the website's Settings.
+- **Columns:** choose and order the collection table's columns, among them how many decks use each card, the copies
+  they use and the copies to spare, every price source, what you paid and the profit.
 - **Print** the collection, a binder or a deck as a list (save it as PDF).
 - A **weekly email** on the day you choose: your collection's value against a week ago, the week's biggest gainers and
   losers, wishlist cards at your price, and changes in your decks.

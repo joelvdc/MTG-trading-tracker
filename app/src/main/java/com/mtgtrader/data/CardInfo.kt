@@ -53,7 +53,15 @@ data class CardInfo(
      * without one, null for other cards and details saved before 1.55; for the win turn. Since 1.55.
      */
     val loyalty: String? = null,
+    /**
+     * Scryfall's layout ("normal", "modal_dfc", "transform", "split"…), for the collection's Faces filter; empty when
+     * Scryfall doesn't know the printing, null for details saved before 1.90. Since 1.90.
+     */
+    val layout: String? = null,
 ) {
+    /** MDFC, transforming or split; null for an ordinary card or unknown layout. */
+    val faces: FaceKind? get() = FaceKind.of(layout)
+
     val isLand get() = "Land" in typeLine.substringBefore(" // ")
 
     companion object {
@@ -101,7 +109,8 @@ interface CardInfoDao {
              SELECT scryfallId FROM collection UNION SELECT scryfallId FROM wishlist UNION SELECT scryfallId FROM deck_cards
            ) WHERE scryfallId NOT IN (SELECT scryfallId FROM card_info) AND scryfallId NOT LIKE '00000000-0000-0000-0000-%'
            UNION SELECT scryfallId FROM card_info WHERE (manaCost IS NULL OR producedMana IS NULL OR (loyalty IS NULL AND typeLine LIKE '%Planeswalker%'))
-             AND scryfallId IN (SELECT scryfallId FROM deck_cards)"""
+             AND scryfallId IN (SELECT scryfallId FROM deck_cards)
+           UNION SELECT scryfallId FROM card_info WHERE layout IS NULL AND scryfallId IN (SELECT scryfallId FROM collection)"""
     )
     suspend fun missing(): List<String>
 
@@ -178,7 +187,7 @@ class CardDetails(private val db: AppDatabase, private val scryfall: ScryfallApi
                 val cards = scryfall.collection(chunk.map(ScryfallApi::idIdentifier)) { done, _ -> _progress.value = (base + done) to ids.size }
                 val found = cards.map { it.toInfo() }
                 // Printings Scryfall no longer knows get an empty entry, so they aren't asked for on every start.
-                val gone = (chunk.toSet() - found.map { it.scryfallId }.toSet()).map { CardInfo(it, null, "", "", "", 0.0, null, manaCost = "", producedMana = "") }
+                val gone = (chunk.toSet() - found.map { it.scryfallId }.toSet()).map { CardInfo(it, null, "", "", "", 0.0, null, manaCost = "", producedMana = "", layout = "") }
                 dao.putAll(found + gone)
                 base += chunk.size
             }
@@ -214,7 +223,27 @@ fun ScryCard.toInfo() = CardInfo(
     tokens = TokenPart.encode(TokenPart.of(this)),
     powerToughness = (power ?: cardFaces?.firstOrNull()?.power)?.let { p -> "$p/${toughness ?: cardFaces?.firstOrNull()?.toughness.orEmpty()}" },
     loyalty = (loyalty ?: cardFaces?.firstOrNull()?.loyalty) ?: "".takeIf { "Planeswalker" in typeLine.ifEmpty { cardFaces?.firstOrNull()?.typeLine.orEmpty() } },
+    layout = layout,
 )
+
+/**
+ * The kinds of two-faced or two-part cards the collection's filter tells apart, from Scryfall's layout (the website's
+ * faceKind in web/src/lib/colquery.ts matches this). Since 1.90.
+ */
+enum class FaceKind(val label: String) {
+    MDFC("MDFC"),
+    TRANSFORM("Transforming"),
+    SPLIT("Split / Adventure");
+
+    companion object {
+        fun of(layout: String?): FaceKind? = when (layout) {
+            "modal_dfc" -> MDFC
+            "transform", "meld" -> TRANSFORM
+            "split", "adventure", "flip", "prepare" -> SPLIT
+            else -> null
+        }
+    }
+}
 
 /** A card name and its mana cost. Since 1.43. */
 data class NameCost(val name: String, val manaCost: String)

@@ -1,6 +1,6 @@
 // What the collection pages show, worked out on the server from the sync file and the price files: every stack
 // with its price as the app shows it (CollectionRow.unitPrice), the binders in the app's order, and the decks.
-import type { CardInfo, DetailsFile } from "./carddetails";
+import { needsLookup, type CardInfo, type DetailsFile } from "./carddetails";
 import type { CkFile } from "./cardkingdom";
 import { currency, rate, type Currency } from "./money";
 import { priceType, PRICE_TYPE_LABELS, type PriceFile, type PriceType } from "./prices";
@@ -170,7 +170,7 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
       const avg30 = set?.[5] ?? null;
       const change = trend != null && avg30 != null && avg30 > 0 ? trend - avg30 : null;
       const d = details?.cards[it.card.scryfallId];
-      if (!d) missing.add(it.card.scryfallId);
+      if (needsLookup(d)) missing.add(it.card.scryfallId);
       return {
         uid: it.uid!,
         card: it.card,
@@ -198,7 +198,7 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
         },
         changeEur: change,
         changePct: change != null ? (change / avg30!) * 100 : null,
-        info: d ? { c: d.c, i: d.i, t: d.t, v: d.v, r: d.r, d: d.d, g: d.g } : null,
+        info: d ? { c: d.c, i: d.i, t: d.t, v: d.v, r: d.r, d: d.d, g: d.g, l: d.l } : null,
       };
     });
   const cur = currency(p.currency);

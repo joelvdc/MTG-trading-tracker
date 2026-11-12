@@ -13,12 +13,15 @@ export function WishGrid({
   perEuro,
   disabled,
   onOpen,
+  onToggleOrdered,
 }: {
   sections: Section[];
   currency: Currency;
   perEuro: number;
   disabled: boolean;
   onOpen: (row: WishRow) => void;
+  /** The Ordered tick box under each picture, as in the table and the app (since 1.90). */
+  onToggleOrdered: (row: WishRow, ordered: boolean) => void;
 }) {
   const money = (eur: number) => format(eur * perEuro, currency);
   return (
@@ -65,6 +68,19 @@ export function WishGrid({
                     <button className="tile-in" disabled={disabled} onClick={() => onOpen(r)}>
                       {body}
                     </button>
+                    {!received && (
+                      <label className="tile-tick small">
+                        <input
+                          type="checkbox"
+                          className="tick"
+                          aria-label={`Ordered: ${r.card.name}`}
+                          checked={r.orderedAt != null}
+                          disabled={disabled}
+                          onChange={(e) => onToggleOrdered(r, e.target.checked)}
+                        />
+                        Ordered
+                      </label>
+                    )}
                   </li>
                 );
               })}

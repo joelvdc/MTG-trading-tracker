@@ -442,7 +442,7 @@ class ScreenshotTest {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SourceStatusStrip(PriceSourceStore.SourceStatus(running = true, message = "Getting TCGplayer's prices… 1,050 of 2,400 cards", progress = 0.44f))
                     SourceStatusStrip(PriceSourceStore.SourceStatus(running = true, message = "Downloading Card Kingdom's prices… 2.1 of 4.7 MB (from GitHub)", progress = 0.45f))
-                    SourceStatusStrip(PriceSourceStore.SourceStatus(cardKingdomError = "HTTP 403; GitHub copy: timeout"))
+                    SourceStatusStrip(PriceSourceStore.SourceStatus(cardKingdomError = "HTTP 403; GitHub copy: timeout"), onRetry = {})
                 }
             }
         }
