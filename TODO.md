@@ -23,16 +23,10 @@ history, the release notes and `web/README.md`.)
   prices (from about 2026-11-20).
 - **Expected for now:** `/api/health` shows `weeklyFresh: false` and `weekly: null` until `/api/cron/weekly` first
   runs (2026-11-13, 07:30 UTC).
-- **Leftovers:** five local `mistral/*` branches from the cancelled Mistral helper; delete them once the owner agrees.
+- **Keep:** the five `mistral/*` branches stay (owner, 2026-11-12: Mistral may pick this project up again on its own).
 - **Next:** the owner picks from "Collecting".
 
 ## Collecting
-
-### Ideas offered by Claude (2026-11-11), not yet chosen
-- Trade matching between friends' accounts (my trade binder against their wishlist).
-- "What should we play tonight?" deck suggestions in the Games tab.
-- A game-night planner website.
-- A website for Poké Trader.
 
 ### Trades on the website (2026-11-05, again 2026-11-06)
 Owner, listing what the website lacks: trades are only shown there. Still to build: make, edit, complete (update the
@@ -67,7 +61,8 @@ about where to back up.
 - Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
 - Prices from the website come as one file, not per-card database lookups (offline, instant). Card Kingdom and
   TCGplayer are still fetched by the phone.
-- Dropped by the owner: Archidekt's own categories for new decks (2026-11-08), the "view on hover" switch for decks,
+- Dropped by the owner: the ideas offered on 2026-11-11 (trade matching between friends, "what should we play
+  tonight?", a game-night planner website, a website for Poké Trader; dropped 2026-11-12), Archidekt's own categories for new decks (2026-11-08), the "view on hover" switch for decks,
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done

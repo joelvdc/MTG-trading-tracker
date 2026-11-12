@@ -88,6 +88,8 @@ The owner clears the conversation after every release. Before the final report, 
 in the repository: work committed and merged, `TODO.md` up to date (shipped, still open), and
 `docs/health-check-instructions.txt` holding the full current health check text. The weekly routine reads that file
 from `main` itself (since 2026-11-05), so a pushed change is all it needs; say in the report what the check gained.
+After every release or website change, also rewrite the "Right now" section at the top of `TODO.md` (where things
+stand, what waits on the owner, what is expected to look odd), so the next session starts from it.
 
 ---
 **For AI assistants:** Keep `AGENTS.md` identical to this file; when either changes, update the other and commit both
