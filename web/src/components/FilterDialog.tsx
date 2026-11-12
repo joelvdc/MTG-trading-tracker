@@ -152,7 +152,8 @@ export function FilterDialog({
           <select value={f.decks} onChange={(e) => setF({ ...f, decks: e.target.value as DeckFilter })}>
             <option value="ANY">All cards</option>
             <option value="IN">Only cards in my decks</option>
-            <option value="OUT">Only cards in no deck</option>
+            <option value="OUT">Only cards no deck uses (every copy is spare)</option>
+            <option value="SPARE">Only spare copies (you own more than your decks use)</option>
           </select>
         </label>
       </div>

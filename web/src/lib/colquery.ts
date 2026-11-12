@@ -36,7 +36,8 @@ export function matchesText(r: CollRow, text: string): boolean {
 }
 
 export type ColorMatch = "ANY" | "EXACT" | "WITHIN" | "IDENTITY";
-export type DeckFilter = "ANY" | "IN" | "OUT";
+/** SPARE (website only, 2026-11-13): you own more copies of the card (every printing) than your decks use. */
+export type DeckFilter = "ANY" | "IN" | "OUT" | "SPARE";
 export type MarkFilter = "SIGNED" | "ALTERED" | "PLAIN";
 /** Two-faced and two-part cards (the app's FaceKind, 1.90). */
 export type FaceKind = "MDFC" | "TRANSFORM" | "SPLIT";
@@ -208,7 +209,8 @@ function colorsMatch(f: Filter, r: CollRow): boolean {
   }
 }
 
-export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>): boolean {
+/** [use]: the decks' use of each card, for the Spare choice (without it, Spare lets everything through). */
+export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>, use?: Map<string, DeckUse>): boolean {
   if (f.colors.length > 0 && !colorsMatch(f, r)) return false;
   if (f.types.length > 0) {
     const t = r.info?.t;
@@ -234,6 +236,11 @@ export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>): bo
     if (p == null) return false;
     if (f.minPrice != null && p < f.minPrice) return false;
     if (f.maxPrice != null && p > f.maxPrice) return false;
+  }
+  if (f.decks === "SPARE") {
+    if (!use) return true;
+    const u = useOf(use, r);
+    return u.owned > u.copies;
   }
   const inDeck = deckNames.has(front(r));
   return f.decks === "ANY" || (f.decks === "IN" ? inDeck : !inDeck);

@@ -265,7 +265,7 @@ export default function CollectionPage() {
 
   const rows = useMemo(() => {
     const words = search.trim();
-    const out = inBinder.filter((r) => (!words || matchesText(r, words)) && matchesFilter(filter, r, deckNames));
+    const out = inBinder.filter((r) => (!words || matchesText(r, words)) && matchesFilter(filter, r, deckNames, use));
     return out.sort(comparator(sorts, use));
   }, [inBinder, search, filter, deckNames, sorts, use]);
 
