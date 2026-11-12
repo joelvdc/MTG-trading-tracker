@@ -18,8 +18,9 @@ history, the release notes and `web/README.md`.)
 - **Latest:** app 1.91 (2026-11-13): "Share wishlist link" in the app and a fuller About text. The website gained, the
   same night: trades made/edited/completed/undone/deleted/exported, saved views, Group printings, the Spare filter, a
   price chart in the card window, a wishlist share link, and a footer with Privacy and Legal & attribution pages.
-- **Expected to look odd:** the price chart only has the days the nightly job has saved so far (from about
-  2026-11-05), so 3M/6M/1Y look the same as 1M for a while. Trades completed on the website reach the phones at their
+- **Expected to look odd:** the price chart only has the days the nightly job has saved so far (from
+  2026-11-12, one point a night), so it says "not enough history" for a couple of days and 3M/6M/1Y look like 1M for
+  months. Trades completed on the website reach the phones at their
   next sync. Saved views store the columns too, so applying an old view can change the table's columns.
 - **Weekly email:** working (confirmed 2026-11-13).
 - **Waiting on the owner:** nothing. Ideas still collecting: Commander Salt scores for local decks, more backup places,
