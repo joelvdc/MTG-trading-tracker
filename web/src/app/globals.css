@@ -3778,3 +3778,45 @@ details.deck-section > summary .mini-head {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* The footer on every page and the Privacy and Legal pages (2026-11-13). */
+.site-footer {
+  border-top: 1px solid var(--raised);
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.site-footer-in {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 16px 28px;
+}
+.site-footer p {
+  margin: 0 0 8px;
+}
+.site-footer a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer a:hover {
+  color: var(--text);
+}
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 12px !important;
+}
+.legal-page h1 {
+  margin: 8px 0 4px;
+}
+.legal-page li {
+  margin: 4px 0;
+}
+@media print {
+  .site-footer {
+    display: none;
+  }
+}
