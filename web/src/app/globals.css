@@ -977,6 +977,22 @@ select.chip.binder-pick option {
   background: rgba(179, 157, 219, 0.12);
 }
 
+/* Group printings: an opened group's line and the piles under it, indented. */
+.coll-table tr.group-row.open td {
+  border-bottom-color: transparent;
+}
+.coll-table tr.sub-pile td {
+  background: rgba(255, 255, 255, 0.025);
+}
+.coll-table tr.sub-pile td.card-cell {
+  padding-left: 28px;
+}
+.coll-table .fold {
+  display: inline-block;
+  width: 1em;
+  color: var(--muted);
+}
+
 .row-with-thumb {
   display: flex;
   gap: 10px;

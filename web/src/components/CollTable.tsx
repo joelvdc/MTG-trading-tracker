@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { columnDef, DEFAULT_COLUMNS, type ColumnDef, type ColumnId } from "@/lib/collcolumns";
 import { format, type Currency } from "@/lib/money";
+import { range, same, type CollGroup } from "@/lib/collgroup";
 import type { CollRow } from "@/lib/collview";
 import { displayName, faceKind, finishName, useOf, type DeckUse, type FaceKind, type SortField, type SortLevel } from "@/lib/colquery";
 import { formatDate } from "./api";
@@ -47,9 +48,25 @@ const RARITY_LABEL: Record<string, string> = { common: "Common", uncommon: "Unco
 
 const dash = <span className="muted">–</span>;
 
-/** The collection as a table, like the wishlist's: one row per pile, sortable column titles, a tick box to select. */
+/** A group's tick box: ticked when all its piles are, half-ticked when some are. */
+function GroupTick({ on, some, disabled, label, onChange }: { on: boolean; some: boolean; disabled: boolean; label: string; onChange: () => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = some && !on;
+  }, [some, on]);
+  return <input ref={ref} type="checkbox" className="tick" aria-label={label} checked={on} disabled={disabled} onChange={onChange} />;
+}
+
+/**
+ * The collection as a table, like the wishlist's: one row per pile, sortable column titles, a tick box to select.
+ * With [groups] (Group printings), one line per card name; a line of several piles opens up to show them.
+ */
 export function CollTable({
   rows,
+  groups,
+  expanded,
+  onExpand,
+  onToggleMany,
   columns,
   use,
   currency,
@@ -65,7 +82,15 @@ export function CollTable({
   onOpen,
   hover,
 }: {
+  /** Every pile shown on this page (also those inside closed groups). */
   rows: CollRow[];
+  /** Group printings: the page's lines, by card name. */
+  groups?: CollGroup[];
+  /** The groups opened up, by key. */
+  expanded?: Set<string>;
+  onExpand?: (key: string) => void;
+  /** Tick or untick several piles at once (a group's tick box). */
+  onToggleMany?: (uids: string[], on: boolean) => void;
   /** The columns chosen (Name is always shown after the tick box). */
   columns: ColumnId[];
   /** The decks' use of each card (Decks, In decks, Spare). */
@@ -206,6 +231,175 @@ export function CollTable({
     }
   }
 
+  const mixed = <span className="muted">Mixed</span>;
+  const priceRange = (values: (number | null)[]) => {
+    const r = range(values);
+    if (!r) return dash;
+    return r.min === r.max ? money(r.min) : `${money(r.min)} – ${money(r.max)}`;
+  };
+  const marksOf = (r: CollRow) => [r.signed ? "Signed" : null, r.altered ? "Altered" : null].filter(Boolean).join(", ");
+
+  /** A group line's cell: one value when every pile agrees, otherwise a summary; card facts as for one pile. */
+  function groupCell(c: ColumnDef, g: CollGroup) {
+    const rs = g.rows;
+    switch (c.id) {
+      case "set": {
+        const one = g.printings === 1;
+        return (
+          <td className={cellClass(c, "muted nowrap set-cell")} title={one ? `${rs[0].card.setName} (${rs[0].card.setCode.toUpperCase()})` : undefined}>
+            {one ? rs[0].card.setName : `${g.printings} printings`}
+          </td>
+        );
+      }
+      case "number":
+        return <td className={cellClass(c, "muted")}>{g.printings === 1 ? rs[0].card.collectorNumber : dash}</td>;
+      case "rarity": {
+        const r = same(rs, (x) => x.card.rarity);
+        return <td className={cellClass(c, "nowrap")}>{r === undefined ? mixed : (RARITY_LABEL[r] ?? r)}</td>;
+      }
+      case "cond":
+        return <td className={cellClass(c)}>{same(rs, (x) => x.condition) ?? mixed}</td>;
+      case "lang":
+        return <td className={cellClass(c)}>{same(rs, (x) => x.language) ?? mixed}</td>;
+      case "finish":
+        return <td className={cellClass(c, "nowrap")}>{same(rs, finishName) ?? mixed}</td>;
+      case "marks":
+        return <td className={cellClass(c, "nowrap")}>{same(rs, marksOf) ?? mixed}</td>;
+      case "binder": {
+        const b = same(rs, (x) => x.binder);
+        const n = new Set(rs.map((x) => x.binder)).size;
+        return <td className={cellClass(c, "binder-name nowrap")}>{b !== undefined ? binderName(b) : <span className="muted">{n} binders</span>}</td>;
+      }
+      case "notes":
+        return <td className={cellClass(c, "small muted notes-cell")}>{same(rs, (x) => x.notes) ?? ""}</td>;
+      case "price":
+        return <td className={cellClass(c, "nowrap")}>{priceRange(rs.map((x) => x.unitEur))}</td>;
+      case "total":
+        return <td className={cellClass(c, "nowrap")}>{g.maxEur != null ? money(g.totalEur) : dash}</td>;
+      case "paid":
+        return <td className={cellClass(c, "nowrap")}>{priceRange(rs.map((x) => x.purchasePrice))}</td>;
+      case "profit":
+        return (
+          <td className={cellClass(c, "nowrap")}>
+            {g.profitEur == null ? dash : <span className={g.profitEur > 0 ? "up" : g.profitEur < 0 ? "down" : "muted"}>{signed(g.profitEur)}</span>}
+          </td>
+        );
+      case "cardmarket":
+      case "tcgplayer":
+      case "cardkingdom":
+      case "ckPays": {
+        const src = c.id;
+        return <td className={cellClass(c, "nowrap")}>{priceRange(rs.map((x) => x.srcEur[src]))}</td>;
+      }
+      default:
+        // Qty, Added and Change come from the stand-in pile; the card's facts and its decks are the same for every pile.
+        return cell(c, g.sum);
+    }
+  }
+
+  function pileRow(r: CollRow, sub = false) {
+    return (
+      <tr
+        key={r.uid}
+        className={["wish-row clickable", sub ? "sub-pile" : "", selected.has(r.uid) ? "picked" : ""].filter(Boolean).join(" ")}
+        onClick={() => {
+          hide();
+          if (!disabled) onOpen(r);
+        }}
+        onMouseEnter={follow(r.card.imageUrl)}
+        onMouseMove={follow(r.card.imageUrl)}
+        onMouseLeave={hide}
+      >
+        <td className="center" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="tick"
+            aria-label={`Select ${r.card.name}`}
+            checked={selected.has(r.uid)}
+            disabled={disabled}
+            onChange={() => onToggle(r.uid)}
+          />
+        </td>
+        <td className="card-cell">
+          <button
+            className="row-title linkish"
+            disabled={disabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(r);
+            }}
+          >
+            {displayName(r.card)}
+          </button>{" "}
+          {/* Inside an opened group the piles share the name, so say which printing each is when no column does. */}
+          {sub && !columns.includes("set") && <span className="muted small">{r.card.setCode.toUpperCase()} </span>}
+          {!columns.includes("number") && <span className="muted small">#{r.card.collectorNumber}</span>}
+          {!columns.includes("finish") && (r.finish !== "NONFOIL" || r.card.foilType) && <span className="tag foil">{finishName(r)}</span>}
+          {!columns.includes("marks") && r.signed && <span className="tag">Signed</span>}
+          {!columns.includes("marks") && r.altered && <span className="tag">Altered</span>}
+          {!columns.includes("notes") && r.notes && <div className="muted small sub">{r.notes}</div>}
+        </td>
+        {cols.map((c) => (
+          <Fragment key={c.id}>{cell(c, r)}</Fragment>
+        ))}
+      </tr>
+    );
+  }
+
+  /** One group: a single pile shows as usual; several show as one line, with the piles under it when opened. */
+  function groupLines(g: CollGroup) {
+    if (g.rows.length === 1) return pileRow(g.rows[0]);
+    const open = !!expanded?.has(g.key);
+    const uids = g.rows.map((r) => r.uid);
+    const nOn = uids.filter((u) => selected.has(u)).length;
+    const name = same(g.rows, (r) => displayName(r.card)) ?? g.rows[0].card.name;
+    const toggleOpen = () => {
+      hide();
+      onExpand?.(g.key);
+    };
+    return (
+      <Fragment key={g.sum.uid}>
+        <tr
+          className={["wish-row clickable group-row", open ? "open" : "", nOn === uids.length ? "picked" : ""].filter(Boolean).join(" ")}
+          onClick={toggleOpen}
+          onMouseEnter={follow(g.rows[0].card.imageUrl)}
+          onMouseMove={follow(g.rows[0].card.imageUrl)}
+          onMouseLeave={hide}
+        >
+          <td className="center" onClick={(e) => e.stopPropagation()}>
+            <GroupTick
+              on={nOn === uids.length}
+              some={nOn > 0}
+              disabled={disabled}
+              label={`Select every ${g.rows[0].card.name}`}
+              onChange={() => onToggleMany?.(uids, nOn < uids.length)}
+            />
+          </td>
+          <td className="card-cell">
+            <button
+              className="row-title linkish"
+              aria-expanded={open}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleOpen();
+              }}
+            >
+              <span className="fold" aria-hidden="true">
+                {open ? "▾" : "▸"}
+              </span>{" "}
+              {name}
+            </button>{" "}
+            <span className="muted small">{g.rows.length} piles</span>
+          </td>
+          {cols.map((c) => (
+            <Fragment key={c.id}>{groupCell(c, g)}</Fragment>
+          ))}
+        </tr>
+        {open && g.rows.map((r) => pileRow(r, true))}
+      </Fragment>
+    );
+  }
+
   const heads: { id: string; label: string; hint: string; field?: SortField; cls?: string }[] = [
     { id: "name", label: "Name", hint: "", field: "NAME" },
     ...cols.map((c) => ({ id: c.id, label: c.label, hint: c.hint, field: c.field, cls: cellClass(c) })),
@@ -245,52 +439,7 @@ export function CollTable({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr
-              key={r.uid}
-              className={["wish-row clickable", selected.has(r.uid) ? "picked" : ""].join(" ")}
-              onClick={() => {
-                hide();
-                if (!disabled) onOpen(r);
-              }}
-              onMouseEnter={follow(r.card.imageUrl)}
-              onMouseMove={follow(r.card.imageUrl)}
-              onMouseLeave={hide}
-            >
-              <td className="center" onClick={(e) => e.stopPropagation()}>
-                <input
-                  type="checkbox"
-                  className="tick"
-                  aria-label={`Select ${r.card.name}`}
-                  checked={selected.has(r.uid)}
-                  disabled={disabled}
-                  onChange={() => onToggle(r.uid)}
-                />
-              </td>
-              <td className="card-cell">
-                <button
-                  className="row-title linkish"
-                  disabled={disabled}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpen(r);
-                  }}
-                >
-                  {displayName(r.card)}
-                </button>{" "}
-                {!columns.includes("number") && <span className="muted small">#{r.card.collectorNumber}</span>}
-                {!columns.includes("finish") && (r.finish !== "NONFOIL" || r.card.foilType) && <span className="tag foil">{finishName(r)}</span>}
-                {!columns.includes("marks") && r.signed && <span className="tag">Signed</span>}
-                {!columns.includes("marks") && r.altered && <span className="tag">Altered</span>}
-                {!columns.includes("notes") && r.notes && <div className="muted small sub">{r.notes}</div>}
-              </td>
-              {cols.map((c) => (
-                <Fragment key={c.id}>{cell(c, r)}</Fragment>
-              ))}
-            </tr>
-          ))}
-        </tbody>
+        <tbody>{groups ? groups.map(groupLines) : rows.map((r) => pileRow(r))}</tbody>
       </table>
       {picture}
     </div>

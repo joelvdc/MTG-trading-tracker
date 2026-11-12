@@ -23,6 +23,7 @@ import { WishlistPanel } from "@/components/WishlistPanel";
 import { CONDITIONS, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit } from "@/lib/collection";
 import { DEFAULT_COLUMNS, readColumns, type ColumnId } from "@/lib/collcolumns";
+import { groupRows } from "@/lib/collgroup";
 import { BAR_SCANS, BAR_UNSORTED, BAR_WISHLIST, barKeys, type CollectionView, type CollRow } from "@/lib/collview";
 import {
   comparator,
@@ -56,6 +57,8 @@ interface Saved {
   perPage?: number;
   /** The table's columns (since 1.90). */
   columns?: ColumnId[];
+  /** Group printings: one table line per card name (website only). */
+  grouped?: boolean;
 }
 
 function readSaved(): Saved {
@@ -101,6 +104,8 @@ export default function CollectionPage() {
   const [perPage, setPerPage] = useState(50);
   const [columns, setColumns] = useState<ColumnId[]>(DEFAULT_COLUMNS);
   const [choosingColumns, setChoosingColumns] = useState(false);
+  const [grouped, setGrouped] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<CollRow | null>(null);
@@ -130,6 +135,7 @@ export default function CollectionPage() {
     if (s.layout === "images") setLayout("images");
     if (s.perPage && PER_PAGE.includes(s.perPage)) setPerPage(s.perPage);
     if (s.columns) setColumns(readColumns(s.columns));
+    if (s.grouped === true) setGrouped(true);
     const params = new URLSearchParams(window.location.search);
     const fromUrl = filterFrom(params.get("filter"));
     const binderUrl = params.get("binder");
@@ -263,6 +269,9 @@ export default function CollectionPage() {
     return out.sort(comparator(sorts, use));
   }, [inBinder, search, filter, deckNames, sorts, use]);
 
+  /** Group printings (the table only; the picture view keeps one tile per pile). */
+  const groups = useMemo(() => (grouped && layout === "list" ? groupRows(rows, comparator(sorts, use)) : null), [grouped, layout, rows, sorts, use]);
+
   // A selection only holds piles that are still there and still shown.
   const shownUids = useMemo(() => new Set(rows.map((r) => r.uid)), [rows]);
   const picked = useMemo(() => [...selected].filter((u) => shownUids.has(u)), [selected, shownUids]);
@@ -307,9 +316,12 @@ export default function CollectionPage() {
   }
 
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
-  const pages = Math.max(1, Math.ceil(rows.length / perPage));
+  // With Group printings, the pages count lines (card names), not piles.
+  const lines = groups ? groups.length : rows.length;
+  const pages = Math.max(1, Math.ceil(lines / perPage));
   const pageAt = Math.min(page, pages - 1);
-  const pageRows = rows.slice(pageAt * perPage, (pageAt + 1) * perPage);
+  const pageGroups = groups ? groups.slice(pageAt * perPage, (pageAt + 1) * perPage) : null;
+  const pageRows = pageGroups ? pageGroups.flatMap((g) => g.rows) : rows.slice(pageAt * perPage, (pageAt + 1) * perPage);
   const copies = rows.reduce((n, r) => n + r.quantity, 0);
   const value = rows.reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
   const locked = view.readOnly || busy;
@@ -473,6 +485,21 @@ export default function CollectionPage() {
               Columns
             </button>
           )}
+          {layout === "list" && (
+            <button
+              className={grouped ? "btn on" : "btn"}
+              aria-pressed={grouped}
+              title="One line per card name, whatever its set, finish, condition or binder; click a line to see its piles"
+              onClick={() => {
+                setGrouped(!grouped);
+                setExpanded(new Set());
+                setPage(0);
+                writeSaved({ grouped: !grouped });
+              }}
+            >
+              Group printings
+            </button>
+          )}
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
@@ -507,7 +534,8 @@ export default function CollectionPage() {
         </div>
 
         <p className="muted small showing">
-          Showing {nFilter > 0 || search.trim() ? `${rows.length} of ${inBinder.length}` : rows.length} piles{" "}
+          Showing {groups ? `${groups.length} card names (` : ""}
+          {nFilter > 0 || search.trim() ? `${rows.length} of ${inBinder.length}` : rows.length} piles{groups ? ")" : ""}{" "}
           {pick === "" ? "in the whole collection" : pick === "~" ? "not in a binder" : `in “${binderLabel}”`}, sorted by {sortText(sorts)}.
         </p>
         {nFilter > 0 && (
@@ -597,6 +625,26 @@ export default function CollectionPage() {
         {layout === "list" ? (
           <CollTable
             rows={pageRows}
+            groups={pageGroups ?? undefined}
+            expanded={expanded}
+            onExpand={(key) =>
+              setExpanded((s) => {
+                const n = new Set(s);
+                if (n.has(key)) n.delete(key);
+                else n.add(key);
+                return n;
+              })
+            }
+            onToggleMany={(uids, on) =>
+              setSelected((s) => {
+                const n = new Set(s);
+                for (const u of uids) {
+                  if (on) n.add(u);
+                  else n.delete(u);
+                }
+                return n;
+              })
+            }
             columns={columns}
             use={use}
             currency={view.currency}
@@ -638,7 +686,7 @@ export default function CollectionPage() {
             </label>
             <span className="spacer" />
             <span className="muted small">
-              {pageAt * perPage + 1}–{Math.min((pageAt + 1) * perPage, rows.length)} of {rows.length}
+              {pageAt * perPage + 1}–{Math.min((pageAt + 1) * perPage, lines)} of {lines}
             </span>
             <button className="btn" aria-label="Previous page" disabled={pageAt === 0} onClick={() => { setPage(pageAt - 1); window.scrollTo(0, 0); }}>
               ‹ Previous

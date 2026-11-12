@@ -14,16 +14,17 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-12, after 1.90)
-- **Latest:** app 1.90 and the website, 2026-11-12: Faces filter (MDFC / Transforming / Split) in the app and on the
-  website, Retry on the app's failed-price notes, the website's Columns dialog (Decks, In decks, Spare and more) and Ordered tick boxes on its wishlist pictures.
-- **Expected to look odd:** right after updating, the app looks up the collection's card details once more (about a
-  minute); until then the Faces filter shows nothing. On the website, cards looked up before 1.90 get their layout on
-  the first Collection visit (the page fetches them, 75 at a time) or at the nightly refresh.
+## Right now (2026-11-12, after 1.90 and the website's Group printings)
+- **Latest:** website only, 2026-11-12: **Group printings** button on the Collection page (list view): one line per
+  card name, click a line to see its piles. No app release needed. Before that, app 1.90: Faces filter, Retry on failed
+  prices, the website's Columns dialog and Ordered ticks on wishlist pictures.
+- **Expected to look odd:** in grouped view, Change stays blank when the piles' changes differ, and the picture view is
+  never grouped (on purpose). Right after updating to 1.90, the app looks up the collection's card details once more
+  (about a minute); until then the Faces filter shows nothing.
 - **Weekly email:** waiting for the owner to click the confirmation link (Friday chosen). Gainers and losers appear once
   the nightly job has saved 7 days of pile prices (from about 2026-11-20). `/api/health` shows `weeklyFresh: false`
   until `/api/cron/weekly` first runs (2026-11-13, 07:30 UTC).
-- **Next:** the owner picks from "Collecting".
+- **Next:** the owner picks from "Collecting"; mention Group printings in the next app release notes.
 
 ## Collecting
 
@@ -65,6 +66,7 @@ about where to back up.
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- Website (2026-11-12): Group printings on the collection table (one line per card name, opens to its piles).
 - 1.90 (2026-11-12): Faces filter (MDFC, Transforming, Split / Adventure; Scryfall's layout now kept in the app's card
   details, database 29, and the website's details blob), Retry on the app's failed-price notes, and the website's
   Columns dialog with Decks, In decks, Spare, profit, every price source and more (sortable by Decks, Spare, EDHREC);

@@ -50,6 +50,11 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 - Stats, filters, sorting and the two CSV exports (`lib/colquery.ts`, `lib/csvexport.ts`) copy the app's
   `CollectionStats`, filter sheet, `SortSpec` and `exportCollectionCsv`. Value over time is not shown (its history lives
   on the phone); risers and fallers use Cardmarket's trend against its 30-day average, like the app.
+- **Group printings** (website only, `lib/collgroup.ts`, remembered per browser): the collection table shows one line per
+  card name after search and filters. One value where every pile agrees, otherwise a summary ("3 printings", "2
+  binders", "Mixed", cheapest – dearest price); Qty, Total and Profit are added up, Change only shows when every pile
+  has the same. Lines sort by their totals (copies added up, dearest copy, newest date). Clicking a line opens its piles
+  under it; its tick box ticks them all. Pages count lines. The picture view keeps one tile per pile.
 - **Auto categories** (`lib/autocategories.ts`): cards added to local decks, new decks and "Put every card in its auto
   category" use the website's own table `card_tags` (card name → categories). A daily job (`/api/cron/categories`,
   04:00 UTC) rebuilds it from Scryfall's card tags when it is a week old: one tag search per category (paged), about
