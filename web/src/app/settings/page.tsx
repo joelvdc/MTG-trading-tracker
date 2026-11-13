@@ -7,6 +7,7 @@ import { TopBar } from "@/components/Nav";
 import { RecSettingsPanel } from "@/components/RecTiles";
 import { SharedLinksPanel } from "@/components/SharePanel";
 import { EmailPanel } from "@/components/EmailPanel";
+import { ThemePanel } from "@/components/ThemePanel";
 import { api } from "@/components/api";
 
 interface Session {
@@ -38,6 +39,7 @@ export default function SettingsPage() {
       <TopBar page="settings" folder={session.folder} />
       <main className="page narrow">
         <div className="stack">
+          <ThemePanel />
           <AppSettingsPanel />
           <RecSettingsPanel />
           <EmailPanel />

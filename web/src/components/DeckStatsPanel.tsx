@@ -196,7 +196,7 @@ export function DeckStatsPanel({
                       <tr key={c.name}>
                         <th>{odds.commanders.length > 1 ? c.name : "Commander"}</th>
                         {c.byTurn.map((p, t) => (
-                          <td key={t} style={{ background: `rgba(179, 157, 219, ${Math.max(0.08, p / 100)})`, color: p > 55 ? "#15131a" : undefined }}>
+                          <td key={t} style={heat(p)}>
                             {p}
                           </td>
                         ))}
@@ -208,7 +208,7 @@ export function DeckStatsPanel({
                           <ManaCost cost={`{${colour}}`} size={16} />
                         </th>
                         {values.map((p, t) => (
-                          <td key={t} style={{ background: `rgba(179, 157, 219, ${Math.max(0.08, p / 100)})`, color: p > 55 ? "#15131a" : undefined }}>
+                          <td key={t} style={heat(p)}>
                             {p}
                           </td>
                         ))}
@@ -218,7 +218,7 @@ export function DeckStatsPanel({
                       <tr>
                         <th>All colours</th>
                         {odds.allColours.map((p, t) => (
-                          <td key={t} style={{ background: `rgba(179, 157, 219, ${Math.max(0.08, p / 100)})`, color: p > 55 ? "#15131a" : undefined }}>
+                          <td key={t} style={heat(p)}>
                             {p}
                           </td>
                         ))}
@@ -261,9 +261,14 @@ export function DeckStatsPanel({
   );
 }
 
-/** The first win (green) and 4 in 10 games (gold) on the dark page. */
-const FIRST_WIN = "#5DCAA5";
-const FOUR_IN_TEN = "var(--gold)";
+/** The first win (green) and 4 in 10 games (the accent, gold in Dark). */
+const FIRST_WIN = "var(--green-text)";
+const FOUR_IN_TEN = "var(--accent)";
+
+/** A heatmap cell: the theme's second accent, stronger with a higher share. */
+function heat(p: number): { background: string; color?: string } {
+  return { background: `color-mix(in srgb, var(--accent2) ${Math.round(Math.max(8, p))}%, transparent)`, color: p > 55 ? "var(--on-accent2)" : undefined };
+}
 
 /**
  * When the deck can win (the app's WinningCard): the first turn it wins (green) and the turn of 4 in 10 games
@@ -307,7 +312,7 @@ function WinningTable({ w, about, setAbout }: { w: WinResult; about: boolean; se
   };
   const turns = winWindow(w);
   const cell = (p: number, mark?: string) => (
-    <td style={{ background: `rgba(179, 157, 219, ${Math.max(0.08, p / 100)})`, color: p > 55 ? "#15131a" : undefined, outline: mark ? `2px solid ${mark}` : undefined }}>{p}</td>
+    <td style={{ ...heat(p), outline: mark ? `2px solid ${mark}` : undefined }}>{p}</td>
   );
   return (
     <>

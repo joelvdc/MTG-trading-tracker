@@ -78,6 +78,8 @@ nightly backups; accounts need an invite code for now.
 - **Saved views** of the collection (binder, search, filter, sort, columns, grouping, layout) kept with the account;
   **Group printings** shows one line per card name; a **Spare** filter finds copies your decks don't use.
 - A **price chart** in the card window, from the prices saved every night (a year back at most).
+- **Themes** (Settings → Theme): System, Dark, Light, and one per basic land (Plains, Island, Swamp, Mountain,
+  Forest), kept per browser.
 - **Print** the collection, a binder or a deck as a list (save it as PDF).
 - A **weekly email** on the day you choose: your collection's value against a week ago, the week's biggest gainers and
   losers, wishlist cards at your price, and changes in your decks.

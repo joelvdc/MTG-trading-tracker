@@ -14,14 +14,18 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-13, after 1.91)
+## Right now (2026-11-13, after 1.91 and the website themes)
 - **Latest:** app 1.91 (2026-11-13): "Share wishlist link" in the app and a fuller About text. The website gained, the
   same night: trades made/edited/completed/undone/deleted/exported, saved views, Group printings, the Spare filter, a
   price chart in the card window, a wishlist share link, and a footer with Privacy and Legal & attribution pages.
+- **Website themes** (2026-11-13, website only, no app version): Settings → Theme with System (the default), Dark,
+  Light, Plains, Island, Swamp, Mountain and Forest, kept per browser.
 - **Expected to look odd:** the price chart only has the days the nightly job has saved so far (from
   2026-11-12, one point a night), so it says "not enough history" for a couple of days and 3M/6M/1Y look like 1M for
   months. Trades completed on the website reach the phones at their
-  next sync. Saved views store the columns too, so applying an old view can change the table's columns.
+  next sync. Saved views store the columns too, so applying an old view can change the table's columns. The website now
+  follows the computer's light/dark setting until a theme is picked, so it can turn light by itself; Dark's chosen tab
+  is a shade darker than before (for readability).
 - **Weekly email:** working (confirmed 2026-11-13).
 - **Waiting on the owner:** nothing. Ideas still collecting: Commander Salt scores for local decks, more backup places,
   Group printings in the app.
@@ -64,6 +68,7 @@ per card name, opens to its piles) for the app's collection list.
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- Website (2026-11-13): themes (System, Dark, Light, Plains, Island, Swamp, Mountain, Forest), per browser.
 - 1.91 (2026-11-13): "Share wishlist link" in the app, About text with every source and the Fan Content Policy;
   website: trades (make, edit, complete, undo, delete with Undo, CSV export, the app's rules), saved views, Spare
   filter, price chart (prices kept a year: daily 92 days, then weekly), wishlist share link, footer with Privacy and

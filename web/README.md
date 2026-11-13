@@ -120,6 +120,13 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 - **Saved views** (`lib/savedviews.ts`, `/api/collection/views`, `components/ViewsMenu.tsx`): up to 30 per account in
   the table `saved_views`; **Group printings** (`lib/collgroup.ts`) folds the list view by card name; the Decks
   filter has SPARE (owned more than the decks use, `lib/colquery.ts`).
+- **Themes** (`lib/themes.ts`, `components/ThemePanel.tsx`, Settings → Theme): every theme colour lives in
+  `lib/themes.ts` (the layout writes them as CSS variables, `globals.css` only uses `var(--...)`; the colours that mean
+  something, such as verdict green and red, foil and mana, are fixed in `:root`). The choice is kept in this browser
+  (`localStorage` `mtg.theme`); none = System (Dark, or Light when the computer asks for light). A small script in
+  `<head>` applies it before the page paints. `test/themes.test.ts` checks every theme gives every colour, text
+  contrast at least 4.5:1, and that every `var(--...)` the site uses exists: a new colour goes into `THEME_TOKENS` and
+  every theme.
 - **Footer and pages** (`components/SiteFooter.tsx`, `/privacy`, `/legal`): data sources, the Fan Content Policy
   wording, Contact = the GitHub issues page.
 - **Print** (`lib/printlist.ts`, `components/PrintLists.tsx`): an A4 list without pictures, drawn under `<body>` and
