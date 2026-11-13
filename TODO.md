@@ -14,21 +14,21 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-13, after 1.91 and the website themes)
-- **Latest:** app 1.91 (2026-11-13): "Share wishlist link" in the app and a fuller About text. The website gained, the
-  same night: trades made/edited/completed/undone/deleted/exported, saved views, Group printings, the Spare filter, a
-  price chart in the card window, a wishlist share link, and a footer with Privacy and Legal & attribution pages.
-- **Website themes** (2026-11-13, website only, no app version): Settings → Theme with System (the default), Dark,
-  Light, Plains, Island, Swamp, Mountain and Forest, kept per browser.
-- **Expected to look odd:** the price chart only has the days the nightly job has saved so far (from
-  2026-11-12, one point a night), so it says "not enough history" for a couple of days and 3M/6M/1Y look like 1M for
-  months. Trades completed on the website reach the phones at their
-  next sync. Saved views store the columns too, so applying an old view can change the table's columns. The website now
-  follows the computer's light/dark setting until a theme is picked, so it can turn light by itself; Dark's chosen tab
-  is a shade darker than before (for readability).
+## Right now (2026-11-13, after 1.92)
+- **Latest:** app 1.92 (2026-11-13): steadier sync (an edit made while a sync saves is no longer missed, changes
+  during a sync start the next one, an unexpected sync error shows as a message instead of closing the app). Website
+  the same day: `/api/sync` answers 428 to a save without If-Match / If-None-Match, and the Vercel deploy check
+  compares with the last deployed commit. 1.91 the same morning: Share wishlist link; website trades, saved views,
+  price chart, themes.
+- **GitHub checks:** the Tests check now also runs the website's tests and type check, on pull requests *and* on every
+  push to `main`; a red mark after a push means fix that first. The Release workflow compares the certificate with
+  the previous release and stops if it differs.
+- **Expected to look odd:** the price chart has only the nights saved since 2026-11-12, so "not enough history" for a
+  few days and 3M/6M/1Y look like 1M for months. Trades completed on the website reach the phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** nothing. Ideas still collecting: Commander Salt scores for local decks, more backup places,
-  Group printings in the app.
+- **Waiting on the owner:** two proposals under "Proposed 2026-11-13" (TCGplayer prices from the website; switching
+  off Android's own Google backup). Review follow-ups for later under "From the code reviews". Ideas still
+  collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
 ## Collecting
 
@@ -58,6 +58,39 @@ per card name, opens to its piles) for the app's collection list.
 - The phone's "Unable to resolve host" for every price site (2026-11-07, VPN on) was a DNS/VPN problem on the phone,
   not the app. Look again only if it comes back with the VPN off.
 
+### From the code reviews (2026-11-13)
+GLM and DeepSeek reviewed the code; Claude checked their findings. The urgent ones shipped in 1.92 (sync fixes, tests
+in GitHub for the website, the release certificate check, the website's deploy rule). The owner asked to keep these
+for later:
+- **Speed with big collections (app):** the hourly sync reads every table before asking the website "changed?" (check
+  the change count and ask first, read only when needed); some lookups load the whole collection to count one card,
+  once per wishlist card too (`MtgRepository.kt`, `PriceSources.kt` `ownedIds`: targeted DAO queries); the Collection
+  screen redoes filtering, sorting and counts on every letter typed (wait ~150 ms, do it off the main thread).
+- **Website card-details file** (`web/src/lib/carddetails.ts`): read whole, changed and written back with no version
+  check, so two saves at once can drop one's additions (they're looked up again later). Rows in the database like
+  `legal_rules`, or retry on the ETag.
+- **Website login lock** (`web/src/lib/users.ts`): two wrong passwords at the same moment can count once (atomic SQL
+  counter), and a locked account is reported before the password is checked.
+- **Website route tests:** `test/syncroute.test.ts` (1.92) covers `/api/sync`; the login, lockout and other routes
+  have none yet.
+- **Content-Security-Policy** for the website, starting in report-only mode.
+- Smaller: the 7 cron routes each copy the secret check (one shared helper); failed price/detail loads on the website
+  are silent (a `console.warn`); `currentAccount()` makes two database calls where one would do; the unused
+  Nextcloud read path in `web/src/lib/store.ts`; ESLint with the React hooks rules; `CollectionScreen.kt`,
+  `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
+  `targetSdk` 36 as its own release with new screenshots.
+
+### Proposed 2026-11-13, waiting on the owner
+- **TCGplayer prices from the website:** the phone asks Scryfall for its cards 75 at a time, at most 2 requests a
+  second, so a few thousand cards take tens of seconds. The website already refreshes TCGplayer prices every night
+  for every card it has looked up (`carddetails.ts`). A new `/api/app/tcgplayer` could answer all the phone's cards in
+  one call (like Cardmarket's prices since 1.81), with Scryfall only for cards the website doesn't know. Needs a
+  health check line for the new address.
+- **Android's own backup:** `allowBackup="true"` lets Android copy the app's database to the phone's Google backup
+  (only if that is switched on in the phone's settings). The owner doesn't use Google Drive; the app has its own
+  backups (daily on the phone or a chosen folder, the website's 10 days, the nightly copy to Nextcloud). Proposed:
+  switch Android's copy off, also because a restored copy can't read its encrypted login and starts logged out.
+
 ### Decided, keep in mind
 - Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
 - Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
@@ -68,6 +101,8 @@ per card name, opens to its piles) for the app's collection list.
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.92 (2026-11-13): sync fixes from the code reviews, sync tests, website checks in GitHub, release certificate
+  check, `/api/sync` 428, Vercel deploy rule.
 - Website (2026-11-13): themes (System, Dark, Light, Plains, Island, Swamp, Mountain, Forest), per browser.
 - 1.91 (2026-11-13): "Share wishlist link" in the app, About text with every source and the Fan Content Policy;
   website: trades (make, edit, complete, undo, delete with Undo, CSV export, the app's rules), saved views, Spare

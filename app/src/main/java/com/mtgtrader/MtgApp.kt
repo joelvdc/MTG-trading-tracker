@@ -90,7 +90,14 @@ class MtgApp : Application(), ImageLoaderFactory {
 
 /** Hand-rolled dependency container; one instance for the whole app. */
 class AppContainer(context: Context) {
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Work started outside a screen. An unexpected error in one job is logged instead of closing the app (since 1.92);
+     * the job's own screen or status shows what failed where it catches its errors.
+     */
+    val appScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default +
+            kotlinx.coroutines.CoroutineExceptionHandler { _, e -> android.util.Log.e("MtgTrader", "Background job failed", e) },
+    )
     /** The application, for work started outside a screen (the home-screen widgets, since 1.77). */
     val appContext: Context = context.applicationContext
     /** Switches the owner can flip on GitHub to turn Archidekt features off everywhere (since 1.76). */

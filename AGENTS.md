@@ -72,7 +72,8 @@ The same agreement applies, with these differences:
 - Release only by the pull request route (see Releases, "Cloud sessions"): open a pull request, merge it once GitHub's
   Tests check has passed, then Actions → Release → Run workflow on `main`. Never build a release with the PC's own
   signing key and never open its files (see "Still ask first").
-- Run the website's `npm test` and `npm run typecheck` yourself when `web/` changed (GitHub's Tests check doesn't).
+- Run the website's `npm test` and `npm run typecheck` yourself when `web/` changed (GitHub's Tests check runs them
+  too since 2026-11-13, but only after pushing).
 - If the owner says Claude Code will review the work, stop after committing on the branch and name the branch.
 - Never run two assistants on the same copy of the code at the same time.
 

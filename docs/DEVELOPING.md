@@ -38,8 +38,9 @@ For any assistant (Claude Code, Cline, …) or person working on this repository
   (`git checkout -- app/src/test/screenshots/` for the rest; recording rewrites every picture with invisible
   differences). They run in UTC with English formats, so pictures pass on GitHub's Linux machines and on the PC.
 - Website: in `web/`, `npm test` and `npm run typecheck` (there is no lint set up).
-- GitHub's **Tests** check runs the app checks on every pull request; it doesn't run the website tests, so run those
-  yourself.
+- GitHub's **Tests** check (`.github/workflows/tests.yml`) runs the app checks and the website's `npm test` and
+  `npm run typecheck` on every pull request and every push to `main` (since 2026-11-13). A red mark after a push to
+  `main` means something is broken there: fix it first. Still run the checks yourself before committing.
 
 ## Things that must change together
 - **Database version** (`data/Database.kt`): every bump needs a `MIGRATION_x_y` whose SQL matches the exported schema
@@ -65,7 +66,8 @@ Two routes, both in `AGENTS.md` → Releases:
   secrets; nobody needs the keystore.
 - **Local on the PC** (Claude Code only): uses the keystore in `keystore/`. Other assistants never use or open it.
 After either route: the published APK must carry the same certificate as the previous release
-(`apksigner verify --print-certs`, compare the SHA-256; currently `f79e1ce9…93f5`).
+(`apksigner verify --print-certs`, compare the SHA-256; currently `f79e1ce9…93f5`). The Release workflow does this
+comparison itself since 1.92 and stops before publishing if they differ; the local route still checks by hand.
 
 ## Website notes
 - Website-only changes need no app release: once on `main`, Vercel deploys `web/` by itself. Check

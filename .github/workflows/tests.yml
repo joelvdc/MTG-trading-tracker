@@ -1,8 +1,12 @@
-# Runs the unit tests, the screenshot comparison and a debug build on every pull request, so problems show up before merging.
+# Runs the app's unit tests, screenshot comparison and a debug build, and the website's tests and type check, on every
+# pull request (so problems show up before merging) and on every push to main (commits made straight to main on the
+# owner's PC, so a problem there shows up as a red mark and an email instead of not at all).
 name: Tests
 
 on:
   pull_request:
+  push:
+    branches: [main]
 
 jobs:
   test:
@@ -21,3 +25,19 @@ jobs:
         with:
           name: screenshot-differences
           path: app/build/outputs/roborazzi/
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck

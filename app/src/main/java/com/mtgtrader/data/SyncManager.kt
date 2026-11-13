@@ -92,6 +92,10 @@ class SyncManager(
     private val web: WebAccountClient,
     private val network: NetworkMonitor,
     private val scope: CoroutineScope,
+    /** Reads the stored login token; tests pass their own (there is no Android keystore there). */
+    private val decrypt: (String) -> String? = SecretStore::decrypt,
+    /** How long after a change the automatic sync waits; tests shorten it. */
+    private val debounceMs: Long = DEBOUNCE_MS,
 ) {
     private val prefs = context.getSharedPreferences("sync", Context.MODE_PRIVATE)
     private val mutex = Mutex()
@@ -131,7 +135,7 @@ class SyncManager(
     /** This phone's website account login, if it syncs through one (also used for the website's prices, since 1.81). */
     fun webLogin(): WebLogin? {
         val user = prefs.getString(K_WEB_USER, null) ?: return null
-        val token = prefs.getString(K_WEB_TOKEN, null)?.let(SecretStore::decrypt) ?: return null
+        val token = prefs.getString(K_WEB_TOKEN, null)?.let(decrypt) ?: return null
         return WebLogin(user, token)
     }
 
@@ -255,11 +259,16 @@ class SyncManager(
         if (autoAllowed()) scope.launch { sync() }
     }
 
+    /**
+     * Also while a sync is running (since 1.92; before, a change made then waited for the next trigger): the sync
+     * that follows waits for the running one, and the "anything new?" check skips it when the change was the
+     * running sync's own writing.
+     */
     private fun onDataChanged() {
-        if (!autoAllowed() || mutex.isLocked) return
+        if (!autoAllowed()) return
         debounce?.cancel()
         debounce = scope.launch {
-            delay(DEBOUNCE_MS)
+            delay(debounceMs)
             if (hasLocalChanges()) sync()
         }
     }
@@ -366,6 +375,13 @@ class SyncManager(
             "Couldn't reach ${place.name()}: ${e.message ?: e.javaClass.simpleName}"
         } catch (e: kotlinx.serialization.SerializationException) {
             "The sync file on ${place.name()} couldn't be read."
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            _status.value = _status.value.copy(running = false)
+            throw e
+        } catch (e: Exception) {
+            // Anything else (a database error, an unexpected answer) becomes a message instead of closing the app. Since 1.92.
+            android.util.Log.e("MtgTrader", "Sync failed", e)
+            "Sync failed (${e.javaClass.simpleName}${e.message?.let { ": $it" } ?: ""}). It will try again later."
         }
         val now = System.currentTimeMillis()
         prefs.edit().apply {
@@ -419,9 +435,12 @@ class SyncManager(
                     is NextcloudClient.PutResult.Ok -> etag = put.etag
                 }
             }
+            // The change count the merge started from, not today's: an edit made while this sync was saving counts as
+            // not synced yet (until 1.91 the count was read again here and such an edit could be skipped). The sync's own
+            // writes don't count (tracking stands still while it writes), and apply() refused if anything changed before.
             prefs.edit()
                 .putString(K_ETAG, etag)
-                .putLong(K_STAMP, store.lastChange())
+                .putLong(K_STAMP, stamp)
                 .putLong(K_PREFS_AT, merged.prefs.updatedAt)
                 .putBoolean(K_FIRST_DONE, true)
                 .apply()

@@ -64,5 +64,6 @@ describe("themes", () => {
     const defined = new Set([...THEME_TOKENS, ...fixed]);
     const used = new Set(files(SRC).flatMap((f) => [...readFileSync(f, "utf-8").matchAll(/var\(--([a-z0-9-]+)/g)].map((m) => m[1])));
     expect([...used].filter((u) => !defined.has(u))).toEqual([]);
-  });
+    // Reads every source file: on the PC's OneDrive folder, with the other test files running, that can pass 5 s.
+  }, 30_000);
 });

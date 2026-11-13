@@ -2,7 +2,9 @@
 
 The website at [mtgtrader.vercel.app](https://mtgtrader.vercel.app): the wishlist, collection (with stats and CSV
 export) and trades of the MTG Trader app, from a computer. Next.js (App Router) on Vercel, project `mtgtrader`, root folder `web/`, region `arn1` (Stockholm).
-Pushes to `main` that touch `web/` deploy to production; other branches get a preview address.
+Pushes to `main` that touch `web/` deploy to production; other branches get a preview address. Whether `web/` changed
+is judged against the last deployed commit (`vercel.json` → `ignoreCommand`, since 2026-11-13; before, only the push's
+last commit counted, so a push whose last commit didn't touch `web/` skipped the deploy).
 
 ## How it works
 - **Two ways to hold the data**, both the app's sync file (`sync.json.gz`), edited as one more sync device
@@ -22,7 +24,7 @@ Pushes to `main` that touch `web/` deploy to production; other branches get a pr
 - **Phone API** (Bearer token, no cookies): `POST /api/app/login` and `/api/app/register` (`{username, password,
   device[, invite]}` → `{token, username}`), `POST /api/app/logout`. `GET /api/sync` answers the gzip file with
   `ETag: "v<n>"` (304 for a matching `If-None-Match`, 404 when the account has none yet); `PUT /api/sync` saves it with
-  `If-Match: "v<n>"` or `If-None-Match: *` (412 if it changed meanwhile, as on Nextcloud), 201/204 with the new ETag.
+  `If-Match: "v<n>"` or `If-None-Match: *` (412 if it changed meanwhile, as on Nextcloud; 428 with neither header), 201/204 with the new ETag.
   Uploads must be a readable sync file, at most 20 MB.
 - **Backups:** before the first change of a day a copy is kept in the database (the newest 10, also before a phone's
   first save of the day). A nightly cron (`/api/cron/backup`, 02:30 UTC) also copies each account's file to

@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
 /**
  * Saves the app's file: with If-Match only if it's still that version, with If-None-Match: * only if there's none
- * yet (412 otherwise, as on Nextcloud, so the app reads it again and merges). Answers the new ETag.
+ * yet (412 otherwise, as on Nextcloud, so the app reads it again and merges); 428 with neither. Answers the new ETag.
  */
 export async function PUT(req: Request) {
   const p = await phoneAccount(req);
@@ -56,7 +56,8 @@ export async function PUT(req: Request) {
       expected = versionOf(ifMatch);
       if (expected === null) return json({ error: "Changed meanwhile." }, 412);
     } else if (onlyNew) expected = null;
-    else expected = current?.version ?? null;
+    // Neither: refused (428) rather than saved over whatever a phone saved meanwhile. The app always sends one of the two.
+    else return json({ error: "Send If-Match or If-None-Match: *." }, 428);
     const now = Date.now();
     // The day's safety copy (the last 10 days with changes, under Settings → Backups), before the first save of a day.
     if (current && current.version === expected) await store.backupOnce(p.account.id, new Date(now).toISOString().slice(0, 10), current.bytes, KEEP_BACKUPS);

@@ -71,10 +71,23 @@ jobs:
       - name: Test and build
         run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
 
-      - name: Check the APK is signed
+      # Obtainium only installs an update signed with the same certificate, so a different one stops the release here.
+      - name: Check the certificate matches the previous release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          "$apksigner" verify --print-certs app/build/outputs/apk/release/app-universal-release.apk | head -3
+          sha() { "$apksigner" verify --print-certs "$1" | grep -m1 'SHA-256 digest' | awk '{print $NF}'; }
+          new=$(sha app/build/outputs/apk/release/app-universal-release.apk)
+          if [ -z "$new" ]; then echo "::error::The new APK isn't signed."; exit 1; fi
+          echo "This build:  $new"
+          prev=$(gh release list --limit 20 --json tagName,isDraft --jq '.[] | select(.isDraft | not) | .tagName' | grep -vx "$TAG" | head -1)
+          if [ -z "$prev" ]; then echo "No earlier release to compare with."; exit 0; fi
+          mkdir -p previous-apk
+          gh release download "$prev" --pattern 'MTG-Trader-*-universal.apk' --dir previous-apk
+          old=$(sha previous-apk/*.apk)
+          echo "$prev: $old"
+          if [ "$new" != "$old" ]; then echo "::error::Signed with a different certificate than $prev: phones won't install this update."; exit 1; fi
 
       - name: Publish the release
         env:
