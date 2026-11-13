@@ -115,7 +115,8 @@ class AppContainer(context: Context) {
     val settings = Settings(context)
     val exchangeRates = com.mtgtrader.data.ExchangeRateStore(context, http)
     val scryfall = ScryfallApi(http)
-    val priceSources = com.mtgtrader.data.PriceSourceStore(context, http, db, scryfall)
+    // Phones logged in to a website account get TCGplayer's and Card Kingdom's prices from the website first (since 1.93).
+    val priceSources = com.mtgtrader.data.PriceSourceStore(context, http, db, scryfall, web = { sync.webLogin()?.let { webAccount to it } })
     val network = NetworkMonitor(context)
     // Phones logged in to a website account get the prices from the website (since 1.81).
     val prices = PriceGuideRepository(context, http, db, settings, web = { sync.webLogin()?.let { webAccount to it } }, rates = exchangeRates)

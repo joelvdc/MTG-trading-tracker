@@ -14,20 +14,20 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-13, after 1.92)
-- **Latest:** app 1.92 (2026-11-13): steadier sync (an edit made while a sync saves is no longer missed, changes
-  during a sync start the next one, an unexpected sync error shows as a message instead of closing the app). Website
-  the same day: `/api/sync` answers 428 to a save without If-Match / If-None-Match, and the Vercel deploy check
-  compares with the last deployed commit. 1.91 the same morning: Share wishlist link; website trades, saved views,
-  price chart, themes.
-- **GitHub checks:** the Tests check now also runs the website's tests and type check, on pull requests *and* on every
-  push to `main`; a red mark after a push means fix that first. The Release workflow compares the certificate with
-  the previous release and stops if it differs.
-- **Expected to look odd:** the price chart has only the nights saved since 2026-11-12, so "not enough history" for a
-  few days and 3M/6M/1Y look like 1M for months. Trades completed on the website reach the phones at their next sync.
+## Right now (2026-11-13, after 1.93)
+- **Latest:** app 1.93 (2026-11-13): TCGplayer and Card Kingdom prices from the website for phones with an account
+  (TCGplayer in one request instead of 75 cards at a time from Scryfall; Card Kingdom as one file, not downloaded
+  again when unchanged); Android's own Google backup off. 1.92 the same evening: steadier sync, website checks in
+  GitHub, the release certificate check. 1.91 that morning: Share wishlist link; website trades, saved views, price
+  chart, themes.
+- **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
+  mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
+- **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card
+  Kingdom list comes from the GitHub copy, so it can be a few hours behind Card Kingdom's own. The price chart has
+  only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
+  phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** two proposals under "Proposed 2026-11-13" (TCGplayer prices from the website; switching
-  off Android's own Google backup). Review follow-ups for later under "From the code reviews". Ideas still
+- **Waiting on the owner:** nothing. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
 ## Collecting
@@ -80,27 +80,21 @@ for later:
   `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
   `targetSdk` 36 as its own release with new screenshots.
 
-### Proposed 2026-11-13, waiting on the owner
-- **TCGplayer prices from the website:** the phone asks Scryfall for its cards 75 at a time, at most 2 requests a
-  second, so a few thousand cards take tens of seconds. The website already refreshes TCGplayer prices every night
-  for every card it has looked up (`carddetails.ts`). A new `/api/app/tcgplayer` could answer all the phone's cards in
-  one call (like Cardmarket's prices since 1.81), with Scryfall only for cards the website doesn't know. Needs a
-  health check line for the new address.
-- **Android's own backup:** `allowBackup="true"` lets Android copy the app's database to the phone's Google backup
-  (only if that is switched on in the phone's settings). The owner doesn't use Google Drive; the app has its own
-  backups (daily on the phone or a chosen folder, the website's 10 days, the nightly copy to Nextcloud). Proposed:
-  switch Android's copy off, also because a restored copy can't read its encrypted login and starts logged out.
-
 ### Decided, keep in mind
 - Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
 - Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
-- Prices from the website come as one file, not per-card database lookups (offline, instant). Card Kingdom and
-  TCGplayer are still fetched by the phone.
+- Prices from the website come as one file, not per-card database lookups (offline, instant). Since 1.93 phones with an
+  account get all three sources from the website first (Cardmarket's file, Card Kingdom's file, TCGplayer for the
+  phone's cards in one request), falling back to Scryfall, Card Kingdom and the GitHub copy. CardTrader stays on the
+  phone (the owner's key never leaves it).
+- Android's own Google backup is off (1.93): the app's own backups cover it.
 - Dropped by the owner: the ideas offered on 2026-11-11 (trade matching between friends, "what should we play
   tonight?", a game-night planner website, a website for Poké Trader; dropped 2026-11-12), Archidekt's own categories for new decks (2026-11-08), the "view on hover" switch for decks,
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.93 (2026-11-13): TCGplayer and Card Kingdom prices from the website (`/api/app/tcgplayer`,
+  `/api/app/cardkingdom`), Android's own Google backup off.
 - 1.92 (2026-11-13): sync fixes from the code reviews, sync tests, website checks in GitHub, release certificate
   check, `/api/sync` 428, Vercel deploy rule.
 - Website (2026-11-13): themes (System, Dark, Light, Plains, Island, Swamp, Mountain, Forest), per browser.

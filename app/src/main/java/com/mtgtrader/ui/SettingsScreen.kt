@@ -633,7 +633,11 @@ internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.
         "Card Kingdom: " + (
             if (status.cardKingdomAt > 0) "downloaded ${Fmt.dateTime(status.cardKingdomAt)}" +
                 (listDay?.let { ", its list of $it" } ?: "") +
-                (if (status.cardKingdomVia == "GitHub copy") " (GitHub's copy, as Card Kingdom refused this phone)" else "")
+                when (status.cardKingdomVia) {
+                    "GitHub copy" -> " (GitHub's copy, as Card Kingdom refused this phone)"
+                    com.mtgtrader.data.PriceSourceStore.WEBSITE -> " (from the MTG Trader website)"
+                    else -> ""
+                }
             else "not downloaded yet"
             ),
         style = small, color = MaterialTheme.colorScheme.onSurfaceVariant,

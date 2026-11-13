@@ -3,6 +3,7 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { get, put } from "@vercel/blob";
 import { USER_AGENT } from "./config";
+import { sameEtag } from "./pricestore";
 
 export const CARD_KINGDOM_COPY_URL =
   "https://raw.githubusercontent.com/joelvdc/MTG-trading-tracker/card-kingdom-prices/cardkingdom.tsv.gz";
@@ -66,4 +67,27 @@ export async function buildCardKingdom(): Promise<{ rows: number; listDate: stri
   await put(CK_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
   cache = { file, at: Date.now() };
   return { rows: count, listDate: file.listDate, bytes: body.length };
+}
+
+/** Older than this, the phones get their Card Kingdom prices elsewhere (the daily job stopped). */
+export const PHONE_MAX_AGE_MS = 48 * 3600_000;
+
+/**
+ * The Card Kingdom file exactly as stored (gzipped JSON, [CkFile]), for the phones (app 1.93, /api/app/cardkingdom):
+ * "same" when the phone already has it (its ETag), "stale" when the daily job hasn't refreshed it for
+ * [PHONE_MAX_AGE_MS], null when there's none yet.
+ */
+export async function cardKingdomBlob(
+  etag: string | null,
+  now = Date.now(),
+): Promise<{ stream: ReadableStream<Uint8Array>; etag: string; size: number } | "same" | "stale" | null> {
+  const res = await get(CK_BLOB, { access: "private", useCache: false });
+  if (!res || res.statusCode !== 200) return null;
+  const stale = now - res.blob.uploadedAt.getTime() > PHONE_MAX_AGE_MS;
+  const tag = `"${res.blob.etag.replace(/^W\//, "").replace(/^"|"$/g, "")}"`;
+  if (stale || sameEtag(tag, etag)) {
+    await res.stream.cancel().catch(() => undefined);
+    return stale ? "stale" : "same";
+  }
+  return { stream: res.stream, etag: tag, size: res.blob.size };
 }

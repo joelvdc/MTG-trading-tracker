@@ -28,7 +28,9 @@ nightly backups; accounts need an invite code for now.
 **Collection**
 - Cards with their printing, finish, condition, language, purchase price, signed and altered, sorted into binders.
 - Prices from Cardmarket, TCGplayer or Card Kingdom, in euros, Danish kroner or US dollars, optionally adjusted for
-  condition. Value over time, value by set, biggest risers and fallers, what you paid against what it's worth.
+  condition. Value over time, value by set, biggest risers and fallers, what you paid against what it's worth. With an
+  MTG Trader account all three come from the website's nightly copies (quicker, the same prices as the website);
+  without one, or when the website can't help, straight from Scryfall, Card Kingdom and Cardmarket.
 - List, compact or picture views; sort in up to three layers; filter by almost anything (MDFCs, transforming and
   split cards included). Home-screen widgets.
 - Stats: colours, identities, rarity, types, mana curve, sets, finish, condition, language and more.

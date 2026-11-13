@@ -193,3 +193,26 @@ export async function refreshDetails(deadline: number): Promise<{ cards: number;
   }
   return { cards: ids.length, refreshed };
 }
+
+/** The most printings a phone asks for in one /api/app/tcgplayer request (app 1.93). */
+export const PHONE_MAX_IDS = 20_000;
+
+/** One printing's TCGplayer prices for a phone: [CardInfo.u], [CardInfo.tu] and when they were looked up. */
+export interface PhoneTcgplayer {
+  u: CardInfo["u"];
+  tu: string | null;
+  at: number;
+}
+
+/**
+ * The TCGplayer prices of the printings in [ids] that the store has (app 1.93, /api/app/tcgplayer): read only, no
+ * Scryfall request. The phone asks Scryfall itself for the ones left out, or older than it accepts.
+ */
+export function tcgplayerFor(file: DetailsFile, ids: string[]): Record<string, PhoneTcgplayer> {
+  const out: Record<string, PhoneTcgplayer> = {};
+  for (const id of ids) {
+    const d = file.cards[id];
+    if (d) out[id] = { u: d.u, tu: d.tu, at: d.at };
+  }
+  return out;
+}

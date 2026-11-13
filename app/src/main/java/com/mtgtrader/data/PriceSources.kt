@@ -189,6 +189,8 @@ class PriceSourceStore(
     /** Where Card Kingdom's list and its GitHub copy are fetched; only tests change them. */
     private val cardKingdomUrl: String = CARD_KINGDOM_URL,
     private val cardKingdomCopyUrl: String = CARD_KINGDOM_COPY_URL,
+    /** The website and this phone's login there, when it has one: both sources come from the website first (since 1.93). */
+    private val web: () -> Pair<WebAccountClient, WebLogin>? = { null },
 ) {
     private val dao = db.sourcePriceDao()
     private val cacheDir = context.cacheDir
@@ -201,7 +203,7 @@ class PriceSourceStore(
     data class SourceStatus(
         val tcgplayerAt: Long = 0,
         val cardKingdomAt: Long = 0,
-        /** "Card Kingdom" or "GitHub copy": where Card Kingdom's prices last came from. */
+        /** "MTG Trader website" (since 1.93), "Card Kingdom" or "GitHub copy": where Card Kingdom's prices last came from. */
         val cardKingdomVia: String? = null,
         /** The date Card Kingdom made the list ("2026-10-10 03:05:18"). */
         val cardKingdomListDate: String? = null,
@@ -291,9 +293,12 @@ class PriceSourceStore(
         val start = System.currentTimeMillis()
         return try {
             val ids = ownedIds()
+            // Since 1.93: the website's copy first (one request instead of one per 75 cards at Scryfall's pace); only the
+            // cards it doesn't keep, or whose price it looked up more than WEB_MAX_AGE_MS ago, still go to Scryfall.
+            val rest = ids - fromWebsite(ids, start)
             set { it.copy(message = "Getting TCGplayer's prices…", progress = 0f) }
             // Scryfall's answers pass through fromScryfall (see AppContainer), which saves the prices.
-            scryfall.collection(ids.map { ScryfallApi.idIdentifier(it) }) { done, total ->
+            if (rest.isNotEmpty()) scryfall.collection(rest.map { ScryfallApi.idIdentifier(it) }) { done, total ->
                 set { it.copy(message = "Getting TCGplayer's prices… ${"%,d".format(done)} of ${"%,d".format(total)} cards", progress = done.toFloat() / total.coerceAtLeast(1)) }
             }
             prefs.edit().putLong(K_TCG_AT, start).remove(K_TCG_ERR).remove(K_TCG_FAIL).apply()
@@ -304,12 +309,42 @@ class PriceSourceStore(
         }
     }
 
+    /**
+     * Saves the website's TCGplayer prices for [ids] that are recent enough and returns those ids; none when the phone
+     * has no account or the website can't be reached (then Scryfall answers them all, as before 1.93).
+     */
+    private suspend fun fromWebsite(ids: List<String>, now: Long): Set<String> {
+        val (client, login) = web() ?: return emptySet()
+        if (ids.isEmpty()) return emptySet()
+        set { it.copy(message = "Getting TCGplayer's prices from the website…", progress = null) }
+        val got = runCatching { client.tcgplayer(login, ids) }.getOrNull() ?: return emptySet()
+        val fresh = got.filterValues { now - it.at < WEB_MAX_AGE_MS }
+        val rows = fresh.flatMap { (id, w) ->
+            listOfNotNull(
+                w.usd?.let { SourcePrice(id, PriceSource.TCGPLAYER.key, Finish.NONFOIL.name, it, url = w.url, updatedAt = w.at) },
+                w.usdFoil?.let { SourcePrice(id, PriceSource.TCGPLAYER.key, Finish.FOIL.name, it, url = w.url, updatedAt = w.at) },
+                w.usdEtched?.let { SourcePrice(id, PriceSource.TCGPLAYER.key, Finish.ETCHED.name, it, url = w.url, updatedAt = w.at) },
+            )
+        }
+        rows.chunked(5000).forEach { dao.putAll(it) }
+        return fresh.keys
+    }
+
     private suspend fun refreshCardKingdom(): Boolean {
         val start = System.currentTimeMillis()
-        val direct = runCatching { downloadCardKingdom(cardKingdomUrl, "Card Kingdom", start, ::readCardKingdom) }
+        // Since 1.93 the website's copy first (the same list the website shows; an unchanged file isn't downloaded again).
+        val viaWebsite = web()?.let { (client, login) ->
+            runCatching {
+                downloadCardKingdom(client.cardKingdomRequest(login, prefs.getString(K_CK_ETAG, null)), WEBSITE, start, ::readCardKingdomWeb) {
+                    prefs.edit().putString(K_CK_ETAG, it).apply()
+                } ?: (WEBSITE to prefs.getString(K_CK_LIST, null))
+            }.getOrNull()
+        }
+        val direct = viaWebsite?.let { Result.success(it) }
+            ?: runCatching { downloadCardKingdom(get(cardKingdomUrl), "Card Kingdom", start, ::readCardKingdom)!! }
         val result = direct.recoverCatching { first ->
             // Refused (HTTP 403) or unreachable from here: the copy GitHub keeps.
-            runCatching { downloadCardKingdom(cardKingdomCopyUrl, "GitHub copy", start, ::readCardKingdomCopy) }
+            runCatching { downloadCardKingdom(get(cardKingdomCopyUrl), "GitHub copy", start, ::readCardKingdomCopy)!! }
                 .getOrElse { second -> throw java.io.IOException("${first.message ?: first.javaClass.simpleName}; GitHub copy: ${second.message ?: second.javaClass.simpleName}") }
         }
         return result.fold(
@@ -325,23 +360,29 @@ class PriceSourceStore(
         )
     }
 
+    private fun get(url: String) = Request.Builder().url(url).header("Accept-Encoding", "gzip").build()
+
     /**
-     * Downloads and saves one Card Kingdom list; returns where it came from and the list's date. Since 1.61 the list
-     * is downloaded to a file first and saved after, so the database isn't held for the whole download (the
-     * collection waited for it, showing only a loading circle).
+     * Downloads and saves one Card Kingdom list; returns where it came from and the list's date, or null when the
+     * website answered that the phone already has its file (304; otherwise [onEtag] gets the saved file's ETag). Since
+     * 1.61 the list is downloaded to a file first and saved after, so the database isn't held for the whole download
+     * (the collection waited for it, showing only a loading circle).
      */
     private suspend fun downloadCardKingdom(
-        url: String,
+        request: Request,
         via: String,
         start: Long,
         parse: suspend (InputStream, Long, (String) -> Unit, suspend (SourcePrice) -> Unit) -> Unit,
-    ): Pair<String, String?> = withContext(Dispatchers.IO) {
+        onEtag: (String?) -> Unit = {},
+    ): Pair<String, String?>? = withContext(Dispatchers.IO) {
         set { it.copy(message = "Downloading Card Kingdom's prices…", progress = null) }
-        val request = Request.Builder().url(url).header("Accept-Encoding", "gzip").build()
         val file = java.io.File(cacheDir, "cardkingdom-download")
+        var etag: String? = null
         try {
             http.newCall(request).execute().use { r ->
+                if (r.code == 304) return@withContext null
                 if (!r.isSuccessful) throw java.io.IOException("HTTP ${r.code}")
+                etag = r.header("ETag")
                 val body = r.body ?: throw java.io.IOException("empty answer")
                 val length = body.contentLength().takeIf { it > 0 }
                 var bytes = 0L
@@ -355,7 +396,7 @@ class PriceSourceStore(
                                 set {
                                     it.copy(
                                         message = "Downloading Card Kingdom's prices… %.1f MB".format(bytes / 1_048_576.0) +
-                                            (length?.let { l -> " of %.1f MB".format(l / 1_048_576.0) } ?: "") + if (via != "Card Kingdom") " (from GitHub)" else "",
+                                            (length?.let { l -> " of %.1f MB".format(l / 1_048_576.0) } ?: "") + when (via) { "GitHub copy" -> " (from GitHub)"; WEBSITE -> " (from the website)"; else -> "" },
                                         progress = length?.let { l -> (bytes.toFloat() / l).coerceIn(0f, 1f) },
                                     )
                                 }
@@ -392,6 +433,7 @@ class PriceSourceStore(
                 if (rows < 1000) throw java.io.IOException("only $rows prices in the list")
                 // Cards Card Kingdom no longer lists.
                 dao.deleteOlder(PriceSource.CARD_KINGDOM.key, start)
+                onEtag(etag)
                 via to listDate
             }
         } finally {
@@ -410,6 +452,12 @@ class PriceSourceStore(
         private const val K_TCG_ERR = "tcgplayerError"
         private const val K_CK_ERR = "cardKingdomError"
         private const val K_CK_VIA = "cardKingdomVia"
+        /** The ETag of the website's Card Kingdom file last saved (since 1.93). */
+        private const val K_CK_ETAG = "cardKingdomEtag"
+        /** Where Card Kingdom's prices came from when they come from the website (since 1.93). */
+        const val WEBSITE = "MTG Trader website"
+        /** The website's TCGplayer prices older than this are asked from Scryfall instead (the daily job missed them). */
+        const val WEB_MAX_AGE_MS = 48 * 3_600_000L
         private const val K_CK_LIST = "cardKingdomListDate"
         private const val MAX_AGE_MS = 20L * 60 * 60 * 1000
         /** After a failed automatic download, wait this long before trying again. */
@@ -540,5 +588,44 @@ suspend fun readCardKingdomCopy(input: InputStream, now: Long, onDate: (String) 
                 url = f[8].takeIf { it.isNotBlank() }?.let { "https://www.cardkingdom.com/$it" }, updatedAt = now,
             ),
         )
+    }
+}
+
+/**
+ * Reads the website's Card Kingdom file (web/src/lib/cardkingdom.ts CkFile, made from the same GitHub copy as
+ * [readCardKingdomCopy]): {"listDate", "madeAt", "rows": {"<scryfall id>|N" or "|F": [retail, buy, nm, ex, vg, g,
+ * url path]}}, one row at a time. Since 1.93.
+ */
+suspend fun readCardKingdomWeb(input: InputStream, now: Long, onDate: (String) -> Unit = {}, emit: suspend (SourcePrice) -> Unit) {
+    JsonReader(InputStreamReader(input, Charsets.UTF_8)).use { r ->
+        r.beginObject()
+        while (r.hasNext()) {
+            when (r.nextName()) {
+                "listDate" -> r.stringOrNull()?.takeIf { it.isNotBlank() }?.let(onDate)
+                "rows" -> {
+                    r.beginObject()
+                    while (r.hasNext()) {
+                        val key = r.nextName()
+                        val f = ArrayList<String?>(7)
+                        r.beginArray()
+                        while (r.hasNext()) f += r.stringOrNull()
+                        r.endArray()
+                        val id = key.substringBefore('|')
+                        if (id.isBlank() || f.size < 7) continue
+                        fun p(i: Int) = f[i]?.toDoubleOrNull()?.takeIf { it > 0 }
+                        emit(
+                            SourcePrice(
+                                id, PriceSource.CARD_KINGDOM.key, if (key.endsWith("|F")) Finish.FOIL.name else Finish.NONFOIL.name, p(0),
+                                nm = p(2), ex = p(3), vg = p(4), g = p(5), buy = p(1),
+                                url = f[6]?.takeIf { it.isNotBlank() }?.let { "https://www.cardkingdom.com/$it" }, updatedAt = now,
+                            ),
+                        )
+                    }
+                    r.endObject()
+                }
+                else -> r.skipValue()
+            }
+        }
+        r.endObject()
     }
 }

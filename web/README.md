@@ -45,6 +45,11 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
     value, EDHREC rank, release date, Game Changer and the TCGplayer prices (`prices.usd*`, `purchase_uris.tcgplayer`).
     New printings are looked up when the collection page opens (75 at a time, `/api/cards/details`); the cron refreshes
     the oldest entries first for 4 minutes a day.
+  - The phones read both (app 1.93), like Cardmarket's file since 1.81: `POST /api/app/tcgplayer` (`{"ids":[…]}`, up to
+    20,000, answers `{"cards":{id:{u,tu,at}}}` for the printings kept, no Scryfall request; the phone asks Scryfall
+    for the rest and for prices over 48 hours old) and `GET /api/app/cardkingdom` (the stored file as it is, 304 with a
+    matching `If-None-Match`, 503 when it's over 48 hours old so the phone asks Card Kingdom itself). Phone login
+    needed for both.
 - **Collection edits** (`lib/collection.ts`) follow the app's rules: a pile that becomes identical to another (card,
   finish, condition, language, binder, signed, altered) is merged into it, with a deletion record for the other; new
   uids are 32 hex characters; prices typed in DKK or USD are kept as typed and converted to euros with the ECB rate.

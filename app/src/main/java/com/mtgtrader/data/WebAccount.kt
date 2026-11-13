@@ -75,6 +75,40 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
         }
     }
 
+    /** One printing's TCGplayer prices from the website: normal, foil, etched (US dollars), its page, when looked up. Since 1.93. */
+    data class WebTcgplayer(val usd: Double?, val usdFoil: Double?, val usdEtched: Double?, val url: String?, val at: Long)
+
+    /**
+     * The TCGplayer prices the website keeps for [ids] (Scryfall ids), refreshed by its daily job; printings it doesn't
+     * keep are left out. Since 1.93.
+     */
+    suspend fun tcgplayer(login: WebLogin, ids: Collection<String>): Map<String, WebTcgplayer> = call {
+        val out = HashMap<String, WebTcgplayer>()
+        for (chunk in ids.distinct().chunked(TCGPLAYER_CHUNK)) {
+            val body = buildJsonObject { put("ids", JsonArray(chunk.map { JsonPrimitive(it) })) }
+            val req = authed(login, "api/app/tcgplayer").post(body.toString().toRequestBody("application/json".toMediaType())).build()
+            http.newCall(req).execute().use { r ->
+                if (!r.isSuccessful) throw failure(r)
+                val cards = json.parseToJsonElement(r.body!!.string()).jsonObject["cards"]?.jsonObject
+                    ?: throw IOException("The website's answer has no cards")
+                for ((id, v) in cards) {
+                    val o = v.jsonObject
+                    val u = (o["u"] as? JsonArray).orEmpty().map { it.jsonPrimitive.content.toDoubleOrNull()?.takeIf { p -> p > 0 } }
+                    out[id] = WebTcgplayer(
+                        u.getOrNull(0), u.getOrNull(1), u.getOrNull(2),
+                        o["tu"]?.jsonPrimitive?.content?.takeIf { it != "null" && it.isNotBlank() },
+                        o["at"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L,
+                    )
+                }
+            }
+        }
+        out
+    }
+
+    /** The request for the website's Card Kingdom file (gzipped JSON, read by [readCardKingdomWeb]), unless it's still [etag]. Since 1.93. */
+    fun cardKingdomRequest(login: WebLogin, etag: String?): Request =
+        authed(login, "api/app/cardkingdom").get().apply { if (etag != null) header("If-None-Match", etag) }.build()
+
     /** One day of the phone's value history, for [sendValueHistory]. */
     data class ValueDay(val day: String, val cards: Int, val values: Map<String, Double>)
 
@@ -208,5 +242,8 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
 
         /** The most card names the website answers in one call. */
         const val CATEGORY_CHUNK = 500
+
+        /** The most printings asked for in one /api/app/tcgplayer request (the website takes up to 20,000). */
+        const val TCGPLAYER_CHUNK = 5000
     }
 }
