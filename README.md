@@ -21,8 +21,9 @@ and the website stay in sync through your MTG Trader account.
   [latest release](https://github.com/joelvdc/MTG-trading-tracker/releases/latest) and open it on your phone. Use the
   `-universal` file if that one doesn't install. Updates install over the old version and keep your data.
 
-The app works on its own, without an account. An **MTG Trader account** adds sync between phones, the website and
-nightly backups; accounts need an invite code for now.
+The app works on its own, without an account: it backs up daily to the phone or a folder you choose (let the Nextcloud
+app auto-upload that folder to keep the backups on Nextcloud). An **MTG Trader account** adds sync between phones, the
+website and nightly backups; accounts need an invite code for now.
 
 ## What it does
 **Collection**
@@ -66,7 +67,8 @@ nightly backups; accounts need an invite code for now.
   and retiring decks you no longer play.
 
 **Games**
-- A life tracker for 2 to 6 players with commander damage, poison, counters, turns, dice and a game clock.
+- A life tracker for 2 to 6 players with commander damage, poison, counters, turns, dice and a game clock; its menus
+  follow the app's theme.
 - Every game is saved, with win rates per deck and player, head to head and an overview.
 
 **Website** ([mtgtrader.vercel.app](https://mtgtrader.vercel.app))

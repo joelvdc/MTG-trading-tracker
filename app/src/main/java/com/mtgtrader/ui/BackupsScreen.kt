@@ -137,20 +137,11 @@ fun BackupsScreen(nav: NavController) {
             item(key = "intro") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "A backup holds your collection, binders, trades, decks, scanned cards, wishlist and settings, so you can go back to it if something goes wrong. " +
-                            "The app makes one each day when something changed, and before big changes: the first sync, " +
-                            "CSV imports and restoring a backup.",
+                        "All your data, made each day something changed and before big changes.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        if (folder != null) "Backups are saved in the folder you picked on this phone."
-                        else "Backups are saved in the app's storage on this phone. They're lost if you uninstall the app: pick a folder below to keep them safe.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        "Kept: the latest ${BackupRetention.KEEP_LATEST} automatic backups and one per week for ${BackupRetention.KEEP_WEEKS} weeks. " +
-                            "Backups you make yourself stay until you delete them.",
+                        "Kept: the latest ${BackupRetention.KEEP_LATEST}, then one a week for ${BackupRetention.KEEP_WEEKS} weeks. Your own stay until deleted.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -174,11 +165,12 @@ fun BackupsScreen(nav: NavController) {
                     }
                     OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }) { Text("Restore from a file…") }
 
-                    NextcloudCopyNote(syncStatus.website)
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    Text("Backups on this phone", style = MaterialTheme.typography.titleSmall)
+                    Text("Where they're saved", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        if (folder == null) "In the app's storage." else "In the folder you picked (they stay when the app is uninstalled).",
+                        if (folder == null) "In the app's storage: lost if you uninstall the app. Pick a folder to keep them safe. " +
+                            "For Nextcloud, let the Nextcloud app auto-upload that folder."
+                        else "In the folder you picked. For Nextcloud, let the Nextcloud app auto-upload it.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -186,6 +178,7 @@ fun BackupsScreen(nav: NavController) {
                         OutlinedButton(onClick = { folderPicker.launch(null) }) { Text(if (folder == null) "Choose a folder…" else "Change folder…") }
                         if (folder != null) TextButton(onClick = { c.backups.folder = null; folder = null }) { Text("Use the app's storage") }
                     }
+                    if (syncStatus.website) NextcloudCopyNote()
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     Text("Restore points", style = MaterialTheme.typography.titleMedium)
                     note?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
@@ -319,17 +312,14 @@ private fun size(bytes: Long): String = when {
 }
 
 /**
- * Since 1.82 the app keeps its backups on the phone only; the website copies the account to the owner's Nextcloud
- * every night (its Settings page), and backups the app left in Nextcloud's "Backups" folder still restore as a file.
+ * With an account: the website can also copy it to Nextcloud every night (set up under Settings on the website).
+ * Without one, a Nextcloud folder picked above does the job (since 1.94).
  */
 @Composable
-private fun NextcloudCopyNote(website: Boolean) {
+private fun NextcloudCopyNote() {
     val context = LocalContext.current
-    Text("Nextcloud", style = MaterialTheme.typography.titleSmall)
     Text(
-        (if (website) "The website copies your account to your Nextcloud every night; set it up or restore a copy under Settings on the website. "
-        else "With an MTG Trader account, the website copies your data to your Nextcloud every night. ") +
-            "Backups the app saved on Nextcloud before 1.82 (its “Backups” folder) can still be restored: download one, then “Restore from a file…”.",
+        "The website can also copy your account to Nextcloud every night.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -340,5 +330,5 @@ private fun NextcloudCopyNote(website: Boolean) {
             }
         },
         contentPadding = PaddingValues(0.dp),
-    ) { Text("Open the website's Settings") }
+    ) { Text("Set it up on the website") }
 }

@@ -14,12 +14,11 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-13, after 1.93)
-- **Latest:** app 1.93 (2026-11-13): TCGplayer and Card Kingdom prices from the website for phones with an account
-  (TCGplayer in one request instead of 75 cards at a time from Scryfall; Card Kingdom as one file, not downloaded
-  again when unchanged); Android's own Google backup off. 1.92 the same evening: steadier sync, website checks in
-  GitHub, the release certificate check. 1.91 that morning: Share wishlist link; website trades, saved views, price
-  chart, themes.
+## Right now (2026-11-14, after 1.94)
+- **Latest:** app 1.94 (2026-11-14): the life tracker's menus (Game settings, Dice, Mana, History, End game, player
+  sheet, dice result) and Settings → Games in the app's colours and theme; much less text on every settings page;
+  Backups explains Nextcloud without the website (a chosen folder plus the Nextcloud app's auto-upload). 1.93 the day
+  before: TCGplayer and Card Kingdom prices from the website.
 - **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
   mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
 - **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card
@@ -93,6 +92,8 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.94 (2026-11-14): tracker menus and Settings → Games in the app's colours, shorter settings texts, Backups and
+  Nextcloud without the website.
 - 1.93 (2026-11-13): TCGplayer and Card Kingdom prices from the website (`/api/app/tcgplayer`,
   `/api/app/cardkingdom`), Android's own Google backup off.
 - 1.92 (2026-11-13): sync fixes from the code reviews, sync tests, website checks in GitHub, release certificate

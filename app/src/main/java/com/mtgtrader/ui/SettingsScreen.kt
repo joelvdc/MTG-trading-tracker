@@ -81,12 +81,12 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 private val typeHelp = mapOf(
-    PriceType.TREND to "Cardmarket's smoothed recent sale price. The usual choice for trades.",
-    PriceType.AVG to "Average price of recent sales.",
-    PriceType.AVG30 to "Average over the last 30 days — steadier for volatile cards.",
-    PriceType.AVG7 to "Average over the last 7 days.",
-    PriceType.AVG1 to "Average of yesterday's sales — can jump around.",
-    PriceType.LOW to "Cheapest current listing (any condition) — tends to be low.",
+    PriceType.TREND to "Smoothed recent sales. The usual choice.",
+    PriceType.AVG to "Recent sales.",
+    PriceType.AVG30 to "Last 30 days. Steadier.",
+    PriceType.AVG7 to "Last 7 days.",
+    PriceType.AVG1 to "Yesterday's sales. Jumpy.",
+    PriceType.LOW to "Cheapest listing, any condition.",
 )
 
 /**
@@ -243,7 +243,7 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     Text(if (priceSource == PriceSource.CARDMARKET) "Price used for valuing cards" else "Cardmarket price", style = MaterialTheme.typography.titleMedium)
                     if (priceSource != PriceSource.CARDMARKET) {
                         Text(
-                            "Used for cards ${priceSource.label} has no price for (shown with ≈), and in the comparisons.",
+                            "For cards ${priceSource.label} has no price for (≈).",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -272,8 +272,8 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     Text("Products with prices: $count")
                     Text("Last downloaded: ${if (lastFetch == 0L) "never" else Fmt.dateTime(lastFetch)}")
                     when (priceVia) {
-                        com.mtgtrader.data.PriceGuideRepository.VIA_WEBSITE -> Text("From: the MTG Trader website (its nightly copy, about 2 MB)")
-                        com.mtgtrader.data.PriceGuideRepository.VIA_CARDMARKET -> Text("From: Cardmarket directly (about 27 MB)")
+                        com.mtgtrader.data.PriceGuideRepository.VIA_WEBSITE -> Text("From: the MTG Trader website (about 2 MB)")
+                        com.mtgtrader.data.PriceGuideRepository.VIA_CARDMARKET -> Text("From: Cardmarket (about 27 MB)")
                         else -> {}
                     }
                     when (val s = state) {
@@ -295,23 +295,16 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     Spacer(Modifier.height(12.dp))
                     SwitchRow(
                         title = "Update automatically",
-                        body = "Prices once a day (about 26 MB), when you open the app and in the background.",
+                        body = "Once a day, also in the background.",
                         checked = autoUpdate,
                         onChange = { c.settings.setAutoUpdate(it); c.updater.schedule() },
                     )
                     SwitchRow(
                         title = "Only on Wi-Fi",
-                        body = "Automatic updates wait for Wi-Fi, so they don't use mobile data. “Update prices now” always works.",
+                        body = "Automatic updates wait for Wi-Fi.",
                         checked = wifiOnly,
                         enabled = autoUpdate,
                         onChange = { c.settings.setWifiOnly(it); c.updater.schedule() },
-                    )
-                    HorizontalDivider(Modifier.padding(vertical = 16.dp))
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Cards that already sit in a trade keep the price they had when added — use “Refresh prices” in a trade to update them.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 SettingsCategory.COLLECTION -> {
@@ -321,7 +314,7 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Fair trade margin: ±$tolerance%", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Trades whose sides differ by no more than this are shown as fair.",
+                        "Trades within this margin show as fair.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -395,8 +388,7 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                 SettingsCategory.DECKS -> {
                     Text("Commander deck power level", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Where the power level on the Decks tab, the deck pages and the power card comes from (also used for sorting). " +
-                            "Brackets and everything else on the rule-zero cards come from Commander Salt.",
+                        "Shown on the Decks tab and deck pages. Brackets come from Commander Salt.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -416,13 +408,10 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                                 Text(src.label)
                                 Text(
                                     when (src) {
-                                        PowerSource.COMMANDER_SALT -> "commandersalt.com scores the deck when it's imported."
-                                        PowerSource.EDH_POWER_LEVEL -> "The app has edhpowerlevel.com work out each deck's power level (a few seconds per deck)."
-                                        PowerSource.SCROLLVAULT -> "The app has ScrollVault's bracket calculator analyse each deck (about 10 seconds per deck). " +
-                                            "Its power level comes with a margin, a typical winning turn and a line to tell your pod."
-                                        PowerSource.APP -> "Worked out on this phone from the win turn: the turn by which the deck wins half its games, " +
-                                            "on the turn scale of the r/EDH power level guide, plus Commander Salt's interaction, consistency, " +
-                                            "efficiency and mana base ratings (up to a point either way). A whole number from 1 to 10."
+                                        PowerSource.COMMANDER_SALT -> "Scored by commandersalt.com on import."
+                                        PowerSource.EDH_POWER_LEVEL -> "From edhpowerlevel.com, a few seconds per deck."
+                                        PowerSource.SCROLLVAULT -> "From ScrollVault, about 10 seconds per deck, with a win turn."
+                                        PowerSource.APP -> "On this phone, from the win turn and Commander Salt's ratings (1–10)."
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -435,17 +424,14 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     val autoCategories by c.settings.deckAutoCategories.collectAsStateWithLifecycle()
                     SwitchRow(
                         "Auto categories for new cards",
-                        "Cards added to a deck you can edit go into the website's auto categories for them (built from Scryfall's card tags, " +
-                            "as on the website: Ramp, Removal, Draw…), the first as their category and the others as extra categories; " +
-                            "by card type when they have none or the website can't be reached. Off: by card type.",
+                        "New cards go into categories like Ramp, Removal and Draw. Off: by card type.",
                         autoCategories,
                         c.settings::setDeckAutoCategories,
                     )
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
                     Text("Archidekt", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "The app reads public Archidekt decks; it doesn't log in to Archidekt (since 1.78). Your username marks " +
-                            "which decks are your own. To bring the collection to Archidekt, use Collection → Export CSV → Archidekt.",
+                        "Marks which public Archidekt decks are yours.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -474,21 +460,17 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     Spacer(Modifier.height(12.dp))
                     SwitchRow(
                         title = "Save deck and wishlist pictures for offline use",
-                        body = "On Wi-Fi, the app saves the pictures of your decks (their cards and covers) and of your wishlist, " +
-                            "so they show without internet too. About 10–15 MB per deck.",
+                        body = "On Wi-Fi. About 10–15 MB per deck.",
                         checked = offlineImages,
                         onChange = c.settings::setOfflineImages,
                     )
                 }
                 SettingsCategory.ABOUT -> {
                     Text(
-                        "Card data and pictures: Scryfall (also EDHREC ranks and TCGplayer prices). Prices: Cardmarket's public daily price " +
-                            "guide (EUR), TCGplayer, Card Kingdom and CardTrader. Recommendations: EDHREC and recommander.cards. " +
-                            "Decklists: Archidekt. Brackets, deck scores and combos: Commander Salt and Commander Spellbook; power level from " +
-                            "the source chosen under Decks (EDH Power Level or ScrollVault). Preconstructed decks: MTGJSON. Exchange rates: " +
-                            "the European Central Bank.\n\n" +
-                            "All of it is looked up live, so new sets show up without an app update. Not affiliated with or endorsed by " +
-                            "any of these; prices are for guidance only.\n\n" +
+                        "Cards: Scryfall. Prices: Cardmarket, TCGplayer, Card Kingdom, CardTrader. Decks: Archidekt, EDHREC, " +
+                            "recommander.cards, Commander Salt, Commander Spellbook, EDH Power Level, ScrollVault, MTGJSON. " +
+                            "Exchange rates: European Central Bank.\n\n" +
+                            "Not affiliated with any of these; prices are for guidance only.\n\n" +
                             "MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved or endorsed by Wizards. " +
                             "Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.\n\n" +
                             "Privacy and attribution: mtgtrader.vercel.app/privacy and mtgtrader.vercel.app/legal.\n\nVersion ${BuildConfig.VERSION_NAME}",
@@ -537,9 +519,8 @@ internal fun ConditionSection(on: Boolean, pcts: Map<String, Int>, source: Price
         Switch(checked = on, onCheckedChange = onSwitch)
     }
     Text(
-        "The price guides have one price per card, whatever its condition. With this on, a copy counts for the percentage " +
-            "below everywhere a value is shown (collection, stats, trades, the trade binder), and the price is marked, e.g. “EX 85%”." +
-            if (source == PriceSource.CARD_KINGDOM) " Card Kingdom's own prices per condition are used as they are." else "",
+        "A copy counts for the percentage below, marked e.g. “EX 85%”." +
+            if (source == PriceSource.CARD_KINGDOM) " Card Kingdom has its own prices per condition." else "",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -559,8 +540,7 @@ internal fun ConditionSection(on: Boolean, pcts: Map<String, Int>, source: Price
 internal fun CurrencySection(currency: AppCurrency, rates: ExchangeRates?, onPick: (AppCurrency) -> Unit) {
     Text("Currency", style = MaterialTheme.typography.titleMedium)
     Text(
-        "Prices come from Cardmarket in euros and are converted with the European Central Bank's daily rates. " +
-            "Prices you type can be in any of these: the € ▾ button in each price field picks the currency you paid in. CSV files and Archidekt keep euros.",
+        "Converted from euros with the European Central Bank's daily rates.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -598,16 +578,10 @@ internal fun rateLine(currency: AppCurrency, rates: ExchangeRates?): String {
 @Composable
 internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.PriceSourceStore.SourceStatus, onPick: (PriceSource) -> Unit) {
     Text("Price source", style = MaterialTheme.typography.titleMedium)
-    Text(
-        "Where card prices come from: the collection total, sorting, filters, trades and the trade binder use it. " +
-            "The value screen, the stats and each card's page compare all three. TCGplayer's and Card Kingdom's dollar prices are converted with the daily exchange rates.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
     val help = mapOf(
-        PriceSource.CARDMARKET to "Europe's market, in euros. Has price types and trend arrows.",
-        PriceSource.TCGPLAYER to "America's largest market: its market price (one price per card, any condition).",
-        PriceSource.CARD_KINGDOM to "An American shop: its selling price for each copy's condition.",
+        PriceSource.CARDMARKET to "Europe, in euros, with price types and trends.",
+        PriceSource.TCGPLAYER to "US market price, any condition.",
+        PriceSource.CARD_KINGDOM to "US shop, a price per condition.",
     )
     PriceSource.entries.forEach { s ->
         Row(Modifier.fillMaxWidth().clickable { onPick(s) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -642,7 +616,6 @@ internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.
             ),
         style = small, color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Text("Both download once a day, with Cardmarket's prices.", style = small, color = MaterialTheme.colorScheme.onSurfaceVariant)
     status.cardKingdomError?.let { Text("Last try failed: $it", style = small, color = MaterialTheme.colorScheme.error) }
 }
 
@@ -651,10 +624,10 @@ internal fun PriceSourceSection(source: PriceSource, status: com.mtgtrader.data.
  * lowest listing is the default. Since 1.37.
  */
 internal val alertTypeHelp = linkedMapOf(
-    PriceType.LOW to "The cheapest copy for sale right now. Reacts fastest, but counts every condition and language, so a damaged or foreign copy can set it off.",
-    PriceType.TREND to "Cardmarket's smoothed “what it really sells for”. One odd cheap copy won't set it off.",
-    PriceType.AVG7 to "What it actually sold for this past week. Steady and honest.",
-    PriceType.AVG1 to "What it sold for yesterday. Quick to react, but jumpy for cards that sell only a few times a day.",
+    PriceType.LOW to "Cheapest copy now. Fastest, but any condition or language.",
+    PriceType.TREND to "Smoothed sale price. One odd cheap copy won't set it off.",
+    PriceType.AVG7 to "Last week's sales. Steady.",
+    PriceType.AVG1 to "Yesterday's sales. Quick but jumpy.",
 )
 
 /**
@@ -729,13 +702,12 @@ internal fun WishlistAlertsSection(s: AlertSettings, act: AlertSettingsActions) 
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Text("Wishlist price alerts", style = MaterialTheme.typography.titleMedium)
     Text(
-        "Open a card on the wishlist and set a price: you get a notification when it costs that much or less " +
-            "(for “any printing” cards, the cheapest printing). Prices are checked when they update, a few times a day.",
+        "Set a price on a wishlist card to get a notification when it's that cheap or cheaper.",
         style = small, color = muted,
     )
     if (!s.autoUpdate) {
         Text(
-            "“Update automatically” is off (below), so prices, and alerts, only update when you tap “Update prices now”.",
+            "Automatic price updates are off (Prices), so alerts only come after “Update prices now”.",
             style = small, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 4.dp),
         )
     }
@@ -750,14 +722,14 @@ internal fun WishlistAlertsSection(s: AlertSettings, act: AlertSettingsActions) 
         ExplainedDropdown("Cardmarket price for alerts", s.alertType, alertTypeHelp, { it.label }, act.onAlertType)
     } else {
         Text(
-            "Alerts use ${s.source.label}'s price, the price source chosen at the top.",
+            "Alerts use ${s.source.label}'s prices (Prices → Price source).",
             style = small, color = muted,
         )
     }
     Spacer(Modifier.height(8.dp))
     SwitchRow(
         title = "Also check CardTrader",
-        body = "Each wishlist card also shows CardTrader's cheapest offer, with a link to the card there, and alerts count it too.",
+        body = "Shows CardTrader's cheapest offer; alerts count it too.",
         checked = s.cardTraderOn,
         onChange = act.onCardTrader,
     )
@@ -765,9 +737,7 @@ internal fun WishlistAlertsSection(s: AlertSettings, act: AlertSettingsActions) 
     CardTraderTokenRow(s.ctStatus, act)
     SwitchRow(
         title = "Only CardTrader Zero offers",
-        body = "Cards CardTrader ships together from its hub, in one parcel. Off: every seller's offer counts, each shipping on its own. " +
-            "The cheapest offer from any seller shows next to it. CardTrader only shows a printing's 25 cheapest offers: " +
-            "when none of them is CT Zero, the card says what a CT Zero copy costs at least (“CT Zero over €…”).",
+        body = "Shipped together from CardTrader's hub. Off: every seller counts.",
         checked = s.ctZeroOnly,
         onChange = act.onZeroOnly,
     )
@@ -776,7 +746,7 @@ internal fun WishlistAlertsSection(s: AlertSettings, act: AlertSettingsActions) 
     Spacer(Modifier.height(8.dp))
     DropdownSelector("Condition on CardTrader", s.ctCondition, CtCondition.entries.toList(), { it.label }, act.onCondition, Modifier.fillMaxWidth())
     Text(
-        "Signed, altered and graded copies, bundles and sellers on holiday are left out. Prices don't include shipping.",
+        "Leaves out signed, altered and graded copies. Without shipping.",
         style = small, color = muted, modifier = Modifier.padding(top = 4.dp),
     )
 }
@@ -810,8 +780,7 @@ private fun CardTraderTokenRow(status: CardTrader.Status, act: AlertSettingsActi
         return
     }
     Text(
-        "CardTrader needs your personal API token: on cardtrader.com, open your profile's settings and copy the token from its API section. " +
-            "It's kept encrypted on this phone only (not synced): enter it on each phone.",
+        "On cardtrader.com: your profile's settings → API. Kept on this phone only.",
         style = small, color = muted,
     )
     OutlinedTextField(
@@ -845,8 +814,7 @@ private fun CardTraderTokenRow(status: CardTrader.Status, act: AlertSettingsActi
 internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, onClear: (ReceivedClear) -> Unit, onToCollection: (Boolean) -> Unit) {
     Text("Received wishlist cards", style = MaterialTheme.typography.titleMedium)
     Text(
-        "Swipe a wishlist card to the right (or tick “Received” in its window) once it has arrived: it moves to the wishlist's " +
-            "Received section, as a record. They're kept until you clear them (⋮ → Clear received cards), or as chosen here.",
+        "Swipe an arrived card right: it moves to Received until cleared.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -855,7 +823,7 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
     Spacer(Modifier.height(4.dp))
     SwitchRow(
         title = "Add received cards to the collection",
-        body = "Each card goes into Unsorted (near mint, its printing). Leave it off when you import your orders: they add the cards already.",
+        body = "Into Unsorted, near mint. Leave off if you import your orders.",
         checked = toCollection,
         onChange = onToCollection,
     )
@@ -866,7 +834,7 @@ internal fun ReceivedCardsSection(clear: ReceivedClear, toCollection: Boolean, o
 internal fun SwipeSection(right: SwipeAction, left: SwipeAction, onPick: (right: Boolean, SwipeAction) -> Unit) {
     Text("Swiping cards in the collection", style = MaterialTheme.typography.titleMedium)
     Text(
-        "In the list and compact views; every swipe can be undone. Press and hold a card to select several (in every view).",
+        "In the list and compact views. Every swipe can be undone.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

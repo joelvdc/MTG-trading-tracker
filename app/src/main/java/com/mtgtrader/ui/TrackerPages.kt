@@ -67,8 +67,12 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -117,9 +121,14 @@ import java.util.Date
 import java.util.Locale
 import kotlin.random.Random
 
-private val Muted = Color(0xFF8C8C8C)
-private val Line = Color(0xFF2A2A2A)
-private val Raised = Color(0xFF2B2B2B)
+// The menus over the tracker follow the app's theme (since 1.94); the game screen itself keeps its own look.
+private val Muted @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val Line @Composable get() = MaterialTheme.colorScheme.outlineVariant
+private val Raised @Composable get() = MaterialTheme.colorScheme.surfaceContainerHighest
+private val Ink @Composable get() = MaterialTheme.colorScheme.onSurface
+private val Accent @Composable get() = MaterialTheme.colorScheme.primary
+/** A dialog over the tracker. */
+private val Dialog @Composable get() = MaterialTheme.colorScheme.surfaceContainerHigh
 
 /**
  * A page from the middle bar (since 1.48): black, upright, with the edges of the panels peeking in at
@@ -129,15 +138,15 @@ private val Raised = Color(0xFF2B2B2B)
 private fun TrackerPageFrame(g: LiveGame, title: String, onClose: () -> Unit, scroll: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     val rows = arrangement(g.seats.size, g.ends)
     Column(
-        Modifier.fillMaxSize().background(Color.Black).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
     ) {
         Slivers(g, rows.first())
         Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp)) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack, "Back",
-                Modifier.align(Alignment.CenterStart).clip(CircleShape).clickable(onClick = onClose).padding(10.dp), tint = Color.White,
+                Modifier.align(Alignment.CenterStart).clip(CircleShape).clickable(onClick = onClose).padding(10.dp), tint = Ink,
             )
-            Text(title, color = Color.White, fontSize = 22.sp, modifier = Modifier.align(Alignment.Center))
+            Text(title, color = Ink, fontSize = 22.sp, modifier = Modifier.align(Alignment.Center))
         }
         HorizontalDivider(color = Line)
         Column(
@@ -158,7 +167,7 @@ private fun Slivers(g: LiveGame, row: List<Int>) = Row(Modifier.fillMaxWidth().p
 @Composable
 private fun SectionHead(t: String) = Row(Modifier.padding(top = 18.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
     Text(t, color = Muted, fontSize = 18.sp)
-    Box(Modifier.padding(start = 12.dp).weight(1f).height(1.dp).background(Color(0xFF333333)))
+    Box(Modifier.padding(start = 12.dp).weight(1f).height(1.dp).background(Line))
 }
 
 @Composable
@@ -167,9 +176,9 @@ private fun SettingRow(icon: ImageVector, title: String, sub: String? = null, on
         Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, Modifier.size(24.dp), tint = Color(0xFFBDBDBD))
+        Icon(icon, null, Modifier.size(24.dp), tint = Muted)
         Column(Modifier.weight(1f).padding(start = 14.dp, end = 8.dp)) {
-            Text(title, color = Color.White, fontSize = 16.sp)
+            Text(title, color = Ink, fontSize = 16.sp)
             if (sub != null) Text(sub, color = Muted, fontSize = 13.sp)
         }
         trailing()
@@ -177,13 +186,7 @@ private fun SettingRow(icon: ImageVector, title: String, sub: String? = null, on
 }
 
 @Composable
-private fun Toggle(on: Boolean, onChange: (Boolean) -> Unit) = Switch(
-    on, onChange,
-    colors = SwitchDefaults.colors(
-        checkedThumbColor = Color(0xFF0B0B0B), checkedTrackColor = TrackerAccent, checkedBorderColor = TrackerAccent,
-        uncheckedThumbColor = Color(0xFF8A8A8A), uncheckedTrackColor = Color(0xFF262626), uncheckedBorderColor = Color(0xFF262626),
-    ),
-)
+private fun Toggle(on: Boolean, onChange: (Boolean) -> Unit) = Switch(on, onChange)
 
 @Composable
 private fun SwitchSetting(icon: ImageVector, title: String, sub: String? = null, on: Boolean, onChange: (Boolean) -> Unit) =
@@ -195,8 +198,8 @@ private fun <T> Drop(value: T, options: List<T>, label: (T) -> String, onPick: (
     var open by remember { mutableStateOf(false) }
     Box {
         Row(Modifier.clip(RoundedCornerShape(8.dp)).clickable { open = true }.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label(value), color = Color(0xFFBDBDBD), fontSize = 15.sp)
-            Icon(Icons.Outlined.ExpandMore, null, tint = Color(0xFFBDBDBD))
+            Text(label(value), color = Muted, fontSize = 15.sp)
+            Icon(Icons.Outlined.ExpandMore, null, tint = Muted)
         }
         ScreenMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEach { o -> DropdownMenuItem(text = { Text(label(o)) }, onClick = { open = false; onPick(o) }) }
@@ -206,23 +209,25 @@ private fun <T> Drop(value: T, options: List<T>, label: (T) -> String, onPick: (
 
 @Composable
 private fun Circles(values: List<Int>, selected: Int?, onPick: (Int) -> Unit) = Row(
-    Modifier.clip(RoundedCornerShape(30.dp)).background(Color(0xFF1C1C1C)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(5.dp),
+    Modifier.clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(5.dp),
 ) {
     values.forEach { v ->
+        val on = v == selected
         Box(
-            Modifier.size(38.dp).clip(CircleShape).background(Color(0xFF2E2E2E)).then(if (v == selected) Modifier.border(2.5.dp, TrackerAccent, CircleShape) else Modifier)
+            Modifier.size(38.dp).clip(CircleShape).background(if (on) MaterialTheme.colorScheme.primaryContainer else Raised)
+                .then(if (on) Modifier.border(2.dp, Accent, CircleShape) else Modifier)
                 .clickable { onPick(v) },
             contentAlignment = Alignment.Center,
-        ) { Text("$v", color = Color.White, fontSize = 15.sp) }
+        ) { Text("$v", color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else Ink, fontSize = 15.sp) }
     }
 }
 
 /** A layout's little picture: side by side, or one at each end. */
 @Composable
 private fun LayoutIcon(players: Int, ends: Boolean, selected: Boolean, onClick: () -> Unit) {
-    val grey = Color(0xFF7A7A7A)
+    val grey = Muted.copy(alpha = 0.7f)
     Box(
-        Modifier.size(60.dp).clip(RoundedCornerShape(10.dp)).then(if (selected) Modifier.border(2.5.dp, TrackerAccent, RoundedCornerShape(10.dp)) else Modifier)
+        Modifier.size(60.dp).clip(RoundedCornerShape(10.dp)).then(if (selected) Modifier.border(2.5.dp, Accent, RoundedCornerShape(10.dp)) else Modifier)
             .clickable(onClick = onClick).padding(8.dp),
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -238,13 +243,13 @@ private fun LayoutIcon(players: Int, ends: Boolean, selected: Boolean, onClick: 
 @Composable
 private fun CardLayoutThumb(layout: CardLayout, selected: Boolean, onClick: () -> Unit) = Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Box(
-        Modifier.size(84.dp, 48.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF2E2E2E))
-            .then(if (selected) Modifier.border(2.5.dp, TrackerAccent, RoundedCornerShape(10.dp)) else Modifier).clickable(onClick = onClick),
+        Modifier.size(84.dp, 48.dp).clip(RoundedCornerShape(10.dp)).background(Raised)
+            .then(if (selected) Modifier.border(2.5.dp, Accent, RoundedCornerShape(10.dp)) else Modifier).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (layout != CardLayout.BIG) Text("Player", color = Color.White, fontSize = 8.sp)
-            Text("40", color = Color.White, fontSize = if (layout == CardLayout.BIG) 22.sp else 13.sp)
+            if (layout != CardLayout.BIG) Text("Player", color = Ink, fontSize = 8.sp)
+            Text("40", color = Ink, fontSize = if (layout == CardLayout.BIG) 22.sp else 13.sp)
             if (layout == CardLayout.DEFAULT) Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { repeat(2) { Box(Modifier.size(5.dp).background(Muted)) } }
         }
     }
@@ -300,22 +305,22 @@ internal fun ColumnScope.TrackerLookSettings() {
     SwitchSetting(Icons.Outlined.Fullscreen, "Hide navigation and status bars", on = hideBars) { s.setTracker("trackerHideBars", it) }
 }
 
-/** Settings → Life tracker → Life tracker settings (since 1.58): [TrackerLookSettings] outside a game, in the tracker's dark look. */
+/** Settings → Games (since 1.58): [TrackerLookSettings] outside a game; since 1.94 in the app's own look, like the other settings pages. */
 @Composable
 fun TrackerSettingsScreen(nav: NavController) {
-    Column(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
-        Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp)) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack, "Back",
-                Modifier.align(Alignment.CenterStart).clip(CircleShape).clickable { nav.safePopBackStack() }.padding(10.dp), tint = Color.White,
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            TopAppBar(
+                title = { Text("Games") },
+                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             )
-            Text("Life tracker settings", color = Color.White, fontSize = 22.sp, modifier = Modifier.align(Alignment.Center))
-        }
-        HorizontalDivider(color = Line)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
+        },
+    ) { pad ->
+        Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp)) {
             TrackerLookSettings()
             Text(
-                "These settings are for every game and follow you to your other phone. The players, starting life, turns and commander damage are chosen per game: in a game, tap ⚙ in the bar across the middle.",
+                "For every game, on all your phones. Players, life and turns are set per game: ⚙ in the middle bar.",
                 color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
             )
         }
@@ -396,12 +401,12 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
                     colour = p.colour,
                 )
             },
-            ends = g.ends, view = tableView, dark = true,
+            ends = g.ends, view = tableView,
             onTap = { picking = it },
             onSwap = { a, b -> c.games.swapSeats(a, b) },
         )
         Text(
-            "Tap a seat to change the player or deck. Hold a seat and drag it onto another to swap them: life, damage and counters move with the player.",
+            "Tap a seat to change it. Hold and drag onto another to swap.",
             color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp),
         )
         SectionHead("Gameplay")
@@ -426,7 +431,7 @@ internal fun GameSettingsPage(g: LiveGame, onClose: () -> Unit) {
         }
         TrackerLookSettings()
         Text(
-            "These settings follow you to your other phone. The game's own choices (players, turns, commander damage…) are kept for the next game too.",
+            "These settings follow you to your other phone and are kept for the next game.",
             color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
         )
     }
@@ -450,24 +455,24 @@ private fun ConfirmBox(title: String, text: String, yes: String, onCancel: () ->
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.widthIn(max = 360.dp).padding(20.dp).clip(RoundedCornerShape(24.dp)).background(Color(0xFF2E2F33)).pointerInput(Unit) { detectTapGestures { } }.padding(20.dp),
+            Modifier.widthIn(max = 360.dp).padding(20.dp).clip(RoundedCornerShape(24.dp)).background(Dialog).pointerInput(Unit) { detectTapGestures { } }.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-            Text(text, color = Color(0xFFBDBDBD), fontSize = 15.sp)
+            Text(title, color = Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Text(text, color = Muted, fontSize = 15.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
                 DarkButton("Cancel", onClick = onCancel)
-                DarkButton(yes, colour = Color(0xFF5A3142), textColour = Color(0xFFFF8FB1), onClick = onYes)
+                DarkButton(yes, colour = MaterialTheme.colorScheme.errorContainer, textColour = MaterialTheme.colorScheme.onErrorContainer, onClick = onYes)
             }
         }
     }
 }
 
 @Composable
-private fun DarkButton(text: String, icon: ImageVector? = null, colour: Color = Raised, textColour: Color = Color.White, outlined: Boolean = false, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
+private fun DarkButton(text: String, icon: ImageVector? = null, colour: Color = Raised, textColour: Color = Ink, outlined: Boolean = false, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     Row(
         modifier.alpha(if (enabled) 1f else 0.4f).clip(RoundedCornerShape(12.dp))
-            .then(if (outlined) Modifier.border(1.dp, Color(0xFF6A6A6A), RoundedCornerShape(12.dp)) else Modifier.background(colour))
+            .then(if (outlined) Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)) else Modifier.background(colour))
             .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -483,7 +488,7 @@ internal fun newRoll(sides: Int): Roll =
 @Composable
 private fun DiceButton(label: String, onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) = Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Box(Modifier.size(88.dp).clip(RoundedCornerShape(26.dp)).background(Raised).clickable(onClick = onClick), contentAlignment = Alignment.Center, content = content)
-    Text(label, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+    Text(label, color = Ink, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
 }
 
 /** Dice & random (since 1.48; Dicefont's dice since 1.59): a random player or opponent, a coin, a custom die and d4 to d20. */
@@ -494,39 +499,39 @@ internal fun DicePage(g: LiveGame, onClose: () -> Unit, onRoll: (Roll) -> Unit, 
     TrackerPageFrame(g, "Dice & random", onClose) {
         Spacer(Modifier.height(10.dp))
         listOf<Triple<@Composable () -> Unit, Pair<String, String>, () -> Unit>>(
-            Triple({ Icon(Icons.Outlined.Shuffle, null, tint = Color.White) }, "Random player" to "Spins around the table", onRandomPlayer),
-            Triple({ CrossedSwords(32.dp) }, "Random opponent" to "Asks who you are, then picks one of the others", onRandomOpponent),
+            Triple({ Icon(Icons.Outlined.Shuffle, null, tint = Ink) }, "Random player" to "Spins around the table", onRandomPlayer),
+            Triple({ CrossedSwords(32.dp, colour = Ink) }, "Random opponent" to "Asks who you are, then picks one of the others", onRandomOpponent),
         ).forEach { (icon, text, action) ->
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = action).padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Raised), contentAlignment = Alignment.Center) { icon() }
-                Column(Modifier.padding(start = 12.dp)) { Text(text.first, color = Color.White, fontSize = 17.sp); Text(text.second, color = Muted, fontSize = 13.sp) }
+                Column(Modifier.padding(start = 12.dp)) { Text(text.first, color = Ink, fontSize = 17.sp); Text(text.second, color = Muted, fontSize = 13.sp) }
             }
         }
-        Text("Coins & dice", color = Color.White, fontSize = 17.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 14.dp, bottom = 10.dp))
+        Text("Coins & dice", color = Ink, fontSize = 17.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 14.dp, bottom = 10.dp))
         Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            DiceButton("Flip coin", { onRoll(newRoll(2)) }) { DieGlyph(dieGlyph(2, 2)!!, 58.dp) }
+            DiceButton("Flip coin", { onRoll(newRoll(2)) }) { DieGlyph(dieGlyph(2, 2)!!, 58.dp, colour = Ink) }
             DiceButton("Custom", { onRoll(Roll("1 – $custom", "${Random.nextInt(1, custom + 1)}", custom)) }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(
-                        Modifier.clip(RoundedCornerShape(12.dp)).background(Color.Black).clickable { setting = true }.padding(horizontal = 10.dp, vertical = 4.dp),
+                        Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).clickable { setting = true }.padding(horizontal = 10.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Set ", color = Color.White, fontSize = 12.sp)
-                        Text("$custom", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        Text("Set ", color = Ink, fontSize = 12.sp)
+                        Text("$custom", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     }
-                    Text("Roll", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Text("Roll", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
         listOf(listOf(4, 6, 8), listOf(10, 12, 20)).forEach { r ->
             Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                r.forEach { d -> DiceButton("Roll d$d", { onRoll(newRoll(d)) }) { DieGlyph(dieGlyph(d, d)!!, 62.dp) } }
+                r.forEach { d -> DiceButton("Roll d$d", { onRoll(newRoll(d)) }) { DieGlyph(dieGlyph(d, d)!!, 62.dp, colour = Ink) } }
             }
         }
-        Row(Modifier.padding(top = 8.dp).fillMaxWidth().border(1.dp, Color(0xFF444444), RoundedCornerShape(14.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Bolt, null, tint = Color.White)
+        Row(Modifier.padding(top = 8.dp).fillMaxWidth().border(1.dp, Line, RoundedCornerShape(14.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Bolt, null, tint = Ink)
             Column(Modifier.padding(start = 12.dp)) {
-                Text("Quick roll", color = Color.White, fontSize = 16.sp)
+                Text("Quick roll", color = Ink, fontSize = 16.sp)
                 Text("Hold the die in the middle bar, slide to a die and let go to roll it on the table", color = Muted, fontSize = 13.sp)
             }
         }
@@ -550,11 +555,11 @@ internal fun ManaPage(g: LiveGame, onClose: () -> Unit) {
     fun line(v: Int, onBy: (Int) -> Unit, symbol: @Composable () -> Unit) = Row(
         Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.RemoveCircleOutline, "One less", Modifier.clip(CircleShape).clickable { onBy(-1) }.padding(4.dp).size(34.dp), tint = Color(0xFFBDBDBD))
+        Icon(Icons.Outlined.RemoveCircleOutline, "One less", Modifier.clip(CircleShape).clickable { onBy(-1) }.padding(4.dp).size(34.dp), tint = Muted)
         Box(Modifier.padding(horizontal = 20.dp).alpha(if (v == 0) 0.35f else 1f).clip(CircleShape).clickable { onBy(1) }) { symbol() }
-        Text("$v", color = if (v == 0) Color(0xFF4A4A4A) else Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.width(64.dp))
+        Text("$v", color = if (v == 0) Ink.copy(alpha = 0.3f) else Ink, fontSize = 38.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.width(64.dp))
         Spacer(Modifier.width(20.dp))
-        Icon(Icons.Outlined.AddCircleOutline, "One more", Modifier.clip(CircleShape).clickable { onBy(1) }.padding(4.dp).size(34.dp), tint = Color(0xFFBDBDBD))
+        Icon(Icons.Outlined.AddCircleOutline, "One more", Modifier.clip(CircleShape).clickable { onBy(1) }.padding(4.dp).size(34.dp), tint = Muted)
     }
     TrackerPageFrame(g, "Mana pool", onClose) {
         Spacer(Modifier.height(6.dp))
@@ -567,7 +572,7 @@ internal fun ManaPage(g: LiveGame, onClose: () -> Unit) {
         }
         Row(Modifier.align(Alignment.CenterHorizontally).padding(top = 14.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             DarkButton("Close", icon = Icons.Outlined.HighlightOff, onClick = onClose)
-            DarkButton("Empty", colour = Color(0xFF3A1622), textColour = Color(0xFFFF8FB1), onClick = { pool { LiveGames.emptyPool(it) } })
+            DarkButton("Empty", colour = MaterialTheme.colorScheme.errorContainer, textColour = MaterialTheme.colorScheme.onErrorContainer, onClick = { pool { LiveGames.emptyPool(it) } })
         }
     }
 }
@@ -581,29 +586,29 @@ internal fun HistoryPage(g: LiveGame, now: Long, canUndo: Boolean, nav: NavContr
     var past by rememberSaveable { mutableStateOf(false) }
     TrackerPageFrame(g, "Game history", onClose) {
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF161616)).padding(4.dp)) {
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp)) {
             listOf("This game" to false, "Past games" to true).forEach { (label, p) ->
                 Text(
-                    label, color = if (past == p) Color.White else Muted, fontSize = 16.sp, textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(if (past == p) Color(0xFF2E2E2E) else Color.Transparent)
+                    label, color = if (past == p) MaterialTheme.colorScheme.onSecondaryContainer else Muted, fontSize = 16.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(if (past == p) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
                         .clickable { past = p }.padding(vertical = 9.dp),
                 )
             }
         }
         if (!past) {
-            Row(Modifier.padding(top = 10.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF121212))) {
-                Box(Modifier.width(4.dp).height(92.dp).background(TrackerAccent))
+            Row(Modifier.padding(top = 10.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceContainer)) {
+                Box(Modifier.width(4.dp).height(92.dp).background(Accent))
                 Column(Modifier.padding(14.dp).weight(1f)) {
                     Text(
                         listOfNotNull(if (g.turnsOn) "Round ${g.round}" else null, Games.clock(g.elapsed(now)) + if (g.paused) " (paused)" else "").joinToString(" · "),
-                        color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                        color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold,
                     )
                     Text(
                         "Started at " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(g.startedAt)) +
                             (g.seats.firstOrNull { it.seat == g.firstSeat }?.let { " · ${it.name} started" } ?: ""),
                         color = Muted, fontSize = 14.sp,
                     )
-                    Text("${g.seats.size} players · ${g.startingLife} life", color = Color.White, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
+                    Text("${g.seats.size} players · ${g.startingLife} life", color = Ink, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
                 }
             }
             Row(Modifier.padding(top = 10.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -615,11 +620,11 @@ internal fun HistoryPage(g: LiveGame, now: Long, canUndo: Boolean, nav: NavContr
             }
             // Since 1.51: the game goes with the paused games (synced), and the tracker closes.
             DarkButton(
-                "Pause game and leave", icon = Icons.AutoMirrored.Outlined.Logout, colour = TrackerAccent, textColour = Color.Black,
+                "Pause game and leave", icon = Icons.AutoMirrored.Outlined.Logout, colour = Accent, textColour = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(top = 10.dp).fillMaxWidth(), onClick = { scope.launch { c.games.pauseAndLeave() } },
             )
             Text(
-                "Continue it later from the Games tab, on this phone or your other one.",
+                "Continue it later from the Games tab, on any of your phones.",
                 color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
             )
             if (!g.logOn) Text("The game log is off (Game settings → Game log).", color = Muted, fontSize = 14.sp)
@@ -629,7 +634,7 @@ internal fun HistoryPage(g: LiveGame, now: Long, canUndo: Boolean, nav: NavContr
                     Text(Games.clock(e.at), color = Muted, fontSize = 13.sp, modifier = Modifier.width(52.dp))
                     val colour = g.seats.firstOrNull { it.seat == e.seat }?.colour
                     Box(Modifier.size(10.dp).clip(CircleShape).background(if (colour != null) seatBrush(colour) else androidx.compose.ui.graphics.SolidColor(Color(0xFF555555))))
-                    Text("  " + LiveGames.logText(e, g), color = Color.White, fontSize = 15.sp)
+                    Text("  " + LiveGames.logText(e, g), color = Ink, fontSize = 15.sp)
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -643,8 +648,8 @@ internal fun HistoryPage(g: LiveGame, now: Long, canUndo: Boolean, nav: NavContr
 
 @Composable
 private fun PastGameRow(r: GameRecord, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF121212)).clickable(onClick = onClick).padding(12.dp)) {
-        Text(gameTitle(r), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainer).clickable(onClick = onClick).padding(12.dp)) {
+        Text(gameTitle(r), color = Ink, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(gameLine(r), color = Muted, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -670,43 +675,47 @@ internal fun EndGameDialog(g: LiveGame, onCancel: () -> Unit, onLeave: () -> Uni
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.widthIn(max = 380.dp).padding(16.dp).clip(RoundedCornerShape(28.dp)).background(Color(0xFF2E2F33)).pointerInput(Unit) { detectTapGestures { } }
+            Modifier.widthIn(max = 380.dp).padding(16.dp).clip(RoundedCornerShape(28.dp)).background(Dialog).pointerInput(Unit) { detectTapGestures { } }
                 .verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("End the game", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Who won? (optional)", color = Color(0xFFBDBDBD), fontSize = 15.sp)
+            Text("End the game", color = Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text("Who won? (optional)", color = Muted, fontSize = 15.sp)
             g.seats.chunked(2).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { p ->
                         val on = !draw && winner == p.seat
                         Row(
-                            Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Color(0xFF3B3C41))
-                                .then(if (on) Modifier.border(2.dp, TrackerAccent, RoundedCornerShape(14.dp)) else Modifier)
+                            Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (on) MaterialTheme.colorScheme.primaryContainer else Raised)
+                                .then(if (on) Modifier.border(2.dp, Accent, RoundedCornerShape(14.dp)) else Modifier)
                                 .clickable { draw = false; winner = if (winner == p.seat) null else p.seat }.padding(horizontal = 14.dp, vertical = 12.dp),
                         ) {
-                            Text(p.name, color = if (p.out) Muted else Color.White, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            Text(if (p.out) "out" else "${p.life}", color = if (p.out) Muted else Color.White, fontSize = 16.sp)
+                            val ink = if (p.out) Muted else if (on) MaterialTheme.colorScheme.onPrimaryContainer else Ink
+                            Text(p.name, color = ink, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            Text(if (p.out) "out" else "${p.life}", color = ink, fontSize = 16.sp)
                         }
                     }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF3B3C41))
-                    .then(if (draw) Modifier.border(2.dp, TrackerAccent, RoundedCornerShape(14.dp)) else Modifier)
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (draw) MaterialTheme.colorScheme.primaryContainer else Raised)
+                    .then(if (draw) Modifier.border(2.dp, Accent, RoundedCornerShape(14.dp)) else Modifier)
                     .clickable { draw = !draw }.padding(12.dp),
                 horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
-            ) { Icon(Icons.Outlined.Handshake, null, tint = Color.White); Text("  Draw", color = Color.White, fontSize = 16.sp) }
+            ) {
+                val ink = if (draw) MaterialTheme.colorScheme.onPrimaryContainer else Ink
+                Icon(Icons.Outlined.Handshake, null, tint = ink); Text("  Draw", color = ink, fontSize = 16.sp)
+            }
             if (!draw) {
-                Text("How? (optional)", color = Color(0xFFBDBDBD), fontSize = 15.sp)
+                Text("How? (optional)", color = Muted, fontSize = 15.sp)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     WinType.entries.forEach { t ->
                         val on = how == t
                         Text(
-                            t.label, color = Color.White, fontSize = 13.sp,
-                            modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) Color(0xFF2A5468) else Color(0xFF3B3C41))
-                                .then(if (on) Modifier.border(1.5.dp, TrackerAccent, RoundedCornerShape(10.dp)) else Modifier)
+                            t.label, color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else Ink, fontSize = 13.sp,
+                            modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (on) MaterialTheme.colorScheme.primaryContainer else Raised)
+                                .then(if (on) Modifier.border(1.5.dp, Accent, RoundedCornerShape(10.dp)) else Modifier)
                                 .clickable { how = if (on) null else t }.padding(horizontal = 10.dp, vertical = 7.dp),
                         )
                     }
@@ -718,9 +727,9 @@ internal fun EndGameDialog(g: LiveGame, onCancel: () -> Unit, onLeave: () -> Uni
                     winner == null && g.alive.size > 1 -> "No winner picked: it's saved as a draw. Life goes back to ${g.startingLife}."
                     else -> "Saved to your games; life goes back to ${g.startingLife}."
                 },
-                color = Color(0xFFBDBDBD), fontSize = 14.sp,
+                color = Muted, fontSize = 14.sp,
             )
-            DarkButton("Save and rematch", icon = Icons.Outlined.Replay, colour = Color(0xFF5A3142), textColour = Color(0xFFFF8FB1), modifier = Modifier.fillMaxWidth()) {
+            DarkButton("Save and rematch", icon = Icons.Outlined.Replay, colour = Accent, textColour = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.fillMaxWidth()) {
                 onLeave()
                 val r = record()
                 scope.launch {
@@ -778,7 +787,7 @@ internal fun RollOverlay(roll: Roll, animate: Boolean, onAgain: () -> Unit, onDi
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Column(
-                Modifier.clip(RoundedCornerShape(40.dp)).background(Color(0xFF2E2F33)).pointerInput(Unit) { detectTapGestures { } }
+                Modifier.clip(RoundedCornerShape(40.dp)).background(Dialog).pointerInput(Unit) { detectTapGestures { } }
                     .padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) { RollFace(roll, shown, 150.dp) }
@@ -793,15 +802,15 @@ private fun RollFace(roll: Roll, shown: String, size: Dp, modifier: Modifier = M
     val glyph = shown.toIntOrNull()?.let { if (roll.title.startsWith("d")) dieGlyph(roll.sides, it) else null }
     when {
         roll.sides == 2 -> {
-            Box(Modifier.size(size * 0.8f).border(5.dp, Color.White, CircleShape), contentAlignment = Alignment.Center) {
-                Text(shown.take(1), color = Color.White, fontSize = (size.value * 0.4f).sp, fontWeight = FontWeight.Bold)
+            Box(Modifier.size(size * 0.8f).border(5.dp, Ink, CircleShape), contentAlignment = Alignment.Center) {
+                Text(shown.take(1), color = Ink, fontSize = (size.value * 0.4f).sp, fontWeight = FontWeight.Bold)
             }
-            Text(shown, color = Color.White, fontSize = 18.sp, modifier = Modifier.padding(top = 8.dp))
+            Text(shown, color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 8.dp))
         }
-        glyph != null -> DieGlyph(glyph, size)
+        glyph != null -> DieGlyph(glyph, size, colour = Ink)
         else -> {
-            Box(Modifier.size(size * 0.8f).border(5.dp, Color.White, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
-                Text(shown, color = Color.White, fontSize = (size.value * if (shown.length > 2) 0.26f else 0.36f).sp, fontWeight = FontWeight.Bold)
+            Box(Modifier.size(size * 0.8f).border(5.dp, Ink, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
+                Text(shown, color = Ink, fontSize = (size.value * if (shown.length > 2) 0.26f else 0.36f).sp, fontWeight = FontWeight.Bold)
             }
             Text(roll.title, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
         }

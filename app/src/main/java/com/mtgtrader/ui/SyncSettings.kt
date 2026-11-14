@@ -59,9 +59,7 @@ fun SyncSection() {
     if (!s.connected) {
         if (s.nextcloudEnded) NextcloudEndedCard(onLogIn = { loggingIn = true }, onForget = { scope.launch { c.sync.disconnect() } })
         Text(
-            "Keep your collection, binders, trades, decks, scans and preferences the same on all your phones and on the " +
-                "website (${WebAccountClient.HOST}), through your MTG Trader account. Prices and " +
-                "pictures aren't synced: each phone downloads those itself.",
+            "Keep your collection, decks, trades and settings the same on all your phones and on ${WebAccountClient.HOST}.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -98,13 +96,13 @@ fun SyncSection() {
         Spacer(Modifier.height(12.dp))
         SwitchRow(
             title = "Sync automatically",
-            body = "When you open the app, shortly after a change, when you leave the app and every hour.",
+            body = "After changes, when you open or leave the app, and hourly.",
             checked = s.autoSync,
             onChange = c.sync::setAutoSync,
         )
         SwitchRow(
             title = "Only on Wi-Fi",
-            body = "Automatic syncs wait for Wi-Fi, so they don't use mobile data. “Sync now” always works.",
+            body = "Automatic syncs wait for Wi-Fi.",
             checked = s.wifiOnly,
             enabled = s.autoSync,
             onChange = c.sync::setWifiOnly,
@@ -279,8 +277,7 @@ internal fun NextcloudEndedCard(onLogIn: () -> Unit, onForget: () -> Unit) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Nextcloud sync has ended: log in with your MTG Trader account", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
             Text(
-                "This phone isn't syncing any more. Your account on ${WebAccountClient.HOST} keeps your phones and the website " +
-                    "in sync, and the website copies it to your Nextcloud every night. Nothing on Nextcloud is deleted.",
+                "This phone isn't syncing any more. Log in with your account to carry on; nothing on Nextcloud is deleted.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
