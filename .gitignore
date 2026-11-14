@@ -8,3 +8,8 @@ build/
 .idea/
 *.iml
 .vscode/
+
+# Local secrets (website passwords etc.): never upload
+.env
+.env.*
+!.env.example

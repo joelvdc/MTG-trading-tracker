@@ -4,3 +4,8 @@ next-env.d.ts
 *.tsbuildinfo
 .vercel
 .env*.local
+
+# Local secrets: never upload
+.env
+.env.*
+!.env.example
