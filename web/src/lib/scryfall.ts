@@ -37,6 +37,8 @@ interface ScryCard {
   layout?: string;
   cmc?: number;
   color_identity?: string[];
+  power?: string | null;
+  toughness?: string | null;
 }
 
 export interface FoundCard {
@@ -116,6 +118,37 @@ export async function tokenPrintings(oracleId: string): Promise<{ id: string; se
   const q = new URLSearchParams({ q: `oracleid:${oracleId} game:paper`, unique: "prints", order: "released", dir: "desc", include_extras: "true" });
   const j = (await getJson(`${API}/cards/search?${q}`)) as { data?: ScryCard[] } | null;
   return (j?.data ?? []).filter((c) => !c.digital).map((c) => ({ id: c.id, setName: c.set_name ?? "", collectorNumber: c.collector_number ?? "" }));
+}
+
+/** A token a search found: its printing's picture, its type line and, when Scryfall knows them, power and toughness. */
+export interface FoundToken {
+  id: string;
+  name: string;
+  typeLine: string;
+  power: string | null;
+  toughness: string | null;
+  imageUrl: string | null;
+}
+
+/**
+ * Token printings whose name matches [text] (Scryfall's "t:token" search), one picture each, at most 40. A search with
+ * no results is an empty list (Scryfall's 404).
+ */
+export async function searchTokens(text: string): Promise<FoundToken[]> {
+  const q = `t:token ${text.replace(/["\\]/g, " ").trim()}`;
+  const query = new URLSearchParams({ q, unique: "art", order: "name" });
+  const j = (await getJson(`${API}/cards/search?${query}`)) as { data?: ScryCard[] } | null;
+  return (j?.data ?? [])
+    .filter((c) => !c.digital)
+    .slice(0, 40)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      typeLine: c.type_line ?? "",
+      power: c.power ?? null,
+      toughness: c.toughness ?? null,
+      imageUrl: c.image_uris?.normal ?? c.card_faces?.[0]?.image_uris?.normal ?? null,
+    }));
 }
 
 /** A card as an order needs it: the app's CardRef plus what tells tokens and basic lands apart. */
