@@ -620,9 +620,7 @@ export function act(game: Game, action: Action): Game {
       const next = cloneState(state);
       const card = next.cards[action.id];
       removeFromZone(next, action.id);
-      if (action.to === "command" && card.def.commander) {
-        next.player.commanderTax[action.id] = (next.player.commanderTax[action.id] ?? 0) + 2;
-      }
+      // The commander tax is raised by casting from the command zone only ("move" does that), not by a search.
       if (action.to === "battlefield") {
         const spot = battlefieldSpot(next, card.def);
         card.x = spot.x;

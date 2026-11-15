@@ -523,6 +523,26 @@ describe("tutors", () => {
     expect(act(g, { type: "tutor", id: target, to: "library" }).state.zones.library[0]).toBe(target);
   });
 
+  it("leaves the commander tax alone (only a cast from the command zone raises it)", () => {
+    let g = playing();
+    const cmd = g.state.zones.command[0];
+    g = act(g, { type: "move", id: cmd, to: "library", position: "top" });
+    expect(g.state.player.commanderTax[cmd]).toBe(0);
+
+    // Searching the commander out of the library doesn't count as casting it.
+    const toCommand = act(g, { type: "tutor", id: cmd, to: "command" });
+    expect(toCommand.state.player.commanderTax[cmd]).toBe(0);
+    expect(toCommand.state.zones.command).toContain(cmd);
+
+    const toBoard = act(g, { type: "tutor", id: cmd, to: "battlefield" });
+    expect(toBoard.state.zones.battlefield).toContain(cmd);
+    expect(toBoard.state.player.commanderTax[cmd]).toBe(0);
+
+    // Casting it from the command zone still does.
+    const cast = act(toCommand, { type: "move", id: cmd, to: "battlefield" });
+    expect(cast.state.player.commanderTax[cmd]).toBe(2);
+  });
+
   it("needs a card that is in the library", () => {
     const g = playing();
     const hand = g.state.zones.hand[0];
