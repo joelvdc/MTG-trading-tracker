@@ -492,6 +492,8 @@ export interface DeckView {
   deck: Omit<Deck, "saltCard" | "scrollVault" | "categoryInfo">;
   cover: string | null;
   group: DeckGroup;
+  /** When the deck last changed, as the list's "Last modified" sort has it (the app's Deck.modifiedAt); null when unknown. */
+  modifiedAt: number | null;
   salt: SaltCard | null;
   scrollVault: Record<string, Json> | null;
   rows: DeckRow[];

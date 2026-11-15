@@ -67,6 +67,11 @@ export function groupOf(d: Deck, owner: string | null): DeckGroup {
   return owner && d.owner.toLowerCase() === owner.toLowerCase() ? "OWN" : "OTHERS";
 }
 
+/** When a deck last changed: Archidekt's date for an Archidekt deck, the last change anywhere for a local one (the app's Deck.modifiedAt). */
+export function modifiedAtOf(d: Deck): number | null {
+  return d.archidektId < 0 ? (d.updatedAt > 0 ? d.updatedAt : null) : (d.archidektUpdatedAt ?? null);
+}
+
 /** The Archidekt user whose decks are "own": the one logged in, else the one decks were last imported from. */
 export function deckOwner(file: SyncFile): string | null {
   const p = prefs(file);
@@ -101,7 +106,7 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
         saltPercent: d.saltPercent ?? null,
         archetype: d.archetype ?? null,
         archidektUpdatedAt: d.archidektUpdatedAt ?? null,
-        modifiedAt: d.archidektId < 0 ? (d.updatedAt > 0 ? d.updatedAt : null) : (d.archidektUpdatedAt ?? null),
+        modifiedAt: modifiedAtOf(d),
         valueEur: main.reduce((s, c) => s + (lineUnit(setup, c) ?? 0) * c.quantity, 0),
         missing: missingPlan(
           main.map((c) => ({ name: c.card.name, quantity: c.quantity })),
@@ -312,6 +317,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     deck: plain,
     cover: coverUrl(d),
     group: groupOf(d, deckOwner(file)),
+    modifiedAt: modifiedAtOf(d),
     salt,
     scrollVault: sv,
     rows,

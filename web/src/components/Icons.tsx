@@ -67,3 +67,12 @@ export function FlipIcon({ size = 16 }: { size?: number }) {
     </svg>
   );
 }
+
+/** A clock, beside a deck's last-modified date. */
+export function ClockIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
+      <path fill="currentColor" d="M12 8v5l4 2 .8-1.3-3.3-1.7V8h-1.5zM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 16.5A7.5 7.5 0 1 1 12 4.5a7.5 7.5 0 0 1 0 15z" />
+    </svg>
+  );
+}

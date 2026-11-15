@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/components/api";
+import { api, formatDate } from "@/components/api";
 import { ArchidektImportDialog, ArchidektUpdateDialog } from "@/components/ArchidektDialogs";
 import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
+import { ClockIcon } from "@/components/Icons";
 import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { NewDeckDialog } from "@/components/NewDeckDialog";
@@ -221,6 +222,14 @@ export default function DecksPage() {
                     {d.folder && <span>· {d.folder}</span>}
                     {d.origin && <span>· {d.origin}</span>}
                     {g === "OTHERS" && d.owner && <span>· {d.owner}</span>}
+                    {d.modifiedAt != null && (
+                      <>
+                        <span className="spacer" />
+                        <span className="deck-modified" title={d.group === "LOCAL" ? "Last changed here or on a phone" : "Last changed on Archidekt"}>
+                          <ClockIcon /> {formatDate(d.modifiedAt)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </a>
                 {!view.readOnly && (

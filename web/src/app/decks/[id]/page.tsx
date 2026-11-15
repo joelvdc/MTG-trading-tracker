@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/components/api";
+import { api, formatDate } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
@@ -390,7 +390,16 @@ export default function DeckPage() {
               {d.commanders || "No commander"} <ColourPips identity={d.colorIdentity} size={16} />
             </div>
             <div className="small deck-banner-sub">
-              {[view.local ? "Local deck" : `by ${d.owner}`, d.origin, d.folderName, `${d.cardCount} cards`, money(shaped.value)].filter(Boolean).join(" · ")}
+              {[
+                view.local ? "Local deck" : `by ${d.owner}`,
+                d.origin,
+                d.folderName,
+                `${d.cardCount} cards`,
+                money(shaped.value),
+                view.modifiedAt != null ? `Modified ${formatDate(view.modifiedAt)}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </div>
           </div>
         </header>

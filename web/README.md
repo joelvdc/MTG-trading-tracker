@@ -111,6 +111,10 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   address comes back) or deletes it. `/s/<code>` reads `GET /api/share/<code>` (no login; `noindex`): the item as it is
   now, priced in the owner's source and currency with the source stated, never purchase prices, notes or a game's
   note; "off", "gone" or "unknown" otherwise. Each opening is counted.
+- **Decks** (`lib/decks.ts`, `lib/deckshared.ts`, `/decks`, `/decks/<id>`, `/api/decks`): the app's decks with their
+  scores, value and missing cards. Each deck card shows when it last changed, bottom right of its "All owned / x missing"
+  line, and so does the deck page's banner ("Modified 11 Nov 2026"): Archidekt's own date for an Archidekt deck, the last
+  change anywhere (here or on a phone) for a local one — the same date as the "Last modified" sort (`modifiedAtOf`).
 - **Commander legality** (`lib/legality.ts`, the same rules as the app's `data/DeckLegality.kt`; both are tested against
   `test/fixtures/legality-cases.json`): banned or not legal (Scryfall's `legalities.commander`), outside the
   commanders' colour identity, more copies than allowed (basics and "a deck can have any number / up to seven…"), not

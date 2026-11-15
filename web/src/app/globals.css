@@ -1601,6 +1601,19 @@ button.link.left {
   padding-bottom: 10px;
 }
 
+/* A deck's last-modified date: bottom right of its "All owned / x missing" line, so the tile keeps its height. */
+.deck-modified {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.deck-modified svg {
+  flex: none;
+  opacity: 0.8;
+}
+
 .bracket-chip {
   font-weight: 700;
   font-size: 12px;
