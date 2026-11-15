@@ -213,14 +213,17 @@ export function PasteCardsDialog({ deckId, onClose, onDone }: { deckId: number; 
         </div>
         {preview && (
           <div className="stack small">
-            <p>
-              {preview.cards} card{preview.cards === 1 ? "" : "s"} found ({preview.exact} exact printing{preview.exact === 1 ? "" : "s"}, {preview.byName} by name)
-            </p>
-            {preview.notFound.length > 0 && <p className="warn-text new-deck-preview">Not found: {preview.notFound.join(", ")}</p>}
-            {preview.unreadable.length > 0 && <p className="muted new-deck-preview">Lines that aren&apos;t cards: {preview.unreadable.join(" · ")}</p>}
-            {preview.inDeck.length > 0 && (
-              <p className="warn-text new-deck-preview">Already in the deck, will be skipped: {preview.inDeck.join(", ")}. Basic lands are added anyway.</p>
-            )}
+            {/* The result lines sit tight together: a plain div holding them all, 4px apart, with no paragraph margins. */}
+            <div className="new-deck-preview" style={{ display: "grid", gap: 4 }}>
+              <div>
+                {preview.cards} card{preview.cards === 1 ? "" : "s"} found ({preview.exact} exact printing{preview.exact === 1 ? "" : "s"}, {preview.byName} by name)
+              </div>
+              {preview.notFound.length > 0 && <div className="warn-text">Not found: {preview.notFound.join(", ")}</div>}
+              {preview.unreadable.length > 0 && <div className="muted">Lines that aren&apos;t cards: {preview.unreadable.join(" · ")}</div>}
+              {preview.inDeck.length > 0 && (
+                <div className="warn-text">Already in the deck, will be skipped: {preview.inDeck.join(", ")}. Basic lands are added anyway.</div>
+              )}
+            </div>
             {preview.hasTags && (
               <label className="check">
                 <input type="checkbox" checked={useTags} onChange={(e) => setUseTags(e.target.checked)} />
@@ -239,7 +242,11 @@ export function PasteCardsDialog({ deckId, onClose, onDone }: { deckId: number; 
             Close
           </button>
           <button className="btn primary" disabled={busy || !preview || preview.cards === 0} onClick={add}>
-            {preview ? `Add ${preview.cards} card${preview.cards === 1 ? "" : "s"}` : "Add cards"}
+            {preview
+              ? preview.inDeck.length > 0
+                ? "Add the new cards"
+                : `Add ${preview.cards} card${preview.cards === 1 ? "" : "s"}`
+              : "Add cards"}
           </button>
         </div>
       </div>
