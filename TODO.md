@@ -14,11 +14,11 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-14, after 1.94)
-- **Latest:** app 1.94 (2026-11-14): the life tracker's menus (Game settings, Dice, Mana, History, End game, player
-  sheet, dice result) and Settings → Games in the app's colours and theme; much less text on every settings page;
-  Backups explains Nextcloud without the website (a chosen folder plus the Nextcloud app's auto-upload). 1.93 the day
-  before: TCGplayer and Card Kingdom prices from the website.
+## Right now (2026-11-15, after 1.95)
+- **Latest:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
+  big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
+  (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
+  settings texts.
 - **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
   mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
 - **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card
@@ -92,6 +92,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.95 (2026-11-15): deck page with much less help text, and its last modified date (not on the Decks tab).
 - 1.94 (2026-11-14): tracker menus and Settings → Games in the app's colours, shorter settings texts, Backups and
   Nextcloud without the website.
 - 1.93 (2026-11-13): TCGplayer and Card Kingdom prices from the website (`/api/app/tcgplayer`,

@@ -139,8 +139,8 @@ internal fun ManaCurveCard(curve: ManaCurve) = StatsCardBox("Mana curve") {
         }
     }
     Note(
-        if (curve.spells == 0) "No spells yet (lands are left out)."
-        else "${curve.spells} spells (lands left out) · average mana value ${"%.2f".format(java.util.Locale.ROOT, curve.average)}"
+        if (curve.spells == 0) "No spells yet."
+        else "${curve.spells} spells · average ${"%.2f".format(java.util.Locale.ROOT, curve.average)}"
     )
 }
 
@@ -173,14 +173,7 @@ internal fun ColoursCard(
     val counts = sources.map { ColourCount(it.colour, it.count) }
     if (counts.isEmpty()) Note(if (landsOnly) "No lands that make mana yet." else "No cards that make mana yet.")
     else SplitBar(counts, selected = open) { open = if (open == it) null else it }
-    Note(
-        "Cost: coloured symbols in the cards' costs (a hybrid counts for both colours). Production: sources " +
-            (if (landsOnly) "among the deck's $landCount lands" else "among all the deck's cards") +
-            ", each counted once for every colour it can make. Tap a colour to see its cards."
-    )
-    if (detailsMissing > 0) {
-        Note("$detailsMissing card(s) are still waiting for their details from Scryfall; they're fetched when the phone is online.")
-    }
+    if (detailsMissing > 0) Note(stillLoading(detailsMissing))
     sources.firstOrNull { it.colour == open }?.let { s -> SourceList(s) }
 }
 
@@ -470,15 +463,12 @@ internal fun CommanderOddsCard(odds: com.mtgtrader.data.ManaOdds?, missing: Int)
     }
     odds.allColours?.let { values -> OddsRow(labelWidth, false, { Text("All colours", style = MaterialTheme.typography.bodyMedium) }, values) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Note(
-            "% of games, from ${"%,d".format(java.util.Locale.ROOT, odds.games)} shuffles of this deck (playing alone, a best case).",
-            Modifier.weight(1f),
-        )
+        Note("% of games · ${"%,d".format(java.util.Locale.ROOT, odds.games)} shuffles", Modifier.weight(1f))
         TextButton(onClick = { about = !about }) { Text(if (about) "Less" else "How?") }
     }
     if (about) {
         Note(
-            "The app plays the deck alone: it draws (also on turn 1), keeps a hand like Commander players do (a free " +
+            "A best case. The app plays the deck alone: it draws (also on turn 1), keeps a hand like Commander players do (a free " +
                 "mulligan, then London mulligans), plays a land each turn and casts mana makers when it can. Counted: " +
                 "${odds.lands} lands, ${odds.rocks} mana rocks, ${odds.creatures} mana creatures (from the turn after) and " +
                 "${odds.ramp} land ramp spells, all costing up to 4. Lands that enter tapped come in tapped (\"unless …\" lands check their condition), " +
@@ -490,7 +480,7 @@ internal fun CommanderOddsCard(odds: com.mtgtrader.data.ManaOdds?, missing: Int)
             runCatching { uriHandler.openUri("https://www.tcgplayer.com/content/article/How-Many-Sources-Do-You-Need-to-Consistently-Cast-Your-Spells-A-2022-Update/dc23a7d2-0a16-4c0b-ad36-586fcca03ad8/") }
         }) { Text("Frank Karsten's article") }
     }
-    if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they count as plain spells for now.")
+    if (missing > 0) Note(stillLoading(missing))
 }
 
 @Composable
@@ -561,19 +551,16 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
         OddsRow(labelWidth, true, { Text("by combo", style = MaterialTheme.typography.bodyMedium) }, turns.map { win.byCombo[it - 1] })
     }
     Note(winDamageNote(win))
-    if (win.fourInTen == null) Note(WIN_SLOW_NOTE)
+    if (win.fourInTen == null) Note("Probably slower here than at the table (see How?).")
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Note(
-            "% of games won by each turn, from ${"%,d".format(java.util.Locale.ROOT, win.games)} shuffles of this deck " +
-                "(playing alone against three players at 40 life, a best case).",
-            Modifier.weight(1f),
-        )
+        Note("% of games won by each turn · ${"%,d".format(java.util.Locale.ROOT, win.games)} shuffles", Modifier.weight(1f))
         TextButton(onClick = { about = !about }) { Text(if (about) "Less" else "How?") }
     }
     if (about) {
         val n = win.counted
+        if (win.fourInTen == null) Note(WIN_SLOW_NOTE)
         Note(
-            "The app plays the deck alone, with the mana as for casting the commander, every land of a ramp spell and " +
+            "A best case, against three players at 40 life. The app plays the deck alone, with the mana as for casting the commander, every land of a ramp spell and " +
                 "Treasures. Each turn it casts its commander, creatures, token makers, equipment and auras and the cards that deal " +
                 "damage, the most expensive first; uses tap and loyalty abilities, Clues and Mutagens with the mana left; it puts " +
                 "the equipment and auras on its commander (or else its biggest creature), keeps pump spells for combat and " +
@@ -598,8 +585,11 @@ internal fun WinningCard(win: com.mtgtrader.data.WinOdds?, missing: Int) = Stats
                 " Not counted: removal, blockers, what the opponents cast and abilities the app can't read from the card text."
         )
     }
-    if (missing > 0) Note("$missing card(s) are still waiting for their details from Scryfall, so they don't count yet.")
+    if (missing > 0) Note(stillLoading(missing))
 }
+
+/** "3 cards still loading from Scryfall" (their details are fetched when the phone is online). Since 1.95. */
+internal fun stillLoading(n: Int) = "$n card" + (if (n == 1) "" else "s") + " still loading from Scryfall"
 
 /** The first win's colour (green, darker on light backgrounds); 4 in 10 games take the theme's gold. Since 1.54. */
 @Composable

@@ -52,7 +52,8 @@ website and nightly backups; accounts need an invite code for now.
 - Price alerts when a card drops to your price.
 
 **Commander decks**
-- Import a deck from a link (read only) or a pasted list, add a precon, or build one in the app or on the website.
+- Import a deck from a link (read only) or a pasted list, add a precon, or build one in the app or on the website;
+  each deck's page shows when it was last modified.
 - Group a deck by category, card type, mana value or colour, sorted by mana value or name; on the website, drag
   categories into your own order (the app follows it) and drag cards between categories of your own decks.
 - Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated

@@ -705,11 +705,13 @@ internal fun DeckGamesCard(r: DeckResult, last: List<GameRecord>, deckId: Long, 
                 }
                 if (r.oppBracket != null || r.oppPower != null) {
                     HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                    Text(
-                        listOfNotNull(r.bracket?.let { "Bracket $it" }, r.power?.let { "power %.1f".format(it) }).joinToString(" · ").let { if (it.isBlank()) "" else "$it. " } +
-                            "The decks it played against: " + listOfNotNull(r.oppBracket?.let { "bracket %.1f".format(it) }, r.oppPower?.let { "power %.1f".format(it) }).joinToString(" · ") + " on average.",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Row {
+                        Text("Opponents (average)", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            listOfNotNull(r.oppBracket?.let { "bracket %.1f".format(it) }, r.oppPower?.let { "power %.1f".format(it) }).joinToString(" · "),
+                            style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
             }
         }

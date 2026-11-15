@@ -140,7 +140,6 @@ import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.PowerSource
-import java.util.Locale
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
@@ -627,21 +626,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
             if (waiting > 0) {
                 item(key = "waiting") { UnsentBanner(waiting, onKeep = { confirmDetach = true }, onDiscard = { confirmReload = true }) }
-            } else if (!d.local) {
-                item(key = "readOnly") {
-                    Text(
-                        "Edit this deck on Archidekt, then reload it here (⟳). To change it in the app, make it a local deck (⋮).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
             }
             if (d.retired) item(key = "retired") {
                 Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Retired: kept with its games, but out of the seat pickers, \"Update all decks\" and the collection checks.",
-                        style = MaterialTheme.typography.bodySmall,
+                        "Retired",
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
@@ -649,24 +639,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 }
             }
             item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
-            item(key = "printings") {
-                val differ = matched.original.size
-                Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        when {
-                            !myPrintings -> "Showing Archidekt's printings."
-                            differ == 0 -> "Showing your printings: they match Archidekt's."
-                            else -> "Showing the printings you own: $differ card(s) differ from Archidekt."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { c.settings.setDeckShowsMyPrintings(deckId, !myPrintings) }) {
-                        Text(if (myPrintings) "Show Archidekt's" else "Show mine")
-                    }
-                }
-            }
             item(key = "rulezero") {
                 Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
@@ -739,14 +711,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 item(key = "tokens_h") { StatsHeading("Tokens (${tokens.size})", tokensFolded) { toggleStats(DeckStats.TOKENS) } }
                 if (!tokensFolded) {
                     tokens.chunked(3).forEachIndexed { i, row -> item(key = "tokens_$i") { TokenRow(row) { openToken = it.key } } }
-                    item(key = "tokens_note") {
-                        Text(
-                            "Tap a token to see it large and choose its printing for this deck.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 6.dp),
-                        )
-                    }
                 }
             }
             sections.forEach { section ->
@@ -758,13 +722,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 if (editable && section.title == DeckToCollection.ADDED_IN_APP && !folded) {
                     item(key = "added_actions") {
                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Only in this app so far.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                             OutlinedButton(onClick = {
                                 edit("Put ${section.count} card(s) in the deck") { c.deckEditor.move(deckId, section.rows.map { it.item.lineUid }, DeckEditor.AUTO) }
-                            }) { Text("Into the deck") }
+                            }, modifier = Modifier.weight(1f)) { Text("Into the deck") }
                             OutlinedButton(onClick = {
                                 edit("Put ${section.count} card(s) in the maybeboard") { c.deckEditor.addedToMaybeboard(deckId) }
-                            }) { Text("To maybeboard") }
+                            }, modifier = Modifier.weight(1f)) { Text("To maybeboard") }
                         }
                     }
                 }
@@ -801,18 +764,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             if (showMaybeboard) {
                 item(key = "maybeboard") {
                     Column(Modifier.padding(top = 20.dp)) {
+                        // Only a divider since 1.95: the maybeboard's own folding sections follow it.
                         HorizontalDivider()
-                        Text(
-                            "Maybeboard" + if (maybeRows.isNotEmpty()) " · ${maybeRows.sumOf { it.item.quantity }} cards" else "",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(top = 10.dp),
-                        )
-                        Text(
-                            if (maybeRows.isEmpty()) "No maybeboard cards. Decks loaded before version 1.42 get theirs when the decklist is reloaded from Archidekt (⟳)."
-                            else "On Archidekt, but left out of the deck: not counted in its cards or value.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (maybeRows.isEmpty()) Text("No maybeboard cards.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
                     }
                 }
                 maybeSections.forEach { section ->
@@ -1100,16 +1054,11 @@ private fun DeckHeader(deck: Deck, cardCount: Int, value: Double, priceType: Pri
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // When it was last changed (since 1.95): Archidekt's date, or a local deck's last change; as on the website.
+        deck.modifiedAt?.let {
+            Text("Modified ${Fmt.date(it)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
-}
-
-/** How the app's power level came about: "Power level from the app's win turn: half the games won by turn 8.6 (6.8), Commander Salt's ratings +0.2." */
-internal fun appPowerText(r: com.mtgtrader.data.AppPowerReading): String {
-    val speed = String.format(Locale.getDefault(), "%.1f", r.speed)
-    val turn = r.turn?.let { "half the games won by turn " + String.format(Locale.getDefault(), "%.1f", it) + " ($speed)" }
-        ?: "under half the games won by the last turn, ${r.wonByEnd}% ($speed)"
-    val salt = r.adjust?.let { ", Commander Salt's ratings " + String.format(Locale.getDefault(), "%+.1f", it) } ?: ", no Commander Salt ratings"
-    return "Power level from the app's win turn: $turn$salt."
 }
 
 /** The deck's Commander legality: "Commander legal ✓", or each problem on its own line; null while it's being checked. */
@@ -1117,11 +1066,13 @@ internal fun appPowerText(r: com.mtgtrader.data.AppPowerReading): String {
 private fun LegalityCard(legality: Legality?) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Legality", style = MaterialTheme.typography.titleSmall)
             when {
                 legality == null -> Text("Checking legality…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                legality.problems.isEmpty() -> Text("Commander legal ✓", style = MaterialTheme.typography.bodyMedium)
-                else -> legality.problems.forEach { Text(it.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+                legality.problems.isEmpty() -> Text("Commander legal ✓", style = MaterialTheme.typography.titleSmall)
+                else -> {
+                    Text("Not Commander legal", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.error)
+                    legality.problems.forEach { Text(it.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+                }
             }
             if (legality != null && legality.unchecked.isNotEmpty()) {
                 val n = legality.unchecked.size
@@ -1137,12 +1088,9 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             if (!deck.scored) {
                 Text("Not scored yet", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    deck.scoreError?.let { "Commander Salt couldn't score this deck: $it" }
-                        ?: "Commander Salt scores the deck when it's imported.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                deck.scoreError?.let {
+                    Text("Commander Salt couldn't score this deck: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 if (!busy) TextButton(onClick = onRetry) { Text("Try again") }
                 return@Column
             }
@@ -1154,16 +1102,11 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
             HorizontalDivider(Modifier.padding(vertical = 10.dp))
             val extras = listOfNotNull(deck.saltPercent?.let { "Salt ${it.roundToInt()}%" }, deck.archetype)
             if (extras.isNotEmpty()) Text(extras.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                "Realistic: how the deck actually plays. Baseline: WotC's bracket rules to the letter.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             if (source == PowerSource.APP) {
-                val other = deck.powerLevel?.let { " (Commander Salt: ${Scores.power(it)})" } ?: ""
+                val other = deck.powerLevel?.let { " · Commander Salt ${Scores.power(it)}" } ?: ""
                 val error = deck.powerError(source)
                 Text(
-                    com.mtgtrader.data.AppPower.of(deck.archidektId)?.let { appPowerText(it) + other }
+                    com.mtgtrader.data.AppPower.of(deck.archidektId)?.let { "Power level from the app's win turn$other" }
                         ?: error?.let { "The app has no power level for this deck: $it.$other" }
                         ?: "Working out the power level from the win turn…$other",
                     style = MaterialTheme.typography.labelSmall,
@@ -1173,12 +1116,11 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
                 val power = deck.power(source)
                 val error = deck.powerError(source)
                 val sv = deck.scrollVaultReading.takeIf { source == PowerSource.SCROLLVAULT && power != null }
-                val other = deck.powerLevel?.let { " (Commander Salt: ${Scores.power(it)})" } ?: ""
+                val other = deck.powerLevel?.let { " · Commander Salt ${Scores.power(it)}" } ?: ""
                 Text(
                     when {
-                        power != null -> "Power level from ${source.site}" + (sv?.margin?.let { " (±${Scores.power(it)})" } ?: "") +
-                            (deck.powerAt(source)?.let { ", ${Fmt.dateTime(it)}" } ?: "") + other
-                        error != null -> "${source.site} couldn't rate this deck ($error); refresh the bracket and power level to try again." + other
+                        power != null -> "Power level from ${source.site}" + (sv?.margin?.let { " (±${Scores.power(it)})" } ?: "") + other
+                        error != null -> "${source.site} couldn't rate this deck ($error)." + other
                         else -> "Waiting for ${source.site}'s power level…$other"
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -1192,22 +1134,28 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
                     if (facts.isNotEmpty()) Text("ScrollVault: " + facts.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            deck.scoredAt?.let {
-                Text("Scored by Commander Salt, ${Fmt.dateTime(it)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
             deck.scoreError?.let {
                 Text(
-                    "The last update couldn't be scored ($it), so these are the earlier scores.",
+                    "The last update couldn't be scored ($it).",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (!busy) {
-                TextButton(onClick = onRescore, contentPadding = PaddingValues(horizontal = 0.dp)) {
-                    Icon(Icons.Default.Refresh, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Refresh bracket and power level")
+            // When Commander Salt scored it, with the refresh button on the same line.
+            Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    deck.scoredAt?.let { "Scored ${Fmt.date(it)}" } ?: "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!busy) {
+                    TextButton(onClick = onRescore) {
+                        Icon(Icons.Default.Refresh, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Refresh")
+                    }
                 }
             }
         }
