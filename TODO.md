@@ -42,6 +42,28 @@ history, the release notes and `web/README.md`.)
 - **Waiting on the owner:** nothing. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
+## In progress: deck builder parity (green light 2026-11-15)
+Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
+(OpenCode Go) writes all code, Opus plans, reviews, tests and releases (`/deepseek`).
+- **Release 1, website:** deck page buttons cut down (Bracket/Power/Missing numbers clickable; Playtest,
+  Recommendations, Share ▾, Edit ▾); drop "(This app)" after Power; Undo bar for every deck edit incl. category and
+  deck delete; Select mode with bulk actions (category, maybeboard, copies, printing cheapest/newest/oldest/owned,
+  foil, tag, package, copy, remove; Archidekt decks only tag/package/copy); Copy deck as text (Moxfield, Archidekt,
+  Arena, plain); Paste cards into an existing deck with a preview.
+- **Release 2, website:** playtester at `/decks/<id>/playtest` (zones, London mulligan + free first, library actions
+  incl. scry/surveil/mill/tutor, tap, flip, face down, copies, counters on cards, tokens from the deck + Scryfall
+  search, life/poison/energy/experience/commander tax, turns, undo, log, dice/coin, shortcuts, land/draw odds). Owner
+  playtests it and gives feedback before release 3. No playtest in the Android app.
+- **Release 3, app 1.96:** deck search with the website's syntax (shared test cases), copy/paste deck text, deck menu
+  under headings + search icon, drop "(This app)".
+- **Release 4, app 1.97 + website, sync format 15 (owner OK: phones update via Obtainium):** deck primer + per-card
+  notes (share page too, kept on Archidekt reload, Archidekt description fills an empty primer once); own tags that
+  apply in every deck + role counts line; packages; change history per deck (same-day merge, last 100 entries).
+- **Release 5, website:** AI primer via OpenCode Go (Vercel `OPENCODE_API_KEY`, own key, set 2026-11-15; Extra Usage
+  off), model picked from Go's model list (chat-completions models), DeepSeek V4.1 Flash default; focus Casual /
+  Upgraded / High power / cEDH, length, sections; saved as editable primer. Health check: Go reachable + key valid
+  via the models list.
+
 ## Collecting
 
 ### Commander Salt scores for local decks (2026-11-05)
