@@ -14,8 +14,15 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-15, after 1.95 and a website speed-up)
-- **Latest:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
+## Right now (2026-11-16, deck builder parity releases 1 and 2 live on the website)
+- **Waiting on the owner:** feedback on the new playtester (`/decks/<id>/playtest`, Playtest button on the deck
+  page) before release 3 (app 1.96) starts; see "In progress" below. Website releases 1 (fewer deck buttons, Undo bar,
+  Select mode with bulk changes, Copy deck as text, Paste cards) and 2 (playtester) are on `main` and live. Tag and
+  package bulk actions come with release 4. Worktrees `%LOCALAPPDATA%\ds-jobs\r1*`/`r2` and branches `claude/ds-*`
+  can be removed once the plan is finished.
+- **Expected to look odd:** the Undo bar lasts 30 s and only undoes the latest change; the playtester's "Any token"
+  search needs Scryfall, so it can be slow.
+- **Earlier:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
   big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
   (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
   settings texts.
