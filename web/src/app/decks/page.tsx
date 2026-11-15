@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { api, formatDate, peek, prefetch, remember } from "@/components/api";
 import { ArchidektImportDialog, ArchidektUpdateDialog } from "@/components/ArchidektDialogs";
 import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
@@ -23,6 +23,12 @@ const SORTS: [Sort, string][] = [
 const GROUPS: DeckGroup[] = ["OWN", "OTHERS", "LOCAL", "RETIRED"];
 /** In the folded-groups list: the Retired section is hidden altogether (app 1.83: "Hide retired decks"). */
 const HIDE_RETIRED = "hide:RETIRED";
+
+/** Closes the drop-down menu a click came from (the <details> that holds the item). */
+function closeMenu(e: MouseEvent<HTMLElement>) {
+  const d = e.currentTarget.closest("details.menu") as HTMLDetailsElement | null;
+  if (d) d.open = false;
+}
 
 /** The app's DeckSorting.sort: decks without the value sorted on always come last, by name. */
 function sortDecks(decks: DeckSummary[], sort: Sort, reverse: boolean): DeckSummary[] {
@@ -167,36 +173,60 @@ export default function DecksPage() {
               ))}
             </select>
           </label>
-          <button className="btn small-btn" onClick={() => setReverse((r) => !r)} title="Reverse the order">
+          <button className="btn" onClick={() => setReverse((r) => !r)} title="Reverse the order">
             {reverse ? "▲" : "▼"}
           </button>
-          <span className="spacer" />
-          {view.decks.some((d) => d.group === "RETIRED") && (
-            <button className="btn small-btn" onClick={() => setFold(HIDE_RETIRED, !folded.has(HIDE_RETIRED))}>
-              {folded.has(HIDE_RETIRED) ? "Show retired decks" : "Hide retired decks"}
-            </button>
-          )}
-          <Link className="btn small-btn" href="/decks/recommendations">
-            Recommendations
-          </Link>
-          <Link className="btn small-btn" href="/decks/shared">
-            Cards in several decks
-          </Link>
-          <Link className="btn small-btn" href="/decks/cards">
-            Rule-zero cards of all decks
-          </Link>
+          <details className="menu">
+            <summary className="btn">Decks ▾</summary>
+            <div className="menu-items">
+              <Link className="menu-link" href="/decks/recommendations" onClick={closeMenu}>
+                Recommendations
+              </Link>
+              <Link className="menu-link" href="/decks/shared" onClick={closeMenu}>
+                Cards in several decks
+              </Link>
+              <Link className="menu-link" href="/decks/cards" onClick={closeMenu}>
+                Rule-zero cards of all decks
+              </Link>
+              {!view.readOnly && (
+                <>
+                  <hr className="menu-sep" />
+                  <button
+                    onClick={(e) => {
+                      closeMenu(e);
+                      setArchidekt("update");
+                    }}
+                    title="Reload the decks changed on Archidekt and score them again"
+                  >
+                    Update all decks…
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      closeMenu(e);
+                      setArchidekt("import");
+                    }}
+                  >
+                    Import from Archidekt…
+                  </button>
+                </>
+              )}
+              {view.decks.some((d) => d.group === "RETIRED") && (
+                <>
+                  <hr className="menu-sep" />
+                  <button
+                    onClick={(e) => {
+                      closeMenu(e);
+                      setFold(HIDE_RETIRED, !folded.has(HIDE_RETIRED));
+                    }}
+                  >
+                    {folded.has(HIDE_RETIRED) ? "Show retired decks" : "Hide retired decks"}
+                  </button>
+                </>
+              )}
+            </div>
+          </details>
           {!view.readOnly && (
-            <button className="btn small-btn" onClick={() => setArchidekt("update")} title="Reload the decks changed on Archidekt and score them again">
-              Update all decks
-            </button>
-          )}
-          {!view.readOnly && (
-            <button className="btn small-btn" onClick={() => setArchidekt("import")}>
-              Import from Archidekt
-            </button>
-          )}
-          {!view.readOnly && (
-            <button className="btn primary small-btn" onClick={() => setNewOpen(true)}>
+            <button className="btn primary add-card" onClick={() => setNewOpen(true)}>
               New deck
             </button>
           )}

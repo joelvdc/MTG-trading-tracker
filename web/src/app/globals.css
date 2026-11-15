@@ -65,6 +65,11 @@ a {
   font-size: 13px;
 }
 
+/* Controls keep the page's text size even inside a small label (one size for buttons and fields, 2026-11-15). */
+.small :is(select, input, textarea, button, .btn) {
+  font-size: 15px;
+}
+
 .gold {
   color: var(--accent);
 }
@@ -274,10 +279,10 @@ p.small {
   width: auto;
 }
 
-/* The decks list row is full of buttons: its search box may shrink further so they stay on one line. */
+/* The decks list keeps its search box roomy: the rest of the row is one Sort picker and one Decks ▾ menu. */
 .decks-controls input[type="search"] {
-  flex: 1 1 90px;
-  min-width: 80px;
+  flex: 1 1 220px;
+  min-width: 160px;
 }
 
 .section-head {
@@ -4222,4 +4227,18 @@ button.multiselect-clear {
 
 .dialog.wide .colour-pick {
   gap: 3px;
+}
+
+/* Decks toolbar: search, Sort, ▼ and one Decks ▾ menu, New deck at the right (2026-11-15) */
+/* A line between groups of items in a menu (the Decks ▾ menu's Archidekt part and its retired-deck toggle). */
+.menu-items > hr.menu-sep {
+  width: auto;
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* The trade binder's list rows are 14px: their buttons keep the page's 15px (one size for buttons, 2026-11-15). */
+.stat-cards li :is(button, .btn) {
+  font-size: 15px;
 }

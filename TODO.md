@@ -29,6 +29,8 @@ history, the release notes and `web/README.md`.)
   load. Later options: keep answers across reloads, pre-built answers in the database, ETag/304, slimmer JSON.
 - **Collection toolbar tidy-up (2026-11-15, website only):** Display ▾ / Collection ▾ / Binders ▾ menus, Add card on
   the right, Views button there from the start, Moxfield-style Filter and Sort windows, one button text size site-wide.
+  Decks list the same way: search, Sort, one Decks ▾ menu (the three deck pages, Archidekt update/import, retired
+  toggle) and New deck on the right; form controls never take the 13px `.small` text.
   Possible next step the owner may ask for: more filters like Moxfield's (rules text, mana value, power/toughness).
 - **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
   mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
