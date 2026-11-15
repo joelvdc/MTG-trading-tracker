@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   addCard,
   addCategory,
+  addPasted,
   AUTO,
   categories,
   COMMANDER,
@@ -19,9 +20,13 @@ import {
   removeLines,
   renameCategory,
   renameDeck,
+  restoreDeck,
   setCategoryHidden,
+  setFinishes,
   setPick,
+  setPrintings,
   setPrinting,
+  setQuantities,
   setQuantity,
   sortLines,
   type Lookups,
@@ -29,7 +34,7 @@ import {
 } from "@/lib/deckedit";
 import { parseDeckText, textCardCount, hasTags } from "@/lib/decktext";
 import { syncDecks } from "@/lib/decks";
-import type { DeckCard } from "@/lib/deckshared";
+import type { DeckCard, SyncDeck } from "@/lib/deckshared";
 import { deletions, parse, prefs, type CardRef } from "@/lib/syncfile";
 import { EditError } from "@/lib/wishlist";
 
@@ -70,6 +75,13 @@ describe("pasted decklists (the app's DeckText, Release146TextTest)", () => {
     const r = parseDeckText("1 Sol Ring (CMM) *E*\n3x Forest");
     expect(r.lines[0]).toMatchObject({ name: "Sol Ring", setCode: "cmm", number: null, foil: true, etched: true });
     expect(r.lines[1]).toMatchObject({ name: "Forest", quantity: 3 });
+  });
+
+  it("reads Moxfield tags with underscores as spaces", () => {
+    const r = parseDeckText("1 Sol Ring (CMR) 263 #Mana #Card_Draw #Win_Con\n1x Sol Ring (cmr) 263 [Card Draw]");
+    expect(r.lines[0].tags).toEqual(["Mana", "Card Draw", "Win Con"]);
+    // Archidekt's [..] categories are kept as they are.
+    expect(r.lines[1].tags).toEqual(["Card Draw"]);
   });
 });
 
@@ -301,6 +313,102 @@ describe("editing local decks (the app's DeckEditor)", () => {
       ["a", true, 1],
       ["b", false, 1],
     ]);
+  });
+
+  it("puts a deck back as it was (undo), also after it was deleted", () => {
+    const { f, id, deck, uid } = withLocal();
+    const snapshot = structuredClone(deck());
+    setQuantity(f, id, uid("Sol Ring"), 4, NOW + 5, look);
+    expect(deck().deck.cardCount).toBe(5);
+    restoreDeck(f, snapshot, NOW + 10);
+    expect(deck().cards).toEqual(snapshot.cards);
+    expect(deck().deck).toEqual({ ...snapshot.deck, updatedAt: NOW + 10 });
+    deleteDeck(f, id, NOW + 20);
+    expect(deletions(f).some((x) => x.uid === `deck:${id}`)).toBe(true);
+    restoreDeck(f, snapshot, NOW + 30);
+    expect(deck().cards).toEqual(snapshot.cards);
+    expect(deck().deck.updatedAt).toBe(NOW + 30);
+    expect(deletions(f).some((x) => x.uid === `deck:${id}`)).toBe(false);
+    // Its updatedAt always moves on, so an older copy of the deck (a phone's) doesn't win the next sync.
+    restoreDeck(f, { ...snapshot, deck: { ...snapshot.deck, updatedAt: NOW + 500 } }, NOW + 40);
+    expect(deck().deck.updatedAt).toBe(NOW + 501);
+    // A snapshot that isn't a deck can't be put back.
+    expect(() => restoreDeck(f, null as unknown as SyncDeck, NOW)).toThrow(EditError);
+    expect(() => restoreDeck(f, { deck: {}, cards: [] } as unknown as SyncDeck, NOW)).toThrow(EditError);
+    expect(() => restoreDeck(f, { deck: snapshot.deck, cards: {} } as unknown as SyncDeck, NOW)).toThrow(EditError);
+  });
+
+  it("changes many lines' quantities, finishes and printings at once", () => {
+    const { f, id, deck, uid } = withLocal();
+    setQuantities(f, id, [uid("Sol Ring"), uid("Maybe card")], 3, NOW + 5, look);
+    expect(deck().cards.map((c) => [c.card.name, c.quantity])).toEqual([
+      ["Auntie", 1],
+      ["Maybe card", 3],
+      ["Sol Ring", 3],
+    ]);
+    expect(deck().deck.cardCount).toBe(4);
+    expect(deck().deck.updatedAt).toBe(NOW + 5);
+    // No line of the deck: refused, like setQuantity; more than the most: capped.
+    expect(() => setQuantities(f, id, ["nope"], 3, NOW, look)).toThrow(EditError);
+    setQuantities(f, id, [uid("Sol Ring")], 5000, NOW + 6, look);
+    expect(deck().cards.find((c) => c.card.name === "Sol Ring")!.quantity).toBe(999);
+    setQuantities(f, id, [uid("Maybe card")], 0, NOW + 7, look);
+    expect(deck().cards.some((c) => c.card.name === "Maybe card")).toBe(false);
+    setFinishes(f, id, [uid("Auntie"), uid("Sol Ring")], "FOIL", NOW + 8, look);
+    expect(deck().cards.filter((c) => c.foil).map((c) => c.card.name)).toEqual(["Auntie", "Sol Ring"]);
+    // A printing without foil keeps the nearest finish it has.
+    const sol = deck().cards.find((c) => c.card.name === "Sol Ring")!;
+    sol.card = { ...sol.card, hasFoil: false };
+    setFinishes(f, id, [sol.lineUid], "FOIL", NOW + 9, look);
+    expect(deck().cards.find((c) => c.card.name === "Sol Ring")).toMatchObject({ foil: false, etched: false });
+    setPrintings(f, id, [{ uid: sol.lineUid, card: ref("sol2", "Sol Ring") }], NOW + 10, look);
+    expect(deck().cards.find((c) => c.card.name === "Sol Ring")).toMatchObject({ quantity: 999, category: "Mana", card: { scryfallId: "sol2" } });
+    expect(deck().deck.updatedAt).toBe(NOW + 10);
+    expect(() => setPrintings(f, id, [{ uid: sol.lineUid, card: ref("x", "Island") }], NOW, look)).toThrow(EditError);
+    expect(() => setPrintings(f, id, [], NOW, look)).toThrow(EditError);
+    expect(() => setFinishes(f, id, ["nope"], "FOIL", NOW, look)).toThrow(EditError);
+  });
+
+  it("refuses bulk edits and pasted cards on decks from Archidekt", () => {
+    const f = fixture();
+    const d = syncDecks(f)[0];
+    const id = d.deck.archidektId;
+    expect(() => setQuantities(f, id, [d.cards[0].lineUid], 2, NOW, look)).toThrow(EditError);
+    expect(() => setFinishes(f, id, [d.cards[0].lineUid], "FOIL", NOW, look)).toThrow(EditError);
+    expect(() => setPrintings(f, id, [{ uid: d.cards[0].lineUid, card: d.cards[0].card }], NOW, look)).toThrow(EditError);
+    expect(() => addPasted(f, id, [line("x", "X", "Ramp")], NOW, look)).toThrow(EditError);
+  });
+
+  it("adds a pasted list, skipping cards already there and topping up basic lands", () => {
+    const { f, id, deck } = withLocal();
+    const r = addPasted(
+      f,
+      id,
+      [
+        line("bolt", "Lightning Bolt", "Instant", { types: "Instant" }),
+        line("sol3", "Sol Ring", "Ramp", { quantity: 2 }),
+        line("island", "Island", "Land", { quantity: 3, types: "Basic Land — Island" }),
+        line("island2", "Island", "Land", { quantity: 2, types: "Basic Land — Island" }),
+        line("may3", "Maybe card", MAYBEBOARD),
+        line("bolt2", "Lightning Bolt", "Instant", { types: "Instant" }),
+      ],
+      NOW + 5,
+      look,
+    );
+    expect(r).toEqual({ added: 6, skipped: ["Sol Ring", "Maybe card", "Lightning Bolt"] });
+    expect(deck().cards.map((c) => [c.card.name, c.quantity, c.maybeboard])).toEqual([
+      ["Lightning Bolt", 1, false],
+      ["Auntie", 1, false],
+      ["Island", 5, false],
+      ["Maybe card", 2, true],
+      ["Sol Ring", 1, false],
+    ]);
+    expect(deck().deck.cardCount).toBe(8);
+    // Pasted cards never become the commander, and a basic land's copies share one line.
+    expect(deck().cards.filter((c) => c.commander).map((c) => c.card.name)).toEqual(["Auntie"]);
+    expect(deck().cards.filter((c) => c.card.name === "Island")).toHaveLength(1);
+    expect(deck().cards.find((c) => c.card.name === "Lightning Bolt")).toMatchObject({ category: "Instant", types: "Instant", commander: false });
+    expect(deck().cards.find((c) => c.card.name === "Island")).toMatchObject({ category: "Land", maybeboard: false });
   });
 });
 

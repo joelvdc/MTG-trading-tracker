@@ -6,9 +6,9 @@
 // updatedAt); a local deck has no archidektUpdatedAt, so an edit wins by moving its updatedAt on, like the app's
 // database triggers do. Its lines are written whole; each keeps its lineUid.
 import { resolveFinish } from "./cards";
-import { primaryType, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
+import { isBasicName, primaryType, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
 import { finishOf, type Finish } from "./pricing";
-import { addDeletion, bump, prefs, setPrefs, type CardRef, type Json, type SyncFile } from "./syncfile";
+import { addDeletion, bump, deletions, prefs, setPrefs, type CardRef, type Json, type SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
 
 export const MAYBEBOARD = "Maybeboard";
@@ -19,6 +19,9 @@ const MAX_QUANTITY = 999;
 const COLOURS = "WUBRG";
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
+/** A card is the same card by its front face, case-insensitively (except for a different printing). */
+const front = (name: string) => name.split(" // ")[0].trim().toLowerCase();
 
 function syncDecks(file: SyncFile): SyncDeck[] {
   return ((file.data.decks as Json[] | undefined) ?? []) as unknown as SyncDeck[];
@@ -173,6 +176,15 @@ export function setQuantity(file: SyncFile, id: number, uid: string, quantity: n
   save(sd, q <= 0 ? sd.cards.filter((c) => c.lineUid !== uid) : sd.cards.map((c) => (c.lineUid === uid ? { ...c, quantity: q } : c)), now, look);
 }
 
+/** Changes several lines' quantities at once (a bulk edit): [quantity] at or below zero removes them. Local decks only. */
+export function setQuantities(file: SyncFile, id: number, uids: string[], quantity: number, now: number, look: Lookups): void {
+  const sd = local(file, id);
+  const want = new Set(uids);
+  if (!sd.cards.some((c) => want.has(c.lineUid))) throw new EditError("That card isn't in the deck any more.");
+  const q = Math.min(MAX_QUANTITY, Math.floor(Number.isFinite(quantity) ? quantity : 0));
+  save(sd, q <= 0 ? sd.cards.filter((c) => !want.has(c.lineUid)) : sd.cards.map((c) => (want.has(c.lineUid) ? { ...c, quantity: q } : c)), now, look);
+}
+
 /**
  * Gives a line another printing of the same card: its quantity, category and commander/maybeboard place stay. It keeps
  * its finish where the new printing has it, else [finish] (when given and available) or the nearest one.
@@ -181,9 +193,50 @@ export function setPrinting(file: SyncFile, id: number, uid: string, card: CardR
   const sd = local(file, id);
   const line = sd.cards.find((c) => c.lineUid === uid);
   if (!line) throw new EditError("That card isn't in the deck any more.");
-  if (card.name.split(" // ")[0].trim().toLowerCase() !== line.card.name.split(" // ")[0].trim().toLowerCase()) throw new EditError("That is a different card.");
+  if (front(card.name) !== front(line.card.name)) throw new EditError("That is a different card.");
   const fin = resolveFinish(card, finish ?? finishOf(line.foil, line.etched));
   save(sd, sd.cards.map((c) => (c === line ? { ...c, card, foil: fin !== "NONFOIL", etched: fin === "ETCHED", archidektCardId: null } : c)), now, look);
+}
+
+/** Gives several lines another finish at once, each where its printing has it (a bulk edit). Local decks only. */
+export function setFinishes(file: SyncFile, id: number, uids: string[], finish: Finish, now: number, look: Lookups): void {
+  const sd = local(file, id);
+  const want = new Set(uids);
+  if (!sd.cards.some((c) => want.has(c.lineUid))) throw new EditError("That card isn't in the deck any more.");
+  save(
+    sd,
+    sd.cards.map((c) => {
+      if (!want.has(c.lineUid)) return c;
+      const fin = resolveFinish(c.card, finish);
+      return { ...c, foil: fin !== "NONFOIL", etched: fin === "ETCHED" };
+    }),
+    now,
+    look,
+  );
+}
+
+/** Gives several lines another printing at once, keeping each line's finish where the new printing has it. Local decks only. */
+export function setPrintings(file: SyncFile, id: number, changes: { uid: string; card: CardRef }[], now: number, look: Lookups): void {
+  const sd = local(file, id);
+  if (changes.length === 0) throw new EditError("Pick a printing first.");
+  // One change per line, the last one given; a change for another card is refused like setPrinting's.
+  const byUid = new Map(changes.map((x) => [x.uid, x.card]));
+  for (const [uid, card] of byUid) {
+    const line = sd.cards.find((c) => c.lineUid === uid);
+    if (!line) throw new EditError("That card isn't in the deck any more.");
+    if (front(card.name) !== front(line.card.name)) throw new EditError("That is a different card.");
+  }
+  save(
+    sd,
+    sd.cards.map((c) => {
+      const card = byUid.get(c.lineUid);
+      if (!card) return c;
+      const fin = resolveFinish(card, finishOf(c.foil, c.etched));
+      return { ...c, card, foil: fin !== "NONFOIL", etched: fin === "ETCHED", archidektCardId: null };
+    }),
+    now,
+    look,
+  );
 }
 
 export function removeLines(file: SyncFile, id: number, uids: string[], now: number, look: Lookups): void {
@@ -417,6 +470,39 @@ export function addCard(
   return line.lineUid;
 }
 
+/**
+ * Adds a pasted decklist to a local deck (DeckEditor.importText into a deck that exists): a card already in the same
+ * board (the main deck or the maybeboard, by name) is skipped, except basic lands, whose copies add to its line.
+ * Pasted lines never become the commander. Returns how many copies were added and the names it skipped.
+ */
+export function addPasted(file: SyncFile, id: number, lines: NewLine[], now: number, look: Lookups): { added: number; skipped: string[] } {
+  const sd = local(file, id);
+  const key = (c: { maybeboard: boolean; card: { name: string } }) => `${c.maybeboard ? "M" : "D"}|${front(c.card.name)}`;
+  const all = [...sd.cards];
+  const byKey = new Map(all.map((c) => [key(c), c]));
+  const skipped: string[] = [];
+  let added = 0;
+  for (const l of lines) {
+    const q = Math.max(1, Math.min(MAX_QUANTITY, Math.floor(Number.isFinite(l.quantity) ? l.quantity : 1)));
+    const there = byKey.get(key(l));
+    if (there) {
+      if (isBasicName(l.card.name)) {
+        const line = { ...there, quantity: Math.min(MAX_QUANTITY, there.quantity + q) };
+        added += line.quantity - there.quantity;
+        all[all.indexOf(there)] = line;
+        byKey.set(key(line), line);
+      } else if (!skipped.some((n) => same(n, l.card.name))) skipped.push(l.card.name);
+      continue;
+    }
+    const line = { ...l, id: 0, deckId: id, relationId: null, commander: false, lineUid: l.lineUid ?? crypto.randomUUID() } as DeckCard;
+    all.push(line);
+    byKey.set(key(line), line);
+    added += q;
+  }
+  save(sd, all, now, look);
+  return { added, skipped };
+}
+
 /** The printing you own to show for a card (Settings.setDeckPick; "scryfallId|FINISH", "archidekt" or null). Every deck. */
 export function setPick(file: SyncFile, id: number, name: string, value: string | null, now: number): void {
   find(file, id);
@@ -481,6 +567,28 @@ export function deleteDeck(file: SyncFile, id: number, now: number): void {
   find(file, id);
   file.data.decks = syncDecks(file).filter((d) => d.deck.archidektId !== id) as unknown as Json;
   addDeletion(file, `deck:${id}`, now);
+}
+
+/**
+ * Undoes an edit: puts the deck back as [snapshot] had it (an edit's answer's `before`), adding it back when it was
+ * deleted, forgets a recorded deletion of it and moves its updatedAt on so the phones take it as the newest version.
+ */
+export function restoreDeck(file: SyncFile, snapshot: SyncDeck, now: number): void {
+  const s = snapshot as unknown as { deck?: Partial<Deck>; cards?: unknown } | null;
+  if (!s || typeof s !== "object" || !s.deck || typeof s.deck.archidektId !== "number" || !Array.isArray(s.cards)) {
+    throw new EditError("That change can't be undone any more.");
+  }
+  const deck: Deck = { ...(s.deck as Deck), updatedAt: bump(s.deck.updatedAt ?? 0, now) };
+  const cards = (s.cards as DeckCard[]).map((c) => ({ ...c }));
+  const id = deck.archidektId;
+  if (syncDecks(file).some((d) => d.deck.archidektId === id)) {
+    file.data.decks = syncDecks(file).map((d) => (d.deck.archidektId === id ? { deck, cards } : d)) as unknown as Json;
+  } else {
+    addDeck(file, { deck, cards });
+  }
+  // The phones drop a deck that is still in the deletions list, so the deck would vanish again at their next sync.
+  const list = deletions(file);
+  if (list.some((d) => d.uid === `deck:${id}`)) file.data.deletions = list.filter((d) => d.uid !== `deck:${id}`) as unknown as Json;
 }
 
 /** A deck with the app's defaults for everything not given. */

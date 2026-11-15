@@ -11,12 +11,17 @@ import { FINISHES, resolveFinish } from "@/lib/cards";
 import {
   addCard,
   addCategory,
+  addPasted,
   addToMaybeboard,
   setCategoryOrder,
   AUTO,
+  COMMANDER,
   copyDeck,
   deleteCategory,
   deleteDeck,
+  fallbackCategory,
+  MAYBEBOARD,
+  restoreDeck,
   setRetired,
   detachDeck,
   inOrder,
@@ -26,17 +31,24 @@ import {
   renameCategory,
   renameDeck,
   setCategoryHidden,
+  setFinishes,
   setPick,
+  setPrintings,
   setPrinting,
+  setQuantities,
   setQuantity,
   setTokenPick,
   type Lookups,
+  type NewLine,
 } from "@/lib/deckedit";
-import type { DeckCard } from "@/lib/deckshared";
+import { isBasicName, type DeckCard, type SyncDeck } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import type { CardRef } from "@/lib/syncfile";
 import { autoCategories } from "@/lib/autocategories";
 import { loadFromArchidekt, scoreAgain, updateOne } from "@/lib/deckload";
+import { deckToText, type ExportFormat } from "@/lib/deckexport";
+import { previewText, textLines } from "@/lib/deckimport";
+import { textCardCount } from "@/lib/decktext";
 import { isUser } from "@/lib/session";
 import { deckStatsCards, keptWins, parseWin } from "@/lib/winturns";
 import { gamesOf } from "@/lib/games";
@@ -120,10 +132,26 @@ type Body = {
   card?: CardRef;
   finish?: Finish;
   names?: string[];
+  /** Undo: the deck as it was before an edit, as that edit's answer's `before` had it. */
+  snapshot?: SyncDeck;
+  /** Bulk printing changes: each line's new printing. */
+  changes?: { uid: string; card: CardRef }[];
+  /** A pasted decklist, and the board and categories it goes into. */
+  text?: string;
+  board?: string;
+  useTags?: boolean;
+  /** Copying the deck as text: the format, its categories and its maybeboard. */
+  format?: string;
+  categories?: boolean;
+  maybeboard?: boolean;
 };
 
 const str = (v: unknown, max = 200): string => (typeof v === "string" ? v.slice(0, max) : "");
 const uidList = (b: Body): string[] => (Array.isArray(b.uids) ? b.uids.filter((u) => typeof u === "string").slice(0, 2000) : typeof b.uid === "string" ? [b.uid] : []);
+const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+/** A card's front face, lower case: how pasted lists are matched against the deck's lines. */
+const front = (name: string) => name.split(" // ")[0].trim().toLowerCase();
+const FORMATS: ExportFormat[] = ["moxfield", "archidekt", "arena", "plain"];
 
 /** What an edit needs looked up before the sync file is opened: colour identities and a card's facts (Scryfall). */
 async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; facts: Record<string, DeckInfo> }> {
@@ -154,14 +182,25 @@ async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; 
   return { look: { identity, auto }, facts };
 }
 
+/** What an edit answers with: a new deck's id, a new line's uid, and the deck as it was before the edit (for undo). */
+type EditResult = { id?: number; uid?: string; before?: SyncDeck | null; added?: number; skipped?: string[]; notFound?: string[] };
+
 /**
  * Deck actions. Decks from Archidekt: "reload" (the list), "refresh" (the list and Commander Salt), "rescore"
- * (Commander Salt only), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist" (the cards the collection lacks go on the wishlist, any printing),
- * "copy", "detach" (a deck from Archidekt becomes a local deck), "hide-category", "pick" (the printing you own to
- * show), "token-pick" (a token's printing), "delete" (never on Archidekt itself), "category-order" (the deck's own
- * category order), "add-maybe" (into the maybeboard; a deck from Archidekt's local one), "remove" (on a deck from
- * Archidekt only its local maybeboard's cards). Local decks only: "set-quantity", "printing" (another printing of a line's card), "remove", "move", "auto-all",
- * "add-card", "rename-category", "delete-category", "add-category", "rename".
+ * (Commander Salt only), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist"
+ * (the cards the collection lacks go on the wishlist, any printing), "copy", "detach" (a deck from Archidekt becomes a
+ * local deck), "hide-category", "pick" (the printing you own to show), "token-pick" (a token's printing), "delete"
+ * (never on Archidekt itself), "category-order" (the deck's own category order), "add-maybe" (into the maybeboard; a
+ * deck from Archidekt's local one), "remove" (on a deck from Archidekt only its local maybeboard's cards), "retire",
+ * "export" (its cards as text to copy: Moxfield's, Archidekt's, Arena's or plain) and "restore" (undo: the deck back
+ * as an earlier answer's `before` had it, also when it was deleted since). Local decks only: "set-quantity", "printing"
+ * (another printing of a line's card), "remove", "move", "auto-all", "add-card", "rename-category", "delete-category",
+ * "add-category", "rename", the bulk edits "bulk-quantity", "bulk-finish" and "bulk-printing", and "paste-preview"
+ * (what a pasted list holds, and which of its cards the deck has already) with "paste" (the list into the deck).
+ * Every edit but "copy", "detach", "pick", "token-pick", "hide-category" and "restore" answers with the deck as it was
+ * before it (`before`), which "restore" then puts back. "hide-category" leaves it out: whether a category is shown is a
+ * separate setting, so putting the deck back would not show it again. Restoring a deck that is gone works before the
+ * deck's own check.
  */
 export async function POST(req: Request, { params }: Params) {
   if (!fromOurPages(req)) return json({ error: "Not allowed." }, 403);
@@ -195,30 +234,104 @@ export async function POST(req: Request, { params }: Params) {
     }
     const { file } = await loadSync(a);
     const current = syncDecks(file).find((d) => d.deck.archidektId === id);
+    // Undo of a deletion: the deck isn't there any more, so this comes before the check that it is.
+    if (body.action === "restore") {
+      const snapshot = body.snapshot;
+      if (!snapshot || typeof snapshot !== "object" || !snapshot.deck || typeof snapshot.deck.archidektId !== "number" || !Array.isArray(snapshot.cards)) {
+        throw new EditError("That change can't be undone any more.");
+      }
+      if (snapshot.deck.archidektId !== id) throw new EditError("That change belongs to another deck.");
+      await editSync(a, (f, now) => restoreDeck(f, snapshot, now));
+      return json({ ok: true });
+    }
     if (!current) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
+    // What a pasted list holds, and which of its cards the deck has already (the page warns about those).
+    if (body.action === "paste-preview") {
+      const p = await previewText(str(body.text, 60_000));
+      const maybe = body.board === "MAYBE";
+      const have = new Set(current.cards.filter((c) => c.maybeboard === maybe).map((c) => front(c.card.name)));
+      const names = [...new Set(p.found.flatMap((c) => (c ? [c.card.name] : [])))].sort();
+      return json({
+        cards: textCardCount(p.result),
+        lines: p.result.lines.length,
+        exact: p.exact,
+        byName: p.byName,
+        notFound: p.notFound,
+        unreadable: p.result.unreadable,
+        commanders: p.commanders,
+        hasTags: p.result.lines.some((l) => l.tags.length > 0),
+        names,
+        inDeck: names.filter((n) => !isBasicName(n) && have.has(front(n))),
+      });
+    }
+    // The deck's cards as text to copy elsewhere (also a deck from Archidekt's).
+    if (body.action === "export") {
+      const format = FORMATS.includes(body.format as ExportFormat) ? (body.format as ExportFormat) : "moxfield";
+      return json({ text: deckToText(current.cards, format, { categories: body.categories !== false, maybeboard: body.maybeboard !== false }) });
+    }
     const { look, facts } = await lookups(current.cards, body);
-    const result = await editSync(a, (f, now): { id?: number; uid?: string } => {
+    // A pasted list is looked up on Scryfall before the file is opened, so the edit itself stays quick.
+    let pasted: { lines: NewLine[]; notFound: string[] } | null = null;
+    if (body.action === "paste") {
+      const p = await previewText(str(body.text, 60_000));
+      const { lines } = await textLines(p, body.useTags !== false, null);
+      if (lines.length === 0) throw new EditError("None of the cards were found on Scryfall.");
+      const maybe = body.board === "MAYBE";
+      pasted = {
+        notFound: p.notFound,
+        lines: lines.map((l): NewLine => {
+          if (maybe) return { ...l, category: MAYBEBOARD, categories: MAYBEBOARD, maybeboard: true, commander: false };
+          // Into the main deck: a pasted "Commander" section (or a board left out of the deck) goes in as normal cards,
+          // in the category of their card type.
+          const to = same(l.category, COMMANDER) || same(l.category, MAYBEBOARD) ? fallbackCategory(l.types) : l.category;
+          const rest = (l.categories ?? "").split("\n").filter((x) => x.trim() && !same(x, l.category));
+          return { ...l, category: to, categories: [to, ...rest].join("\n"), maybeboard: false, commander: false };
+        }),
+      };
+    }
+    const result = await editSync(a, (f, now): EditResult => {
+      // The deck as it was before this edit, for undo: any line edit, category change, rename, retire or delete.
+      const before = structuredClone(syncDecks(f).find((d) => d.deck.archidektId === id) ?? null);
       switch (body.action) {
         case "set-quantity":
           setQuantity(f, id, str(body.uid, 100), Number(body.quantity) || 0, now, look);
-          return {};
+          return { before };
+        case "bulk-quantity":
+          setQuantities(f, id, uidList(body), Number(body.quantity) || 0, now, look);
+          return { before };
+        case "bulk-finish":
+          if (!FINISHES.includes(body.finish as Finish)) throw new EditError("Pick a finish first.");
+          setFinishes(f, id, uidList(body), body.finish as Finish, now, look);
+          return { before };
+        case "bulk-printing": {
+          const changes = (Array.isArray(body.changes) ? body.changes : [])
+            .filter((x) => !!x && typeof x.uid === "string" && !!x.card && typeof x.card.scryfallId === "string" && typeof x.card.name === "string")
+            .slice(0, 2000)
+            .map((x) => ({ uid: x.uid.slice(0, 100), card: x.card }));
+          setPrintings(f, id, changes, now, look);
+          return { before };
+        }
+        case "paste": {
+          const r = addPasted(f, id, pasted!.lines, now, look);
+          return { added: r.added, skipped: r.skipped, notFound: pasted!.notFound, before };
+        }
         case "printing": {
           const card = body.card;
           if (!card || typeof card.scryfallId !== "string" || typeof card.name !== "string") throw new EditError("Pick a printing first.");
           setPrinting(f, id, str(body.uid, 100), card, FINISHES.includes(body.finish as Finish) ? (body.finish as Finish) : null, now, look);
-          return {};
+          return { before };
         }
         case "remove":
           removeLines(f, id, uidList(body), now, look);
-          return {};
+          return { before };
         case "move":
           moveLines(f, id, uidList(body), body.category === null ? AUTO : str(body.category), now, look);
-          return {};
+          return { before };
         case "auto-all": {
           // Every card (not the commander or the maybeboard) into its auto category (DeckEditor.autoCategoriseAll).
           const sd = syncDecks(f).find((d) => d.deck.archidektId === id);
           moveLines(f, id, (sd?.cards ?? []).filter((c) => !c.commander && !c.maybeboard).map((c) => c.lineUid), AUTO, now, look);
-          return {};
+          return { before };
         }
         case "add-card": {
           const card = body.card;
@@ -226,7 +339,7 @@ export async function POST(req: Request, { params }: Params) {
           const fin = resolveFinish(card, FINISHES.includes(body.finish as Finish) ? (body.finish as Finish) : "NONFOIL");
           const info = facts[card.scryfallId];
           const uid = addCard(f, id, card, fin !== "NONFOIL", fin === "ETCHED", Number(body.quantity) || 1, str(body.category) || null, info ? { typeLine: info.t, cmc: info.v } : null, now, look);
-          return { uid };
+          return { uid, before };
         }
         case "add-maybe": {
           // Into the maybeboard: a local deck's own, a deck from Archidekt's local one (app 1.86).
@@ -234,20 +347,20 @@ export async function POST(req: Request, { params }: Params) {
           if (!card || typeof card.scryfallId !== "string" || typeof card.name !== "string") throw new EditError("Pick a card first.");
           const fin = resolveFinish(card, FINISHES.includes(body.finish as Finish) ? (body.finish as Finish) : "NONFOIL");
           const info = facts[card.scryfallId];
-          return { uid: addToMaybeboard(f, id, card, fin !== "NONFOIL", fin === "ETCHED", info ? { typeLine: info.t, cmc: info.v } : null, now, look) };
+          return { uid: addToMaybeboard(f, id, card, fin !== "NONFOIL", fin === "ETCHED", info ? { typeLine: info.t, cmc: info.v } : null, now, look), before };
         }
         case "category-order":
           setCategoryOrder(f, id, Array.isArray(body.names) ? body.names.filter((n) => typeof n === "string").map((n) => n.slice(0, 200)).slice(0, 300) : [], now);
-          return {};
+          return { before };
         case "rename-category":
           renameCategory(f, id, str(body.from), str(body.to), now, look);
-          return {};
+          return { before };
         case "delete-category":
           deleteCategory(f, id, str(body.name), body.moveTo ? str(body.moveTo) : null, now, look);
-          return {};
+          return { before };
         case "add-category":
           addCategory(f, id, str(body.name), now);
-          return {};
+          return { before };
         case "hide-category":
           setCategoryHidden(f, id, str(body.name), body.hidden === true, now);
           return {};
@@ -259,13 +372,13 @@ export async function POST(req: Request, { params }: Params) {
           return {};
         case "rename":
           renameDeck(f, id, str(body.name), now);
-          return {};
+          return { before };
         case "delete":
           deleteDeck(f, id, now);
-          return {};
+          return { before };
         case "retire":
           setRetired(f, id, body.retired !== false, now);
-          return {};
+          return { before };
         case "copy":
           return { id: copyDeck(f, id, str(body.name) || `Copy of ${current.deck.name}`, now) };
         case "detach":

@@ -92,7 +92,8 @@ function readLine(line: string, board: Board): TextLine | null {
     }
   }
   rest = rest.replace(BRACKET, " ");
-  for (const h of rest.matchAll(HASH_TAG)) tags.push(h[1]);
+  // Moxfield's tags can't hold spaces, so its export writes them as underscores (#Card_Draw): read them back.
+  for (const h of rest.matchAll(HASH_TAG)) tags.push(h[1].replace(/_/g, " "));
   rest = rest.replace(HASH_TAG, " ");
   let foil = false;
   let etched = false;
