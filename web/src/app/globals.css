@@ -982,6 +982,35 @@ select.chip.binder-pick option {
   width: auto;
 }
 
+/* The deck page's bar for the selected lines (select mode): along the bottom of the window, full width. */
+.deck-bulk-bar {
+  left: 0;
+  bottom: 0;
+  transform: none;
+  width: 100%;
+  z-index: 7;
+  background: var(--surface);
+  border: 0;
+  border-top: 1px solid var(--accent2);
+  border-radius: 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.deck-bulk-bar .bar {
+  flex-basis: 100%;
+  margin-bottom: 0;
+}
+
+.deck-bulk-bar input[type="number"] {
+  width: 64px;
+}
+
+/* Select mode: a section title's checkbox. */
+.section-check {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 .coll-table tr.picked td,
 .scan-table tr.picked td {
   background: color-mix(in srgb, var(--accent2) 12%, transparent);
@@ -3380,6 +3409,10 @@ details.deck-section > summary .mini-head {
 .deck-row.filter-hit {
   box-shadow: inset 3px 0 0 var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+/* Select mode's ticked lines (the deck page). */
+.deck-row.selected {
+  background: var(--selected);
 }
 .deck-filter .seg {
   padding: 2px;

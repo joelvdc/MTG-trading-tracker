@@ -7,6 +7,7 @@ import { api, formatDate, peek, remember } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
+import { DeckBulkBar } from "@/components/DeckBulkBar";
 import { UndoBar } from "@/components/DeckUndo";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
@@ -95,6 +96,9 @@ export default function DeckPage() {
   const [pasteOpen, setPasteOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
+  // Select mode: ticked lines (by lineUid) for the bulk bar.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [folded, setFold] = useFolded(params.id);
   const [hoverOn, setHoverOn] = useHoverSetting();
   // Dragging a category (to order them) or, in a local deck, a card (to another category), and where it would land.
@@ -147,6 +151,29 @@ export default function DeckPage() {
   useEffect(() => {
     if (view) remember(`/api/decks/${encodeURIComponent(String(view.id))}`, view);
   }, [view]);
+
+  // Lines that went away after a reload (removed, or moved) leave the selection.
+  useEffect(() => {
+    if (!view) return;
+    setSelected((old) => {
+      if (old.size === 0) return old;
+      const live = new Set(view.rows.map((r) => r.lineUid));
+      const next = new Set([...old].filter((u) => live.has(u)));
+      return next.size === old.size ? old : next;
+    });
+  }, [view]);
+
+  // Esc leaves select mode (a window on top, such as the Edit menu's, closes first).
+  useEffect(() => {
+    if (!selecting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector(".backdrop")) return;
+      setSelecting(false);
+      setSelected(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selecting]);
 
   /** Reads an Archidekt deck again ("reload": the list, "refresh": and Commander Salt, "rescore": Commander Salt only). */
   async function fromArchidekt(action: "reload" | "refresh" | "rescore") {
@@ -240,6 +267,60 @@ export default function DeckPage() {
     setDropAt(null);
   };
 
+  /** Select mode: tick or untick one line. */
+  function toggleLine(uid: string) {
+    setSelected((old) => {
+      const next = new Set(old);
+      if (!next.delete(uid)) next.add(uid);
+      return next;
+    });
+  }
+
+  /** Select mode: tick every line of a section, or clear them when all are ticked. */
+  function toggleSection(rows: DeckRow[]) {
+    setSelected((old) => {
+      const next = new Set(old);
+      const all = rows.length > 0 && rows.every((r) => next.has(r.lineUid));
+      for (const r of rows) {
+        if (all) next.delete(r.lineUid);
+        else next.add(r.lineUid);
+      }
+      return next;
+    });
+  }
+
+  /** Select mode: leave it, dropping the selection. */
+  function endSelecting() {
+    setSelecting(false);
+    setSelected(new Set());
+  }
+
+  /**
+   * A section title's checkbox: ticked when all its lines are, half-ticked when some are. Clicking it ticks the rest
+   * or clears them, without folding the section (a summary folds on its own click).
+   */
+  const sectionCheck = (rows: DeckRow[], label: string) => {
+    const on = rows.filter((r) => selected.has(r.lineUid)).length;
+    return (
+      <input
+        type="checkbox"
+        className="section-check"
+        aria-label={label}
+        checked={rows.length > 0 && on === rows.length}
+        ref={(el) => {
+          if (el) el.indeterminate = on > 0 && on < rows.length;
+        }}
+        onChange={() => undefined}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          toggleSection(rows);
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+      />
+    );
+  };
+
   /** Where [p] would land with the pointer at (x, y): the innermost section under it that takes it. */
   function dropAtPoint(p: DragItem, x: number, y: number): DropTarget | null {
     let el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-drop-key]") ?? null;
@@ -287,21 +368,37 @@ export default function DeckPage() {
 
   const row = (r: DeckRow) => {
     const basic = BASICS.has(r.name.toLowerCase());
+    const chosen = selected.has(r.lineUid);
+    const classes = ["deck-row"];
+    if (!selecting) classes.push("clickable");
+    if (chosen) classes.push("selected");
+    if (filter.test && filter.mode === "HIGHLIGHT") classes.push(filter.test(r) ? "filter-hit" : "filter-miss");
     return (
       <li
         key={r.lineUid}
-        data-movable={canMoveCards ? "1" : undefined}
-        onPointerDown={canMoveCards ? dnd.press({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category }, r.name) : undefined}
-        onDragStart={canMoveCards ? (e) => e.preventDefault() : undefined}
-        className={filter.test && filter.mode === "HIGHLIGHT" ? (filter.test(r) ? "deck-row clickable filter-hit" : "deck-row clickable filter-miss") : "deck-row clickable"}
+        data-movable={canMoveCards && !selecting ? "1" : undefined}
+        onPointerDown={canMoveCards && !selecting ? dnd.press({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category }, r.name) : undefined}
+        onDragStart={canMoveCards && !selecting ? (e) => e.preventDefault() : undefined}
+        className={classes.join(" ")}
         role="button"
         tabIndex={0}
-        title={view.local && !view.readOnly ? "Change this card" : "This card"}
-        onClick={() => (hover.hide(), setLine(r.lineUid))}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setLine(r.lineUid))}
+        title={selecting ? (chosen ? "Deselect this card" : "Select this card") : view.local && !view.readOnly ? "Change this card" : "This card"}
+        onClick={() => (selecting ? toggleLine(r.lineUid) : (hover.hide(), setLine(r.lineUid)))}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), selecting ? toggleLine(r.lineUid) : setLine(r.lineUid))}
         onMouseMove={hover.follow(pictureOf(r))}
         onMouseLeave={hover.hide}
       >
+        {selecting && (
+          <input
+            type="checkbox"
+            className="line-check"
+            aria-label={`Select ${r.name}`}
+            checked={chosen}
+            onChange={() => toggleLine(r.lineUid)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        )}
         <span className="deck-qty num">{r.quantity}</span>
         <span className="grow deck-card-name">
           <span className="deck-name-text" title={r.name}>
@@ -367,6 +464,7 @@ export default function DeckPage() {
     >
       <summary>
         <h3 className="mini-head">
+          {selecting && sectionCheck(rows, `Select all ${title}`)}
           {orderable && canOrder && (
             <span
               className="cat-handle"
@@ -396,7 +494,7 @@ export default function DeckPage() {
   return (
     <>
       <TopBar page="decks" folder={folder} />
-      <main className="page wide">
+      <main className={selecting && selected.size > 0 ? "page wide with-bulk" : "page wide"}>
         <Link href="/decks" className="small">
           ← Decks
         </Link>
@@ -494,6 +592,7 @@ export default function DeckPage() {
                 <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
                   {view.local && <button onClick={() => setAddOpen(true)}>Add a card</button>}
                   {view.local && <button onClick={() => setPasteOpen(true)}>Paste cards…</button>}
+                  <button onClick={() => setSelecting(true)}>Select cards</button>
                   {!view.local && <button onClick={() => fromArchidekt("reload")}>Reload decklist</button>}
                   {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
                   {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
@@ -588,6 +687,15 @@ export default function DeckPage() {
             <input type="checkbox" checked={prefs.descending} onChange={(e) => setPrefs({ descending: e.target.checked })} />
             <span>Order descending</span>
           </label>
+          {!view.readOnly && (
+            <button
+              className={selecting ? "chip on" : "chip"}
+              title={selecting ? "Leave select mode" : "Select cards to change or copy"}
+              onClick={() => (selecting ? endSelecting() : setSelecting(true))}
+            >
+              {selecting ? "Done" : "Select"}
+            </button>
+          )}
           {shaped.tagged > 0 && (
             <button className={onlyBracket ? "chip on" : "chip"} onClick={() => setOnlyBracket((x) => !x)}>
               Only bracket cards · {shaped.tagged}
@@ -624,6 +732,7 @@ export default function DeckPage() {
             >
               <summary>
                 <h3 className="mini-head">
+                  {selecting && sectionCheck(shaped.maybeSections.flatMap((s) => s.rows), "Select all Maybeboard")}
                   Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
                 </h3>
               </summary>
@@ -699,6 +808,17 @@ export default function DeckPage() {
           onToggle={(open) => setFold("\u0000tokens", !open)}
         />
         </div>
+        {selecting && selected.size > 0 && (
+          <DeckBulkBar
+            view={view}
+            rows={view.rows.filter((r) => selected.has(r.lineUid))}
+            onDone={async (t) => {
+              await reload(t);
+              setSelected(new Set());
+            }}
+            onClose={endSelecting}
+          />
+        )}
       </main>
       {showRecs && (
         <Dialog full title="Recommendations" onClose={() => setShowRecs(false)}>
