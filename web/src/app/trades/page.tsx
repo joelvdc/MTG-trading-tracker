@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, formatDate } from "@/components/api";
+import { api, formatDate, peek, remember } from "@/components/api";
 import { TopBar } from "@/components/Nav";
 import { AddTradeCardDialog, CompleteTradeDialog, TradeDialog, verdictClass, verdictText } from "@/components/TradeDialogs";
 import { displayName, finishName } from "@/lib/colquery";
@@ -26,6 +26,13 @@ export default function TradesPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kt = peek<TradesView>("/api/trades");
+    if (ks?.data.folder && kt && Array.isArray(kt.data.trades)) {
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? kt.data);
+    }
     const [s, t] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<TradesView & { noFolder?: boolean }>("/api/trades")]);
     if (!s.data.loggedIn || t.status === 401 || t.data.loggedOut) return window.location.replace("/login");
     if (!s.data.folder || t.data.noFolder) return window.location.replace("/settings");
@@ -33,6 +40,11 @@ export default function TradesPage() {
     if (t.ok && Array.isArray(t.data.trades)) setView(t.data);
     else setError(t.data.error ?? "Could not load the trades.");
   }, []);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/trades", view);
+  }, [view]);
 
   useEffect(() => {
     load();

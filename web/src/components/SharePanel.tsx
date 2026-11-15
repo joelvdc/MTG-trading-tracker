@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, formatDate } from "./api";
+import { api, formatDate, peek, remember } from "./api";
 import { Dialog } from "./Dialog";
 
 type Kind = "deck" | "game" | "binder" | "collection" | "wishlist";
@@ -86,9 +86,14 @@ export function SharedLinksPanel() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const load = useCallback(() => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const k = peek<{ links: Line[] }>("/api/shares");
+    if (k) setLines((cur) => cur ?? k.data.links);
     api<{ links: Line[] }>("/api/shares").then((r) => {
-      if (r.ok) setLines(r.data.links);
-      else setError(r.data.error ?? "Could not list the shared links.");
+      if (r.ok) {
+        setLines(r.data.links);
+        remember("/api/shares", r.data);
+      } else setError(r.data.error ?? "Could not list the shared links.");
     });
   }, []);
   useEffect(load, [load]);

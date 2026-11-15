@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/components/api";
+import { api, peek } from "@/components/api";
 import { TopBar } from "@/components/Nav";
 import { ValueChart } from "@/components/ValueChart";
 import type { CollectionView } from "@/lib/collview";
@@ -22,6 +22,13 @@ export default function StatsPage() {
 
   useEffect(() => {
     setBinder(new URLSearchParams(window.location.search).get("binder") ?? "");
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kc = peek<CollectionView>("/api/collection");
+    if (ks?.data.folder && kc && Array.isArray(kc.data.rows)) {
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? kc.data);
+    }
     (async () => {
       const [s, c] = await Promise.all([
         api<{ loggedIn: boolean; folder?: string }>("/api/session"),

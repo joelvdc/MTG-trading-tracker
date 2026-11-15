@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { api, formatDate } from "@/components/api";
+import { api, formatDate, peek, remember } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
@@ -122,6 +122,13 @@ export default function DeckPage() {
   const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, view !== null, view?.winTurn ?? null);
 
   useEffect(() => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kd = peek<Answer>(`/api/decks/${encodeURIComponent(params.id)}`);
+    if (ks?.data.folder && kd && Array.isArray(kd.data.rows) && String(kd.data.id) === params.id) {
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? kd.data);
+    }
     (async () => {
       const [s, d] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<Answer & { noFolder?: boolean }>(`/api/decks/${encodeURIComponent(params.id)}`)]);
       if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
@@ -131,6 +138,11 @@ export default function DeckPage() {
       else setError(d.data.error ?? "Could not load the deck.");
     })();
   }, [params.id]);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember(`/api/decks/${encodeURIComponent(String(view.id))}`, view);
+  }, [view]);
 
   /** Reads an Archidekt deck again ("reload": the list, "refresh": and Commander Salt, "rescore": Commander Salt only). */
   async function fromArchidekt(action: "reload" | "refresh" | "rescore") {

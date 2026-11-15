@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddDialog, type AddRequest } from "@/components/AddDialog";
 import { AlertHistoryDialog } from "@/components/AlertHistoryDialog";
-import { api, formatDate } from "@/components/api";
+import { api, formatDate, peek, remember } from "@/components/api";
 import { EditDialog } from "@/components/EditDialog";
 import { ReceivedDialog } from "@/components/ReceivedDialog";
 import { ShareDialog } from "@/components/SharePanel";
@@ -58,6 +58,9 @@ export function WishlistPanel({
 
   const load = useCallback(async () => {
     setLoadError(null);
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const kw = peek<WishView>("/api/wishlist");
+    if (kw?.ok && Array.isArray(kw.data.rows)) setView((cur) => cur ?? kw.data);
     const w = await api<WishView>("/api/wishlist");
     if (w.status === 401 || w.data.loggedOut) return onLoggedOut();
     if (w.ok && Array.isArray(w.data.rows)) setView(w.data);
@@ -67,6 +70,11 @@ export function WishlistPanel({
   useEffect(() => {
     load();
   }, [load]);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/wishlist", view);
+  }, [view]);
 
   function changeSort(next: Sort) {
     setSort(next);

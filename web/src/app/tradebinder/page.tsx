@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/components/api";
+import { api, peek, remember } from "@/components/api";
 import { CollCardDialog } from "@/components/CollCardDialog";
 import { Dialog } from "@/components/Dialog";
 import { TopBar } from "@/components/Nav";
@@ -39,6 +39,13 @@ export default function TradeBinderPage() {
   const [cardBusy, setCardBusy] = useState(false);
 
   useEffect(() => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kt = peek<TradeBinderView>("/api/tradebinder");
+    if (ks?.data.folder && kt && Array.isArray(kt.data.changes)) {
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? kt.data);
+    }
     (async () => {
       const [s, t] = await Promise.all([
         api<{ loggedIn: boolean; folder?: string }>("/api/session"),
@@ -51,6 +58,11 @@ export default function TradeBinderPage() {
       else setError(t.data.error ?? "Could not load the trade binder.");
     })();
   }, []);
+
+  // What's on screen (after decisions too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/tradebinder", view);
+  }, [view]);
 
   const id = (c: TradeChange) => `${c.add ? "add" : "remove"}|${c.key}`;
   const choice = (c: TradeChange): Choice => choices[id(c)] ?? "accept";

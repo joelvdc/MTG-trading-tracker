@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api, formatDate } from "./api";
+import { useEffect, useRef, useState } from "react";
+import { api, formatDate, peek, remember } from "./api";
 
 // The same order as lib/weekly.ts DAY_NAMES (that file is server-side).
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -23,10 +23,24 @@ export function EmailPanel() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Whether an answer has been put on screen already (the kept one is then no longer used).
+  const shown = useRef(false);
 
   function load() {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const k = peek<{ settings: Settings | null; mailReady: boolean }>("/api/account/email");
+    if (k && !shown.current) {
+      shown.current = true;
+      setLoaded(k.data);
+      if (k.data.settings) {
+        setAddress(k.data.settings.address);
+        setDay(k.data.settings.day);
+        setEnabled(k.data.settings.enabled);
+      }
+    }
     api<{ settings: Settings | null; mailReady: boolean }>("/api/account/email").then((r) => {
       if (!r.ok) return setError(r.data.error ?? "Could not read the email settings.");
+      shown.current = true;
       setLoaded(r.data);
       if (r.data.settings) {
         setAddress(r.data.settings.address);
@@ -36,6 +50,11 @@ export function EmailPanel() {
     });
   }
   useEffect(load, []);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (loaded) remember("/api/account/email", loaded);
+  }, [loaded]);
 
   async function act(body: object) {
     setBusy(true);

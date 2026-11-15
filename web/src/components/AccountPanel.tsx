@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "./api";
+import { api, peek, remember } from "./api";
 
 interface DeviceRow {
   id: string;
@@ -41,6 +41,9 @@ export function AccountPanel({ onLogout }: { onLogout: () => void }) {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const k = peek<AccountInfo>("/api/account");
+    if (k?.data.username) setInfo((cur) => cur ?? k.data);
     const r = await api<AccountInfo>("/api/account");
     if (r.ok && r.data.username) setInfo(r.data);
     else setError(r.data.error ?? "Could not load the account.");
@@ -49,6 +52,11 @@ export function AccountPanel({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (info) remember("/api/account", info);
+  }, [info]);
 
   async function act(body: Record<string, string>, done?: (data: Record<string, unknown>) => void) {
     setBusy(true);

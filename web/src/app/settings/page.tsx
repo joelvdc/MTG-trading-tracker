@@ -8,7 +8,7 @@ import { RecSettingsPanel } from "@/components/RecTiles";
 import { SharedLinksPanel } from "@/components/SharePanel";
 import { EmailPanel } from "@/components/EmailPanel";
 import { ThemePanel } from "@/components/ThemePanel";
-import { api } from "@/components/api";
+import { api, peek } from "@/components/api";
 
 interface Session {
   loggedIn: boolean;
@@ -21,6 +21,9 @@ export default function SettingsPage() {
   const goLogin = useCallback(() => window.location.replace("/login"), []);
 
   useEffect(() => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const k = peek<Session>("/api/session");
+    if (k?.data.loggedIn) setSession((cur) => cur ?? k.data);
     api<Session>("/api/session").then((r) => {
       if (!r.data.loggedIn) return goLogin();
       setSession(r.data);

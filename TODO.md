@@ -19,12 +19,14 @@ history, the release notes and `web/README.md`.)
   big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
   (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
   settings texts.
-- **Website speed-up (2026-11-15, website only):** internal links no longer reload the site (`next/link`); Collection
-  and Decks show their last answer at once and refresh in the background (`web/src/components/api.ts`: `peek`,
-  `remember`, emptied by any edit); hovering a top-bar link preloads that section; the login check is one query
-  (`deviceAccount`). **Expected to look odd:** for a moment after switching, Collection/Decks can show the previous
-  numbers until the fresh ones arrive. Later options if the first load still feels slow: pre-built answers in the
-  database, ETag/304, slimmer JSON.
+- **Website speed-up (2026-11-15, website only):** internal links no longer reload the site (`next/link`); every page
+  and panel (collection, decks, deck pages, wishlist, scans, stats, games, orders, trades, trade binder, settings
+  panels) shows its last answer at once and refreshes in the background (`web/src/components/api.ts`: `peek`,
+  `remember`; an edit only marks answers stale; a kept answer is only used when the page is still empty); after the
+  first page loads, `warmUp()` fetches every section once in the background; hovering a deck tile or a top-bar link
+  preloads it; the login check is one query (`deviceAccount`). **Expected to look odd:** right after switching or an
+  edit, a page can show the previous numbers for a moment. Opening the site from scratch still takes the 1-2 s first
+  load. Later options: keep answers across reloads, pre-built answers in the database, ETag/304, slimmer JSON.
 - **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
   mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
 - **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card

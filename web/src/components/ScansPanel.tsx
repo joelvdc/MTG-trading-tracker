@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, formatDate } from "@/components/api";
+import { api, formatDate, peek, remember } from "@/components/api";
 import type { Printing } from "@/components/CardSearch";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard } from "@/components/HoverCard";
@@ -48,6 +48,9 @@ export function ScansPanel({
 
   const load = useCallback(async () => {
     setLoadError(null);
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const kr = peek<ScanView>("/api/scans");
+    if (kr?.ok && Array.isArray(kr.data.rows)) setView((cur) => cur ?? kr.data);
     const r = await api<ScanView>("/api/scans");
     if (r.status === 401 || r.data.loggedOut) return onLoggedOut();
     if (r.ok && Array.isArray(r.data.rows)) setView(r.data);
@@ -57,6 +60,11 @@ export function ScansPanel({
   useEffect(() => {
     load();
   }, [load]);
+
+  // What's on screen (after changes too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/scans", view);
+  }, [view]);
 
   /** Sends one change; answers with what it gave back, or null when it didn't work (the old list stays). */
   async function edit(e: ScanEdit): Promise<ScanEditResult | null> {

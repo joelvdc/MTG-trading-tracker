@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { api, formatDate, peek, remember } from "@/components/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, formatDate, peek, prefetch, remember } from "@/components/api";
 import { ArchidektImportDialog, ArchidektUpdateDialog } from "@/components/ArchidektDialogs";
 import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
 import { ClockIcon } from "@/components/Icons";
@@ -73,9 +73,12 @@ export default function DecksPage() {
   const [archidekt, setArchidekt] = useState<"import" | "update" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  // Whether a decks answer has been put on screen already (the kept one is then no longer used).
+  const shown = useRef(false);
 
   useEffect(() => {
     const show = (d: DecksView) => {
+      shown.current = true;
       setView(d);
       const saved = SORTS.find(([k]) => k === d.sort)?.[0];
       if (saved) setSort(saved);
@@ -84,7 +87,7 @@ export default function DecksPage() {
     // Seen before while the website was open: show that at once; the fresh answer replaces it below.
     const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
     const kd = peek<DecksView>("/api/decks");
-    if (ks?.data.folder && kd && Array.isArray(kd.data.decks)) {
+    if (!shown.current && ks?.data.folder && kd && Array.isArray(kd.data.decks)) {
       setFolder(ks.data.folder);
       show(kd.data);
     }
@@ -209,7 +212,13 @@ export default function DecksPage() {
             <div className="deck-grid">
               {decks.map((d) => (
                 <div key={d.id} className="deck-tile-wrap">
-                <Link className="deck-tile" href={`/decks/${d.id}`}>
+                <Link
+                  className="deck-tile"
+                  href={`/decks/${d.id}`}
+                  onMouseEnter={() => prefetch([`/api/decks/${encodeURIComponent(String(d.id))}`])}
+                  onFocus={() => prefetch([`/api/decks/${encodeURIComponent(String(d.id))}`])}
+                  onTouchStart={() => prefetch([`/api/decks/${encodeURIComponent(String(d.id))}`])}
+                >
                   <div className="deck-cover" style={d.cover ? { backgroundImage: `url("${d.cover}")` } : undefined}>
                     <div className="deck-cover-in">
                       <strong className="deck-name">{d.name}</strong>

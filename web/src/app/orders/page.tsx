@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/components/api";
+import { api, peek, remember } from "@/components/api";
 import { Dialog } from "@/components/Dialog";
 import { TopBar } from "@/components/Nav";
 import { OrderImportDialog } from "@/components/OrderImportDialog";
@@ -30,6 +30,13 @@ export default function OrdersPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const ko = peek<OrdersView>("/api/orders");
+    if (ks?.data.folder && ko && Array.isArray(ko.data.orders)) {
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? ko.data);
+    }
     const [s, o] = await Promise.all([
       api<{ loggedIn: boolean; folder?: string }>("/api/session"),
       api<OrdersView & { noFolder?: boolean }>("/api/orders"),
@@ -40,6 +47,11 @@ export default function OrdersPage() {
     if (o.ok && Array.isArray(o.data.orders)) setView(o.data);
     else setError(o.data.error ?? "Could not load the orders.");
   }, []);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/orders", view);
+  }, [view]);
 
   useEffect(() => {
     load();

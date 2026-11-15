@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "@/components/api";
+import { api, peek, remember } from "@/components/api";
 import { Dialog } from "@/components/Dialog";
 import { GameDialog } from "@/components/GameDialog";
 import { GameStatsPanel } from "@/components/GameStatsPanel";
@@ -62,6 +62,13 @@ export default function GamesPage() {
     if (t === "STATS" || t === "PLAYERS") setTab(t);
     if (q.get("game")) setOpen(q.get("game"));
     setPerPage(readPerPage());
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kg = peek<GamesView>("/api/games");
+    if (ks?.data.folder && kg && Array.isArray(kg.data.games)) {
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? kg.data);
+    }
     (async () => {
       const [s, g] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<GamesView>("/api/games")]);
       if (!s.data.loggedIn || g.status === 401 || g.data.loggedOut) return goLogin();
@@ -70,6 +77,11 @@ export default function GamesPage() {
       else setLoadError(g.data.error ?? "Could not load the games.");
     })();
   }, [goLogin]);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/games", view);
+  }, [view]);
 
   function pickTab(t: Tab) {
     setTab(t);

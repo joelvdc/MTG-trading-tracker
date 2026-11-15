@@ -180,8 +180,8 @@ export default function CollectionPage() {
     const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
     const kc = peek<CollectionView>("/api/collection");
     if (ks?.data.folder && kc && Array.isArray(kc.data.rows)) {
-      setFolder(ks.data.folder);
-      setView(kc.data);
+      setFolder((cur) => cur || ks.data.folder!);
+      setView((cur) => cur ?? kc.data);
     }
     const [s, c] = await Promise.all([
       api<{ loggedIn: boolean; folder?: string }>("/api/session"),

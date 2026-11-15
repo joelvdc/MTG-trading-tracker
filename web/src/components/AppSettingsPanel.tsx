@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/components/api";
+import { useEffect, useRef, useState } from "react";
+import { api, peek, remember } from "@/components/api";
 import { CURRENCY_CHOICES, POWER_SOURCE_CHOICES, PRICE_SOURCES, PRICE_TYPE_CHOICES, RECEIVED_CLEAR, type AppSettings } from "@/lib/appsettings";
 import { CONDITIONS } from "@/lib/cards";
 
@@ -12,13 +12,25 @@ export function AppSettingsPanel() {
   const [readOnly, setReadOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // Whether an answer has been put on screen already (the kept one is then no longer used).
+  const shown = useRef(false);
 
   useEffect(() => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const k = peek<{ settings?: AppSettings; readOnly?: boolean }>("/api/appsettings");
+    if (k?.data.settings && !shown.current) {
+      shown.current = true;
+      setSaved(k.data.settings);
+      setS(k.data.settings);
+      setReadOnly(!!k.data.readOnly);
+    }
     api<{ settings?: AppSettings; readOnly?: boolean }>("/api/appsettings").then((r) => {
       if (r.ok && r.data.settings) {
+        shown.current = true;
         setSaved(r.data.settings);
         setS(r.data.settings);
         setReadOnly(!!r.data.readOnly);
+        remember("/api/appsettings", r.data);
       } else setMessage({ ok: false, text: r.data.error ?? "Could not read the app's settings." });
     });
   }, []);
@@ -141,9 +153,14 @@ export function BackupsPanel() {
   const [list, setList] = useState<{ backups: string[]; folder: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const k = peek<{ backups?: string[]; folder?: string }>("/api/backups");
+    if (k && Array.isArray(k.data.backups)) setList((cur) => cur ?? { backups: k.data.backups!, folder: k.data.folder ?? "" });
     api<{ backups?: string[]; folder?: string }>("/api/backups").then((r) => {
-      if (r.ok && Array.isArray(r.data.backups)) setList({ backups: r.data.backups, folder: r.data.folder ?? "" });
-      else setError(r.data.error ?? "Could not list the backups.");
+      if (r.ok && Array.isArray(r.data.backups)) {
+        setList({ backups: r.data.backups, folder: r.data.folder ?? "" });
+        remember("/api/backups", r.data);
+      } else setError(r.data.error ?? "Could not list the backups.");
     });
   }, []);
   return (
