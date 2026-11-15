@@ -10,6 +10,7 @@ import { api } from "./api";
 import { CardRulesTabs } from "./CardRules";
 import { CardSearch, type Printing } from "./CardSearch";
 import { ComboLine } from "./ComboLine";
+import { labelFor, offerUndo, snapshotOf } from "./DeckUndo";
 import { Dialog } from "./Dialog";
 import { FlipPicture } from "./FlipPicture";
 
@@ -18,10 +19,18 @@ const MAYBEBOARD = "Maybeboard";
 const AUTO = "\u0000auto";
 const NEW = "\u0000new";
 
-/** Sends one deck action; answers with the error to show, or null when it worked. */
+/**
+ * Sends one deck action; answers with the error to show, or null when it worked. When the server says what the deck
+ * looked like before the change, the answer offers an Undo for it (see DeckUndo).
+ */
 export async function deckAction(id: number, body: Record<string, unknown>): Promise<{ error: string | null; id?: number }> {
-  const r = await api<{ ok?: boolean; id?: number }>(`/api/decks/${id}`, body);
-  return r.ok ? { error: null, id: r.data.id } : { error: r.data.error ?? "That did not work." };
+  const r = await api<{ ok?: boolean; id?: number; before?: unknown }>(`/api/decks/${id}`, body);
+  if (r.ok) {
+    const before = snapshotOf(r.data.before);
+    if (before) offerUndo(id, before, labelFor(body));
+    return { error: null, id: r.data.id };
+  }
+  return { error: r.data.error ?? "That did not work." };
 }
 
 /** The categories cards can be moved to, Commander and Maybeboard included. */

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { api, formatDate, peek, prefetch, remember } from "@/components/api";
 import { ArchidektImportDialog, ArchidektUpdateDialog } from "@/components/ArchidektDialogs";
 import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
+import { UndoBar } from "@/components/DeckUndo";
 import { ClockIcon } from "@/components/Icons";
 import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
@@ -161,6 +162,12 @@ export default function DecksPage() {
             {notice}
           </div>
         )}
+        <UndoBar
+          onRestored={() => {
+            setNotice("Deck restored.");
+            setReloads((n) => n + 1);
+          }}
+        />
         <div className="controls decks-controls">
           <input type="search" placeholder="Search decks, commanders, owners" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search decks" />
           <label className="inline small">

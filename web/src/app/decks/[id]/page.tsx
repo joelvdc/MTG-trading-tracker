@@ -7,6 +7,7 @@ import { api, formatDate, peek, remember } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
+import { UndoBar } from "@/components/DeckUndo";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
@@ -428,6 +429,7 @@ export default function DeckPage() {
             </button>
           </div>
         )}
+        <UndoBar deckId={view.id} onRestored={() => reload("Undone.")} />
         {error && <div className="bar error">{error}</div>}
         {view.detailsError && <div className="bar warn">Card details: {view.detailsError} The stats use what is known so far.</div>}
 

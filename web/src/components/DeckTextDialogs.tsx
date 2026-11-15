@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { offerUndo, snapshotOf } from "./DeckUndo";
 import { Dialog } from "./Dialog";
 
 /** The ways a deck can be written out: Moxfield's and Archidekt's imports, MTG Arena's, or a plain list. */
@@ -162,12 +163,14 @@ export function PasteCardsDialog({ deckId, onClose, onDone }: { deckId: number; 
   async function add() {
     setBusy(true);
     setError(null);
-    const r = await api<{ added?: number; skipped?: string[] }>(`/api/decks/${deckId}`, { action: "paste", text, board, useTags });
+    const r = await api<{ added?: number; skipped?: string[]; before?: unknown }>(`/api/decks/${deckId}`, { action: "paste", text, board, useTags });
     setBusy(false);
     if (!r.ok || r.data.added === undefined) {
       setError(r.data.error ?? "That did not work.");
       return;
     }
+    const before = snapshotOf(r.data.before);
+    if (before) offerUndo(deckId, before, "Cards added");
     const added = r.data.added;
     const skipped = r.data.skipped ?? [];
     onDone(`Added ${added} card${added === 1 ? "" : "s"}.${skipped.length ? ` Skipped ${skipped.length} already in the deck.` : ""}`);
