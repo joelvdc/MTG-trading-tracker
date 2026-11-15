@@ -348,8 +348,8 @@
   position: fixed;
   z-index: 70;
   min-width: 190px;
-  max-height: min(70vh, 430px);
-  overflow-y: auto;
+  /* A narrow window can still hold it; the menu's own script caps the height and adds the scrolling. */
+  max-width: calc(100vw - 16px);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -452,6 +452,7 @@
   .pt-page {
     height: auto;
     min-height: 100dvh;
+    overflow-x: hidden;
   }
 
   .pt-body {
@@ -464,21 +465,38 @@
     grid-row: 1;
   }
 
+  /* The four piles (library, graveyard, exile, command zone) share the width equally, so none is cut off. */
   .pt-side {
     grid-column: 1;
     grid-row: 2;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
     gap: 6px;
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow-x: hidden;
   }
 
   .pt-pile {
-    flex: 0 0 108px;
+    flex: initial;
+    min-width: 0;
+    padding: 4px;
+  }
+
+  .pt-pile-head {
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    font-size: 11px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
 
   .pt-pile-card {
-    max-width: 72px;
+    width: 100%;
+    max-width: 64px;
+  }
+
+  .pt-command-card {
+    max-width: 64px;
   }
 
   .pt-hand {

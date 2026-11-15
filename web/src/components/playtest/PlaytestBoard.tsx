@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -710,13 +711,39 @@ function FloatMenu({
   title: string;
   children: ReactNode;
 }) {
-  // About the size a menu takes: enough to keep it away from the window's edges.
-  const width = 210;
-  const height = 320;
-  const left = typeof window === "undefined" ? x : Math.max(8, Math.min(x, window.innerWidth - width - 8));
-  const top = typeof window === "undefined" ? y : Math.max(8, Math.min(y, window.innerHeight - height - 8));
+  // Once it is in the page (and again whenever its items change), measure it and move it so that every item can be
+  // reached: shifted left and up if it would run off the window, or scrolling from the top if it is taller than the
+  // window. This runs before the browser paints, so the menu never shows at the wrong place.
+  useLayoutEffect(() => {
+    const el = menuRef.current;
+    if (!el) return;
+    const margin = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Measure the menu as it would be at the pointer, without a height cap from an earlier fit.
+    el.style.maxHeight = "";
+    el.style.overflowY = "";
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    const rect = el.getBoundingClientRect();
+    const width = Math.min(rect.width, vw - margin * 2);
+    const left = Math.max(margin, Math.min(x, vw - margin - width));
+
+    if (rect.height > vh - margin * 2) {
+      // Taller than the window: scroll it, from the top margin, so no item stays out of reach.
+      el.style.maxHeight = `calc(100vh - ${margin * 2}px)`;
+      el.style.overflowY = "auto";
+      el.style.left = `${left}px`;
+      el.style.top = `${margin}px`;
+      return;
+    }
+
+    el.style.left = `${left}px`;
+    el.style.top = `${Math.max(margin, Math.min(y, vh - margin - rect.height))}px`;
+  }, [menuRef, x, y, children]);
+
   return (
-    <div className="pt-menu" ref={menuRef} style={{ left, top }} role="menu" aria-label={title}>
+    <div className="pt-menu" ref={menuRef} style={{ left: x, top: y }} role="menu" aria-label={title}>
       <span className="pt-menu-name">{title}</span>
       {children}
     </div>

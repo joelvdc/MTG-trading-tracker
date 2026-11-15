@@ -565,6 +565,9 @@ export default function DeckPage() {
             <span className="small">copies</span>
           </button>
           <div className="deck-actions">
+            <Link className="btn small-btn" href={`/decks/${view.id}/playtest`} title="Draw hands and play the deck (goldfish)">
+              Playtest
+            </Link>
             <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
               Recommendations
             </button>
