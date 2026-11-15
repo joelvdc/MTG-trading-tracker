@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { api, formatDate, peek, remember } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
+import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
@@ -89,6 +90,8 @@ export default function DeckPage() {
   const [line, setLine] = useState<string | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
   const [folded, setFold] = useFolded(params.id);
@@ -429,60 +432,66 @@ export default function DeckPage() {
         {view.detailsError && <div className="bar warn">Card details: {view.detailsError} The stats use what is known so far.</div>}
 
         <section className="card deck-scores">
-          <div className="score">
+          <button
+            type="button"
+            className="score score-btn"
+            disabled={!view.salt}
+            title={view.salt ? "Show and print the bracket card" : "Commander Salt hasn't scored this deck yet"}
+            onClick={() => setRz("BRACKET")}
+          >
             <span className="muted small">Bracket</span>
             <strong>{d.bracketRealistic ?? "–"}</strong>
             <span className="small">{bracketName(d.bracketRealistic) ?? "not scored"}</span>
             {d.bracketBaseline != null && <span className="muted small">baseline {d.bracketBaseline}</span>}
-          </div>
-          <div className="score">
-            <span className="muted small">Power ({POWER_SOURCES[source].label})</span>
+          </button>
+          <button
+            type="button"
+            className="score score-btn"
+            disabled={!view.salt}
+            title={view.salt ? "Show and print the power card" : "Commander Salt hasn't scored this deck yet"}
+            onClick={() => setRz("POWER")}
+          >
+            <span className="muted small">{source === "APP" ? "Power" : `Power (${POWER_SOURCES[source].label})`}</span>
             <strong>{power != null ? formatPower(power, source) : source === "APP" && win.status === "working" ? "…" : "–"}</strong>
             {d.archetype && <span className="small">{d.archetype}</span>}
-          </div>
+          </button>
           <div className="score">
             <span className="muted small">Saltiness</span>
             <strong>{d.saltPercent != null ? `${Math.round(d.saltPercent)}%` : "–"}</strong>
           </div>
-          <div className="score">
+          <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
             <span className="muted small">Missing</span>
             <strong className={shaped.missing > 0 ? "warn-text" : "ok-text"}>{shaped.missing}</strong>
             <span className="small">copies</span>
-          </div>
+          </button>
           <div className="deck-actions">
-            <button className="btn small-btn" disabled={!view.salt} onClick={() => setRz("BRACKET")} title={view.salt ? "Show and print the bracket card" : "Commander Salt hasn't scored this deck yet"}>
-              Bracket card
-            </button>
-            <button className="btn small-btn" disabled={!view.salt} onClick={() => setRz("POWER")}>
-              Power card
-            </button>
-            <button className="btn small-btn" onClick={() => setMissingOpen(true)}>
-              Cards I&apos;m missing
-            </button>
-            {!view.local && (
-              <a className="btn small-btn" href={`https://archidekt.com/decks/${d.archidektId}`} target="_blank" rel="noreferrer">
-                Archidekt
-              </a>
-            )}
-            {d.saltId && (
-              <a className="btn small-btn" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
-                Commander Salt
-              </a>
-            )}
-            <button className="btn small-btn" onClick={() => setPrintOpen(true)}>
-              Print
-            </button>
-            <button className="btn small-btn" onClick={() => setSharing(true)}>
-              Share
-            </button>
             <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
               Recommendations
             </button>
+            <details className="menu">
+              <summary className="btn small-btn">Share ▾</summary>
+              <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
+                <button onClick={() => setSharing(true)}>Share link…</button>
+                <button onClick={() => setCopyOpen(true)}>Copy deck as text…</button>
+                <button onClick={() => setPrintOpen(true)}>Print…</button>
+                {!view.local && (
+                  <a className="menu-link" href={`https://archidekt.com/decks/${d.archidektId}`} target="_blank" rel="noreferrer">
+                    Open on Archidekt
+                  </a>
+                )}
+                {d.saltId && (
+                  <a className="menu-link" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
+                    Open on Commander Salt
+                  </a>
+                )}
+              </div>
+            </details>
             {!view.readOnly && (
               <details className="menu">
                 <summary className="btn small-btn">Edit ▾</summary>
                 <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
                   {view.local && <button onClick={() => setAddOpen(true)}>Add a card</button>}
+                  {view.local && <button onClick={() => setPasteOpen(true)}>Paste cards…</button>}
                   {!view.local && <button onClick={() => fromArchidekt("reload")}>Reload decklist</button>}
                   {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
                   {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
@@ -732,6 +741,17 @@ export default function DeckPage() {
       )}
       {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
       {addOpen && <AddCardDialog view={view} onClose={() => setAddOpen(false)} onChanged={(t) => reload(t)} />}
+      {copyOpen && <CopyTextDialog deckId={view.id} hasMaybe={shaped.maybeCount > 0} onClose={() => setCopyOpen(false)} />}
+      {pasteOpen && (
+        <PasteCardsDialog
+          deckId={view.id}
+          onClose={() => setPasteOpen(false)}
+          onDone={(t) => {
+            setPasteOpen(false);
+            void reload(t);
+          }}
+        />
+      )}
       {nameDialog && (
         <NameDialog
           title={nameDialog === "RENAME" ? "Rename the deck" : "Copy as a local deck"}

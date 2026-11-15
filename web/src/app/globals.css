@@ -125,6 +125,12 @@ textarea {
   resize: vertical;
 }
 
+/* The text of "Copy deck as text" (DeckTextDialogs.tsx): one card per line, in a fixed-width font. */
+.deck-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -1700,6 +1706,31 @@ button.link.left {
 .score strong {
   font-size: 26px;
   line-height: 1.2;
+}
+
+/* A score block that opens something (the bracket card, the power card, the missing cards) is a button, but looks like
+   the plain scores beside it (2026-11-15). */
+.score-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.score-btn:hover strong,
+.score-btn:focus-visible strong {
+  text-decoration: underline;
+}
+
+.score-btn:disabled {
+  cursor: default;
+}
+
+.score-btn:disabled:hover strong {
+  text-decoration: none;
 }
 
 /* The deck's buttons sit to the right of the scores, wrapping onto two rows there rather than going below them. */
