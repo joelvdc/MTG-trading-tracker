@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { api, formatDate } from "@/components/api";
@@ -198,9 +199,9 @@ export default function DeckPage() {
       <>
         <TopBar page="decks" folder={folder} />
         <main className="page wide">
-          <a href="/decks" className="small">
+          <Link href="/decks" className="small">
             ← Decks
-          </a>
+          </Link>
           {error ? <div className="bar error">{error}</div> : <p className="muted center">Loading… (the first visit looks the cards up on Scryfall)</p>}
         </main>
       </>
@@ -380,9 +381,9 @@ export default function DeckPage() {
     <>
       <TopBar page="decks" folder={folder} />
       <main className="page wide">
-        <a href="/decks" className="small">
+        <Link href="/decks" className="small">
           ← Decks
-        </a>
+        </Link>
         <header className="deck-banner" style={view.cover ? { backgroundImage: `url("${view.cover}")` } : undefined}>
           <div className="deck-banner-in">
             <h1>{d.name}</h1>
@@ -650,7 +651,7 @@ export default function DeckPage() {
               </summary>
               <DeckGamesCard r={r} last={view.games!} isDeck={(s) => s.deckId === view.id} onGame={(g) => window.location.assign(`/games?game=${encodeURIComponent(g.uid)}`)} />
               <p className="small">
-                <a href="/games?view=stats">All game stats</a>
+                <Link href="/games?view=stats">All game stats</Link>
               </p>
             </details>
           ) : null;

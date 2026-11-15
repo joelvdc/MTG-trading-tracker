@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
@@ -51,9 +52,9 @@ export default function AllRuleZeroCardsPage() {
     <>
       <TopBar page="decks" folder={folder} />
       <main className="page wide">
-        <a href="/decks" className="small">
+        <Link href="/decks" className="small">
           ← Decks
-        </a>
+        </Link>
         <h1 className="section-head">Rule-zero cards of all decks</h1>
         {error && <div className="bar error">{error}</div>}
         {!data && !error && <p className="muted center">Loading…</p>}

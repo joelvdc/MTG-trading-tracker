@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ISSUES_URL } from "@/components/SiteFooter";
 
 export const metadata: Metadata = { title: "Privacy · MTG Trader" };
@@ -8,7 +9,7 @@ export default function PrivacyPage() {
   return (
     <main className="page narrow legal-page">
       <p>
-        <a href="/">← MTG Trader</a>
+        <Link href="/">← MTG Trader</Link>
       </p>
       <h1>Privacy</h1>
       <p className="muted small">Last changed 13 November 2026.</p>

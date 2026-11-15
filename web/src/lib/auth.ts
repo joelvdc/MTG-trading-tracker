@@ -15,10 +15,9 @@ export async function currentAccount(): Promise<Account | null> {
   if (isUser(a)) {
     // Still logged in on this device (a password reset or "log out everywhere" removes it), and still that account.
     const store = accountStore();
-    const d = store ? await store.device(a.device) : null;
-    if (!store || !d || d.accountId !== a.accountId) return null;
-    const acc = await store.byId(a.accountId);
-    return acc ? { ...a, username: acc.username, admin: acc.admin } : null;
+    const found = store ? await store.deviceAccount(a.device) : null;
+    if (!store || !found || found.device.accountId !== a.accountId) return null;
+    return { ...a, username: found.account.username, admin: found.account.admin };
   }
   // An old Nextcloud login (before 2026-11-08): no longer a way in; Nextcloud is only the backup place now.
   return null;

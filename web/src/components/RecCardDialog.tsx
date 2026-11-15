@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CardUse } from "@/lib/decks";
 import { recFacts, type RecCard, type RecSource } from "@/lib/recshared";
@@ -116,9 +117,9 @@ export function RecCardDialog({
             <ul className="plain-list rec-deck-rows">
               {decks.map((d) => (
                 <li key={d.id}>
-                  <a href={`/decks/${d.id}`} className="grow">
+                  <Link href={`/decks/${d.id}`} className="grow">
                     {d.name}
-                  </a>
+                  </Link>
                   {deckButtons(d, true)}
                 </li>
               ))}

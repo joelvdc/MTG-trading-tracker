@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "@/components/api";
+import { api, peek, remember } from "@/components/api";
 import { CollAddDialog } from "@/components/CollAddDialog";
 import { CollCardDialog } from "@/components/CollCardDialog";
 import { CollGrid } from "@/components/CollGrid";
@@ -175,6 +176,13 @@ export default function CollectionPage() {
 
   const load = useCallback(async () => {
     setLoadError(null);
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kc = peek<CollectionView>("/api/collection");
+    if (ks?.data.folder && kc && Array.isArray(kc.data.rows)) {
+      setFolder(ks.data.folder);
+      setView(kc.data);
+    }
     const [s, c] = await Promise.all([
       api<{ loggedIn: boolean; folder?: string }>("/api/session"),
       api<CollectionView & { noFolder?: boolean }>("/api/collection"),
@@ -195,6 +203,11 @@ export default function CollectionPage() {
       }
     }
   }, [goLogin, fillDetails]);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/collection", view);
+  }, [view]);
 
   useEffect(() => {
     load();
@@ -338,9 +351,9 @@ export default function CollectionPage() {
                 <button className="btn" onClick={load}>
                   Try again
                 </button>
-                <a className="btn" href="/settings">
+                <Link className="btn" href="/settings">
                   Settings
-                </a>
+                </Link>
                 <button className="btn" onClick={logout}>
                   Log out
                 </button>
@@ -545,12 +558,12 @@ export default function CollectionPage() {
           <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
-          <a className="btn" href={pick ? `/collection/stats?binder=${encodeURIComponent(pick)}` : "/collection/stats"}>
+          <Link className="btn" href={pick ? `/collection/stats?binder=${encodeURIComponent(pick)}` : "/collection/stats"}>
             Stats
-          </a>
-          <a className="btn" href="/tradebinder">
+          </Link>
+          <Link className="btn" href="/tradebinder">
             Trade binder
-          </a>
+          </Link>
           <button className="btn" onClick={() => setExporting(true)}>
             Export CSV
           </button>

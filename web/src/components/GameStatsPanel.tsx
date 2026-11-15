@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
 import { Dialog } from "@/components/Dialog";
@@ -303,9 +304,9 @@ export function GameStatsPanel({ games, onGame }: { games: Game[]; onGame: (g: G
           />
           <div className="dialog-actions">
             {deck.deckId != null && (
-              <a className="btn" href={`/decks/${deck.deckId}`}>
+              <Link className="btn" href={`/decks/${deck.deckId}`}>
                 Open the deck
-              </a>
+              </Link>
             )}
             <button className="btn" onClick={() => setDeck(null)}>
               Close

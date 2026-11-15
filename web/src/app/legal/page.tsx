@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ISSUES_URL } from "@/components/SiteFooter";
 
 export const metadata: Metadata = { title: "Legal & attribution · MTG Trader" };
@@ -23,7 +24,7 @@ export default function LegalPage() {
   return (
     <main className="page narrow legal-page">
       <p>
-        <a href="/">← MTG Trader</a>
+        <Link href="/">← MTG Trader</Link>
       </p>
       <h1>Legal &amp; attribution</h1>
 
@@ -77,7 +78,7 @@ export default function LegalPage() {
         <a href={ISSUES_URL} target="_blank" rel="noreferrer">
           open an issue there
         </a>
-        . See also <a href="/privacy">Privacy</a>.
+        . See also <Link href="/privacy">Privacy</Link>.
       </p>
     </main>
   );

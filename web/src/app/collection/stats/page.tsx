@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
@@ -88,9 +89,9 @@ export default function StatsPage() {
             return (
               <li key={e.key} title={tip}>
                 {target ? (
-                  <a className="bar-row" href={target}>
+                  <Link className="bar-row" href={target}>
                     {body}
-                  </a>
+                  </Link>
                 ) : (
                   <div className="bar-row">{body}</div>
                 )}
@@ -113,7 +114,7 @@ export default function StatsPage() {
         <ul className="plain-list set-values">
           {(allSets ? sets : sets.slice(0, 10)).map((e) => (
             <li key={e.key}>
-              <a className="set-value-row" href={link(e.filter)}>
+              <Link className="set-value-row" href={link(e.filter)}>
                 <span className="grow">
                   {e.label}
                   <span className="muted small">
@@ -131,7 +132,7 @@ export default function StatsPage() {
                     </span>
                   )}
                 </span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -179,9 +180,9 @@ export default function StatsPage() {
       <TopBar page="stats" folder={folder} />
       <main className="page wide">
         <div className="controls">
-          <a className="btn" href="/collection">
+          <Link className="btn" href="/collection">
             ← Collection
-          </a>
+          </Link>
           <select aria-label="Binder" value={pick} onChange={(e) => setBinder(e.target.value)}>
             <option value="">Whole collection</option>
             <option value="~">Unsorted</option>

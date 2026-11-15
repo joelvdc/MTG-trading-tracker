@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { finishesOf, FINISH_LABELS } from "@/lib/cards";
 import { allCombos, saltKey, type DeckRow, type DeckView, type HeldPile } from "@/lib/deckshared";
@@ -97,9 +98,9 @@ function CardOwnership({ row }: { row: DeckRow }) {
                 </li>
               ))}
             </ul>
-            <a className="small" href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}>
+            <Link className="small" href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}>
               Open in collection
-            </a>
+            </Link>
           </>
         )}
       </section>
@@ -111,7 +112,7 @@ function CardOwnership({ row }: { row: DeckRow }) {
           <ul className="plain-list small">
             {row.otherDecks.map((d, i) => (
               <li key={i}>
-                <a href={`/decks/${d.deckId}`}>{d.deckName}</a> <span className="muted">×{d.quantity}{d.maybeboard ? " (maybeboard)" : ""}</span>
+                <Link href={`/decks/${d.deckId}`}>{d.deckName}</Link> <span className="muted">×{d.quantity}{d.maybeboard ? " (maybeboard)" : ""}</span>
               </li>
             ))}
           </ul>

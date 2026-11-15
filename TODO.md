@@ -14,11 +14,17 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-15, after 1.95)
+## Right now (2026-11-15, after 1.95 and a website speed-up)
 - **Latest:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
   big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
   (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
   settings texts.
+- **Website speed-up (2026-11-15, website only):** internal links no longer reload the site (`next/link`); Collection
+  and Decks show their last answer at once and refresh in the background (`web/src/components/api.ts`: `peek`,
+  `remember`, emptied by any edit); hovering a top-bar link preloads that section; the login check is one query
+  (`deviceAccount`). **Expected to look odd:** for a moment after switching, Collection/Decks can show the previous
+  numbers until the fresh ones arrive. Later options if the first load still feels slow: pre-built answers in the
+  database, ETag/304, slimmer JSON.
 - **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
   mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
 - **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card

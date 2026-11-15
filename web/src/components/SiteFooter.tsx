@@ -1,6 +1,8 @@
 // The footer on every page (2026-11-13): the data sources, Wizards of the Coast's Fan Content Policy wording, and links
 // to the privacy and legal pages and to the project's GitHub issues (the contact).
 
+import Link from "next/link";
+
 export const ISSUES_URL = "https://github.com/joelvdc/MTG-trading-tracker/issues";
 
 /** The sources named in the footer; the legal page lists them all with what each gives. */
@@ -40,11 +42,11 @@ export function SiteFooter() {
           . Not approved or endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.
         </p>
         <p className="site-footer-links">
-          <a href="/privacy">Privacy</a>
+          <Link href="/privacy">Privacy</Link>
           <a href={ISSUES_URL} target="_blank" rel="noreferrer">
             Contact
           </a>
-          <a href="/legal">Legal &amp; attribution</a>
+          <Link href="/legal">Legal &amp; attribution</Link>
         </p>
       </div>
     </footer>

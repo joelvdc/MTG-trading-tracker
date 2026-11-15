@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { api, formatDate } from "@/components/api";
+import { api, formatDate, peek, remember } from "@/components/api";
 import { ArchidektImportDialog, ArchidektUpdateDialog } from "@/components/ArchidektDialogs";
 import { ConfirmDialog, deckAction } from "@/components/DeckEditDialogs";
 import { ClockIcon } from "@/components/Icons";
@@ -74,19 +75,33 @@ export default function DecksPage() {
   const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
+    const show = (d: DecksView) => {
+      setView(d);
+      const saved = SORTS.find(([k]) => k === d.sort)?.[0];
+      if (saved) setSort(saved);
+      setReverse(d.sortReversed);
+    };
+    // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+    const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+    const kd = peek<DecksView>("/api/decks");
+    if (ks?.data.folder && kd && Array.isArray(kd.data.decks)) {
+      setFolder(ks.data.folder);
+      show(kd.data);
+    }
     (async () => {
       const [s, d] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<DecksView & { noFolder?: boolean }>("/api/decks")]);
       if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
       if (!s.data.folder || d.data.noFolder) return window.location.replace("/settings");
       setFolder(s.data.folder ?? "");
-      if (d.ok && Array.isArray(d.data.decks)) {
-        setView(d.data);
-        const saved = SORTS.find(([k]) => k === d.data.sort)?.[0];
-        if (saved) setSort(saved);
-        setReverse(d.data.sortReversed);
-      } else setError(d.data.error ?? "Could not load the decks.");
+      if (d.ok && Array.isArray(d.data.decks)) show(d.data);
+      else setError(d.data.error ?? "Could not load the decks.");
     })();
   }, [reloads]);
+
+  // What's on screen (after edits too) is what the next visit shows first.
+  useEffect(() => {
+    if (view) remember("/api/decks", view);
+  }, [view]);
 
   const groups = useMemo(() => {
     if (!view) return [];
@@ -158,15 +173,15 @@ export default function DecksPage() {
               {folded.has(HIDE_RETIRED) ? "Show retired decks" : "Hide retired decks"}
             </button>
           )}
-          <a className="btn small-btn" href="/decks/recommendations">
+          <Link className="btn small-btn" href="/decks/recommendations">
             Recommendations
-          </a>
-          <a className="btn small-btn" href="/decks/shared">
+          </Link>
+          <Link className="btn small-btn" href="/decks/shared">
             Cards in several decks
-          </a>
-          <a className="btn small-btn" href="/decks/cards">
+          </Link>
+          <Link className="btn small-btn" href="/decks/cards">
             Rule-zero cards of all decks
-          </a>
+          </Link>
           {!view.readOnly && (
             <button className="btn small-btn" onClick={() => setArchidekt("update")} title="Reload the decks changed on Archidekt and score them again">
               Update all decks
@@ -194,7 +209,7 @@ export default function DecksPage() {
             <div className="deck-grid">
               {decks.map((d) => (
                 <div key={d.id} className="deck-tile-wrap">
-                <a className="deck-tile" href={`/decks/${d.id}`}>
+                <Link className="deck-tile" href={`/decks/${d.id}`}>
                   <div className="deck-cover" style={d.cover ? { backgroundImage: `url("${d.cover}")` } : undefined}>
                     <div className="deck-cover-in">
                       <strong className="deck-name">{d.name}</strong>
@@ -231,7 +246,7 @@ export default function DecksPage() {
                       </>
                     )}
                   </div>
-                </a>
+                </Link>
                 {!view.readOnly && (
                   <button
                     className="tile-delete tile-retire"

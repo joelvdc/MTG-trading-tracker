@@ -95,6 +95,8 @@ export interface AccountStore {
   addDevice(id: string, accountId: number, tokenHash: string, name: string, now: number): Promise<void>;
   deviceByToken(tokenHash: string): Promise<Device | null>;
   device(id: string): Promise<Device | null>;
+  /** A device together with its account, in one lookup; null when either is gone. */
+  deviceAccount(deviceId: string): Promise<{ device: Device; account: UserAccount } | null>;
   devices(accountId: number): Promise<Device[]>;
   touchDevice(id: string, now: number): Promise<void>;
   removeDevice(id: string): Promise<void>;
@@ -353,6 +355,12 @@ export function memoryStore(): AccountStore {
     device: async (id) => {
       const d = devices.find((x) => x.id === id);
       return d ? dev(d) : null;
+    },
+    deviceAccount: async (deviceId) => {
+      const d = devices.find((x) => x.id === deviceId);
+      if (!d) return null;
+      const a = accounts.find((x) => x.id === d.accountId);
+      return a ? { device: dev(d), account: plain(a) } : null;
     },
     devices: async (accountId) => devices.filter((d) => d.accountId === accountId).map(dev),
     touchDevice: async (id, now) => {
@@ -656,6 +664,26 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
     device: async (id) => {
       const r = (await q("SELECT * FROM devices WHERE id = $1", [id]))[0];
       return r ? dev(r) : null;
+    },
+    deviceAccount: async (deviceId) => {
+      const r = (
+        await q(
+          `SELECT d.id AS d_id, d.account_id, d.name, d.created_at AS d_created_at, d.last_used,
+                  a.id AS a_id, a.username, a.admin, a.created_at AS a_created_at
+           FROM devices d JOIN accounts a ON a.id = d.account_id WHERE d.id = $1`,
+          [deviceId],
+        )
+      )[0];
+      if (!r) return null;
+      const device: Device = {
+        id: String(r.d_id),
+        accountId: num(r.account_id),
+        name: String(r.name),
+        createdAt: num(r.d_created_at),
+        lastUsed: num(r.last_used),
+      };
+      const account: UserAccount = { id: num(r.a_id), username: String(r.username), admin: Boolean(r.admin), createdAt: num(r.a_created_at) };
+      return { device, account };
     },
     devices: async (accountId) => (await q("SELECT * FROM devices WHERE account_id = $1 ORDER BY last_used DESC", [accountId])).map(dev),
     touchDevice: async (id, now) => void (await q("UPDATE devices SET last_used = $2::bigint WHERE id = $1 AND last_used < $2::bigint - 600000", [id, now])),

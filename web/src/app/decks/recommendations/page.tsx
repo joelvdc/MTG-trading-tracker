@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/components/api";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
@@ -195,9 +196,9 @@ export default function AllRecommendationsPage() {
     <>
       <TopBar page="decks" folder={folder} />
       <main className="page">
-        <a href="/decks" className="small">
+        <Link href="/decks" className="small">
           ← Decks
-        </a>
+        </Link>
         <h1 className="section-head">Recommendations for all decks</h1>
         {!view && !error && <p className="muted center">Loading…</p>}
         {view && (

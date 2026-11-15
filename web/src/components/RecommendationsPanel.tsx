@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { DeckView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
@@ -202,7 +203,7 @@ export function RecommendationsPanel({
       {result && (
         <p className="muted small">
           {result.source === "edhrec" ? "From EDHREC's page for this commander." : "From recommander.cards for this commander and decklist."} Cards already in the deck are left out;
-          &quot;New&quot; means first printed in the last year; a green corner or ✓ means you own the card. <a href="/decks/recommendations">Recommendations for all decks ›</a>
+          &quot;New&quot; means first printed in the last year; a green corner or ✓ means you own the card. <Link href="/decks/recommendations">Recommendations for all decks ›</Link>
         </p>
       )}
       {open && (

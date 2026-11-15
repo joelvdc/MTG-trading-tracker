@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
@@ -34,9 +35,9 @@ export default function SharedCardsPage() {
     <>
       <TopBar page="decks" folder={folder} />
       <main className="page">
-        <a href="/decks" className="small">
+        <Link href="/decks" className="small">
           ← Decks
-        </a>
+        </Link>
         <h1 className="section-head">Cards in several decks</h1>
         {error && <div className="bar error">{error}</div>}
         {!cards && !error && <p className="muted center">Loading…</p>}
@@ -77,9 +78,9 @@ export default function SharedCardsPage() {
                         <ul className="plain-list shared-uses">
                           {c.uses.map((u) => (
                             <li key={u.deckId}>
-                              <a href={`/decks/${u.deckId}`}>
+                              <Link href={`/decks/${u.deckId}`}>
                                 {u.quantity}× in {u.deckName} ›
-                              </a>
+                              </Link>
                             </li>
                           ))}
                         </ul>

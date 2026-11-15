@@ -1,14 +1,26 @@
 "use client";
 
+import Link from "next/link";
+import { prefetch } from "./api";
 import { Logo } from "./Logo";
+
+// The sections whose pages show their last answer at once: their data starts loading when the link is about to be
+// pressed (hover, focus or touch), so even the first switch is quick.
+const DATA: Record<string, string[]> = {
+  "/collection": ["/api/session", "/api/collection"],
+  "/decks": ["/api/session", "/api/decks"],
+};
 
 /** The top bar on every page after logging in: the website's sections and Settings. */
 export function TopBar({ page, folder }: { page: "collection" | "stats" | "decks" | "games" | "orders" | "trades" | "settings"; folder?: string }) {
-  const link = (href: string, label: string, on: boolean) => (
-    <a href={href} className={on ? "nav-link on" : "nav-link"} aria-current={on ? "page" : undefined}>
-      {label}
-    </a>
-  );
+  const link = (href: string, label: string, on: boolean) => {
+    const warm = !on && DATA[href] ? () => prefetch(DATA[href]) : undefined;
+    return (
+      <Link href={href} className={on ? "nav-link on" : "nav-link"} aria-current={on ? "page" : undefined} onMouseEnter={warm} onFocus={warm} onTouchStart={warm}>
+        {label}
+      </Link>
+    );
+  };
   return (
     <header className="topbar">
       <div className="topbar-in wide">
@@ -28,9 +40,9 @@ export function TopBar({ page, folder }: { page: "collection" | "stats" | "decks
           {link("/orders", "Orders", page === "orders")}
           {link("/trades", "Trades", page === "trades")}
         </nav>
-        <a className={page === "settings" ? "btn on" : "btn"} href="/settings">
+        <Link className={page === "settings" ? "btn on" : "btn"} href="/settings">
           Settings
-        </a>
+        </Link>
       </div>
     </header>
   );

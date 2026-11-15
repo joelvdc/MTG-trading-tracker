@@ -56,6 +56,19 @@ describe.each([
     expect(await s.devices(a.id)).toEqual([]);
   });
 
+  it("a device and its account in one lookup", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    await s.addDevice("d1", a.id, "hash1", "App · Pixel", NOW);
+    expect(await s.deviceAccount("d1")).toEqual({
+      device: { id: "d1", accountId: a.id, name: "App · Pixel", createdAt: NOW, lastUsed: NOW },
+      account: { id: a.id, username: "joel", admin: true, createdAt: NOW },
+    });
+    expect(await s.deviceAccount("no-such-device")).toBeNull();
+    await s.removeDevice("d1");
+    expect(await s.deviceAccount("d1")).toBeNull();
+  });
+
   it("the sync file, backups and the backup place", async () => {
     const s = await make();
     const a = (await s.create("joel", "h", true, NOW))!;

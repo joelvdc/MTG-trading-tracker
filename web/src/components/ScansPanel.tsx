@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, formatDate } from "@/components/api";
 import type { Printing } from "@/components/CardSearch";
@@ -134,9 +135,9 @@ export function ScansPanel({
         <div className="bar ok" role="status">
           {note.text}{" "}
           {note.href && (
-            <a className="link" href={note.href}>
+            <Link className="link" href={note.href}>
               Open the deck
-            </a>
+            </Link>
           )}
           {note.undo && note.undo.length > 0 && (
             <button

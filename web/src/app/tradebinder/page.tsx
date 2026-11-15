@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/api";
 import { CollCardDialog } from "@/components/CollCardDialog";
@@ -201,9 +202,9 @@ export default function TradeBinderPage() {
       <TopBar page="collection" folder={folder} />
       <main className="page wide">
         <div className="controls">
-          <a className="btn" href="/collection">
+          <Link className="btn" href="/collection">
             ← Collection
-          </a>
+          </Link>
           <button className="btn" onClick={() => setEditingRules(true)} disabled={view.readOnly}>
             Rules
           </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import type { DeckRow } from "@/lib/deckshared";
 
@@ -47,7 +48,7 @@ export function OwnedIcon({ row }: { row: DeckRow }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <a
+      <Link
         className={`own-icon own-${kind}`}
         href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}
         aria-label={label}
@@ -62,7 +63,7 @@ export function OwnedIcon({ row }: { row: DeckRow }) {
         }}
       >
         {kind === "ok" ? "✓" : ""}
-      </a>
+      </Link>
       {shown && (
         <span id={tipId} role="tooltip" className="own-tip small">
           <strong className="own-title">Collection tracker</strong>
@@ -102,9 +103,9 @@ export function OwnedIcon({ row }: { row: DeckRow }) {
             </>
           ) : null}
           {tapped && (
-            <a className="own-link" href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}>
+            <Link className="own-link" href={`/collection?search=${encodeURIComponent(row.name)}&binder=`}>
               Show in collection
-            </a>
+            </Link>
           )}
         </span>
       )}
