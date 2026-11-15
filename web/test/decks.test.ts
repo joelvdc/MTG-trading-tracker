@@ -168,6 +168,17 @@ describe("decks pages", () => {
     const v = decksView(f, null, null, null);
     expect(v.decks.find((d) => d.id === 10710772)?.modifiedAt).toBe(1_700_000_900_000);
     expect(v.decks.find((d) => d.id === -3)?.modifiedAt).toBe(1_700_000_500_000);
+    // The deck page shows the same date as the list.
+    expect(deckView(f, 10710772, null, null, null)?.modifiedAt).toBe(1_700_000_900_000);
+    expect(deckView(f, -3, null, null, null)?.modifiedAt).toBe(1_700_000_500_000);
+    // Neither page shows a date it doesn't know (a local deck never changed, an Archidekt deck never imported with one).
+    decks.push({ ...decks[0], deck: { ...decks[0].deck, archidektId: -4, name: "Never changed", archidektUpdatedAt: null, updatedAt: 0 } });
+    decks.push({ ...decks[0], deck: { ...decks[0].deck, archidektId: 4242, name: "No Archidekt date", archidektUpdatedAt: null } });
+    const v2 = decksView(f, null, null, null);
+    expect(v2.decks.find((d) => d.id === -4)?.modifiedAt).toBeNull();
+    expect(v2.decks.find((d) => d.id === 4242)?.modifiedAt).toBeNull();
+    expect(deckView(f, -4, null, null, null)?.modifiedAt).toBeNull();
+    expect(deckView(f, 4242, null, null, null)?.modifiedAt).toBeNull();
   });
 
   it("shows a deck in the printing you own", () => {
