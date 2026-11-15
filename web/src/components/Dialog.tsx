@@ -2,8 +2,24 @@
 
 import { useEffect, useRef } from "react";
 
-/** A centered modal that closes with Esc or a click on the dark background. With [full], it takes (nearly) the whole screen, like Archidekt's and Moxfield's card views. */
-export function Dialog({ title, onClose, children, full = false }: { title: string; onClose: () => void; children: React.ReactNode; full?: boolean }) {
+/**
+ * A centered modal that closes with Esc or a click on the dark background. With [full], it takes (nearly) the whole
+ * screen, like Archidekt's and Moxfield's card views; with [wide], it is a bit wider than usual (the Filter and Sort
+ * windows), so rows like the colour tick boxes fit on one line.
+ */
+export function Dialog({
+  title,
+  onClose,
+  children,
+  full = false,
+  wide = false,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  full?: boolean;
+  wide?: boolean;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -12,7 +28,8 @@ export function Dialog({ title, onClose, children, full = false }: { title: stri
     const previous = document.activeElement as HTMLElement | null;
     box.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      // A control inside the dialog (an open drop-down, a set search) may have handled this Escape itself.
+      if (e.key !== "Escape" || e.defaultPrevented) return;
       // With dialogs stacked (a card page over the recommendations window), only the top one closes.
       const backdrops = document.querySelectorAll(".backdrop");
       if (backdrops.length > 0 && backdrops[backdrops.length - 1] !== box.current?.closest(".backdrop")) return;
@@ -29,7 +46,14 @@ export function Dialog({ title, onClose, children, full = false }: { title: stri
 
   return (
     <div className="backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={full ? "dialog full" : "dialog"} role="dialog" aria-modal="true" aria-label={title} ref={box} tabIndex={-1}>
+      <div
+        className={full ? "dialog full" : wide ? "dialog wide" : "dialog"}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={box}
+        tabIndex={-1}
+      >
         <h2>{title}</h2>
         {children}
       </div>

@@ -19,6 +19,15 @@ body {
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Form controls take the page's text size (15px), not the browser's smaller default,
+   so every button reads the same (one font size for buttons, 2026-11-15). */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 h1,
 h2 {
   margin: 0;
@@ -176,7 +185,6 @@ textarea {
 .btn.small-btn {
   min-height: 32px;
   padding: 4px 10px;
-  font-size: 13px;
 }
 
 .btn:disabled,
@@ -898,7 +906,6 @@ a.btn {
   border-radius: 999px;
   padding: 5px 12px;
   font: inherit;
-  font-size: 14px;
   cursor: pointer;
 }
 
@@ -2636,7 +2643,6 @@ html[data-pic-size="l"] .rec-grid.images {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   color: var(--green-text);
   font: inherit;
-  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -2783,7 +2789,7 @@ html[data-pic-size="l"] .rec-grid.images {
 .value-chart .tick { fill: var(--muted); font-size: 12px; }
 /* The card window's price chart (2026-11-13): smaller period buttons. */
 .price-chart { margin: 10px 0 4px; }
-.price-chart .seg.text button { padding: 0 10px; min-height: 28px; font-size: 0.85rem; }
+.price-chart .seg.text button { padding: 0 10px; min-height: 28px; }
 .alert-list { list-style: none; margin: 0; padding: 0; }
 .alert-list li { padding: 8px 0; border-bottom: 1px solid var(--raised); }
 .trade-list li { flex-wrap: wrap; }
@@ -3145,7 +3151,6 @@ details.deck-section > summary .mini-head {
 .deck-toolbar select {
   min-height: 32px;
   padding: 4px 10px;
-  font-size: 13px;
 }
 
 .deck-toolbar .check {
@@ -3346,7 +3351,6 @@ details.deck-section > summary .mini-head {
 .deck-filter .seg button {
   height: 28px;
   padding: 0 10px;
-  font-size: 13px;
 }
 /* Recommendations and the view options stay together at the right, also when the toolbar wraps. */
 .deck-toolbar-end {
@@ -3859,7 +3863,6 @@ details.deck-section > summary .mini-head {
   width: auto;
   min-height: 32px;
   padding: 4px 8px;
-  font-size: 14px;
 }
 .trade-line-fields .qty {
   width: 56px;
@@ -3887,7 +3890,7 @@ details.deck-section > summary .mini-head {
 .theme-choice {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 8px 6px; border: 1px solid var(--line-soft); border-radius: 10px;
-  background: var(--raised); color: var(--text); font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--raised); color: var(--text); font: inherit; cursor: pointer;
 }
 .theme-choice:hover { background: var(--hover); }
 .theme-choice.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
@@ -3901,3 +3904,322 @@ details.deck-section > summary .mini-head {
 .theme-swatch-split > .theme-swatch { width: 32px; border-radius: 0; box-shadow: none; }
 .theme-swatch-split .theme-swatch-card { padding: 6px 3px; gap: 2px; }
 .theme-swatch-split .theme-swatch-card > span { width: 7px; height: 7px; }
+
+/* ---- Collection toolbar: Display ▾, Collection ▾ and Binders ▾ (2026-11-15) ---- */
+/* Menu items sit one per line, full width and left-aligned (the shared .menu-items rules); an item that is on
+   (Group printings ✓) and a link among them (Stats, Trade binder) look like the menu's buttons. */
+.menu-items button.on {
+  background: var(--selected);
+  color: var(--accent);
+}
+
+.menu-items a.menu-link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.menu-items a.menu-link:hover,
+.menu-items a.menu-link:focus-visible {
+  background: var(--surface);
+}
+
+/* The Display menu: the list / pictures switch (and the hover and picture-size switches) on their own lines. */
+.menu-items.display-items {
+  gap: 6px;
+  padding: 8px;
+  min-width: 210px;
+}
+
+.menu-items.display-items > .seg {
+  align-self: flex-start;
+}
+
+/* Add card sits at the far right of the controls row; on phones it wraps to a line of its own, still on the right. */
+.controls > .add-card {
+  margin-left: auto;
+}
+
+/* Filter window: labels on the left (2026-11-15) */
+.form-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px 16px;
+  align-items: center;
+}
+
+.form-label {
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.form-control {
+  min-width: 0;
+}
+
+.form-control select {
+  width: 100%;
+}
+
+/* Colors: a tick box and a coloured circle per colour, and how they match beside them. */
+.colours-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.colour-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.colour-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.colour-pick input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* The circle's border and fill come from Mana's COLOUR_FILL, set inline by FilterDialog; the letter keeps the theme's text colour. */
+.colour-dot {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.colour-dot.multi {
+  border-color: var(--line);
+  text-shadow: 0 0 3px var(--surface);
+}
+
+.colours-line .colour-match {
+  flex: 1 1 200px;
+  width: auto;
+  min-width: 0;
+}
+
+/* Multi-select drop-downs (Filter window). */
+.multiselect {
+  position: relative;
+}
+
+.multiselect-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.multiselect-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multiselect-caret {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.multiselect-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.multiselect-option {
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 6px;
+}
+
+.multiselect-option:hover {
+  background: var(--hover);
+}
+
+.multiselect-option input {
+  width: 18px;
+  height: 18px;
+}
+
+button.multiselect-clear {
+  margin: 4px 8px 6px;
+  align-self: flex-start;
+}
+
+/* Sets: the search box's matching sets drop down under it; the chosen sets stay as chips under that. */
+.set-search {
+  position: relative;
+}
+
+.set-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.set-list button {
+  background: none;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.set-list button:hover,
+.set-list button:focus-visible {
+  background: var(--surface);
+}
+
+.set-list .set-none {
+  padding: 8px 10px;
+}
+
+.set-chips {
+  margin-top: 8px;
+}
+
+/* Value of one copy: From – To on one line. */
+.price-range .price-dash {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* Phones: one column, the label just above its control. */
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 3px 0;
+  }
+
+  .form-grid > .form-control {
+    margin-bottom: 10px;
+  }
+}
+
+
+/* Sort window: labels on the left (2026-11-15) */
+.sort-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px 16px;
+  align-items: center;
+}
+
+/* The name of a row ("Quick picks", "Sort by", "Then by"), level with the controls beside it. */
+.sort-label {
+  color: var(--muted);
+}
+
+/* One sort level on one line: the field takes the room, the direction keeps a steady width, then the x. */
+.sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sort-row select {
+  min-width: 0;
+}
+
+.sort-row select:first-child {
+  flex: 1 1 auto;
+}
+
+.sort-row select + select {
+  flex: 0 1 160px;
+}
+
+.sort-remove {
+  flex: none;
+  min-width: 32px;
+  min-height: 40px;
+  margin-left: 0;
+  text-decoration: none;
+}
+
+/* "+ Add a level" starts where the controls column starts. */
+.sort-add {
+  grid-column: 2;
+  justify-self: start;
+  margin-left: 0;
+}
+
+/* Phones: the label goes above its controls. */
+@media (max-width: 560px) {
+  .sort-grid {
+    grid-template-columns: 1fr;
+    gap: 8px 0;
+  }
+
+  .sort-grid > .sort-label:not(:first-child) {
+    margin-top: 4px;
+  }
+
+  .sort-add {
+    grid-column: 1;
+  }
+}
+
+/* Wider dialogs: Filter and Sort (2026-11-15) */
+.dialog.wide {
+  max-width: 640px;
+}
+
+/* At 640px the colour tick boxes fit on one line beside the "How colors match" select's room; a slightly tighter
+   gap keeps them there in every font size. They stay on their own line above the select. */
+.dialog.wide .colour-picks {
+  gap: 6px 8px;
+}
+
+.dialog.wide .colour-pick {
+  gap: 3px;
+}

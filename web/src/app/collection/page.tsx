@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { api, peek, remember } from "@/components/api";
 import { CollAddDialog } from "@/components/CollAddDialog";
 import { CollCardDialog } from "@/components/CollCardDialog";
@@ -91,6 +91,12 @@ function filterFrom(text: string | null): Filter | null {
   }
 }
 
+/** Closes the drop-down menu a click came from (the <details> that holds the item). */
+function closeMenu(e: MouseEvent<HTMLElement>) {
+  const d = e.currentTarget.closest("details.menu") as HTMLDetailsElement | null;
+  if (d) d.open = false;
+}
+
 export default function CollectionPage() {
   const [view, setView] = useState<CollectionView | null>(null);
   const [folder, setFolder] = useState("");
@@ -110,7 +116,7 @@ export default function CollectionPage() {
   const [grouped, setGrouped] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [views, setViews] = useState<SavedView[]>([]);
-  const [viewsOn, setViewsOn] = useState(false);
+  const [viewsOn, setViewsOn] = useState(true);
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<CollRow | null>(null);
@@ -211,6 +217,12 @@ export default function CollectionPage() {
 
   useEffect(() => {
     load();
+    // Seen before while the website was open: the Views ▾ button shows at once with those, so the row doesn't shift.
+    const kv = peek<{ views?: SavedView[]; available?: boolean }>("/api/collection/views");
+    if (kv && Array.isArray(kv.data.views)) {
+      setViews(kv.data.views);
+      setViewsOn(kv.data.available !== false);
+    }
     api<{ views?: SavedView[]; available?: boolean }>("/api/collection/views").then((r) => {
       if (r.ok && Array.isArray(r.data.views)) {
         setViews(r.data.views);
@@ -378,6 +390,8 @@ export default function CollectionPage() {
   const value = rows.reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
   const locked = view.readOnly || busy;
   const nFilter = filterCount(filter);
+  // The Display ▾ button is marked when anything in it differs from how the page starts.
+  const displayChanged = layout !== "list" || grouped || columns.join() !== DEFAULT_COLUMNS.join();
   // The Binder dropdown: Unsorted and the binders in the bar's order (Arrange).
   const binderChoices = view.bar.flatMap((k) =>
     k === BAR_UNSORTED
@@ -470,30 +484,71 @@ export default function CollectionPage() {
               </option>
             ))}
           </select>
-          <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: null, name: "" })}>
-            ＋ Binder
-          </button>
-          {pick !== "" && pick !== "~" && !isWish && !isScans && (
-            <>
-              <button className="chip add" disabled={locked} onClick={() => setNaming({ uid: pick, name: binderName(pick) })}>
-                Rename
+          <details className="menu">
+            <summary className="chip">Binders ▾</summary>
+            <div className="menu-items from-left">
+              <button
+                disabled={locked}
+                onClick={(e) => {
+                  closeMenu(e);
+                  setNaming({ uid: null, name: "" });
+                }}
+              >
+                New binder…
               </button>
-              <button className="chip add" disabled={locked} onClick={() => setMerging(true)}>
-                Merge…
+              {pick !== "" && pick !== "~" && !isWish && !isScans && (
+                <>
+                  <button
+                    disabled={locked}
+                    onClick={(e) => {
+                      closeMenu(e);
+                      setNaming({ uid: pick, name: binderName(pick) });
+                    }}
+                  >
+                    Rename…
+                  </button>
+                  <button
+                    disabled={locked}
+                    onClick={(e) => {
+                      closeMenu(e);
+                      setMerging(true);
+                    }}
+                  >
+                    Merge…
+                  </button>
+                  <button
+                    disabled={locked}
+                    onClick={(e) => {
+                      closeMenu(e);
+                      setDeletingBinder(true);
+                    }}
+                  >
+                    Delete…
+                  </button>
+                </>
+              )}
+              {pick === "~" && (
+                <button
+                  disabled={locked || (counts.get("~") ?? 0) === 0}
+                  onClick={(e) => {
+                    closeMenu(e);
+                    setMerging(true);
+                  }}
+                >
+                  Move all to…
+                </button>
+              )}
+              <button
+                disabled={locked}
+                onClick={(e) => {
+                  closeMenu(e);
+                  setArranging(true);
+                }}
+              >
+                Arrange…
               </button>
-              <button className="chip add" disabled={locked} onClick={() => setDeletingBinder(true)}>
-                Delete…
-              </button>
-            </>
-          )}
-          {pick === "~" && (
-            <button className="chip add" disabled={locked || (counts.get("~") ?? 0) === 0} onClick={() => setMerging(true)}>
-              Move all to…
-            </button>
-          )}
-          <button className="chip add" disabled={locked} onClick={() => setArranging(true)}>
-            Arrange
-          </button>
+            </div>
+          </details>
         </div>
 
         {isScans ? (
@@ -539,53 +594,92 @@ export default function CollectionPage() {
               onSave={saveViews}
             />
           )}
-          <ViewSwitch layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} />
-          {layout === "list" && (
-            <button className={columns.join() !== DEFAULT_COLUMNS.join() ? "btn on" : "btn"} title="Choose the table's columns" onClick={() => setChoosingColumns(true)}>
-              Columns
-            </button>
-          )}
-          {layout === "list" && (
-            <button
-              className={grouped ? "btn on" : "btn"}
-              aria-pressed={grouped}
-              title="One line per card name, whatever its set, finish, condition or binder; click a line to see its piles"
-              onClick={() => changeGrouped(!grouped)}
-            >
-              Group printings
-            </button>
-          )}
-          <button className="btn primary" disabled={locked} onClick={() => setAdding(true)}>
+          <details className="menu">
+            <summary className={displayChanged ? "btn on" : "btn"}>Display ▾</summary>
+            <div className="menu-items from-left display-items">
+              {/* The layout switch keeps the menu open; Columns opens a dialog, so it closes it. */}
+              <ViewSwitch layout={layout} onLayout={changeLayout} hover={hover} onHover={setHover} />
+              {layout === "list" && (
+                <button
+                  title="Choose the table's columns"
+                  onClick={(e) => {
+                    closeMenu(e);
+                    setChoosingColumns(true);
+                  }}
+                >
+                  Columns
+                </button>
+              )}
+              {layout === "list" && (
+                <button
+                  className={grouped ? "on" : undefined}
+                  aria-pressed={grouped}
+                  title="One line per card name, whatever its set, finish, condition or binder; click a line to see its piles"
+                  onClick={() => changeGrouped(!grouped)}
+                >
+                  Group printings{grouped ? " ✓" : ""}
+                </button>
+              )}
+            </div>
+          </details>
+          <details className="menu">
+            <summary className="btn">Collection ▾</summary>
+            <div className="menu-items">
+              <Link className="menu-link" href={pick ? `/collection/stats?binder=${encodeURIComponent(pick)}` : "/collection/stats"} onClick={closeMenu}>
+                Stats
+              </Link>
+              <Link className="menu-link" href="/tradebinder" onClick={closeMenu}>
+                Trade binder
+              </Link>
+              <button
+                disabled={locked}
+                onClick={(e) => {
+                  closeMenu(e);
+                  setImporting(true);
+                }}
+              >
+                Import CSV file…
+              </button>
+              <button
+                disabled={locked}
+                onClick={(e) => {
+                  closeMenu(e);
+                  setPrecon(true);
+                }}
+              >
+                Import preconstructed deck…
+              </button>
+              <button
+                onClick={(e) => {
+                  closeMenu(e);
+                  setExporting(true);
+                }}
+              >
+                Export…
+              </button>
+              <button
+                disabled={rows.length === 0}
+                onClick={(e) => {
+                  closeMenu(e);
+                  setPrinting(true);
+                }}
+              >
+                Print…
+              </button>
+              <button
+                onClick={(e) => {
+                  closeMenu(e);
+                  setSharing(true);
+                }}
+                title={pick === "" ? "Share the whole collection" : `Share ${binderLabel}`}
+              >
+                Share…
+              </button>
+            </div>
+          </details>
+          <button className="btn primary add-card" disabled={locked} onClick={() => setAdding(true)}>
             Add card
           </button>
-          <Link className="btn" href={pick ? `/collection/stats?binder=${encodeURIComponent(pick)}` : "/collection/stats"}>
-            Stats
-          </Link>
-          <Link className="btn" href="/tradebinder">
-            Trade binder
-          </Link>
-          <button className="btn" onClick={() => setExporting(true)}>
-            Export CSV
-          </button>
-          <button className="btn" disabled={rows.length === 0} onClick={() => setPrinting(true)}>
-            Print
-          </button>
-          <button className="btn" onClick={() => setSharing(true)} title={pick === "" ? "Share the whole collection" : `Share ${binderLabel}`}>
-            Share
-          </button>
-          {locked ? (
-            <button className="btn" disabled>
-              Import ▾
-            </button>
-          ) : (
-            <details className="menu">
-              <summary className="btn">Import ▾</summary>
-              <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
-                <button onClick={() => setImporting(true)}>CSV file…</button>
-                <button onClick={() => setPrecon(true)}>Preconstructed deck…</button>
-              </div>
-            </details>
-          )}
         </div>
 
         <p className="muted small showing">

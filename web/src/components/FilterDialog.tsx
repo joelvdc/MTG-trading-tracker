@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { CONDITIONS, FINISH_LABELS, FINISHES, LANGUAGES } from "@/lib/cards";
 import {
   COLOR_MATCH_LABELS,
@@ -14,7 +15,9 @@ import {
   type MarkFilter,
 } from "@/lib/colquery";
 import type { Currency } from "@/lib/money";
+import { COLOUR_FILL } from "./Mana";
 import { Dialog } from "./Dialog";
+import { MultiSelect } from "./MultiSelect";
 
 const COLORS: [string, string][] = [
   ["W", "White"],
@@ -42,6 +45,20 @@ function Chips<T extends string>({ options, value, onChange }: { options: [T, st
   );
 }
 
+/** A colour's circle: its fill (the mana colours) with the letter on it; Multicolor is the five colours as a wheel. */
+function colourDotStyle(code: string): CSSProperties {
+  if (code !== "M") {
+    return {
+      borderColor: COLOUR_FILL[code],
+      background: `color-mix(in srgb, ${COLOUR_FILL[code]} 30%, var(--surface))`,
+    };
+  }
+  const tint = (c: string) => `color-mix(in srgb, ${COLOUR_FILL[c]} 60%, var(--surface))`;
+  return {
+    background: `conic-gradient(from 0deg, ${tint("W")} 0deg 72deg, ${tint("U")} 72deg 144deg, ${tint("B")} 144deg 216deg, ${tint("R")} 216deg 288deg, ${tint("G")} 288deg 360deg)`,
+  };
+}
+
 /** The collection's filter (the app's filter sheet): everything that's awkward to type in the search field. */
 export function FilterDialog({
   filter,
@@ -61,6 +78,7 @@ export function FilterDialog({
 }) {
   const [f, setF] = useState<Filter>(filter);
   const [setText, setSetText] = useState("");
+  const [setsFocused, setSetsFocused] = useState(false);
   const [min, setMin] = useState(filter.minPrice != null ? (filter.minPrice * perEuro).toFixed(2) : "");
   const [max, setMax] = useState(filter.maxPrice != null ? (filter.maxPrice * perEuro).toFixed(2) : "");
   const num = (s: string) => {
@@ -69,14 +87,29 @@ export function FilterDialog({
     return t === "" || !Number.isFinite(n) ? null : n / perEuro;
   };
   const shownSets = sets.filter((s) => !setText.trim() || s.name.toLowerCase().includes(setText.toLowerCase()) || s.code === setText.trim().toLowerCase()).slice(0, 40);
+  const setChoices = shownSets.filter((s) => !f.sets.includes(s.code));
 
   return (
-    <Dialog title="Filter" onClose={onClose}>
-      <div className="stack">
-        <div className="field">
-          <span>Colors</span>
-          <Chips options={COLORS} value={f.colors} onChange={(colors) => setF({ ...f, colors })} />
-          <select aria-label="How colors match" value={f.colorMatch} onChange={(e) => setF({ ...f, colorMatch: e.target.value as ColorMatch })}>
+    <Dialog title="Filter" onClose={onClose} wide>
+      <div className="form-grid">
+        <span className="form-label">Colors</span>
+        <div className="form-control colours-line">
+          <div className="colour-picks">
+            {COLORS.map(([code, name]) => (
+              <label key={code} className="colour-pick" title={name}>
+                <input
+                  type="checkbox"
+                  aria-label={name}
+                  checked={f.colors.includes(code)}
+                  onChange={() => setF({ ...f, colors: toggle(f.colors, code) })}
+                />
+                <span className={code === "M" ? "colour-dot multi" : "colour-dot"} style={colourDotStyle(code)} aria-hidden="true">
+                  {code}
+                </span>
+              </label>
+            ))}
+          </div>
+          <select aria-label="How colors match" className="colour-match" value={f.colorMatch} onChange={(e) => setF({ ...f, colorMatch: e.target.value as ColorMatch })}>
             {(Object.keys(COLOR_MATCH_LABELS) as ColorMatch[]).map((k) => (
               <option key={k} value={k}>
                 {COLOR_MATCH_LABELS[k]}
@@ -84,78 +117,134 @@ export function FilterDialog({
             ))}
           </select>
         </div>
-        <div className="field">
-          <span>Type</span>
-          <Chips options={FILTER_TYPES.map((t) => [t, t] as [string, string])} value={f.types} onChange={(types) => setF({ ...f, types })} />
+
+        <span className="form-label">Type</span>
+        <div className="form-control">
+          <MultiSelect
+            label="Type"
+            options={FILTER_TYPES.map((t) => [t, t] as [string, string])}
+            value={f.types}
+            onChange={(types) => setF({ ...f, types })}
+          />
         </div>
-        <div className="field">
-          <span>Faces</span>
-          <Chips options={FACE_KINDS} value={f.faces ?? []} onChange={(faces) => setF({ ...f, faces })} />
+
+        <span className="form-label">Faces</span>
+        <div className="form-control">
+          <MultiSelect label="Faces" options={FACE_KINDS} value={f.faces ?? []} onChange={(faces) => setF({ ...f, faces })} />
         </div>
-        <div className="field">
-          <span>Rarity</span>
-          <Chips options={FILTER_RARITIES} value={f.rarities} onChange={(rarities) => setF({ ...f, rarities })} />
+
+        <span className="form-label">Rarity</span>
+        <div className="form-control">
+          <MultiSelect label="Rarity" options={FILTER_RARITIES} value={f.rarities} onChange={(rarities) => setF({ ...f, rarities })} />
         </div>
-        <div className="field">
-          <span>Sets</span>
-          {f.sets.length > 0 && (
-            <Chips
-              options={f.sets.map((c) => [c, sets.find((s) => s.code === c)?.name ?? c.toUpperCase()] as [string, string])}
-              value={f.sets}
-              onChange={(v) => setF({ ...f, sets: v })}
+
+        <span className="form-label">Sets</span>
+        <div className="form-control">
+          <div className="set-search">
+            <input
+              type="search"
+              aria-label="Find a set"
+              placeholder="Find a set"
+              value={setText}
+              onChange={(e) => setSetText(e.target.value)}
+              onFocus={() => setSetsFocused(true)}
+              onKeyDown={(e) => {
+                // Escape hides the set list and empties the box, leaving the window itself open.
+                if (e.key === "Escape" && (setsFocused || setText.trim() !== "")) {
+                  e.preventDefault();
+                  setSetText("");
+                  setSetsFocused(false);
+                }
+              }}
+              onBlur={(e) => {
+                if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setSetsFocused(false);
+              }}
             />
-          )}
-          <input type="search" placeholder="Find a set" value={setText} onChange={(e) => setSetText(e.target.value)} />
-          <div className="chips scroll">
-            {shownSets
-              .filter((s) => !f.sets.includes(s.code))
-              .map((s) => (
-                <button key={s.code} className="chip" onClick={() => setF({ ...f, sets: [...f.sets, s.code] })}>
-                  {s.name} <span className="muted">({s.copies})</span>
-                </button>
-              ))}
+            {(setsFocused || setText.trim() !== "") && (
+              <div className="set-list">
+                {setChoices.map((s) => (
+                  <button
+                    key={s.code}
+                    type="button"
+                    onClick={() => {
+                      setF({ ...f, sets: [...f.sets, s.code] });
+                      setSetText("");
+                    }}
+                  >
+                    {s.name} <span className="muted">({s.copies})</span>
+                  </button>
+                ))}
+                {setChoices.length === 0 && <span className="set-none muted">No matching sets</span>}
+              </div>
+            )}
           </div>
+          {f.sets.length > 0 && (
+            <div className="set-chips">
+              <Chips
+                options={f.sets.map((c) => [c, sets.find((s) => s.code === c)?.name ?? c.toUpperCase()] as [string, string])}
+                value={f.sets}
+                onChange={(v) => setF({ ...f, sets: v })}
+              />
+            </div>
+          )}
         </div>
-        <div className="field">
-          <span>Finish</span>
-          <Chips options={FINISHES.map((x) => [x, FINISH_LABELS[x]] as [(typeof FINISHES)[number], string])} value={f.finishes} onChange={(finishes) => setF({ ...f, finishes })} />
+
+        <span className="form-label">Finish</span>
+        <div className="form-control">
+          <MultiSelect
+            label="Finish"
+            options={FINISHES.map((x) => [x, FINISH_LABELS[x]] as [(typeof FINISHES)[number], string])}
+            value={f.finishes}
+            onChange={(finishes) => setF({ ...f, finishes })}
+          />
         </div>
-        <div className="field">
-          <span>Signed or altered</span>
-          <Chips
-            options={[
-              ["SIGNED", "Signed"],
-              ["ALTERED", "Altered"],
-              ["PLAIN", "Neither"],
-            ] as [MarkFilter, string][]}
+
+        <span className="form-label">Signed or altered</span>
+        <div className="form-control">
+          <MultiSelect
+            label="Signed or altered"
+            options={
+              [
+                ["SIGNED", "Signed"],
+                ["ALTERED", "Altered"],
+                ["PLAIN", "Neither"],
+              ] as [MarkFilter, string][]
+            }
             value={f.marks}
             onChange={(marks) => setF({ ...f, marks })}
           />
         </div>
-        <div className="field">
-          <span>Condition</span>
-          <Chips options={CONDITIONS} value={f.conditions} onChange={(conditions) => setF({ ...f, conditions })} />
+
+        <span className="form-label">Condition</span>
+        <div className="form-control">
+          <MultiSelect label="Condition" options={CONDITIONS} value={f.conditions} onChange={(conditions) => setF({ ...f, conditions })} />
         </div>
-        <div className="field">
-          <span>Language</span>
-          <Chips options={LANGUAGES} value={f.languages} onChange={(languages) => setF({ ...f, languages })} />
+
+        <span className="form-label">Language</span>
+        <div className="form-control">
+          <MultiSelect label="Language" options={LANGUAGES} value={f.languages} onChange={(languages) => setF({ ...f, languages })} />
         </div>
-        <div className="field">
-          <span>Value of one copy ({currency})</span>
-          <div className="inline">
+
+        <span className="form-label">Value of one copy ({currency})</span>
+        <div className="form-control">
+          <div className="inline price-range">
             <input type="text" inputMode="decimal" aria-label="Lowest value" placeholder="From" value={min} onChange={(e) => setMin(e.target.value)} />
+            <span className="price-dash" aria-hidden="true">
+              –
+            </span>
             <input type="text" inputMode="decimal" aria-label="Highest value" placeholder="To" value={max} onChange={(e) => setMax(e.target.value)} />
           </div>
         </div>
-        <label className="field">
-          <span>Decks</span>
-          <select value={f.decks} onChange={(e) => setF({ ...f, decks: e.target.value as DeckFilter })}>
+
+        <span className="form-label">Decks</span>
+        <div className="form-control">
+          <select aria-label="Decks" value={f.decks} onChange={(e) => setF({ ...f, decks: e.target.value as DeckFilter })}>
             <option value="ANY">All cards</option>
             <option value="IN">Only cards in my decks</option>
             <option value="OUT">Only cards no deck uses (every copy is spare)</option>
             <option value="SPARE">Only spare copies (you own more than your decks use)</option>
           </select>
-        </label>
+        </div>
       </div>
       <div className="dialog-actions">
         <button

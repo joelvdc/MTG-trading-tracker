@@ -27,6 +27,9 @@ history, the release notes and `web/README.md`.)
   preloads it; the login check is one query (`deviceAccount`). **Expected to look odd:** right after switching or an
   edit, a page can show the previous numbers for a moment. Opening the site from scratch still takes the 1-2 s first
   load. Later options: keep answers across reloads, pre-built answers in the database, ETag/304, slimmer JSON.
+- **Collection toolbar tidy-up (2026-11-15, website only):** Display ▾ / Collection ▾ / Binders ▾ menus, Add card on
+  the right, Views button there from the start, Moxfield-style Filter and Sort windows, one button text size site-wide.
+  Possible next step the owner may ask for: more filters like Moxfield's (rules text, mana value, power/toughness).
 - **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
   mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
 - **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card

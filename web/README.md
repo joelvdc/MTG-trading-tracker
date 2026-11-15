@@ -131,6 +131,12 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
 - **Saved views** (`lib/savedviews.ts`, `/api/collection/views`, `components/ViewsMenu.tsx`): up to 30 per account in
   the table `saved_views`; **Group printings** (`lib/collgroup.ts`) folds the list view by card name; the Decks
   filter has SPARE (owned more than the decks use, `lib/colquery.ts`).
+- **Collection toolbar** (since 2026-11-15): search, Filter, Sort, Views ▾, **Display ▾** (list/images, hover preview,
+  Columns, Group printings), **Collection ▾** (Stats, Trade binder, Import, Export, Print, Share) and Add card on the
+  right; the binder actions (new, rename, merge, delete, move all, arrange) are in one **Binders ▾** menu. The Filter
+  and Sort windows use a label-left grid (`form-grid`, `sort-grid`; wider `Dialog wide`), with tick-box drop-downs
+  (`components/MultiSelect.tsx`). Every button has the page's 15px text (`.small-btn` and `.chip` are only smaller in
+  height).
 - **Themes** (`lib/themes.ts`, `components/ThemePanel.tsx`, Settings → Theme): every theme colour lives in
   `lib/themes.ts` (the layout writes them as CSS variables, `globals.css` only uses `var(--...)`; the colours that mean
   something, such as verdict green and red, foil and mana, are fixed in `:root`). The choice is kept in this browser

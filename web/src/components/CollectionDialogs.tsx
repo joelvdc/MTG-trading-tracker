@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import type { Paid } from "@/lib/collection";
 import { BAR_UNSORTED, BAR_WISHLIST, type CollBinder } from "@/lib/collview";
@@ -33,59 +33,66 @@ export function SortDialog({ initial, onSave, onClose }: { initial: SortLevel[];
   const set = (i: number, l: SortLevel) => setLevels(levels.map((x, j) => (j === i ? l : x)));
   const same = (a: SortLevel[], b: SortLevel[]) => JSON.stringify(a) === JSON.stringify(b);
   return (
-    <Dialog title="Sort" onClose={onClose}>
+    <Dialog title="Sort" onClose={onClose} wide>
       <div className="stack">
-        <div className="chips">
-          {PRESETS.map(([label, spec]) => (
-            <button key={label} type="button" className={same(levels, spec) ? "chip on" : "chip"} onClick={() => setLevels(spec)}>
-              {label}
-            </button>
-          ))}
-        </div>
-        {levels.map((l, i) => {
-          const f = SORT_FIELDS.find((x) => x.field === l.field) ?? SORT_FIELDS[0];
-          return (
-            <div key={i} className="sort-level">
-              <span className="muted small">{i === 0 ? "Sort by" : "then by"}</span>
-              <div className="inline">
-                <select
-                  aria-label={`Level ${i + 1}: field`}
-                  value={l.field}
-                  onChange={(e) => set(i, { field: e.target.value as SortField, reversed: false })}
-                >
-                  {SORT_FIELDS.filter((x) => x.field === l.field || !levels.some((y) => y.field === x.field)).map((x) => (
-                    <option key={x.field} value={x.field}>
-                      {x.label}
-                    </option>
-                  ))}
-                </select>
-                <select aria-label={`Level ${i + 1}: order`} value={l.reversed ? "r" : "f"} onChange={(e) => set(i, { ...l, reversed: e.target.value === "r" })}>
-                  <option value="f">{f.forward}</option>
-                  <option value="r">{f.backward}</option>
-                </select>
-                {levels.length > 1 && (
-                  <button type="button" className="link" aria-label={`Remove level ${i + 1}`} onClick={() => setLevels(levels.filter((_, j) => j !== i))}>
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        {levels.length < 3 && (
-          <div>
+        <div className="sort-grid">
+          <span className="sort-label">Quick picks</span>
+          <div className="chips">
+            {PRESETS.map(([label, spec]) => (
+              <button key={label} type="button" className={same(levels, spec) ? "chip on" : "chip"} onClick={() => setLevels(spec)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {levels.map((l, i) => {
+            const f = SORT_FIELDS.find((x) => x.field === l.field) ?? SORT_FIELDS[0];
+            return (
+              <Fragment key={i}>
+                <span className="sort-label">{i === 0 ? "Sort by" : "Then by"}</span>
+                <div className="sort-row">
+                  <select
+                    aria-label={`Level ${i + 1}: field`}
+                    value={l.field}
+                    onChange={(e) => set(i, { field: e.target.value as SortField, reversed: false })}
+                  >
+                    {SORT_FIELDS.filter((x) => x.field === l.field || !levels.some((y) => y.field === x.field)).map((x) => (
+                      <option key={x.field} value={x.field}>
+                        {x.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select aria-label={`Level ${i + 1}: order`} value={l.reversed ? "r" : "f"} onChange={(e) => set(i, { ...l, reversed: e.target.value === "r" })}>
+                    <option value="f">{f.forward}</option>
+                    <option value="r">{f.backward}</option>
+                  </select>
+                  {levels.length > 1 && (
+                    <button
+                      type="button"
+                      className="link sort-remove"
+                      aria-label={`Remove level ${i + 1}`}
+                      title={`Remove level ${i + 1}`}
+                      onClick={() => setLevels(levels.filter((_, j) => j !== i))}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </Fragment>
+            );
+          })}
+          {levels.length < 3 && (
             <button
               type="button"
-              className="link"
+              className="link sort-add"
               onClick={() => {
                 const next = SORT_FIELDS.find((x) => !levels.some((y) => y.field === x.field));
                 if (next) setLevels([...levels, { field: next.field, reversed: false }]);
               }}
             >
-              ＋ Add a level
+              + Add a level
             </button>
-          </div>
-        )}
+          )}
+        </div>
         {levels.some((l) => l.field === "CHANGE_PCT" || l.field === "CHANGE_MONEY") && (
           <p className="muted small">
             The change is Cardmarket&apos;s trend price against its 30-day average, for one copy. Cards without a 30-day average go last.
