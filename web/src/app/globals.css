@@ -1846,7 +1846,14 @@ details.card > summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
-  margin-top: 10px;
+  margin-top: 4px;
+}
+
+/* Inside the deck page's Stats section the blocks sit on the section's own background, so no extra padding or margin
+   (the grid's gap spaces them). */
+.deck-stats .stat-block {
+  margin-bottom: 0;
+  padding: 4px 4px 8px;
 }
 
 .curve {
@@ -4440,12 +4447,14 @@ button.role-btn:hover {
   margin-top: 12px;
   scroll-margin-top: 70px;
 }
-.primer-top {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
+/* The Primer folds like Tokens and Stats: their summary row, with Edit at the right. */
+.deck-primer[open] > summary {
   margin-bottom: 8px;
 }
+.deck-primer > summary .link {
+  float: right;
+}
+/* The Primer's heading on a shared deck's page, where it is a plain section. */
 .primer-title {
   margin: 0;
   font-size: 16px;

@@ -78,7 +78,7 @@ export function PrimerText({ text, cards }: { text: string; cards?: PrimerCardLi
 /**
  * The deck page's Primer section, at the bottom of the page: the primer in full with Edit, or "No primer yet." with
  * "Write a primer"; [editing] swaps in the editor in the same place (any deck; the caller decides whether it may be
- * edited).
+ * edited). Foldable like Tokens and Stats: the page keeps whether it is folded ([open] and [onToggle]).
  */
 export function PrimerSection({
   deckId,
@@ -90,6 +90,8 @@ export function PrimerSection({
   onSave,
   cards,
   cardNames = [],
+  open,
+  onToggle,
 }: {
   deckId: number;
   primer: string | null;
@@ -100,18 +102,35 @@ export function PrimerSection({
   onSave: (text: string) => Promise<string | null>;
   cards?: PrimerCardLinks;
   cardNames?: string[];
+  open: boolean;
+  onToggle: (open: boolean) => void;
 }) {
   const text = (primer ?? "").trim();
   return (
-    <section className="card deck-primer" id="primer" aria-label="Primer">
-      <div className="primer-top">
-        <h2 className="primer-title">Primer</h2>
+    <details
+      className="card deck-primer"
+      id="primer"
+      aria-label="Primer"
+      open={open}
+      onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary>
+        <strong>Primer</strong>
         {canEdit && !editing && text !== "" && (
-          <button type="button" className="link small" onClick={onEdit}>
+          <button
+            type="button"
+            className="link small"
+            onClick={(e) => {
+              // The Edit link doesn't fold the section.
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit();
+            }}
+          >
             Edit
           </button>
         )}
-      </div>
+      </summary>
       {editing ? (
         <PrimerEditor deckId={deckId} start={text} onCancel={onCancel} onSave={onSave} cards={cards} cardNames={cardNames} />
       ) : text === "" ? (
@@ -128,7 +147,7 @@ export function PrimerSection({
       ) : (
         <PrimerText text={text} cards={cards} />
       )}
-    </section>
+    </details>
   );
 }
 
