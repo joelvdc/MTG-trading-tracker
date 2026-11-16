@@ -78,6 +78,8 @@ export interface SharedDeckLine {
   number: string;
   finish: Finish;
   gameChanger: boolean;
+  /** The card's note (Deck.cardNotes), or null. */
+  note: string | null;
   unitEur: number | null;
   image: string | null;
 }
@@ -96,6 +98,8 @@ export interface SharedDeck {
   cards: number;
   bracket: string | null;
   power: string | null;
+  /** The deck's primer (Deck.primer), or null; shared like the notes. */
+  primer: string | null;
   sections: { title: string; lines: SharedDeckLine[] }[];
   legality: Legality | null;
 }
@@ -200,6 +204,8 @@ export function sharedView(
         cards: main.reduce((n, r) => n + r.quantity, 0),
         bracket: d.bracketRealistic != null ? `Bracket ${d.bracketRealistic}${bracketName(d.bracketRealistic) ? ` (${bracketName(d.bracketRealistic)})` : ""}` : null,
         power: v.power != null ? `Power ${v.power.toFixed(1)} (${POWER_SOURCES[v.powerSource].label})` : null,
+        // The deck's own words go with the list: its primer and its cards' notes (never purchase prices).
+        primer: v.primer,
         sections: sections(main, "CATEGORY").map((s) => ({
           title: s.title,
           lines: s.rows.map((r) => ({
@@ -209,6 +215,7 @@ export function sharedView(
             number: r.card.collectorNumber,
             finish: r.finish,
             gameChanger: r.gameChanger,
+            note: r.note,
             unitEur: r.unitEur,
             image: r.card.imageUrl,
           })),

@@ -7,6 +7,8 @@ import type { Finish } from "@/lib/pricing";
 import { api } from "./api";
 import type { Printing } from "./CardSearch";
 import { deckAction } from "./DeckEditDialogs";
+import { SavePackageDialog } from "./DeckPackages";
+import { BulkTagDialog } from "./DeckTags";
 
 const COMMANDER = "Commander";
 const MAYBEBOARD = "Maybeboard";
@@ -58,6 +60,8 @@ export function DeckBulkBar({
   const [progress, setProgress] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copies, setCopies] = useState("1");
+  const [tagOpen, setTagOpen] = useState(false);
+  const [packageOpen, setPackageOpen] = useState(false);
   const n = rows.length;
   const uids = rows.map((r) => r.lineUid);
   const wanted = Math.floor(Number(copies));
@@ -154,59 +158,73 @@ export function DeckBulkBar({
   }
 
   return (
-    <div className="bulk-bar deck-bulk-bar" role="region" aria-label="Selected cards">
-      <strong>
-        {n} selected
-      </strong>
-      {error && <div className="bar error">{error}</div>}
-      {progress && <span className="muted small">{progress}</span>}
-      {view.local ? (
-        <>
-          <select aria-label="Move to" disabled={busy} value="" onChange={(e) => e.target.value && void moveTo(e.target.value)}>
-            <option value="">Move to…</option>
-            {targets(view).map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <label className="inline small">
-            <span className="muted">Copies</span>
-            <input aria-label="Copies" type="number" min={1} max={99} value={copies} disabled={busy} onChange={(e) => setCopies(e.target.value)} />
-          </label>
-          <button className="btn small-btn" disabled={busy || !copiesOk} onClick={setQuantity}>
-            Set
-          </button>
-          <select aria-label="Printing" disabled={busy} value="" onChange={(e) => e.target.value && void setPrinting(e.target.value as PrintChoice)}>
-            <option value="">Printing…</option>
-            {PRINTING_CHOICES.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select aria-label="Finish" disabled={busy} value="" onChange={(e) => e.target.value && void setFinish(e.target.value as Finish)}>
-            <option value="">Finish…</option>
-            {FINISH_CHOICES.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <button className="btn small-btn danger" disabled={busy} onClick={remove}>
-            Remove
-          </button>
-        </>
-      ) : (
-        <span className="muted small">Cards of a deck from Archidekt are changed on Archidekt.</span>
+    <>
+      <div className="bulk-bar deck-bulk-bar" role="region" aria-label="Selected cards">
+        <strong>{n} selected</strong>
+        {error && <div className="bar error">{error}</div>}
+        {progress && <span className="muted small">{progress}</span>}
+        {view.local ? (
+          <>
+            <select aria-label="Move to" disabled={busy} value="" onChange={(e) => e.target.value && void moveTo(e.target.value)}>
+              <option value="">Move to…</option>
+              {targets(view).map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <label className="inline small">
+              <span className="muted">Copies</span>
+              <input aria-label="Copies" type="number" min={1} max={99} value={copies} disabled={busy} onChange={(e) => setCopies(e.target.value)} />
+            </label>
+            <button className="btn small-btn" disabled={busy || !copiesOk} onClick={setQuantity}>
+              Set
+            </button>
+            <select aria-label="Printing" disabled={busy} value="" onChange={(e) => e.target.value && void setPrinting(e.target.value as PrintChoice)}>
+              <option value="">Printing…</option>
+              {PRINTING_CHOICES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <select aria-label="Finish" disabled={busy} value="" onChange={(e) => e.target.value && void setFinish(e.target.value as Finish)}>
+              <option value="">Finish…</option>
+              {FINISH_CHOICES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <button className="btn small-btn danger" disabled={busy} onClick={remove}>
+              Remove
+            </button>
+          </>
+        ) : (
+          <span className="muted small">Cards of a deck from Archidekt are changed on Archidekt.</span>
+        )}
+        <button className="btn small-btn" disabled={busy} onClick={() => setTagOpen(true)}>
+          Tag…
+        </button>
+        <button className="btn small-btn" disabled={busy} onClick={() => setPackageOpen(true)}>
+          Save as package…
+        </button>
+        <button className="btn small-btn" disabled={busy} onClick={copyText}>
+          {copied ? "Copied" : "Copy as text"}
+        </button>
+        <span className="spacer" />
+        <button className="btn small-btn" disabled={busy} onClick={onClose}>
+          Done
+        </button>
+      </div>
+      {tagOpen && <BulkTagDialog names={rows.map((r) => r.name)} onClose={() => setTagOpen(false)} onDone={() => onDone("Tags changed.")} />}
+      {packageOpen && (
+        <SavePackageDialog
+          cards={rows.map((r) => ({ name: r.name, scryfallId: (r.original ?? r.card).scryfallId, quantity: r.quantity }))}
+          onClose={() => setPackageOpen(false)}
+          onDone={(notice) => onDone(notice)}
+        />
       )}
-      <button className="btn small-btn" disabled={busy} onClick={copyText}>
-        {copied ? "Copied" : "Copy as text"}
-      </button>
-      <span className="spacer" />
-      <button className="btn small-btn" disabled={busy} onClick={onClose}>
-        Done
-      </button>
-    </div>
+    </>
   );
 }

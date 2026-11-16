@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useHoverCard } from "@/components/HoverCard";
+import { PrimerText } from "@/components/DeckNotes";
 import { Logo } from "@/components/Logo";
 import { duration, ordinal, outReasonLabel, winTypeLabel } from "@/lib/gameshared";
 import { format } from "@/lib/money";
@@ -83,6 +84,12 @@ function SharedDeckView({ deck, prices }: { deck: SharedDeck; prices: SharedPric
           {[`${deck.cards} cards`, deck.bracket, deck.power, `worth ${money(total)}`].filter(Boolean).join(" · ")}
         </p>
         <p className="muted small">{prices.line}</p>
+        {deck.primer && deck.primer.trim() && (
+          <section className="shared-primer" aria-label="Primer">
+            <h2 className="primer-title">Primer</h2>
+            <PrimerText text={deck.primer} />
+          </section>
+        )}
         {legal && (
           <div className="share-legal">
             {legal.problems.length === 0 ? (
@@ -129,6 +136,7 @@ function SharedDeckView({ deck, prices }: { deck: SharedDeck; prices: SharedPric
                     {l.name}
                     {l.gameChanger && <span className="tag small"> Game changer</span>}
                     {FINISH[l.finish] && <span className="muted small"> · {FINISH[l.finish]}</span>}
+                    {l.note && <div className="card-note small">{l.note}</div>}
                   </td>
                   <td className="muted">
                     {l.set.toUpperCase()} {l.number}

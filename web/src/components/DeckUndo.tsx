@@ -143,6 +143,14 @@ export function labelFor(body: Record<string, unknown>): string {
       return "Printings changed";
     case "paste":
       return "Cards added";
+    case "set-primer":
+      return "Primer changed";
+    case "set-card-note":
+      return "Card note changed";
+    case "add-package":
+      return "Package added";
+    case "remove-package":
+      return "Package removed";
     default:
       return "Deck changed";
   }
