@@ -13,7 +13,7 @@ import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
 import { HistoryDialog } from "@/components/DeckHistory";
-import { DeckPrimer, PrimerDialog } from "@/components/DeckNotes";
+import { PrimerSection } from "@/components/DeckNotes";
 import { PackagesDialog } from "@/components/DeckPackages";
 import { DeckRolesLine } from "@/components/DeckRolesLine";
 import { deckResults, type Game } from "@/lib/gameshared";
@@ -98,7 +98,7 @@ export default function DeckPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
-  const [primerOpen, setPrimerOpen] = useState(false);
+  const [primerEditing, setPrimerEditing] = useState(false);
   const [packagesOpen, setPackagesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
@@ -208,6 +208,17 @@ export default function DeckPage() {
       setError(null);
     } else setError(d.data.error ?? "Could not load the deck.");
     if (text) setNotice(text);
+  }
+
+  /** Scrolls to the Primer section at the bottom of the page. */
+  function jumpToPrimer() {
+    document.getElementById("primer")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /** Goes to the Primer section at the bottom of the page and opens its editor ("Primer…" in the Edit menu). */
+  function openPrimer() {
+    if (view && !view.readOnly) setPrimerEditing(true);
+    jumpToPrimer();
   }
 
   const shaped = useMemo(() => {
@@ -651,7 +662,7 @@ export default function DeckPage() {
                   {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
                   {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
                   <button onClick={() => setCatsOpen(true)}>Categories</button>
-                  <button onClick={() => setPrimerOpen(true)}>Primer…</button>
+                  <button onClick={openPrimer}>Primer…</button>
                   <button onClick={() => setPackagesOpen(true)}>Packages…</button>
                   <button onClick={() => setHistoryOpen(true)}>Change history</button>
                   {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
@@ -677,15 +688,27 @@ export default function DeckPage() {
           )}
         </section>
 
-        <DeckRolesLine
-          roles={view.roles}
-          onPick={(role) => {
-            // A tag with a space goes in quoted (the filter's tag: key), as Scryfall's search wants it.
-            const tag = role.toLowerCase();
-            filter.setText(tag.includes(" ") ? `tag:"${tag}"` : `tag:${tag}`);
-          }}
-        />
-        <DeckPrimer primer={view.primer} canEdit={!view.readOnly} onEdit={() => setPrimerOpen(true)} />
+        <div className="roles-row">
+          <DeckRolesLine
+            roles={view.roles}
+            onPick={(role) => {
+              // A tag with a space goes in quoted (the filter's tag: key), as Scryfall's search wants it.
+              const tag = role.toLowerCase();
+              filter.setText(tag.includes(" ") ? `tag:"${tag}"` : `tag:${tag}`);
+            }}
+          />
+          <a
+            className="primer-jump small"
+            href="#primer"
+            title="Go to the primer at the bottom of the page"
+            onClick={(e) => {
+              e.preventDefault();
+              jumpToPrimer();
+            }}
+          >
+            Primer ↓
+          </a>
+        </div>
 
         {combos.length > 0 && (
           <details className="card" open={!folded.has("\u0000combos")} onToggle={(e) => setFold("\u0000combos", !(e.currentTarget as HTMLDetailsElement).open)}>
@@ -853,6 +876,21 @@ export default function DeckPage() {
           onToggle={(open) => setFold("\u0000tokens", !open)}
         />
         </div>
+        <PrimerSection
+          deckId={view.id}
+          primer={view.primer}
+          canEdit={!view.readOnly}
+          editing={primerEditing}
+          onEdit={openPrimer}
+          onCancel={() => setPrimerEditing(false)}
+          onSave={async (text) => {
+            const r = await deckAction(view.id, { action: "set-primer", primer: text });
+            if (r.error) return r.error;
+            setPrimerEditing(false);
+            await reload("Primer saved.");
+            return null;
+          }}
+        />
         {selecting && selected.size > 0 && (
           <DeckBulkBar
             view={view}
@@ -907,19 +945,6 @@ export default function DeckPage() {
         />
       )}
       {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
-      {primerOpen && (
-        <PrimerDialog
-          start={view.primer ?? ""}
-          onClose={() => setPrimerOpen(false)}
-          onSave={async (text) => {
-            const r = await deckAction(view.id, { action: "set-primer", primer: text });
-            if (r.error) return r.error;
-            setPrimerOpen(false);
-            await reload("Primer saved.");
-            return null;
-          }}
-        />
-      )}
       {packagesOpen && <PackagesDialog view={view} onClose={() => setPackagesOpen(false)} onChanged={(t) => reload(t)} />}
       {historyOpen && <HistoryDialog history={view.history} onClose={() => setHistoryOpen(false)} />}
       {addOpen && <AddCardDialog view={view} onClose={() => setAddOpen(false)} onChanged={(t) => reload(t)} />}
