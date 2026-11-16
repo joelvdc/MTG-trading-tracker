@@ -25,8 +25,10 @@ history, the release notes and `web/README.md`.)
   (OpenCode Go, `web/src/lib/aiprimer.ts`, 20 a day, header `x-opencode-session` required; `/api/health` has `ai`).
   The first live try said "The AI's answer was empty"; fixed the same evening (more room for thinking models, streams
   and content parts handled, and an `aiprimer empty:` line in Vercel's runtime logs, kept only 1 hour on Hobby).
-- **Next:** the owner confirms an AI primer works now, and gives playtester feedback. Next.js 16.4.2 reports a known
-  security advisory (seen in `next dev`): upgrade on the owner's go.
+- **Website (2026-11-16, after 1.99):** Next.js 16.4.2 → 16.4.6 for advisory GHSA-mfr8-8qww-v76h (the site never
+  used the affected `unstable_cache`/`use cache`); `npm audit` clean.
+- **Next:** the owner confirms an AI primer works now, and gives playtester feedback. Harmless noise: `npm test`
+  prints "Failed to load source map" for `web/src/lib/winodds-js/*.mjs` (the `.map` files aren't committed).
 - **Expected to look odd:** AI primers use the owner's OpenCode Go plan (DeepSeek's $100 a month is shared with the
   coding sessions; Go's 5-hour and weekly limits apply). Go is meant for coding agents; if OpenCode objects, switch
   provider. The app's primer editor has no `/` list (type `[[…]]` by hand).
@@ -56,8 +58,7 @@ history, the release notes and `web/README.md`.)
   only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
   phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** playtester feedback (now due), a working AI primer on the website, and a go for the Next.js
-  security upgrade. Review follow-ups for later under "From the code reviews". Ideas still
+- **Waiting on the owner:** playtester feedback (now due) and a working AI primer on the website. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
@@ -80,6 +81,7 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
   the deck page with in-page editor and Write with AI (OpenCode Go, 20 a day); health check `ai`.
 
 ## Done
+- Website (2026-11-16): Next.js 16.4.6 security update.
 - 1.99 (2026-11-16): clickable card links in primers (`/` list on the website), AI timing note.
 - 1.98 (2026-11-16): Primer page in the app; website primer editor at the bottom of the deck page with Write
   with AI (OpenCode Go).
