@@ -113,8 +113,9 @@ data class SyncFile(
          * 13 since 1.83: retired decks, which an older version would write back as not retired.
          * 14 since 1.86: decks' own category order, which an older version would write back without; and the local
          * maybeboard of decks from Archidekt (cards added in the app), which an older version drops on a reload.
+         * 15 since 1.97: deck primer, card notes, notesAt and history; prefs cardTags and deckPackages.
          */
-        const val FORMAT = 14
+        const val FORMAT = 15
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**
@@ -148,6 +149,10 @@ class SyncException(message: String) : Exception(message)
  * other phone changed something on its copy later, like a score or a power level rating. Each score
  * (Commander Salt, edhpowerlevel.com, ScrollVault) comes from whichever copy got it last, as long
  * as it was made after that list was loaded; older ones belong to an older list.
+ *
+ * Since 1.97 the deck's primer, its cards' notes and when they changed come from whichever copy changed
+ * them last ([Deck.notesAt]; none counts as older than any time, and on a tie the list's copy wins), so
+ * notes made on either phone are kept. The history comes with the list's copy, like the cards.
  */
 object DeckMerge {
     private val newerList = compareBy<SyncDeck>(
@@ -168,6 +173,8 @@ object DeckMerge {
         val salt = pick(d.scoredAt, o.scoredAt)
         val edh = pick(d.edhPowerAt, o.edhPowerAt)
         val sv = pick(d.svAt, o.svAt)
+        // The primer and the card notes belong together: whichever copy changed them last wins (a tie keeps the list's).
+        val notes = if ((o.notesAt ?: Long.MIN_VALUE) > (d.notesAt ?: Long.MIN_VALUE)) o else d
         val merged = d.copy(
             saltId = salt.saltId,
             powerLevel = salt.powerLevel,
@@ -185,6 +192,9 @@ object DeckMerge {
             scrollVault = sv.scrollVault,
             svAt = sv.svAt,
             svError = sv.svError,
+            primer = notes.primer,
+            cardNotes = notes.cardNotes,
+            notesAt = notes.notesAt,
             updatedAt = maxOf(d.updatedAt, o.updatedAt),
         )
         return SyncDeck(merged, list.cards)

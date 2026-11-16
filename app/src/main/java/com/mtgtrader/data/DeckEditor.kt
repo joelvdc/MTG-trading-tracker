@@ -61,14 +61,19 @@ class DeckEditor(
 
     /**
      * Replaces the deck's lines [before] (by their lineUid) with [after]: lines only in [before] are removed, lines only
-     * in [after] are added. Returns the undo.
+     * in [after] are added. What that changes in the deck's cards goes into its history (since 1.97). Returns the undo.
      */
     private suspend fun change(deckId: Long, before: List<DeckCard>, after: List<DeckCard>): UndoAction {
         val deck = dao.get(deckId) ?: return {}
         val uids = (before.map { it.lineUid } + after.map { it.lineUid }).distinct()
+        val history = DeckHistory.record(deck.history, System.currentTimeMillis(), DeckHistory.SOURCE_APP, DeckHistory.diff(before, after))
         db.withTransaction {
             dao.deleteLines(deckId, uids)
             dao.insertCards(after.map { it.copy(id = 0, deckId = deckId) })
+            // Read the deck again: the changed cards bumped its updatedAt, and saving the history mustn't put the old
+            // time back (another phone would then win the merge with older changes).
+            val now = dao.get(deckId)
+            if (now != null && now.history != history) dao.update(now.copy(history = history))
         }
         refreshSummary(deckId)
         return { change(deckId, after, before) }
@@ -527,6 +532,100 @@ class DeckEditor(
         }
         if (before.isEmpty() && after.isEmpty()) return {}
         return change(deckId, before.values.toList(), after.values.toList())
+    }
+
+    // ---- The primer and the cards' notes (since 1.97) ------------------------------------------
+
+    /**
+     * Sets the deck's primer (its text, without trailing spaces, cut to [DeckNotes.MAX_PRIMER]) on any deck, local or
+     * from Archidekt. Returns the undo, which puts the old primer and notes time back.
+     */
+    suspend fun setPrimer(deckId: Long, primer: String): UndoAction {
+        val deck = dao.get(deckId) ?: return {}
+        val old = deck.primer
+        val oldAt = deck.notesAt
+        val now = System.currentTimeMillis()
+        dao.update(deck.copy(primer = primer.trimEnd().take(DeckNotes.MAX_PRIMER), notesAt = now, updatedAt = now))
+        return { dao.get(deckId)?.let { dao.update(it.copy(primer = old, notesAt = oldAt, updatedAt = System.currentTimeMillis())) } }
+    }
+
+    /**
+     * Sets (or, with a blank [note], takes away) the note on a card of the deck, trimmed and cut to
+     * [DeckNotes.MAX_NOTE], on any deck. Returns the undo, which puts the old notes and notes time back.
+     */
+    suspend fun setCardNote(deckId: Long, name: String, note: String): UndoAction {
+        val deck = dao.get(deckId) ?: return {}
+        val old = deck.cardNotes
+        val oldAt = deck.notesAt
+        val key = DeckNotes.nameKey(name)
+        if (key.isEmpty()) return {}
+        val notes = DeckNotes.parseCardNotes(deck.cardNotes)
+        val text = note.trim().take(DeckNotes.MAX_NOTE)
+        val now = System.currentTimeMillis()
+        dao.update(
+            deck.copy(
+                cardNotes = DeckNotes.encodeCardNotes(if (text.isEmpty()) notes - key else notes + (key to text)),
+                notesAt = now,
+                updatedAt = now,
+            )
+        )
+        return { dao.get(deckId)?.let { dao.update(it.copy(cardNotes = old, notesAt = oldAt, updatedAt = System.currentTimeMillis())) } }
+    }
+
+    // ---- Packages (since 1.97) --------------------------------------------------------------------
+
+    /** What adding a package did: how many of its cards went in, how many the deck had already, and which weren't found. */
+    data class PackageResult(val added: Int, val skipped: Int, val notFound: List<String>)
+
+    /** The undo of a change that didn't happen. */
+    private val nothingToUndo: UndoAction = {}
+
+    /**
+     * Adds the cards of [pkg] the deck doesn't have yet (by name), with the package's quantities and printings, to the
+     * deck's main deck, each in the category a newly added card gets. One change, so one undo takes it all back.
+     */
+    suspend fun addPackage(deckId: Long, pkg: DeckPackage): Pair<UndoAction, PackageResult> {
+        val have = dao.allLines(deckId).filterNot { it.maybeboard }.map { DeckNotes.nameKey(it.card.name) }.toSet()
+        val wanted = pkg.cards.filterNot { DeckNotes.nameKey(it.name) in have }
+        val skipped = pkg.cards.size - wanted.size
+        if (wanted.isEmpty()) return nothingToUndo to PackageResult(0, skipped, emptyList())
+        val found = runCatching { scryfall.collection(wanted.map { ScryfallApi.idIdentifier(it.scryfallId) }) }.getOrDefault(emptyList())
+        val byId = found.associateBy { it.id }
+        val auto = autoCategories(found.associate { it.id to it.name })
+        val notFound = mutableListOf<String>()
+        val newLines = mutableListOf<DeckCard>()
+        for (c in wanted) {
+            val sc = byId[c.scryfallId]
+            if (sc == null) {
+                notFound += c.name
+                continue
+            }
+            val types = sc.typeLine.substringBefore(" — ")
+            val cats = auto[sc.id].orEmpty()
+            val category = cats.firstOrNull() ?: fallbackCategory(types)
+            newLines += lineFor(sc, c.quantity.coerceAtLeast(1), foil = false, etched = false, category = category, commander = false, extra = cats.drop(1))
+        }
+        if (newLines.isEmpty()) return nothingToUndo to PackageResult(0, skipped, notFound)
+        return change(deckId, emptyList(), newLines) to PackageResult(newLines.size, skipped, notFound)
+    }
+
+    /**
+     * Removes the deck's main-deck lines (the commanders left alone) whose card is in [pkg], copies included, as one
+     * change. Returns the undo and how many copies went.
+     */
+    suspend fun removePackage(deckId: Long, pkg: DeckPackage): Pair<UndoAction, Int> {
+        val keys = pkg.cards.map { DeckNotes.nameKey(it.name) }.toSet()
+        if (keys.isEmpty()) return nothingToUndo to 0
+        val before = dao.allLines(deckId).filter { !it.maybeboard && !it.commander && DeckNotes.nameKey(it.card.name) in keys }
+        if (before.isEmpty()) return nothingToUndo to 0
+        return change(deckId, before, emptyList()) to before.sumOf { it.quantity }
+    }
+
+    /** A package from pasted text (the same formats [fromText] reads), with the names Scryfall couldn't find. */
+    suspend fun packageFromText(name: String, text: String): Pair<DeckPackage, List<String>> {
+        val preview = previewText(text)
+        val cards = preview.result.lines.mapNotNull { l -> preview.found[l]?.let { PackageCard(it.name, it.id, l.quantity) } }
+        return DeckPackage(UUID.randomUUID().toString(), name.trim().take(DeckPackages.MAX_NAME), cards) to preview.notFound
     }
 
     private fun identityFromCards(cards: Collection<ScryCard>, commanders: Set<String>): String {

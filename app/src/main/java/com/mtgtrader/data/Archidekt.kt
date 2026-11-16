@@ -60,6 +60,8 @@ private data class ArchDeck(
     val categories: List<ArchCategory> = emptyList(),
     val cards: List<ArchEntry> = emptyList(),
     val updatedAt: String? = null,
+    /** The deck's description: a Quill delta as JSON text, usually empty (see [DeckNotes.primerFromArchidekt]). */
+    val description: String? = null,
 )
 
 @Serializable
@@ -120,6 +122,8 @@ data class ArchidektDeck(
     val folderId: Long? = null,
     val visibility: String? = null,
     val categories: List<ArchidektCategory> = emptyList(),
+    /** The deck's description on Archidekt, for a primer the deck doesn't have yet. Since 1.97. */
+    val description: String? = null,
 ) {
     val commanders get() = cards.filter { it.commander }
     val cardCount get() = cards.sumOf { it.quantity }
@@ -235,6 +239,7 @@ class ArchidektApi(private val http: OkHttpClient) {
                     else -> ArchidektCollectionClient.VISIBILITY_PUBLIC
                 },
                 categories = d.categories.map { ArchidektCategory(it.name, it.includedInDeck, it.id) },
+                description = d.description,
             )
         }
     }

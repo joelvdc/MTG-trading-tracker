@@ -582,6 +582,83 @@ class Settings(context: Context) {
         prefs.edit().putString("binderOrder", BinderOrder.encode(keys)).stamp().apply()
     }
 
+    // ---- Cards' own tags and saved packages (since 1.97; both follow the user to their other phone) ----
+
+    private val _cardTags: MutableStateFlow<Map<String, List<String>>> =
+        MutableStateFlow(DeckRoles.parseCardTags(prefs.getString("cardTags", null)))
+    /** Cards' own tags, by [DeckNotes.nameKey] of their name; they count in every deck. Synced. Since 1.97. */
+    val cardTags: StateFlow<Map<String, List<String>>> = _cardTags
+
+    /** Gives a card its tags ([DeckRoles.normaliseTags] sorts them out); an empty list takes its tags away. */
+    fun setCardTags(name: String, tags: List<String>) {
+        val key = DeckNotes.nameKey(name)
+        if (key.isEmpty()) return
+        val normalised = DeckRoles.normaliseTags(tags)
+        val v = if (normalised.isEmpty()) _cardTags.value - key else _cardTags.value + (key to normalised)
+        if (v == _cardTags.value) return
+        _cardTags.value = v
+        prefs.edit().putString("cardTags", DeckRoles.encodeCardTags(v)).stamp().apply()
+    }
+
+    /** Adds [add] to, or takes [remove] from, the tags of several cards at once (e.g. a selection in a deck). */
+    fun bulkTag(names: List<String>, add: String?, remove: String?) {
+        val plus = add?.trim()?.takeIf { it.isNotEmpty() }
+        val minus = remove?.trim()?.takeIf { it.isNotEmpty() }
+        if (plus == null && minus == null) return
+        val tags = HashMap(_cardTags.value)
+        var changed = false
+        for (name in names) {
+            val key = DeckNotes.nameKey(name)
+            if (key.isEmpty()) continue
+            var list = tags[key].orEmpty()
+            if (minus != null) list = list.filterNot { it.equals(minus, true) }
+            if (plus != null && list.none { it.equals(plus, true) }) list = list + plus
+            val normalised = DeckRoles.normaliseTags(list)
+            if (normalised == tags[key]) continue
+            changed = true
+            if (normalised.isEmpty()) tags -= key else tags[key] = normalised
+        }
+        if (!changed) return
+        _cardTags.value = tags
+        prefs.edit().putString("cardTags", DeckRoles.encodeCardTags(tags)).stamp().apply()
+    }
+
+    private val _deckPackages = MutableStateFlow(DeckPackages.parse(prefs.getString("deckPackages", null)))
+    /** Saved groups of cards to add to decks ([DeckPackage]). Synced. Since 1.97. */
+    val deckPackages: StateFlow<List<DeckPackage>> = _deckPackages
+
+    /** Saves [pkg] in place of the package with its id, or adds it at the end (up to [DeckPackages.MAX_PACKAGES]). */
+    fun savePackage(pkg: DeckPackage) {
+        val clean = DeckPackages.clean(pkg)
+        val list = _deckPackages.value.toMutableList()
+        val i = list.indexOfFirst { it.id == clean.id }
+        when {
+            i >= 0 -> list[i] = clean
+            list.size < DeckPackages.MAX_PACKAGES -> list += clean
+            else -> return
+        }
+        putPackages(list)
+    }
+
+    fun renamePackage(id: String, name: String) {
+        val newName = name.trim().take(DeckPackages.MAX_NAME)
+        if (newName.isEmpty()) return
+        val list = _deckPackages.value.map { if (it.id == id) it.copy(name = newName) else it }
+        if (list == _deckPackages.value) return
+        putPackages(list)
+    }
+
+    fun deletePackage(id: String) {
+        val list = _deckPackages.value.filterNot { it.id == id }
+        if (list.size == _deckPackages.value.size) return
+        putPackages(list)
+    }
+
+    private fun putPackages(list: List<DeckPackage>) {
+        _deckPackages.value = list
+        prefs.edit().putString("deckPackages", DeckPackages.encode(list)).stamp().apply()
+    }
+
     /** Preferences that follow the user to their other phone through sync (with when they last changed). */
     fun syncedPrefs() = SyncPrefs(
         updatedAt = prefs.getLong(PREFS_UPDATED_AT, 0L),
@@ -613,6 +690,8 @@ class Settings(context: Context) {
             put("swipeRight", swipeRight.value.key)
             put("swipeLeft", swipeLeft.value.key)
             put("binderOrder", BinderOrder.encode(binderOrder.value))
+            put("cardTags", DeckRoles.encodeCardTags(cardTags.value))
+            put("deckPackages", DeckPackages.encode(deckPackages.value))
             // The trade binder's rules (since 1.80; the website's trade binder page edits them too).
             tradeRules.let { r ->
                 put("tradeMax", r.maxCards.toString())
@@ -660,6 +739,8 @@ class Settings(context: Context) {
         v["swipeRight"]?.let { _swipeRight.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_RIGHT); e.putString("swipeRight", it) }
         v["swipeLeft"]?.let { _swipeLeft.value = SwipeAction.fromKey(it, SwipeAction.DEFAULT_LEFT); e.putString("swipeLeft", it) }
         v["binderOrder"]?.let { _binderOrder.value = BinderOrder.decode(it); e.putString("binderOrder", it) }
+        v["cardTags"]?.let { _cardTags.value = DeckRoles.parseCardTags(it); e.putString("cardTags", it) }
+        v["deckPackages"]?.let { _deckPackages.value = DeckPackages.parse(it); e.putString("deckPackages", it) }
         v["tradeMax"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("tradeMax", it) }
         v["tradeKeepOne"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepOne", it) }
         v["tradeMinValue"]?.toFloatOrNull()?.takeIf { it >= 0 }?.let { e.putFloat("tradeMinValue", it) }

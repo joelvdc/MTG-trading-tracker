@@ -370,7 +370,11 @@ class DeckRepository(
         return scored to scored.scoreError
     }
 
-    /** Fetches the list and saves it, keeping any scores from before until new ones arrive. */
+    /**
+     * Fetches the list and saves it, keeping any scores from before until new ones arrive. The primer, the cards'
+     * notes and when they changed are kept; a deck without a primer takes Archidekt's description, and a reload of a
+     * deck that was already here adds what changed to its history (since 1.97).
+     */
     private suspend fun load(id: Long, step: (String) -> Unit, fetched: ArchidektDeck? = null): Deck {
         val a = fetched ?: readDeck(id)
         if (a.cards.isEmpty()) throw IllegalStateException("${a.name.ifBlank { "This deck" }} has no cards")
@@ -414,7 +418,10 @@ class DeckRepository(
         }
         val cards = a.cards.map { deckCard(it, false) } + a.maybeboard.map { deckCard(it, true) }
         val old = dao.get(a.id)
-        val deck = (old ?: Deck(a.id, "", "", "", null, null, "", 0)).copy(
+        // The lines as they are now, read before the reload replaces them: they say what changed (since 1.97).
+        val oldCards = if (old == null) emptyList() else dao.cards(a.id)
+        val now = System.currentTimeMillis()
+        var deck = (old ?: Deck(a.id, "", "", "", null, null, "", 0)).copy(
             name = a.name,
             owner = a.owner,
             commanders = a.commanders.map { it.name }.distinct().joinToString(" & "),
@@ -422,7 +429,7 @@ class DeckRepository(
             artUrl = a.artUrl,
             colorIdentity = a.colorIdentity,
             cardCount = a.cardCount,
-            importedAt = System.currentTimeMillis(),
+            importedAt = now,
             archidektUpdatedAt = a.updatedAt ?: old?.archidektUpdatedAt,
             folderId = a.folderId ?: old?.folderId,
             folderName = old?.folderName?.takeIf { old.folderId == a.folderId },
@@ -436,6 +443,10 @@ class DeckRepository(
             if (source != PowerSource.SCROLLVAULT) d = d.copy(svPowerLevel = null, scrollVault = null, svAt = null, svError = null)
             d
         }
+        // Archidekt's description becomes the primer of a deck that never had one ("" means the user cleared it).
+        if (deck.primer == null) DeckNotes.primerFromArchidekt(a.description)?.let { deck = deck.copy(primer = it, notesAt = now) }
+        // A reload of a deck that was here before adds what the new list changed to its history (a first import has none).
+        if (old != null) deck = deck.copy(history = DeckHistory.record(old.history, now, DeckHistory.SOURCE_ARCHIDEKT, DeckHistory.diff(oldCards, cards)))
         dao.replace(deck, cards)
         return deck
     }

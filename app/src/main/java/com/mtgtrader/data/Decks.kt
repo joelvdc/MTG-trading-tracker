@@ -79,6 +79,24 @@ data class Deck(
      * categories not in it follow alphabetically. Kept when the deck is reloaded from Archidekt. Synced.
      */
     val categoryOrder: String? = null,
+    /**
+     * The deck's primer: plain text with light markdown (headings, bullets, **bold**; see [DeckNotes]). Null until
+     * one is set, "" when the user cleared it.
+     * Since 1.97. Synced. Kept when reloaded from Archidekt.
+     */
+    val primer: String? = null,
+    /**
+     * Notes on the deck's cards, by name ([DeckNotes.nameKey]), as [DeckNotes.encodeCardNotes] JSON.
+     * Since 1.97. Synced. Kept when reloaded from Archidekt.
+     */
+    val cardNotes: String? = null,
+    /** When the primer or the card notes were last changed (ms). Since 1.97. Synced. Kept when reloaded from Archidekt. */
+    val notesAt: Long? = null,
+    /**
+     * The deck's changes, newest first, as [DeckHistory] JSON (a reload from Archidekt adds to it too).
+     * Since 1.97. Synced.
+     */
+    val history: String? = null,
 ) {
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0
