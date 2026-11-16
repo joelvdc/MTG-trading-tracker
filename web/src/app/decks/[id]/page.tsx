@@ -12,6 +12,10 @@ import { UndoBar } from "@/components/DeckUndo";
 import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
+import { HistoryDialog } from "@/components/DeckHistory";
+import { DeckPrimer, PrimerDialog } from "@/components/DeckNotes";
+import { PackagesDialog } from "@/components/DeckPackages";
+import { DeckRolesLine } from "@/components/DeckRolesLine";
 import { deckResults, type Game } from "@/lib/gameshared";
 import { useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
@@ -94,6 +98,9 @@ export default function DeckPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [primerOpen, setPrimerOpen] = useState(false);
+  const [packagesOpen, setPackagesOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
   // Select mode: ticked lines (by lineUid) for the bulk bar.
@@ -404,6 +411,11 @@ export default function DeckPage() {
           <span className="deck-name-text" title={r.name}>
             {r.name}
           </span>
+          {r.note && (
+            <span className="deck-note-mark" title={r.note} aria-label={`Note: ${r.note}`}>
+              🗒
+            </span>
+          )}
           {r.finish !== "NONFOIL" && <span className="foil-text" title={r.finish === "ETCHED" ? "Etched" : "Foil"}> ✦</span>}
           {r.addedInApp && (
             <span className="ok-text" title="Added in the app">
@@ -639,6 +651,9 @@ export default function DeckPage() {
                   {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
                   {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
                   <button onClick={() => setCatsOpen(true)}>Categories</button>
+                  <button onClick={() => setPrimerOpen(true)}>Primer…</button>
+                  <button onClick={() => setPackagesOpen(true)}>Packages…</button>
+                  <button onClick={() => setHistoryOpen(true)}>Change history</button>
                   {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
                   <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
                   {!view.local && <button onClick={() => setConfirm("DETACH")}>Make it a local deck</button>}
@@ -661,6 +676,16 @@ export default function DeckPage() {
             </p>
           )}
         </section>
+
+        <DeckRolesLine
+          roles={view.roles}
+          onPick={(role) => {
+            // A tag with a space goes in quoted (the filter's tag: key), as Scryfall's search wants it.
+            const tag = role.toLowerCase();
+            filter.setText(tag.includes(" ") ? `tag:"${tag}"` : `tag:${tag}`);
+          }}
+        />
+        <DeckPrimer primer={view.primer} canEdit={!view.readOnly} onEdit={() => setPrimerOpen(true)} />
 
         {combos.length > 0 && (
           <details className="card" open={!folded.has("\u0000combos")} onToggle={(e) => setFold("\u0000combos", !(e.currentTarget as HTMLDetailsElement).open)}>
@@ -882,6 +907,21 @@ export default function DeckPage() {
         />
       )}
       {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
+      {primerOpen && (
+        <PrimerDialog
+          start={view.primer ?? ""}
+          onClose={() => setPrimerOpen(false)}
+          onSave={async (text) => {
+            const r = await deckAction(view.id, { action: "set-primer", primer: text });
+            if (r.error) return r.error;
+            setPrimerOpen(false);
+            await reload("Primer saved.");
+            return null;
+          }}
+        />
+      )}
+      {packagesOpen && <PackagesDialog view={view} onClose={() => setPackagesOpen(false)} onChanged={(t) => reload(t)} />}
+      {historyOpen && <HistoryDialog history={view.history} onClose={() => setHistoryOpen(false)} />}
       {addOpen && <AddCardDialog view={view} onClose={() => setAddOpen(false)} onChanged={(t) => reload(t)} />}
       {copyOpen && <CopyTextDialog deckId={view.id} hasMaybe={shaped.maybeCount > 0} onClose={() => setCopyOpen(false)} />}
       {pasteOpen && (

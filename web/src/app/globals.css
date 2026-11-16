@@ -4389,3 +4389,134 @@ button.multiselect-clear {
 .stat-cards li :is(button, .btn) {
   font-size: 15px;
 }
+
+/* ---- Deck primer, card notes, tags, roles, packages and change history (app 1.97) ---- */
+/* The lands and roles line under the deck header; clicking a role puts its tag in the filter box. */
+.deck-roles {
+  margin: 10px 2px 0;
+  line-height: 1.7;
+}
+button.role-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+button.role-btn:hover {
+  color: var(--accent);
+}
+
+/* A card with a note shows a small mark after its name in the deck list. */
+.deck-note-mark {
+  margin-left: 4px;
+  font-size: 12px;
+  cursor: help;
+}
+
+/* The Primer section (also on a shared deck's page). */
+.deck-primer {
+  margin-top: 12px;
+}
+.deck-primer-add {
+  margin: 8px 2px 0;
+}
+.deck-primer-add button.link {
+  margin-left: 0;
+}
+.primer-top {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.primer-title {
+  margin: 0;
+  font-size: 16px;
+  color: var(--accent2);
+}
+.primer-text {
+  overflow-wrap: anywhere;
+}
+.primer-line {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.primer-gap {
+  height: 8px;
+}
+.primer-h1 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.primer-h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.primer-h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+.primer-bullet {
+  position: relative;
+  padding-left: 18px;
+}
+.primer-bullet::before {
+  content: "•";
+  position: absolute;
+  left: 4px;
+  color: var(--muted);
+}
+button.primer-more {
+  margin-left: 0;
+  padding: 0;
+}
+.shared-primer {
+  margin: 12px 0;
+}
+.card-note {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+/* The card window's tags: the card's own tags as chips, its automatic ones lighter. */
+.chip.own-tag {
+  padding: 3px 10px;
+  font-size: 13px;
+}
+.tag.auto-tag {
+  background: transparent;
+  border: 1px dashed var(--line-soft);
+}
+
+/* Packages */
+.package-list > li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.package-list > li:last-child {
+  border-bottom: 0;
+}
+.package-new {
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+
+/* Change history */
+.history-list > li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.history-list > li:last-child {
+  border-bottom: 0;
+}
+
+/* The combos card after the primer keeps the gap the scores card had. */
+.deck-roles + details.card,
+.deck-primer + details.card,
+.deck-primer-add + details.card {
+  margin-top: 12px;
+}

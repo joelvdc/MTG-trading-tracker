@@ -103,6 +103,7 @@ import { encodeCardNotes, nameKey, parseCardNotes, primerFromArchidekt } from "@
 import { encodePackages, MAX_PACKAGES, normalisePackage, packageUse, parsePackages, type DeckPackage } from "@/lib/deckpackages";
 import { putLoadedDeck } from "@/lib/deckload";
 import { deckView, syncDecks } from "@/lib/decks";
+import { sharedView } from "@/lib/shares";
 import { decode, encode, parse, prefs, setPrefs, type SyncFile } from "@/lib/syncfile";
 import type { SyncDeck } from "@/lib/deckshared";
 import { GET as deckPrefsGet, POST as deckPrefsPost } from "@/app/api/deckprefs/route";
@@ -542,5 +543,28 @@ describe("the tags and packages route", () => {
     };
     expect(body.package.cards).toEqual([{ name: "Sol Ring", scryfallId: "11111111-1111-1111-1111-111111111111", quantity: 2 }]);
     expect(body.notFound).toEqual(["Bogus Card"]);
+  });
+});
+
+describe("a shared deck", () => {
+  it("shows the primer and the card notes, and still never purchase prices or collection notes", () => {
+    const f = appFile();
+    const item = (f.data.collection as { item: Record<string, unknown> }[])[0].item;
+    Object.assign(item, { purchasePrice: 12.5, notes: "bought from Anna" });
+    const sd = deckOf(f);
+    sd.deck.primer = "Game plan\n\n# Ramp\n- Sol Ring early";
+    sd.deck.cardNotes = '{"sol ring":"Tutor target"}';
+
+    const v = sharedView(f, { kind: "deck", target: String(ID) }, "joel", null, null, null)!;
+    expect(v.kind).toBe("deck");
+    if (v.kind !== "deck") return;
+    expect(v.deck.primer).toBe("Game plan\n\n# Ramp\n- Sol Ring early");
+    const line = v.deck.sections.flatMap((s) => s.lines).find((l) => l.name === "Sol Ring")!;
+    expect(line.note).toBe("Tutor target");
+
+    const text = JSON.stringify(v);
+    expect(text).not.toContain("12.5");
+    expect(text).not.toContain("bought from Anna");
+    expect(text).not.toContain("purchase");
   });
 });

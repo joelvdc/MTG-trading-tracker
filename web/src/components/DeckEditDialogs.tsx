@@ -10,6 +10,8 @@ import { api } from "./api";
 import { CardRulesTabs } from "./CardRules";
 import { CardSearch, type Printing } from "./CardSearch";
 import { ComboLine } from "./ComboLine";
+import { CardNoteEditor } from "./DeckNotes";
+import { CardTagEditor } from "./DeckTags";
 import { labelFor, offerUndo, snapshotOf } from "./DeckUndo";
 import { Dialog } from "./Dialog";
 import { FlipPicture } from "./FlipPicture";
@@ -21,14 +23,18 @@ const NEW = "\u0000new";
 
 /**
  * Sends one deck action; answers with the error to show, or null when it worked. When the server says what the deck
- * looked like before the change, the answer offers an Undo for it (see DeckUndo).
+ * looked like before the change, the answer offers an Undo for it (see DeckUndo). A few actions also answer with what
+ * they did (the cards a package added, removed or skipped).
  */
-export async function deckAction(id: number, body: Record<string, unknown>): Promise<{ error: string | null; id?: number }> {
-  const r = await api<{ ok?: boolean; id?: number; before?: unknown }>(`/api/decks/${id}`, body);
+export async function deckAction(
+  id: number,
+  body: Record<string, unknown>,
+): Promise<{ error: string | null; id?: number; added?: number; removed?: number; skipped?: string[] }> {
+  const r = await api<{ ok?: boolean; id?: number; before?: unknown; added?: number; removed?: number; skipped?: string[] }>(`/api/decks/${id}`, body);
   if (r.ok) {
     const before = snapshotOf(r.data.before);
     if (before) offerUndo(id, before, labelFor(body));
-    return { error: null, id: r.data.id };
+    return { error: null, id: r.data.id, added: r.data.added, removed: r.data.removed, skipped: r.data.skipped };
   }
   return { error: r.data.error ?? "That did not work." };
 }
@@ -328,6 +334,20 @@ export function LineDialog({
               <ComboLine key={i} combo={c} cardName={row.name} />
             ))}
           </ul>
+        )}
+        {!view.readOnly && (
+          <>
+            <CardNoteEditor
+              note={row.note ?? ""}
+              onSave={async (note) => {
+                const r = await deckAction(view.id, { action: "set-card-note", name: row.name, note });
+                if (r.error) return r.error;
+                onChanged(null);
+                return null;
+              }}
+            />
+            <CardTagEditor name={row.name} autoTags={row.roleTags} onChanged={() => onChanged(null)} />
+          </>
         )}
         </CardRulesTabs>
         {error && <div className="bar error">{error}</div>}
