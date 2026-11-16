@@ -261,8 +261,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRetire by remember { mutableStateOf(false) }
     var sharing by remember { mutableStateOf(false) }
-    // The primer, the packages, the change history and tagging a selection (since 1.97).
-    var editingPrimer by remember { mutableStateOf(false) }
+    // The packages, the change history and tagging a selection (since 1.97).
     var packagesOpen by remember { mutableStateOf(false) }
     var historyOpen by remember { mutableStateOf(false) }
     var bulkTagging by remember { mutableStateOf(false) }
@@ -497,7 +496,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         DropdownMenuItem(
                             text = { Text("Primer…") },
                             leadingIcon = { Icon(Icons.Default.Article, null) },
-                            onClick = { menu = false; editingPrimer = true },
+                            onClick = { menu = false; nav.navigate("deck/$deckId/primer") },
                         )
                         DropdownMenuItem(
                             text = { Text("Packages…") },
@@ -807,7 +806,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             )
                         }
                     }
-                    item(key = "primer") { PrimerCard(d.primer, onEdit = { editingPrimer = true }) }
+                    item(key = "primer") { PrimerRow(d.primer, onOpen = { nav.navigate("deck/$deckId/primer") }) }
                     item(key = "rulezero") {
                         Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
@@ -1247,13 +1246,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         )
     }
 
-    // ---- The primer, the packages, the change history and tagging a selection (since 1.97) ----
-    if (editingPrimer) {
-        PrimerEditorDialog(deck?.primer, onDismiss = { editingPrimer = false }) { text ->
-            editingPrimer = false
-            edit("Primer saved") { c.deckEditor.setPrimer(deckId, text) }
-        }
-    }
+    // ---- The packages, the change history and tagging a selection (since 1.97) ----
     if (packagesOpen) {
         DeckPackagesSheet(
             local = ownDeck,

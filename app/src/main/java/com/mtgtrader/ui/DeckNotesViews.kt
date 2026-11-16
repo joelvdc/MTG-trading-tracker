@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -26,8 +27,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -104,59 +103,79 @@ fun RoleCountsLine(counts: List<DeckRoles.RoleCount>, onRole: (String) -> Unit, 
 
 // ---- The primer (spec 3) -------------------------------------------------------------------------
 
-/** The lines of a long primer shown before "Show all". */
-private const val PRIMER_LINES = 6
+/**
+ * The primer's first non-empty line with its writing marks taken off (# headings, - bullets, **bold**), for the one
+ * line the deck page shows it in. Null when there is nothing to read: no primer, or only blank lines.
+ */
+internal fun primerFirstLine(primer: String?): String? =
+    primer.orEmpty().lineSequence()
+        .map { it.trim() }
+        .firstOrNull { it.isNotEmpty() }
+        ?.let { it.removePrefix("- ").trimStart('#').replace("**", "").trim() }
+        ?.takeIf { it.isNotEmpty() }
 
 /**
- * The deck's primer on its page (since 1.97): its text with headings, bullets, bold pieces and paragraphs, folded
- * to [PRIMER_LINES] lines. A deck without one (or with one the user cleared) gets a small way in instead of an
- * empty card, so the page keeps saying a primer can be written on every deck, Archidekt's too.
+ * The deck's primer on its page, as one compact row since 1.98: a mark, "Primer: " and its first line (or "Add a
+ * primer" when there is none), and a chevron saying it opens. The primer itself has its own page ([PrimerScreen]),
+ * with room to be read at the table; this row only says there is one and what it starts with.
  */
 @Composable
-fun PrimerCard(primer: String?, onEdit: () -> Unit) {
-    val text = primer.orEmpty()
-    if (text.isBlank()) {
-        TextButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null, Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Add a primer…")
-        }
-        return
-    }
-    // Opens again whenever the primer itself changes (an undo, a sync from the website).
-    var expanded by rememberSaveable(text) { mutableStateOf(false) }
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+fun PrimerRow(primer: String?, onOpen: () -> Unit) {
+    val first = remember(primer) { primerFirstLine(primer) }
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onOpen).padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Primer", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                TextButton(onClick = onEdit) { Text("Edit") }
-            }
-            val lines = remember(text) { text.split("\n") }
-            val shown = if (expanded) lines else lines.take(PRIMER_LINES)
-            shown.forEach { PrimerLine(it) }
-            if (lines.size > PRIMER_LINES) {
-                TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Show less" else "Show all") }
-            }
+        Icon(Icons.Default.Article, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(8.dp))
+        if (first == null) {
+            Text(
+                "Add a primer",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Primer: ") }
+                    append(first)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
         }
+        Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+/**
+ * The primer in full, as its page shows it: larger than the app's small text, so it can be read at the table, with
+ * its headings, bullets, bold pieces and paragraphs. Nothing is folded here; the page scrolls instead.
+ */
+@Composable
+fun PrimerBody(primer: String, modifier: Modifier = Modifier) {
+    val lines = remember(primer) { primer.split("\n") }
+    Column(modifier) { lines.forEach { PrimerLine(it) } }
 }
 
 /** One line of the primer: a heading, a bullet, a paragraph, or the gap of an empty line. */
 @Composable
 private fun PrimerLine(line: String) {
     when {
-        line.isBlank() -> Spacer(Modifier.height(6.dp))
+        line.isBlank() -> Spacer(Modifier.height(8.dp))
         line.startsWith("### ") -> PrimerHeading(line.removePrefix("### "), 3)
         line.startsWith("## ") -> PrimerHeading(line.removePrefix("## "), 2)
         line.startsWith("# ") -> PrimerHeading(line.removePrefix("# "), 1)
-        line.startsWith("- ") -> Row(Modifier.padding(vertical = 1.dp)) {
-            Text("•", style = MaterialTheme.typography.bodyMedium)
-            Text(primerMarkup(line.removePrefix("- ")), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 6.dp))
+        line.startsWith("- ") -> Row(Modifier.padding(vertical = 2.dp)) {
+            Text("•", style = MaterialTheme.typography.bodyLarge)
+            Text(primerMarkup(line.removePrefix("- ")), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
         }
-        else -> Text(primerMarkup(line), style = MaterialTheme.typography.bodyMedium)
+        else -> Text(primerMarkup(line), style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -166,12 +185,12 @@ private fun PrimerHeading(text: String, level: Int) {
     Text(
         primerMarkup(text),
         style = when (level) {
-            1 -> MaterialTheme.typography.titleLarge
-            2 -> MaterialTheme.typography.titleMedium
-            else -> MaterialTheme.typography.titleSmall
+            1 -> MaterialTheme.typography.headlineSmall
+            2 -> MaterialTheme.typography.titleLarge
+            else -> MaterialTheme.typography.titleMedium
         },
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = 8.dp),
     )
 }
 
@@ -196,7 +215,7 @@ private fun primerMarkup(line: String): AnnotatedString = buildAnnotatedString {
 
 /**
  * Writing the deck's primer (since 1.97). The field keeps to [DeckNotes.MAX_PRIMER] characters; the light markdown
- * the card on the deck page renders (# headings, - bullets, **bold**) is written as plain text here.
+ * the primer page renders (# headings, - bullets, **bold**) is written as plain text here.
  */
 @Composable
 fun PrimerEditorDialog(primer: String?, onDismiss: () -> Unit, onSave: (String) -> Unit) {
