@@ -137,7 +137,11 @@ private val formatNames = mapOf(
     "paupercommander" to "Pauper Commander", "oldschool" to "Old School", "predh" to "PreDH", "standardbrawl" to "Standard Brawl",
     "premodern" to "Premodern",
 )
-private val amber = Color(0xFFE0A100)
+/**
+ * The app's warning amber (since 1.97): a legality that needs care, and a role count outside its usual range
+ * (the deck page's roles line).
+ */
+internal val WarningAmber = Color(0xFFE0A100)
 
 private fun formatName(key: String) = formatNames[key] ?: key.replaceFirstChar { it.uppercase() }
 
@@ -153,7 +157,7 @@ private fun statusWord(status: String) = when (status) {
 private fun statusColor(status: String) = when (status) {
     "legal" -> TrendColors.up
     "banned" -> TrendColors.down
-    "restricted" -> amber
+    "restricted" -> WarningAmber
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 

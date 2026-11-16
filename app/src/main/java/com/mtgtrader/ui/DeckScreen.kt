@@ -186,6 +186,13 @@ import com.mtgtrader.data.DeckLegality
 import com.mtgtrader.data.LegalLine
 import com.mtgtrader.data.LegalRule
 import com.mtgtrader.data.Legality
+import com.mtgtrader.data.DeckNotes
+import com.mtgtrader.data.DeckPackage
+import com.mtgtrader.data.DeckRoles
+import com.mtgtrader.data.PackageCard
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.History
+import java.util.UUID
 
 @Composable
 fun DeckScreen(nav: NavController, deckId: Long) {
@@ -254,6 +261,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRetire by remember { mutableStateOf(false) }
     var sharing by remember { mutableStateOf(false) }
+    // The primer, the packages, the change history and tagging a selection (since 1.97).
+    var editingPrimer by remember { mutableStateOf(false) }
+    var packagesOpen by remember { mutableStateOf(false) }
+    var historyOpen by remember { mutableStateOf(false) }
+    var bulkTagging by remember { mutableStateOf(false) }
+    var packaging by remember { mutableStateOf(false) }
     // The Commander legality of the main deck. The rules kept on the phone show at once when they cover every card;
     // otherwise (null) it says it's checking until Scryfall has answered, offline or not.
     val legalLines = remember(archidektRows) { archidektRows.map { LegalLine(it.item.card.name, it.item.quantity, it.item.commander) } }
@@ -280,6 +293,32 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     // (CardQuery). The field sits under the top bar, so it's in the same place whatever the list's scroll position.
     var searching by rememberSaveable { mutableStateOf(false) }
     var searchText by rememberSaveable { mutableStateOf("") }
+    // The cards' own tags and their notes (since 1.97), for the roles line, the search and the card window.
+    val cardTags by c.settings.cardTags.collectAsStateWithLifecycle()
+    val cardNotes = remember(deck?.cardNotes) { DeckNotes.parseCardNotes(deck?.cardNotes) }
+    // The website's automatic categories by Scryfall id, asked for once whenever the deck's cards change; none while
+    // offline (DeckEditor.autoCategories remembers what it has already been told).
+    val cardNames = remember(archidektRows, maybeRows) { (archidektRows + maybeRows).associate { it.item.card.scryfallId to it.item.card.name } }
+    var autoCats by remember { mutableStateOf(emptyMap<String, List<String>>()) }
+    LaunchedEffect(cardNames) { autoCats = runCatching { c.deckEditor.autoCategories(cardNames) }.getOrDefault(emptyMap<String, List<String>>()) }
+    // What the deck's cards do for it, in the line under its header (DeckRoles.counts).
+    val roleCounts = remember(archidektRows, cardTags, autoCats) {
+        DeckRoles.counts(archidektRows.map { row ->
+            val item = row.item
+            DeckRoles.RoleCard(
+                name = item.card.name,
+                types = item.types,
+                quantity = item.quantity,
+                commander = item.commander,
+                maybeboard = item.maybeboard,
+                categories = item.categoryList,
+                ownTags = cardTags[DeckNotes.nameKey(item.card.name)],
+                auto = autoCats[item.card.scryfallId].orEmpty(),
+            )
+        })
+    }
+    // What the tag dialogs offer: the role names and the user's own tags.
+    val tagSuggestions = remember(cardTags) { (DeckRoles.ROLES + cardTags.values.flatten()).distinctBy { it.lowercase() } }
     // The card details the search reads (type, rules text, colours, power…): loaded once per change of the printings.
     val searchIds = remember(rows, maybeRows) { (rows + maybeRows).map { it.item.card.scryfallId }.distinct() }
     val searchWanted = searching && searchText.isNotBlank()
@@ -288,10 +327,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
     val searchQuery = remember(searchText) { searchText.trim().takeIf { it.isNotEmpty() }?.let(CardQuery::parse) }
     // Each line once, by its uid: a search over a long deck stays quick and keeps the same answer for the same line.
-    val searchMatches: Map<String, Boolean> = remember(searchQuery, searchDetails, rows, maybeRows, priceType) {
+    val searchMatches: Map<String, Boolean> = remember(searchQuery, searchDetails, rows, maybeRows, priceType, cardTags, autoCats) {
         val q = searchQuery as? CardQuery.Query ?: return@remember emptyMap()
         (rows + maybeRows).associate { row ->
-            row.item.lineUid to CardQuery.matches(q, queryCard(row, searchDetails[row.item.card.scryfallId], priceType))
+            val name = row.item.card.name
+            row.item.lineUid to CardQuery.matches(
+                q,
+                queryCard(row, searchDetails[row.item.card.scryfallId], priceType, cardTags[DeckNotes.nameKey(name)], autoCats[row.item.card.scryfallId].orEmpty()),
+            )
         }
     }
     // A filter that didn't parse changes nothing (its message shows under the field instead).
@@ -425,6 +468,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         selection = emptyList()
                         edit("Removed ${uids.size} card(s)") { c.deckEditor.remove(deckId, uids) }
                     },
+                    onTag = { bulkTagging = true },
+                    onPackage = { packaging = true },
                 )
             } else TopAppBar(
                 title = { Text(deck?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -447,6 +492,17 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             leadingIcon = { Icon(Icons.Default.Refresh, null) },
                             enabled = job == null,
                             onClick = { menu = false; refresh() },
+                        )
+                        // The primer and the packages hold on every deck, Archidekt's included (since 1.97).
+                        DropdownMenuItem(
+                            text = { Text("Primer…") },
+                            leadingIcon = { Icon(Icons.Default.Article, null) },
+                            onClick = { menu = false; editingPrimer = true },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Packages…") },
+                            leadingIcon = { Icon(Icons.Default.Inventory2, null) },
+                            onClick = { menu = false; packagesOpen = true },
                         )
                         // Editing (since 1.46).
                         if (local) {
@@ -548,6 +604,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             text = { Text("Cards I'm missing") },
                             leadingIcon = { Icon(Icons.Default.RemoveShoppingCart, null) },
                             onClick = { menu = false; nav.navigate("deck/$deckId/missing") },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Change history") },
+                            leadingIcon = { Icon(Icons.Default.History, null) },
+                            onClick = { menu = false; historyOpen = true },
                         )
                         deck?.takeIf { !it.local }?.let { d ->
                             DropdownMenuItem(
@@ -733,6 +794,20 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         }
                     }
                     item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
+                    // What the deck's cards do for it (since 1.97), then its primer: both under the header, on every deck.
+                    if (archidektRows.isNotEmpty()) {
+                        item(key = "roles") {
+                            RoleCountsLine(
+                                roleCounts,
+                                onRole = { role ->
+                                    val tag = role.lowercase()
+                                    searchText = if (" " in tag) "tag:\"$tag\"" else "tag:$tag"
+                                    searching = true
+                                },
+                            )
+                        }
+                    }
+                    item(key = "primer") { PrimerCard(d.primer, onEdit = { editingPrimer = true }) }
                     item(key = "rulezero") {
                         Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
@@ -832,8 +907,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             val key = "c_${row.item.id}"
                             val editing = rowEditing(row, key)
                             dragged(key) {
-                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
-                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
+                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
                             }
                         }
                     }
@@ -850,8 +925,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             val key = "x_${row.item.id}"
                             val editing = rowEditing(row, key)
                             dragged(key) {
-                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
-                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
+                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
                             }
                         }
                     }
@@ -876,8 +951,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 val rowKey = "m_${row.item.id}"
                                 val editing = rowEditing(row, rowKey)
                                 dragged(rowKey) {
-                                    if (compact) DeckCompactRow(row, priceType, emptySet(), cost, editing) { onRow(row) }
-                                    else DeckCardRowView(row, priceType, emptySet(), cost, editing) { onRow(row) }
+                                    if (compact) DeckCompactRow(row, priceType, emptySet(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
+                                    else DeckCardRowView(row, priceType, emptySet(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
                                 }
                             }
                         }
@@ -941,6 +1016,14 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     )
                 }
             },
+            note = cardNotes[DeckNotes.nameKey(row.item.card.name)],
+            ownTags = cardTags[DeckNotes.nameKey(row.item.card.name)].orEmpty(),
+            autoTags = DeckRoles.tagsOf(row.item.card.name, row.item.categoryList, null, autoCats[row.item.card.scryfallId].orEmpty()),
+            tagSuggestions = tagSuggestions,
+            onNote = { text ->
+                edit(if (text.isBlank()) "Note removed" else "Note saved") { c.deckEditor.setCardNote(deckId, row.item.card.name, text) }
+            },
+            onSetTags = { tags -> c.settings.setCardTags(row.item.card.name, tags) },
         ) { selected = null }
     }
     if (addingToCollection) {
@@ -1163,6 +1246,69 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             dismissButton = { TextButton(onClick = { confirmReload = false }) { Text("Cancel") } },
         )
     }
+
+    // ---- The primer, the packages, the change history and tagging a selection (since 1.97) ----
+    if (editingPrimer) {
+        PrimerEditorDialog(deck?.primer, onDismiss = { editingPrimer = false }) { text ->
+            editingPrimer = false
+            edit("Primer saved") { c.deckEditor.setPrimer(deckId, text) }
+        }
+    }
+    if (packagesOpen) {
+        DeckPackagesSheet(
+            local = ownDeck,
+            onDismiss = { packagesOpen = false },
+            onAdd = { pkg ->
+                packagesOpen = false
+                scope.launch {
+                    val (undo, result) = c.deckEditor.addPackage(deckId, pkg)
+                    val message = when {
+                        result.added == 0 && result.notFound.isEmpty() -> "Nothing to add: the deck has every card"
+                        else -> "${result.added} card(s) added, ${result.skipped} already in the deck" +
+                            if (result.notFound.isNotEmpty()) ", ${result.notFound.size} not found" else ""
+                    }
+                    if (snackbar.showUndo(message)) undo()
+                }
+            },
+            onRemove = { pkg ->
+                packagesOpen = false
+                scope.launch {
+                    val (undo, n) = c.deckEditor.removePackage(deckId, pkg)
+                    if (n == 0) snackbar.showSnackbar("None of its cards are in the deck")
+                    else if (snackbar.showUndo("$n card(s) removed")) undo()
+                }
+            },
+            onMessage = { message ->
+                packagesOpen = false
+                scope.launch { snackbar.showSnackbar(message) }
+            },
+        )
+    }
+    if (historyOpen) ChangeHistorySheet(deck?.history, onDismiss = { historyOpen = false })
+    if (bulkTagging) {
+        val chosen = (archidektRows + maybeRows).filter { it.item.lineUid in selection }
+        val names = chosen.map { it.item.card.name }.distinct()
+        BulkTagDialog(names.size, tagSuggestions, onDismiss = { bulkTagging = false }) { add, remove ->
+            bulkTagging = false
+            c.settings.bulkTag(names, add, remove)
+            scope.launch {
+                snackbar.showSnackbar(
+                    if (add != null) "Tagged ${names.size} card(s) with $add"
+                    else "Removed the tag ${remove.orEmpty()} from ${names.size} card(s)",
+                )
+            }
+        }
+    }
+    if (packaging) {
+        val cards = (archidektRows + maybeRows).filter { it.item.lineUid in selection }
+            .map { PackageCard(it.item.card.name, it.item.card.scryfallId, it.item.quantity) }
+        SaveAsPackageDialog(cards, onDismiss = { packaging = false }) { name ->
+            packaging = false
+            selection = emptyList()
+            c.settings.savePackage(DeckPackage(UUID.randomUUID().toString(), name, cards))
+            scope.launch { snackbar.showSnackbar("Package saved") }
+        }
+    }
 }
 
 /**
@@ -1220,10 +1366,14 @@ private fun DeckSearchBar(
     }
 }
 
-/** A deck line as the deck search sees it ([QueryCard]), from the line and its details from Scryfall when they're known. */
-private fun queryCard(row: DeckCardRow, info: CardInfo?, priceType: PriceType): QueryCard {
+/**
+ * A deck line as the deck search sees it ([QueryCard]), from the line and its details from Scryfall when they're
+ * known. Its tags are its categories plus the roles it counts as (since 1.97), so `tag:ramp` finds it either way.
+ */
+private fun queryCard(row: DeckCardRow, info: CardInfo?, priceType: PriceType, ownTags: List<String>?, auto: List<String>): QueryCard {
     val item = row.item
     val pt = info?.powerToughness?.split("/")
+    val categories = item.categoryList
     return QueryCard(
         name = item.card.name,
         typeLine = info?.typeLine?.takeIf { it.isNotBlank() } ?: item.types,
@@ -1241,7 +1391,7 @@ private fun queryCard(row: DeckCardRow, info: CardInfo?, priceType: PriceType): 
         gameChanger = item.gameChanger,
         priceEur = row.unitPrice(priceType),
         category = item.category,
-        tags = item.categories.split("\n").map { it.trim() }.filter { it.isNotEmpty() },
+        tags = (categories + DeckRoles.tagsOf(item.card.name, categories, ownTags, auto)).distinct(),
     )
 }
 
@@ -1402,7 +1552,16 @@ private fun SelectMark(editing: RowEditing?) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, cost: String?, editing: RowEditing? = null, onClick: () -> Unit) {
+internal fun DeckCardRowView(
+    row: DeckCardRow,
+    priceType: PriceType,
+    tags: Set<BracketTag>,
+    cost: String?,
+    editing: RowEditing? = null,
+    /** The card has a note in its window (since 1.97). */
+    note: Boolean = false,
+    onClick: () -> Unit,
+) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
@@ -1413,12 +1572,16 @@ internal fun DeckCardRowView(row: DeckCardRow, priceType: PriceType, tags: Set<B
         CardThumb(item.card.imageUrl, width = 34)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(
-                (if (item.quantity > 1) "${item.quantity}× " else "") + item.card.displayName,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    (if (item.quantity > 1) "${item.quantity}× " else "") + item.card.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (note) NoteIcon(Modifier.padding(start = 4.dp))
+            }
             // The mana cost where the set and number were (since 1.43); they're in the card's window.
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 ManaCostView(cost, modifier = Modifier.align(Alignment.CenterVertically))
@@ -1561,9 +1724,9 @@ internal fun dotColor(t: BracketTag): Color = when {
 private val OtherComboDot = Color(0xFF4A8FE0)
 private val FoilMark = Color(0xFFB083E8)
 
-/** The card's name followed by its marks: ✦ foil, + added in the app, then its bracket tags (see [DeckMarks]). */
+/** The card's name followed by its marks: ✦ foil, + added in the app, a note mark (since 1.97), then its bracket tags. */
 @Composable
-private fun NameWithMarks(name: String, tags: Set<BracketTag>, foil: Boolean, added: Boolean, modifier: Modifier = Modifier) {
+private fun NameWithMarks(name: String, tags: Set<BracketTag>, foil: Boolean, added: Boolean, modifier: Modifier = Modifier, note: Boolean = false) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val nameStyle = MaterialTheme.typography.bodyMedium
@@ -1571,19 +1734,20 @@ private fun NameWithMarks(name: String, tags: Set<BracketTag>, foil: Boolean, ad
     val ordered = BracketTag.entries.filter { it in tags }
     BoxWithConstraints(modifier) {
         val available = constraints.maxWidth
-        val level = remember(name, ordered, foil, added, available, nameStyle, density) {
+        val level = remember(name, ordered, foil, added, note, available, nameStyle, density) {
             fun w(text: String, style: TextStyle) = measurer.measure(text, style, maxLines = 1, softWrap = false).size.width
             val chip = with(density) { 10.dp.roundToPx() }
             DeckMarks.level(
                 available,
                 name = w(name, nameStyle),
-                extras = (if (foil) w(" ✦", markStyle) else 0) + (if (added) w(" +", markStyle) else 0),
+                extras = (if (foil) w(" ✦", markStyle) else 0) + (if (added) w(" +", markStyle) else 0) + (if (note) with(density) { 18.dp.roundToPx() } else 0),
                 full = ordered.sumOf { w(DeckMarks.full(it), MarkLabelStyle) + chip },
                 short = ordered.sumOf { w(DeckMarks.short(it), MarkLabelStyle) + chip },
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(name, style = nameStyle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            if (note) NoteIcon(Modifier.padding(start = 4.dp))
             if (foil) Text(" ✦", style = markStyle, color = FoilMark, maxLines = 1)
             if (added) Text(" +", style = markStyle, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
             ordered.forEach { t ->
@@ -1609,10 +1773,18 @@ private fun NameWithMarks(name: String, tags: Set<BracketTag>, foil: Boolean, ad
 
 /**
  * One line per card, like Archidekt's list: amount, name and its marks, mana cost, price. The set and
- * number are in the card's window. Since 1.42; on one line since 1.43.
+ * number are in the card's window. Since 1.42; on one line since 1.43. [note]: the card has a note (since 1.97).
  */
 @Composable
-internal fun DeckCompactRow(row: DeckCardRow, priceType: PriceType, tags: Set<BracketTag>, cost: String?, editing: RowEditing? = null, onClick: () -> Unit) {
+internal fun DeckCompactRow(
+    row: DeckCardRow,
+    priceType: PriceType,
+    tags: Set<BracketTag>,
+    cost: String?,
+    editing: RowEditing? = null,
+    note: Boolean = false,
+    onClick: () -> Unit,
+) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Column(Modifier.fillMaxWidth().rowClicks(editing, onClick)) {
@@ -1624,7 +1796,7 @@ internal fun DeckCompactRow(row: DeckCardRow, priceType: PriceType, tags: Set<Br
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(24.dp),
             )
-            NameWithMarks(item.card.displayName, tags, item.foil, item.addedInApp, Modifier.weight(1f))
+            NameWithMarks(item.card.displayName, tags, item.foil, item.addedInApp, Modifier.weight(1f), note)
             Spacer(Modifier.width(8.dp))
             ManaCostView(cost)
             Text(
@@ -1693,6 +1865,13 @@ private fun DeckCardDialog(
     onPick: (String?) -> Unit,
     onRemove: (() -> Unit)?,
     editControls: (@Composable () -> Unit)? = null,
+    /** The deck's note on this card, its own tags and the roles its categories give it (since 1.97). */
+    note: String? = null,
+    ownTags: List<String> = emptyList(),
+    autoTags: List<String> = emptyList(),
+    tagSuggestions: List<String> = emptyList(),
+    onNote: ((String) -> Unit)? = null,
+    onSetTags: ((List<String>) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val c = LocalContext.current.container
@@ -1728,6 +1907,10 @@ private fun DeckCardDialog(
                     }
                 }
                 CardTextBlock(rules.faces)
+                // The card's note and its tags (since 1.97): both work on every deck, Archidekt's included, and the
+                // tags follow the card into every deck.
+                onNote?.let { CardNoteSection(note = note, onSave = it) }
+                onSetTags?.let { CardTagsSection(ownTags = ownTags, autoTags = autoTags, suggestions = tagSuggestions, onSetTags = it) }
                 CardTabs(tab) { tab = it }
                 if (tab == CardTab.RULINGS) RulingsTab(rules)
                 if (tab == CardTab.VERSIONS) {

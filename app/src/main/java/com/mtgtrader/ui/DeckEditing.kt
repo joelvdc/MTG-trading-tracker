@@ -28,7 +28,9 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -75,10 +77,22 @@ import com.mtgtrader.data.DeckEditor
 import com.mtgtrader.data.DeckEdits
 import kotlinx.coroutines.launch
 
-/** The top bar while cards are selected on an editable deck (since 1.46). [inMaybeboard]: all selected are there. */
+/**
+ * The top bar while cards are selected on an editable deck (since 1.46). [inMaybeboard]: all selected are there.
+ * [onTag] tags all of them at once and [onPackage] saves them as a package (both since 1.97); null leaves them out.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SelectionBar(count: Int, inMaybeboard: Boolean, onClose: () -> Unit, onMove: () -> Unit, onBoard: () -> Unit, onRemove: () -> Unit) {
+fun SelectionBar(
+    count: Int,
+    inMaybeboard: Boolean,
+    onClose: () -> Unit,
+    onMove: () -> Unit,
+    onBoard: () -> Unit,
+    onRemove: () -> Unit,
+    onTag: (() -> Unit)? = null,
+    onPackage: (() -> Unit)? = null,
+) {
     TopAppBar(
         title = { Text("$count selected") },
         navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Stop selecting") } },
@@ -86,6 +100,8 @@ fun SelectionBar(count: Int, inMaybeboard: Boolean, onClose: () -> Unit, onMove:
         actions = {
             IconButton(onClick = onMove) { Icon(Icons.AutoMirrored.Filled.DriveFileMove, "Move to a category") }
             IconButton(onClick = onBoard) { Icon(if (inMaybeboard) Icons.Default.Style else Icons.Default.Inventory2, if (inMaybeboard) "Put in the deck" else "Put in the maybeboard") }
+            onTag?.let { IconButton(onClick = it) { Icon(Icons.Default.Sell, "Tag these cards") } }
+            onPackage?.let { IconButton(onClick = it) { Icon(Icons.Default.PlaylistAdd, "Save these cards as a package") } }
             IconButton(onClick = onRemove) { Icon(Icons.Default.Delete, "Remove from the deck") }
         },
     )
