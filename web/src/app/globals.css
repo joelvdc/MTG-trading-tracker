@@ -5,6 +5,8 @@
   --red: #d32f2f;
   --teal: #00897b;
   --radius: 12px;
+  /* The playtester's card size (changed by its zoom buttons); 1 is 100%. */
+  --pt-zoom: 1;
 }
 
 * {
@@ -1844,7 +1846,19 @@ details.card > summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
-  margin-top: 10px;
+  margin-top: 4px;
+}
+
+/* Inside the deck page's Stats section the blocks sit on the section's own background, so no extra padding or margin
+   (the grid's gap spaces them). */
+.deck-stats .stat-block {
+  margin-bottom: 0;
+  padding: 4px 4px 8px;
+}
+
+/* The blocks' headings carry no extra gap: the site's general h2 rule would otherwise push them down 22px. */
+.deck-stats .stat-block h2 {
+  margin-top: 0;
 }
 
 .curve {
@@ -4438,12 +4452,14 @@ button.role-btn:hover {
   margin-top: 12px;
   scroll-margin-top: 70px;
 }
-.primer-top {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
+/* The Primer folds like Tokens and Stats: their summary row, with Edit at the right. */
+.deck-primer[open] > summary {
   margin-bottom: 8px;
 }
+.deck-primer > summary .link {
+  float: right;
+}
+/* The Primer's heading on a shared deck's page, where it is a plain section. */
 .primer-title {
   margin: 0;
   font-size: 16px;

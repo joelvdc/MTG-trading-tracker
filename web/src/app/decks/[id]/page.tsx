@@ -211,9 +211,11 @@ export default function DeckPage() {
     if (text) setNotice(text);
   }
 
-  /** Scrolls to the Primer section at the bottom of the page. */
+  /** Scrolls to the Primer section at the bottom of the page, unfolding it first. */
   function jumpToPrimer() {
-    document.getElementById("primer")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setFold("\u0000primer", false);
+    // The section can only be scrolled to once it has opened.
+    requestAnimationFrame(() => document.getElementById("primer")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   /** Goes to the Primer section at the bottom of the page and opens its editor ("Primer…" in the Edit menu). */
@@ -897,6 +899,8 @@ export default function DeckPage() {
           editing={primerEditing}
           cards={cardLinks}
           cardNames={cardNames}
+          open={!folded.has("\u0000primer") || primerEditing}
+          onToggle={(open) => setFold("\u0000primer", !open)}
           onEdit={openPrimer}
           onCancel={() => setPrimerEditing(false)}
           onSave={async (text) => {

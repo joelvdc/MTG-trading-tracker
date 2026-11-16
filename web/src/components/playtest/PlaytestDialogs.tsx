@@ -2,18 +2,22 @@
 
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Dialog } from "@/components/Dialog";
+import { CardRulesTabs } from "@/components/CardRules";
+import { FlipPicture } from "@/components/FlipPicture";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { api } from "@/components/api";
 import { scryfallImage, type DeckToken } from "@/lib/deckstats";
 import {
   chanceByTurn,
   landOdds,
+  ZONE_IDS,
   type Action,
   type CardDef,
   type CardInstance,
   type Game,
   type ZoneId,
 } from "@/lib/playtest";
+import { CustomFace } from "./PlaytestBoard";
 
 /**
  * The playtest page's dialogs: the zone lists, the library search, the look/scry/surveil window, counters, putting a
@@ -26,8 +30,9 @@ export type PlaytestDialog =
   | { kind: "search" }
   | { kind: "peek" } // shown automatically while state.peek is set
   | { kind: "counter"; id: string }
+  | { kind: "card"; id: string }
   | { kind: "libraryPosition"; id: string }
-  | { kind: "token" }
+  | { kind: "token"; custom?: boolean }
   | { kind: "dice" }
   | { kind: "log" }
   | { kind: "odds" }
@@ -141,10 +146,12 @@ export function PlaytestDialogs({
       return <PeekDialog game={game} dispatch={dispatch} onClose={onClose} />;
     case "counter":
       return <CounterDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
+    case "card":
+      return <CardViewDialog id={dialog.id} game={game} onClose={onClose} />;
     case "libraryPosition":
       return <LibraryPositionDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
     case "token":
-      return <TokenDialog deckTokens={deckTokens} dispatch={dispatch} onClose={onClose} />;
+      return <TokenDialog deckTokens={deckTokens} dispatch={dispatch} onClose={onClose} custom={dialog.custom} />;
     case "dice":
       return <DiceDialog onClose={onClose} />;
     case "log":
@@ -298,9 +305,8 @@ function ZoneDialog({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={url} alt="" loading="lazy" />
                     ) : (
-                      <span className="pt-zone-back" aria-hidden="true">
-                        MTG Trader
-                      </span>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="pt-zone-back" src="/card-back.jpg" alt="" loading="lazy" />
                     )}
                   </span>
                   <span className="pt-zone-name">{card.faceDown ? `${card.def.name} (face down)` : card.def.name}</span>
@@ -399,7 +405,8 @@ function SearchDialog({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={url} alt="" loading="lazy" />
                     ) : (
-                      <span className="pt-zone-back" aria-hidden="true" />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="pt-zone-back" src="/card-back.jpg" alt="" loading="lazy" />
                     )}
                   </span>
                   <div className="pt-pick-info">
@@ -524,9 +531,8 @@ function PeekDialog({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={url} alt="" loading="lazy" />
                   ) : (
-                    <span className="pt-zone-back" aria-hidden="true">
-                      MTG Trader
-                    </span>
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="pt-zone-back" src="/card-back.jpg" alt="" loading="lazy" />
                   )}
                 </span>
                 <span className="pt-zone-name">{card.faceDown ? `${card.def.name} (face down)` : card.def.name}</span>
@@ -686,6 +692,66 @@ function CounterDialog({
   );
 }
 
+/** Where a card is, as the card view says it. */
+const PLACE_LABELS: Record<ZoneId, string> = {
+  library: "In the library",
+  hand: "In your hand",
+  battlefield: "On the battlefield",
+  graveyard: "In the graveyard",
+  exile: "In exile",
+  command: "In the command zone",
+};
+
+/** One card of the game: its picture, what it is doing there, its rules text and the rulings. */
+function CardViewDialog({ id, game, onClose }: { id: string; game: Game; onClose: () => void }) {
+  const card = game.state.cards[id];
+  if (!card) return null;
+  const zone = ZONE_IDS.find((z) => game.state.zones[z].includes(id)) ?? null;
+  const facts = [
+    zone ? PLACE_LABELS[zone] : null,
+    card.tapped ? "tapped" : null,
+    card.token ? "token" : null,
+    ...card.counters
+      .filter((counter) => counter.amount !== 0)
+      .map((counter) => `${counter.kind} ×${counter.amount}`),
+  ].filter((part): part is string => part !== null);
+
+  return (
+    <Dialog title={card.def.name} onClose={onClose}>
+      <div className="stack">
+        {card.def.custom ? (
+          <div className="pt-custom-big">
+            <CustomFace def={card.def} />
+          </div>
+        ) : (
+          card.def.imageUrl && (
+            <FlipPicture
+              url={card.def.imageUrl}
+              className="line-picture"
+              typeLine={card.def.typeLine}
+              startFlipped={card.flipped}
+            />
+          )
+        )}
+        {/* A made-up token has no Scryfall card behind it: the facts (and nothing to look up). */}
+        {card.def.scryfallId === "" ? (
+          <p className="muted small">{facts.join(" · ")}</p>
+        ) : (
+          <CardRulesTabs scryfallId={card.def.scryfallId}>
+            <p className="muted small">{facts.join(" · ")}</p>
+          </CardRulesTabs>
+        )}
+        <div className="dialog-actions">
+          <span className="spacer" />
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /** Where in the library a card should go: the top (0), the bottom, or a number of cards from the top. */
 function LibraryPositionDialog({
   id,
@@ -777,15 +843,27 @@ function tokenResultLabel(token: TokenResult): string {
     : token.name;
 }
 
-/** The deck's own tokens and a Scryfall token search, each creating the chosen token in the chosen quantity. */
+/** The five colours a made-up token can have, in the rules' order. */
+const TOKEN_COLOURS: { letter: string; label: string }[] = [
+  { letter: "W", label: "White" },
+  { letter: "U", label: "Blue" },
+  { letter: "B", label: "Black" },
+  { letter: "R", label: "Red" },
+  { letter: "G", label: "Green" },
+];
+
+/** The deck's own tokens and a Scryfall token search, each creating the chosen token in the chosen quantity; plus a
+ *  token the player makes up, drawn by the board itself. "Custom token…" puts that last section first. */
 function TokenDialog({
   deckTokens,
   dispatch,
   onClose,
+  custom,
 }: {
   deckTokens: DeckToken[];
   dispatch: (a: Action) => void;
   onClose: () => void;
+  custom?: boolean;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [query, setQuery] = useState("");
@@ -794,6 +872,20 @@ function TokenDialog({
   const [error, setError] = useState<string | null>(null);
   const [hoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
+  const [ownName, setOwnName] = useState("");
+  const [ownType, setOwnType] = useState("Token Creature");
+  const [ownColours, setOwnColours] = useState<string[]>([]);
+  const [ownPower, setOwnPower] = useState("");
+  const [ownToughness, setOwnToughness] = useState("");
+  const [ownText, setOwnText] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  // The Dialog moves the focus to itself as it opens, so "Custom token…" gives it to the Name field a moment later.
+  useEffect(() => {
+    if (!custom) return;
+    const timer = window.setTimeout(() => nameRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [custom]);
 
   useEffect(() => {
     const q = query.trim();
@@ -852,20 +944,125 @@ function TokenDialog({
       commander: false,
     });
 
+  const toggleColour = (letter: string) =>
+    setOwnColours((old) => (old.includes(letter) ? old.filter((c) => c !== letter) : [...old, letter]));
+
+  /** A token the player makes up: no Scryfall card, so the board draws it from what is typed here. */
+  const createOwn = () => {
+    const name = ownName.trim();
+    if (name === "") return;
+    const typeLine = ownType.trim() === "" ? "Token Creature" : ownType.trim();
+    create({
+      scryfallId: "",
+      name,
+      imageUrl: null,
+      backImageUrl: null,
+      typeLine,
+      manaValue: 0,
+      isLand: /\bland\b/i.test(typeLine),
+      commander: false,
+      custom: {
+        colors: TOKEN_COLOURS.map((colour) => colour.letter).filter((letter) => ownColours.includes(letter)),
+        power: ownPower.trim(),
+        toughness: ownToughness.trim(),
+        text: ownText.trim(),
+      },
+    });
+  };
+
+  /** The "How many" field: at the top of the dialog, or in the "Make your own" form just above its Create button. */
+  const quantityField = (
+    <label className="inline">
+      <span className="muted pt-nowrap">How many</span>
+      <input
+        type="number"
+        min={1}
+        max={20}
+        className="pt-counter-amount"
+        value={quantity}
+        onChange={(e) => setQuantity(Number(e.target.value))}
+      />
+    </label>
+  );
+
+  /** The "Make your own" form: the name, the type line, the colours, power and toughness, and the rules text. */
+  const ownSection = (
+    <>
+      <h3 className="pt-dialog-head">Make your own</h3>
+      <label className="inline">
+        <span className="muted">Name</span>
+        <input
+          ref={nameRef}
+          type="text"
+          value={ownName}
+          maxLength={60}
+          placeholder="e.g. Saproling"
+          onChange={(e) => setOwnName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              createOwn();
+            }
+          }}
+        />
+      </label>
+      <label className="inline">
+        <span className="muted pt-nowrap">Type line</span>
+        <input type="text" value={ownType} maxLength={80} onChange={(e) => setOwnType(e.target.value)} />
+      </label>
+      <div className="pt-custom-colours">
+        {TOKEN_COLOURS.map(({ letter, label }) => (
+          <label key={letter} className="pt-custom-colour">
+            <input type="checkbox" checked={ownColours.includes(letter)} onChange={() => toggleColour(letter)} />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
+      <div className="inline">
+        <label className="inline">
+          <span className="muted">Power</span>
+          <input
+            type="text"
+            className="pt-counter-amount"
+            value={ownPower}
+            maxLength={4}
+            aria-label="Power"
+            onChange={(e) => setOwnPower(e.target.value)}
+          />
+        </label>
+        <label className="inline">
+          <span className="muted">Toughness</span>
+          <input
+            type="text"
+            className="pt-counter-amount"
+            value={ownToughness}
+            maxLength={4}
+            aria-label="Toughness"
+            onChange={(e) => setOwnToughness(e.target.value)}
+          />
+        </label>
+      </div>
+      <textarea
+        value={ownText}
+        maxLength={400}
+        rows={3}
+        aria-label="Rules text"
+        placeholder="Rules text"
+        onChange={(e) => setOwnText(e.target.value)}
+      />
+      <div className="inline">
+        {custom && quantityField}
+        <button className="btn primary" disabled={ownName.trim() === ""} onClick={createOwn}>
+          Create
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <Dialog title="Create a token" onClose={onClose} wide>
       <div className="stack">
-        <label className="inline">
-          <span className="muted">How many</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            className="pt-counter-amount"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-          />
-        </label>
+        {custom ? ownSection : quantityField}
 
         <h3 className="pt-dialog-head">This deck&apos;s tokens</h3>
         {deckTokens.length === 0 ? (
@@ -932,6 +1129,8 @@ function TokenDialog({
             </div>
           </div>
         ) : null}
+
+        {!custom && ownSection}
 
         <div className="dialog-actions">
           <span className="spacer" />

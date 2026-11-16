@@ -573,6 +573,69 @@ describe("card state", () => {
     expect(act(g, { type: "tap", id: g.state.zones.hand[0] })).toBe(g);
   });
 
+  it("taps everything, and taps nothing when nothing is untapped", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    const elf = idOf(g, "Llanowar Elves");
+    g = act(g, { type: "move", id: ring, to: "battlefield" });
+    g = act(g, { type: "move", id: elf, to: "battlefield" });
+    g = act(g, { type: "tap", id: ring });
+
+    const all = act(g, { type: "tapAll" });
+    expect(all.state.zones.battlefield.every((id) => all.state.cards[id].tapped)).toBe(true);
+    expect(all.state.log.at(-1)?.text).toBe("Tapped everything.");
+    expect(act(all, { type: "tapAll" })).toBe(all);
+
+    const undone = act(all, { type: "undo" });
+    expect(undone.state.cards[ring].tapped).toBe(true);
+    expect(undone.state.cards[elf].tapped).toBe(false);
+
+    const empty = playing();
+    expect(act(empty, { type: "tapAll" })).toBe(empty);
+  });
+
+  it("proliferates one more of every counter kind that is there", () => {
+    let g = playing();
+    const elf = idOf(g, "Llanowar Elves");
+    const ring = idOf(g, "Sol Ring");
+    g = act(g, { type: "move", id: elf, to: "battlefield" });
+    g = act(g, { type: "move", id: ring, to: "battlefield" });
+    g = act(g, { type: "counter", id: elf, kind: "+1/+1", delta: 2 });
+    g = act(g, { type: "counter", id: elf, kind: "charge", delta: 1 });
+
+    const after = act(g, { type: "proliferate" });
+    expect(after.state.cards[elf].counters).toEqual([
+      { kind: "+1/+1", amount: 3 },
+      { kind: "charge", amount: 2 },
+    ]);
+    expect(after.state.cards[ring].counters).toEqual([]);
+    expect(after.state.log.at(-1)?.text).toBe("Proliferated (1 permanent).");
+
+    const undone = act(after, { type: "undo" });
+    expect(undone.state.cards[elf].counters).toEqual([
+      { kind: "+1/+1", amount: 2 },
+      { kind: "charge", amount: 1 },
+    ]);
+
+    const both = act(after, { type: "counter", id: ring, kind: "loyalty", delta: 1 });
+    const two = act(both, { type: "proliferate" });
+    expect(two.state.cards[ring].counters).toEqual([{ kind: "loyalty", amount: 2 }]);
+    expect(two.state.cards[elf].counters).toEqual([
+      { kind: "+1/+1", amount: 4 },
+      { kind: "charge", amount: 3 },
+    ]);
+    expect(two.state.log.at(-1)?.text).toBe("Proliferated (2 permanents).");
+  });
+
+  it("proliferates nothing when no battlefield card has a counter", () => {
+    const g = playing();
+    expect(act(g, { type: "proliferate" })).toBe(g);
+    const onBoard = act(g, { type: "move", id: idOf(g, "Sol Ring"), to: "battlefield" });
+    expect(act(onBoard, { type: "proliferate" })).toBe(onBoard);
+    const inHand = act(onBoard, { type: "counter", id: onBoard.state.zones.hand[0], kind: "+1/+1", delta: 1 });
+    expect(inHand).toBe(onBoard);
+  });
+
   it("flips only a card with a back face", () => {
     let g = playing();
     const cmd = g.state.zones.command[0];
@@ -684,6 +747,30 @@ describe("copies and tokens", () => {
     const none = playing();
     expect(act(none, { type: "token", def: treasure, count: 0 })).toBe(none);
     expect(g.state.cards[g.state.zones.battlefield[0]].copyOf).toBeNull();
+  });
+
+  it("creates a token the player made up, with its own look, and undo takes it back", () => {
+    const custom = { colors: ["R", "G"], power: "2", toughness: "2", text: "Trample" };
+    const made = card("My Plant", {
+      scryfallId: "",
+      imageUrl: null,
+      backImageUrl: null,
+      typeLine: "Token Creature — Plant",
+      manaValue: 0,
+      custom,
+    });
+    const before = playing();
+    const g = act(before, { type: "token", def: made, count: 1 });
+    expect(g.state.zones.battlefield).toHaveLength(1);
+    const id = g.state.zones.battlefield[0];
+    expect(g.state.cards[id].token).toBe(true);
+    expect(g.state.cards[id].def.custom).toEqual(custom);
+    expect(g.state.cards[id].def.scryfallId).toBe("");
+    expect(g.state.cards[id].def.imageUrl).toBeNull();
+
+    const undone = act(g, { type: "undo" });
+    expect(undone.state.zones.battlefield).toEqual([]);
+    expect(undone.state.cards[id]).toBeUndefined();
   });
 });
 

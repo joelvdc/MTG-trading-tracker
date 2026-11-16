@@ -10,8 +10,9 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
-import { ZONE_IDS, type Action, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
+import { useHoverSetting } from "@/components/HoverCard";
+import { ZONE_IDS, type Action, type CardDef, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
+import { useCornerPreview } from "./CornerPreview";
 import type { PlaytestDialog } from "./PlaytestDialogs";
 
 /** Where a dragged card can land. */
@@ -32,7 +33,10 @@ const COUNTER_KINDS: { kind: string; label: string }[] = [
   { kind: "charge", label: "Charge" },
 ];
 
-type Menu = { kind: "card"; id: string; x: number; y: number } | { kind: "library"; x: number; y: number };
+type Menu =
+  | { kind: "card"; id: string; x: number; y: number }
+  | { kind: "library"; x: number; y: number }
+  | { kind: "board"; x: number; y: number };
 
 /** A press that may still become a drag, a long press or a click. Kept in a ref (it changes on every move). */
 interface Press {
@@ -79,7 +83,7 @@ export function PlaytestBoard({
 }) {
   const state = game.state;
   const [hoverOn] = useHoverSetting();
-  const hover = useHoverCard(hoverOn);
+  const hover = useCornerPreview(hoverOn);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -119,6 +123,25 @@ export function PlaytestBoard({
     openMenuAt(id, e.clientX, e.clientY);
   };
 
+  /** A right-click on the empty battlefield: the board's own menu (a card's menu stops the event first). */
+  const boardMenu = (e: ReactMouseEvent) => {
+    e.preventDefault();
+    hover.hide();
+    setMenu({ kind: "board", x: e.clientX, y: e.clientY });
+  };
+
+  /** An item of the board menu that closes the menu after it runs. */
+  const boardItem = (label: string, run: () => void) => (
+    <button
+      onClick={() => {
+        setMenu(null);
+        run();
+      }}
+    >
+      {label}
+    </button>
+  );
+
   /** What is under the pointer, if it takes a dropped card. The ghost lets pointer events through. */
   function targetAt(x: number, y: number): DropTarget | null {
     const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-drop]");
@@ -127,6 +150,7 @@ export function PlaytestBoard({
   }
 
   function onCardPointerDown(e: ReactPointerEvent<HTMLElement>, id: string) {
+    hover.hide();
     if (e.button !== 0 || press.current) return;
     const zone = zoneOf(id);
     if (zone === null) return;
@@ -305,7 +329,7 @@ export function PlaytestBoard({
 
   return (
     <div className={drag ? "pt-body dragging" : "pt-body"}>
-      <div className={"pt-board" + dropClass("battlefield")} ref={boardRef} data-drop="battlefield" onContextMenu={(e) => e.preventDefault()}>
+      <div className={"pt-board" + dropClass("battlefield")} ref={boardRef} data-drop="battlefield" onContextMenu={boardMenu}>
         {state.zones.battlefield.map((id) => {
           const card = state.cards[id];
           return (
@@ -445,7 +469,7 @@ export function PlaytestBoard({
             <div
               key={id}
               className="pt-hand-card"
-              style={i === 0 || overlap === 0 ? undefined : { marginLeft: -overlap }}
+              style={i === 0 || overlap === 0 ? undefined : { marginLeft: `calc(${-overlap}px * var(--pt-zoom, 1))` }}
               onDoubleClick={() => playFromHand(id)}
             >
               {cardBox(card, "")}
@@ -554,6 +578,23 @@ export function PlaytestBoard({
         </FloatMenu>
       )}
 
+      {menu && menu.kind === "board" && (
+        <FloatMenu menuRef={menuRef} x={menu.x} y={menu.y} title="Battlefield">
+          {boardItem("Untap all (U)", () => dispatch({ type: "untapAll" }))}
+          {boardItem("Tap all", () => dispatch({ type: "tapAll" }))}
+          {boardItem("Next turn: untap and draw (N)", () => dispatch({ type: "nextTurn" }))}
+          {boardItem("Draw a card (D)", () => dispatch({ type: "draw" }))}
+          {boardItem("Proliferate", () => dispatch({ type: "proliferate" }))}
+          <span className="pt-menu-sep" />
+          {boardItem("Create token… (T)", () => openDialog({ kind: "token" }))}
+          {boardItem("Custom token…", () => openDialog({ kind: "token", custom: true }))}
+          {boardItem("Search the library…", () => openDialog({ kind: "search" }))}
+          {boardItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
+          <span className="pt-menu-sep" />
+          {boardItem("Undo (Z)", () => dispatch({ type: "undo" }))}
+        </FloatMenu>
+      )}
+
       {menu && menu.kind === "card" && state.cards[menu.id] && (
         <CardMenu
           menuRef={menuRef}
@@ -609,6 +650,12 @@ function CardMenu({
 
   return (
     <FloatMenu menuRef={menuRef} x={x} y={y} title={card.faceDown ? "Face-down card" : card.def.name}>
+      {!card.faceDown && (
+        <>
+          {item("View card", () => openDialog({ kind: "card", id: card.id }))}
+          <span className="pt-menu-sep" />
+        </>
+      )}
       {zone === "battlefield" && (
         <>
           {item(card.tapped ? "Untap" : "Tap", () => dispatch({ type: "tap", id: card.id }))}
@@ -753,10 +800,13 @@ function FloatMenu({
 /** A card's picture, or its back when it is face down; with the counters and the token badge on top. */
 function CardFace({ card }: { card: CardInstance }) {
   const url = card.faceDown ? null : card.flipped && card.def.backImageUrl ? card.def.backImageUrl : card.def.imageUrl;
+  const custom = !card.faceDown && card.def.custom ? card.def.custom : null;
   const badges = card.counters.filter((c) => c.amount !== 0);
   return (
     <>
-      {url ? (
+      {custom ? (
+        <CustomFace def={card.def} />
+      ) : url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt={card.faceDown ? "Face-down card" : card.def.name} loading="lazy" draggable={false} />
       ) : (
@@ -776,18 +826,43 @@ function CardFace({ card }: { card: CardInstance }) {
   );
 }
 
+/** The frame colours of a made-up token: one colour of its own, gold for two or more, grey for none. */
+const CUSTOM_FRAMES: Record<string, string> = { W: "w", U: "u", B: "b", R: "r", G: "g" };
+
+/**
+ * A made-up token's own card, drawn to fill its box: the frame in its colours, the name, the type line, the rules text
+ * and the power and toughness. The board and the card view share it.
+ */
+export function CustomFace({ def }: { def: CardDef }) {
+  const custom = def.custom;
+  const colors = custom?.colors ?? [];
+  const frame = colors.length === 1 ? (CUSTOM_FRAMES[colors[0]] ?? "gold") : colors.length > 1 ? "gold" : "none";
+  const power = (custom?.power ?? "").trim();
+  const toughness = (custom?.toughness ?? "").trim();
+  return (
+    <span className={`pt-custom pt-custom-${frame}`}>
+      <span className="pt-custom-name">{def.name}</span>
+      <span className="pt-custom-type">{def.typeLine}</span>
+      <span className="pt-custom-text">{custom?.text ?? ""}</span>
+      {(power !== "" || toughness !== "") && (
+        <span className="pt-custom-pt">
+          {power === "" ? "—" : power}/{toughness === "" ? "—" : toughness}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function counterText(kind: string, amount: number): string {
   if (kind === "loyalty") return `Loyalty ${amount}`;
   if (kind === "charge") return `Charge ${amount}`;
   return `${kind} ×${amount}`;
 }
 
-/** The card back: drawn with CSS, as there is no picture for it. */
+/** The card back: the site's card-back picture, filling the card. */
 function CardBack() {
   return (
-    <span className="pt-back">
-      <span className="pt-back-oval" aria-hidden="true" />
-      <span className="pt-back-label">MTG Trader</span>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="pt-back" src="/card-back.jpg" alt="Card back" draggable={false} />
   );
 }
