@@ -14,21 +14,26 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-16, after app 1.99)
-- **Latest:** app 1.99 + website (2026-11-16, no sync change): primer card links `[[Card name]]` (shared rules
+## Right now (2026-11-17, after the playtester website update)
+- **Latest (website only, 2026-11-17, no app version, no sync change):** playtester feedback round. A big card
+  picture in the playing field's top-right corner once the mouse rests ~0.3 s on a card (`CornerPreview.tsx`, follows
+  the "Card on hover" setting); zoom − 100% + at the top right (50–200 %, `--pt-zoom`, remembered as `mtg.ptZoom`);
+  right-click menu on the empty battlefield (untap/tap all, next turn, draw, proliferate, tokens, search, shuffle,
+  undo; engine actions `tapAll` and `proliferate`); "View card" in a card's menu (picture, text, rulings); custom
+  tokens ("Make your own" in the token dialog, `CardDef.custom`, drawn by `CustomFace`); the real card back
+  (`web/public/card-back.jpg`, Scryfall's back image, under the Fan Content Policy notice already in the footer).
+  Deck page: the Primer folds like Tokens and Stats (fold key `primer`; "Primer ↓" unfolds it), and the Stats
+  blocks have less empty space.
+- **Expected to look odd:** at a high zoom, cards placed close together on the battlefield overlap (positions are
+  kept as percentages). A custom token has no big corner preview (no picture); View card shows its drawn card.
+- **Before that:** app 1.99 + website (2026-11-16, no sync change): primer card links `[[Card name]]` (shared rules
   `DeckNotes.linkSegments/linkMatches` and `web/src/lib/decknotes.ts`, cases in
   `web/test/fixtures/primerlinks-cases.json`). Website: `/` card list in the primer editor, links open the card window
   and show the hover picture; the AI writes links and reports seconds, tokens, thinking tokens and tokens/s. App: a
   link on the Primer page opens the deck page's card window (hand-over through the deck entry's saved state
   "primerCard") and returns to the Primer page on close.
-- **App 1.98 the same day:** Primer page in the app; website primer at the bottom of the deck page with Write with AI
-  (OpenCode Go, `web/src/lib/aiprimer.ts`, 20 a day, header `x-opencode-session` required; `/api/health` has `ai`).
-  The first live try said "The AI's answer was empty"; fixed the same evening (more room for thinking models, streams
-  and content parts handled, and an `aiprimer empty:` line in Vercel's runtime logs, kept only 1 hour on Hobby).
-- **Website (2026-11-16, after 1.99):** Next.js 16.4.2 → 16.4.6 for advisory GHSA-mfr8-8qww-v76h (the site never
-  used the affected `unstable_cache`/`use cache`); `npm audit` clean.
-- **Next:** the owner confirms an AI primer works now, and gives playtester feedback. Harmless noise: `npm test`
-  prints "Failed to load source map" for `web/src/lib/winodds-js/*.mjs` (the `.map` files aren't committed).
+- **Earlier:** app 1.98 (Primer page, website Write with AI on OpenCode Go) and Next.js 16.4.6 (2026-11-16).
+- Harmless noise: `npm test` prints "Failed to load source map" for `web/src/lib/winodds-js/*.mjs` (the `.map` files aren't committed).
 - **Expected to look odd:** AI primers use the owner's OpenCode Go plan (DeepSeek's $100 a month is shared with the
   coding sessions; Go's 5-hour and weekly limits apply). Go is meant for coding agents; if OpenCode objects, switch
   provider. The app's primer editor has no `/` list (type `[[…]]` by hand).
@@ -81,6 +86,8 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
   the deck page with in-page editor and Write with AI (OpenCode Go, 20 a day); health check `ai`.
 
 ## Done
+- Website (2026-11-17): playtester corner preview, zoom, battlefield menu (tap all, proliferate), View card,
+  custom tokens, real card back; deck page primer folds, tighter Stats.
 - Website (2026-11-16): Next.js 16.4.6 security update.
 - 1.99 (2026-11-16): clickable card links in primers (`/` list on the website), AI timing note.
 - 1.98 (2026-11-16): Primer page in the app; website primer editor at the bottom of the deck page with Write
