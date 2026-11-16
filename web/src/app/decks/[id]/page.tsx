@@ -564,6 +564,45 @@ export default function DeckPage() {
             <strong className={shaped.missing > 0 ? "warn-text" : "ok-text"}>{shaped.missing}</strong>
             <span className="small">copies</span>
           </button>
+          {(() => {
+            // The date of the scores and the deck's legality, beside the scores rather than on rows of their own.
+            const scored = d.scoredAt ? (
+              <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>
+            ) : d.scoreError ? (
+              <p className="warn-text small">Not scored: {d.scoreError}</p>
+            ) : null;
+            if (!view.legality && !scored) return null;
+            return (
+              <div className="deck-meta">
+                {view.legality && (
+                  <div className="share-legal">
+                    {view.legality.problems.length === 0 ? (
+                      <p className="ok-text small">
+                        <strong>Commander legal ✓</strong>
+                      </p>
+                    ) : (
+                      <>
+                        <p className="small">
+                          <strong>Legality</strong>
+                        </p>
+                        {view.legality.problems.map((p) => (
+                          <p key={p.kind + p.text} className="warn-text small">
+                            {p.text}
+                          </p>
+                        ))}
+                      </>
+                    )}
+                    {view.legality.unchecked.length > 0 && (
+                      <p className="muted small" title={view.legality.unchecked.join(", ")}>
+                        Couldn&apos;t check {view.legality.unchecked.length} card(s) yet.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {scored}
+              </div>
+            );
+          })()}
           <div className="deck-actions">
             <Link className="btn small-btn" href={`/decks/${view.id}/playtest`} title="Draw hands and play the deck (goldfish)">
               Playtest
@@ -621,33 +660,6 @@ export default function DeckPage() {
               )}
             </p>
           )}
-          {d.scoredAt && <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>}
-          {!d.scoredAt && d.scoreError && <p className="warn-text small">Not scored: {d.scoreError}</p>}
-          {view.legality && (
-            <div className="share-legal">
-              {view.legality.problems.length === 0 ? (
-                <p className="ok-text small">
-                  <strong>Commander legal ✓</strong>
-                </p>
-              ) : (
-                <>
-                  <p className="small">
-                    <strong>Legality</strong>
-                  </p>
-                  {view.legality.problems.map((p) => (
-                    <p key={p.kind + p.text} className="warn-text small">
-                      {p.text}
-                    </p>
-                  ))}
-                </>
-              )}
-              {view.legality.unchecked.length > 0 && (
-                <p className="muted small" title={view.legality.unchecked.join(", ")}>
-                  Couldn&apos;t check {view.legality.unchecked.length} card(s) yet.
-                </p>
-              )}
-            </div>
-          )}
         </section>
 
         {combos.length > 0 && (
@@ -686,10 +698,15 @@ export default function DeckPage() {
               <option value="NAME">Name</option>
             </select>
           </label>
-          <label className="check small deck-desc">
-            <input type="checkbox" checked={prefs.descending} onChange={(e) => setPrefs({ descending: e.target.checked })} />
-            <span>Order descending</span>
-          </label>
+          <button
+            type="button"
+            className="btn icon-btn sort-dir"
+            aria-label={prefs.descending ? "Descending order, click for ascending" : "Ascending order, click for descending"}
+            title={prefs.descending ? "Descending order, click for ascending" : "Ascending order, click for descending"}
+            onClick={() => setPrefs({ descending: !prefs.descending })}
+          >
+            {prefs.descending ? "↓" : "↑"}
+          </button>
           {!view.readOnly && (
             <button
               className={selecting ? "chip on" : "chip"}
