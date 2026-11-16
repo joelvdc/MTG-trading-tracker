@@ -4,9 +4,31 @@ package com.mtgtrader.data
  * Reads a decklist pasted as text (since 1.46): Moxfield's export ("1 Sol Ring (CMR) 263 *F* #Ramp"), Archidekt's
  * ("1x Sol Ring (cmr) 263 [Ramp]"), MTG Arena's (with "Commander" and "Deck" headings) and plain lists
  * ("1 Sol Ring"). Headings such as "Commander", "Sideboard" or "Maybeboard" say where the following cards go.
+ *
+ * Writes a deck the same four ways ([export]), like the website's deckexport.ts.
  */
 object DeckText {
     enum class Board { MAIN, COMMANDER, MAYBE }
+
+    enum class Format(val label: String) {
+        MOXFIELD("Moxfield"),
+        ARCHIDEKT("Archidekt"),
+        ARENA("MTG Arena"),
+        PLAIN("Plain list"),
+    }
+
+    /** One line to write: what [export] needs from a deck card. */
+    data class ExportLine(
+        val quantity: Int,
+        val name: String,
+        val setCode: String,
+        val number: String,
+        val foil: Boolean,
+        val etched: Boolean,
+        val categories: List<String>,
+        val commander: Boolean,
+        val maybeboard: Boolean,
+    )
 
     data class Line(
         val quantity: Int,
@@ -91,7 +113,8 @@ object DeckText {
             }
         }
         rest = bracket.replace(rest, " ")
-        hashTag.findAll(rest).forEach { tags += it.groupValues[1] }
+        // Moxfield's tags can't hold spaces, so its export writes them as underscores (#Card_Draw): read them back.
+        hashTag.findAll(rest).forEach { tags += it.groupValues[1].replace('_', ' ') }
         rest = hashTag.replace(rest, " ")
         var foil = false
         var etched = false
@@ -112,5 +135,53 @@ object DeckText {
         val name = rest.trim()
         if (name.isEmpty()) return null
         return Line(qty, name, set, number, foil || etched, etched, tags.distinct(), lineBoard)
+    }
+
+    // ---- Writing a deck as text ----------------------------------------------------------------
+
+    /**
+     * A deck's cards as text: the commander, the main deck and (when asked) the maybeboard, each under its heading
+     * with one blank line between the sections. The lines come sorted by name; lines of the same card and printing
+     * stay apart. The same text as the website's deckToText (deckexport.ts).
+     */
+    fun export(lines: List<ExportLine>, format: Format, categories: Boolean, maybeboard: Boolean): String {
+        val sections = mutableListOf<String>()
+        fun add(heading: String, list: List<ExportLine>) {
+            if (list.isEmpty()) return
+            val body = list.sortedBy { it.name.lowercase() }.joinToString("\n") { line(it, format, categories) }
+            sections += "$heading\n$body"
+        }
+        val headings = headings(format)
+        add(headings[0], lines.filter { it.commander && !it.maybeboard })
+        add(headings[1], lines.filter { !it.commander && !it.maybeboard })
+        add(headings[2], if (maybeboard) lines.filter { it.maybeboard } else emptyList())
+        return sections.joinToString("\n\n")
+    }
+
+    /** The heading above each section; Arena calls the maybeboard its sideboard. */
+    private fun headings(format: Format): List<String> =
+        if (format == Format.ARENA) listOf("Commander", "Deck", "Sideboard") else listOf("Commander", "Deck", "Maybeboard")
+
+    /** One line: quantity, name, printing, finish and categories, as [format] writes them. */
+    private fun line(l: ExportLine, format: Format, withCategories: Boolean): String {
+        if (format == Format.PLAIN) return "${l.quantity} ${l.name}"
+        // Moxfield writes the set code in capitals, Archidekt in small letters.
+        val set = if (format == Format.ARCHIDEKT) l.setCode.lowercase() else l.setCode.uppercase()
+        val number = if (l.number.isEmpty()) "" else " ${l.number}"
+        val head = "${l.quantity}${if (format == Format.ARCHIDEKT) "x" else ""} ${l.name} ($set)$number"
+        // Arena's lists have no finish marks and no categories.
+        if (format == Format.ARENA) return head
+        val finish = when {
+            l.etched -> " *E*"
+            l.foil -> " *F*"
+            else -> ""
+        }
+        val tags = if (withCategories) l.categories.map { it.trim() }.filter { it.isNotEmpty() } else emptyList()
+        // Moxfield's tags can't hold spaces: "Card Draw" is #Card_Draw.
+        return if (format == Format.ARCHIDEKT) {
+            head + finish + if (tags.isEmpty()) "" else " [${tags.joinToString(",")}]"
+        } else {
+            head + finish + tags.joinToString("") { " #${it.replace(Regex("\\s+"), "_")}" }
+        }
     }
 }

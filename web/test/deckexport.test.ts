@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { deckToText } from "@/lib/deckexport";
+import { deckToText, type ExportFormat } from "@/lib/deckexport";
 import type { DeckCard } from "@/lib/deckshared";
 import { parseDeckText } from "@/lib/decktext";
 import type { CardRef } from "@/lib/syncfile";
@@ -185,4 +187,46 @@ describe("reading an export back (round trip)", () => {
       ].sort(),
     );
   });
+});
+
+/** The lines and expected texts shared with the Android app (DeckTextExportTest.kt). */
+interface SharedLine {
+  quantity: number;
+  name: string;
+  setCode: string;
+  number: string;
+  foil: boolean;
+  etched: boolean;
+  categories: string[];
+  commander: boolean;
+  maybeboard: boolean;
+}
+
+interface SharedCase {
+  format: ExportFormat;
+  categories: boolean;
+  maybeboard: boolean;
+  text: string;
+}
+
+const shared = JSON.parse(readFileSync(path.join(__dirname, "fixtures", "deckexport-cases.json"), "utf8")) as { lines: SharedLine[]; cases: SharedCase[] };
+
+describe("shared cases", () => {
+  const cards = shared.lines.map((l) =>
+    card(l.name, l.setCode, l.number, {
+      quantity: l.quantity,
+      category: l.categories[0] ?? "",
+      categories: l.categories.join("\n"),
+      commander: l.commander,
+      foil: l.foil,
+      etched: l.etched,
+      maybeboard: l.maybeboard,
+    }),
+  );
+
+  for (const c of shared.cases) {
+    it(`writes ${c.format} with categories ${c.categories ? "on" : "off"} and the maybeboard ${c.maybeboard ? "on" : "off"}`, () => {
+      expect(deckToText(cards, c.format, { categories: c.categories, maybeboard: c.maybeboard })).toBe(c.text);
+    });
+  }
 });

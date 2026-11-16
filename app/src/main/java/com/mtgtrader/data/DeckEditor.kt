@@ -416,6 +416,9 @@ class DeckEditor(
         val commanders get() = result.lines.filter { it.board == DeckText.Board.COMMANDER }.mapNotNull { found[it]?.name }
     }
 
+    /** A pasted list for a deck that exists: what it holds, and the cards the deck has already (they'll be skipped). */
+    data class PastePreview(val text: TextPreview, val inDeck: List<String>)
+
     suspend fun previewText(text: String): TextPreview {
         val result = DeckText.parse(text)
         fun ident(l: DeckText.Line) = if (l.setCode != null && l.number != null) ScryfallApi.setNumberIdentifier(l.setCode, l.number) else ScryfallApi.nameIdentifier(l.name)
@@ -457,6 +460,73 @@ class DeckEditor(
             lineFor(sc, l.quantity, l.foil, l.etched, category, commander, extra = extra)
         }
         return createLocal(name, lines, "Pasted decklist", identityFromCards(preview.found.values, commanderNames))
+    }
+
+    /**
+     * What pasting [text] into the deck would add: its cards looked up on Scryfall, and the ones already in the
+     * deck on [board] (by name) that would be skipped. Basic lands aren't skipped: their copies are added.
+     */
+    suspend fun previewPaste(deckId: Long, text: String, board: DeckText.Board): PastePreview {
+        val preview = previewText(text)
+        val maybe = board == DeckText.Board.MAYBE
+        val have = dao.allLines(deckId).filter { it.maybeboard == maybe }.map { DeckPrintings.nameKey(it.card.name) }.toSet()
+        val names = preview.found.values.map { it.name }.distinct().sorted()
+        val inDeck = names.filter { !DeckToCollection.isBasic(it) && DeckPrintings.nameKey(it) in have }
+        return PastePreview(preview, inDeck)
+    }
+
+    /**
+     * Adds a pasted list to the deck (see [previewPaste]): cards already in it on [board] (by name) are skipped,
+     * except basic lands, whose copies add to their line. Pasted cards never become the commander. Everything is
+     * one [change], so one undo takes it all back.
+     */
+    suspend fun addPasted(deckId: Long, preview: PastePreview, board: DeckText.Board, useTags: Boolean): UndoAction {
+        val result = preview.text.result
+        val maybe = board == DeckText.Board.MAYBE
+        val auto = if (maybe || (useTags && result.hasTags)) emptyMap() else autoCategories(preview.text.found.values.associate { it.id to it.name })
+        fun key(name: String, onMaybe: Boolean) = "${if (onMaybe) "M" else "D"}|${DeckPrintings.nameKey(name)}"
+        // Only what changes goes to change(): the raised basic lands (their old line, then the raised one) and the new
+        // lines, so every other line of the deck keeps its row id.
+        val before = LinkedHashMap<String, DeckCard>()
+        val after = LinkedHashMap<String, DeckCard>()
+        val deckLines = dao.allLines(deckId)
+        val deckUids = deckLines.map { it.lineUid }.toSet()
+        val byKey = deckLines.associateBy { key(it.card.name, it.maybeboard) }.toMutableMap()
+        for (l in result.lines) {
+            val sc = preview.text.found[l] ?: continue
+            val types = sc.typeLine.substringBefore(" — ")
+            val tagged = useTags && l.tags.isNotEmpty()
+            val first = when {
+                maybe -> DeckEdits.MAYBEBOARD
+                tagged -> l.tags.first()
+                else -> auto[sc.id]?.firstOrNull() ?: fallbackCategory(types)
+            }
+            // A pasted "Commander" or "Maybeboard" tag in the main deck is an ordinary card.
+            val category = if (!maybe && (first.equals(DeckEdits.COMMANDER, true) || first.equals(DeckEdits.MAYBEBOARD, true))) fallbackCategory(types) else first
+            val extra = when {
+                maybe -> emptyList()
+                tagged -> l.tags.drop(1)
+                else -> auto[sc.id].orEmpty().drop(1)
+            }
+            val k = key(sc.name, maybe)
+            val there = byKey[k]
+            if (there != null) {
+                if (DeckToCollection.isBasic(sc.name)) {
+                    val raised = there.copy(quantity = minOf(999, there.quantity + l.quantity))
+                    byKey[k] = raised
+                    if (raised.quantity != there.quantity) {
+                        if (there.lineUid in deckUids && there.lineUid !in before) before[there.lineUid] = there
+                        after[there.lineUid] = raised
+                    }
+                }
+                continue
+            }
+            val line = lineFor(sc, l.quantity, l.foil, l.etched, category, commander = false, extra = extra)
+            after[line.lineUid] = line
+            byKey[k] = line
+        }
+        if (before.isEmpty() && after.isEmpty()) return {}
+        return change(deckId, before.values.toList(), after.values.toList())
     }
 
     private fun identityFromCards(cards: Collection<ScryCard>, commanders: Set<String>): String {
