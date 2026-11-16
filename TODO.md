@@ -14,18 +14,22 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-16, after app 1.98; deck builder parity plan finished)
-- **Latest:** app 1.98 + website (2026-11-16, no sync change, sync format 15, database 30): the app's deck page shows
-  the primer as one row that opens a Primer page (`ui/PrimerScreen.kt`); the website's primer sits at the bottom of
-  the deck page with an in-page editor and "Write with AI" (OpenCode Go, `web/src/lib/aiprimer.ts`, routes
-  `/api/ai/models` and `/api/decks/<id>/aiprimer`, 20 a day per account, counted in `store.job`; needs the header
-  `x-opencode-session`, a new random id per primer). `/api/health` has `ai` (checked at most hourly).
-- **Next:** the owner writes the first real AI primer and gives playtester feedback. The DeepSeek work copies
-  and `claude/ds-*` branches were removed after 1.98 (leftover build caches in `%LOCALAPPDATA%\ds-jobs` may be deleted).
+## Right now (2026-11-16, after app 1.99)
+- **Latest:** app 1.99 + website (2026-11-16, no sync change): primer card links `[[Card name]]` (shared rules
+  `DeckNotes.linkSegments/linkMatches` and `web/src/lib/decknotes.ts`, cases in
+  `web/test/fixtures/primerlinks-cases.json`). Website: `/` card list in the primer editor, links open the card window
+  and show the hover picture; the AI writes links and reports seconds, tokens, thinking tokens and tokens/s. App: a
+  link on the Primer page opens the deck page's card window (hand-over through the deck entry's saved state
+  "primerCard") and returns to the Primer page on close.
+- **App 1.98 the same day:** Primer page in the app; website primer at the bottom of the deck page with Write with AI
+  (OpenCode Go, `web/src/lib/aiprimer.ts`, 20 a day, header `x-opencode-session` required; `/api/health` has `ai`).
+  The first live try said "The AI's answer was empty"; fixed the same evening (more room for thinking models, streams
+  and content parts handled, and an `aiprimer empty:` line in Vercel's runtime logs, kept only 1 hour on Hobby).
+- **Next:** the owner confirms an AI primer works now, and gives playtester feedback. Next.js 16.4.2 reports a known
+  security advisory (seen in `next dev`): upgrade on the owner's go.
 - **Expected to look odd:** AI primers use the owner's OpenCode Go plan (DeepSeek's $100 a month is shared with the
-  coding sessions; Go's 5-hour and weekly limits apply, then "usage limit is reached"). Go is meant for coding agents;
-  a few primers a day should be fine, but if OpenCode objects, switch the website to another provider. One earlier
-  1.97 note still holds: history only shows changes from 1.97 on, and the role line's automatic roles need the website.
+  coding sessions; Go's 5-hour and weekly limits apply). Go is meant for coding agents; if OpenCode objects, switch
+  provider. The app's primer editor has no `/` list (type `[[…]]` by hand).
 - **Earlier:** app 1.97 (2026-11-16, sync format 15): primer, card notes, own tags with role line, packages, change
   history. 1.96 the same day: deck search, copy/paste deck text.
 - **Before that:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
@@ -52,7 +56,8 @@ history, the release notes and `web/README.md`.)
   only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
   phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** playtester feedback (now due) and a first real AI primer on the website. Review follow-ups for later under "From the code reviews". Ideas still
+- **Waiting on the owner:** playtester feedback (now due), a working AI primer on the website, and a go for the Next.js
+  security upgrade. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
@@ -75,6 +80,7 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
   the deck page with in-page editor and Write with AI (OpenCode Go, 20 a day); health check `ai`.
 
 ## Done
+- 1.99 (2026-11-16): clickable card links in primers (`/` list on the website), AI timing note.
 - 1.98 (2026-11-16): Primer page in the app; website primer editor at the bottom of the deck page with Write
   with AI (OpenCode Go).
 - 1.97 (2026-11-16): deck primer and card notes, own tags in every deck with a role line, packages, change history
