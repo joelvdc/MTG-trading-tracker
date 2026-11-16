@@ -4417,15 +4417,26 @@ button.role-btn:hover {
   cursor: help;
 }
 
-/* The Primer section (also on a shared deck's page). */
+/* The roles line and its "Primer ↓" link, which jumps to the Primer section at the bottom of the page. */
+.roles-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.roles-row .deck-roles {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.primer-jump {
+  flex: 0 0 auto;
+  margin: 10px 2px 0;
+  white-space: nowrap;
+}
+
+/* The Primer section at the bottom of the deck page (also on a shared deck's page). */
 .deck-primer {
   margin-top: 12px;
-}
-.deck-primer-add {
-  margin: 8px 2px 0;
-}
-.deck-primer-add button.link {
-  margin-left: 0;
+  scroll-margin-top: 70px;
 }
 .primer-top {
   display: flex;
@@ -4470,9 +4481,88 @@ button.role-btn:hover {
   left: 4px;
   color: var(--muted);
 }
-button.primer-more {
-  margin-left: 0;
-  padding: 0;
+
+/* The primer's editor, in place on the page: Edit/Preview, a box that grows with its text and the hint beside them. */
+.primer-tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.primer-hint {
+  overflow-wrap: anywhere;
+}
+.primer-count {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.primer-editor textarea {
+  min-height: 250px;
+  overflow-y: hidden;
+  resize: vertical;
+}
+.primer-preview {
+  min-height: 250px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--raised);
+  overflow-wrap: anywhere;
+}
+.primer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "Write with AI", folded under the primer's box. */
+.primer-ai {
+  padding: 8px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+.primer-ai > summary {
+  cursor: pointer;
+  color: var(--accent2);
+  font-weight: 600;
+}
+.primer-ai-body {
+  margin-top: 10px;
+}
+div.primer-ai-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.primer-ai-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.primer-ai-field {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.primer-ai-field select {
+  width: 100%;
+  max-width: 100%;
+}
+.primer-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  cursor: pointer;
+}
+.primer-choice input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }
 .shared-primer {
   margin: 12px 0;
@@ -4514,9 +4604,7 @@ button.primer-more {
   border-bottom: 0;
 }
 
-/* The combos card after the primer keeps the gap the scores card had. */
-.deck-roles + details.card,
-.deck-primer + details.card,
-.deck-primer-add + details.card {
+/* The combos card under the roles line keeps the gap the scores card had. */
+.roles-row + details.card {
   margin-top: 12px;
 }
