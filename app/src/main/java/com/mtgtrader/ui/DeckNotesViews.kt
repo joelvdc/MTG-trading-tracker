@@ -52,10 +52,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,14 +107,24 @@ fun RoleCountsLine(counts: List<DeckRoles.RoleCount>, onRole: (String) -> Unit, 
 // ---- The primer (spec 3) -------------------------------------------------------------------------
 
 /**
- * The primer's first non-empty line with its writing marks taken off (# headings, - bullets, **bold**), for the one
- * line the deck page shows it in. Null when there is nothing to read: no primer, or only blank lines.
+ * The primer's first non-empty line with its writing marks taken off (# headings, - bullets, **bold**, and the
+ * `[[` `]]` of a card link, so the row shows the card's name), for the one line the deck page shows it in. Null when
+ * there is nothing to read: no primer, or only blank lines.
  */
 internal fun primerFirstLine(primer: String?): String? =
     primer.orEmpty().lineSequence()
         .map { it.trim() }
         .firstOrNull { it.isNotEmpty() }
-        ?.let { it.removePrefix("- ").trimStart('#').replace("**", "").trim() }
+        ?.let { it.removePrefix("- ").trimStart('#').replace("**", "") }
+        ?.let { line ->
+            DeckNotes.linkSegments(line).joinToString("") { segment ->
+                when (segment) {
+                    is DeckNotes.PrimerSegment.Text -> segment.text
+                    is DeckNotes.PrimerSegment.Card -> segment.name
+                }
+            }
+        }
+        ?.trim()
         ?.takeIf { it.isNotEmpty() }
 
 /**
@@ -156,34 +169,53 @@ fun PrimerRow(primer: String?, onOpen: () -> Unit) {
 /**
  * The primer in full, as its page shows it: larger than the app's small text, so it can be read at the table, with
  * its headings, bullets, bold pieces and paragraphs. Nothing is folded here; the page scrolls instead.
+ *
+ * [cardLink] says which deck card a `[[Card name]]` link means (its exact name, or null when the deck has no such
+ * card) and [onCard] opens it (since 1.99); links stay plain bold text on a page that gives neither.
  */
 @Composable
-fun PrimerBody(primer: String, modifier: Modifier = Modifier) {
+fun PrimerBody(
+    primer: String,
+    modifier: Modifier = Modifier,
+    cardLink: ((String) -> String?)? = null,
+    onCard: (String) -> Unit = {},
+) {
     val lines = remember(primer) { primer.split("\n") }
-    Column(modifier) { lines.forEach { PrimerLine(it) } }
+    val linkColor = MaterialTheme.colorScheme.primary
+    Column(modifier) { lines.forEach { PrimerLine(it, cardLink, onCard, linkColor) } }
 }
 
 /** One line of the primer: a heading, a bullet, a paragraph, or the gap of an empty line. */
 @Composable
-private fun PrimerLine(line: String) {
+private fun PrimerLine(line: String, cardLink: ((String) -> String?)?, onCard: (String) -> Unit, linkColor: Color) {
     when {
         line.isBlank() -> Spacer(Modifier.height(8.dp))
-        line.startsWith("### ") -> PrimerHeading(line.removePrefix("### "), 3)
-        line.startsWith("## ") -> PrimerHeading(line.removePrefix("## "), 2)
-        line.startsWith("# ") -> PrimerHeading(line.removePrefix("# "), 1)
+        line.startsWith("### ") -> PrimerHeading(line.removePrefix("### "), 3, cardLink, onCard, linkColor)
+        line.startsWith("## ") -> PrimerHeading(line.removePrefix("## "), 2, cardLink, onCard, linkColor)
+        line.startsWith("# ") -> PrimerHeading(line.removePrefix("# "), 1, cardLink, onCard, linkColor)
         line.startsWith("- ") -> Row(Modifier.padding(vertical = 2.dp)) {
             Text("•", style = MaterialTheme.typography.bodyLarge)
-            Text(primerMarkup(line.removePrefix("- ")), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
+            Text(
+                primerMarkup(line.removePrefix("- "), cardLink, onCard, linkColor),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
-        else -> Text(primerMarkup(line), style = MaterialTheme.typography.bodyLarge)
+        else -> Text(primerMarkup(line, cardLink, onCard, linkColor), style = MaterialTheme.typography.bodyLarge)
     }
 }
 
 /** A primer heading; [level] 1, 2 or 3 (the only heading sizes the primer has). */
 @Composable
-private fun PrimerHeading(text: String, level: Int) {
+private fun PrimerHeading(
+    text: String,
+    level: Int,
+    cardLink: ((String) -> String?)?,
+    onCard: (String) -> Unit,
+    linkColor: Color,
+) {
     Text(
-        primerMarkup(text),
+        primerMarkup(text, cardLink, onCard, linkColor),
         style = when (level) {
             1 -> MaterialTheme.typography.headlineSmall
             2 -> MaterialTheme.typography.titleLarge
@@ -195,27 +227,65 @@ private fun PrimerHeading(text: String, level: Int) {
 }
 
 /**
- * [line] with its `**bold**` pieces bold. Nothing else of the markdown counts: an unclosed `**` stays as it is
- * written, so a primer always reads as the user typed it.
+ * [line] with its `**bold**` pieces bold, and its card links as the page shows them. Nothing else of the markdown
+ * counts: an unclosed `**` stays as it is written, so a primer always reads as the user typed it. Each part is read
+ * for links after the stars are taken off, so `**[[Sol Ring]]**` is a bold link.
  */
-private fun primerMarkup(line: String): AnnotatedString = buildAnnotatedString {
+private fun primerMarkup(
+    line: String,
+    cardLink: ((String) -> String?)?,
+    onCard: (String) -> Unit,
+    linkColor: Color,
+): AnnotatedString = buildAnnotatedString {
     var i = 0
     while (i < line.length) {
         val open = line.indexOf("**", i)
         val close = if (open < 0) -1 else line.indexOf("**", open + 2)
         if (open < 0 || close < 0) {
-            append(line.substring(i))
+            appendLinks(line.substring(i), false, cardLink, onCard, linkColor)
             return@buildAnnotatedString
         }
-        append(line.substring(i, open))
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(line.substring(open + 2, close)) }
+        appendLinks(line.substring(i, open), false, cardLink, onCard, linkColor)
+        appendLinks(line.substring(open + 2, close), true, cardLink, onCard, linkColor)
         i = close + 2
     }
 }
 
 /**
+ * [text] as the primer shows it (since 1.99): a card link whose card the deck has is its name in the link colour and
+ * tappable, and one the deck doesn't have is its name in bold, so a link to a card that has gone still reads. The
+ * brackets never show.
+ */
+private fun AnnotatedString.Builder.appendLinks(
+    text: String,
+    bold: Boolean,
+    cardLink: ((String) -> String?)?,
+    onCard: (String) -> Unit,
+    linkColor: Color,
+) {
+    for (segment in DeckNotes.linkSegments(text)) {
+        when (segment) {
+            is DeckNotes.PrimerSegment.Text ->
+                if (bold) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(segment.text) } else append(segment.text)
+            is DeckNotes.PrimerSegment.Card -> {
+                val card = cardLink?.invoke(segment.name)
+                if (card == null) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(segment.name) }
+                else withLink(
+                    LinkAnnotation.Clickable(
+                        tag = card,
+                        styles = TextLinkStyles(SpanStyle(color = linkColor, fontWeight = if (bold) FontWeight.Bold else null)),
+                        linkInteractionListener = { onCard(card) },
+                    ),
+                ) { append(segment.name) }
+            }
+        }
+    }
+}
+
+/**
  * Writing the deck's primer (since 1.97). The field keeps to [DeckNotes.MAX_PRIMER] characters; the light markdown
- * the primer page renders (# headings, - bullets, **bold**) is written as plain text here.
+ * the primer page renders (# headings, - bullets, **bold**, and `[[Card name]]` links to the deck's cards) is written
+ * as plain text here.
  */
 @Composable
 fun PrimerEditorDialog(primer: String?, onDismiss: () -> Unit, onSave: (String) -> Unit) {
@@ -228,7 +298,7 @@ fun PrimerEditorDialog(primer: String?, onDismiss: () -> Unit, onSave: (String) 
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it.take(DeckNotes.MAX_PRIMER) },
-                    placeholder = { Text("How the deck plays, its combos, what to look for…\n# Heading\n- A bullet\n**Bold**") },
+                    placeholder = { Text("How the deck plays, its combos, what to look for…\n# Heading\n- A bullet\n**Bold**\n[[Card name]] links a card") },
                     minLines = 8,
                     maxLines = 16,
                     modifier = Modifier.fillMaxWidth(),

@@ -36,12 +36,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mtgtrader.container
+import com.mtgtrader.data.DeckNotes
 import kotlinx.coroutines.launch
 
 /**
  * A deck's primer on its own page (since 1.98): the whole text, in the larger type the deck page hasn't room for, so
  * it can be read at the table. Editing opens the same dialog the deck page used to, and saving offers Undo here.
  * A deck without one says what a primer is for and offers to write it, so every deck can have one, Archidekt's too.
+ * A card link (`[[Card name]]`) opens that card in the deck page's own window and comes back here (since 1.99).
  */
 @Composable
 fun PrimerScreen(nav: NavController, deckId: Long) {
@@ -49,6 +51,17 @@ fun PrimerScreen(nav: NavController, deckId: Long) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val deck by remember { c.db.deckDao().observe(deckId) }.collectAsStateWithLifecycle(null)
+    // The deck's card names, from the same lists the deck page reads, so a link finds its card (main deck first).
+    val mainRows by remember { c.db.deckDao().observeCards(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val maybeRows by remember { c.db.deckDao().observeMaybeboard(deckId) }.collectAsStateWithLifecycle(emptyList())
+    val cardLink: (String) -> String? = remember(mainRows, maybeRows) {
+        val main = mainRows.map { it.item.card.name }
+        val maybe = maybeRows.map { it.item.card.name }
+        val find: (String) -> String? = { name ->
+            main.firstOrNull { DeckNotes.linkMatches(name, it) } ?: maybe.firstOrNull { DeckNotes.linkMatches(name, it) }
+        }
+        find
+    }
     var editing by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -91,7 +104,15 @@ fun PrimerScreen(nav: NavController, deckId: Long) {
                 Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState())
                     .navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
             ) {
-                PrimerBody(primer)
+                PrimerBody(
+                    primer,
+                    cardLink = cardLink,
+                    onCard = { name ->
+                        // The deck page opens the card in its own window, and comes back here when it closes.
+                        nav.previousBackStackEntry?.savedStateHandle?.set("primerCard", name)
+                        nav.safePopBackStack()
+                    },
+                )
             }
         }
     }

@@ -28,6 +28,62 @@ object DeckNotes {
     fun nameKey(name: String): String = name.trim().lowercase()
 
     /**
+     * One piece of a primer line (since 1.99): text as it is written, or a card link (`[[Card name]]`). The website
+     * splits its primer the same way, so a link reads the same on both sides.
+     */
+    sealed interface PrimerSegment {
+        data class Text(val text: String) : PrimerSegment
+        data class Card(val name: String) : PrimerSegment
+    }
+
+    /**
+     * [text] as segments (since 1.99): its ordinary text and the card links in it. A `[[` whose inner text is empty,
+     * or holds a bracket or a newline, isn't a link and stays as written; so does one that is never closed. Text
+     * between links is merged, and there are no empty text segments.
+     */
+    fun linkSegments(text: String): List<PrimerSegment> {
+        if (text.isEmpty()) return emptyList()
+        val out = mutableListOf<PrimerSegment>()
+        val plain = StringBuilder()
+        var i = 0
+        while (i < text.length) {
+            val open = text.indexOf("[[", i)
+            if (open < 0) {
+                plain.append(text, i, text.length)
+                break
+            }
+            val close = text.indexOf("]]", open + 2)
+            val inner = if (close < 0) null else text.substring(open + 2, close)
+            val name = inner?.trim().orEmpty()
+            if (inner == null || name.isEmpty() || '[' in inner || ']' in inner || '\n' in inner) {
+                // Not a link: its two brackets are text like any other, and scanning goes on after them.
+                plain.append(text, i, open + 2)
+                i = open + 2
+                continue
+            }
+            plain.append(text, i, open)
+            if (plain.isNotEmpty()) {
+                out += PrimerSegment.Text(plain.toString())
+                plain.setLength(0)
+            }
+            out += PrimerSegment.Card(name)
+            i = close + 2
+        }
+        if (plain.isNotEmpty()) out += PrimerSegment.Text(plain.toString())
+        return out
+    }
+
+    /**
+     * Whether a primer link's [linkName] means the deck's card [cardName] (since 1.99): the same name, or a double-
+     * faced or split card's front name, which is how people link one ("Delver of Secrets" for the whole "A // B").
+     */
+    fun linkMatches(linkName: String, cardName: String): Boolean {
+        val key = nameKey(linkName)
+        if (key == nameKey(cardName)) return true
+        return key == nameKey(cardName.substringBefore(" // "))
+    }
+
+    /**
      * Archidekt's [description] as a primer: headings become "# " lines, bullet and ordered list items "- " and
      * "1. ", bold pieces "**…**", and images are left out. A description that isn't a Quill delta is taken as text.
      * Null when there's nothing to show.
