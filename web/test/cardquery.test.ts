@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isQueryError, matches, parseQuery, type QueryCard, scryfallBatches, unsupportedKeys } from "@/lib/cardquery";
 
@@ -145,6 +147,27 @@ describe("parseQuery and matches", () => {
     expect(err("or t:a")).toBe("Nothing before or.");
     expect(err("t>creature")).toMatch(/only works with :/);
   });
+});
+
+describe("shared cases", () => {
+  const shared = JSON.parse(readFileSync(path.join(__dirname, "fixtures", "cardquery-cases.json"), "utf8")) as {
+    cards: QueryCard[];
+    cases: { query: string; matches?: string[]; error?: string; unsupported?: string[] }[];
+  };
+
+  for (const c of shared.cases)
+    it(`filters with ${JSON.stringify(c.query)}`, () => {
+      const p = parseQuery(c.query);
+      if (c.error !== undefined) {
+        expect(isQueryError(p)).toBe(true);
+        if (isQueryError(p)) expect(p.error).toBe(c.error);
+        return;
+      }
+      if (isQueryError(p)) throw new Error(`${JSON.stringify(c.query)} failed: ${p.error}`);
+      if (c.unsupported !== undefined) expect(unsupportedKeys(p)).toEqual(c.unsupported);
+      const got = shared.cards.filter((card) => matches(p, card)).map((card) => card.name);
+      if (c.matches !== undefined) expect(got).toEqual(c.matches);
+    });
 });
 
 describe("scryfallBatches", () => {
