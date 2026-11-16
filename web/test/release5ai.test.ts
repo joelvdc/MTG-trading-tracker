@@ -261,6 +261,20 @@ describe("writePrimer", () => {
     expect(error?.message).not.toContain(KEY);
   });
 
+  it("gives each primer its own conversation id, which Go insists on", async () => {
+    const { fn, calls } = fakeFetch(() => chatAnswer("ok"));
+    await writePrimer(input, options(), "m", fn);
+    await writePrimer(input, options(), "m", fn);
+
+    const ids = calls.map((c) => (c.init.headers as Record<string, string>)["x-opencode-session"]);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).toMatch(/^primer-/);
+    expect(ids[1]).toMatch(/^primer-/);
+    expect(ids[0]).not.toBe(ids[1]);
+    // Nothing about the account, the deck or the owner in it.
+    for (const id of ids) expect(id).toMatch(/^primer-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
   it("is not set up without a key", async () => {
     delete process.env.OPENCODE_API_KEY;
     expect(aiConfigured()).toBe(false);

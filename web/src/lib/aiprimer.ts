@@ -79,7 +79,9 @@ export async function writePrimer(input: PrimerInput, options: AiOptions, model:
   try {
     res = await fetchFn(CHAT_URL, {
       method: "POST",
-      headers: { ...headers(key), "Content-Type": "application/json" },
+      // Go refuses a chat without a session header (400): each primer is its own one-question conversation, so a new
+      // random id per call, carrying nothing about the account, the deck or the owner.
+      headers: { ...headers(key), "Content-Type": "application/json", "x-opencode-session": `primer-${crypto.randomUUID()}` },
       body: JSON.stringify({
         model: model || DEFAULT_MODEL,
         messages: [
