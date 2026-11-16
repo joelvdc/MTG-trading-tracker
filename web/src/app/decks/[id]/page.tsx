@@ -13,7 +13,7 @@ import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
 import { HistoryDialog } from "@/components/DeckHistory";
-import { PrimerSection } from "@/components/DeckNotes";
+import { PrimerSection, type PrimerCardLinks } from "@/components/DeckNotes";
 import { PackagesDialog } from "@/components/DeckPackages";
 import { DeckRolesLine } from "@/components/DeckRolesLine";
 import { deckResults, type Game } from "@/lib/gameshared";
@@ -33,6 +33,7 @@ import { PrintDeckDialog } from "@/components/PrintLists";
 import type { Legality } from "@/lib/legality";
 import { ShareDialog } from "@/components/SharePanel";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
@@ -276,6 +277,19 @@ export default function DeckPage() {
   /** Whether a line's card has a back face, from Scryfall's layout when known. */
   const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
+
+  // The primer's [[card]] links: a card of the deck (the main deck's line first) opens its window, and its picture
+  // follows the mouse; a link to a card the deck hasn't got is its name in bold.
+  const cardLinks: PrimerCardLinks = {
+    find: (name) => {
+      const hit = view.rows.find((r) => !r.maybeboard && linkMatches(name, r.name)) ?? view.rows.find((r) => linkMatches(name, r.name));
+      return hit ? { open: () => setLine(hit.lineUid), picture: pictureOf(hit) } : null;
+    },
+    follow: hover.follow,
+    hide: hover.hide,
+  };
+  // The primer editor's "/" list: the deck's card names, the main deck's (commanders first), then the maybeboard's.
+  const cardNames = [...new Set([...view.rows.filter((r) => !r.maybeboard && r.commander), ...view.rows.filter((r) => !r.maybeboard), ...view.rows.filter((r) => r.maybeboard)].map((r) => r.name))];
 
   const byCategory = prefs.group === "CATEGORY";
   const canOrder = byCategory && !view.readOnly;
@@ -881,6 +895,8 @@ export default function DeckPage() {
           primer={view.primer}
           canEdit={!view.readOnly}
           editing={primerEditing}
+          cards={cardLinks}
+          cardNames={cardNames}
           onEdit={openPrimer}
           onCancel={() => setPrimerEditing(false)}
           onSave={async (text) => {

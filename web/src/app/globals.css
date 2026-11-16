@@ -4482,6 +4482,22 @@ button.role-btn:hover {
   color: var(--muted);
 }
 
+/* A [[card]] link in a primer: it opens the card's window, like a line of the deck list; bold links stay bold. */
+.primer-card {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-align: inherit;
+  white-space: inherit;
+  cursor: pointer;
+}
+.primer-card:hover {
+  text-decoration: underline;
+}
+
 /* The primer's editor, in place on the page: Edit/Preview, a box that grows with its text and the hint beside them. */
 .primer-tabs-row {
   display: flex;
@@ -4501,6 +4517,51 @@ button.role-btn:hover {
   overflow-y: hidden;
   resize: vertical;
 }
+
+/* The box with its "/" list of cards: a hidden copy of the text measures where the caret's line is. */
+.primer-box {
+  position: relative;
+}
+.primer-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  border: 0;
+  box-sizing: content-box;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.primer-cardlist {
+  position: absolute;
+  z-index: 25;
+  min-width: 200px;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--raised);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+.primer-cardlist li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.primer-cardlist li:hover {
+  background: var(--row-hover);
+}
+.primer-cardlist li.on {
+  background: var(--selected);
+}
+
 .primer-preview {
   min-height: 250px;
   padding: 12px 14px;

@@ -1,35 +1,75 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { DEFAULT_MODEL, DEFAULT_SECTIONS, FOCUS_LABELS, SECTION_LABELS, type AiFocus, type AiLength, type AiSection } from "@/lib/aiprimershared";
-import { MAX_NOTE, MAX_PRIMER } from "@/lib/decknotes";
+import { linkSegments, MAX_NOTE, MAX_PRIMER, nameKey } from "@/lib/decknotes";
 import { api } from "./api";
 
-/** A line's text with **bold** as bold; everything else stays as it is (never HTML). */
-function lineText(text: string): ReactNode {
-  if (!text.includes("**")) return text;
+/** How a primer's [[card]] links meet the deck: which card a name is, and the picture that follows the mouse. */
+export interface PrimerCardLinks {
+  find: (name: string) => { open: () => void; picture: string | null } | null;
+  follow: (url: string | null) => (e: MouseEvent) => void;
+  hide: () => void;
+}
+
+/**
+ * A line's text with **bold** as bold and [[card]] links as buttons that open the card (a link to a card the deck
+ * hasn't got is its name in bold); everything else stays as it is (never HTML).
+ */
+function lineText(text: string, cards?: PrimerCardLinks): ReactNode[] {
   const parts = text.split("**");
   // Only pairs count: a lone ** at the end of a line is shown as it is.
   const paired = parts.length % 2 === 1 ? parts.length : parts.length - 1;
-  return parts.map((part, i) => (i % 2 === 1 && i < paired ? <strong key={i}>{part}</strong> : part));
+  const out: ReactNode[] = [];
+  parts.forEach((part, i) => {
+    const bold = i < paired && i % 2 === 1;
+    linkSegments(part).forEach((segment, j) => {
+      const key = `${i}-${j}`;
+      if (segment.kind === "text") {
+        out.push(bold ? <strong key={key}>{segment.text}</strong> : segment.text);
+        return;
+      }
+      const hit = cards?.find(segment.name) ?? null;
+      if (!cards || !hit) {
+        out.push(<strong key={key}>{segment.name}</strong>);
+        return;
+      }
+      out.push(
+        <button
+          key={key}
+          type="button"
+          className="primer-card"
+          onClick={() => {
+            cards.hide();
+            hit.open();
+          }}
+          onMouseMove={(e) => cards.follow(hit.picture)(e)}
+          onMouseLeave={cards.hide}
+        >
+          {segment.name}
+        </button>,
+      );
+    });
+  });
+  return out;
 }
 
 /** One line of a primer: a heading (#, ##, ###), a bullet (- ), a paragraph gap, or plain text. */
-function PrimerLine({ line }: { line: string }) {
+function PrimerLine({ line, cards }: { line: string; cards?: PrimerCardLinks }) {
   if (line.trim() === "") return <div className="primer-gap" aria-hidden="true" />;
-  if (line.startsWith("### ")) return <p className="primer-line primer-h3">{lineText(line.slice(4))}</p>;
-  if (line.startsWith("## ")) return <p className="primer-line primer-h2">{lineText(line.slice(3))}</p>;
-  if (line.startsWith("# ")) return <p className="primer-line primer-h1">{lineText(line.slice(2))}</p>;
-  if (line.startsWith("- ")) return <p className="primer-line primer-bullet">{lineText(line.slice(2))}</p>;
-  return <p className="primer-line">{lineText(line)}</p>;
+  if (line.startsWith("### ")) return <p className="primer-line primer-h3">{lineText(line.slice(4), cards)}</p>;
+  if (line.startsWith("## ")) return <p className="primer-line primer-h2">{lineText(line.slice(3), cards)}</p>;
+  if (line.startsWith("# ")) return <p className="primer-line primer-h1">{lineText(line.slice(2), cards)}</p>;
+  if (line.startsWith("- ")) return <p className="primer-line primer-bullet">{lineText(line.slice(2), cards)}</p>;
+  return <p className="primer-line">{lineText(line, cards)}</p>;
 }
 
-/** A primer as it is shown (spec 3): headings, bullets, bold and paragraph gaps, nothing else. */
-export function PrimerText({ text }: { text: string }) {
+/** A primer as it is shown (spec 3): headings, bullets, bold and paragraph gaps, nothing else; card links when [cards]. */
+export function PrimerText({ text, cards }: { text: string; cards?: PrimerCardLinks }) {
   return (
     <div className="primer-text">
       {text.split("\n").map((line, i) => (
-        <PrimerLine key={i} line={line} />
+        <PrimerLine key={i} line={line} cards={cards} />
       ))}
     </div>
   );
@@ -48,6 +88,8 @@ export function PrimerSection({
   onEdit,
   onCancel,
   onSave,
+  cards,
+  cardNames = [],
 }: {
   deckId: number;
   primer: string | null;
@@ -56,6 +98,8 @@ export function PrimerSection({
   onEdit: () => void;
   onCancel: () => void;
   onSave: (text: string) => Promise<string | null>;
+  cards?: PrimerCardLinks;
+  cardNames?: string[];
 }) {
   const text = (primer ?? "").trim();
   return (
@@ -69,7 +113,7 @@ export function PrimerSection({
         )}
       </div>
       {editing ? (
-        <PrimerEditor deckId={deckId} start={text} onCancel={onCancel} onSave={onSave} />
+        <PrimerEditor deckId={deckId} start={text} onCancel={onCancel} onSave={onSave} cards={cards} cardNames={cardNames} />
       ) : text === "" ? (
         <div className="stack">
           <p className="muted">No primer yet.</p>
@@ -82,23 +126,101 @@ export function PrimerSection({
           )}
         </div>
       ) : (
-        <PrimerText text={text} />
+        <PrimerText text={text} cards={cards} />
       )}
     </section>
   );
 }
 
+/** The "/" word the caret is at, when a card list can open there: a "/" at the start of the text or after a space or "(". */
+interface CardWord {
+  /** Where the "/" is. */
+  start: number;
+  /** The caret, at the end of what was typed after the "/". */
+  end: number;
+  query: string;
+}
+
+/** The "/" word the caret is at, or null when the caret isn't in one (no "/", or it follows a word). */
+function cardWord(value: string, caret: number): CardWord | null {
+  const before = value.slice(0, caret);
+  const start = before.lastIndexOf("/");
+  if (start < 0) return null;
+  if (start > 0 && !" \n(".includes(before[start - 1])) return null;
+  const query = before.slice(start + 1);
+  if (query.includes("\n") || /[[\]]/.test(query)) return null;
+  return { start, end: caret, query };
+}
+
+/** The deck's cards that match what is typed after the "/": those starting with it first, then those containing it. */
+function cardMatches(names: string[], query: string): string[] {
+  const key = nameKey(query);
+  const starts = names.filter((n) => nameKey(n).startsWith(key));
+  const inside = names.filter((n) => !starts.includes(n) && nameKey(n).includes(key));
+  return [...starts, ...inside].slice(0, 8);
+}
+
+/** The font and spacing a hidden copy of the box's text needs to wrap exactly as the box does. */
+const MIRROR_STYLES = ["font-family", "font-size", "font-weight", "font-style", "letter-spacing", "line-height", "text-transform", "text-indent", "tab-size"];
+
+/**
+ * Where the caret's line ends in the primer's box, measured with a hidden copy of its text in the same place ("/" list
+ * of cards opens just under it).
+ */
+function caretSpot(box: HTMLTextAreaElement, copy: HTMLDivElement, caret: number): { left: number; top: number } {
+  const style = window.getComputedStyle(box);
+  for (const name of MIRROR_STYLES) copy.style.setProperty(name, style.getPropertyValue(name));
+  const size = (name: string) => Number.parseFloat(style.getPropertyValue(name)) || 0;
+  // The copy starts at the box's corner with the box's border and padding, so its lines sit where the box's do.
+  copy.style.paddingTop = `${size("padding-top") + size("border-top-width")}px`;
+  copy.style.paddingRight = `${size("padding-right") + size("border-right-width")}px`;
+  copy.style.paddingBottom = `${size("padding-bottom") + size("border-bottom-width")}px`;
+  copy.style.paddingLeft = `${size("padding-left") + size("border-left-width")}px`;
+  copy.style.width = `${box.clientWidth - size("padding-left") - size("padding-right")}px`;
+  copy.textContent = box.value.slice(0, caret);
+  const mark = document.createElement("span");
+  mark.textContent = "\u200b";
+  copy.append(mark);
+  const line = size("line-height") || size("font-size") * 1.4;
+  const at = mark.getBoundingClientRect();
+  const corner = copy.getBoundingClientRect();
+  // A list that would run off the right edge stays inside the box (it is 200px wide at least).
+  const room = copy.parentElement?.clientWidth ?? 320;
+  return { left: Math.max(0, Math.min(at.left - corner.left, Math.max(0, room - 200))), top: at.top - corner.top + line };
+}
+
 /**
  * The primer in place on the page: a box that grows with its text, Edit/Preview, Save (the page posts it and offers the
- * Undo) and Cancel; "Write with AI" is folded under the box. Leaving the page with changes asks first.
+ * Undo) and Cancel; a "/" in the box lists the deck's cards to link; "Write with AI" is folded under the box. Leaving
+ * the page with changes asks first.
  */
-export function PrimerEditor({ deckId, start, onCancel, onSave }: { deckId: number; start: string; onCancel: () => void; onSave: (text: string) => Promise<string | null> }) {
+export function PrimerEditor({
+  deckId,
+  start,
+  cards,
+  cardNames,
+  onCancel,
+  onSave,
+}: {
+  deckId: number;
+  start: string;
+  cards?: PrimerCardLinks;
+  cardNames: string[];
+  onCancel: () => void;
+  onSave: (text: string) => Promise<string | null>;
+}) {
   const [text, setText] = useState(start);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [written, setWritten] = useState<string | null>(null);
+  // The "/" list: the word it is for and the card highlighted, where it opens, and where the caret goes after a link.
+  const [pick, setPick] = useState<(CardWord & { active: number }) | null>(null);
+  const [spot, setSpot] = useState<{ left: number; top: number } | null>(null);
+  const [caretAt, setCaretAt] = useState<number | null>(null);
   const box = useRef<HTMLTextAreaElement | null>(null);
+  const copy = useRef<HTMLDivElement | null>(null);
+  const found = pick === null ? [] : cardMatches(cardNames, pick.query);
   const dirty = text !== start;
 
   // A changed primer that isn't saved yet makes the browser ask before the page goes.
@@ -120,12 +242,79 @@ export function PrimerEditor({ deckId, start, onCancel, onSave }: { deckId: numb
     el.style.height = `${el.scrollHeight + 2}px`;
   }, [text, preview]);
 
+  // After a card is linked, the caret goes after the link.
+  useEffect(() => {
+    const el = box.current;
+    if (caretAt === null || !el) return;
+    el.focus();
+    el.setSelectionRange(caretAt, caretAt);
+    setCaretAt(null);
+  }, [caretAt]);
+
+  // The list opens under the caret's line.
+  const caretInBox = pick?.end ?? null;
+  useLayoutEffect(() => {
+    const el = box.current;
+    const mirror = copy.current;
+    if (caretInBox === null || !el || !mirror) {
+      setSpot(null);
+      return;
+    }
+    setSpot(caretSpot(el, mirror, caretInBox));
+  }, [caretInBox, found.length, text]);
+
+  /** Shows the "/" list for where the caret is, or closes it (nothing matches, another word, a new line). */
+  function remember(value: string, at: number) {
+    const word = cardWord(value, at);
+    const matches = word === null ? [] : cardMatches(cardNames, word.query);
+    if (word === null || matches.length === 0) {
+      setPick(null);
+      return;
+    }
+    setPick((old) => (old && old.start === word.start && old.query === word.query ? { ...word, active: Math.min(old.active, matches.length - 1) } : { ...word, active: 0 }));
+  }
+
+  /** Puts [[Name]] where the "/" and what was typed are, and moves the caret after it. */
+  function linkCard(name: string) {
+    if (pick === null) return;
+    const link = `[[${name}]]`;
+    setText(text.slice(0, pick.start) + link + text.slice(pick.end));
+    setPick(null);
+    setCaretAt(pick.start + link.length);
+  }
+
+  /** Up/Down pick a card, Enter, Tab or a click links it, Escape closes the list (Enter is no new line while it's open). */
+  function boxKeys(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (pick === null || found.length === 0) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const step = e.key === "ArrowDown" ? 1 : found.length - 1;
+      setPick((old) => (old === null ? old : { ...old, active: (old.active + step) % found.length }));
+      return;
+    }
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      linkCard(found[Math.min(pick.active, found.length - 1)]);
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setPick(null);
+    }
+  }
+
   async function save() {
     setBusy(true);
     setError(null);
     const err = await onSave(text);
     setBusy(false);
     if (err) setError(err);
+  }
+
+  /** Switches between Edit and Preview; the "/" list is for typing, so it closes. */
+  function show(on: boolean) {
+    setPreview(on);
+    setPick(null);
   }
 
   function cancel() {
@@ -138,32 +327,61 @@ export function PrimerEditor({ deckId, start, onCancel, onSave }: { deckId: numb
     <div className="stack primer-editor">
       <div className="primer-tabs-row">
         <div className="seg text" role="group" aria-label="Primer view">
-          <button type="button" className={preview ? "" : "on"} onClick={() => setPreview(false)}>
+          <button type="button" className={preview ? "" : "on"} onClick={() => show(false)}>
             Edit
           </button>
-          <button type="button" className={preview ? "on" : ""} onClick={() => setPreview(true)}>
+          <button type="button" className={preview ? "on" : ""} onClick={() => show(true)}>
             Preview
           </button>
         </div>
-        <span className="muted small primer-hint"># heading, - bullet, **bold**</span>
+        <span className="muted small primer-hint"># heading, - bullet, **bold**, / to link a card</span>
         <span className="muted small primer-count">
           {text.length} of {MAX_PRIMER} characters
         </span>
       </div>
       {preview ? (
         <div className="primer-preview">
-          {text.trim() !== "" ? <PrimerText text={text} /> : <p className="muted small">Nothing to preview yet.</p>}
+          {text.trim() !== "" ? <PrimerText text={text} cards={cards} /> : <p className="muted small">Nothing to preview yet.</p>}
         </div>
       ) : (
-        <textarea
-          ref={box}
-          aria-label="Primer"
-          rows={12}
-          maxLength={MAX_PRIMER}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="What the deck does, how to play it, its main lines…"
-        />
+        <div className="primer-box">
+          <textarea
+            ref={box}
+            aria-label="Primer"
+            rows={12}
+            maxLength={MAX_PRIMER}
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              remember(e.target.value, e.target.selectionStart);
+            }}
+            onSelect={(e) => remember(e.currentTarget.value, e.currentTarget.selectionStart)}
+            onKeyDown={boxKeys}
+            onBlur={() => setPick(null)}
+            placeholder="What the deck does, how to play it, its main lines…"
+          />
+          {pick !== null && found.length > 0 && (
+            <>
+              <div className="primer-mirror" ref={copy} aria-hidden="true" />
+              <ul className="primer-cardlist" role="listbox" aria-label="Deck cards" style={spot === null ? undefined : { left: spot.left, top: spot.top }}>
+                {found.map((name, i) => (
+                  <li
+                    key={name}
+                    role="option"
+                    aria-selected={i === pick.active}
+                    className={i === pick.active ? "on" : undefined}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      linkCard(name);
+                    }}
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
       )}
       <WriteWithAi
         deckId={deckId}
@@ -172,6 +390,7 @@ export function PrimerEditor({ deckId, start, onCancel, onSave }: { deckId: numb
         onWritten={(value, note) => {
           setText(value);
           setPreview(true);
+          setPick(null);
           setWritten(note);
         }}
       />
@@ -302,7 +521,7 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
   async function write() {
     setBusy(true);
     onError(null);
-    const r = await api<{ text?: string; model?: string; left?: number }>(`/api/decks/${deckId}/aiprimer`, {
+    const r = await api<{ text?: string; model?: string; left?: number; seconds?: number; outputTokens?: number | null; reasoningTokens?: number | null }>(`/api/decks/${deckId}/aiprimer`, {
       model: chosen,
       focus,
       length,
@@ -316,7 +535,16 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
     }
     const wrote = r.data.model ?? chosen;
     const left = r.data.left;
-    onWritten(r.data.text, `Written by ${wrote}. Read it, change what you like, then Save.${left != null ? ` ${left} left today.` : ""}`);
+    const seconds = typeof r.data.seconds === "number" ? Math.round(r.data.seconds * 10) / 10 : null;
+    const tokens = typeof r.data.outputTokens === "number" ? r.data.outputTokens : null;
+    const thinking = typeof r.data.reasoningTokens === "number" && r.data.reasoningTokens > 0 ? r.data.reasoningTokens : null;
+    const count = (n: number) => n.toLocaleString("en-GB");
+    const said = [`Written by ${wrote}${seconds === null ? "" : ` in ${seconds} s`}`];
+    if (tokens !== null) {
+      said.push(`${count(tokens)} tokens${thinking === null ? "" : ` (${count(thinking)} thinking)`}`);
+      if (seconds !== null && seconds > 0) said.push(`${count(Math.round(tokens / seconds))} tokens/s`);
+    }
+    onWritten(r.data.text, `${said.join(" · ")}. Read it, change what you like, then Save.${left != null ? ` ${left} left today.` : ""}`);
   }
 
   return (
