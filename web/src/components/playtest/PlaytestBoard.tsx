@@ -33,7 +33,10 @@ const COUNTER_KINDS: { kind: string; label: string }[] = [
   { kind: "charge", label: "Charge" },
 ];
 
-type Menu = { kind: "card"; id: string; x: number; y: number } | { kind: "library"; x: number; y: number };
+type Menu =
+  | { kind: "card"; id: string; x: number; y: number }
+  | { kind: "library"; x: number; y: number }
+  | { kind: "board"; x: number; y: number };
 
 /** A press that may still become a drag, a long press or a click. Kept in a ref (it changes on every move). */
 interface Press {
@@ -119,6 +122,25 @@ export function PlaytestBoard({
     e.stopPropagation();
     openMenuAt(id, e.clientX, e.clientY);
   };
+
+  /** A right-click on the empty battlefield: the board's own menu (a card's menu stops the event first). */
+  const boardMenu = (e: ReactMouseEvent) => {
+    e.preventDefault();
+    hover.hide();
+    setMenu({ kind: "board", x: e.clientX, y: e.clientY });
+  };
+
+  /** An item of the board menu that closes the menu after it runs. */
+  const boardItem = (label: string, run: () => void) => (
+    <button
+      onClick={() => {
+        setMenu(null);
+        run();
+      }}
+    >
+      {label}
+    </button>
+  );
 
   /** What is under the pointer, if it takes a dropped card. The ghost lets pointer events through. */
   function targetAt(x: number, y: number): DropTarget | null {
@@ -307,7 +329,7 @@ export function PlaytestBoard({
 
   return (
     <div className={drag ? "pt-body dragging" : "pt-body"}>
-      <div className={"pt-board" + dropClass("battlefield")} ref={boardRef} data-drop="battlefield" onContextMenu={(e) => e.preventDefault()}>
+      <div className={"pt-board" + dropClass("battlefield")} ref={boardRef} data-drop="battlefield" onContextMenu={boardMenu}>
         {state.zones.battlefield.map((id) => {
           const card = state.cards[id];
           return (
@@ -556,6 +578,22 @@ export function PlaytestBoard({
         </FloatMenu>
       )}
 
+      {menu && menu.kind === "board" && (
+        <FloatMenu menuRef={menuRef} x={menu.x} y={menu.y} title="Battlefield">
+          {boardItem("Untap all (U)", () => dispatch({ type: "untapAll" }))}
+          {boardItem("Tap all", () => dispatch({ type: "tapAll" }))}
+          {boardItem("Next turn: untap and draw (N)", () => dispatch({ type: "nextTurn" }))}
+          {boardItem("Draw a card (D)", () => dispatch({ type: "draw" }))}
+          {boardItem("Proliferate", () => dispatch({ type: "proliferate" }))}
+          <span className="pt-menu-sep" />
+          {boardItem("Create token… (T)", () => openDialog({ kind: "token" }))}
+          {boardItem("Search the library…", () => openDialog({ kind: "search" }))}
+          {boardItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
+          <span className="pt-menu-sep" />
+          {boardItem("Undo (Z)", () => dispatch({ type: "undo" }))}
+        </FloatMenu>
+      )}
+
       {menu && menu.kind === "card" && state.cards[menu.id] && (
         <CardMenu
           menuRef={menuRef}
@@ -611,6 +649,12 @@ function CardMenu({
 
   return (
     <FloatMenu menuRef={menuRef} x={x} y={y} title={card.faceDown ? "Face-down card" : card.def.name}>
+      {!card.faceDown && (
+        <>
+          {item("View card", () => openDialog({ kind: "card", id: card.id }))}
+          <span className="pt-menu-sep" />
+        </>
+      )}
       {zone === "battlefield" && (
         <>
           {item(card.tapped ? "Untap" : "Tap", () => dispatch({ type: "tap", id: card.id }))}

@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Dialog } from "@/components/Dialog";
+import { CardRulesTabs } from "@/components/CardRules";
+import { FlipPicture } from "@/components/FlipPicture";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
 import { api } from "@/components/api";
 import { scryfallImage, type DeckToken } from "@/lib/deckstats";
 import {
   chanceByTurn,
   landOdds,
+  ZONE_IDS,
   type Action,
   type CardDef,
   type CardInstance,
@@ -26,6 +29,7 @@ export type PlaytestDialog =
   | { kind: "search" }
   | { kind: "peek" } // shown automatically while state.peek is set
   | { kind: "counter"; id: string }
+  | { kind: "card"; id: string }
   | { kind: "libraryPosition"; id: string }
   | { kind: "token" }
   | { kind: "dice" }
@@ -141,6 +145,8 @@ export function PlaytestDialogs({
       return <PeekDialog game={game} dispatch={dispatch} onClose={onClose} />;
     case "counter":
       return <CounterDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
+    case "card":
+      return <CardViewDialog id={dialog.id} game={game} onClose={onClose} />;
     case "libraryPosition":
       return <LibraryPositionDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
     case "token":
@@ -675,6 +681,55 @@ function CounterDialog({
             </div>
           </>
         )}
+        <div className="dialog-actions">
+          <span className="spacer" />
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** Where a card is, as the card view says it. */
+const PLACE_LABELS: Record<ZoneId, string> = {
+  library: "In the library",
+  hand: "In your hand",
+  battlefield: "On the battlefield",
+  graveyard: "In the graveyard",
+  exile: "In exile",
+  command: "In the command zone",
+};
+
+/** One card of the game: its picture, what it is doing there, its rules text and the rulings. */
+function CardViewDialog({ id, game, onClose }: { id: string; game: Game; onClose: () => void }) {
+  const card = game.state.cards[id];
+  if (!card) return null;
+  const zone = ZONE_IDS.find((z) => game.state.zones[z].includes(id)) ?? null;
+  const facts = [
+    zone ? PLACE_LABELS[zone] : null,
+    card.tapped ? "tapped" : null,
+    card.token ? "token" : null,
+    ...card.counters
+      .filter((counter) => counter.amount !== 0)
+      .map((counter) => `${counter.kind} ×${counter.amount}`),
+  ].filter((part): part is string => part !== null);
+
+  return (
+    <Dialog title={card.def.name} onClose={onClose}>
+      <div className="stack">
+        {card.def.imageUrl && (
+          <FlipPicture
+            url={card.def.imageUrl}
+            className="line-picture"
+            typeLine={card.def.typeLine}
+            startFlipped={card.flipped}
+          />
+        )}
+        <CardRulesTabs scryfallId={card.def.scryfallId}>
+          <p className="muted small">{facts.join(" · ")}</p>
+        </CardRulesTabs>
         <div className="dialog-actions">
           <span className="spacer" />
           <button className="btn" onClick={onClose}>

@@ -118,6 +118,8 @@ export type Action =
   | { type: "tutor"; id: string; to: ZoneId; position?: "top" | "bottom" }
   | { type: "tap"; id: string }
   | { type: "untapAll" }
+  | { type: "tapAll" }
+  | { type: "proliferate" }
   | { type: "flip"; id: string }
   | { type: "faceDown"; id: string }
   | { type: "counter"; id: string; kind: string; delta: number }
@@ -653,6 +655,34 @@ export function act(game: Game, action: Action): Game {
       const next = cloneState(state);
       for (const id of tapped) next.cards[id].tapped = false;
       addLog(next, "Untapped everything.");
+      return commit(game, next);
+    }
+
+    case "tapAll": {
+      if (!playing) return game;
+      const untapped = state.zones.battlefield.filter((id) => !state.cards[id].tapped);
+      if (untapped.length === 0) return game;
+      const next = cloneState(state);
+      for (const id of untapped) next.cards[id].tapped = true;
+      addLog(next, "Tapped everything.");
+      return commit(game, next);
+    }
+
+    case "proliferate": {
+      if (!playing) return game;
+      const withCounters = state.zones.battlefield.filter((id) =>
+        state.cards[id].counters.some((counter) => counter.amount > 0),
+      );
+      if (withCounters.length === 0) return game;
+      const next = cloneState(state);
+      for (const id of withCounters) {
+        const card = next.cards[id];
+        // The kinds first: adding a counter may change (and reorder) the card's own list.
+        const kinds = card.counters.filter((counter) => counter.amount > 0).map((counter) => counter.kind);
+        for (const kind of kinds) changeCounters(card, kind, 1);
+      }
+      const n = withCounters.length;
+      addLog(next, `Proliferated (${n} permanent${n === 1 ? "" : "s"}).`);
       return commit(game, next);
     }
 
