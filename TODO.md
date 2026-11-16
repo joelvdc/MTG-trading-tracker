@@ -14,14 +14,18 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-16, deck builder parity releases 1 and 2 live on the website)
-- **Waiting on the owner:** feedback on the new playtester (`/decks/<id>/playtest`, Playtest button on the deck
-  page) before release 3 (app 1.96) starts; see "In progress" below. Website releases 1 (fewer deck buttons, Undo bar,
-  Select mode with bulk changes, Copy deck as text, Paste cards) and 2 (playtester) are on `main` and live. Tag and
-  package bulk actions come with release 4. Worktrees `%LOCALAPPDATA%\ds-jobs\r1*`/`r2` and branches `claude/ds-*`
-  can be removed once the plan is finished.
+## Right now (2026-11-16, after app 1.96; deck builder parity releases 1-3 done)
+- **Latest:** app 1.96 (2026-11-16): search inside a deck (🔍, the website's syntax via `CardQuery.kt`, shared cases
+  in `web/test/fixtures/cardquery-cases.json`), Copy deck as text / Paste cards (`DeckText.export`, `DeckEditor.
+  previewPaste/addPasted`, shared cases in `deckexport-cases.json`), the deck menu under headings. The app never showed
+  "(This app)" next to Power, so nothing was dropped there. Website (same day): scores card with legality and score
+  date beside the scores, order arrow, toolbar on one line.
+- **Next:** release 4 (app 1.97 + website, sync format 15), then release 5. The owner asked (2026-11-16) to do
+  releases 3 and 4 BEFORE they test the playtester; ask for playtester feedback after release 4. Tag and package bulk
+  actions come with release 4. Worktrees `%LOCALAPPDATA%\ds-jobs\*` and branches `claude/ds-*` can be removed once
+  the plan is finished.
 - **Expected to look odd:** the Undo bar lasts 30 s and only undoes the latest change; the playtester's "Any token"
-  search needs Scryfall, so it can be slow.
+  search needs Scryfall, so it can be slow. The app's deck search skips Scryfall-only words (otag:, art:) and says so.
 - **Earlier:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
   big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
   (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
@@ -46,23 +50,22 @@ history, the release notes and `web/README.md`.)
   only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
   phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** nothing. Review follow-ups for later under "From the code reviews". Ideas still
+- **Waiting on the owner:** playtester feedback, after release 4. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
 ## In progress: deck builder parity (green light 2026-11-15)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
 (OpenCode Go) writes all code, Opus plans, reviews, tests and releases (`/deepseek`).
-- **Release 1, website:** deck page buttons cut down (Bracket/Power/Missing numbers clickable; Playtest,
+- **Release 1, website:** DONE 2026-11-16 (tag/package bulk actions moved to release 4). Deck page buttons cut down (Bracket/Power/Missing numbers clickable; Playtest,
   Recommendations, Share ▾, Edit ▾); drop "(This app)" after Power; Undo bar for every deck edit incl. category and
   deck delete; Select mode with bulk actions (category, maybeboard, copies, printing cheapest/newest/oldest/owned,
   foil, tag, package, copy, remove; Archidekt decks only tag/package/copy); Copy deck as text (Moxfield, Archidekt,
   Arena, plain); Paste cards into an existing deck with a preview.
 - **Release 2, website:** playtester at `/decks/<id>/playtest` (zones, London mulligan + free first, library actions
   incl. scry/surveil/mill/tutor, tap, flip, face down, copies, counters on cards, tokens from the deck + Scryfall
-  search, life/poison/energy/experience/commander tax, turns, undo, log, dice/coin, shortcuts, land/draw odds). Owner
-  playtests it and gives feedback before release 3. No playtest in the Android app.
-- **Release 3, app 1.96:** deck search with the website's syntax (shared test cases), copy/paste deck text, deck menu
-  under headings + search icon, drop "(This app)".
+  search, life/poison/energy/experience/commander tax, turns, undo, log, dice/coin, shortcuts, land/draw odds). DONE
+  (live 2026-11-16). Owner tests it after release 4. No playtest in the Android app.
+- **Release 3, app 1.96:** DONE 2026-11-16 (deck search, copy/paste deck text, menu headings + search icon).
 - **Release 4, app 1.97 + website, sync format 15 (owner OK: phones update via Obtainium):** deck primer + per-card
   notes (share page too, kept on Archidekt reload, Archidekt description fills an empty primer once); own tags that
   apply in every deck + role counts line; packages; change history per deck (same-day merge, last 100 entries).
