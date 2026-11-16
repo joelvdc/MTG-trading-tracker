@@ -6,6 +6,7 @@
 // updatedAt); a local deck has no archidektUpdatedAt, so an edit wins by moving its updatedAt on, like the app's
 // database triggers do. Its lines are written whole; each keeps its lineUid.
 import { resolveFinish } from "./cards";
+import { encodeCardNotes, MAX_NOTE, MAX_PRIMER, nameKey, parseCardNotes } from "./decknotes";
 import { isBasicName, primaryType, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
 import { finishOf, type Finish } from "./pricing";
 import { addDeletion, bump, deletions, prefs, setPrefs, type CardRef, type Json, type SyncFile } from "./syncfile";
@@ -305,6 +306,28 @@ export function setCategoryOrder(file: SyncFile, id: number, names: string[], no
   if ((sd.deck.categoryOrder ?? null) === value) return;
   sd.deck.categoryOrder = value;
   touch(sd, now);
+}
+
+/** The deck's primer (Deck.primer, app 1.97): any deck, also one from Archidekt; "" clears it. */
+export function setPrimer(file: SyncFile, id: number, raw: string, now: number): void {
+  const sd = find(file, id);
+  sd.deck.primer = raw.trimEnd().slice(0, MAX_PRIMER);
+  sd.deck.notesAt = now;
+  sd.deck.updatedAt = bump(sd.deck.updatedAt ?? 0, now);
+}
+
+/** One card's note (Deck.cardNotes, app 1.97): any deck, also one from Archidekt; an empty note removes it. */
+export function setCardNote(file: SyncFile, id: number, rawName: string, rawNote: string, now: number): void {
+  const sd = find(file, id);
+  const name = rawName.trim();
+  if (!name) throw new EditError("Pick a card first.");
+  const notes = parseCardNotes(sd.deck.cardNotes);
+  const note = rawNote.trim().slice(0, MAX_NOTE);
+  if (note) notes[nameKey(name)] = note;
+  else delete notes[nameKey(name)];
+  sd.deck.cardNotes = encodeCardNotes(notes);
+  sd.deck.notesAt = now;
+  sd.deck.updatedAt = bump(sd.deck.updatedAt ?? 0, now);
 }
 
 function moved(sd: SyncDeck, uids: Set<string>, category: string, look: Lookups, skip: string | null = null): DeckCard[] {
@@ -628,6 +651,10 @@ export function newDeck(id: number, now: number, d: Partial<Deck>): Deck {
     origin: null,
     retired: false,
     categoryOrder: null,
+    primer: null,
+    cardNotes: null,
+    notesAt: null,
+    history: null,
     ...d,
   };
 }

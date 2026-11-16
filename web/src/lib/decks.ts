@@ -3,6 +3,9 @@
 // DeckPrintings), bracket tags (SaltCard.tagsByCard) and prices. Shared pieces: deckshared.ts.
 import { frontName } from "./collview";
 import { categories, included } from "./deckedit";
+import { parseHistory } from "./deckhistory";
+import { nameKey, parseCardNotes } from "./decknotes";
+import { roleCounts, tagsOf } from "./deckroles";
 import { recListKey } from "./recshared";
 import {
   caseless,
@@ -208,11 +211,33 @@ function categoriesOf(sd: SyncDeck): DeckCategory[] {
   return [...out.values()].sort((a, b) => (a.name.toLowerCase() === "commander" ? -1 : b.name.toLowerCase() === "commander" ? 1 : caseless(a.name, b.name)));
 }
 
-export function deckView(file: SyncFile, id: number, prices: PriceFile | null, details: DetailsFile | null, ck: CkFile | null): DeckView | null {
+/** What the deck page passes in for the cards' roles and notes (looked up before deckView, which stays synchronous). */
+export interface DeckViewExtras {
+  /** Own tags per card name (the cardTags pref). */
+  cardTags?: Record<string, string[]>;
+  /** The website's automatic categories per card name (categoriesByName); none when it couldn't be read. */
+  auto?: Record<string, string[]>;
+}
+
+export function deckView(
+  file: SyncFile,
+  id: number,
+  prices: PriceFile | null,
+  details: DetailsFile | null,
+  ck: CkFile | null,
+  extras: DeckViewExtras = {},
+): DeckView | null {
   const sd = syncDecks(file).find((d) => d.deck.archidektId === id);
   if (!sd) return null;
   const p = prefs(file);
   const d = sd.deck;
+  const cardTags = extras.cardTags ?? {};
+  const auto = extras.auto ?? {};
+  const notes = parseCardNotes(d.cardNotes);
+  const lineCategories = (c: DeckCard) => {
+    const list = (c.categories ?? "").split("\n").filter((x) => x.trim());
+    return list.length ? list : [c.category];
+  };
   const setup = setupOf(file, prices, details, ck);
   const owned = ownedByName(file);
   const salt = decodeSalt(d.saltCard);
@@ -276,6 +301,9 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     if (c.gameChanger && !t.includes("GAME_CHANGER")) t.unshift("GAME_CHANGER");
     const shown = finishOf(foil, etched);
     const held = !isBasicName(key) ? (pilesByName.get(c.card.name.toLowerCase()) ?? []) : [];
+    const categories = lineCategories(c);
+    const ownTags = cardTags[nameKey(c.card.name)] ?? null;
+    const autoTags = auto[c.card.name] ?? [];
     return {
       lineUid: c.lineUid,
       name: c.card.name,
@@ -284,7 +312,7 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
       finish: finishOf(foil, etched),
       quantity: c.quantity,
       category: c.category,
-      categories: (c.categories ?? "").split("\n").filter((x) => x.trim()).length ? c.categories.split("\n").filter((x) => x.trim()) : [c.category],
+      categories,
       types: c.types,
       cmc: c.cmc,
       commander: c.commander,
@@ -300,8 +328,22 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
       tags: t,
       choices: !isBasicName(key) && !c.maybeboard ? choicesOf(copiesByName.get(key) ?? []) : [],
       picked: picks[key] ?? null,
+      roleTags: tagsOf(c.card.name, categories, ownTags, autoTags),
+      note: notes[nameKey(c.card.name)] ?? null,
     };
   });
+  const roles = roleCounts(
+    sd.cards.map((c) => ({
+      name: c.card.name,
+      types: c.types,
+      quantity: c.quantity,
+      commander: c.commander,
+      maybeboard: c.maybeboard,
+      categories: lineCategories(c),
+      ownTags: cardTags[nameKey(c.card.name)] ?? null,
+      auto: auto[c.card.name] ?? [],
+    })),
+  );
   const { saltCard, scrollVault, categoryInfo, ...plain } = d;
   void saltCard;
   void categoryInfo;
@@ -325,6 +367,9 @@ export function deckView(file: SyncFile, id: number, prices: PriceFile | null, d
     hidden: Object.keys(decodePicks(p.deckHidden)[String(id)] ?? {}),
     tokenPicks: decodePicks(p.deckTokenPicks)[String(id)] ?? {},
     categories: categoriesOf(sd),
+    primer: d.primer ?? null,
+    history: parseHistory(d.history),
+    roles,
     myPrintings,
     currency: cur,
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,

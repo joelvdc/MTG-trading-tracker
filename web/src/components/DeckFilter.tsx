@@ -36,7 +36,7 @@ function queryCard(r: DeckRow, s: StatsCard | undefined): QueryCard {
     gameChanger: r.gameChanger,
     priceEur: r.unitEur,
     category: r.category,
-    tags: r.categories,
+    tags: [...new Set([...r.categories, ...r.roleTags])],
   };
 }
 

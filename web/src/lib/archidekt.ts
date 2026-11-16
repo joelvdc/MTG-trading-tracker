@@ -42,6 +42,8 @@ export interface ArchidektDeck {
   name: string;
   owner: string;
   artUrl: string | null;
+  /** The deck's description as Archidekt keeps it (usually empty, or a Quill delta); null when it has none. */
+  description: string | null;
   /** Only the cards in the deck itself. */
   cards: ArchidektCard[];
   updatedAt: number | null;
@@ -147,6 +149,7 @@ export function parseDeck(body: unknown): ArchidektDeck {
     name: str(d.name),
     owner: str(obj(d.owner).username),
     artUrl: blankNull(d.customFeatured) ?? blankNull(d.featured),
+    description: typeof d.description === "string" ? d.description : null,
     cards: all.filter((c) => !excluded.has(c.category)),
     updatedAt: parseTime(str(d.updatedAt) || null),
     maybeboard: all.filter((c) => excluded.has(c.category)),

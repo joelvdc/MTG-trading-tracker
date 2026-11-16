@@ -1,0 +1,356 @@
+[
+  {
+    "name": "add",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "remove",
+    "start": "[{\"day\":\"2025-11-15\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]",
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ],
+        "after": []
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{},\"removed\":{\"Sol Ring\":1}},{\"day\":\"2025-11-15\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "quantity change",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 3,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":2},\"removed\":{}}]"
+  },
+  {
+    "name": "two lines with the same name",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          },
+          {
+            "name": "Sol Ring",
+            "quantity": 2,
+            "maybeboard": false
+          }
+        ],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 4,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "maybeboard lines ignored",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          },
+          {
+            "name": "Arcane Signet",
+            "quantity": 1,
+            "maybeboard": true
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "same day add then remove leaves no entry",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      },
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ],
+        "after": []
+      }
+    ],
+    "result": null
+  },
+  {
+    "name": "same day from two sources",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      },
+      {
+        "now": 1763251200000,
+        "source": "website",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          },
+          {
+            "name": "Arcane Signet",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\",\"website\"],\"added\":{\"Arcane Signet\":1,\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "a new day goes in front",
+    "start": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]",
+    "steps": [
+      {
+        "now": 1763337600000,
+        "source": "website",
+        "before": [],
+        "after": [
+          {
+            "name": "Arcane Signet",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-17\",\"sources\":[\"website\"],\"added\":{\"Arcane Signet\":1},\"removed\":{}},{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "101 days drops the oldest",
+    "start": "[{\"day\":\"2025-04-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-31\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-30\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-29\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-28\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-27\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-26\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-25\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-24\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-23\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-22\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-21\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-20\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-19\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-18\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-17\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-16\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-15\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-14\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-13\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-12\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-11\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-28\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-27\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-26\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-25\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-24\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-23\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-22\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-21\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-20\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-19\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-18\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-17\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-16\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-15\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-14\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-13\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-12\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-11\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-31\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-30\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-29\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-28\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-27\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-26\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-25\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-24\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-23\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-22\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-21\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-20\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-19\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-18\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-17\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-16\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-15\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-14\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-13\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-12\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-11\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}}]",
+    "steps": [
+      {
+        "now": 1744329600000,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "B",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-04-11\",\"sources\":[\"app\"],\"added\":{\"B\":1},\"removed\":{}},{\"day\":\"2025-04-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-04-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-31\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-30\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-29\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-28\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-27\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-26\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-25\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-24\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-23\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-22\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-21\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-20\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-19\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-18\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-17\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-16\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-15\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-14\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-13\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-12\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-11\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-03-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-28\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-27\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-26\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-25\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-24\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-23\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-22\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-21\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-20\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-19\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-18\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-17\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-16\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-15\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-14\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-13\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-12\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-11\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-02-01\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-31\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-30\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-29\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-28\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-27\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-26\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-25\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-24\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-23\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-22\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-21\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-20\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-19\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-18\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-17\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-16\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-15\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-14\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-13\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-12\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-11\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-10\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-09\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-08\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-07\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-06\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-05\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-04\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-03\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}},{\"day\":\"2025-01-02\",\"sources\":[\"app\"],\"added\":{\"A\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "unreadable start text",
+    "start": "not json",
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "no change keeps null",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "name": "same day nets out one card but keeps another",
+    "start": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Arcane Signet\":1,\"Sol Ring\":2},\"removed\":{}}]",
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "website",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 2,
+            "maybeboard": false
+          }
+        ],
+        "after": []
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\",\"website\"],\"added\":{\"Arcane Signet\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "removing part of a quantity",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "app",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 5,
+            "maybeboard": false
+          }
+        ],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 3,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{},\"removed\":{\"Sol Ring\":2}}]"
+  },
+  {
+    "name": "the UTC day just before midnight",
+    "start": null,
+    "steps": [
+      {
+        "now": 1763251199999,
+        "source": "app",
+        "before": [],
+        "after": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ]
+      }
+    ],
+    "result": "[{\"day\":\"2025-11-15\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]"
+  },
+  {
+    "name": "same day removal from another source clears the entry",
+    "start": "[{\"day\":\"2025-11-16\",\"sources\":[\"app\"],\"added\":{\"Sol Ring\":1},\"removed\":{}}]",
+    "steps": [
+      {
+        "now": 1763251200000,
+        "source": "website",
+        "before": [
+          {
+            "name": "Sol Ring",
+            "quantity": 1,
+            "maybeboard": false
+          }
+        ],
+        "after": []
+      }
+    ],
+    "result": null
+  }
+]

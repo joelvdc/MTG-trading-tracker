@@ -1,0 +1,864 @@
+[
+  {
+    "name": "an empty deck",
+    "cards": [],
+    "tags": {},
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      }
+    ]
+  },
+  {
+    "name": "own tags win over the categories",
+    "cards": [
+      {
+        "name": "Sol Ring",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Ramp"
+        ],
+        "ownTags": [
+          "Combo piece"
+        ],
+        "auto": [
+          "Ramp"
+        ]
+      }
+    ],
+    "tags": {
+      "Sol Ring": [
+        "Combo piece"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Combo piece",
+        "count": 1,
+        "status": "none"
+      }
+    ]
+  },
+  {
+    "name": "auto and categories map to roles in role order",
+    "cards": [
+      {
+        "name": "Cultivate",
+        "types": "Sorcery",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Ramp",
+          "Tutor"
+        ],
+        "ownTags": null,
+        "auto": [
+          "Ramp"
+        ]
+      }
+    ],
+    "tags": {
+      "Cultivate": [
+        "Ramp",
+        "Tutor"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Tutor",
+        "count": 1,
+        "status": "none"
+      }
+    ]
+  },
+  {
+    "name": "every guideline inside its range",
+    "cards": [
+      {
+        "name": "Island",
+        "types": "Basic Land — Island",
+        "quantity": 37,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Lands"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Sol Ring",
+        "types": "Artifact",
+        "quantity": 11,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Mana rocks"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Rhystic Study",
+        "types": "Enchantment",
+        "quantity": 10,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Card draw"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Swords to Plowshares",
+        "types": "Instant",
+        "quantity": 8,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Spot Removal"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Wrath of God",
+        "types": "Sorcery",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Wrath"
+        ],
+        "ownTags": null,
+        "auto": []
+      }
+    ],
+    "tags": {
+      "Island": [],
+      "Sol Ring": [
+        "Ramp"
+      ],
+      "Rhystic Study": [
+        "Draw"
+      ],
+      "Swords to Plowshares": [
+        "Removal"
+      ],
+      "Wrath of God": [
+        "Wipes"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 37,
+        "status": "ok"
+      },
+      {
+        "role": "Ramp",
+        "count": 11,
+        "status": "ok"
+      },
+      {
+        "role": "Draw",
+        "count": 10,
+        "status": "ok"
+      },
+      {
+        "role": "Removal",
+        "count": 8,
+        "status": "ok"
+      },
+      {
+        "role": "Wipes",
+        "count": 2,
+        "status": "ok"
+      }
+    ]
+  },
+  {
+    "name": "outside the guideline ranges",
+    "cards": [
+      {
+        "name": "Island",
+        "types": "Basic Land",
+        "quantity": 39,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Lands"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Sol Ring",
+        "types": "Artifact",
+        "quantity": 13,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Ramp"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Rhystic Study",
+        "types": "Enchantment",
+        "quantity": 9,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Draw"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Swords to Plowshares",
+        "types": "Instant",
+        "quantity": 13,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Removal"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Wrath of God",
+        "types": "Sorcery",
+        "quantity": 5,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Wipes"
+        ],
+        "ownTags": null,
+        "auto": []
+      }
+    ],
+    "tags": {
+      "Island": [],
+      "Sol Ring": [
+        "Ramp"
+      ],
+      "Rhystic Study": [
+        "Draw"
+      ],
+      "Swords to Plowshares": [
+        "Removal"
+      ],
+      "Wrath of God": [
+        "Wipes"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 39,
+        "status": "high"
+      },
+      {
+        "role": "Ramp",
+        "count": 13,
+        "status": "high"
+      },
+      {
+        "role": "Draw",
+        "count": 9,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 13,
+        "status": "high"
+      },
+      {
+        "role": "Wipes",
+        "count": 5,
+        "status": "high"
+      }
+    ]
+  },
+  {
+    "name": "commanders and the maybeboard do not count",
+    "cards": [
+      {
+        "name": "Atraxa",
+        "types": "Legendary Creature",
+        "quantity": 5,
+        "commander": true,
+        "maybeboard": false,
+        "categories": [
+          "Ramp"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Sol Ring",
+        "types": "Artifact",
+        "quantity": 5,
+        "commander": false,
+        "maybeboard": true,
+        "categories": [
+          "Ramp"
+        ],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Island",
+        "types": "Land",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Arcane Signet",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Ramp"
+        ],
+        "ownTags": null,
+        "auto": []
+      }
+    ],
+    "tags": {
+      "Atraxa": [
+        "Ramp"
+      ],
+      "Sol Ring": [
+        "Ramp"
+      ],
+      "Island": [],
+      "Arcane Signet": [
+        "Ramp"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 2,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      }
+    ]
+  },
+  {
+    "name": "other own tags: counted ignoring case, top five by count then name",
+    "cards": [
+      {
+        "name": "A",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Zeta"
+        ],
+        "auto": []
+      },
+      {
+        "name": "B",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Alpha"
+        ],
+        "auto": []
+      },
+      {
+        "name": "C",
+        "types": "Artifact",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Beta"
+        ],
+        "auto": []
+      },
+      {
+        "name": "D",
+        "types": "Artifact",
+        "quantity": 3,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Gamma"
+        ],
+        "auto": []
+      },
+      {
+        "name": "E",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Delta"
+        ],
+        "auto": []
+      },
+      {
+        "name": "F",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Epsilon"
+        ],
+        "auto": []
+      },
+      {
+        "name": "G",
+        "types": "Artifact",
+        "quantity": 4,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "RAMP"
+        ],
+        "auto": []
+      },
+      {
+        "name": "H",
+        "types": "Artifact",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "combo piece"
+        ],
+        "auto": []
+      },
+      {
+        "name": "I",
+        "types": "Artifact",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": [
+          "Combo piece"
+        ],
+        "auto": []
+      }
+    ],
+    "tags": {
+      "A": [
+        "Zeta"
+      ],
+      "B": [
+        "Alpha"
+      ],
+      "C": [
+        "Beta"
+      ],
+      "D": [
+        "Gamma"
+      ],
+      "E": [
+        "Delta"
+      ],
+      "F": [
+        "Epsilon"
+      ],
+      "G": [
+        "RAMP"
+      ],
+      "H": [
+        "combo piece"
+      ],
+      "I": [
+        "Combo piece"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 4,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "combo piece",
+        "count": 3,
+        "status": "none"
+      },
+      {
+        "role": "Gamma",
+        "count": 3,
+        "status": "none"
+      },
+      {
+        "role": "Beta",
+        "count": 2,
+        "status": "none"
+      },
+      {
+        "role": "Alpha",
+        "count": 1,
+        "status": "none"
+      },
+      {
+        "role": "Delta",
+        "count": 1,
+        "status": "none"
+      }
+    ]
+  },
+  {
+    "name": "an empty own tag list stops the automatic roles",
+    "cards": [
+      {
+        "name": "Sol Ring",
+        "types": "Artifact",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "Ramp"
+        ],
+        "ownTags": [],
+        "auto": [
+          "Ramp"
+        ]
+      }
+    ],
+    "tags": {
+      "Sol Ring": []
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      }
+    ]
+  },
+  {
+    "name": "every role through its category synonyms",
+    "cards": [
+      {
+        "name": "Kitchen Sink",
+        "types": "Sorcery",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "mana rocks",
+          "counterspell",
+          "sweeper",
+          "tutors",
+          "protection",
+          "recursion"
+        ],
+        "ownTags": null,
+        "auto": [
+          "Draw"
+        ]
+      }
+    ],
+    "tags": {
+      "Kitchen Sink": [
+        "Ramp",
+        "Draw",
+        "Removal",
+        "Wipes",
+        "Tutor",
+        "Protection",
+        "Recursion"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Wipes",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Tutor",
+        "count": 1,
+        "status": "none"
+      },
+      {
+        "role": "Protection",
+        "count": 1,
+        "status": "none"
+      },
+      {
+        "role": "Recursion",
+        "count": 1,
+        "status": "none"
+      }
+    ]
+  },
+  {
+    "name": "Land is a whole word, case-sensitively",
+    "cards": [
+      {
+        "name": "Type1",
+        "types": "Creature // Land",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Type2",
+        "types": "Landing Party",
+        "quantity": 3,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Type3",
+        "types": "Land",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Type4",
+        "types": "legendary land",
+        "quantity": 4,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      }
+    ],
+    "tags": {
+      "Type1": [],
+      "Type2": [],
+      "Type3": [],
+      "Type4": []
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 3,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
+        "status": "low"
+      }
+    ]
+  },
+  {
+    "name": "a full double-faced name and mixed case categories",
+    "cards": [
+      {
+        "name": "Fire // Ice",
+        "types": "Instant // Instant",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [
+          "removal"
+        ],
+        "ownTags": null,
+        "auto": [
+          "Draw"
+        ]
+      }
+    ],
+    "tags": {
+      "Fire // Ice": [
+        "Draw",
+        "Removal"
+      ]
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Ramp",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 1,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 1,
+        "status": "low"
+      }
+    ]
+  }
+]
