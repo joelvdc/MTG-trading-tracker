@@ -1,0 +1,208 @@
+{
+  "lines": [
+    {
+      "quantity": 1,
+      "name": "Kenrith, the Returned King",
+      "setCode": "ELD",
+      "number": "303",
+      "foil": false,
+      "etched": false,
+      "categories": [
+        "Commander"
+      ],
+      "commander": true,
+      "maybeboard": false
+    },
+    {
+      "quantity": 1,
+      "name": "Swords to Plowshares",
+      "setCode": "STA",
+      "number": "10",
+      "foil": true,
+      "etched": false,
+      "categories": [
+        "Removal"
+      ],
+      "commander": false,
+      "maybeboard": false
+    },
+    {
+      "quantity": 1,
+      "name": "Arcane Signet",
+      "setCode": "C21",
+      "number": "1",
+      "foil": false,
+      "etched": true,
+      "categories": [
+        "Mana"
+      ],
+      "commander": false,
+      "maybeboard": false
+    },
+    {
+      "quantity": 1,
+      "name": "Sol Ring",
+      "setCode": "CMR",
+      "number": "263",
+      "foil": false,
+      "etched": false,
+      "categories": [
+        "Mana",
+        "Card Draw"
+      ],
+      "commander": false,
+      "maybeboard": false
+    },
+    {
+      "quantity": 1,
+      "name": "Fire // Ice",
+      "setCode": "APC",
+      "number": "128",
+      "foil": false,
+      "etched": false,
+      "categories": [
+        "Removal"
+      ],
+      "commander": false,
+      "maybeboard": false
+    },
+    {
+      "quantity": 10,
+      "name": "Island",
+      "setCode": "UST",
+      "number": "213",
+      "foil": false,
+      "etched": false,
+      "categories": [
+        "Land"
+      ],
+      "commander": false,
+      "maybeboard": false
+    },
+    {
+      "quantity": 1,
+      "name": "Rhystic Study",
+      "setCode": "PCY",
+      "number": "45",
+      "foil": false,
+      "etched": false,
+      "categories": [
+        "Maybeboard"
+      ],
+      "commander": false,
+      "maybeboard": true
+    },
+    {
+      "quantity": 2,
+      "name": "Smothering Tithe",
+      "setCode": "RNA",
+      "number": "22",
+      "foil": true,
+      "etched": false,
+      "categories": [
+        "Maybeboard",
+        "Ramp"
+      ],
+      "commander": false,
+      "maybeboard": true
+    }
+  ],
+  "cases": [
+    {
+      "format": "moxfield",
+      "categories": true,
+      "maybeboard": true,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303 #Commander\n\nDeck\n1 Arcane Signet (C21) 1 *E* #Mana\n1 Fire // Ice (APC) 128 #Removal\n10 Island (UST) 213 #Land\n1 Sol Ring (CMR) 263 #Mana #Card_Draw\n1 Swords to Plowshares (STA) 10 *F* #Removal\n\nMaybeboard\n1 Rhystic Study (PCY) 45 #Maybeboard\n2 Smothering Tithe (RNA) 22 *F* #Maybeboard #Ramp"
+    },
+    {
+      "format": "moxfield",
+      "categories": true,
+      "maybeboard": false,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303 #Commander\n\nDeck\n1 Arcane Signet (C21) 1 *E* #Mana\n1 Fire // Ice (APC) 128 #Removal\n10 Island (UST) 213 #Land\n1 Sol Ring (CMR) 263 #Mana #Card_Draw\n1 Swords to Plowshares (STA) 10 *F* #Removal"
+    },
+    {
+      "format": "moxfield",
+      "categories": false,
+      "maybeboard": true,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303\n\nDeck\n1 Arcane Signet (C21) 1 *E*\n1 Fire // Ice (APC) 128\n10 Island (UST) 213\n1 Sol Ring (CMR) 263\n1 Swords to Plowshares (STA) 10 *F*\n\nMaybeboard\n1 Rhystic Study (PCY) 45\n2 Smothering Tithe (RNA) 22 *F*"
+    },
+    {
+      "format": "moxfield",
+      "categories": false,
+      "maybeboard": false,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303\n\nDeck\n1 Arcane Signet (C21) 1 *E*\n1 Fire // Ice (APC) 128\n10 Island (UST) 213\n1 Sol Ring (CMR) 263\n1 Swords to Plowshares (STA) 10 *F*"
+    },
+    {
+      "format": "archidekt",
+      "categories": true,
+      "maybeboard": true,
+      "text": "Commander\n1x Kenrith, the Returned King (eld) 303 [Commander]\n\nDeck\n1x Arcane Signet (c21) 1 *E* [Mana]\n1x Fire // Ice (apc) 128 [Removal]\n10x Island (ust) 213 [Land]\n1x Sol Ring (cmr) 263 [Mana,Card Draw]\n1x Swords to Plowshares (sta) 10 *F* [Removal]\n\nMaybeboard\n1x Rhystic Study (pcy) 45 [Maybeboard]\n2x Smothering Tithe (rna) 22 *F* [Maybeboard,Ramp]"
+    },
+    {
+      "format": "archidekt",
+      "categories": true,
+      "maybeboard": false,
+      "text": "Commander\n1x Kenrith, the Returned King (eld) 303 [Commander]\n\nDeck\n1x Arcane Signet (c21) 1 *E* [Mana]\n1x Fire // Ice (apc) 128 [Removal]\n10x Island (ust) 213 [Land]\n1x Sol Ring (cmr) 263 [Mana,Card Draw]\n1x Swords to Plowshares (sta) 10 *F* [Removal]"
+    },
+    {
+      "format": "archidekt",
+      "categories": false,
+      "maybeboard": true,
+      "text": "Commander\n1x Kenrith, the Returned King (eld) 303\n\nDeck\n1x Arcane Signet (c21) 1 *E*\n1x Fire // Ice (apc) 128\n10x Island (ust) 213\n1x Sol Ring (cmr) 263\n1x Swords to Plowshares (sta) 10 *F*\n\nMaybeboard\n1x Rhystic Study (pcy) 45\n2x Smothering Tithe (rna) 22 *F*"
+    },
+    {
+      "format": "archidekt",
+      "categories": false,
+      "maybeboard": false,
+      "text": "Commander\n1x Kenrith, the Returned King (eld) 303\n\nDeck\n1x Arcane Signet (c21) 1 *E*\n1x Fire // Ice (apc) 128\n10x Island (ust) 213\n1x Sol Ring (cmr) 263\n1x Swords to Plowshares (sta) 10 *F*"
+    },
+    {
+      "format": "arena",
+      "categories": true,
+      "maybeboard": true,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303\n\nDeck\n1 Arcane Signet (C21) 1\n1 Fire // Ice (APC) 128\n10 Island (UST) 213\n1 Sol Ring (CMR) 263\n1 Swords to Plowshares (STA) 10\n\nSideboard\n1 Rhystic Study (PCY) 45\n2 Smothering Tithe (RNA) 22"
+    },
+    {
+      "format": "arena",
+      "categories": true,
+      "maybeboard": false,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303\n\nDeck\n1 Arcane Signet (C21) 1\n1 Fire // Ice (APC) 128\n10 Island (UST) 213\n1 Sol Ring (CMR) 263\n1 Swords to Plowshares (STA) 10"
+    },
+    {
+      "format": "arena",
+      "categories": false,
+      "maybeboard": true,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303\n\nDeck\n1 Arcane Signet (C21) 1\n1 Fire // Ice (APC) 128\n10 Island (UST) 213\n1 Sol Ring (CMR) 263\n1 Swords to Plowshares (STA) 10\n\nSideboard\n1 Rhystic Study (PCY) 45\n2 Smothering Tithe (RNA) 22"
+    },
+    {
+      "format": "arena",
+      "categories": false,
+      "maybeboard": false,
+      "text": "Commander\n1 Kenrith, the Returned King (ELD) 303\n\nDeck\n1 Arcane Signet (C21) 1\n1 Fire // Ice (APC) 128\n10 Island (UST) 213\n1 Sol Ring (CMR) 263\n1 Swords to Plowshares (STA) 10"
+    },
+    {
+      "format": "plain",
+      "categories": true,
+      "maybeboard": true,
+      "text": "Commander\n1 Kenrith, the Returned King\n\nDeck\n1 Arcane Signet\n1 Fire // Ice\n10 Island\n1 Sol Ring\n1 Swords to Plowshares\n\nMaybeboard\n1 Rhystic Study\n2 Smothering Tithe"
+    },
+    {
+      "format": "plain",
+      "categories": true,
+      "maybeboard": false,
+      "text": "Commander\n1 Kenrith, the Returned King\n\nDeck\n1 Arcane Signet\n1 Fire // Ice\n10 Island\n1 Sol Ring\n1 Swords to Plowshares"
+    },
+    {
+      "format": "plain",
+      "categories": false,
+      "maybeboard": true,
+      "text": "Commander\n1 Kenrith, the Returned King\n\nDeck\n1 Arcane Signet\n1 Fire // Ice\n10 Island\n1 Sol Ring\n1 Swords to Plowshares\n\nMaybeboard\n1 Rhystic Study\n2 Smothering Tithe"
+    },
+    {
+      "format": "plain",
+      "categories": false,
+      "maybeboard": false,
+      "text": "Commander\n1 Kenrith, the Returned King\n\nDeck\n1 Arcane Signet\n1 Fire // Ice\n10 Island\n1 Sol Ring\n1 Swords to Plowshares"
+    }
+  ]
+}
