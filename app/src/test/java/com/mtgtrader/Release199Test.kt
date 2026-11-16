@@ -25,7 +25,7 @@ class Release199Test {
 
     /** One segment as the shared file spells it: its kind, and its text or the card's name. */
     @Serializable
-    private class SegmentCase(val kind: String, val text: String? = null, val name: String? = null)
+    private data class SegmentCase(val kind: String, val text: String? = null, val name: String? = null)
 
     @Serializable
     private class SegmentsCase(val input: String, val output: List<SegmentCase> = emptyList())
