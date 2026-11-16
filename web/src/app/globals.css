@@ -1812,6 +1812,29 @@ button.link.left {
   margin: 0;
 }
 
+/* On a wide window the scores card stays on one line: the scores, the legality and date, then the buttons. The legality
+   takes the leftover room and its text may wrap inside it; below 1100px the rows wrap as before. */
+@media (min-width: 1100px) {
+  .deck-scores {
+    flex-wrap: nowrap;
+  }
+
+  /* A retired deck's note gets its own line here too. */
+  .deck-scores:has(> p) {
+    flex-wrap: wrap;
+  }
+
+  .deck-meta {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .deck-actions {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+  }
+}
+
 details.card > summary {
   cursor: pointer;
   padding: 2px 0;
