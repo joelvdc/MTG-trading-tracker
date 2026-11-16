@@ -223,16 +223,88 @@ describe("writePrimer", () => {
     const headers = full.calls[0].init.headers as Record<string, string>;
     expect(headers.Authorization).toBe(`Bearer ${KEY}`);
     expect(headers["User-Agent"]).toBe(USER_AGENT);
-    const body = JSON.parse(String(full.calls[0].init.body)) as { model: string; max_tokens: number; temperature: number; messages: { role: string; content: string }[] };
+    const body = JSON.parse(String(full.calls[0].init.body)) as { model: string; max_tokens: number; temperature: number; stream: boolean; messages: { role: string; content: string }[] };
     expect(body.model).toBe("some-other-model");
-    expect(body.max_tokens).toBe(4000);
+    expect(body.max_tokens).toBe(16000);
     expect(body.temperature).toBe(0.7);
+    // The whole answer, not a stream: reading chunks is only a fallback.
+    expect(body.stream).toBe(false);
     expect(body.messages.map((m) => m.role)).toEqual(["system", "user"]);
     expect(body.messages[1].content).toContain("## Game plan");
 
     const short = fakeFetch(() => chatAnswer("ok"));
     await writePrimer(input, options({ length: "SHORT" }), "m", short.fn);
-    expect((JSON.parse(String(short.calls[0].init.body)) as { max_tokens: number }).max_tokens).toBe(1500);
+    expect((JSON.parse(String(short.calls[0].init.body)) as { max_tokens: number }).max_tokens).toBe(8000);
+  });
+
+  it("takes a content that comes as parts", async () => {
+    const parts = fakeFetch(() =>
+      jsonBody({ choices: [{ message: { content: [{ type: "text", text: "## Plan\n" }, { text: "- Sol Ring" }] } }] }),
+    );
+    expect(await writePrimer(input, options(), "m", parts.fn)).toBe("## Plan\n- Sol Ring");
+
+    // Nothing but the other parts left: still an empty answer, never a crash.
+    const images = fakeFetch(() => jsonBody({ choices: [{ message: { content: [{ type: "image_url", image_url: { url: "x" } }] } }] }));
+    const quiet = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      await expect(writePrimer(input, options(), "m", images.fn)).rejects.toThrow("The AI's answer was empty.");
+    } finally {
+      quiet.mockRestore();
+    }
+  });
+
+  it("reads an answer that came as server-sent events", async () => {
+    const lines = [
+      `data: ${JSON.stringify({ model: "m", choices: [{ delta: { role: "assistant", content: "## Plan\n" } }] })}`,
+      `data: ${JSON.stringify({ choices: [{ delta: { content: "- Sol Ring" }, finish_reason: null }] })}`,
+      `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] })}`,
+      "data: [DONE]",
+    ];
+    const streamed = fakeFetch(
+      () => new Response(`${lines.join("\n\n")}\n\n`, { status: 200, headers: { "content-type": "text/event-stream" } }),
+    );
+    expect(await writePrimer(input, options(), "m", streamed.fn)).toBe("## Plan\n- Sol Ring");
+  });
+
+  it("says when thinking used up the answer's room, and warns with the numbers only", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const thinking = fakeFetch(() =>
+        jsonBody({
+          model: "deepseek-v4.1-flash",
+          choices: [{ message: { role: "assistant", content: "", reasoning_content: "Reasoning nobody may read" }, finish_reason: "length" }],
+          usage: { prompt_tokens: 1200, completion_tokens: 8000, total_tokens: 9200 },
+        }),
+      );
+      await expect(writePrimer(input, options(), "deepseek-v4.1-flash", thinking.fn)).rejects.toThrow(
+        "The AI used all its room for thinking and wrote nothing; try again, or pick Short or fewer sections.",
+      );
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const line = String(warn.mock.calls[0][0]);
+      expect(line.startsWith("aiprimer empty: ")).toBe(true);
+      // Nothing of the answer, and never the key.
+      expect(line).not.toContain("Reasoning nobody may read");
+      expect(line).not.toContain(KEY);
+      const report = JSON.parse(line.slice("aiprimer empty: ".length)) as Record<string, unknown>;
+      expect(Object.keys(report).sort()).toEqual(["bodyLength", "contentType", "finishReason", "hasReasoning", "messageKeys", "model", "status", "usage"]);
+      expect(report.status).toBe(200);
+      expect(report.contentType).toBe("application/json");
+      expect(report.bodyLength).toBeGreaterThan(0);
+      expect(report.finishReason).toBe("length");
+      expect(report.messageKeys).toEqual(["role", "content", "reasoning_content"]);
+      expect(report.hasReasoning).toBe(true);
+      expect(report.usage).toEqual({ prompt_tokens: 1200, completion_tokens: 8000, total_tokens: 9200 });
+      expect(report.model).toBe("deepseek-v4.1-flash");
+
+      // A short answer that simply said nothing keeps the old wording.
+      const empty = fakeFetch(() => chatAnswer("   "));
+      await expect(writePrimer(input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(String(warn.mock.calls[1][0])).toContain('"finishReason":null');
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("says what went wrong, without the key in the message", async () => {
@@ -247,8 +319,13 @@ describe("writePrimer", () => {
       await expect(writePrimer(input, options(), "m", fn)).rejects.toThrow(message);
     }
 
-    const empty = fakeFetch(() => chatAnswer("   "));
-    await expect(writePrimer(input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
+    const quiet = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const empty = fakeFetch(() => chatAnswer("   "));
+      await expect(writePrimer(input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
+    } finally {
+      quiet.mockRestore();
+    }
 
     const offline = fakeFetch(() => {
       throw new Error("offline");
@@ -415,7 +492,7 @@ describe("the AI primer route", () => {
     expect(calls).toHaveLength(1);
     const sent = JSON.parse(String(calls[0].init.body)) as { model: string; max_tokens: number; messages: { content: string }[] };
     expect(sent.model).toBe("my-model");
-    expect(sent.max_tokens).toBe(1500);
+    expect(sent.max_tokens).toBe(8000);
     expect(sent.messages[1].content).toContain("Focus: cEDH");
     expect(sent.messages[1].content).toContain("## Game plan");
     expect(sent.messages[1].content).toContain("## Weak spots");
@@ -452,7 +529,7 @@ describe("the AI primer route", () => {
     expect(((await answer.json()) as { model: string }).model).toBe(DEFAULT_MODEL);
     const sent = JSON.parse(String(calls[0].init.body)) as { model: string; max_tokens: number; messages: { content: string }[] };
     expect(sent.model).toBe(DEFAULT_MODEL);
-    expect(sent.max_tokens).toBe(4000);
+    expect(sent.max_tokens).toBe(16000);
     expect(sent.messages[1].content).toContain("Focus: Casual");
     expect(sent.messages[1].content).toContain("700–1200 words");
     expect(sent.messages[1].content.match(/## Game plan/g)).toHaveLength(1);
