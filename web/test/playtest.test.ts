@@ -748,6 +748,30 @@ describe("copies and tokens", () => {
     expect(act(none, { type: "token", def: treasure, count: 0 })).toBe(none);
     expect(g.state.cards[g.state.zones.battlefield[0]].copyOf).toBeNull();
   });
+
+  it("creates a token the player made up, with its own look, and undo takes it back", () => {
+    const custom = { colors: ["R", "G"], power: "2", toughness: "2", text: "Trample" };
+    const made = card("My Plant", {
+      scryfallId: "",
+      imageUrl: null,
+      backImageUrl: null,
+      typeLine: "Token Creature — Plant",
+      manaValue: 0,
+      custom,
+    });
+    const before = playing();
+    const g = act(before, { type: "token", def: made, count: 1 });
+    expect(g.state.zones.battlefield).toHaveLength(1);
+    const id = g.state.zones.battlefield[0];
+    expect(g.state.cards[id].token).toBe(true);
+    expect(g.state.cards[id].def.custom).toEqual(custom);
+    expect(g.state.cards[id].def.scryfallId).toBe("");
+    expect(g.state.cards[id].def.imageUrl).toBeNull();
+
+    const undone = act(g, { type: "undo" });
+    expect(undone.state.zones.battlefield).toEqual([]);
+    expect(undone.state.cards[id]).toBeUndefined();
+  });
 });
 
 describe("the player and the turns", () => {

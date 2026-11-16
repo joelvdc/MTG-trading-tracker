@@ -11,7 +11,7 @@ import {
   type RefObject,
 } from "react";
 import { useHoverSetting } from "@/components/HoverCard";
-import { ZONE_IDS, type Action, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
+import { ZONE_IDS, type Action, type CardDef, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
 import { useCornerPreview } from "./CornerPreview";
 import type { PlaytestDialog } from "./PlaytestDialogs";
 
@@ -587,6 +587,7 @@ export function PlaytestBoard({
           {boardItem("Proliferate", () => dispatch({ type: "proliferate" }))}
           <span className="pt-menu-sep" />
           {boardItem("Create token… (T)", () => openDialog({ kind: "token" }))}
+          {boardItem("Custom token…", () => openDialog({ kind: "token", custom: true }))}
           {boardItem("Search the library…", () => openDialog({ kind: "search" }))}
           {boardItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
           <span className="pt-menu-sep" />
@@ -799,10 +800,13 @@ function FloatMenu({
 /** A card's picture, or its back when it is face down; with the counters and the token badge on top. */
 function CardFace({ card }: { card: CardInstance }) {
   const url = card.faceDown ? null : card.flipped && card.def.backImageUrl ? card.def.backImageUrl : card.def.imageUrl;
+  const custom = !card.faceDown && card.def.custom ? card.def.custom : null;
   const badges = card.counters.filter((c) => c.amount !== 0);
   return (
     <>
-      {url ? (
+      {custom ? (
+        <CustomFace def={card.def} />
+      ) : url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt={card.faceDown ? "Face-down card" : card.def.name} loading="lazy" draggable={false} />
       ) : (
@@ -822,18 +826,43 @@ function CardFace({ card }: { card: CardInstance }) {
   );
 }
 
+/** The frame colours of a made-up token: one colour of its own, gold for two or more, grey for none. */
+const CUSTOM_FRAMES: Record<string, string> = { W: "w", U: "u", B: "b", R: "r", G: "g" };
+
+/**
+ * A made-up token's own card, drawn to fill its box: the frame in its colours, the name, the type line, the rules text
+ * and the power and toughness. The board and the card view share it.
+ */
+export function CustomFace({ def }: { def: CardDef }) {
+  const custom = def.custom;
+  const colors = custom?.colors ?? [];
+  const frame = colors.length === 1 ? (CUSTOM_FRAMES[colors[0]] ?? "gold") : colors.length > 1 ? "gold" : "none";
+  const power = (custom?.power ?? "").trim();
+  const toughness = (custom?.toughness ?? "").trim();
+  return (
+    <span className={`pt-custom pt-custom-${frame}`}>
+      <span className="pt-custom-name">{def.name}</span>
+      <span className="pt-custom-type">{def.typeLine}</span>
+      <span className="pt-custom-text">{custom?.text ?? ""}</span>
+      {(power !== "" || toughness !== "") && (
+        <span className="pt-custom-pt">
+          {power === "" ? "—" : power}/{toughness === "" ? "—" : toughness}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function counterText(kind: string, amount: number): string {
   if (kind === "loyalty") return `Loyalty ${amount}`;
   if (kind === "charge") return `Charge ${amount}`;
   return `${kind} ×${amount}`;
 }
 
-/** The card back: drawn with CSS, as there is no picture for it. */
+/** The card back: the site's card-back picture, filling the card. */
 function CardBack() {
   return (
-    <span className="pt-back">
-      <span className="pt-back-oval" aria-hidden="true" />
-      <span className="pt-back-label">MTG Trader</span>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="pt-back" src="/card-back.jpg" alt="Card back" draggable={false} />
   );
 }

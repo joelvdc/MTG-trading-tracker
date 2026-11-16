@@ -17,6 +17,7 @@ import {
   type Game,
   type ZoneId,
 } from "@/lib/playtest";
+import { CustomFace } from "./PlaytestBoard";
 
 /**
  * The playtest page's dialogs: the zone lists, the library search, the look/scry/surveil window, counters, putting a
@@ -31,7 +32,7 @@ export type PlaytestDialog =
   | { kind: "counter"; id: string }
   | { kind: "card"; id: string }
   | { kind: "libraryPosition"; id: string }
-  | { kind: "token" }
+  | { kind: "token"; custom?: boolean }
   | { kind: "dice" }
   | { kind: "log" }
   | { kind: "odds" }
@@ -150,7 +151,7 @@ export function PlaytestDialogs({
     case "libraryPosition":
       return <LibraryPositionDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
     case "token":
-      return <TokenDialog deckTokens={deckTokens} dispatch={dispatch} onClose={onClose} />;
+      return <TokenDialog deckTokens={deckTokens} dispatch={dispatch} onClose={onClose} custom={dialog.custom} />;
     case "dice":
       return <DiceDialog onClose={onClose} />;
     case "log":
@@ -304,9 +305,8 @@ function ZoneDialog({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={url} alt="" loading="lazy" />
                     ) : (
-                      <span className="pt-zone-back" aria-hidden="true">
-                        MTG Trader
-                      </span>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="pt-zone-back" src="/card-back.jpg" alt="" loading="lazy" />
                     )}
                   </span>
                   <span className="pt-zone-name">{card.faceDown ? `${card.def.name} (face down)` : card.def.name}</span>
@@ -405,7 +405,8 @@ function SearchDialog({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={url} alt="" loading="lazy" />
                     ) : (
-                      <span className="pt-zone-back" aria-hidden="true" />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="pt-zone-back" src="/card-back.jpg" alt="" loading="lazy" />
                     )}
                   </span>
                   <div className="pt-pick-info">
@@ -530,9 +531,8 @@ function PeekDialog({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={url} alt="" loading="lazy" />
                   ) : (
-                    <span className="pt-zone-back" aria-hidden="true">
-                      MTG Trader
-                    </span>
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="pt-zone-back" src="/card-back.jpg" alt="" loading="lazy" />
                   )}
                 </span>
                 <span className="pt-zone-name">{card.faceDown ? `${card.def.name} (face down)` : card.def.name}</span>
@@ -719,17 +719,28 @@ function CardViewDialog({ id, game, onClose }: { id: string; game: Game; onClose
   return (
     <Dialog title={card.def.name} onClose={onClose}>
       <div className="stack">
-        {card.def.imageUrl && (
-          <FlipPicture
-            url={card.def.imageUrl}
-            className="line-picture"
-            typeLine={card.def.typeLine}
-            startFlipped={card.flipped}
-          />
+        {card.def.custom ? (
+          <div className="pt-custom-big">
+            <CustomFace def={card.def} />
+          </div>
+        ) : (
+          card.def.imageUrl && (
+            <FlipPicture
+              url={card.def.imageUrl}
+              className="line-picture"
+              typeLine={card.def.typeLine}
+              startFlipped={card.flipped}
+            />
+          )
         )}
-        <CardRulesTabs scryfallId={card.def.scryfallId}>
+        {/* A made-up token has no Scryfall card behind it: the facts (and nothing to look up). */}
+        {card.def.scryfallId === "" ? (
           <p className="muted small">{facts.join(" · ")}</p>
-        </CardRulesTabs>
+        ) : (
+          <CardRulesTabs scryfallId={card.def.scryfallId}>
+            <p className="muted small">{facts.join(" · ")}</p>
+          </CardRulesTabs>
+        )}
         <div className="dialog-actions">
           <span className="spacer" />
           <button className="btn" onClick={onClose}>
@@ -832,15 +843,27 @@ function tokenResultLabel(token: TokenResult): string {
     : token.name;
 }
 
-/** The deck's own tokens and a Scryfall token search, each creating the chosen token in the chosen quantity. */
+/** The five colours a made-up token can have, in the rules' order. */
+const TOKEN_COLOURS: { letter: string; label: string }[] = [
+  { letter: "W", label: "White" },
+  { letter: "U", label: "Blue" },
+  { letter: "B", label: "Black" },
+  { letter: "R", label: "Red" },
+  { letter: "G", label: "Green" },
+];
+
+/** The deck's own tokens and a Scryfall token search, each creating the chosen token in the chosen quantity; plus a
+ *  token the player makes up, drawn by the board itself. "Custom token…" puts that last section first. */
 function TokenDialog({
   deckTokens,
   dispatch,
   onClose,
+  custom,
 }: {
   deckTokens: DeckToken[];
   dispatch: (a: Action) => void;
   onClose: () => void;
+  custom?: boolean;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [query, setQuery] = useState("");
@@ -849,6 +872,12 @@ function TokenDialog({
   const [error, setError] = useState<string | null>(null);
   const [hoverOn] = useHoverSetting();
   const hover = useHoverCard(hoverOn);
+  const [ownName, setOwnName] = useState("");
+  const [ownType, setOwnType] = useState("Token Creature");
+  const [ownColours, setOwnColours] = useState<string[]>([]);
+  const [ownPower, setOwnPower] = useState("");
+  const [ownToughness, setOwnToughness] = useState("");
+  const [ownText, setOwnText] = useState("");
 
   useEffect(() => {
     const q = query.trim();
@@ -907,9 +936,110 @@ function TokenDialog({
       commander: false,
     });
 
+  const toggleColour = (letter: string) =>
+    setOwnColours((old) => (old.includes(letter) ? old.filter((c) => c !== letter) : [...old, letter]));
+
+  /** A token the player makes up: no Scryfall card, so the board draws it from what is typed here. */
+  const createOwn = () => {
+    const name = ownName.trim();
+    if (name === "") return;
+    const typeLine = ownType.trim() === "" ? "Token Creature" : ownType.trim();
+    create({
+      scryfallId: "",
+      name,
+      imageUrl: null,
+      backImageUrl: null,
+      typeLine,
+      manaValue: 0,
+      isLand: /\bland\b/i.test(typeLine),
+      commander: false,
+      custom: {
+        colors: TOKEN_COLOURS.map((colour) => colour.letter).filter((letter) => ownColours.includes(letter)),
+        power: ownPower.trim(),
+        toughness: ownToughness.trim(),
+        text: ownText.trim(),
+      },
+    });
+  };
+
+  /** The "Make your own" form: the name, the type line, the colours, power and toughness, and the rules text. */
+  const ownSection = (
+    <>
+      <h3 className="pt-dialog-head">Make your own</h3>
+      <label className="inline">
+        <span className="muted">Name</span>
+        <input
+          type="text"
+          value={ownName}
+          maxLength={60}
+          autoFocus={custom}
+          placeholder="e.g. Saproling"
+          onChange={(e) => setOwnName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              createOwn();
+            }
+          }}
+        />
+      </label>
+      <label className="inline">
+        <span className="muted">Type line</span>
+        <input type="text" value={ownType} maxLength={80} onChange={(e) => setOwnType(e.target.value)} />
+      </label>
+      <div className="pt-custom-colours">
+        {TOKEN_COLOURS.map(({ letter, label }) => (
+          <label key={letter} className="pt-custom-colour">
+            <input type="checkbox" checked={ownColours.includes(letter)} onChange={() => toggleColour(letter)} />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
+      <div className="inline">
+        <label className="inline">
+          <span className="muted">Power</span>
+          <input
+            type="text"
+            className="pt-counter-amount"
+            value={ownPower}
+            maxLength={4}
+            aria-label="Power"
+            onChange={(e) => setOwnPower(e.target.value)}
+          />
+        </label>
+        <label className="inline">
+          <span className="muted">Toughness</span>
+          <input
+            type="text"
+            className="pt-counter-amount"
+            value={ownToughness}
+            maxLength={4}
+            aria-label="Toughness"
+            onChange={(e) => setOwnToughness(e.target.value)}
+          />
+        </label>
+      </div>
+      <textarea
+        value={ownText}
+        maxLength={400}
+        rows={3}
+        aria-label="Rules text"
+        placeholder="Rules text"
+        onChange={(e) => setOwnText(e.target.value)}
+      />
+      <div className="inline">
+        <button className="btn primary" disabled={ownName.trim() === ""} onClick={createOwn}>
+          Create
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <Dialog title="Create a token" onClose={onClose} wide>
       <div className="stack">
+        {custom && ownSection}
+
         <label className="inline">
           <span className="muted">How many</span>
           <input
@@ -987,6 +1117,8 @@ function TokenDialog({
             </div>
           </div>
         ) : null}
+
+        {!custom && ownSection}
 
         <div className="dialog-actions">
           <span className="spacer" />

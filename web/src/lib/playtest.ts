@@ -20,6 +20,8 @@ export interface CardDef {
   manaValue: number;
   isLand: boolean;
   commander: boolean;
+  /** A token the player made up (no Scryfall card): drawn from these instead of a picture. */
+  custom?: { colors: string[]; power: string; toughness: string; text: string };
 }
 
 /** A kind of counter on a card: "+1/+1", "-1/-1", "loyalty", "charge", or any name. */
