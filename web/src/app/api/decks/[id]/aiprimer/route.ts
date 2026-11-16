@@ -99,11 +99,19 @@ export async function POST(req: Request, { params }: Params) {
     const input = deckPrimerInput(file, id, { cardTags, auto: autoByName });
     if (!input) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
 
-    const text = await writePrimer(input, options, model);
+    const answer = await writePrimer(input, options, model);
     const count = used + 1;
     // A count that can't be saved shouldn't throw away an answer the owner paid for.
     if (store) await store.setJob(jobKey, Date.now(), { count }).catch(() => undefined);
-    return json({ text, model, left: MAX_PER_DAY - count });
+    // The numbers beside the text let the dialog show how long the primer took and what it cost in tokens.
+    return json({
+      text: answer.text,
+      model,
+      left: MAX_PER_DAY - count,
+      seconds: answer.seconds,
+      outputTokens: answer.outputTokens,
+      reasoningTokens: answer.reasoningTokens,
+    });
   } catch (e) {
     return errorResponse(e);
   }

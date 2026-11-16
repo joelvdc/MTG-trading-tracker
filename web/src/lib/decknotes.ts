@@ -103,6 +103,54 @@ export function parseCardNotes(json: string | null | undefined): Record<string, 
   return Object.fromEntries(Object.keys(out).sort().map((k) => [k, out[k]]));
 }
 
+/** One piece of primer text: words, or a link to a card of the deck written as [[Card name]]. */
+export type PrimerSegment = { kind: "text"; text: string } | { kind: "card"; name: string };
+
+/**
+ * Splits one piece of primer text into text and card links (the app reads a primer the same way, so the two agree).
+ * A "[[...]]" is a card only when what is inside is one name: empty or bracketed inside, or a newline, leaves the
+ * whole thing as plain text, so a half-written link never swallows the rest of the primer.
+ */
+export function linkSegments(text: string): PrimerSegment[] {
+  const out: PrimerSegment[] = [];
+  let plain = "";
+  const flush = () => {
+    if (plain !== "") out.push({ kind: "text", text: plain });
+    plain = "";
+  };
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === "[" && text[i + 1] === "[") {
+      const end = text.indexOf("]]", i + 2);
+      if (end >= 0) {
+        const name = text.slice(i + 2, end).trim();
+        // A name with a bracket or a newline in it means this "[[" was just text: carry on right after it.
+        if (name !== "" && !/[[\]\n]/.test(name)) {
+          flush();
+          out.push({ kind: "card", name });
+          i = end + 2;
+          continue;
+        }
+      }
+      plain += "[[";
+      i += 2;
+      continue;
+    }
+    plain += text[i];
+    i += 1;
+  }
+  flush();
+  return out;
+}
+
+/**
+ * Whether a link's name means this card: the whole name, or its front face for double-faced and split cards, so
+ * [[Delver of Secrets]] finds "Delver of Secrets // Insectile Aberration" but the back face alone does not.
+ */
+export function linkMatches(linkName: string, cardName: string): boolean {
+  return nameKey(linkName) === nameKey(cardName) || nameKey(linkName) === nameKey(cardName.split(" // ")[0]);
+}
+
 /** The notes as the synced field's text: trimmed, keys sorted and empty notes left out; null when there are none. */
 export function encodeCardNotes(notes: Record<string, string>): string | null {
   const out: Record<string, string> = {};
