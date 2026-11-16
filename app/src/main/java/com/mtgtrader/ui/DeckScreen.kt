@@ -135,6 +135,7 @@ import com.mtgtrader.data.ManaOdds
 import com.mtgtrader.data.ManaOddsCalc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.FlowRow
@@ -287,6 +288,35 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         }
     }
     val rows = matched.rows
+
+    // A card tapped in the primer page (since 1.99): it opens in this page's own card window, and closing that window
+    // goes back to the primer. The name waits in this page's saved state, which the primer page fills before popping.
+    // The entry is taken once, at this page's first composition: while the primer is on top, nav.currentBackStackEntry
+    // is the primer's own, so asking for it again would miss this page's saved state.
+    val ownEntry = remember { nav.currentBackStackEntry }
+    val primerCardFlow = remember(ownEntry) {
+        ownEntry?.savedStateHandle?.getStateFlow<String?>("primerCard", null) ?: MutableStateFlow<String?>(null)
+    }
+    val primerCard by primerCardFlow.collectAsStateWithLifecycle(null)
+    var backToPrimer by remember { mutableStateOf(false) }
+    LaunchedEffect(primerCard, rows, maybeRows) {
+        val name = primerCard ?: return@LaunchedEffect
+        // Nothing until the deck's lines are in, and nothing at all when no line is that card.
+        if (rows.isEmpty() && maybeRows.isEmpty()) return@LaunchedEffect
+        val row = rows.firstOrNull { DeckNotes.linkMatches(name, it.item.card.name) }
+            ?: maybeRows.firstOrNull { DeckNotes.linkMatches(name, it.item.card.name) }
+            ?: return@LaunchedEffect
+        selected = row
+        backToPrimer = true
+        ownEntry?.savedStateHandle?.set("primerCard", null)
+    }
+    LaunchedEffect(selected) {
+        // The window closed (an edit in it ran first): back to the primer it was opened from.
+        if (selected == null && backToPrimer) {
+            backToPrimer = false
+            nav.navigate("deck/$deckId/primer")
+        }
+    }
 
     // Searching inside the deck (since 1.96), with Scryfall's search words answered on the phone as far as it can
     // (CardQuery). The field sits under the top bar, so it's in the same place whatever the list's scroll position.
