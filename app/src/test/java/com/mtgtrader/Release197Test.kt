@@ -213,14 +213,14 @@ class Release197Test {
         // A card added and taken out again the same day leaves nothing.
         assertNull(DeckHistory.record(added, day1 + 3_600_000, DeckHistory.SOURCE_ARCHIDEKT, DeckHistory.diff(listOf(line("Sol Ring")), emptyList())))
 
-        // Three copies in, one out again the same day: two the better.
+        // Three copies in, one out again the same day: one more than before.
         val net = DeckHistory.record(
             DeckHistory.record(null, day1, "app", DeckHistory.diff(listOf(line("Sol Ring")), listOf(line("Sol Ring", 3)))),
             day1 + 60_000,
             "app",
             DeckHistory.diff(listOf(line("Sol Ring", 3)), listOf(line("Sol Ring", 2))),
         )
-        assertEquals("""[{"day":"2026-11-16","sources":["app"],"added":{"Sol Ring":2},"removed":{}}]""", net)
+        assertEquals("""[{"day":"2026-11-16","sources":["app"],"added":{"Sol Ring":1},"removed":{}}]""", net)
     }
 
     @Test
@@ -337,7 +337,7 @@ class Release197Test {
         assertEquals(listOf("rhystic study", "sol ring"), notes.keys.toList())
         assertEquals("ramp", notes.getValue("sol ring"))
         assertEquals(emptyMap<String, String>(), DeckNotes.parseCardNotes("[]"))
-        assertEquals("A // B", DeckNotes.nameKey("A // B"))
+        assertEquals("a // b", DeckNotes.nameKey("A // B"))
         assertEquals("a // b", DeckNotes.nameKey(" A // B  "))
     }
 
