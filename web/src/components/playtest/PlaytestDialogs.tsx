@@ -878,6 +878,14 @@ function TokenDialog({
   const [ownPower, setOwnPower] = useState("");
   const [ownToughness, setOwnToughness] = useState("");
   const [ownText, setOwnText] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  // The Dialog moves the focus to itself as it opens, so "Custom token…" gives it to the Name field a moment later.
+  useEffect(() => {
+    if (!custom) return;
+    const timer = window.setTimeout(() => nameRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [custom]);
 
   useEffect(() => {
     const q = query.trim();
@@ -962,6 +970,21 @@ function TokenDialog({
     });
   };
 
+  /** The "How many" field: at the top of the dialog, or in the "Make your own" form just above its Create button. */
+  const quantityField = (
+    <label className="inline">
+      <span className="muted pt-nowrap">How many</span>
+      <input
+        type="number"
+        min={1}
+        max={20}
+        className="pt-counter-amount"
+        value={quantity}
+        onChange={(e) => setQuantity(Number(e.target.value))}
+      />
+    </label>
+  );
+
   /** The "Make your own" form: the name, the type line, the colours, power and toughness, and the rules text. */
   const ownSection = (
     <>
@@ -969,10 +992,10 @@ function TokenDialog({
       <label className="inline">
         <span className="muted">Name</span>
         <input
+          ref={nameRef}
           type="text"
           value={ownName}
           maxLength={60}
-          autoFocus={custom}
           placeholder="e.g. Saproling"
           onChange={(e) => setOwnName(e.target.value)}
           onKeyDown={(e) => {
@@ -984,7 +1007,7 @@ function TokenDialog({
         />
       </label>
       <label className="inline">
-        <span className="muted">Type line</span>
+        <span className="muted pt-nowrap">Type line</span>
         <input type="text" value={ownType} maxLength={80} onChange={(e) => setOwnType(e.target.value)} />
       </label>
       <div className="pt-custom-colours">
@@ -1028,6 +1051,7 @@ function TokenDialog({
         onChange={(e) => setOwnText(e.target.value)}
       />
       <div className="inline">
+        {custom && quantityField}
         <button className="btn primary" disabled={ownName.trim() === ""} onClick={createOwn}>
           Create
         </button>
@@ -1038,19 +1062,7 @@ function TokenDialog({
   return (
     <Dialog title="Create a token" onClose={onClose} wide>
       <div className="stack">
-        {custom && ownSection}
-
-        <label className="inline">
-          <span className="muted">How many</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            className="pt-counter-amount"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-          />
-        </label>
+        {custom ? ownSection : quantityField}
 
         <h3 className="pt-dialog-head">This deck&apos;s tokens</h3>
         {deckTokens.length === 0 ? (

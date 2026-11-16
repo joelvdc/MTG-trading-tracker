@@ -629,6 +629,11 @@
   color: var(--accent2);
 }
 
+/* A short label that stays on one line ("Type line", "How many"). */
+.pt-nowrap {
+  white-space: nowrap;
+}
+
 .pt-filter {
   display: flex;
   align-items: center;
