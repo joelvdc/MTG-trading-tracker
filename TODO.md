@@ -14,18 +14,18 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-16, after app 1.96; deck builder parity releases 1-3 done)
-- **Latest:** app 1.96 (2026-11-16): search inside a deck (🔍, the website's syntax via `CardQuery.kt`, shared cases
-  in `web/test/fixtures/cardquery-cases.json`), Copy deck as text / Paste cards (`DeckText.export`, `DeckEditor.
-  previewPaste/addPasted`, shared cases in `deckexport-cases.json`), the deck menu under headings. The app never showed
-  "(This app)" next to Power, so nothing was dropped there. Website (same day): scores card with legality and score
-  date beside the scores, order arrow, toolbar on one line.
-- **Next:** release 4 (app 1.97 + website, sync format 15), then release 5. The owner asked (2026-11-16) to do
-  releases 3 and 4 BEFORE they test the playtester; ask for playtester feedback after release 4. Tag and package bulk
-  actions come with release 4. Worktrees `%LOCALAPPDATA%\ds-jobs\*` and branches `claude/ds-*` can be removed once
-  the plan is finished.
-- **Expected to look odd:** the Undo bar lasts 30 s and only undoes the latest change; the playtester's "Any token"
-  search needs Scryfall, so it can be slow. The app's deck search skips Scryfall-only words (otag:, art:) and says so.
+## Right now (2026-11-16, after app 1.97; deck builder parity releases 1-4 done)
+- **Latest:** app 1.97 + website (2026-11-16, sync format 15, database 30): deck primer and card notes (also on share
+  links; Archidekt's description fills an empty primer once), own tags in every deck (synced pref `cardTags`) with a
+  role line and `tag:` search, packages (pref `deckPackages`, `/api/deckprefs`), change history per deck. Shared rules
+  in `web/test/fixtures/decknotes-, deckhistory-, deckroles-cases.json` (`DeckNotes/DeckHistory/DeckRoles.kt`, `web/src/
+  lib/decknotes/deckhistory/deckroles.ts`). App 1.96 the same day: deck search, copy/paste deck text.
+- **Next:** ask the owner for playtester feedback (they test it now), then release 5 (AI primer). Worktrees
+  `%LOCALAPPDATA%\ds-jobs\*` and branches `claude/ds-*` can be removed once the plan is finished.
+- **Expected to look odd:** a phone still on 1.96 pauses syncing until updated. History starts empty (only changes
+  from 1.97 on). The role line's automatic roles need the website (offline, only own tags and deck categories count);
+  Wipes only shows from own tags or categories such as "Board Wipe" (the website's table puts sweepers under Removal).
+  The Undo bar lasts 30 s and only undoes the latest change.
 - **Earlier:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
   big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
   (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
@@ -50,7 +50,7 @@ history, the release notes and `web/README.md`.)
   only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
   phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** playtester feedback, after release 4. Review follow-ups for later under "From the code reviews". Ideas still
+- **Waiting on the owner:** playtester feedback (now due). Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
 ## In progress: deck builder parity (green light 2026-11-15)
@@ -66,7 +66,7 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
   search, life/poison/energy/experience/commander tax, turns, undo, log, dice/coin, shortcuts, land/draw odds). DONE
   (live 2026-11-16). Owner tests it after release 4. No playtest in the Android app.
 - **Release 3, app 1.96:** DONE 2026-11-16 (deck search, copy/paste deck text, menu headings + search icon).
-- **Release 4, app 1.97 + website, sync format 15 (owner OK: phones update via Obtainium):** deck primer + per-card
+- **Release 4, app 1.97 + website, sync format 15:** DONE 2026-11-16. Deck primer + per-card
   notes (share page too, kept on Archidekt reload, Archidekt description fills an empty primer once); own tags that
   apply in every deck + role counts line; packages; change history per deck (same-day merge, last 100 entries).
 - **Release 5, website:** AI primer via OpenCode Go (Vercel `OPENCODE_API_KEY`, own key, set 2026-11-15; Extra Usage
@@ -137,6 +137,10 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.97 (2026-11-16): deck primer and card notes, own tags in every deck with a role line, packages, change history
+  (app and website, sync format 15); website Select mode gains Tag… and Save as package….
+- 1.96 (2026-11-16): search inside a deck, copy deck as text, paste cards, the deck menu under headings.
+- Website (2026-11-16): fewer deck buttons, Undo bar, Select mode, copy/paste deck text, playtester.
 - 1.95 (2026-11-15): deck page with much less help text, and its last modified date (not on the Decks tab).
 - 1.94 (2026-11-14): tracker menus and Settings → Games in the app's colours, shorter settings texts, Backups and
   Nextcloud without the website.
