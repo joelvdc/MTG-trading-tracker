@@ -10,8 +10,9 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
+import { useHoverSetting } from "@/components/HoverCard";
 import { ZONE_IDS, type Action, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
+import { useCornerPreview } from "./CornerPreview";
 import type { PlaytestDialog } from "./PlaytestDialogs";
 
 /** Where a dragged card can land. */
@@ -79,7 +80,7 @@ export function PlaytestBoard({
 }) {
   const state = game.state;
   const [hoverOn] = useHoverSetting();
-  const hover = useHoverCard(hoverOn);
+  const hover = useCornerPreview(hoverOn);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -127,6 +128,7 @@ export function PlaytestBoard({
   }
 
   function onCardPointerDown(e: ReactPointerEvent<HTMLElement>, id: string) {
+    hover.hide();
     if (e.button !== 0 || press.current) return;
     const zone = zoneOf(id);
     if (zone === null) return;
@@ -445,7 +447,7 @@ export function PlaytestBoard({
             <div
               key={id}
               className="pt-hand-card"
-              style={i === 0 || overlap === 0 ? undefined : { marginLeft: -overlap }}
+              style={i === 0 || overlap === 0 ? undefined : { marginLeft: `calc(${-overlap}px * var(--pt-zoom, 1))` }}
               onDoubleClick={() => playFromHand(id)}
             >
               {cardBox(card, "")}

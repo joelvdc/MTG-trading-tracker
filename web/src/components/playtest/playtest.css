@@ -53,6 +53,19 @@
   margin-left: auto;
 }
 
+/* The card-size buttons, at the far right of the header (after the player counters, which take the auto margin). */
+.pt-zoom {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.pt-zoom-value {
+  min-width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
 .pt-chip {
   display: inline-flex;
   align-items: center;
@@ -104,10 +117,24 @@
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 156px;
+  grid-template-columns: minmax(0, 1fr) calc(156px * max(1, var(--pt-zoom, 1)));
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 8px;
   padding: 8px;
+  position: relative;
+}
+
+/* The big picture of the card the mouse rests on, in the playing field's top-right corner (like Moxfield). */
+.pt-preview {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  width: min(300px, 42vw);
+  aspect-ratio: 488 / 680;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
 }
 
 .pt-board {
@@ -136,7 +163,7 @@
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  min-height: 124px;
+  min-height: calc(124px * var(--pt-zoom, 1));
   padding: 4px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -148,7 +175,7 @@
 
 .pt-hand-card {
   flex: 0 0 auto;
-  width: 84px;
+  width: calc(84px * var(--pt-zoom, 1));
 }
 
 .pt-hand-empty {
@@ -158,7 +185,7 @@
 /* ---- Cards ---- */
 .pt-board-card {
   position: absolute;
-  width: 92px;
+  width: calc(92px * var(--pt-zoom, 1));
 }
 
 .pt-card {
@@ -292,7 +319,7 @@
 .pt-pile-card {
   position: relative;
   width: 100%;
-  max-width: 84px;
+  max-width: calc(84px * var(--pt-zoom, 1));
   margin: 0 auto;
   aspect-ratio: 488 / 680;
   border-radius: 6px;
@@ -322,7 +349,7 @@
 
 .pt-command-card {
   flex: 1 1 60px;
-  max-width: 84px;
+  max-width: calc(84px * var(--pt-zoom, 1));
 }
 
 .pt-command-card .pt-card {
@@ -492,22 +519,22 @@
 
   .pt-pile-card {
     width: 100%;
-    max-width: 64px;
+    max-width: calc(64px * var(--pt-zoom, 1));
   }
 
   .pt-command-card {
-    max-width: 64px;
+    max-width: calc(64px * var(--pt-zoom, 1));
   }
 
   .pt-hand {
     grid-column: 1;
     grid-row: 3;
-    min-height: 96px;
+    min-height: calc(96px * var(--pt-zoom, 1));
   }
 
   .pt-board-card,
   .pt-hand-card {
-    width: 64px;
+    width: calc(64px * var(--pt-zoom, 1));
   }
 
   .pt-deck-name {
@@ -516,6 +543,11 @@
 
   .pt-player {
     margin-left: 0;
+  }
+
+  /* On phones the player counters no longer take the auto margin, so the zoom buttons keep it at the far right. */
+  .pt-zoom {
+    margin-left: auto;
   }
 }
 

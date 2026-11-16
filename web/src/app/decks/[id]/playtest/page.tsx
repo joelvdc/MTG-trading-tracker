@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { api } from "@/components/api";
 import { PlaytestBoard } from "@/components/playtest/PlaytestBoard";
 import { PlaytestDialogs, type PlaytestDialog } from "@/components/playtest/PlaytestDialogs";
@@ -54,6 +54,31 @@ function newSeed(): number {
   return Date.now() % 2147483647;
 }
 
+const ZOOM_KEY = "mtg.ptZoom";
+const ZOOM_DEFAULT = 100;
+const ZOOM_MIN = 50;
+const ZOOM_MAX = 200;
+const ZOOM_STEP = 10;
+
+/** The card size remembered per browser: a whole percent from 50 to 200 in steps of 10; 100 otherwise. */
+function loadZoom(): number {
+  try {
+    const saved = Number(localStorage.getItem(ZOOM_KEY));
+    if (Number.isInteger(saved) && saved >= ZOOM_MIN && saved <= ZOOM_MAX && saved % ZOOM_STEP === 0) return saved;
+  } catch {
+    // Storage unavailable: the default.
+  }
+  return ZOOM_DEFAULT;
+}
+
+function saveZoom(zoom: number): void {
+  try {
+    localStorage.setItem(ZOOM_KEY, String(zoom));
+  } catch {
+    // Not remembered; fine.
+  }
+}
+
 /**
  * The deck's cards as the playtester's engine wants them: one entry per line (its quantity copies), with the type line
  * from the stats, the back face for a double-faced card, and whether the front is a land.
@@ -99,9 +124,15 @@ export default function PlaytestPage() {
   const [game, setGame] = useState<Game | null>(null);
   const [options, setOptions] = useState<Options>(() => (typeof window === "undefined" ? DEFAULTS : loadOptions()));
   const [dialog, setDialog] = useState<PlaytestDialog | null>(null);
+  const [zoom, setZoom] = useState(ZOOM_DEFAULT);
   // The options in force when the first game was dealt (the toggles only apply at the next Restart).
   const optionsRef = useRef(options);
   const dealt = useRef(false);
+
+  // The card size is only known in the browser, so it is read once mounted.
+  useEffect(() => {
+    setZoom(loadZoom());
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -152,6 +183,13 @@ export default function PlaytestPage() {
       saveOptions(next);
       return next;
     });
+  }
+
+  /** Sets the card size, kept between 50% and 200%, and remembers it. */
+  function changeZoom(next: number) {
+    const value = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next));
+    setZoom(value);
+    saveZoom(value);
   }
 
   /** Closes a dialog; closing the "look at the top" window (a placeholder for now) stops the look. */
@@ -240,7 +278,7 @@ export default function PlaytestPage() {
   const peek = state.peek;
 
   return (
-    <div className="pt-page">
+    <div className="pt-page" style={{ "--pt-zoom": zoom / 100 } as CSSProperties}>
       <header className="pt-bar">
         <Link href={`/decks/${encodeURIComponent(params.id)}`} className="btn small-btn pt-back-link">
           ← Back to deck
@@ -327,6 +365,17 @@ export default function PlaytestPage() {
               ))}
             </div>
           </details>
+        </div>
+        <div className="pt-zoom" role="group" aria-label="Card size">
+          <button className="btn small-btn" disabled={zoom <= 50} onClick={() => changeZoom(zoom - 10)} title="Smaller cards" aria-label="Smaller cards">
+            −
+          </button>
+          <button className="btn small-btn pt-zoom-value" onClick={() => changeZoom(100)} title="Back to 100%">
+            {zoom}%
+          </button>
+          <button className="btn small-btn" disabled={zoom >= 200} onClick={() => changeZoom(zoom + 10)} title="Bigger cards" aria-label="Bigger cards">
+            +
+          </button>
         </div>
       </header>
 

@@ -5,6 +5,8 @@
   --red: #d32f2f;
   --teal: #00897b;
   --radius: 12px;
+  /* The playtester's card size (changed by its zoom buttons); 1 is 100%. */
+  --pt-zoom: 1;
 }
 
 * {
