@@ -162,37 +162,3 @@ export function encodeCardNotes(notes: Record<string, string>): string | null {
   if (keys.length === 0) return null;
   return JSON.stringify(Object.fromEntries(keys.map((k) => [k, out[k]])));
 }
-
-/** One piece of a primer line: plain text, or a link to a card written as [[Card name]]. */
-export type PrimerSegment = { kind: "text"; text: string } | { kind: "card"; name: string };
-
-/** Splits text into text and [[card]] segments (see the shared rules). */
-export function linkSegments(text: string): PrimerSegment[] {
-  const out: PrimerSegment[] = [];
-  let buf = "";
-  let i = 0;
-  while (i < text.length) {
-    const open = text.indexOf("[[", i);
-    if (open < 0) { buf += text.slice(i); break; }
-    const close = text.indexOf("]]", open + 2);
-    const inner = close < 0 ? "" : text.slice(open + 2, close);
-    if (close >= 0 && inner.trim() !== "" && !/[[\]\n]/.test(inner)) {
-      buf += text.slice(i, open);
-      if (buf !== "") out.push({ kind: "text", text: buf });
-      buf = "";
-      out.push({ kind: "card", name: inner.trim() });
-      i = close + 2;
-    } else {
-      buf += text.slice(i, open + 2);
-      i = open + 2;
-    }
-  }
-  if (buf !== "") out.push({ kind: "text", text: buf });
-  return out;
-}
-
-/** Whether a [[link]] names this card: the same name, or the front face of a double-faced or split card. */
-export function linkMatches(linkName: string, cardName: string): boolean {
-  const key = nameKey(linkName);
-  return key === nameKey(cardName) || key === nameKey(cardName.split(" // ")[0]);
-}
