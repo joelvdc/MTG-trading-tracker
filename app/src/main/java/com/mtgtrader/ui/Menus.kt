@@ -5,7 +5,10 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,6 +26,19 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ScreenMenu(expanded: Boolean, onDismissRequest: () -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest, modifier = modifier.heightIn(max = menuMaxHeight()), content = content)
+}
+
+/**
+ * A small heading that groups the items under it in a menu (since 1.96). It isn't a menu item: it can't be tapped.
+ */
+@Composable
+fun MenuHeading(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 4.dp),
+    )
 }
 
 /** The screen's height without the status bar, the phone's buttons and the menu's margins above and below. */

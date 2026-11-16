@@ -2,6 +2,8 @@ package com.mtgtrader.ui
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +30,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Unarchive
@@ -48,6 +53,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -71,12 +77,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -124,6 +134,7 @@ import androidx.compose.material.icons.filled.DragIndicator
 import com.mtgtrader.data.ManaOdds
 import com.mtgtrader.data.ManaOddsCalc
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.FlowRow
@@ -136,8 +147,10 @@ import com.mtgtrader.data.DeckCollectionCounts
 import com.mtgtrader.data.DeckCardRow
 import com.mtgtrader.data.DeckGroupBy
 import com.mtgtrader.data.DeckGrouping
+import com.mtgtrader.data.DeckText
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
+import com.mtgtrader.data.QueryCard
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.PowerSource
 import kotlinx.coroutines.launch
@@ -147,6 +160,7 @@ import androidx.compose.material.icons.filled.Style
 import com.mtgtrader.data.DeckPrintings
 import com.mtgtrader.data.DeckToCollection
 import com.mtgtrader.data.CardRef
+import com.mtgtrader.data.CardQuery
 import com.mtgtrader.data.DeckCard
 import com.mtgtrader.data.CollectionRow
 import com.mtgtrader.data.Binder
@@ -233,6 +247,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val descending by c.settings.deckDescending.collectAsStateWithLifecycle()
     var layoutOptions by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
+    var copyingText by remember { mutableStateOf(false) }
+    var pasting by remember { mutableStateOf(false) }
     var showing by remember { mutableStateOf<RuleZeroCard?>(null) }
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -260,6 +276,41 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     }
     val rows = matched.rows
 
+    // Searching inside the deck (since 1.96), with Scryfall's search words answered on the phone as far as it can
+    // (CardQuery). The field sits under the top bar, so it's in the same place whatever the list's scroll position.
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var searchText by rememberSaveable { mutableStateOf("") }
+    // The card details the search reads (type, rules text, colours, power…): loaded once per change of the printings.
+    val searchIds = remember(rows, maybeRows) { (rows + maybeRows).map { it.item.card.scryfallId }.distinct() }
+    val searchWanted = searching && searchText.isNotBlank()
+    val searchDetails by produceState(emptyMap<String, CardInfo>(), searchIds, searchWanted) {
+        value = if (!searchWanted) emptyMap() else runCatching { c.cardDetails.forIds(searchIds) }.getOrDefault(emptyMap())
+    }
+    val searchQuery = remember(searchText) { searchText.trim().takeIf { it.isNotEmpty() }?.let(CardQuery::parse) }
+    // Each line once, by its uid: a search over a long deck stays quick and keeps the same answer for the same line.
+    val searchMatches: Map<String, Boolean> = remember(searchQuery, searchDetails, rows, maybeRows, priceType) {
+        val q = searchQuery as? CardQuery.Query ?: return@remember emptyMap()
+        (rows + maybeRows).associate { row ->
+            row.item.lineUid to CardQuery.matches(q, queryCard(row, searchDetails[row.item.card.scryfallId], priceType))
+        }
+    }
+    // A filter that didn't parse changes nothing (its message shows under the field instead).
+    val searchError = (searchQuery as? CardQuery.Error)?.error
+    val filtering = searchQuery is CardQuery.Query && searchMatches.isNotEmpty()
+    // While a search that parsed is on, the list shows only the cards (the sections), nothing above them.
+    val searchActive = searching && filtering
+    val shownRows = remember(rows, searchMatches, filtering) { if (!filtering) rows else rows.filter { searchMatches[it.item.lineUid] == true } }
+    val shownMaybeRows = remember(maybeRows, searchMatches, filtering) { if (!filtering) maybeRows else maybeRows.filter { searchMatches[it.item.lineUid] == true } }
+    // "N of M cards" (by quantity) for the deck while a filter that parsed is on, and the words only Scryfall can answer.
+    val searchCounts = if (searchQuery is CardQuery.Query && searchText.isNotBlank()) {
+        shownRows.sumOf { it.item.quantity } to rows.sumOf { it.item.quantity }
+    } else null
+    val searchUnsupported = (searchQuery as? CardQuery.Query)?.let { CardQuery.unsupportedKeys(it) }.orEmpty()
+    fun closeSearch() {
+        searching = false
+        searchText = ""
+    }
+
     var addingToCollection by remember { mutableStateOf(false) }
     var onlyBracket by rememberSaveable { mutableStateOf(false) }
     // Bracket-relevant cards come from Commander Salt's analysis (fetched again when saved by an older version).
@@ -285,8 +336,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val hidden = hiddenAll[deckId].orEmpty().keys
     // The deck's own category order (set on the website, since 1.86); the rest alphabetically.
     val categoryOrder = remember(deck?.categoryOrder) { DeckGrouping.categoryOrder(deck?.categoryOrder) }
-    val allSections = remember(rows, groupBy, cardSort, descending, onlyBracket, tagged, costs, categoryOrder) {
-        DeckGrouping.sections(if (onlyBracket) rows.filter { it.item.id in tagged } else rows, groupBy, cardSort, descending, categoryOrder) {
+    val allSections = remember(shownRows, groupBy, cardSort, descending, onlyBracket, tagged, costs, categoryOrder) {
+        DeckGrouping.sections(if (onlyBracket) shownRows.filter { it.item.id in tagged } else shownRows, groupBy, cardSort, descending, categoryOrder) {
             DeckGrouping.costColours(costs[it.item.card.name])
         }
     }
@@ -297,7 +348,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         (allSections - sections.toSet()).flatMap { s -> s.rows }.sortedWith(compareBy({ it.item.category.lowercase() }, { it.item.card.name }))
     }
     // The maybeboard (and any other category left out of the deck on Archidekt), by its categories.
-    val maybeSections = remember(maybeRows, cardSort, descending, categoryOrder) { DeckGrouping.sections(maybeRows, DeckGroupBy.CATEGORY, cardSort, descending, categoryOrder) }
+    val maybeSections = remember(shownMaybeRows, cardSort, descending, categoryOrder) { DeckGrouping.sections(shownMaybeRows, DeckGroupBy.CATEGORY, cardSort, descending, categoryOrder) }
     // Headings are folded by their title, for every deck; the maybeboard's apart from the deck's.
     val shownKeys = remember(sections, maybeSections, showMaybeboard) {
         sections.map { it.title } + if (showMaybeboard) maybeSections.map { maybeKey(it.title) } else emptyList()
@@ -341,6 +392,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     LaunchedEffect(deckId, ownDeck) {
         if (ownDeck) c.deckEditor.prepare(deckId)?.let { snackbar.showSnackbar(it) }
     }
+    BackHandler(enabled = searching) { closeSearch() }
     BackHandler(enabled = selection.isNotEmpty()) { selection = emptyList() }
     fun edit(message: String, op: suspend () -> UndoAction) {
         scope.launch {
@@ -378,13 +430,18 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 title = { Text(deck?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
+                    IconButton(onClick = { if (searching) closeSearch() else searching = true }) { Icon(Icons.Default.Search, "Search this deck") }
                     IconButton(onClick = { c.settings.setDeckCompact(!compact) }) {
                         if (compact) Icon(Icons.Default.ViewList, "Show cards with pictures") else Icon(Icons.Default.ViewHeadline, "Compact view")
                     }
                     if (deck?.local != true) IconButton(onClick = ::refresh, enabled = job == null) { Icon(Icons.Default.Refresh, "Reload decklist from Archidekt") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                    // The menu under headings (since 1.96). Each heading keeps at least one item on every deck, so none
+                    // is ever left with nothing under it.
                     ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         val local = deck?.local == true
+                        val anyOpen = shownKeys.any { it !in collapsed }
+                        MenuHeading("Deck")
                         if (!local) DropdownMenuItem(
                             text = { Text("Reload decklist from Archidekt") },
                             leadingIcon = { Icon(Icons.Default.Refresh, null) },
@@ -397,6 +454,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 text = { Text("Rename deck") },
                                 leadingIcon = { Icon(Icons.Default.Edit, null) },
                                 onClick = { menu = false; renameDeck = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Paste cards…") },
+                                leadingIcon = { Icon(Icons.Default.ContentPaste, null) },
+                                onClick = { menu = false; pasting = true },
                             )
                         }
                         if (editable) {
@@ -417,11 +479,16 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             onClick = { menu = false; confirmDetach = true },
                         )
                         DropdownMenuItem(
-                            text = { Text(if (myPrintings) "Show Archidekt's printings" else "Show the printings I own") },
-                            leadingIcon = { Icon(Icons.Default.Style, null) },
-                            onClick = { menu = false; c.settings.setDeckShowsMyPrintings(deckId, !myPrintings) },
+                            text = { Text("Add to collection…") },
+                            leadingIcon = { Icon(Icons.Default.LibraryAdd, null) },
+                            onClick = { menu = false; addingToCollection = true },
                         )
-                        HorizontalDivider()
+                        MenuHeading("View")
+                        DropdownMenuItem(
+                            text = { Text("Search this deck") },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            onClick = { menu = false; searching = true },
+                        )
                         DropdownMenuItem(
                             text = { Text("Group and sort…") },
                             leadingIcon = { Icon(Icons.Default.ViewList, null) },
@@ -438,7 +505,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             trailingIcon = { if (showMaybeboard) Icon(Icons.Default.Check, "On") },
                             onClick = { menu = false; c.settings.setDeckMaybeboard(!showMaybeboard) },
                         )
-                        val anyOpen = shownKeys.any { it !in collapsed }
                         DropdownMenuItem(
                             text = { Text(if (anyOpen) "Collapse all sections" else "Expand all sections") },
                             leadingIcon = { Icon(if (anyOpen) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore, null) },
@@ -446,6 +512,42 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 menu = false
                                 c.settings.setDeckCollapsed(if (anyOpen) collapsed + shownKeys else collapsed - shownKeys.toSet())
                             },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (myPrintings) "Show Archidekt's printings" else "Show the printings I own") },
+                            leadingIcon = { Icon(Icons.Default.Style, null) },
+                            onClick = { menu = false; c.settings.setDeckShowsMyPrintings(deckId, !myPrintings) },
+                        )
+                        MenuHeading("Share")
+                        DropdownMenuItem(
+                            text = { Text("Copy deck as text…") },
+                            leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
+                            enabled = deck != null,
+                            onClick = { menu = false; copyingText = true },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Share a link to this deck") },
+                            leadingIcon = { Icon(Icons.Default.Share, null) },
+                            enabled = !sharing && deck != null,
+                            onClick = {
+                                menu = false
+                                sharing = true
+                                scope.launch {
+                                    shareLink(context, c, "deck", deckId.toString(), "MTG Trader: ${deck?.name.orEmpty()}")?.let { snackbar.showSnackbar(it) }
+                                    sharing = false
+                                }
+                            },
+                        )
+                        MenuHeading("More")
+                        DropdownMenuItem(
+                            text = { Text("Recommendations (EDHREC, recommander.cards)") },
+                            leadingIcon = { Icon(Icons.Default.AutoAwesome, null) },
+                            onClick = { menu = false; nav.navigate("deck/$deckId/recs") },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Cards I'm missing") },
+                            leadingIcon = { Icon(Icons.Default.RemoveShoppingCart, null) },
+                            onClick = { menu = false; nav.navigate("deck/$deckId/missing") },
                         )
                         deck?.takeIf { !it.local }?.let { d ->
                             DropdownMenuItem(
@@ -469,34 +571,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 )
                             }
                         }
-                        DropdownMenuItem(
-                            text = { Text("Recommendations (EDHREC, recommander.cards)") },
-                            leadingIcon = { Icon(Icons.Default.AutoAwesome, null) },
-                            onClick = { menu = false; nav.navigate("deck/$deckId/recs") },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Cards I'm missing") },
-                            leadingIcon = { Icon(Icons.Default.RemoveShoppingCart, null) },
-                            onClick = { menu = false; nav.navigate("deck/$deckId/missing") },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Add to collection…") },
-                            leadingIcon = { Icon(Icons.Default.LibraryAdd, null) },
-                            onClick = { menu = false; addingToCollection = true },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Share a link to this deck") },
-                            leadingIcon = { Icon(Icons.Default.Share, null) },
-                            enabled = !sharing && deck != null,
-                            onClick = {
-                                menu = false
-                                sharing = true
-                                scope.launch {
-                                    shareLink(context, c, "deck", deckId.toString(), "MTG Trader: ${deck?.name.orEmpty()}")?.let { snackbar.showSnackbar(it) }
-                                    sharing = false
-                                }
-                            },
-                        )
+                        HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text(if (deck?.retired == true) "Bring back" else "Retire deck…") },
                             leadingIcon = { Icon(if (deck?.retired == true) Icons.Default.Unarchive else Icons.Default.Archive, null) },
@@ -622,167 +697,188 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 }
             }
         }
-        LazyColumn(Modifier.padding(pad), state = listState, contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 88.dp)) {
-            job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
-            if (waiting > 0) {
-                item(key = "waiting") { UnsentBanner(waiting, onKeep = { confirmDetach = true }, onDiscard = { confirmReload = true }) }
+        // Once the typing settles, the matching cards come into view (the list holds only cards while searching).
+        LaunchedEffect(searchText) {
+            if (!searchActive) return@LaunchedEffect
+            delay(300)
+            listState.scrollToItem(0)
+        }
+        // The search field sits above the list, so it's in the same place whatever the list's scroll position.
+        Column(Modifier.padding(pad).fillMaxSize()) {
+            if (searching) {
+                DeckSearchBar(
+                    text = searchText,
+                    onChange = { searchText = it },
+                    error = searchError,
+                    counts = searchCounts,
+                    unsupported = searchUnsupported,
+                    onClose = ::closeSearch,
+                )
             }
-            if (d.retired) item(key = "retired") {
-                Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Retired",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { scope.launch { c.db.deckDao().setRetired(deckId, false) } }) { Text("Bring back") }
-                }
-            }
-            item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
-            item(key = "rulezero") {
-                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Shield, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Bracket card")
+            LazyColumn(Modifier.weight(1f), state = listState, contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 88.dp)) {
+                if (!searchActive) {
+                    job?.takeIf { it.deckId == deckId }?.let { j -> item(key = "job") { Box(Modifier.padding(bottom = 8.dp)) { JobCard(j) } } }
+                    if (waiting > 0) {
+                        item(key = "waiting") { UnsentBanner(waiting, onKeep = { confirmDetach = true }, onDiscard = { confirmReload = true }) }
                     }
-                    Button(onClick = { showing = RuleZeroCard.POWER }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Bolt, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Power card")
+                    if (d.retired) item(key = "retired") {
+                        Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "Retired",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { scope.launch { c.db.deckDao().setRetired(deckId, false) } }) { Text("Bring back") }
+                        }
                     }
-                }
-            }
-            item(key = "recs") {
-                OutlinedButton(onClick = { nav.navigate("deck/$deckId/recs") }, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                    Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Card recommendations")
-                }
-            }
-            item(key = "scores") {
-                ScoresCard(d, source, busy = job != null, onRetry = ::refresh) {
-                    if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
-                }
-            }
-            if (archidektRows.isNotEmpty()) item(key = "legality") { LegalityCard(legality) }
-            if (tagged.isNotEmpty()) {
-                item(key = "bracketcards") { BracketSummary(tagged.values, saltCard?.allCombos.orEmpty(), onlyBracket) { onlyBracket = it } }
-            }
-            // The stats and tokens, folded until opened (remembered for every deck).
-            val statsFolded = DeckStats.STATS !in statsOpen
-            item(key = "stats_h") { StatsHeading("Stats", statsFolded) { toggleStats(DeckStats.STATS) } }
-            if (!statsFolded) {
-                // Only decks with a commander keep "any colour" sources to its colours.
-                val identity = d.colorIdentity.takeIf { d.commanders.isNotBlank() }
-                item(key = "stats_curve") { ManaCurveCard(remember(statCards) { DeckStats.curve(statCards) }) }
-                item(key = "stats_colours") {
-                    ColoursCard(
-                        costs = remember(statCards) { DeckStats.costs(statCards) },
-                        sources = remember(statCards, identity, landsOnly, colourless) { DeckStats.sources(statCards, identity, landsOnly, colourless) },
-                        landsOnly = landsOnly,
-                        colourless = colourless,
-                        landCount = statCards.filter { it.isLand }.sumOf { it.quantity },
-                        detailsMissing = statCards.count { it.producedMana == null },
-                        onLandsOnly = c.settings::setDeckLandsOnly,
-                        onColourless = c.settings::setDeckColourless,
-                    )
-                }
-                if (d.commanders.isNotBlank()) {
-                    item(key = "stats_odds") {
-                        if (statCards.any { it.commander }) CommanderOddsCard(odds, statCards.count { it.oracleText == null })
+                    item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
+                    item(key = "rulezero") {
+                        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Default.Shield, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Bracket card")
+                            }
+                            Button(onClick = { showing = RuleZeroCard.POWER }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Default.Bolt, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Power card")
+                            }
+                        }
                     }
-                    item(key = "stats_win") {
-                        if (statCards.any { it.commander }) WinningCard(win, statCards.count { it.oracleText == null })
+                    item(key = "recs") {
+                        OutlinedButton(onClick = { nav.navigate("deck/$deckId/recs") }, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                            Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Card recommendations")
+                        }
                     }
-                }
-            }
-            // The deck's games from the life tracker (since 1.47), folded until opened; above the tokens since 1.58.
-            if (deckGames.isNotEmpty()) {
-                val gamesFolded = GAMES_OPEN !in statsOpen
-                item(key = "games_h") { StatsHeading("Games (${deckGames.size})", gamesFolded) { toggleStats(GAMES_OPEN) } }
-                if (!gamesFolded) item(key = "games_card") {
-                    val r = remember(deckGames) { com.mtgtrader.data.GameStats.decks(deckGames).firstOrNull { it.deckId == deckId } }
-                    r?.let { DeckGamesCard(it, deckGames, deckId) { g -> g.uid?.let { uid -> nav.navigate("games/game/$uid") } } }
-                }
-            }
-            if (tokens.isNotEmpty()) {
-                val tokensFolded = DeckStats.TOKENS !in statsOpen
-                item(key = "tokens_h") { StatsHeading("Tokens (${tokens.size})", tokensFolded) { toggleStats(DeckStats.TOKENS) } }
-                if (!tokensFolded) {
-                    tokens.chunked(3).forEachIndexed { i, row -> item(key = "tokens_$i") { TokenRow(row) { openToken = it.key } } }
-                }
-            }
-            sections.forEach { section ->
-                val folded = section.title in collapsed
-                item(key = "h_${section.title}") {
-                    SectionHeading(section, sectionValue(section), folded, highlight = dropCategory == section.title, menu = categoryMenu(section.title, section.rows)) { toggle(section.title) }
-                }
-                // Cards "Added in app" on an editable deck: into the deck, or to Archidekt's maybeboard (since 1.46).
-                if (editable && section.title == DeckToCollection.ADDED_IN_APP && !folded) {
-                    item(key = "added_actions") {
-                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedButton(onClick = {
-                                edit("Put ${section.count} card(s) in the deck") { c.deckEditor.move(deckId, section.rows.map { it.item.lineUid }, DeckEditor.AUTO) }
-                            }, modifier = Modifier.weight(1f)) { Text("Into the deck") }
-                            OutlinedButton(onClick = {
-                                edit("Put ${section.count} card(s) in the maybeboard") { c.deckEditor.addedToMaybeboard(deckId) }
-                            }, modifier = Modifier.weight(1f)) { Text("To maybeboard") }
+                    item(key = "scores") {
+                        ScoresCard(d, source, busy = job != null, onRetry = ::refresh) {
+                            if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
+                        }
+                    }
+                    if (archidektRows.isNotEmpty()) item(key = "legality") { LegalityCard(legality) }
+                    if (tagged.isNotEmpty()) {
+                        item(key = "bracketcards") { BracketSummary(tagged.values, saltCard?.allCombos.orEmpty(), onlyBracket) { onlyBracket = it } }
+                    }
+                    // The stats and tokens, folded until opened (remembered for every deck).
+                    val statsFolded = DeckStats.STATS !in statsOpen
+                    item(key = "stats_h") { StatsHeading("Stats", statsFolded) { toggleStats(DeckStats.STATS) } }
+                    if (!statsFolded) {
+                        // Only decks with a commander keep "any colour" sources to its colours.
+                        val identity = d.colorIdentity.takeIf { d.commanders.isNotBlank() }
+                        item(key = "stats_curve") { ManaCurveCard(remember(statCards) { DeckStats.curve(statCards) }) }
+                        item(key = "stats_colours") {
+                            ColoursCard(
+                                costs = remember(statCards) { DeckStats.costs(statCards) },
+                                sources = remember(statCards, identity, landsOnly, colourless) { DeckStats.sources(statCards, identity, landsOnly, colourless) },
+                                landsOnly = landsOnly,
+                                colourless = colourless,
+                                landCount = statCards.filter { it.isLand }.sumOf { it.quantity },
+                                detailsMissing = statCards.count { it.producedMana == null },
+                                onLandsOnly = c.settings::setDeckLandsOnly,
+                                onColourless = c.settings::setDeckColourless,
+                            )
+                        }
+                        if (d.commanders.isNotBlank()) {
+                            item(key = "stats_odds") {
+                                if (statCards.any { it.commander }) CommanderOddsCard(odds, statCards.count { it.oracleText == null })
+                            }
+                            item(key = "stats_win") {
+                                if (statCards.any { it.commander }) WinningCard(win, statCards.count { it.oracleText == null })
+                            }
+                        }
+                    }
+                    // The deck's games from the life tracker (since 1.47), folded until opened; above the tokens since 1.58.
+                    if (deckGames.isNotEmpty()) {
+                        val gamesFolded = GAMES_OPEN !in statsOpen
+                        item(key = "games_h") { StatsHeading("Games (${deckGames.size})", gamesFolded) { toggleStats(GAMES_OPEN) } }
+                        if (!gamesFolded) item(key = "games_card") {
+                            val r = remember(deckGames) { com.mtgtrader.data.GameStats.decks(deckGames).firstOrNull { it.deckId == deckId } }
+                            r?.let { DeckGamesCard(it, deckGames, deckId) { g -> g.uid?.let { uid -> nav.navigate("games/game/$uid") } } }
+                        }
+                    }
+                    if (tokens.isNotEmpty()) {
+                        val tokensFolded = DeckStats.TOKENS !in statsOpen
+                        item(key = "tokens_h") { StatsHeading("Tokens (${tokens.size})", tokensFolded) { toggleStats(DeckStats.TOKENS) } }
+                        if (!tokensFolded) {
+                            tokens.chunked(3).forEachIndexed { i, row -> item(key = "tokens_$i") { TokenRow(row) { openToken = it.key } } }
                         }
                     }
                 }
-                if (!folded) {
-                    items(section.rows, key = { "c_${it.item.id}" }) { row ->
-                        val cost = costs[row.item.card.name]
-                        val key = "c_${row.item.id}"
-                        val editing = rowEditing(row, key)
-                        dragged(key) {
-                            if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
-                            else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                sections.forEach { section ->
+                    val folded = section.title in collapsed
+                    item(key = "h_${section.title}") {
+                        SectionHeading(section, sectionValue(section), folded, highlight = dropCategory == section.title, menu = categoryMenu(section.title, section.rows)) { toggle(section.title) }
+                    }
+                    // Cards "Added in app" on an editable deck: into the deck, or to Archidekt's maybeboard (since 1.46).
+                    if (editable && section.title == DeckToCollection.ADDED_IN_APP && !folded) {
+                        item(key = "added_actions") {
+                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedButton(onClick = {
+                                    edit("Put ${section.count} card(s) in the deck") { c.deckEditor.move(deckId, section.rows.map { it.item.lineUid }, DeckEditor.AUTO) }
+                                }, modifier = Modifier.weight(1f)) { Text("Into the deck") }
+                                OutlinedButton(onClick = {
+                                    edit("Put ${section.count} card(s) in the maybeboard") { c.deckEditor.addedToMaybeboard(deckId) }
+                                }, modifier = Modifier.weight(1f)) { Text("To maybeboard") }
+                            }
                         }
-                    }
-                }
-            }
-            // Cards of the categories switched off in "Manage categories", folded until opened (since 1.47).
-            // Categories without cards aren't shown at all.
-            if (hiddenRows.isNotEmpty()) {
-                val hiddenSection = com.mtgtrader.data.DeckSection(HIDDEN_TITLE, hiddenRows)
-                val folded = HIDDEN_OPEN !in collapsed
-                item(key = "hidden_h") { SectionHeading(hiddenSection, sectionValue(hiddenSection), folded) { toggle(HIDDEN_OPEN) } }
-                if (!folded) {
-                    items(hiddenRows, key = { "x_${it.item.id}" }) { row ->
-                        val cost = costs[row.item.card.name]
-                        val key = "x_${row.item.id}"
-                        val editing = rowEditing(row, key)
-                        dragged(key) {
-                            if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
-                            else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
-                        }
-                    }
-                }
-            }
-            if (showMaybeboard) {
-                item(key = "maybeboard") {
-                    Column(Modifier.padding(top = 20.dp)) {
-                        // Only a divider since 1.95: the maybeboard's own folding sections follow it.
-                        HorizontalDivider()
-                        if (maybeRows.isEmpty()) Text("No maybeboard cards.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
-                    }
-                }
-                maybeSections.forEach { section ->
-                    val key = maybeKey(section.title)
-                    val folded = key in collapsed
-                    item(key = "mh_${section.title}") {
-                        SectionHeading(section, sectionValue(section), folded, highlight = dropCategory == section.title, menu = categoryMenu(section.title, section.rows)) { toggle(key) }
                     }
                     if (!folded) {
-                        items(section.rows, key = { "m_${it.item.id}" }) { row ->
+                        items(section.rows, key = { "c_${it.item.id}" }) { row ->
                             val cost = costs[row.item.card.name]
-                            val rowKey = "m_${row.item.id}"
-                            val editing = rowEditing(row, rowKey)
-                            dragged(rowKey) {
-                                if (compact) DeckCompactRow(row, priceType, emptySet(), cost, editing) { onRow(row) }
-                                else DeckCardRowView(row, priceType, emptySet(), cost, editing) { onRow(row) }
+                            val key = "c_${row.item.id}"
+                            val editing = rowEditing(row, key)
+                            dragged(key) {
+                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                            }
+                        }
+                    }
+                }
+                // Cards of the categories switched off in "Manage categories", folded until opened (since 1.47).
+                // Categories without cards aren't shown at all.
+                if (hiddenRows.isNotEmpty()) {
+                    val hiddenSection = com.mtgtrader.data.DeckSection(HIDDEN_TITLE, hiddenRows)
+                    val folded = HIDDEN_OPEN !in collapsed
+                    item(key = "hidden_h") { SectionHeading(hiddenSection, sectionValue(hiddenSection), folded) { toggle(HIDDEN_OPEN) } }
+                    if (!folded) {
+                        items(hiddenRows, key = { "x_${it.item.id}" }) { row ->
+                            val cost = costs[row.item.card.name]
+                            val key = "x_${row.item.id}"
+                            val editing = rowEditing(row, key)
+                            dragged(key) {
+                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing) { onRow(row) }
+                            }
+                        }
+                    }
+                }
+                if (showMaybeboard) {
+                    item(key = "maybeboard") {
+                        Column(Modifier.padding(top = 20.dp)) {
+                            // Only a divider since 1.95: the maybeboard's own folding sections follow it.
+                            HorizontalDivider()
+                            if (shownMaybeRows.isEmpty()) Text("No maybeboard cards.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp))
+                        }
+                    }
+                    maybeSections.forEach { section ->
+                        val key = maybeKey(section.title)
+                        val folded = key in collapsed
+                        item(key = "mh_${section.title}") {
+                            SectionHeading(section, sectionValue(section), folded, highlight = dropCategory == section.title, menu = categoryMenu(section.title, section.rows)) { toggle(key) }
+                        }
+                        if (!folded) {
+                            items(section.rows, key = { "m_${it.item.id}" }) { row ->
+                                val cost = costs[row.item.card.name]
+                                val rowKey = "m_${row.item.id}"
+                                val editing = rowEditing(row, rowKey)
+                                dragged(rowKey) {
+                                    if (compact) DeckCompactRow(row, priceType, emptySet(), cost, editing) { onRow(row) }
+                                    else DeckCardRowView(row, priceType, emptySet(), cost, editing) { onRow(row) }
+                                }
                             }
                         }
                     }
@@ -867,6 +963,35 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             onApply = { g, s, d -> layoutOptions = false; c.settings.setDeckLayout(g, s, d) },
             onDismiss = { layoutOptions = false },
         )
+    }
+    // The deck as text, to copy or share (since 1.96).
+    if (copyingText) {
+        val exportLines = remember(archidektRows, maybeRows) {
+            (archidektRows + maybeRows).map { row ->
+                val item = row.item
+                DeckText.ExportLine(
+                    quantity = item.quantity,
+                    name = item.card.name,
+                    setCode = item.card.setCode,
+                    number = item.card.collectorNumber,
+                    foil = item.foil,
+                    etched = item.etched,
+                    categories = item.categories.split("\n").map { it.trim() }.filter { it.isNotEmpty() }.ifEmpty { listOf(item.category) },
+                    commander = item.commander,
+                    maybeboard = item.maybeboard,
+                )
+            }
+        }
+        CopyDeckTextDialog(exportLines, deck?.name.orEmpty(), onDismiss = { copyingText = false }) {
+            scope.launch { snackbar.showSnackbar("Deck copied as text") }
+        }
+    }
+    // Cards pasted as text into a local deck (since 1.96).
+    if (pasting) {
+        PasteCardsDialog(deckId, onDismiss = { pasting = false }) { message, undo ->
+            pasting = false
+            scope.launch { if (snackbar.showUndo(message)) undo() }
+        }
     }
     if (confirmRetire) {
         AlertDialog(
@@ -1038,6 +1163,86 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             dismissButton = { TextButton(onClick = { confirmReload = false }) { Text("Cancel") } },
         )
     }
+}
+
+/**
+ * The deck's search (since 1.96): Scryfall's search words, answered on the phone as far as [CardQuery] can, with its
+ * error or how many of the deck's cards match. It sits under the top bar, above the list.
+ */
+@Composable
+private fun DeckSearchBar(
+    text: String,
+    onChange: (String) -> Unit,
+    error: String?,
+    /** The cards shown and the deck's cards (by quantity), while a filter that parsed is on. */
+    counts: Pair<Int, Int>?,
+    /** The words only Scryfall can answer (otag:, art:…), which the search leaves out. */
+    unsupported: List<String>,
+    onClose: () -> Unit,
+) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    // Focus and keyboard straight away when the field opens (since 1.96), so the search needs no second tap.
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focus.requestFocus()
+        keyboard?.show()
+    }
+    Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 4.dp)) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = onChange,
+            placeholder = { Text("Search (eg: t:creature o:draw mv<=2)") },
+            singleLine = true,
+            isError = error != null,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+            trailingIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close search") } },
+            modifier = Modifier.fillMaxWidth().focusRequester(focus),
+        )
+        if (error != null) {
+            Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(start = 16.dp, top = 2.dp))
+        } else if (counts != null) {
+            Text(
+                "${counts.first} of ${counts.second} cards",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+            )
+        }
+        if (unsupported.isNotEmpty()) {
+            Text(
+                "Not searched in the app: " + unsupported.joinToString(", "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+            )
+        }
+    }
+}
+
+/** A deck line as the deck search sees it ([QueryCard]), from the line and its details from Scryfall when they're known. */
+private fun queryCard(row: DeckCardRow, info: CardInfo?, priceType: PriceType): QueryCard {
+    val item = row.item
+    val pt = info?.powerToughness?.split("/")
+    return QueryCard(
+        name = item.card.name,
+        typeLine = info?.typeLine?.takeIf { it.isNotBlank() } ?: item.types,
+        oracleText = info?.oracleText.orEmpty(),
+        manaCost = info?.manaCost.orEmpty(),
+        mv = item.cmc,
+        colors = info?.colors.orEmpty().map { it.toString() },
+        colorIdentity = info?.colorIdentity.orEmpty().map { it.toString() },
+        power = pt?.getOrNull(0)?.takeIf { it.isNotBlank() },
+        toughness = pt?.getOrNull(1)?.takeIf { it.isNotBlank() },
+        loyalty = info?.loyalty?.takeIf { it.isNotBlank() },
+        rarity = item.card.rarity.takeIf { it.isNotBlank() },
+        setCode = item.card.setCode,
+        commander = item.commander,
+        gameChanger = item.gameChanger,
+        priceEur = row.unitPrice(priceType),
+        category = item.category,
+        tags = item.categories.split("\n").map { it.trim() }.filter { it.isNotEmpty() },
+    )
 }
 
 @Composable
