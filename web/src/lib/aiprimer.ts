@@ -95,6 +95,32 @@ function keysOf(fields: unknown): string[] {
   return fields !== null && typeof fields === "object" ? Object.keys(fields as ChatFields) : [];
 }
 
+/** A usage number, or null when the answer carried none (or something else than a number). */
+function numberIn(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** The answer's completion tokens from `usage`, for the dialog's "took X s, Y tokens" line; null when not told. */
+function outputTokensOf(usage: unknown): number | null {
+  if (usage === null || typeof usage !== "object") return null;
+  return numberIn((usage as ChatFields).completion_tokens);
+}
+
+/**
+ * The tokens a thinking model spent reasoning: OpenAI's `completion_tokens_details.reasoning_tokens` first, then the
+ * plainer `reasoning_tokens` some providers send beside `completion_tokens`; null when the answer said neither.
+ */
+function reasoningTokensOf(usage: unknown): number | null {
+  if (usage === null || typeof usage !== "object") return null;
+  const fields = usage as ChatFields;
+  const details = fields.completion_tokens_details;
+  if (details !== null && typeof details === "object") {
+    const nested = numberIn((details as ChatFields).reasoning_tokens);
+    if (nested !== null) return nested;
+  }
+  return numberIn(fields.reasoning_tokens);
+}
+
 /** The reasoning a thinking model may put beside the answer, under either name Go uses. */
 function reasoningOf(fields: ChatFields | undefined): string {
   if (!fields) return "";
@@ -210,13 +236,27 @@ function warnEmpty(status: number, contentType: string, bodyLength: number, answ
   );
 }
 
+/** What one primer request gave back: the text for the editor, and the numbers the dialog shows beside it. */
+export interface PrimerAnswer {
+  text: string;
+  /** Seconds from just before the request to the whole answer being read, to one decimal. */
+  seconds: number;
+  /** The answer's completion tokens; null when Go sent no usage. */
+  outputTokens: number | null;
+  /** The tokens spent thinking, when the model reports them; null otherwise. */
+  reasoningTokens: number | null;
+}
+
 /** One chat request for a primer, cleaned for the editor; its answer, or an EditError saying what went wrong. */
-export async function writePrimer(input: PrimerInput, options: AiOptions, model: string, fetchFn: typeof fetch = fetch): Promise<string> {
+export async function writePrimer(input: PrimerInput, options: AiOptions, model: string, fetchFn: typeof fetch = fetch): Promise<PrimerAnswer> {
   const key = apiKey();
   if (!key) throw new EditError("The AI isn't set up on this website.");
   const prompt = buildPrompt(input, options);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ANSWER_TIMEOUT_MS);
+  // The dialog tells the owner how long a primer took: the clock starts as the request leaves, and stops once the whole
+  // body has been read, so the wait it saw and the number it shows are the same.
+  const startedAt = Date.now();
   try {
     let res: Response;
     try {
@@ -251,6 +291,7 @@ export async function writePrimer(input: PrimerInput, options: AiOptions, model:
       if (controller.signal.aborted) throw new EditError("The AI took too long; try again.");
       throw new EditError("The AI didn't answer.");
     }
+    const seconds = Math.round((Date.now() - startedAt) / 100) / 10;
     const answer = readAnswer(raw);
     const text = cleanPrimer(answer.text);
     if (!text) {
@@ -260,7 +301,7 @@ export async function writePrimer(input: PrimerInput, options: AiOptions, model:
       }
       throw new EditError("The AI's answer was empty.");
     }
-    return text;
+    return { text, seconds, outputTokens: outputTokensOf(answer.usage), reasoningTokens: reasoningTokensOf(answer.usage) };
   } finally {
     clearTimeout(timer);
   }

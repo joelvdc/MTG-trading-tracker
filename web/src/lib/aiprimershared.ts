@@ -73,9 +73,11 @@ export interface PrimerInput {
 const SYSTEM_PROMPT = [
   "You write a Commander deck primer for the deck's owner.",
   "Write plain text with only these marks: lines starting with # or ## for headings, lines starting with - for bullets, and **bold** inside a line.",
-  "No tables, no links, no HTML and no code blocks.",
+  "No tables, no web links, no HTML and no code blocks.",
   "Write in English.",
   "Be concrete about these cards: name them and say what they do in this deck.",
+  // The primer's own mark for a deck card: the page and the app turn it into a clickable link.
+  "Write the name of every card from the decklist in double square brackets, exactly as it is written in the list, like [[Sol Ring]]; cards that aren't in the list (upgrade ideas) go without brackets.",
   "Don't invent cards that aren't in the list (upgrade ideas excepted).",
 ].join(" ");
 

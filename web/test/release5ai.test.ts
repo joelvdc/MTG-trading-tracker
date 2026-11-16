@@ -132,6 +132,10 @@ describe("buildPrompt", () => {
     expect(p.system).toContain("no HTML");
     expect(p.system).toContain("code blocks");
     expect(p.system).toContain("English");
+    // The primer's card links: deck cards go in double square brackets, upgrade ideas don't.
+    expect(p.system).toContain("[[Sol Ring]]");
+    expect(p.system).toContain("exactly as it is written in the list");
+    expect(p.system).toContain("go without brackets");
     expect(p.system).toMatch(/don't invent cards/i);
 
     expect(p.user).toContain("High power");
@@ -182,6 +186,12 @@ describe("cleanPrimer", () => {
     expect(cleanPrimer('<b>bold</b> and <a href="x">a link</a>')).toBe("bold and a link");
   });
 
+  it("keeps the primer's card links untouched", () => {
+    expect(cleanPrimer("- [[Sol Ring]] first\n**[[Arcane Signet]]**")).toBe("- [[Sol Ring]] first\n**[[Arcane Signet]]**");
+    // A link isn't HTML, so the tag strip leaves it as it is.
+    expect(cleanPrimer("Play [[Atraxa, Praetors' Voice]]")).toBe("Play [[Atraxa, Praetors' Voice]]");
+  });
+
   it("trims, collapses blank runs, cuts to 20,000 characters and answers null for nothing", () => {
     expect(cleanPrimer("a   \nb  ")).toBe("a\nb");
     expect(cleanPrimer("a\n\n\n\nb")).toBe("a\n\nb");
@@ -217,7 +227,7 @@ describe("listModels", () => {
 describe("writePrimer", () => {
   it("sends one chat request to the right address with the key, the model and the token budget", async () => {
     const full = fakeFetch(() => chatAnswer("```\n# Plan\n- Sol Ring\n```"));
-    expect(await writePrimer(input, options({ length: "FULL" }), "some-other-model", full.fn)).toBe("# Plan\n- Sol Ring");
+    expect((await writePrimer(input, options({ length: "FULL" }), "some-other-model", full.fn)).text).toBe("# Plan\n- Sol Ring");
     expect(full.calls).toHaveLength(1);
     expect(full.calls[0].url).toBe("https://opencode.ai/inference/go/openai/v1/chat/completions");
     const headers = full.calls[0].init.headers as Record<string, string>;
@@ -241,7 +251,7 @@ describe("writePrimer", () => {
     const parts = fakeFetch(() =>
       jsonBody({ choices: [{ message: { content: [{ type: "text", text: "## Plan\n" }, { text: "- Sol Ring" }] } }] }),
     );
-    expect(await writePrimer(input, options(), "m", parts.fn)).toBe("## Plan\n- Sol Ring");
+    expect((await writePrimer(input, options(), "m", parts.fn)).text).toBe("## Plan\n- Sol Ring");
 
     // Nothing but the other parts left: still an empty answer, never a crash.
     const images = fakeFetch(() => jsonBody({ choices: [{ message: { content: [{ type: "image_url", image_url: { url: "x" } }] } }] }));
@@ -263,7 +273,42 @@ describe("writePrimer", () => {
     const streamed = fakeFetch(
       () => new Response(`${lines.join("\n\n")}\n\n`, { status: 200, headers: { "content-type": "text/event-stream" } }),
     );
-    expect(await writePrimer(input, options(), "m", streamed.fn)).toBe("## Plan\n- Sol Ring");
+    expect((await writePrimer(input, options(), "m", streamed.fn)).text).toBe("## Plan\n- Sol Ring");
+  });
+
+  it("reports the seconds it took and the tokens the answer used", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    const usage = fakeFetch(() => {
+      // The answer comes back 2.34 s after the request left, and its body is read straight after: one decimal.
+      vi.setSystemTime(1_002_340);
+      return jsonBody({
+        choices: [{ message: { content: "ok" } }],
+        usage: { prompt_tokens: 10, completion_tokens: 42, total_tokens: 52, reasoning_tokens: 7 },
+      });
+    });
+    expect(await writePrimer(input, options(), "m", usage.fn)).toEqual({ text: "ok", seconds: 2.3, outputTokens: 42, reasoningTokens: 7 });
+  });
+
+  it("says nothing about tokens without usage, and reads reasoning under either name", async () => {
+    const none = await writePrimer(input, options(), "m", fakeFetch(() => chatAnswer("ok")).fn);
+    expect(none.outputTokens).toBeNull();
+    expect(none.reasoningTokens).toBeNull();
+
+    // OpenAI's nested detail wins; a plain reasoning_tokens beside completion_tokens still counts when it's missing.
+    const nested = fakeFetch(() =>
+      jsonBody({ choices: [{ message: { content: "ok" } }], usage: { completion_tokens: 900, completion_tokens_details: { reasoning_tokens: 800 } } }),
+    );
+    expect(await writePrimer(input, options(), "m", nested.fn)).toMatchObject({ outputTokens: 900, reasoningTokens: 800 });
+
+    // A streamed answer carries its usage in the last chunk, which is the one that counts.
+    const lines = [
+      `data: ${JSON.stringify({ model: "m", choices: [{ delta: { content: "## Plan" } }] })}`,
+      `data: ${JSON.stringify({ choices: [{ delta: { content: " ok" }, finish_reason: "stop" }], usage: { completion_tokens: 120, completion_tokens_details: { reasoning_tokens: 100 } } })}`,
+      "data: [DONE]",
+    ];
+    const streamed = fakeFetch(() => new Response(`${lines.join("\n\n")}\n\n`, { status: 200, headers: { "content-type": "text/event-stream" } }));
+    expect(await writePrimer(input, options(), "m", streamed.fn)).toMatchObject({ text: "## Plan ok", outputTokens: 120, reasoningTokens: 100 });
   });
 
   it("says when thinking used up the answer's room, and warns with the numbers only", async () => {
@@ -488,7 +533,11 @@ describe("the AI primer route", () => {
 
     const answer = await callRoute({ model: "my-model", focus: "CEDH", length: "SHORT", sections: ["plan", "weak"], startFrom: "Old words" });
     expect(answer.status).toBe(200);
-    expect(await answer.json()).toEqual({ text: "# Plan\n- Sol Ring", model: "my-model", left: MAX_PER_DAY - 1 });
+    const body = (await answer.json()) as { text: string; model: string; left: number; seconds: number; outputTokens: number | null; reasoningTokens: number | null };
+    // The text, the model and the day's count; the numbers are this request's own clock and Go's usage (none sent here).
+    expect({ ...body, seconds: 0 }).toEqual({ text: "# Plan\n- Sol Ring", model: "my-model", left: MAX_PER_DAY - 1, seconds: 0, outputTokens: null, reasoningTokens: null });
+    expect(typeof body.seconds).toBe("number");
+    expect(body.seconds).toBeGreaterThanOrEqual(0);
     expect(calls).toHaveLength(1);
     const sent = JSON.parse(String(calls[0].init.body)) as { model: string; max_tokens: number; messages: { content: string }[] };
     expect(sent.model).toBe("my-model");

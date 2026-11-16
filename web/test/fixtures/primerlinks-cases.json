@@ -1,0 +1,111 @@
+{
+  "segments": [
+    {
+      "name": "plain text without links",
+      "input": "Play your threats and keep mana up.",
+      "output": [{ "kind": "text", "text": "Play your threats and keep mana up." }]
+    },
+    {
+      "name": "one link in the middle",
+      "input": "Play [[Sol Ring]] early",
+      "output": [
+        { "kind": "text", "text": "Play " },
+        { "kind": "card", "name": "Sol Ring" },
+        { "kind": "text", "text": " early" }
+      ]
+    },
+    {
+      "name": "a link at the start and one at the end",
+      "input": "[[Sol Ring]] ramps, then [[Arcane Signet]]",
+      "output": [
+        { "kind": "card", "name": "Sol Ring" },
+        { "kind": "text", "text": " ramps, then " },
+        { "kind": "card", "name": "Arcane Signet" }
+      ]
+    },
+    {
+      "name": "two links next to each other",
+      "input": "[[Sol Ring]][[Arcane Signet]]",
+      "output": [
+        { "kind": "card", "name": "Sol Ring" },
+        { "kind": "card", "name": "Arcane Signet" }
+      ]
+    },
+    {
+      "name": "an unclosed link stays text",
+      "input": "Ramp with [[Sol Ring",
+      "output": [{ "kind": "text", "text": "Ramp with [[Sol Ring" }]
+    },
+    {
+      "name": "an empty link stays text",
+      "input": "Nothing [[ ]] here",
+      "output": [{ "kind": "text", "text": "Nothing [[ ]] here" }]
+    },
+    {
+      "name": "a bracket inside stays text",
+      "input": "Not [[a]b]] a link",
+      "output": [{ "kind": "text", "text": "Not [[a]b]] a link" }]
+    },
+    {
+      "name": "spaces around the name are trimmed",
+      "input": "Then [[  Sol Ring  ]] wins",
+      "output": [
+        { "kind": "text", "text": "Then " },
+        { "kind": "card", "name": "Sol Ring" },
+        { "kind": "text", "text": " wins" }
+      ]
+    },
+    {
+      "name": "bold marks around a link stay text",
+      "input": "**[[Sol Ring]]**",
+      "output": [
+        { "kind": "text", "text": "**" },
+        { "kind": "card", "name": "Sol Ring" },
+        { "kind": "text", "text": "**" }
+      ]
+    },
+    {
+      "name": "a name with an apostrophe and a comma",
+      "input": "Cast [[Atraxa, Praetors' Voice]] and win",
+      "output": [
+        { "kind": "text", "text": "Cast " },
+        { "kind": "card", "name": "Atraxa, Praetors' Voice" },
+        { "kind": "text", "text": " and win" }
+      ]
+    },
+    {
+      "name": "a newline inside means no link",
+      "input": "[[Sol\nRing]]",
+      "output": [{ "kind": "text", "text": "[[Sol\nRing]]" }]
+    },
+    {
+      "name": "empty input",
+      "input": "",
+      "output": []
+    }
+  ],
+  "matches": [
+    { "name": "the exact name", "link": "Sol Ring", "card": "Sol Ring", "match": true },
+    { "name": "a different case", "link": "sol ring", "card": "Sol Ring", "match": true },
+    { "name": "extra spaces", "link": "  Sol Ring  ", "card": "Sol Ring", "match": true },
+    {
+      "name": "the front face of a double-faced card",
+      "link": "Delver of Secrets",
+      "card": "Delver of Secrets // Insectile Aberration",
+      "match": true
+    },
+    {
+      "name": "the whole double-faced name",
+      "link": "Delver of Secrets // Insectile Aberration",
+      "card": "Delver of Secrets // Insectile Aberration",
+      "match": true
+    },
+    {
+      "name": "the back face alone",
+      "link": "Insectile Aberration",
+      "card": "Delver of Secrets // Insectile Aberration",
+      "match": false
+    },
+    { "name": "a different card", "link": "Sol Ring", "card": "Arcane Signet", "match": false }
+  ]
+}
