@@ -59,7 +59,8 @@ website and nightly backups; accounts need an invite code for now.
 - **Search inside a deck** with Scryfall's search words (`t:creature o:draw mv<=2`), the same in the app and on the
   website; **copy a deck as text** (Moxfield, Archidekt, MTG Arena or a plain list) and **paste cards** into one of
   your own decks, with a check first that shows what's new, what's already there and what wasn't found.
-- A **primer** per deck and a **note** per card (also on shared links; a deck's Archidekt description fills an empty
+- A **primer** per deck (on its own page in the app, at the bottom of the deck page on the website, where an AI can
+  write or improve it) and a **note** per card (also on shared links; a deck's Archidekt description fills an empty
   primer), **your own tags** that count in every deck, with a role line such as "Lands 37 · Ramp 11 · Draw 9"
   (`tag:ramp` in the search), **packages** (saved groups of cards to add to or take out of a deck) and a **change
   history** per deck, in the app and on the website.

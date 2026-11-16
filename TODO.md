@@ -14,19 +14,21 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-16, after app 1.97; deck builder parity releases 1-4 done)
-- **Latest:** app 1.97 + website (2026-11-16, sync format 15, database 30): deck primer and card notes (also on share
-  links; Archidekt's description fills an empty primer once), own tags in every deck (synced pref `cardTags`) with a
-  role line and `tag:` search, packages (pref `deckPackages`, `/api/deckprefs`), change history per deck. Shared rules
-  in `web/test/fixtures/decknotes-, deckhistory-, deckroles-cases.json` (`DeckNotes/DeckHistory/DeckRoles.kt`, `web/src/
-  lib/decknotes/deckhistory/deckroles.ts`). App 1.96 the same day: deck search, copy/paste deck text.
-- **Next:** ask the owner for playtester feedback (they test it now), then release 5 (AI primer). Worktrees
-  `%LOCALAPPDATA%\ds-jobs\*` and branches `claude/ds-*` can be removed once the plan is finished.
-- **Expected to look odd:** a phone still on 1.96 pauses syncing until updated. History starts empty (only changes
-  from 1.97 on). The role line's automatic roles need the website (offline, only own tags and deck categories count);
-  Wipes only shows from own tags or categories such as "Board Wipe" (the website's table puts sweepers under Removal).
-  The Undo bar lasts 30 s and only undoes the latest change.
-- **Earlier:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
+## Right now (2026-11-16, after app 1.98; deck builder parity plan finished)
+- **Latest:** app 1.98 + website (2026-11-16, no sync change, sync format 15, database 30): the app's deck page shows
+  the primer as one row that opens a Primer page (`ui/PrimerScreen.kt`); the website's primer sits at the bottom of
+  the deck page with an in-page editor and "Write with AI" (OpenCode Go, `web/src/lib/aiprimer.ts`, routes
+  `/api/ai/models` and `/api/decks/<id>/aiprimer`, 20 a day per account, counted in `store.job`; needs the header
+  `x-opencode-session`, a new random id per primer). `/api/health` has `ai` (checked at most hourly).
+- **Next:** the owner writes the first real AI primer and gives playtester feedback. The DeepSeek work copies
+  and `claude/ds-*` branches were removed after 1.98 (leftover build caches in `%LOCALAPPDATA%\ds-jobs` may be deleted).
+- **Expected to look odd:** AI primers use the owner's OpenCode Go plan (DeepSeek's $100 a month is shared with the
+  coding sessions; Go's 5-hour and weekly limits apply, then "usage limit is reached"). Go is meant for coding agents;
+  a few primers a day should be fine, but if OpenCode objects, switch the website to another provider. One earlier
+  1.97 note still holds: history only shows changes from 1.97 on, and the role line's automatic roles need the website.
+- **Earlier:** app 1.97 (2026-11-16, sync format 15): primer, card notes, own tags with role line, packages, change
+  history. 1.96 the same day: deck search, copy/paste deck text.
+- **Before that:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
   big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
   (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
   settings texts.
@@ -50,10 +52,10 @@ history, the release notes and `web/README.md`.)
   only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
   phones at their next sync.
 - **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** playtester feedback (now due). Review follow-ups for later under "From the code reviews". Ideas still
+- **Waiting on the owner:** playtester feedback (now due) and a first real AI primer on the website. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
-## In progress: deck builder parity (green light 2026-11-15)
+## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
 (OpenCode Go) writes all code, Opus plans, reviews, tests and releases (`/deepseek`).
 - **Release 1, website:** DONE 2026-11-16 (tag/package bulk actions moved to release 4). Deck page buttons cut down (Bracket/Power/Missing numbers clickable; Playtest,
@@ -69,74 +71,12 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
 - **Release 4, app 1.97 + website, sync format 15:** DONE 2026-11-16. Deck primer + per-card
   notes (share page too, kept on Archidekt reload, Archidekt description fills an empty primer once); own tags that
   apply in every deck + role counts line; packages; change history per deck (same-day merge, last 100 entries).
-- **Release 5, website:** AI primer via OpenCode Go (Vercel `OPENCODE_API_KEY`, own key, set 2026-11-15; Extra Usage
-  off), model picked from Go's model list (chat-completions models), DeepSeek V4.1 Flash default; focus Casual /
-  Upgraded / High power / cEDH, length, sections; saved as editable primer. Health check: Go reachable + key valid
-  via the models list.
-
-## Collecting
-
-### Commander Salt scores for local decks (2026-11-05)
-Owner's idea: a copy of the decklist on a site Commander Salt accepts. Every site it accepts (Moxfield, Archidekt,
-TappedOut, ManaBox, MTGGoldfish, Scryfall, …) needs an account to create a deck, with no open way for an app to do it.
-- Proposed: a half-manual "Score on Commander Salt": copy the list and open Archidekt's new-deck page, the owner pastes
-  and saves, then pastes the link back; it is kept as that local deck's scoring link ("Copy list again" after edits).
-  First look for a site that takes a deck link without an account; maybe ask Commander Salt whether it could take a
-  pasted list.
-- Open question: on the website too, or only in the app?
-
-### More places to back up (2026-11-05)
-Owner: "could we in the future expand the sync, so that the user can choose between nextcloud, google drive, dropbox or
-onedrive?" Since 1.82 Nextcloud is only a nightly backup (syncing goes through the MTG Trader account), so this is now
-about where to back up.
-- Open questions: each service needs its own sign-in and an app registration there; which ones the owner wants first.
-
-### Group printings in the app (2026-11-13)
-Owner: "not needed for now, add it to the todo as a potential future task". The website's Group printings (one line
-per card name, opens to its piles) for the app's collection list.
-
-### Smaller loose ends
-- The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
-- Scanned page on the website: "To trade" for scans, and sending scans to an Archidekt deck (the website only adds to
-  local decks). Small; left from the 2026-11-05 list.
-- The phone's "Unable to resolve host" for every price site (2026-11-07, VPN on) was a DNS/VPN problem on the phone,
-  not the app. Look again only if it comes back with the VPN off.
-
-### From the code reviews (2026-11-13)
-GLM and DeepSeek reviewed the code; Claude checked their findings. The urgent ones shipped in 1.92 (sync fixes, tests
-in GitHub for the website, the release certificate check, the website's deploy rule). The owner asked to keep these
-for later:
-- **Speed with big collections (app):** the hourly sync reads every table before asking the website "changed?" (check
-  the change count and ask first, read only when needed); some lookups load the whole collection to count one card,
-  once per wishlist card too (`MtgRepository.kt`, `PriceSources.kt` `ownedIds`: targeted DAO queries); the Collection
-  screen redoes filtering, sorting and counts on every letter typed (wait ~150 ms, do it off the main thread).
-- **Website card-details file** (`web/src/lib/carddetails.ts`): read whole, changed and written back with no version
-  check, so two saves at once can drop one's additions (they're looked up again later). Rows in the database like
-  `legal_rules`, or retry on the ETag.
-- **Website login lock** (`web/src/lib/users.ts`): two wrong passwords at the same moment can count once (atomic SQL
-  counter), and a locked account is reported before the password is checked.
-- **Website route tests:** `test/syncroute.test.ts` (1.92) covers `/api/sync`; the login, lockout and other routes
-  have none yet.
-- **Content-Security-Policy** for the website, starting in report-only mode.
-- Smaller: the 7 cron routes each copy the secret check (one shared helper); failed price/detail loads on the website
-  are silent (a `console.warn`); `currentAccount()` makes two database calls where one would do; the unused
-  Nextcloud read path in `web/src/lib/store.ts`; ESLint with the React hooks rules; `CollectionScreen.kt`,
-  `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
-  `targetSdk` 36 as its own release with new screenshots.
-
-### Decided, keep in mind
-- Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
-- Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
-- Prices from the website come as one file, not per-card database lookups (offline, instant). Since 1.93 phones with an
-  account get all three sources from the website first (Cardmarket's file, Card Kingdom's file, TCGplayer for the
-  phone's cards in one request), falling back to Scryfall, Card Kingdom and the GitHub copy. CardTrader stays on the
-  phone (the owner's key never leaves it).
-- Android's own Google backup is off (1.93): the app's own backups cover it.
-- Dropped by the owner: the ideas offered on 2026-11-11 (trade matching between friends, "what should we play
-  tonight?", a game-night planner website, a website for Poké Trader; dropped 2026-11-12), Archidekt's own categories for new decks (2026-11-08), the "view on hover" switch for decks,
-  full-screen pictures. The life tracker stays on the phone.
+- **Release 5, app 1.98 + website:** DONE 2026-11-16. Primer page in the app; website primer at the bottom of
+  the deck page with in-page editor and Write with AI (OpenCode Go, 20 a day); health check `ai`.
 
 ## Done
+- 1.98 (2026-11-16): Primer page in the app; website primer editor at the bottom of the deck page with Write
+  with AI (OpenCode Go).
 - 1.97 (2026-11-16): deck primer and card notes, own tags in every deck with a role line, packages, change history
   (app and website, sync format 15); website Select mode gains Tag… and Save as package….
 - 1.96 (2026-11-16): search inside a deck, copy deck as text, paste cards, the deck menu under headings.
