@@ -1,0 +1,77 @@
+[
+  {
+    "name": "null description",
+    "description": null,
+    "primer": null
+  },
+  {
+    "name": "empty description",
+    "description": "",
+    "primer": null
+  },
+  {
+    "name": "blank description",
+    "description": "   ",
+    "primer": null
+  },
+  {
+    "name": "plain text",
+    "description": "Game plan: win with tokens.",
+    "primer": "Game plan: win with tokens."
+  },
+  {
+    "name": "plain text with four blank lines",
+    "description": "First line\n\n\n\n\nSecond line",
+    "primer": "First line\n\nSecond line"
+  },
+  {
+    "name": "header 1 and header 2",
+    "description": "{\"ops\":[{\"insert\":\"Game plan\"},{\"attributes\":{\"header\":1},\"insert\":\"\\n\"},{\"insert\":\"Ramp early.\"},{\"attributes\":{\"header\":2},\"insert\":\"\\n\"}]}",
+    "primer": "# Game plan\n## Ramp early."
+  },
+  {
+    "name": "bold text inside a line",
+    "description": "{\"ops\":[{\"insert\":\"Play \"},{\"attributes\":{\"bold\":true},\"insert\":\"fast\"},{\"insert\":\" and win.\\n\"}]}",
+    "primer": "Play **fast** and win."
+  },
+  {
+    "name": "bullet and ordered lists",
+    "description": "{\"ops\":[{\"insert\":\"Ramp\"},{\"attributes\":{\"list\":\"bullet\"},\"insert\":\"\\n\"},{\"insert\":\"Draw\"},{\"attributes\":{\"list\":\"ordered\"},\"insert\":\"\\n\"}]}",
+    "primer": "- Ramp\n1. Draw"
+  },
+  {
+    "name": "an image op is skipped",
+    "description": "{\"ops\":[{\"insert\":{\"image\":\"//:0\"}},{\"insert\":\"Game plan\\n\"}]}",
+    "primer": "Game plan"
+  },
+  {
+    "name": "invalid JSON starting with a brace",
+    "description": "{not json",
+    "primer": "{not json"
+  },
+  {
+    "name": "a JSON object without ops",
+    "description": "{\"foo\":\"bar\"}",
+    "primer": "{\"foo\":\"bar\"}"
+  },
+  {
+    "name": "trailing spaces",
+    "description": "Game plan   \nWin   ",
+    "primer": "Game plan\nWin"
+  },
+  {
+    "name": "an empty ops array",
+    "description": "{\"ops\":[]}",
+    "primer": null
+  },
+  {
+    "name": "a blank line with no prefix",
+    "description": "{\"ops\":[{\"insert\":\"  \"},{\"insert\":\"\\n\"}]}",
+    "primer": null
+  },
+  {
+    "name": "header, bold and paragraph gaps together",
+    "description": "{\"ops\":[{\"insert\":\"Title\"},{\"attributes\":{\"header\":1},\"insert\":\"\\n\"},{\"insert\":\"\\n\"},{\"insert\":\"Step \"},{\"attributes\":{\"bold\":true},\"insert\":\"one\"},{\"insert\":\"\\n\\n\"},{\"insert\":\"End\"}]}",
+    "primer": "# Title\n\nStep **one**\n\nEnd"
+  }
+]

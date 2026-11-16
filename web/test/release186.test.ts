@@ -17,7 +17,7 @@ const signet: CardRef = { ...deckOf(appFile()).cards[0].card, scryfallId: "55555
 
 describe("a deck from Archidekt's local maybeboard (MtgRepository.addToMaybeboard)", () => {
   it("adds cards added in the app, counts a second copy, and only those can be removed", () => {
-    expect(WEB_FORMAT).toBe(14);
+    expect(WEB_FORMAT).toBe(15);
     const f = appFile();
     const before = deckOf(f).deck.updatedAt;
     const uid = addToMaybeboard(f, ID, signet, false, false, { typeLine: "Artifact", cmc: 2 }, NOW, NO_LOOKUPS);

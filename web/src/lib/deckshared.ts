@@ -1,5 +1,7 @@
 // What the decks pages share between the server and the browser (no server-only code here): the app's deck types,
 // scores, bracket tags, grouping and the missing-cards plan. The server side is decks.ts.
+import type { HistoryEntry } from "./deckhistory";
+import type { RoleCount } from "./deckroles";
 import type { Currency } from "./money";
 import type { PriceType } from "./prices";
 import type { Finish } from "./pricing";
@@ -43,6 +45,14 @@ export interface Deck {
   retired?: boolean;
   /** The deck's own category order, one name per line (Deck.categoryOrder, app 1.86); the rest alphabetically. */
   categoryOrder?: string | null;
+  /** The deck's primer, plain text with light markdown (Deck.primer, app 1.97); null when never set, "" when cleared. */
+  primer?: string | null;
+  /** Card notes as JSON, `{ "<nameKey>": "<note>" }` (Deck.cardNotes, app 1.97); null when there are none. */
+  cardNotes?: string | null;
+  /** When the primer or the card notes last changed (Deck.notesAt, app 1.97); null when never. */
+  notesAt?: number | null;
+  /** The change history as JSON, newest first (Deck.history, app 1.97); null when there is none. */
+  history?: string | null;
 }
 
 /** One line of a deck (DeckCard). */
@@ -476,6 +486,10 @@ export interface DeckRow {
   choices: { value: string; label: string; quantity: number }[];
   /** The pick for this card: a choice's value, "archidekt" for the deck's own printing, or null to let the site choose. */
   picked: string | null;
+  /** The card's role tags (DeckRoles.tagsOf), for the role line and the deck search's tag: key. */
+  roleTags: string[];
+  /** The card's note (Deck.cardNotes), or null. */
+  note: string | null;
 }
 
 /** A category of the deck: from its lines and its categoryInfo (which keeps empty ones and those left out). */
@@ -502,6 +516,12 @@ export interface DeckView {
   /** The printing picked for each of its tokens (the token's key → Scryfall id; synced as deckTokenPicks). */
   tokenPicks: Record<string, string>;
   categories: DeckCategory[];
+  /** The deck's primer (plain text), or null. */
+  primer: string | null;
+  /** Its change history, newest first. */
+  history: HistoryEntry[];
+  /** Lands and the roles under the deck header (DeckRoles.counts). */
+  roles: RoleCount[];
   /** Whether the deck is shown in the printings you own (the app's "Show in my printings"). */
   myPrintings: boolean;
   currency: Currency;

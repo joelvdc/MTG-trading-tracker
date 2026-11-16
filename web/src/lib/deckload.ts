@@ -3,7 +3,9 @@
 // sync file is then changed in one go ([putLoadedDeck], [putScores]), inside editSync.
 import { fetchDeck, identityOf, userDecks, type ArchidektCard, type ArchidektDeck } from "./archidekt";
 import { saltDeckId, scoreDeck, type SaltScores } from "./commandersalt";
+import { diffLines, recordHistory } from "./deckhistory";
 import { addDeck, detachDeck, encodeCategories, newDeck, sortLines } from "./deckedit";
+import { primerFromArchidekt } from "./decknotes";
 import { powerSource, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
 import { syncDecks } from "./decks";
 import { lookupCollection } from "./scryfall";
@@ -86,7 +88,8 @@ function line(r: ReadDeck, c: ArchidektCard, maybeboard: boolean): DeckCard {
 export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDeck {
   const a = r.deck;
   const all = syncDecks(file);
-  const old = all.find((d) => d.deck.archidektId === a.id)?.deck ?? null;
+  const previous = all.find((d) => d.deck.archidektId === a.id) ?? null;
+  const old = previous?.deck ?? null;
   const commanders = a.cards.filter((c) => c.commander);
   const source = powerSource(prefs(file).powerSource);
   let deck: Deck = {
@@ -106,11 +109,22 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
     categoryInfo: encodeCategories(a.categories.map((c) => ({ name: c.name, included: c.includedInDeck, id: c.id }))),
     updatedAt: bump(old?.updatedAt ?? 0, now),
   };
+  // A primer the user never set (null) comes from Archidekt's description, on a reload as on a first import; an empty
+  // primer means the user cleared it, so it stays empty.
+  if ((old?.primer ?? null) === null) {
+    const primer = primerFromArchidekt(a.description);
+    if (primer !== null) deck = { ...deck, primer, notesAt: now };
+  }
   if (source !== "EDH_POWER_LEVEL") deck = { ...deck, edhPowerLevel: null, edhPowerAt: null, edhPowerError: null };
   if (source !== "SCROLLVAULT") deck = { ...deck, svPowerLevel: null, scrollVault: null, svAt: null, svError: null };
   // Cards added in the app (an old deck's "Added in app" ones and, since 1.86, its local maybeboard) stay, as in the app.
-  const kept = (all.find((d) => d.deck.archidektId === a.id)?.cards ?? []).filter((c) => c.addedInApp);
+  const kept = (previous?.cards ?? []).filter((c) => c.addedInApp);
   const sd: SyncDeck = { deck, cards: sortLines([...a.cards.map((c) => line(r, c, false)), ...a.maybeboard.map((c) => line(r, c, true)), ...kept]) };
+  // A reload of a deck that was here already records what its list gained and lost (not a first import).
+  if (previous) {
+    const lines = (cards: DeckCard[]) => cards.map((c) => ({ name: c.card.name, quantity: c.quantity, maybeboard: c.maybeboard }));
+    sd.deck.history = recordHistory(previous.deck.history, now, "archidekt", diffLines(lines(previous.cards), lines(sd.cards)));
+  }
   file.data.decks = all.filter((d) => d.deck.archidektId !== a.id) as unknown as Json;
   addDeck(file, sd);
   return sd;
