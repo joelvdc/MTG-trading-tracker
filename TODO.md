@@ -14,8 +14,18 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-17, after the precons and top bar website update)
-- **Latest (website only, 2026-11-17, no app version, no sync change):** new top bar (Collection, Decks, Games, Trades
+## Right now (2026-11-17, after the precon win turns and land rule website update)
+- **Latest (website only, 2026-11-17, no sync change):** precon pages work out the win turn and show Power (from the
+  win turn) and Missing, no Bracket; one result per precon kept for every account (`precon_win_turns`,
+  `POST /api/precons/winturn`). Lands always go in Land (categories table leaves front-face lands out, rebuilt once by
+  the 04:00 UTC job on 2026-11-18; `autoFor` places lands by type at once). The Land heading counts MDFC lands:
+  "Land · 37 (40 with MDFCs)" (`lib/mdfclands.ts`; not on shared links).
+- **Next (owner's green light 2026-11-17, after the website):** the app's deck page gets the same Land heading with
+  MDFCs (app release). The land rule reaches the phones through the categories table, no app change needed.
+- **Expected to look odd:** until the 2026-11-18 rebuild, the phones and the role line may still count Evolving
+  Wilds and other lands as Tutor/Ramp; existing decks keep old placements until "Put every card in its auto category".
+- **Before that (website, 2026-11-17):** precons pages and the Explore top bar:
+  new top bar (Collection, Decks, Games, Trades
   (Wishlist link removed again on request; it stays inside Collection), Explore ▾ panel, account menu with Orders/Settings/Log out) and Commander precons: `/precons` grid
   from a daily index (`lib/preconindex.ts`, Blob `precons/index.json.gz`, filled by `/api/cron/sources`) and
   `/precons/<fileName>`, the deck page in read-only precon mode (`DeckScreen.tsx`, `/api/precons/view`, `deckanswer.ts`)

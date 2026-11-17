@@ -4865,8 +4865,4 @@ div.primer-ai-body {
 .precon-bar .btn {
   text-decoration: none;
 }
-/* Its Stats keep everything but the win turn, which belongs to a saved deck (it is the last block of the stats). */
-.precon-view .deck-stats > .odds-block:last-child {
-  display: none;
-}
 

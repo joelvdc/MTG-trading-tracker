@@ -13,6 +13,7 @@ import {
   deleteCategory,
   deleteDeck,
   detachDeck,
+  frontIsLand,
   MAYBEBOARD,
   maybeCategoryOf,
   moveLines,
@@ -251,6 +252,16 @@ describe("editing local decks (the app's DeckEditor)", () => {
     expect(deck().deck.cardCount).toBe(6);
   });
 
+  it("puts a land in the Land category even when the table calls it a tutor", () => {
+    const { f, id, deck } = withLocal();
+    const withLand = { ...look, auto: new Map([["wilds", { cardId: null, category: "Tutor" }]]) };
+    addCard(f, id, ref("wilds", "Evolving Wilds"), false, false, 1, null, { typeLine: "Land", cmc: 0 }, NOW, withLand);
+    expect(deck().cards.find((c) => c.card.name === "Evolving Wilds")).toMatchObject({ category: "Land", types: "Land", categories: "" });
+    // "In its auto category" is Land too, so a mistake can be undone the same way.
+    moveLines(f, id, [deck().cards.find((c) => c.card.name === "Evolving Wilds")!.lineUid], AUTO, NOW + 5, withLand);
+    expect(deck().cards.find((c) => c.card.name === "Evolving Wilds")).toMatchObject({ category: "Land" });
+  });
+
   it("refuses to edit decks from Archidekt", () => {
     const f = fixture();
     const archidekt = syncDecks(f)[0];
@@ -423,5 +434,29 @@ describe("maybeboard categories when split (display only)", () => {
   it("else its auto category, else its card type", () => {
     expect(maybeCategoryOf(line(MAYBEBOARD, "Maybeboard"), auto)).toBe("Ramp");
     expect(maybeCategoryOf(line(MAYBEBOARD, ""), new Map())).toBe("Creature");
+  });
+  it("never takes an auto category for a land, but goes by card type", () => {
+    expect(maybeCategoryOf(line(MAYBEBOARD, "Maybeboard", "Land"), auto)).toBe("Land");
+    expect(maybeCategoryOf(line(MAYBEBOARD, "Maybeboard", "Basic Land — Island"), auto)).toBe("Land");
+    // A category of its own still wins.
+    expect(maybeCategoryOf(line(MAYBEBOARD, ["Maybeboard", "Utility"].join("\n"), "Land"), auto)).toBe("Utility");
+  });
+});
+
+describe("a card's front face (frontIsLand)", () => {
+  it("is a land for land type lines, also with supertypes and subtypes", () => {
+    expect(frontIsLand("Land")).toBe(true);
+    expect(frontIsLand("Legendary Land")).toBe(true);
+    expect(frontIsLand("Artifact Land")).toBe(true);
+    expect(frontIsLand("Legendary Land — Urza's")).toBe(true);
+    expect(frontIsLand("Basic Land — Island")).toBe(true);
+    expect(frontIsLand("Land // Land")).toBe(true);
+  });
+  it("isn't one for a spell, or for a modal card with a spell on the front", () => {
+    expect(frontIsLand("Sorcery // Land")).toBe(false);
+    expect(frontIsLand("Instant // Land")).toBe(false);
+    expect(frontIsLand("Creature — Elf")).toBe(false);
+    expect(frontIsLand("Enchantment — Island")).toBe(false);
+    expect(frontIsLand("")).toBe(false);
   });
 });

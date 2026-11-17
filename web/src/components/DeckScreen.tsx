@@ -34,6 +34,7 @@ import { ShareDialog } from "@/components/SharePanel";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
+import { isLandSection, mdfcLandCopies } from "@/lib/mdfclands";
 import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
@@ -151,7 +152,18 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   // The main deck's and the maybeboard's cards with their details: the lines' mana costs and the filter use both.
   const allCards = useMemo(() => (view ? [...view.stats, ...(view.maybeStats ?? [])] : NO_CARDS), [view]);
   const filter = useDeckFilter(view?.rows ?? NO_ROWS, allCards);
-  const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, !precon && view !== null, view?.winTurn ?? null);
+  const win = useWinOdds(
+    // A precon is rebuilt in memory on every visit and gets a new temporary negative id each time, so its browser
+    // kept win turn goes under one fixed key (0) instead of a fresh localStorage entry per visit.
+    precon ? 0 : (view?.id ?? 0),
+    view?.stats ?? NO_CARDS,
+    view?.deck.colorIdentity ?? "",
+    view?.saltCard ?? null,
+    view !== null,
+    view?.winTurn ?? null,
+    // A precon keeps its win turn on the website under its file name (it has no saved deck to keep it for).
+    precon ? (key, result) => void api("/api/precons/winturn", { fileName: file, key, result }).catch(() => undefined) : undefined,
+  );
 
   useEffect(() => {
     // A precon is a preview of MTGJSON's list: nothing is kept for it in this browser, and it needs no sync folder.
@@ -324,6 +336,12 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
   const costOf = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
   const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
+  /** A line's card type line, from Scryfall's when known (the deck's own otherwise). */
+  const typeOf = (r: DeckRow) => typeLineOf.get(r.card.scryfallId) ?? r.types;
+  /** MDFC land copies in the whole main deck: Archidekt counts them in the Land heading ("40 w/ MDFC"). */
+  const mdfcLands = mdfcLandCopies(shaped.main, typeOf);
+  /** How many MDFC lands sit outside the Land section: added to its heading, those inside are in its plain number. */
+  const mdfcOutside = (title: string, rows: DeckRow[]) => (isLandSection(title) ? Math.max(0, mdfcLands - mdfcLandCopies(rows, typeOf)) : 0);
   /** Whether a line's card has a back face, from Scryfall's layout when known. */
   const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
@@ -539,36 +557,40 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
 
   /**
    * A section. [category]: where a card dropped on it goes (null: nowhere); [orderable]: a category of the deck, which
-   * can be dragged to another place (and others dropped next to it).
+   * can be dragged to another place (and others dropped next to it). [mdfc]: the MDFC lands elsewhere added to the
+   * count in brackets (the Land section only).
    */
-  const block = (title: string, rows: DeckRow[], key: string, category: string | null = null, orderable = false) => (
-    <details
-      key={key}
-      className={"deck-section" + dropClass(orderable ? title : key)}
-      open={!folded.has(key)}
-      onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}
-      {...(canOrder || canMoveCards ? dropProps(orderable ? title : key, canMoveCards ? category : null, orderable && canOrder) : {})}
-    >
-      <summary>
-        <h3 className="mini-head">
-          {selecting && sectionCheck(rows, `Select all ${title}`)}
-          {orderable && canOrder && (
-            <span
-              className="cat-handle"
-              title="Drag to move this category"
-              aria-label={`Move ${title}`}
-              onClick={(e) => e.preventDefault()}
-              onPointerDown={dnd.press({ kind: "cat", title }, title)}
-            >
-              ⠿
-            </span>
-          )}
-          {title} <span className="muted small">· {rows.reduce((s, r) => s + r.quantity, 0)} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
-        </h3>
-      </summary>
-      <ul className="plain-list deck-list">{rows.map(row)}</ul>
-    </details>
-  );
+  const block = (title: string, rows: DeckRow[], key: string, category: string | null = null, orderable = false, mdfc = 0) => {
+    const copies = rows.reduce((s, r) => s + r.quantity, 0);
+    return (
+      <details
+        key={key}
+        className={"deck-section" + dropClass(orderable ? title : key)}
+        open={!folded.has(key)}
+        onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}
+        {...(canOrder || canMoveCards ? dropProps(orderable ? title : key, canMoveCards ? category : null, orderable && canOrder) : {})}
+      >
+        <summary>
+          <h3 className="mini-head">
+            {selecting && sectionCheck(rows, `Select all ${title}`)}
+            {orderable && canOrder && (
+              <span
+                className="cat-handle"
+                title="Drag to move this category"
+                aria-label={`Move ${title}`}
+                onClick={(e) => e.preventDefault()}
+                onPointerDown={dnd.press({ kind: "cat", title }, title)}
+              >
+                ⠿
+              </span>
+            )}
+            {title} <span className="muted small">· {copies}{mdfc > 0 && ` (${copies + mdfc} with MDFCs)`} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
+          </h3>
+        </summary>
+        <ul className="plain-list deck-list">{rows.map(row)}</ul>
+      </details>
+    );
+  };
   /** A section's size for the columns: its lines plus the heading, folded or not. */
   const weight = (rows: DeckRow[]) => rows.length + 2;
   const isCommanders = (rows: DeckRow[]) => rows.length > 0 && rows.every((r) => r.commander);
@@ -646,6 +668,21 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
         {error && <div className="bar error">{error}</div>}
         {view.detailsError && <div className="bar warn">Card details: {view.detailsError} The stats use what is known so far.</div>}
 
+        {precon && (
+          // A precon's scores are just what the website works out itself: its power level from the win turn, and what
+          // you're missing. It has no Commander Salt scores, legality or actions.
+          <section className="card deck-scores">
+            <div className="score">
+              <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
+              <strong>{power != null ? formatPower(power, powerFrom) : powerFrom === "APP" && win.status === "working" ? "…" : "–"}</strong>
+            </div>
+            <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
+              <span className="muted small">Missing</span>
+              <strong className={shaped.missing > 0 ? "warn-text" : "ok-text"}>{shaped.missing}</strong>
+              <span className="small">copies</span>
+            </button>
+          </section>
+        )}
         {!precon && (
           <section className="card deck-scores">
             <button
@@ -882,7 +919,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
             items={[
               ...shaped.visible.map((s) => {
                 const commanders = isCommanders(s.rows);
-                return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders) };
+                return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders, mdfcOutside(s.title, s.rows)) };
               }),
               ...(shaped.hiddenRows.length > 0 ? [{ key: "\u0000hidden", weight: weight(shaped.hiddenRows), node: block("Hidden categories", shaped.hiddenRows, "\u0000hidden") }] : []),
             ]}
@@ -1014,7 +1051,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
       )}
       {hover.picture}
       {dnd.ghost}
-      {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
+      {missingOpen && <MissingDialog view={view} money={money} showWishlist={!precon} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
       {sharing && <ShareDialog kind="deck" target={String(view.id)} what="this deck" onClose={() => setSharing(false)} />}
       {printOpen && (
         <PrintDeckDialog
@@ -1125,7 +1162,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   );
 }
 
-function MissingDialog({ view, money, onClose, onDone }: { view: Answer; money: (eur: number) => string; onClose: () => void; onDone: (text: string) => void }) {
+/** The cards the deck is missing, read only, with "Add to wishlist" where there is a saved deck to add them to ([showWishlist]). */
+function MissingDialog({ view, money, showWishlist = true, onClose, onDone }: { view: Answer; money: (eur: number) => string; showWishlist?: boolean; onClose: () => void; onDone: (text: string) => void }) {
   const [skipBasics, setSkipBasics] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1204,9 +1242,11 @@ function MissingDialog({ view, money, onClose, onDone }: { view: Answer; money: 
           <button className="btn" onClick={onClose} disabled={busy}>
             Close
           </button>
-          <button className="btn primary" disabled={busy || copies === 0 || view.readOnly} onClick={toWishlist}>
-            Add to wishlist
-          </button>
+          {showWishlist && (
+            <button className="btn primary" disabled={busy || copies === 0 || view.readOnly} onClick={toWishlist}>
+              Add to wishlist
+            </button>
+          )}
         </div>
       </div>
     </Dialog>
