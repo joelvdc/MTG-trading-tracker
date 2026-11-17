@@ -40,6 +40,37 @@ data class StatsCard(
     val isBasic get() = landFaces.any { (t, _) -> "Basic" in t.substringBefore(" — ").split(' ') }
 }
 
+/**
+ * The modal double-faced cards whose back face is a land (Sink into Stupor // Soporific Springs, "Instant //
+ * Land"). Archidekt counts their copies in the Land section's heading in brackets, although they sit in
+ * another section; these helpers find them. Since 1.100.
+ */
+object MdfcLands {
+    /**
+     * Whether a card's type line is a spell on the front and a land on a later face ("Instant // Land"); a land
+     * on the front ("Land // Land") doesn't count, as it's already in the land section.
+     */
+    fun backIsLand(typeLine: String): Boolean {
+        val faces = typeLine.split(" // ")
+        return faces.size > 1 && !landFace(faces.first()) && faces.drop(1).any(::landFace)
+    }
+
+    /** Whether a section title is the Land section ("Land" or "Lands", any case). */
+    fun isLandSection(title: String): Boolean = title.trim().let { it.equals("land", true) || it.equals("lands", true) }
+
+    /**
+     * The copies of such cards outside the section [inSection] (the Scryfall ids of the cards in it), their
+     * quantities added up. Cards whose type line Scryfall hasn't given yet are left out.
+     */
+    fun copies(cards: List<StatsCard>, inSection: Set<String> = emptySet()): Int = cards.sumOf { c ->
+        val line = c.typeLine
+        if (line.isNullOrEmpty() || c.scryfallId in inSection || !backIsLand(line)) 0 else c.quantity
+    }
+
+    /** Whether a face is a land: types before the dash, e.g. "Legendary Land — Desert". */
+    private fun landFace(type: String) = "Land" in type.substringBefore(" — ").split(' ')
+}
+
 /** The mana curve: cards per mana value 0 to 7+ (lands left out), and their average. */
 data class ManaCurve(val counts: List<Int>, val spells: Int, val average: Double)
 

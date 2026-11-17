@@ -183,6 +183,7 @@ import com.mtgtrader.data.CardTarget
 import com.mtgtrader.data.DeckSection
 import com.mtgtrader.data.CardInfo
 import com.mtgtrader.data.DeckStats
+import com.mtgtrader.data.MdfcLands
 import com.mtgtrader.data.DeckLegality
 import com.mtgtrader.data.LegalLine
 import com.mtgtrader.data.LegalRule
@@ -915,7 +916,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 sections.forEach { section ->
                     val folded = section.title in collapsed
                     item(key = "h_${section.title}") {
-                        SectionHeading(section, sectionValue(section), folded, highlight = dropCategory == section.title, menu = categoryMenu(section.title, section.rows)) { toggle(section.title) }
+                        // The Land heading also counts the MDFC lands sitting in the deck's other sections (since 1.100).
+                        val mdfc = if (MdfcLands.isLandSection(section.title)) MdfcLands.copies(statCards, section.rows.map { it.item.card.scryfallId }.toSet()) else 0
+                        SectionHeading(section, sectionValue(section), folded, mdfc = mdfc, highlight = dropCategory == section.title, menu = categoryMenu(section.title, section.rows)) { toggle(section.title) }
                     }
                     // Cards "Added in app" on an editable deck: into the deck, or to Archidekt's maybeboard (since 1.46).
                     if (editable && section.title == DeckToCollection.ADDED_IN_APP && !folded) {
@@ -1636,7 +1639,8 @@ private const val GAMES_OPEN = "games"
 
 /**
  * A section's title and card count, with what its cards are worth (since 1.43); tapping it folds the
- * section away or opens it again. Since 1.42.
+ * section away or opens it again. Since 1.42. The Land section adds the copies of the modal double-faced
+ * lands outside it ("Land (37, 40 with MDFCs)", since 1.100) when [mdfc] is above 0.
  */
 @Composable
 internal fun SectionHeading(
@@ -1644,10 +1648,12 @@ internal fun SectionHeading(
     value: Double?,
     folded: Boolean,
     count: Int? = null,
+    mdfc: Int = 0,
     highlight: Boolean = false,
     menu: (@Composable () -> Unit)? = null,
     onToggle: () -> Unit,
 ) {
+    val n = count ?: section.count
     Column(
         Modifier.fillMaxWidth().padding(top = 12.dp).clip(RoundedCornerShape(4.dp))
             .background(if (highlight) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
@@ -1655,7 +1661,7 @@ internal fun SectionHeading(
     ) {
         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "${section.title} (${count ?: section.count})",
+                if (mdfc > 0) "${section.title} ($n, ${n + mdfc} with MDFCs)" else "${section.title} ($n)",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
