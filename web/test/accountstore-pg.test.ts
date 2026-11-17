@@ -120,6 +120,11 @@ describe.each([
     });
     await s.dropWinTurns(a.id, [10710772]);
     expect([...(await s.winTurns(a.id)).keys()]).toEqual([-1793996277123]);
+    // A precon's win turn is kept once per file and replaced when its list changes.
+    expect(await s.preconWinTurn("Blast from the Past.txt")).toBeNull();
+    await s.putPreconWinTurn("Blast from the Past.txt", { key: "13|p1", result: "null", at: NOW });
+    await s.putPreconWinTurn("Blast from the Past.txt", { key: "13|p2", result: '{"label":"p"}', at: NOW + 1 });
+    expect(await s.preconWinTurn("Blast from the Past.txt")).toEqual({ key: "13|p2", result: '{"label":"p"}', at: NOW + 1 });
   });
 
   it("value history, alert levels, the alert history and job runs", async () => {
