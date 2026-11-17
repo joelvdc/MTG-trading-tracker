@@ -55,7 +55,11 @@ website and nightly backups; accounts need an invite code for now.
 - Import a deck from a link (read only) or a pasted list, add a precon, or build one in the app or on the website;
   each deck's page shows when it was last modified.
 - Group a deck by category, card type, mana value or colour, sorted by mana value or name; on the website, drag
-  categories into your own order (the app follows it) and drag cards between categories of your own decks.
+  categories into your own order (the app follows it) and drag cards between categories of your own decks. Lands
+  always go in the Land category, and its heading also counts the MDFCs with a land on the back, like Archidekt
+  ("Land (37, 40 with MDFCs)").
+- **Browse every Commander precon** on the website (Explore → Commander precons): see one with the auto categories,
+  its simulated win turn and power level, then make it your deck or add its cards to your collection.
 - **Search inside a deck** with Scryfall's search words (`t:creature o:draw mv<=2`), the same in the app and on the
   website; **copy a deck as text** (Moxfield, Archidekt, MTG Arena or a plain list) and **paste cards** into one of
   your own decks, with a check first that shows what's new, what's already there and what wasn't found.
