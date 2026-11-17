@@ -301,17 +301,25 @@ object ManaOddsCalc {
         return null
     }
 
-    /** Whether [land] comes in untapped now, with [out] on the battlefield and [hand] (without it) to reveal from. Since 1.71. */
-    internal fun entersUntapped(land: Card, out: LandsOut, hand: List<Card>): Boolean {
+    /**
+     * Whether [land] comes in untapped now, with [out] on the battlefield and [hand] (without it) to reveal from. Since
+     * 1.71. [out] and [hand] are only asked for when the answer needs them: most lands don't enter tapped, and only a
+     * land that reveals one (Game Trail) reads the hand.
+     */
+    internal fun entersUntapped(land: Card, out: () -> LandsOut, hand: () -> List<Card>): Boolean {
         if (!land.tapped) return true
         val u = land.untap ?: return false
-        if (out.count < u.min || out.count > u.max || out.basics < u.basics) return false
-        if (u.legendary && !out.legendary || u.planeswalker && !out.planeswalker) return false
-        if (u.lowLife != null && out.lowestLife > u.lowLife) return false
+        val o = out()
+        if (o.count < u.min || o.count > u.max || o.basics < u.basics) return false
+        if (u.legendary && !o.legendary || u.planeswalker && !o.planeswalker) return false
+        if (u.lowLife != null && o.lowestLife > u.lowLife) return false
         if (u.types.isEmpty()) return true
-        if (u.ofTypes > 0) return u.types.sumOf { out.typeCounts[it] ?: 0 } >= u.ofTypes
-        return if (u.reveal) hand.any { it.kind == Kind.LAND && it.types.any { t -> t in u.types } } else out.types.any { it in u.types }
+        if (u.ofTypes > 0) return u.types.sumOf { o.typeCounts[it] ?: 0 } >= u.ofTypes
+        return if (u.reveal) hand().any { it.kind == Kind.LAND && it.types.any { t -> t in u.types } } else o.types.any { it in u.types }
     }
+
+    /** As above, for a caller that has the battlefield and the hand worked out already. */
+    internal fun entersUntapped(land: Card, out: LandsOut, hand: List<Card>): Boolean = entersUntapped(land, { out }, { hand })
 
     /** The mana a turn spends from [pool] on [costs], dearest first: whether a land's mana would be used now. Since 1.71. */
     internal fun spend(pool: List<Pair<Set<Char>, Int>>, costs: List<Cost>): Int {
@@ -325,26 +333,65 @@ object ManaOddsCalc {
     }
 
     /**
+     * What [chooseLand] sorts a land by: whether it comes in untapped now (or must, when that's what's needed), whether
+     * it's played last, whether it enters tapped but could come in untapped later, the colours it adds that are missing,
+     * and the colours it adds.
+     */
+    private data class LandKey(val untapped: Boolean, val last: Boolean, val later: Boolean, val missing: Int, val colours: Int)
+
+    private val LAND_ORDER = compareBy<LandKey> { it.untapped }.thenBy { it.last }.thenBy { it.later }
+        .thenByDescending { it.missing }.thenByDescending { it.colours }
+
+    /**
      * The land to play from [lands] (since 1.71): one that adds a missing colour ({C} isn't one), untapped when its mana
      * would be used this turn on [costs] from [pool], else one that enters tapped (always-tapped lands before those that
      * could come in untapped later). [untapped] tells whether a land would come in untapped now. With a [sink] (an X
      * spell in hand, or an ability on the battlefield that costs mana, since 1.77) an untapped land's mana is always used.
+     * Since 1.101 [pool] and [sink] are only asked for when the answer could depend on them.
      */
     internal fun <T> chooseLand(
         lands: List<T>, mana: (T) -> Card, untapped: (T) -> Boolean, have: Set<Char>,
-        pool: List<Pair<Set<Char>, Int>>, costs: List<Cost>, last: (T) -> Boolean = { false }, sink: Boolean = false,
+        pool: () -> List<Pair<Set<Char>, Int>>, costs: List<Cost>, last: (T) -> Boolean = { false }, sink: () -> Boolean = { false },
     ): T {
-        val up = lands.associateWith(untapped)
-        val now = spend(pool, costs)
-        val needed = lands.any { l -> up.getValue(l) && (sink || spend(pool + (mana(l).colours to mana(l).amount), costs) > now) }
-        return lands.sortedWith(
-            compareBy<T> { if (needed) !up.getValue(it) else up.getValue(it) }
-                .thenBy(last)
-                .thenBy { !up.getValue(it) && mana(it).untap != null }
-                .thenByDescending { (mana(it).colours - have - 'C').size }
-                .thenByDescending { (mana(it).colours - 'C').size },
-        ).first()
+        // One land is the answer; whether it comes in untapped isn't asked of it.
+        if (lands.size == 1) return lands[0]
+        val up = lands.map(untapped)
+        // Coming in untapped only changes the order when the lands differ in it: when they all do or none does, the first
+        // key is the same for each of them whatever it is, so what the pool spends now can't matter.
+        val needed = if (up.all { it } || up.none { it }) false else {
+            val left = pool()
+            val now = spend(left, costs)
+            lands.indices.any { i -> up[i] && (sink() || spend(left + (mana(lands[i]).colours to mana(lands[i]).amount), costs) > now) }
+        }
+        // Each land's key once, and the first land in the hand with the smallest key: what the first of a stable sort is.
+        fun key(i: Int): LandKey {
+            val o = up[i]
+            val card = mana(lands[i])
+            return LandKey(
+                if (needed) !o else o,
+                last(lands[i]),
+                !o && card.untap != null,
+                (card.colours - have - 'C').size,
+                (card.colours - 'C').size,
+            )
+        }
+        var best = 0
+        var bestKey = key(0)
+        for (i in 1 until lands.size) {
+            val other = key(i)
+            if (LAND_ORDER.compare(other, bestKey) < 0) {
+                best = i
+                bestKey = other
+            }
+        }
+        return lands[best]
     }
+
+    /** As above, for a caller that has the pool and the sink (an X spell in hand…) worked out already. */
+    internal fun <T> chooseLand(
+        lands: List<T>, mana: (T) -> Card, untapped: (T) -> Boolean, have: Set<Char>,
+        pool: List<Pair<Set<Char>, Int>>, costs: List<Cost>, last: (T) -> Boolean = { false }, sink: Boolean = false,
+    ): T = chooseLand(lands, mana, untapped, have, { pool }, costs, last, { sink })
 
     /**
      * Karsten's Commander mulligans: a free one, then London mulligans bottoming towards three lands. [mana] tells
@@ -385,15 +432,21 @@ object ManaOddsCalc {
         val lands = hand.filter { it.kind == Kind.LAND && sources.count { s -> s.land && turn < s.until } >= it.sacrificesLands }
         if (lands.isEmpty()) return
         val have = sources.flatMap { it.colours }.toSet()
-        val out = sources.filter { it.land && turn <= it.until }
-            .let { l ->
-                LandsOut(
-                    l.size, l.count { it.basic }, l.flatMap { it.types }.toSet(), l.flatMap { it.types }.groupingBy { it }.eachCount(),
-                    legendary = commandersOut.any { "Legendary" in it && "Creature" in it }, planeswalker = commandersOut.any { "Planeswalker" in it },
-                )
-            }
-        fun untapped(l: Card) = entersUntapped(l, out, hand.toMutableList().also { it.remove(l) })
-        val pool = sources.filter { it.from <= turn && turn <= it.until }.map { it.colours to it.amount }
+        // Only a land that enters tapped reads the battlefield, and all of them read the same one: worked out once, on
+        // first use (nothing here changes the battlefield before the land is chosen).
+        val out by lazy(LazyThreadSafetyMode.NONE) {
+            sources.filter { it.land && turn <= it.until }
+                .let { l ->
+                    LandsOut(
+                        l.size, l.count { it.basic }, l.flatMap { it.types }.toSet(), l.flatMap { it.types }.groupingBy { it }.eachCount(),
+                        legendary = commandersOut.any { "Legendary" in it && "Creature" in it }, planeswalker = commandersOut.any { "Planeswalker" in it },
+                    )
+                }
+        }
+        // The hand without the land, which only a land that reveals one to come in untapped (Game Trail) reads.
+        fun untapped(l: Card) = entersUntapped(l, { out }) { hand.toMutableList().also { it.remove(l) } }
+        // The mana left this turn, asked for only when an untapped land's mana could be used.
+        val pool = { sources.filter { it.from <= turn && turn <= it.until }.map { it.colours to it.amount } }
         val costs = waiting + hand.filter { it.kind == Kind.ROCK || it.kind == Kind.CREATURE || it.kind == Kind.RAMP }.map { it.cost }
         val land = chooseLand(lands, { it }, ::untapped, have, pool, costs)
         val up = untapped(land)

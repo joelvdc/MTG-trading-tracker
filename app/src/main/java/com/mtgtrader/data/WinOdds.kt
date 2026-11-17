@@ -2751,10 +2751,14 @@ object WinOddsCalc {
 
         /**
          * Whether a land coming in now is untapped: its own text (since 1.71 with its condition, from [hand] without it:
-         * slow, check and battle lands, Game Trail), or Amulet of Vigor, Spelunking, Gond Gate…
+         * slow, check and battle lands, Game Trail), or Amulet of Vigor, Spelunking, Gond Gate… Since 1.101 the
+         * battlefield's lands and the hand are only worked out when the answer needs them, and [out] can be one already
+         * worked out for this land drop.
          */
-        fun untapped(land: WinCard?, hand: List<WinCard> = this.hand) = land == null ||
-            ManaOddsCalc.entersUntapped(land.mana, landsOut(), hand.map { it.mana }) ||
+        fun untapped(
+            land: WinCard?, out: () -> ManaOddsCalc.LandsOut, hand: () -> List<WinCard>,
+        ) = land == null ||
+            ManaOddsCalc.entersUntapped(land.mana, out, hand = { hand().map { it.mana } }) ||
             board.any { b -> b.card?.untapsLands?.let { it == 1 || it == 2 && land.subtypes.contains("Gate") } == true }
 
         /**
@@ -2790,7 +2794,7 @@ object WinOddsCalc {
             val names = gateNames()
             val i = (drawn until rest.size).firstOrNull { rest[it].land && "Gate" in rest[it].subtypes && rest[it].name !in names } ?: return
             val gate = rest.removeAt(i)
-            val source = Source(gate.mana.colours, 1, if (untapped(gate)) turn else turn + 1)
+            val source = Source(gate.mana.colours, 1, if (untapped(gate, { landsOut() }, { hand })) turn else turn + 1)
             sources += source
             val e = Entry(gate, turn, 0, false, false, false).also { it.source = source }
             board += e
@@ -4611,22 +4615,30 @@ object WinOddsCalc {
             val have = HashSet<Char>()
             sources.forEach { have += it.colours }
             // Spell // land cards last: they may be cast as spells later (since 1.62).
-            // Lotus Field waits until there are lands to sacrifice to it (since 1.69).
-            val lands = hand.filter { it.land && board.count { e -> e.isA("land") && (e.source?.until ?: 0) > turn } >= it.mana.sacrificesLands }
+            // Lotus Field waits until there are lands to sacrifice to it (since 1.69). The board is counted once, and only
+            // when a land in the hand sacrifices some: with none, every land passes whatever the count is.
+            val landsOnBoard = if (hand.any { it.land && it.mana.sacrificesLands > 0 })
+                board.count { e -> e.isA("land") && (e.source?.until ?: 0) > turn } else 0
+            val lands = hand.filter { it.land && landsOnBoard >= it.mana.sacrificesLands }
             val names = if (mazeDeck) gateNames() else emptySet()
             // A Maze's End deck plays Maze's End, then Gates with new names (since 1.54). With Crucible of Worlds a land
             // can come from the graveyard (since 1.55).
             val fromYard = if (lands.isEmpty() && board.any { it.card?.crucible == true }) graveyard.firstOrNull { it.land } else null
+            // The lands an "enters tapped unless …" land sees are the same for every land played now, and only a land that
+            // enters tapped reads them: worked out once, on first use (the board doesn't change before the land is picked).
+            val out by lazy(LazyThreadSafetyMode.NONE) { landsOut() }
+            // The hand without the land, which only a land that reveals one to come in untapped (Game Trail) reads.
+            fun untappedNow(l: WinCard) = untapped(l, { out }, { hand.toMutableList().also { h -> h.remove(l) } })
             val land = (if (mazeDeck) lands.firstOrNull { it.mazeEnd } ?: lands.firstOrNull { "Gate" in it.subtypes && it.name !in names } else null)
                 ?: lands.takeIf { it.isNotEmpty() }?.let { l ->
                     val costs = (hand.filter { !it.land } + command).map { it.cost }
                     ManaOddsCalc.chooseLand(
-                        l, { it.mana }, { untapped(it, hand.toMutableList().also { h -> h.remove(it) }) }, have, pool(), costs,
-                        last = { it.spellSide != null }, sink = manaSink(),
+                        l, { it.mana }, { untappedNow(it) }, have, { pool() }, costs,
+                        last = { it.spellSide != null }, sink = { manaSink() },
                     )
                 }
                 ?: fromYard ?: return null
-            val up = untapped(land, hand.toMutableList().also { it.remove(land) })
+            val up = untappedNow(land)
             if (land === fromYard) leftGraveyard(listOf(land)) else hand.remove(land)
             landDrops--
             // Since 1.69: lands making more than one mana (Lotus Field), for as long as their depletion counters last.
