@@ -23,8 +23,19 @@ function today(): string {
  * Add a preconstructed Commander deck (the app's Precon screen): pick the deck, then the binder, the price paid and
  * the day. Its cards (no basic lands) go into the binder, each with its share of the price, and the deck is
  * remembered as an order. [binder] picks the binder to start with ("" for Unsorted; none: a new binder).
+ * [initialDeck] is an MTGJSON deck file name to open on its price and binder step at once (a precon's page asks for it).
  */
-export function PreconDialog({ binder: startBinder, onDone, onClose }: { binder?: string; onDone: (summary: string) => void; onClose: () => void }) {
+export function PreconDialog({
+  binder: startBinder,
+  initialDeck,
+  onDone,
+  onClose,
+}: {
+  binder?: string;
+  initialDeck?: string;
+  onDone: (summary: string) => void;
+  onClose: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [list, setList] = useState<{ decks: PreconInfo[]; more: number } | null>(null);
   const [deck, setDeck] = useState<DeckAnswer | null>(null);
@@ -53,16 +64,28 @@ export function PreconDialog({ binder: startBinder, onDone, onClose }: { binder?
     });
   }, []);
 
-  async function pick(d: PreconInfo) {
+  // Gets a deck's cards and opens the price and binder step for it.
+  async function loadDeck(fileName: string) {
     setBusy("Getting the deck's cards…");
     setError(null);
-    const r = await api<DeckAnswer>(`/api/precons?deck=${encodeURIComponent(d.fileName)}`);
+    const r = await api<DeckAnswer>(`/api/precons?deck=${encodeURIComponent(fileName)}`);
     setBusy(null);
     if (!r.ok || !r.data.cards) return setError(r.data.error ?? "Could not get the deck.");
     setDeck(r.data);
-    setNewName(d.name);
-    if (d.releaseDate && /^\d{4}-\d{2}-\d{2}$/.test(d.releaseDate) && d.releaseDate > today()) setDate(today());
+    setNewName(r.data.info.name);
+    // A deck that isn't out yet can't have been bought: keep today's date.
+    const released = r.data.info.releaseDate;
+    if (released && /^\d{4}-\d{2}-\d{2}$/.test(released) && released > today()) setDate(today());
   }
+
+  // Opened with a deck already picked (from a precon's page): go straight to its price and binder step.
+  useEffect(() => {
+    if (initialDeck) loadDeck(initialDeck);
+    // Only when the dialog opens, not when something else on it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pick = (d: PreconInfo) => loadDeck(d.fileName);
 
   const paid = Number(amount.replace(",", "."));
   const paidOk = amount.trim() !== "" && Number.isFinite(paid) && paid >= 0;

@@ -24,6 +24,8 @@ export default function OrdersPage() {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [precon, setPrecon] = useState(false);
+  // A deck asked for in the address (/orders?precon=<fileName>), until the dialog opens with it.
+  const [preconDeck, setPreconDeck] = useState<string | null>(null);
   const [pricing, setPricing] = useState(false);
   const [dating, setDating] = useState<OrderRow | null>(null);
   const [deleting, setDeleting] = useState<OrderRow | null>(null);
@@ -54,8 +56,28 @@ export default function OrdersPage() {
   }, [view]);
 
   useEffect(() => {
+    // "Add its cards to my collection…" on a precon's page: /orders?precon=<fileName>. Taken out of the address
+    // once read, so reloading the page doesn't open the dialog again.
+    const wanted = new URLSearchParams(window.location.search).get("precon");
+    if (wanted) {
+      setPreconDeck(wanted);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     load();
   }, [load]);
+
+  // The deck asked for opens the dialog once the orders are in (not on a read-only page: nothing could be added).
+  useEffect(() => {
+    if (!preconDeck || !view) return;
+    if (view.readOnly) return setPreconDeck(null);
+    setPrecon(true);
+  }, [preconDeck, view]);
+
+  // Closes the precon dialog, and forgets a deck it was opened with.
+  function closePrecon() {
+    setPrecon(false);
+    setPreconDeck(null);
+  }
 
   async function edit(e: OrderEdit) {
     setBusy(true);
@@ -217,9 +239,10 @@ export default function OrdersPage() {
       )}
       {precon && (
         <PreconDialog
-          onClose={() => setPrecon(false)}
+          initialDeck={preconDeck ?? undefined}
+          onClose={closePrecon}
           onDone={(text) => {
-            setPrecon(false);
+            closePrecon();
             setNotice(text);
             load();
           }}

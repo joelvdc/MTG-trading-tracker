@@ -606,7 +606,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               <button className="btn primary" disabled={making} onClick={makeDeck}>
                 {making ? "Making…" : "Make it my deck"}
               </button>
-              <Link className="btn" href="/orders">
+              <Link className="btn" href={`/orders?precon=${encodeURIComponent(file)}`}>
                 Add its cards to my collection…
               </Link>
               <button className="btn" onClick={copyDecklist}>
