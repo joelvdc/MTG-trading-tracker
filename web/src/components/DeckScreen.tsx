@@ -1,0 +1,1255 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { api, formatDate, peek, remember } from "@/components/api";
+import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
+import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
+import { DeckStatsPanel } from "@/components/DeckStatsPanel";
+import { DeckBulkBar } from "@/components/DeckBulkBar";
+import { UndoBar } from "@/components/DeckUndo";
+import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
+import { DeckTokens } from "@/components/DeckTokens";
+import { DeckGamesCard } from "@/components/DeckGamesCard";
+import { HistoryDialog } from "@/components/DeckHistory";
+import { PrimerSection, type PrimerCardLinks } from "@/components/DeckNotes";
+import { PackagesDialog } from "@/components/DeckPackages";
+import { DeckRolesLine } from "@/components/DeckRolesLine";
+import { deckResults, type Game } from "@/lib/gameshared";
+import { useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
+import { Dialog } from "@/components/Dialog";
+import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
+import { FlipIcon, HoverSwitch } from "@/components/Icons";
+import { ColourPips, ManaCost } from "@/components/Mana";
+import { TopBar } from "@/components/Nav";
+import { OwnedIcon } from "@/components/OwnedIcon";
+import { RecommendationsPanel } from "@/components/RecommendationsPanel";
+import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
+import { usePointerDrag } from "@/components/useDragScroll";
+import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
+import type { StatsCard } from "@/lib/deckstats";
+import { PrintDeckDialog } from "@/components/PrintLists";
+import type { Legality } from "@/lib/legality";
+import { ShareDialog } from "@/components/SharePanel";
+import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { linkMatches } from "@/lib/decknotes";
+import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
+import { DeckColumns } from "@/components/DeckColumns";
+import { ComboLine } from "@/components/ComboLine";
+import { format } from "@/lib/money";
+
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin; games?: Game[]; legality?: Legality | null; precon?: { fileName: string; name: string; code: string; releaseDate: string | null } };
+
+const NO_CARDS: StatsCard[] = [];
+const NO_ROWS: DeckRow[] = [];
+
+/** The deck's folded card sections, remembered in this browser per deck. */
+/** What is being dragged on the deck page: a category (to order them) or, in a local deck, a card (to another category). */
+type DragItem = { kind: "cat"; title: string } | { kind: "card"; uid: string; from: string };
+
+function useFolded(deckId: string): [Set<string>, (key: string, folded: boolean) => void] {
+  const key = `mtg.deckFolded.${deckId}`;
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      setFolded(new Set(JSON.parse(localStorage.getItem(key) ?? "[]") as string[]));
+    } catch {
+      setFolded(new Set());
+    }
+  }, [key]);
+  return [
+    folded,
+    (k, f) =>
+      setFolded((old) => {
+        if (old.has(k) === f) return old;
+        const next = new Set(old);
+        if (f) next.add(k);
+        else next.delete(k);
+        try {
+          localStorage.setItem(key, JSON.stringify([...next]));
+        } catch {
+          // Not remembered.
+        }
+        return next;
+      }),
+  ];
+}
+
+const BASICS = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].flatMap((b) => [b, `Snow-Covered ${b}`]).map((n) => n.toLowerCase()));
+
+/**
+ * A deck page: its cards by category or type, what you own, the stats and the rule-zero cards. It draws a saved
+ * deck, or a precon from MTGJSON's list as a preview (read only: nothing is saved, and nothing that edits or belongs
+ * to a saved deck is shown).
+ */
+export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | { kind: "precon"; file: string } }) {
+  const precon = source.kind === "precon";
+  const file = source.kind === "precon" ? source.file : "";
+  const id = source.kind === "deck" ? source.id : "";
+  // Where the answer comes from: the saved deck, or the precon's deck list.
+  const loadPath = precon ? `/api/precons/view?deck=${encodeURIComponent(file)}` : `/api/decks/${encodeURIComponent(id)}`;
+  const [view, setView] = useState<Answer | null>(null);
+  const [folder, setFolder] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [prefs, setPrefs] = useDeckPrefs();
+  const [onlyBracket, setOnlyBracket] = useState(false);
+  const [flipped, setFlipped] = useState<Set<string>>(new Set());
+  const [showStats, setShowStats] = useState(true);
+  const [showRecs, setShowRecs] = useState(false);
+  const [missingOpen, setMissingOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [rz, setRz] = useState<"BRACKET" | "POWER" | null>(null);
+  const [line, setLine] = useState<string | null>(null);
+  const [catsOpen, setCatsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [primerEditing, setPrimerEditing] = useState(false);
+  const [packagesOpen, setPackagesOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
+  const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
+  // Making the precon a deck of yours ("Make it my deck").
+  const [making, setMaking] = useState(false);
+  // Select mode: ticked lines (by lineUid) for the bulk bar.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // A precon keeps its folded sections apart from the saved deck that may share its name.
+  const [folded, setFold] = useFolded(precon ? `precon:${file}` : id);
+  const [hoverOn, setHoverOn] = useHoverSetting();
+  // Dragging a category (to order them) or, in a local deck, a card (to another category), and where it would land.
+  const [drag, setDrag] = useState<DragItem | null>(null);
+  const [dropAt, setDropAt] = useState<{ key: string; after: boolean } | null>(null);
+  // The page's own dragging (the mouse wheel and the window's edges scroll the page meanwhile; see usePointerDrag).
+  const dnd = usePointerDrag<DragItem, DropTarget>({
+    begin: (p) => {
+      hover.hide();
+      setDrag(p);
+    },
+    over: (p, x, y) => {
+      const t = dropAtPoint(p, x, y);
+      setDropAt((old) => (t ? (old?.key === t.key && old.after === t.after ? old : { key: t.key, after: t.after }) : null));
+      return t;
+    },
+    drop: (p, t) => {
+      endDrag();
+      if (!t) return;
+      if (p.kind === "cat") void orderCategory(p.title, t.key, t.after);
+      else if (t.category !== null) void moveCard(p.uid, p.from, t.category);
+    },
+    cancel: () => endDrag(),
+  });
+  const hover = useHoverCard(hoverOn);
+  // The main deck's and the maybeboard's cards with their details: the lines' mana costs and the filter use both.
+  const allCards = useMemo(() => (view ? [...view.stats, ...(view.maybeStats ?? [])] : NO_CARDS), [view]);
+  const filter = useDeckFilter(view?.rows ?? NO_ROWS, allCards);
+  const win = useWinOdds(view?.id ?? 0, view?.stats ?? NO_CARDS, view?.deck.colorIdentity ?? "", view?.saltCard ?? null, !precon && view !== null, view?.winTurn ?? null);
+
+  useEffect(() => {
+    // A precon is a preview of MTGJSON's list: nothing is kept for it in this browser, and it needs no sync folder.
+    if (!precon) {
+      // Seen before while the website was open: show that at once; the fresh answer replaces it below.
+      const ks = peek<{ loggedIn: boolean; folder?: string }>("/api/session");
+      const kd = peek<Answer>(loadPath);
+      if (ks?.data.folder && kd && Array.isArray(kd.data.rows) && String(kd.data.id) === id) {
+        setFolder((cur) => cur || ks.data.folder!);
+        setView((cur) => cur ?? kd.data);
+      }
+    } else {
+      // Another precon from the same page: what's on screen now is the one before.
+      setView(null);
+    }
+    (async () => {
+      const [s, d] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<Answer & { noFolder?: boolean }>(loadPath)]);
+      if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
+      if (!precon && (!s.data.folder || d.data.noFolder)) return window.location.replace("/settings");
+      setFolder(s.data.folder ?? "");
+      if (d.ok && Array.isArray(d.data.rows)) setView(d.data);
+      else setError(d.data.error ?? (precon ? "Could not load the precon." : "Could not load the deck."));
+    })();
+  }, [loadPath, id, precon]);
+
+  // What's on screen (after edits too) is what the next visit shows first (a precon is never kept).
+  useEffect(() => {
+    if (!precon && view) remember(`/api/decks/${encodeURIComponent(String(view.id))}`, view);
+  }, [view, precon]);
+
+  // Lines that went away after a reload (removed, or moved) leave the selection.
+  useEffect(() => {
+    if (!view) return;
+    setSelected((old) => {
+      if (old.size === 0) return old;
+      const live = new Set(view.rows.map((r) => r.lineUid));
+      const next = new Set([...old].filter((u) => live.has(u)));
+      return next.size === old.size ? old : next;
+    });
+  }, [view]);
+
+  // Esc leaves select mode (a window on top, such as the Edit menu's, closes first).
+  useEffect(() => {
+    if (!selecting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector(".backdrop")) return;
+      setSelecting(false);
+      setSelected(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selecting]);
+
+  /** Reads an Archidekt deck again ("reload": the list, "refresh": and Commander Salt, "rescore": Commander Salt only). */
+  async function fromArchidekt(action: "reload" | "refresh" | "rescore") {
+    setNotice(action === "reload" ? "Reading the decklist from Archidekt…" : action === "refresh" ? "Reading the decklist from Archidekt and scoring it on Commander Salt…" : "Scoring the deck on Commander Salt…");
+    const r = await api<{ ok?: boolean; scoreError?: string | null }>(loadPath, { action });
+    if (!r.ok) return setNotice(r.data.error ?? "That did not work.");
+    const done = action === "reload" ? "Decklist reloaded from Archidekt." : action === "refresh" ? "Reloaded from Archidekt and scored again." : "Scored again on Commander Salt.";
+    await reload(r.data.scoreError ? `${action === "reload" ? done : "Saved"}, but Commander Salt couldn't score it: ${r.data.scoreError}` : done);
+  }
+
+  /** Retires the deck or brings it back (app 1.83). */
+  async function retire(on: boolean): Promise<string | null> {
+    const r = await deckAction(Number(id), { action: "retire", retired: on });
+    if (r.error) return r.error;
+    setConfirm(null);
+    await reload(on ? "Retired: the deck is under Retired on the Decks page." : "Brought back.");
+    return null;
+  }
+
+  /** Loads the deck again after an edit (keeping the page as it is meanwhile). */
+  async function reload(text: string | null) {
+    const d = await api<Answer>(loadPath);
+    if (d.ok && Array.isArray(d.data.rows)) {
+      setView(d.data);
+      setError(null);
+    } else setError(d.data.error ?? (precon ? "Could not load the precon." : "Could not load the deck."));
+    if (text) setNotice(text);
+  }
+
+  /** Makes the precon a local deck of yours, then opens it as a deck. */
+  async function makeDeck() {
+    setMaking(true);
+    setError(null);
+    const r = await api<{ id?: number }>("/api/decks", { action: "from-precon", fileName: file, name: view?.precon?.name ?? "" });
+    setMaking(false);
+    if (!r.ok || r.data.id === undefined) return setError(r.data.error ?? "That did not work.");
+    window.location.assign(`/decks/${r.data.id}`);
+  }
+
+  /** Puts the precon's decklist on the clipboard ("1 Card Name" per line, the commanders first). */
+  async function copyDecklist() {
+    if (!view) return;
+    const rows = [...view.rows].filter((r) => !r.maybeboard).sort((a, b) => Number(b.commander) - Number(a.commander));
+    try {
+      await navigator.clipboard.writeText(rows.map((r) => `${r.quantity} ${r.name}`).join("\n"));
+      setNotice("Copied.");
+    } catch {
+      setError("The browser didn't allow copying.");
+    }
+  }
+
+  /** Scrolls to the Primer section at the bottom of the page, unfolding it first. */
+  function jumpToPrimer() {
+    setFold("\u0000primer", false);
+    // The section can only be scrolled to once it has opened.
+    requestAnimationFrame(() => document.getElementById("primer")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  /** Goes to the Primer section at the bottom of the page and opens its editor ("Primer…" in the Edit menu). */
+  function openPrimer() {
+    if (view && !view.readOnly) setPrimerEditing(true);
+    jumpToPrimer();
+  }
+
+  const shaped = useMemo(() => {
+    if (!view) return null;
+    const costs = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
+    const coloursOf = (r: DeckRow) => costColours(costs.get(r.original?.scryfallId ?? r.card.scryfallId));
+    const main = view.rows.filter((r) => !r.maybeboard);
+    const only = filter.mode === "ONLY" ? filter.test : null;
+    const bracketShown = onlyBracket ? main.filter((r) => r.tags.length > 0) : main;
+    const shown = only ? bracketShown.filter(only) : bracketShown;
+    const order = categoryOrder(view.deck.categoryOrder);
+    const all = layoutSections(shown, prefs.group, prefs.sort, prefs.descending, coloursOf, order);
+    const hidden = new Set(view.hidden);
+    const visible = prefs.group === "CATEGORY" ? all.filter((s) => !hidden.has(s.title.toLowerCase())) : all;
+    const hiddenRows = all
+      .filter((s) => !visible.includes(s))
+      .flatMap((s) => s.rows)
+      .sort((a, b) => caseless(a.category, b.category) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    const maybeRows = view.rows.filter((r) => r.maybeboard && (!only || only(r)));
+    // Split: grouped as the deck is, each line under its own category (the server's pick: lib/deckedit.ts
+    // maybeCategoryOf); otherwise by the maybeboard's own categories (Maybeboard, Sideboard…).
+    const maybeSections = prefs.maybeSplit
+      ? layoutSections(
+          maybeRows.map((r) => ({ ...r, category: view.maybeCategories?.[r.lineUid] ?? r.category })),
+          prefs.group,
+          prefs.sort,
+          prefs.descending,
+          coloursOf,
+          order,
+        )
+      : layoutSections(maybeRows, "CATEGORY", prefs.sort, prefs.descending, coloursOf, order);
+    const value = main.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0);
+    const missing = main.reduce((s, r) => s + r.missing, 0);
+    return { main, visible, hiddenRows, maybeSections, maybeCount: maybeRows.reduce((s, r) => s + r.quantity, 0), value, missing, tagged: main.filter((r) => r.tags.length > 0).length, matched: filter.test ? view.rows.filter(filter.test).reduce((s, r) => s + r.quantity, 0) : null };
+  }, [view, allCards, prefs.group, prefs.sort, prefs.descending, prefs.maybeSplit, onlyBracket, filter.mode, filter.test]);
+
+  if (!view || !shaped) {
+    return (
+      <>
+        <TopBar page={precon ? "precons" : "decks"} folder={folder} />
+        <main className="page wide">
+          <Link href={precon ? "/precons" : "/decks"} className="small">
+            {precon ? "← Precons" : "← Decks"}
+          </Link>
+          {error ? <div className="bar error">{error}</div> : <p className="muted center">{precon ? "Loading…" : "Loading… (the first visit looks the cards up on Scryfall)"}</p>}
+        </main>
+      </>
+    );
+  }
+
+  const d = view.deck;
+  // A precon says how much of it you own; a saved deck shows the missing copies in its scores instead.
+  const mainRows = view.rows.filter((r) => !r.maybeboard);
+  const ownedCopies = mainRows.reduce((s, r) => s + r.quantity - r.missing, 0);
+  const totalCopies = mainRows.reduce((s, r) => s + r.quantity, 0);
+  const money = (eur: number) => format(eur * view.perEuro, view.currency);
+  const costOf = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
+  const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
+  /** Whether a line's card has a back face, from Scryfall's layout when known. */
+  const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
+  const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
+
+  // The primer's [[card]] links: a card of the deck (the main deck's line first) opens its window, and its picture
+  // follows the mouse; a link to a card the deck hasn't got is its name in bold.
+  const cardLinks: PrimerCardLinks = {
+    find: (name) => {
+      const hit = view.rows.find((r) => !r.maybeboard && linkMatches(name, r.name)) ?? view.rows.find((r) => linkMatches(name, r.name));
+      return hit ? { open: () => setLine(hit.lineUid), picture: pictureOf(hit) } : null;
+    },
+    follow: hover.follow,
+    hide: hover.hide,
+  };
+  // The primer editor's "/" list: the deck's card names, the main deck's (commanders first), then the maybeboard's.
+  const cardNames = [...new Set([...view.rows.filter((r) => !r.maybeboard && r.commander), ...view.rows.filter((r) => !r.maybeboard), ...view.rows.filter((r) => r.maybeboard)].map((r) => r.name))];
+
+  const byCategory = prefs.group === "CATEGORY";
+  const canOrder = byCategory && !view.readOnly;
+  const canMoveCards = byCategory && view.local && !view.readOnly;
+  const endDrag = () => {
+    setDrag(null);
+    setDropAt(null);
+  };
+
+  /** Select mode: tick or untick one line. */
+  function toggleLine(uid: string) {
+    setSelected((old) => {
+      const next = new Set(old);
+      if (!next.delete(uid)) next.add(uid);
+      return next;
+    });
+  }
+
+  /** Select mode: tick every line of a section, or clear them when all are ticked. */
+  function toggleSection(rows: DeckRow[]) {
+    setSelected((old) => {
+      const next = new Set(old);
+      const all = rows.length > 0 && rows.every((r) => next.has(r.lineUid));
+      for (const r of rows) {
+        if (all) next.delete(r.lineUid);
+        else next.add(r.lineUid);
+      }
+      return next;
+    });
+  }
+
+  /** Select mode: leave it, dropping the selection. */
+  function endSelecting() {
+    setSelecting(false);
+    setSelected(new Set());
+  }
+
+  /**
+   * A section title's checkbox: ticked when all its lines are, half-ticked when some are. Clicking it ticks the rest
+   * or clears them, without folding the section (a summary folds on its own click).
+   */
+  const sectionCheck = (rows: DeckRow[], label: string) => {
+    const on = rows.filter((r) => selected.has(r.lineUid)).length;
+    return (
+      <input
+        type="checkbox"
+        className="section-check"
+        aria-label={label}
+        checked={rows.length > 0 && on === rows.length}
+        ref={(el) => {
+          if (el) el.indeterminate = on > 0 && on < rows.length;
+        }}
+        onChange={() => undefined}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          toggleSection(rows);
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+      />
+    );
+  };
+
+  /** Where [p] would land with the pointer at (x, y): the innermost section under it that takes it. */
+  function dropAtPoint(p: DragItem, x: number, y: number): DropTarget | null {
+    let el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-drop-key]") ?? null;
+    while (el) {
+      const box = el.getBoundingClientRect();
+      const spot = dropSpot(p.kind, { key: el.dataset.dropKey ?? "", category: el.dataset.dropCat ?? null, orderable: el.dataset.dropOrder === "1", top: box.top, height: box.height }, y);
+      if (spot) return spot;
+      el = el.parentElement?.closest<HTMLElement>("[data-drop-key]") ?? null;
+    }
+    return null;
+  }
+
+  /** Puts the dragged category before or after [target] and saves the deck's own order (any deck). */
+  async function orderCategory(dragged: string, target: string, after: boolean) {
+    if (!view || !shaped || dragged.toLowerCase() === target.toLowerCase()) return;
+    const titles = shaped.visible.filter((s) => !s.rows.every((r) => r.commander)).map((s) => s.title);
+    const list = titles.filter((t) => t.toLowerCase() !== dragged.toLowerCase());
+    const at = list.findIndex((t) => t.toLowerCase() === target.toLowerCase());
+    if (at < 0) return;
+    list.splice(at + (after ? 1 : 0), 0, dragged);
+    // Categories not shown now (hidden, or only in the maybeboard) keep their place after these.
+    const rest = categoryOrder(view.deck.categoryOrder).filter((n) => !list.some((t) => t.toLowerCase() === n));
+    const names = [...list, ...rest];
+    setView({ ...view, deck: { ...view.deck, categoryOrder: names.join("\n") } });
+    const r = await deckAction(view.id, { action: "category-order", names });
+    if (r.error) await reload(null).then(() => setError(r.error));
+  }
+
+  /** Moves a dragged card into [category] (local decks). */
+  async function moveCard(uid: string, from: string, category: string) {
+    if (!view || from.toLowerCase() === category.toLowerCase()) return;
+    const r = await deckAction(view.id, { action: "move", uids: [uid], category });
+    if (r.error) setError(r.error);
+    else await reload(null);
+  }
+
+  /** A section a dragged card or category can land on: [category] is where a card dropped there goes; [orderable] whether categories can land next to it. */
+  const dropProps = (key: string, category: string | null, orderable: boolean) => ({
+    "data-drop-key": key,
+    ...(category !== null ? { "data-drop-cat": category } : {}),
+    "data-drop-order": orderable ? "1" : "0",
+  });
+  const dropClass = (key: string) =>
+    dropAt?.key !== key || !drag ? "" : drag.kind === "cat" ? (dropAt.after ? " drop-after" : " drop-before") : " drop-into";
+
+  const row = (r: DeckRow) => {
+    const basic = BASICS.has(r.name.toLowerCase());
+    const chosen = selected.has(r.lineUid);
+    const classes = ["deck-row"];
+    if (!selecting) classes.push("clickable");
+    if (chosen) classes.push("selected");
+    if (filter.test && filter.mode === "HIGHLIGHT") classes.push(filter.test(r) ? "filter-hit" : "filter-miss");
+    return (
+      <li
+        key={r.lineUid}
+        data-movable={canMoveCards && !selecting ? "1" : undefined}
+        onPointerDown={canMoveCards && !selecting ? dnd.press({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category }, r.name) : undefined}
+        onDragStart={canMoveCards && !selecting ? (e) => e.preventDefault() : undefined}
+        className={classes.join(" ")}
+        role="button"
+        tabIndex={0}
+        title={selecting ? (chosen ? "Deselect this card" : "Select this card") : view.local && !view.readOnly ? "Change this card" : "This card"}
+        onClick={() => (selecting ? toggleLine(r.lineUid) : (hover.hide(), setLine(r.lineUid)))}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), selecting ? toggleLine(r.lineUid) : setLine(r.lineUid))}
+        onMouseMove={hover.follow(pictureOf(r))}
+        onMouseLeave={hover.hide}
+      >
+        {selecting && (
+          <input
+            type="checkbox"
+            className="line-check"
+            aria-label={`Select ${r.name}`}
+            checked={chosen}
+            onChange={() => toggleLine(r.lineUid)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        )}
+        <span className="deck-qty num">{r.quantity}</span>
+        <span className="grow deck-card-name">
+          <span className="deck-name-text" title={r.name}>
+            {r.name}
+          </span>
+          {r.note && (
+            <span className="deck-note-mark" title={r.note} aria-label={`Note: ${r.note}`}>
+              🗒
+            </span>
+          )}
+          {r.finish !== "NONFOIL" && <span className="foil-text" title={r.finish === "ETCHED" ? "Etched" : "Foil"}> ✦</span>}
+          {r.addedInApp && (
+            <span className="ok-text" title="Added in the app">
+              {" "}
+              +
+            </span>
+          )}
+          {r.tags.map((t) => (
+            <span key={t} className={TAG_LABELS[t].strict ? "tag rz-strict" : "tag rz-soft"}>
+              {TAG_LABELS[t].label}
+            </span>
+          ))}
+          {flippable(r) && r.card.imageUrl && (
+            <button
+              type="button"
+              className="flip-btn"
+              title={flipped.has(r.lineUid) ? "Show the front" : "Show the back"}
+              aria-label={`Flip ${r.name}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                // The hover picture stays and turns to the other face.
+                const toBack = !flipped.has(r.lineUid);
+                if (r.card.imageUrl) hover.follow(toBack ? backImageUrl(r.card.imageUrl) : r.card.imageUrl)(e);
+                setFlipped((old) => {
+                  const next = new Set(old);
+                  if (!next.delete(r.lineUid)) next.add(r.lineUid);
+                  return next;
+                });
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <FlipIcon size={14} />
+            </button>
+          )}
+        </span>
+        {prefs.cost && (
+          <span className="deck-cost">
+            <ManaCost cost={costOf.get(r.original?.scryfallId ?? r.card.scryfallId) ?? null} size={14} />
+          </span>
+        )}
+        {prefs.owned && <span className="deck-own small">{basic ? null : <OwnedIcon row={r} />}</span>}
+        {prefs.price && <span className="num nowrap deck-price">{r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}</span>}
+      </li>
+    );
+  };
+
+  /**
+   * A section. [category]: where a card dropped on it goes (null: nowhere); [orderable]: a category of the deck, which
+   * can be dragged to another place (and others dropped next to it).
+   */
+  const block = (title: string, rows: DeckRow[], key: string, category: string | null = null, orderable = false) => (
+    <details
+      key={key}
+      className={"deck-section" + dropClass(orderable ? title : key)}
+      open={!folded.has(key)}
+      onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}
+      {...(canOrder || canMoveCards ? dropProps(orderable ? title : key, canMoveCards ? category : null, orderable && canOrder) : {})}
+    >
+      <summary>
+        <h3 className="mini-head">
+          {selecting && sectionCheck(rows, `Select all ${title}`)}
+          {orderable && canOrder && (
+            <span
+              className="cat-handle"
+              title="Drag to move this category"
+              aria-label={`Move ${title}`}
+              onClick={(e) => e.preventDefault()}
+              onPointerDown={dnd.press({ kind: "cat", title }, title)}
+            >
+              ⠿
+            </span>
+          )}
+          {title} <span className="muted small">· {rows.reduce((s, r) => s + r.quantity, 0)} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
+        </h3>
+      </summary>
+      <ul className="plain-list deck-list">{rows.map(row)}</ul>
+    </details>
+  );
+  /** A section's size for the columns: its lines plus the heading, folded or not. */
+  const weight = (rows: DeckRow[]) => rows.length + 2;
+  const isCommanders = (rows: DeckRow[]) => rows.length > 0 && rows.every((r) => r.commander);
+  const combos = view.salt ? allCombos(view.salt) : [];
+  const counted = combos.filter((c) => c.counts).length;
+
+  const powerFrom = view.powerSource;
+  // The app's own power level isn't synced: the website works it out from the win turn, as the phone does.
+  const power = view.power ?? (powerFrom === "APP" && win.status === "done" && win.win ? win.win.power.power : null);
+  return (
+    <>
+      <TopBar page={precon ? "precons" : "decks"} folder={folder} />
+      <main className={(precon ? "page wide precon-view" : "page wide") + (selecting && selected.size > 0 ? " with-bulk" : "")}>
+        <Link href={precon ? "/precons" : "/decks"} className="small">
+          {precon ? "← Precons" : "← Decks"}
+        </Link>
+        <header className="deck-banner" style={view.cover ? { backgroundImage: `url("${view.cover}")` } : undefined}>
+          <div className="deck-banner-in">
+            <h1>{d.name}</h1>
+            <div>
+              {d.commanders || "No commander"} <ColourPips identity={d.colorIdentity} size={16} />
+            </div>
+            <div className="small deck-banner-sub">
+              {[
+                precon ? `Precon · ${view.precon?.code ?? ""}` : view.local ? "Local deck" : `by ${d.owner}`,
+                precon ? null : d.origin,
+                precon ? null : d.folderName,
+                `${d.cardCount} cards`,
+                money(shaped.value),
+                view.modifiedAt != null ? `Modified ${formatDate(view.modifiedAt)}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </div>
+          </div>
+        </header>
+        {precon ? (
+          <div className="bar precon-bar">
+            <p className="small">Precon preview: this is MTGJSON&apos;s list with each card in its auto category. Nothing is saved.</p>
+            <div className="inline">
+              <button className="btn primary" disabled={making} onClick={makeDeck}>
+                {making ? "Making…" : "Make it my deck"}
+              </button>
+              <Link className="btn" href="/orders">
+                Add its cards to my collection…
+              </Link>
+              <button className="btn" onClick={copyDecklist}>
+                Copy decklist
+              </button>
+            </div>
+          </div>
+        ) : (
+          view.readOnly && <div className="bar warn">Read only: the app on a phone is newer than this website.</div>
+        )}
+        {precon && (
+          <p className="muted small">
+            You own {ownedCopies} of {totalCopies} cards.
+          </p>
+        )}
+        {notice && (
+          <div className="bar ok" role="status">
+            {notice}
+            <button className="link" onClick={() => setNotice(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
+        {!precon && <UndoBar deckId={view.id} onRestored={() => reload("Undone.")} />}
+        {error && <div className="bar error">{error}</div>}
+        {view.detailsError && <div className="bar warn">Card details: {view.detailsError} The stats use what is known so far.</div>}
+
+        {!precon && (
+          <section className="card deck-scores">
+            <button
+              type="button"
+              className="score score-btn"
+              disabled={!view.salt}
+              title={view.salt ? "Show and print the bracket card" : "Commander Salt hasn't scored this deck yet"}
+              onClick={() => setRz("BRACKET")}
+            >
+              <span className="muted small">Bracket</span>
+              <strong>{d.bracketRealistic ?? "–"}</strong>
+              <span className="small">{bracketName(d.bracketRealistic) ?? "not scored"}</span>
+              {d.bracketBaseline != null && <span className="muted small">baseline {d.bracketBaseline}</span>}
+            </button>
+            <button
+              type="button"
+              className="score score-btn"
+              disabled={!view.salt}
+              title={view.salt ? "Show and print the power card" : "Commander Salt hasn't scored this deck yet"}
+              onClick={() => setRz("POWER")}
+            >
+              <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
+              <strong>{power != null ? formatPower(power, powerFrom) : powerFrom === "APP" && win.status === "working" ? "…" : "–"}</strong>
+              {d.archetype && <span className="small">{d.archetype}</span>}
+            </button>
+            <div className="score">
+              <span className="muted small">Saltiness</span>
+              <strong>{d.saltPercent != null ? `${Math.round(d.saltPercent)}%` : "–"}</strong>
+            </div>
+            <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
+              <span className="muted small">Missing</span>
+              <strong className={shaped.missing > 0 ? "warn-text" : "ok-text"}>{shaped.missing}</strong>
+              <span className="small">copies</span>
+            </button>
+            {(() => {
+              // The date of the scores and the deck's legality, beside the scores rather than on rows of their own.
+              const scored = d.scoredAt ? (
+                <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>
+              ) : d.scoreError ? (
+                <p className="warn-text small">Not scored: {d.scoreError}</p>
+              ) : null;
+              if (!view.legality && !scored) return null;
+              return (
+                <div className="deck-meta">
+                  {view.legality && (
+                    <div className="share-legal">
+                      {view.legality.problems.length === 0 ? (
+                        <p className="ok-text small">
+                          <strong>Commander legal ✓</strong>
+                        </p>
+                      ) : (
+                        <>
+                          <p className="small">
+                            <strong>Legality</strong>
+                          </p>
+                          {view.legality.problems.map((p) => (
+                            <p key={p.kind + p.text} className="warn-text small">
+                              {p.text}
+                            </p>
+                          ))}
+                        </>
+                      )}
+                      {view.legality.unchecked.length > 0 && (
+                        <p className="muted small" title={view.legality.unchecked.join(", ")}>
+                          Couldn&apos;t check {view.legality.unchecked.length} card(s) yet.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {scored}
+                </div>
+              );
+            })()}
+            <div className="deck-actions">
+              <Link className="btn small-btn" href={`/decks/${view.id}/playtest`} title="Draw hands and play the deck (goldfish)">
+                Playtest
+              </Link>
+              <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
+                Recommendations
+              </button>
+              <details className="menu">
+                <summary className="btn small-btn">Share ▾</summary>
+                <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
+                  <button onClick={() => setSharing(true)}>Share link…</button>
+                  <button onClick={() => setCopyOpen(true)}>Copy deck as text…</button>
+                  <button onClick={() => setPrintOpen(true)}>Print…</button>
+                  {!view.local && (
+                    <a className="menu-link" href={`https://archidekt.com/decks/${d.archidektId}`} target="_blank" rel="noreferrer">
+                      Open on Archidekt
+                    </a>
+                  )}
+                  {d.saltId && (
+                    <a className="menu-link" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
+                      Open on Commander Salt
+                    </a>
+                  )}
+                </div>
+              </details>
+              {!view.readOnly && (
+                <details className="menu">
+                  <summary className="btn small-btn">Edit ▾</summary>
+                  <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
+                    {view.local && <button onClick={() => setAddOpen(true)}>Add a card</button>}
+                    {view.local && <button onClick={() => setPasteOpen(true)}>Paste cards…</button>}
+                    <button onClick={() => setSelecting(true)}>Select cards</button>
+                    {!view.local && <button onClick={() => fromArchidekt("reload")}>Reload decklist</button>}
+                    {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
+                    {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
+                    <button onClick={() => setCatsOpen(true)}>Categories</button>
+                    <button onClick={openPrimer}>Primer…</button>
+                    <button onClick={() => setPackagesOpen(true)}>Packages…</button>
+                    <button onClick={() => setHistoryOpen(true)}>Change history</button>
+                    {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
+                    <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
+                    {!view.local && <button onClick={() => setConfirm("DETACH")}>Make it a local deck</button>}
+                    {d.retired ? <button onClick={() => retire(false)}>Bring back</button> : <button onClick={() => setConfirm("RETIRE")}>Retire deck…</button>}
+                    <button className="danger-text" onClick={() => setConfirm("DELETE")}>
+                      Delete deck
+                    </button>
+                  </div>
+                </details>
+              )}
+            </div>
+            {d.retired && (
+              <p className="muted small">
+                Retired: kept with its games, but out of the seat pickers, Update all decks and the collection checks.{" "}
+                {!view.readOnly && (
+                  <button className="link" onClick={() => retire(false)}>
+                    Bring back
+                  </button>
+                )}
+              </p>
+            )}
+          </section>
+        )}
+
+        <div className="roles-row">
+          <DeckRolesLine
+            roles={view.roles}
+            onPick={(role) => {
+              // A tag with a space goes in quoted (the filter's tag: key), as Scryfall's search wants it.
+              const tag = role.toLowerCase();
+              filter.setText(tag.includes(" ") ? `tag:"${tag}"` : `tag:${tag}`);
+            }}
+          />
+          {!precon && (
+            <a
+              className="primer-jump small"
+              href="#primer"
+              title="Go to the primer at the bottom of the page"
+              onClick={(e) => {
+                e.preventDefault();
+                jumpToPrimer();
+              }}
+            >
+              Primer ↓
+            </a>
+          )}
+        </div>
+
+        {combos.length > 0 && (
+          <details className="card" open={!folded.has("\u0000combos")} onToggle={(e) => setFold("\u0000combos", !(e.currentTarget as HTMLDetailsElement).open)}>
+            <summary>
+              <strong>Combos</strong>{" "}
+              <span className="muted small">
+                · {combos.length}
+                {counted === combos.length ? (combos.length === 1 ? ", it counts for the bracket" : ", all count for the bracket") : counted === 0 ? ", none count for the bracket" : `, ${counted} count for the bracket`}
+              </span>
+            </summary>
+            <ul className="combo-list">
+              {combos.map((c, i) => (
+                <ComboLine key={i} combo={c} />
+              ))}
+            </ul>
+            <p className="muted small">From Commander Salt&apos;s analysis. Red: counts for the bracket (two cards, or early in the game); blue: doesn&apos;t.</p>
+          </details>
+        )}
+
+        <div className="controls deck-toolbar">
+          <label className="inline small">
+            <span className="muted">Group by</span>
+            <select value={prefs.group} onChange={(e) => setPrefs({ group: e.target.value as DeckGroup })}>
+              {(Object.keys(GROUP_LABELS) as DeckGroup[]).map((g) => (
+                <option key={g} value={g}>
+                  {GROUP_LABELS[g]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="inline small">
+            <span className="muted">Sort by</span>
+            <select value={prefs.sort} onChange={(e) => setPrefs({ sort: e.target.value as DeckSort })}>
+              <option value="MANA_VALUE">Mana value</option>
+              <option value="NAME">Name</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            className="btn icon-btn sort-dir"
+            aria-label={prefs.descending ? "Descending order, click for ascending" : "Ascending order, click for descending"}
+            title={prefs.descending ? "Descending order, click for ascending" : "Ascending order, click for descending"}
+            onClick={() => setPrefs({ descending: !prefs.descending })}
+          >
+            {prefs.descending ? "↓" : "↑"}
+          </button>
+          {!view.readOnly && (
+            <button
+              className={selecting ? "chip on" : "chip"}
+              title={selecting ? "Leave select mode" : "Select cards to change or copy"}
+              onClick={() => (selecting ? endSelecting() : setSelecting(true))}
+            >
+              {selecting ? "Done" : "Select"}
+            </button>
+          )}
+          {shaped.tagged > 0 && (
+            <button className={onlyBracket ? "chip on" : "chip"} onClick={() => setOnlyBracket((x) => !x)}>
+              Only bracket cards · {shaped.tagged}
+            </button>
+          )}
+          <DeckFilterBox filter={filter} shown={shaped.matched} total={view.rows.reduce((s, r) => s + r.quantity, 0)} />
+          <span className="deck-toolbar-end">
+            <HoverSwitch on={hoverOn} onChange={setHoverOn} />
+            <ViewOptionsMenu prefs={prefs} onChange={setPrefs} />
+          </span>
+        </div>
+        {view.myPrintings && view.rows.some((r) => r.original) && (
+          <p className="muted small">Shown in the printings you own, as in the app; the deck itself keeps its printings.</p>
+        )}
+
+        <div className={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? "deck-layout has-maybe" : "deck-layout"}>
+          <DeckColumns
+            max={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 2 : 3}
+            minWidth={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 260 : 320}
+            items={[
+              ...shaped.visible.map((s) => {
+                const commanders = isCommanders(s.rows);
+                return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders) };
+              }),
+              ...(shaped.hiddenRows.length > 0 ? [{ key: "\u0000hidden", weight: weight(shaped.hiddenRows), node: block("Hidden categories", shaped.hiddenRows, "\u0000hidden") }] : []),
+            ]}
+          />
+          {shaped.maybeSections.length > 0 && (
+            <details
+              className={"deck-section deck-maybe" + dropClass("\u0000maybe")}
+              open={!folded.has("\u0000maybe")}
+              onToggle={(e) => setFold("\u0000maybe", !(e.currentTarget as HTMLDetailsElement).open)}
+              {...(canMoveCards ? dropProps("\u0000maybe", "Maybeboard", false) : {})}
+            >
+              <summary>
+                <h3 className="mini-head">
+                  {selecting && sectionCheck(shaped.maybeSections.flatMap((s) => s.rows), "Select all Maybeboard")}
+                  Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
+                </h3>
+              </summary>
+              {/* Below the deck: three columns like the deck's; beside it: one. */}
+              {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
+                <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
+              ) : prefs.maybe === "BELOW" ? (
+                <DeckColumns
+                  max={3}
+                  minWidth={320}
+                  items={shaped.maybeSections.map((s) => ({ key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title) }))}
+                />
+              ) : (
+                shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title))
+              )}
+            </details>
+          )}
+        </div>
+        {!precon && (
+          <p className="muted small">
+            Prices: {view.priceTypeLabel}, at the printings shown. Missing: copies the collection lacks in any printing (copies you own count once, however many
+            decks use them).
+          </p>
+        )}
+
+        <div className="deck-bottom">
+        <details className="card" open={showStats} onToggle={(e) => setShowStats((e.target as HTMLDetailsElement).open)}>
+          <summary>
+            <strong>Stats</strong>
+          </summary>
+          {showStats && (
+            <DeckStatsPanel
+              cards={view.stats}
+              identity={d.colorIdentity}
+              win={win}
+            />
+          )}
+        </details>
+
+        {(() => {
+          // The deck's results in the recorded games (the app's deck page "Games" section).
+          const r = !precon && view.games?.length ? deckResults(view.games).find((x) => x.deckId === view.id) : null;
+          return r ? (
+            <details className="card" open={!folded.has("\u0000games")} onToggle={(e) => setFold("\u0000games", !(e.currentTarget as HTMLDetailsElement).open)}>
+              <summary>
+                <strong>Games</strong>{" "}
+                <span className="muted small">
+                  · {r.games} played, {r.wins} won
+                </span>
+              </summary>
+              <DeckGamesCard r={r} last={view.games!} isDeck={(s) => s.deckId === view.id} onGame={(g) => window.location.assign(`/games?game=${encodeURIComponent(g.uid)}`)} />
+              <p className="small">
+                <Link href="/games?view=stats">All game stats</Link>
+              </p>
+            </details>
+          ) : null;
+        })()}
+
+        <DeckTokens
+          cards={view.stats}
+          tokenInfo={view.tokenInfo}
+          tokenPicks={view.tokenPicks}
+          onTokenPick={
+            view.readOnly
+              ? undefined
+              : async (key, value) => {
+                  const r = await deckAction(view.id, { action: "token-pick", key, value });
+                  if (r.error) return r.error;
+                  await reload(null);
+                  return null;
+                }
+          }
+          hover={hover}
+          open={!folded.has("\u0000tokens")}
+          onToggle={(open) => setFold("\u0000tokens", !open)}
+        />
+        </div>
+        {!precon && (
+          <PrimerSection
+            deckId={view.id}
+            primer={view.primer}
+            canEdit={!view.readOnly}
+            editing={primerEditing}
+            cards={cardLinks}
+            cardNames={cardNames}
+            open={!folded.has("\u0000primer") || primerEditing}
+            onToggle={(open) => setFold("\u0000primer", !open)}
+            onEdit={openPrimer}
+            onCancel={() => setPrimerEditing(false)}
+            onSave={async (text) => {
+              const r = await deckAction(view.id, { action: "set-primer", primer: text });
+              if (r.error) return r.error;
+              setPrimerEditing(false);
+              await reload("Primer saved.");
+              return null;
+            }}
+          />
+        )}
+        {!precon && selecting && selected.size > 0 && (
+          <DeckBulkBar
+            view={view}
+            rows={view.rows.filter((r) => selected.has(r.lineUid))}
+            onDone={async (t) => {
+              await reload(t);
+              setSelected(new Set());
+            }}
+            onClose={endSelecting}
+          />
+        )}
+      </main>
+      {showRecs && (
+        <Dialog full title="Recommendations" onClose={() => setShowRecs(false)}>
+          <RecommendationsPanel view={view} hover={hover} hoverOn={hoverOn} onHoverOn={setHoverOn} onAdded={(t) => reload(t)} onClose={() => setShowRecs(false)} />
+        </Dialog>
+      )}
+      {hover.picture}
+      {dnd.ghost}
+      {missingOpen && <MissingDialog view={view} money={money} onClose={() => setMissingOpen(false)} onDone={(t) => (setMissingOpen(false), setNotice(t))} />}
+      {sharing && <ShareDialog kind="deck" target={String(view.id)} what="this deck" onClose={() => setSharing(false)} />}
+      {printOpen && (
+        <PrintDeckDialog
+          name={d.name}
+          commanders={d.commanders}
+          details={[
+            `${d.cardCount} cards`,
+            ...(d.bracketRealistic != null ? [`Bracket ${d.bracketRealistic}`] : []),
+            ...(power != null ? [`Power ${formatPower(power, powerFrom)}`] : []),
+          ]}
+          sections={sections(shaped.main, prefs.group === "TYPE" ? "TYPE" : "CATEGORY")}
+          priceLine={`Prices: ${view.priceTypeLabel}, in ${view.currency}`}
+          money={money}
+          onClose={() => setPrintOpen(false)}
+        />
+      )}
+      {rz && view.salt && (
+        <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} win={win} power={power} />
+      )}
+      {line && view.rows.find((r) => r.lineUid === line) && (
+        <LineDialog
+          key={line + view.rows.find((r) => r.lineUid === line)!.quantity}
+          view={view}
+          row={view.rows.find((r) => r.lineUid === line)!}
+          layout={view.layouts?.[view.rows.find((r) => r.lineUid === line)!.card.scryfallId]}
+          typeLine={typeLineOf.get(view.rows.find((r) => r.lineUid === line)!.card.scryfallId)}
+          onClose={() => setLine(null)}
+          onChanged={async (t) => {
+            await reload(t);
+            if (t) setLine(null);
+          }}
+        />
+      )}
+      {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
+      {packagesOpen && <PackagesDialog view={view} onClose={() => setPackagesOpen(false)} onChanged={(t) => reload(t)} />}
+      {historyOpen && <HistoryDialog history={view.history} onClose={() => setHistoryOpen(false)} />}
+      {addOpen && <AddCardDialog view={view} onClose={() => setAddOpen(false)} onChanged={(t) => reload(t)} />}
+      {copyOpen && <CopyTextDialog deckId={view.id} hasMaybe={shaped.maybeCount > 0} onClose={() => setCopyOpen(false)} />}
+      {pasteOpen && (
+        <PasteCardsDialog
+          deckId={view.id}
+          onClose={() => setPasteOpen(false)}
+          onDone={(t) => {
+            setPasteOpen(false);
+            void reload(t);
+          }}
+        />
+      )}
+      {nameDialog && (
+        <NameDialog
+          title={nameDialog === "RENAME" ? "Rename the deck" : "Copy as a local deck"}
+          start={nameDialog === "RENAME" ? d.name : `Copy of ${d.name}`}
+          button={nameDialog === "RENAME" ? "Rename" : "Copy"}
+          note={nameDialog === "COPY" ? "A local deck with the same cards, categories and maybeboard (not the scores). It syncs to the phones." : undefined}
+          onClose={() => setNameDialog(null)}
+          onSave={async (name) => {
+            const r = await deckAction(view.id, { action: nameDialog === "RENAME" ? "rename" : "copy", name });
+            if (r.error) return r.error;
+            if (nameDialog === "COPY" && r.id !== undefined) window.location.assign(`/decks/${r.id}`);
+            else {
+              setNameDialog(null);
+              await reload(null);
+            }
+            return null;
+          }}
+        />
+      )}
+      {confirm === "RETIRE" && (
+        <ConfirmDialog
+          title="Retire the deck?"
+          text={`${d.name} moves to Retired on the Decks page, with its page, games and stats. It leaves the seat pickers, Update all decks and the collection checks (In a deck, the trade binder\u2019s keep for my decks). Bring it back at any time.`}
+          button="Retire"
+          onClose={() => setConfirm(null)}
+          onYes={() => retire(true)}
+        />
+      )}
+      {confirm === "DELETE" && (
+        <ConfirmDialog
+          title="Delete the deck?"
+          text={`${view.games?.length && !d.retired ? `It played ${view.games.length} recorded game(s). The games stay either way, but retiring the deck keeps its page and stats too. ` : ""}${d.name} is deleted here and, at their next sync, on the phones. This can't be undone.${view.local ? "" : " The deck on Archidekt itself isn't touched; importing it again in the app brings it back."}`}
+          button="Delete"
+          danger
+          other={view.games?.length && !d.retired ? { label: "Retire instead", run: () => retire(true) } : undefined}
+          onClose={() => setConfirm(null)}
+          onYes={async () => {
+            const r = await deckAction(view.id, { action: "delete" });
+            if (r.error) return r.error;
+            window.location.assign("/decks");
+            return null;
+          }}
+        />
+      )}
+      {confirm === "DETACH" && (
+        <ConfirmDialog
+          title="Make it a local deck?"
+          text={`${d.name} stops following Archidekt: it can then be changed here and in the app, but changes made on Archidekt no longer come in and nothing is sent back there. Its scores stay. The deck on Archidekt itself isn't touched.`}
+          button="Make it local"
+          onClose={() => setConfirm(null)}
+          onYes={async () => {
+            const r = await deckAction(view.id, { action: "detach" });
+            if (r.error) return r.error;
+            window.location.assign(`/decks/${r.id}`);
+            return null;
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function MissingDialog({ view, money, onClose, onDone }: { view: Answer; money: (eur: number) => string; onClose: () => void; onDone: (text: string) => void }) {
+  const [skipBasics, setSkipBasics] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  // The app's DeckToCollection.plan: copies you own in any printing count once, in the deck's order.
+  const list = useMemo(() => {
+    const left = new Map<string, number>();
+    for (const r of view.rows) if (!r.maybeboard) left.set(r.name.toLowerCase(), r.owned);
+    const out: [DeckRow, number][] = [];
+    for (const r of view.rows) {
+      if (r.maybeboard || (skipBasics && BASICS.has(r.name.toLowerCase()))) continue;
+      const k = r.name.toLowerCase();
+      const have = left.get(k) ?? 0;
+      const used = Math.min(have, r.quantity);
+      left.set(k, have - used);
+      if (r.quantity - used > 0) out.push([r, r.quantity - used]);
+    }
+    return out.sort((a, b) => caseless(a[0].name, b[0].name));
+  }, [view, skipBasics]);
+  const copies = list.reduce((s, [, n]) => s + n, 0);
+  const cost = list.reduce((s, [r, n]) => s + (r.unitEur ?? 0) * n, 0);
+  const text = list.map(([r, n]) => `${n} ${r.name}`).join("\n");
+
+  async function toWishlist() {
+    setBusy(true);
+    setError(null);
+    const r = await api<{ added?: number }>(`/api/decks/${view.id}`, { action: "missing-to-wishlist", skipBasics });
+    setBusy(false);
+    if (r.ok && r.data.added !== undefined) onDone(`Added ${r.data.added} card${r.data.added === 1 ? "" : "s"} to the wishlist.`);
+    else setError(r.data.error ?? "That did not work.");
+  }
+
+  return (
+    <Dialog title="Cards I'm missing" onClose={() => !busy && onClose()}>
+      <div className="stack">
+        <p className="small">
+          {copies === 0
+            ? "You own every card of this deck (any printing counts)."
+            : `${copies} card${copies === 1 ? "" : "s"} missing · about ${money(cost)} (${view.priceTypeLabel}, at the decklist's printings)`}
+        </p>
+        <label className="check small">
+          <input type="checkbox" checked={skipBasics} onChange={(e) => setSkipBasics(e.target.checked)} />
+          <span>Skip basic lands</span>
+        </label>
+        {list.length > 0 && (
+          <ul className="plain-list">
+            {list.map(([r, n]) => (
+              <li key={r.lineUid} className="small">
+                <span className="grow">
+                  {n}× {r.name}
+                  {r.owned > 0 && <span className="muted"> · you own {r.owned} of {r.quantity}</span>}
+                </span>
+                <span className="num">{r.unitEur != null ? money(r.unitEur * n) : "–"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {copies > 0 && <p className="muted small">The copied list (&quot;1 Card name&quot; per line) can be pasted into a Cardmarket wants list or Archidekt.</p>}
+        {error && <div className="bar error">{error}</div>}
+        <div className="dialog-actions">
+          <button
+            className="btn"
+            disabled={copies === 0}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(text);
+                setCopied(true);
+              } catch {
+                setError("The browser didn't allow copying.");
+              }
+            }}
+          >
+            {copied ? "Copied" : "Copy list"}
+          </button>
+          <span className="spacer" />
+          <button className="btn" onClick={onClose} disabled={busy}>
+            Close
+          </button>
+          <button className="btn primary" disabled={busy || copies === 0 || view.readOnly} onClick={toWishlist}>
+            Add to wishlist
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; start: "BRACKET" | "POWER"; onClose: () => void; win: WinState; power: number | null }) {
+  const [inkSaver, setInkSaver] = useState(false);
+  const [which, setWhich] = useState<"BOTH" | "BRACKET" | "POWER">(start);
+  const salt = view.salt!;
+  const deck = view.deck;
+  const sv = view.scrollVault as Parameters<typeof PowerCard>[0]["scrollVault"];
+  return (
+    <Dialog title="Rule-zero cards" onClose={onClose}>
+      <div className="stack">
+        <div className="inline">
+          <div className="seg text" role="group" aria-label="Cards">
+            {(
+              [
+                ["BRACKET", "Bracket"],
+                ["POWER", "Power level"],
+                ["BOTH", "Both"],
+              ] as const
+            ).map(([k, l]) => (
+              <button key={k} className={which === k ? "on" : ""} onClick={() => setWhich(k)}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <label className="check small">
+            <input type="checkbox" checked={inkSaver} onChange={(e) => setInkSaver(e.target.checked)} />
+            <span>Ink saver (light headers without the commander art)</span>
+          </label>
+        </div>
+        <div className="rz-print">
+          {which !== "POWER" && <BracketCard deck={deck} cover={view.cover} data={salt} inkSaver={inkSaver} speed={win.status === "done" && win.win ? <SpeedSection win={win.win} /> : undefined} />}
+          {which !== "BRACKET" && (
+            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} scrollVault={sv} inkSaver={inkSaver} />
+          )}
+        </div>
+        <div className="dialog-actions">
+          {deck.saltId && (
+            <a className="btn" href={`https://commandersalt.com/details/deck/${deck.saltId}`} target="_blank" rel="noreferrer">
+              Commander Salt&apos;s originals
+            </a>
+          )}
+          <span className="spacer" />
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+          <button className="btn primary" onClick={() => window.print()}>
+            Print
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}

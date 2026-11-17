@@ -13,7 +13,7 @@ const DATA: Record<string, string[]> = {
 };
 
 /** The top bar on every page after logging in: the website's sections and Settings. */
-export function TopBar({ page, folder }: { page: "collection" | "stats" | "decks" | "games" | "orders" | "trades" | "settings"; folder?: string }) {
+export function TopBar({ page, folder }: { page: "collection" | "stats" | "decks" | "games" | "orders" | "trades" | "settings" | "precons"; folder?: string }) {
   useEffect(() => { warmUp(); }, []);
   const link = (href: string, label: string, on: boolean) => {
     const warm = !on && DATA[href] ? () => prefetch(DATA[href]) : undefined;
