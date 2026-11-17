@@ -184,15 +184,33 @@
   grid-column: 1;
   grid-row: 2;
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
+  flex-direction: column;
+  gap: 3px;
   min-height: calc(124px * var(--pt-zoom, 1));
   padding: 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
   background: var(--surface);
+  touch-action: pan-x;
+}
+
+/* "Hand 7" above the cards, as each pile has its own heading (it never covers them). */
+.pt-hand-head {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* The cards themselves, on one row that scrolls sideways when the hand gets long. */
+.pt-hand-cards {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
   touch-action: pan-x;
 }
 
@@ -423,6 +441,8 @@
   aspect-ratio: 488 / 680;
   border-radius: 6px;
   overflow: hidden;
+  /* Its card can be dragged out with a finger too, so a swipe on it is not a scroll. */
+  touch-action: none;
 }
 
 .pt-pile-card img {
@@ -635,6 +655,10 @@
     grid-column: 1;
     grid-row: 3;
     min-height: calc(96px * var(--pt-zoom, 1));
+  }
+
+  .pt-hand-head {
+    font-size: 11px;
   }
 
   .pt-board-card,

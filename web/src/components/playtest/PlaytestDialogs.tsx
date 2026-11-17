@@ -92,6 +92,7 @@ const SHORTCUTS: [string, string][] = [
   ["?", "These shortcuts"],
   ["Esc", "Close a menu or dialog, or clear the selection"],
   ["Drag on the empty battlefield", "Select cards (Ctrl-click adds one)"],
+  ["Right-click a pile", "Open its menu; drag the top card of a pile to move it"],
 ];
 
 /** A card's picture: the face that is up, and nothing when it is face down. */
@@ -279,6 +280,15 @@ function ZoneDialog({
       {zone !== "exile" && (
         <button className="btn" onClick={() => send(id, "exile")} title="Exile it">
           Exile
+        </button>
+      )}
+      {zone === "graveyard" && (
+        <button
+          className="btn"
+          onClick={() => dispatch({ type: "copy", id })}
+          title="Put a token copy of it on the battlefield; the card stays in the graveyard"
+        >
+          Token copy
         </button>
       )}
     </div>

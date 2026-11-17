@@ -37,8 +37,14 @@ const COUNTER_KINDS: { kind: string; label: string }[] = [
 type Menu =
   | { kind: "card"; id: string; x: number; y: number }
   | { kind: "library"; x: number; y: number }
+  | { kind: "pile"; zone: "graveyard" | "exile"; x: number; y: number }
   | { kind: "board"; x: number; y: number }
   | { kind: "group"; x: number; y: number };
+
+/** The zones whose pile shows one card on top: that card can be dragged out while playing. */
+function isPileZone(zone: ZoneId | null): boolean {
+  return zone === "library" || zone === "graveyard" || zone === "exile";
+}
 
 /** A selection box in progress: where the press started on the board, in the board's own pixels. */
 interface BoxStart {
@@ -123,6 +129,11 @@ export function PlaytestBoard({
   const [box, setBox] = useState<SelectBox | null>(null);
   const boxStart = useRef<BoxStart | null>(null);
   const press = useRef<Press | null>(null);
+  // A drag or long press on a pile's top card still ends with a click on the pile. This remembers such a click, so the
+  // pile does not also open its menu or its list (the list would land on top of the menu a long press just opened).
+  const justDragged = useRef(false);
+  // When the last drag or long press on a pile card ended: two of them in a row are not the double-click that draws.
+  const draggedAt = useRef(0);
 
   const zoneOf = (id: string): ZoneId | null => ZONE_IDS.find((z) => state.zones[z].includes(id)) ?? null;
 
@@ -269,6 +280,8 @@ export function PlaytestBoard({
 
   function onCardPointerDown(e: ReactPointerEvent<HTMLElement>, id: string) {
     hover.hide();
+    // A new press starts over: the click that follows it is a real one (see justDragged).
+    justDragged.current = false;
     if (e.button !== 0 || press.current) return;
     const zone = zoneOf(id);
     if (zone === null) return;
@@ -305,6 +318,9 @@ export function PlaytestBoard({
         p.longPress = true;
         // A long press on a card of a bigger selection opens the selection's menu, as a right-click does.
         if (selected.has(id) && selected.size > 1) setMenu({ kind: "group", x: opensAt.x, y: opensAt.y });
+        // A pile's top card opens the pile's own menu, as a right-click on the pile does.
+        else if (zone === "library") setMenu({ kind: "library", x: opensAt.x, y: opensAt.y });
+        else if (zone === "graveyard" || zone === "exile") setMenu({ kind: "pile", zone, x: opensAt.x, y: opensAt.y });
         else setMenu({ kind: "card", id, x: opensAt.x, y: opensAt.y });
       }, LONG_PRESS_MS);
     }
@@ -344,8 +360,21 @@ export function PlaytestBoard({
 
   function onCardPointerUp(e: ReactPointerEvent<HTMLElement>) {
     const p = endPress(e);
-    if (!p || p.longPress) return;
+    if (!p) return;
+    if (p.longPress) {
+      // The long press already opened the pile's menu: the click that follows must not open it again.
+      if (isPileZone(p.zone)) {
+        justDragged.current = true;
+        draggedAt.current = Date.now();
+      }
+      return;
+    }
     if (p.dragging) {
+      // Letting go of a pile card fires a click on the pile too; it must not open the pile's menu as well.
+      if (isPileZone(p.zone)) {
+        justDragged.current = true;
+        draggedAt.current = Date.now();
+      }
       const target = targetAt(e.clientX, e.clientY);
       if (target) dropCard(p, target, e);
       return;
@@ -466,6 +495,9 @@ export function PlaytestBoard({
       openMenuAt(p.id, e.clientX, e.clientY);
       return;
     }
+    // A pile's top card is only there to be dragged while playing: a plain click is the pile's own (its menu or its
+    // list), and letting it open the card's menu too would hide the card's place in the pile.
+    if (isPileZone(p.zone)) return;
     openMenuAt(p.id, e.clientX, e.clientY);
   }
 
@@ -511,13 +543,14 @@ export function PlaytestBoard({
       else dispatch({ type: "move", id: p.id, to: "battlefield", x, y });
       return;
     }
+    // Letting a card go back on its own pile changes nothing (a library card on the library pile, say).
+    if (p.zone === target) return;
     if (target === "library") {
       const position = e.shiftKey ? "bottom" : "top";
       if (together) moveSelected("library", position);
       else dispatch({ type: "move", id: p.id, to: "library", position });
       return;
     }
-    if (p.zone === target) return;
     if (together) moveSelected(target);
     else dispatch({ type: "move", id: p.id, to: target });
   }
@@ -533,6 +566,8 @@ export function PlaytestBoard({
   // Cards overlap a little when the hand gets long, so a full hand still fits on one row.
   const overlap = hand.length > 6 ? Math.min(52, (hand.length - 6) * 8) : 0;
   const ghost = drag ? state.cards[drag.id] : null;
+  // A card dragged out of the library stays hidden while the top card is not revealed (it lands face up all the same).
+  const ghostHidden = drag !== null && zoneOf(drag.id) === "library" && !state.topRevealed;
   const libraryTopId = state.zones.library[0];
   const libraryTop = libraryTopId ? state.cards[libraryTopId] : null;
   const graveyardTop = state.zones.graveyard.length > 0 ? state.cards[state.zones.graveyard[state.zones.graveyard.length - 1]] : null;
@@ -545,6 +580,22 @@ export function PlaytestBoard({
   };
 
   const dropClass = (target: DropTarget) => (dropAt === target ? " drop-on" : "");
+
+  /** A press anywhere on a pile starts over, as one on a card does (so an old drag cannot swallow this click). */
+  const freshPress = () => {
+    justDragged.current = false;
+  };
+
+  /** The press-and-drag handlers of a pile's top card, which it has only while the game is being played. */
+  const pileDrag = (card: CardInstance | null) =>
+    state.phase === "playing" && card
+      ? {
+          onPointerDown: (e: ReactPointerEvent<HTMLElement>) => onCardPointerDown(e, card.id),
+          onPointerMove: onCardPointerMove,
+          onPointerUp: onCardPointerUp,
+          onPointerCancel: onCardPointerCancel,
+        }
+      : {};
 
   /** A card wherever it is on the board, in the hand or in the command zone. */
   const cardBox = (card: CardInstance, extra: string) => (
@@ -631,13 +682,25 @@ export function PlaytestBoard({
           data-drop="library"
           role="button"
           tabIndex={0}
-          title="Click for the library menu, double-click to draw"
+          title="Click for the library menu, double-click to draw, right-click for more, drag the top card"
+          onPointerDown={freshPress}
           onClick={(e) => {
+            if (justDragged.current) {
+              justDragged.current = false;
+              return;
+            }
+            hover.hide();
+            setMenu({ kind: "library", x: e.clientX, y: e.clientY });
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
             hover.hide();
             setMenu({ kind: "library", x: e.clientX, y: e.clientY });
           }}
           onDoubleClick={() => {
             setMenu(null);
+            // Two dragged drops in a row also count as a double-click on the pile: that is not a draw.
+            if (Date.now() - draggedAt.current < 500) return;
             dispatch({ type: "draw" });
           }}
           onKeyDown={(e) => {
@@ -653,6 +716,7 @@ export function PlaytestBoard({
           </div>
           <div
             className="pt-pile-card"
+            {...pileDrag(libraryTop)}
             onMouseMove={hover.follow(state.topRevealed ? faceUrl(libraryTop) : null)}
             onMouseLeave={hover.hide}
           >
@@ -665,8 +729,20 @@ export function PlaytestBoard({
           data-drop="graveyard"
           role="button"
           tabIndex={0}
-          title="See the graveyard"
-          onClick={() => openDialog({ kind: "zone", zone: "graveyard" })}
+          title="Click to see the graveyard, right-click for more, drag the top card"
+          onPointerDown={freshPress}
+          onClick={() => {
+            if (justDragged.current) {
+              justDragged.current = false;
+              return;
+            }
+            openDialog({ kind: "zone", zone: "graveyard" });
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            hover.hide();
+            setMenu({ kind: "pile", zone: "graveyard", x: e.clientX, y: e.clientY });
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
@@ -678,7 +754,12 @@ export function PlaytestBoard({
             <span>Graveyard</span>
             <span className="muted">{state.zones.graveyard.length}</span>
           </div>
-          <div className="pt-pile-card" onMouseMove={hover.follow(faceUrl(graveyardTop))} onMouseLeave={hover.hide}>
+          <div
+            className="pt-pile-card"
+            {...pileDrag(graveyardTop)}
+            onMouseMove={hover.follow(faceUrl(graveyardTop))}
+            onMouseLeave={hover.hide}
+          >
             {graveyardTop ? <CardFace card={graveyardTop} /> : <span className="pt-pile-empty" />}
           </div>
         </div>
@@ -688,8 +769,20 @@ export function PlaytestBoard({
           data-drop="exile"
           role="button"
           tabIndex={0}
-          title="See what is exiled"
-          onClick={() => openDialog({ kind: "zone", zone: "exile" })}
+          title="Click to see what is exiled, right-click for more, drag the top card"
+          onPointerDown={freshPress}
+          onClick={() => {
+            if (justDragged.current) {
+              justDragged.current = false;
+              return;
+            }
+            openDialog({ kind: "zone", zone: "exile" });
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            hover.hide();
+            setMenu({ kind: "pile", zone: "exile", x: e.clientX, y: e.clientY });
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
@@ -701,7 +794,12 @@ export function PlaytestBoard({
             <span>Exile</span>
             <span className="muted">{state.zones.exile.length}</span>
           </div>
-          <div className="pt-pile-card" onMouseMove={hover.follow(faceUrl(exileTop))} onMouseLeave={hover.hide}>
+          <div
+            className="pt-pile-card"
+            {...pileDrag(exileTop)}
+            onMouseMove={hover.follow(faceUrl(exileTop))}
+            onMouseLeave={hover.hide}
+          >
             {exileTop ? <CardFace card={exileTop} /> : <span className="pt-pile-empty" />}
           </div>
         </div>
@@ -726,20 +824,26 @@ export function PlaytestBoard({
       </aside>
 
       <div className={"pt-hand" + dropClass("hand")} data-drop="hand">
-        {hand.length === 0 && <span className="pt-hand-empty muted small">Your hand is empty.</span>}
-        {hand.map((id, i) => {
-          const card = state.cards[id];
-          return (
-            <div
-              key={id}
-              className="pt-hand-card"
-              style={i === 0 || overlap === 0 ? undefined : { marginLeft: `calc(${-overlap}px * var(--pt-zoom, 1))` }}
-              onDoubleClick={() => playFromHand(id)}
-            >
-              {cardBox(card, "")}
-            </div>
-          );
-        })}
+        <div className="pt-hand-head">
+          <span>Hand</span>
+          <span className="muted">{hand.length}</span>
+        </div>
+        <div className="pt-hand-cards">
+          {hand.length === 0 && <span className="pt-hand-empty muted small">Your hand is empty.</span>}
+          {hand.map((id, i) => {
+            const card = state.cards[id];
+            return (
+              <div
+                key={id}
+                className="pt-hand-card"
+                style={i === 0 || overlap === 0 ? undefined : { marginLeft: `calc(${-overlap}px * var(--pt-zoom, 1))` }}
+                onDoubleClick={() => playFromHand(id)}
+              >
+                {cardBox(card, "")}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {drag && ghost && (
@@ -749,7 +853,7 @@ export function PlaytestBoard({
           style={{ left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width, height: drag.height }}
         >
           <div className={"pt-card" + (ghost.tapped && zoneOf(ghost.id) === "battlefield" ? " tapped" : "")}>
-            <CardFace card={ghost} />
+            {ghostHidden ? <CardBack /> : <CardFace card={ghost} />}
           </div>
         </div>
       )}
@@ -877,6 +981,21 @@ export function PlaytestBoard({
         </FloatMenu>
       )}
 
+      {menu && menu.kind === "pile" && (
+        <PileMenu
+          menuRef={menuRef}
+          x={menu.x}
+          y={menu.y}
+          zone={menu.zone}
+          topId={menu.zone === "graveyard" ? (graveyardTop?.id ?? null) : (exileTop?.id ?? null)}
+          ids={state.zones[menu.zone]}
+          playing={state.phase === "playing"}
+          close={() => setMenu(null)}
+          dispatch={dispatch}
+          openDialog={openDialog}
+        />
+      )}
+
       {menu && menu.kind === "card" && state.cards[menu.id] && (
         <CardMenu
           menuRef={menuRef}
@@ -891,6 +1010,96 @@ export function PlaytestBoard({
         />
       )}
     </div>
+  );
+}
+
+/**
+ * The menu of the graveyard or exile pile (right-click, or a long press on a finger): the whole list, the top card and
+ * every card in the pile. Each "All cards" item is one undo step, so the whole pile comes back at once.
+ */
+function PileMenu({
+  menuRef,
+  x,
+  y,
+  zone,
+  topId,
+  ids,
+  playing,
+  close,
+  dispatch,
+  openDialog,
+}: {
+  menuRef: RefObject<HTMLDivElement | null>;
+  x: number;
+  y: number;
+  /** The pile this menu belongs to. */
+  zone: "graveyard" | "exile";
+  /** The card the pile shows (its newest), or null when the pile is empty. */
+  topId: string | null;
+  /** Every card of the pile, in the pile's own order. */
+  ids: string[];
+  /** Cards only move while the game is being played (not in the opening hand, say). */
+  playing: boolean;
+  close: () => void;
+  dispatch: (a: Action) => void;
+  openDialog: (d: PlaytestDialog) => void;
+}) {
+  /** An item that closes the menu after it runs. */
+  const item = (label: string, run: () => void) => (
+    <button
+      onClick={() => {
+        close();
+        run();
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  /** One card of the pile to another zone. */
+  const to = (id: string, target: ZoneId, label: string, position?: "top" | "bottom") =>
+    item(label, () => dispatch({ type: "move", id, to: target, ...(position ? { position } : {}) }));
+
+  /** The whole pile at once, as one step; the shuffle goes last, so the cards land in a fresh library. */
+  const all = (label: string, target: ZoneId, position?: "bottom", shuffle = false) =>
+    item(label, () => {
+      const actions: Action[] = ids.map(
+        (id): Action => ({
+          type: "move",
+          id,
+          to: target,
+          ...(position ? { position } : {}),
+        }),
+      );
+      if (shuffle) actions.push({ type: "shuffle" });
+      dispatch({ type: "group", actions });
+    });
+
+  return (
+    <FloatMenu menuRef={menuRef} x={x} y={y} title={zone === "graveyard" ? "Graveyard" : "Exile"}>
+      {item("See all…", () => openDialog({ kind: "zone", zone }))}
+      {playing && topId && (
+        <>
+          <span className="pt-menu-sep" />
+          <span className="pt-menu-title">Top card</span>
+          {to(topId, "battlefield", "To the battlefield")}
+          {to(topId, "hand", "To hand")}
+          {to(topId, "library", "To top of library", "top")}
+          {to(topId, "library", "To bottom of library", "bottom")}
+          {zone === "graveyard" ? to(topId, "exile", "To exile") : to(topId, "graveyard", "To graveyard")}
+          {zone === "graveyard" && item("Token copy", () => dispatch({ type: "copy", id: topId }))}
+        </>
+      )}
+      {playing && ids.length > 0 && (
+        <>
+          <span className="pt-menu-sep" />
+          <span className="pt-menu-title">All cards</span>
+          {all("All to hand", "hand")}
+          {zone === "graveyard" ? all("All to exile", "exile") : all("All to graveyard", "graveyard")}
+          {all("Shuffle all into the library", "library", "bottom", true)}
+        </>
+      )}
+    </FloatMenu>
   );
 }
 
@@ -966,7 +1175,7 @@ function CardMenu({
           ))}
           {item("Other…", () => openDialog({ kind: "counter", id: card.id }))}
           <span className="pt-menu-sep" />
-          {item("Copy", () => dispatch({ type: "copy", id: card.id }))}
+          {item("Create token copy", () => dispatch({ type: "copy", id: card.id }))}
           <span className="pt-menu-title">Move to</span>
           {to("hand", "Hand")}
           {to("graveyard", "Graveyard")}
@@ -1020,6 +1229,7 @@ function CardMenu({
           {to("exile", "Exile")}
           {to("library", "Top of library", "top")}
           {to("library", "Bottom of library", "bottom")}
+          {zone === "graveyard" && item("Create token copy", () => dispatch({ type: "copy", id: card.id }))}
         </>
       )}
     </FloatMenu>
