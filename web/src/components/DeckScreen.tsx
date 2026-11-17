@@ -34,6 +34,7 @@ import { ShareDialog } from "@/components/SharePanel";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
+import { isLandSection, mdfcLandCopies } from "@/lib/mdfclands";
 import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
@@ -324,6 +325,12 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
   const costOf = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
   const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
+  /** A line's card type line, from Scryfall's when known (the deck's own otherwise). */
+  const typeOf = (r: DeckRow) => typeLineOf.get(r.card.scryfallId) ?? r.types;
+  /** MDFC land copies in the whole main deck: Archidekt counts them in the Land heading ("40 w/ MDFC"). */
+  const mdfcLands = mdfcLandCopies(shaped.main, typeOf);
+  /** How many MDFC lands sit outside the Land section: added to its heading, those inside are in its plain number. */
+  const mdfcOutside = (title: string, rows: DeckRow[]) => (isLandSection(title) ? Math.max(0, mdfcLands - mdfcLandCopies(rows, typeOf)) : 0);
   /** Whether a line's card has a back face, from Scryfall's layout when known. */
   const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
@@ -539,36 +546,40 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
 
   /**
    * A section. [category]: where a card dropped on it goes (null: nowhere); [orderable]: a category of the deck, which
-   * can be dragged to another place (and others dropped next to it).
+   * can be dragged to another place (and others dropped next to it). [mdfc]: the MDFC lands elsewhere added to the
+   * count in brackets (the Land section only).
    */
-  const block = (title: string, rows: DeckRow[], key: string, category: string | null = null, orderable = false) => (
-    <details
-      key={key}
-      className={"deck-section" + dropClass(orderable ? title : key)}
-      open={!folded.has(key)}
-      onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}
-      {...(canOrder || canMoveCards ? dropProps(orderable ? title : key, canMoveCards ? category : null, orderable && canOrder) : {})}
-    >
-      <summary>
-        <h3 className="mini-head">
-          {selecting && sectionCheck(rows, `Select all ${title}`)}
-          {orderable && canOrder && (
-            <span
-              className="cat-handle"
-              title="Drag to move this category"
-              aria-label={`Move ${title}`}
-              onClick={(e) => e.preventDefault()}
-              onPointerDown={dnd.press({ kind: "cat", title }, title)}
-            >
-              ⠿
-            </span>
-          )}
-          {title} <span className="muted small">· {rows.reduce((s, r) => s + r.quantity, 0)} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
-        </h3>
-      </summary>
-      <ul className="plain-list deck-list">{rows.map(row)}</ul>
-    </details>
-  );
+  const block = (title: string, rows: DeckRow[], key: string, category: string | null = null, orderable = false, mdfc = 0) => {
+    const copies = rows.reduce((s, r) => s + r.quantity, 0);
+    return (
+      <details
+        key={key}
+        className={"deck-section" + dropClass(orderable ? title : key)}
+        open={!folded.has(key)}
+        onToggle={(e) => setFold(key, !(e.currentTarget as HTMLDetailsElement).open)}
+        {...(canOrder || canMoveCards ? dropProps(orderable ? title : key, canMoveCards ? category : null, orderable && canOrder) : {})}
+      >
+        <summary>
+          <h3 className="mini-head">
+            {selecting && sectionCheck(rows, `Select all ${title}`)}
+            {orderable && canOrder && (
+              <span
+                className="cat-handle"
+                title="Drag to move this category"
+                aria-label={`Move ${title}`}
+                onClick={(e) => e.preventDefault()}
+                onPointerDown={dnd.press({ kind: "cat", title }, title)}
+              >
+                ⠿
+              </span>
+            )}
+            {title} <span className="muted small">· {copies}{mdfc > 0 && ` (${copies + mdfc} with MDFCs)`} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
+          </h3>
+        </summary>
+        <ul className="plain-list deck-list">{rows.map(row)}</ul>
+      </details>
+    );
+  };
   /** A section's size for the columns: its lines plus the heading, folded or not. */
   const weight = (rows: DeckRow[]) => rows.length + 2;
   const isCommanders = (rows: DeckRow[]) => rows.length > 0 && rows.every((r) => r.commander);
@@ -882,7 +893,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
             items={[
               ...shaped.visible.map((s) => {
                 const commanders = isCommanders(s.rows);
-                return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders) };
+                return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders, mdfcOutside(s.title, s.rows)) };
               }),
               ...(shaped.hiddenRows.length > 0 ? [{ key: "\u0000hidden", weight: weight(shaped.hiddenRows), node: block("Hidden categories", shaped.hiddenRows, "\u0000hidden") }] : []),
             ]}
