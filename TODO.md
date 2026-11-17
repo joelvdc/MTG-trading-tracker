@@ -22,7 +22,8 @@ history, the release notes and `web/README.md`.)
 - **Also website, 2026-11-17:** the Bracket score and the Decks list chip show the higher of realistic/baseline first
   ("3 · Upgraded · realistic 2", `shownBracket` in deckshared.ts; the app keeps both side by side). The MDFC count,
   flip button and card pop-up look a card up by the deck's own printing (`detailsId`), not the owned printing shown
-  (Bala Ged Recovery in Ruby was missed: 39 → 40, as Archidekt and the app). Next: step 2 (leaner simulation).
+  (Bala Ged Recovery in Ruby was missed: 39 → 40, as Archidekt and the app). Next: step 2 (leaner simulation, see
+  "Next: leaner win-turn simulation" below), to be done from another session.
 - **Latest: app 1.100 (2026-11-17, no sync change):** the deck page's Land heading counts MDFC lands outside it,
   "Land (37, 40 with MDFCs)" (`MdfcLands` in data/DeckStats.kt, tests in Release1100Test). Same day, website (no app
   needed): precon pages work out the win turn and show Power (from the
@@ -81,6 +82,27 @@ history, the release notes and `web/README.md`.)
 - **Weekly email:** working (confirmed 2026-11-13).
 - **Waiting on the owner:** playtester feedback (now due) and a working AI primer on the website. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
+
+## Next: leaner win-turn simulation ("step 2", owner wants it, 2026-11-17)
+Owner (2026-11-17): "is there any way to speed up the calculation time of the win-turn simulation?" Step 1 (website
+plays the app's 4 batches in 4 Web Workers + a first estimate after 1,000 games) is done. Step 2: make the simulation
+itself cheaper (`WinOddsCalc` in `app/src/main/java/com/mtgtrader/data/WinOdds.kt`), so the app, the website (it
+compiles that same file to JS via `web/winodds-kt`) and the server cron all get faster.
+- Measured 2026-11-17 on the owner's laptop (i7-1165G7, 4 cores), Node, 61-card fixture `web/test/fixtures/winodds-small.json`:
+  10,000 games 26 s in one thread (`winOddsJson`), 13 s in 4 workers.
+- CPU profile (3,000 games, Kotlin/JS): no single hotspot; time spread over Kotlin stdlib overhead: ArrayList growth
+  (`increaseLength`), HashMap creation, iterators, `sortArrayWith`, `charSequenceGet` + `uppercaseChar` (case-insensitive
+  string compares in the game loop, e.g. `equals(kind, true)` in `Entry.isA` and the lords/kinds checks), `isInterface`
+  checks, garbage collection. Likely wins: precompute lower-cased/interned kinds and subtypes per card once (outside
+  the game loop), avoid `filter`/`map`/`sortedBy` lists per turn (reuse buffers, plain loops), avoid boxing in maps.
+- **Hard rule: results must stay identical** (same `Random` calls in the same order, same choices), so
+  `WinOddsCalc.VERSION` doesn't change and kept win turns stay valid. Checks: the app's win-odds unit tests and
+  `web/test/winodds.test.ts` (compares with the app's answer and checks 4 batches + merge == `winOddsJson`). Measure
+  before/after with the same fixture (and in the app on the phone if possible).
+- Needs an app release (code change in the app) and regenerating `web/src/lib/winodds-js` with
+  `./gradlew -p web/winodds-kt copyToWeb` (JDK 18) in the same change; the build's `.swap` texts in
+  `web/winodds-kt/build.gradle.kts` must still match WinOdds.kt.
+- Open question: aim for a target (e.g. 2× faster) or stop when the easy wins are taken?
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
