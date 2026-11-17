@@ -140,6 +140,9 @@ export interface AccountStore {
   putWinTurn(accountId: number, deckId: number, win: StoredWinTurn): Promise<void>;
   /** Forgets the win turns of decks that are gone. */
   dropWinTurns(accountId: number, deckIds: number[]): Promise<void>;
+  /** A precon's win turn (lib/precondeck.ts), shared by every account because the cards are the same for everyone. */
+  preconWinTurn(fileName: string): Promise<StoredWinTurn | null>;
+  putPreconWinTurn(fileName: string, win: StoredWinTurn): Promise<void>;
   /** The account's link for this item, if it has one. */
   share(accountId: number, kind: ShareKind, target: string): Promise<ShareLink | null>;
   /** Adds a link; if the item has one already, that one is kept and answered. */
@@ -302,6 +305,7 @@ export function memoryStore(): AccountStore {
   const alerts = new Map<number, AlertEvent[]>();
   const jobs = new Map<string, { at: number; info: Record<string, unknown> }>();
   const wins = new Map<number, Map<number, StoredWinTurn>>();
+  const preconWins = new Map<string, StoredWinTurn>();
   const shareList: ShareLink[] = [];
   const rules = new Map<string, { rule: string | null; at: number }>();
   const emails = new Map<number, EmailSettings>();
@@ -440,6 +444,11 @@ export function memoryStore(): AccountStore {
       wins.get(id)!.set(deckId, { ...w });
     },
     dropWinTurns: async (id, deckIds) => deckIds.forEach((d) => wins.get(id)?.delete(d)),
+    preconWinTurn: async (fileName) => {
+      const w = preconWins.get(fileName);
+      return w ? { ...w } : null;
+    },
+    putPreconWinTurn: async (fileName, w) => void preconWins.set(fileName, { ...w }),
     share: async (id, kind, target) => {
       const l = shareList.find((x) => x.accountId === id && x.kind === kind && x.target === target);
       return l ? { ...l } : null;
@@ -576,6 +585,12 @@ const SCHEMA = [
      result TEXT NOT NULL,
      at BIGINT NOT NULL,
      PRIMARY KEY (account_id, deck_id))`,
+  // 2026-11-17: each precon's win turn, worked out on its deck page (the cards are the same for every account).
+  `CREATE TABLE IF NOT EXISTS precon_win_turns (
+     file_name TEXT PRIMARY KEY,
+     list_key TEXT NOT NULL,
+     result TEXT NOT NULL,
+     at BIGINT NOT NULL)`,
   // 2026-11-12: shared links, the cards' Commander rules, the weekly email and the daily card prices behind it.
   `CREATE TABLE IF NOT EXISTS share_links (
      code TEXT PRIMARY KEY,
@@ -809,6 +824,15 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
     dropWinTurns: async (id, deckIds) => {
       if (deckIds.length) await q("DELETE FROM win_turns WHERE account_id = $1 AND deck_id = ANY($2::bigint[])", [id, deckIds]);
     },
+    preconWinTurn: async (fileName) => {
+      const r = (await q("SELECT list_key, result, at FROM precon_win_turns WHERE file_name = $1", [fileName]))[0];
+      return r ? { key: String(r.list_key), result: String(r.result), at: num(r.at) } : null;
+    },
+    putPreconWinTurn: async (fileName, w) =>
+      void (await q(
+        "INSERT INTO precon_win_turns (file_name, list_key, result, at) VALUES ($1, $2, $3, $4) ON CONFLICT (file_name) DO UPDATE SET list_key = EXCLUDED.list_key, result = EXCLUDED.result, at = EXCLUDED.at",
+        [fileName, w.key, w.result, w.at],
+      )),
     share: async (id, kind, target) => {
       const r = (await q("SELECT * FROM share_links WHERE account_id = $1 AND kind = $2 AND target = $3", [id, kind, target]))[0];
       return r ? shareRow(r) : null;
