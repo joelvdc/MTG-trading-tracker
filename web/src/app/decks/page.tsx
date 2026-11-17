@@ -11,7 +11,7 @@ import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { NewDeckDialog } from "@/components/NewDeckDialog";
 import { formatPower } from "@/components/RuleZeroCards";
-import { bracketName, caseless, GROUP_TITLES, type DeckGroup, type DeckSummary, type DecksView } from "@/lib/deckshared";
+import { bracketName, caseless, GROUP_TITLES, shownBracket, type DeckGroup, type DeckSummary, type DecksView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
 
 type Sort = "NAME" | "POWER" | "BRACKET" | "MODIFIED";
@@ -35,15 +35,36 @@ function closeMenu(e: MouseEvent<HTMLElement>) {
 function sortDecks(decks: DeckSummary[], sort: Sort, reverse: boolean): DeckSummary[] {
   const byName = (a: DeckSummary, b: DeckSummary) => caseless(a.name, b.name);
   if (sort === "NAME") return [...decks].sort((a, b) => (reverse ? -byName(a, b) : byName(a, b)));
-  const key = (d: DeckSummary): number | null => (sort === "POWER" ? d.power : sort === "BRACKET" ? d.bracketRealistic : d.modifiedAt);
+  /** A deck's bracket, the higher of the two in front. */
+  const shownOf = (d: DeckSummary) => shownBracket(d.bracketRealistic, d.bracketBaseline);
+  const key = (d: DeckSummary): number | null => (sort === "POWER" ? d.power : sort === "BRACKET" ? shownOf(d).main : d.modifiedAt);
   const known = decks.filter((d) => key(d) !== null);
   const unknown = decks.filter((d) => key(d) === null).sort(byName);
   const then =
     sort === "BRACKET"
-      ? (a: DeckSummary, b: DeckSummary) => (b.bracketBaseline ?? 0) - (a.bracketBaseline ?? 0) || (b.power ?? 0) - (a.power ?? 0) || caseless(a.name, b.name)
+      ? (a: DeckSummary, b: DeckSummary) =>
+          (shownOf(b).other?.value ?? 0) - (shownOf(a).other?.value ?? 0) || (b.power ?? 0) - (a.power ?? 0) || caseless(a.name, b.name)
       : byName;
   const sorted = known.sort((a, b) => key(b)! - key(a)! || then(a, b));
   return [...(reverse ? sorted.reverse() : sorted), ...unknown];
+}
+
+/** A deck tile's bracket chip: the higher of the two in front, the other one in the tooltip. */
+function BracketChip({ d }: { d: DeckSummary }) {
+  const b = shownBracket(d.bracketRealistic, d.bracketBaseline);
+  if (b.main == null) {
+    return (
+      <span className="bracket-chip b0" title="Not scored yet">
+        –
+      </span>
+    );
+  }
+  const other = b.other ? `, ${b.other.label} ${b.other.value}` : "";
+  return (
+    <span className={`bracket-chip b${b.main}`} title={`Bracket ${b.main} (${bracketName(b.main)})${other}`}>
+      {`B${b.main}`}
+    </span>
+  );
 }
 
 /** The decks (the app's Decks tab): Archidekt decks and local ones, with their scores, value and missing cards. */
@@ -265,9 +286,7 @@ export default function DecksPage() {
                     </div>
                   </div>
                   <div className="deck-facts">
-                    <span className={`bracket-chip b${d.bracketRealistic ?? 0}`} title={d.bracketRealistic ? `Bracket ${d.bracketRealistic} (${bracketName(d.bracketRealistic)}), baseline ${d.bracketBaseline ?? "–"}` : "Not scored yet"}>
-                      {d.bracketRealistic ? `B${d.bracketRealistic}` : "–"}
-                    </span>
+                    <BracketChip d={d} />
                     <span title={`Power level (${view.powerLabel})`}>{d.power != null ? `⚡ ${formatPower(d.power, view.powerSource)}` : <span className="muted">⚡ –</span>}</span>
                     <span className="muted">{d.cardCount} cards</span>
                     <span className="spacer" />

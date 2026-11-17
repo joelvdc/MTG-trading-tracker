@@ -31,7 +31,7 @@ import type { StatsCard } from "@/lib/deckstats";
 import { PrintDeckDialog } from "@/components/PrintLists";
 import type { Legality } from "@/lib/legality";
 import { ShareDialog } from "@/components/SharePanel";
-import { allCombos, bracketName, caseless, POWER_SOURCES, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { allCombos, bracketName, caseless, POWER_SOURCES, sections, shownBracket, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { isLandSection, mdfcLandCopies } from "@/lib/mdfclands";
@@ -280,10 +280,13 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
     jumpToPrimer();
   }
 
+  /** The Scryfall id the card details are keyed by: the deck's own printing, which the printing shown may differ from. */
+  const detailsId = (r: DeckRow) => r.original?.scryfallId ?? r.card.scryfallId;
+
   const shaped = useMemo(() => {
     if (!view) return null;
     const costs = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
-    const coloursOf = (r: DeckRow) => costColours(costs.get(r.original?.scryfallId ?? r.card.scryfallId));
+    const coloursOf = (r: DeckRow) => costColours(costs.get(detailsId(r)));
     const main = view.rows.filter((r) => !r.maybeboard);
     const only = filter.mode === "ONLY" ? filter.test : null;
     const bracketShown = onlyBracket ? main.filter((r) => r.tags.length > 0) : main;
@@ -334,16 +337,18 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const ownedCopies = mainRows.reduce((s, r) => s + r.quantity - r.missing, 0);
   const totalCopies = mainRows.reduce((s, r) => s + r.quantity, 0);
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
+  /** The bracket in front (the higher of the two) and the other one, labelled. */
+  const bracket = shownBracket(d.bracketRealistic, d.bracketBaseline);
   const costOf = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
   const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
   /** A line's card type line, from Scryfall's when known (the deck's own otherwise). */
-  const typeOf = (r: DeckRow) => typeLineOf.get(r.card.scryfallId) ?? r.types;
+  const typeOf = (r: DeckRow) => typeLineOf.get(detailsId(r)) ?? r.types;
   /** MDFC land copies in the whole main deck: Archidekt counts them in the Land heading ("40 w/ MDFC"). */
   const mdfcLands = mdfcLandCopies(shaped.main, typeOf);
   /** How many MDFC lands sit outside the Land section: added to its heading, those inside are in its plain number. */
   const mdfcOutside = (title: string, rows: DeckRow[]) => (isLandSection(title) ? Math.max(0, mdfcLands - mdfcLandCopies(rows, typeOf)) : 0);
   /** Whether a line's card has a back face, from Scryfall's layout when known. */
-  const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[r.card.scryfallId], typeLineOf.get(r.card.scryfallId) ?? r.types);
+  const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[detailsId(r)], typeLineOf.get(detailsId(r)) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
 
   // The primer's [[card]] links: a card of the deck (the main deck's line first) opens its window, and its picture
@@ -546,7 +551,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
         </span>
         {prefs.cost && (
           <span className="deck-cost">
-            <ManaCost cost={costOf.get(r.original?.scryfallId ?? r.card.scryfallId) ?? null} size={14} />
+            <ManaCost cost={costOf.get(detailsId(r)) ?? null} size={14} />
           </span>
         )}
         {prefs.owned && <span className="deck-own small">{basic ? null : <OwnedIcon row={r} />}</span>}
@@ -701,9 +706,13 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               onClick={() => setRz("BRACKET")}
             >
               <span className="muted small">Bracket</span>
-              <strong>{d.bracketRealistic ?? "–"}</strong>
-              <span className="small">{bracketName(d.bracketRealistic) ?? "not scored"}</span>
-              {d.bracketBaseline != null && <span className="muted small">baseline {d.bracketBaseline}</span>}
+              <strong>{bracket.main ?? "–"}</strong>
+              <span className="small">{bracketName(bracket.main) ?? "not scored"}</span>
+              {bracket.other && (
+                <span className="muted small">
+                  {bracket.other.label} {bracket.other.value}
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -1092,8 +1101,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           key={line + view.rows.find((r) => r.lineUid === line)!.quantity}
           view={view}
           row={view.rows.find((r) => r.lineUid === line)!}
-          layout={view.layouts?.[view.rows.find((r) => r.lineUid === line)!.card.scryfallId]}
-          typeLine={typeLineOf.get(view.rows.find((r) => r.lineUid === line)!.card.scryfallId)}
+          layout={view.layouts?.[detailsId(view.rows.find((r) => r.lineUid === line)!)]}
+          typeLine={typeLineOf.get(detailsId(view.rows.find((r) => r.lineUid === line)!))}
           onClose={() => setLine(null)}
           onChanged={async (t) => {
             await reload(t);

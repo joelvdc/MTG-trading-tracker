@@ -128,6 +128,19 @@ export function bracketName(b: number | null | undefined): string | null {
   return b === 1 ? "Exhibition" : b === 2 ? "Core" : b === 3 ? "Upgraded" : b === 4 ? "Optimized" : b === 5 ? "cEDH" : null;
 }
 
+/** The bracket shown first (the higher of realistic and baseline) and the other one, labelled; null fields when unscored. */
+export function shownBracket(
+  realistic: number | null | undefined,
+  baseline: number | null | undefined,
+): { main: number | null; other: { label: "realistic" | "baseline"; value: number } | null } {
+  const r = realistic ?? null;
+  const b = baseline ?? null;
+  if (r == null && b == null) return { main: null, other: null };
+  if (b == null) return { main: r, other: null };
+  if (r == null) return { main: b, other: null };
+  return b > r ? { main: b, other: { label: "realistic", value: r } } : { main: r, other: { label: "baseline", value: b } };
+}
+
 /** A deck's cover: its featured art from Archidekt, or its commander's art. */
 export function coverUrl(d: Deck): string | null {
   const id = d.commanderScryfallId;
