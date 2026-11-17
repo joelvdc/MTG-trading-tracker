@@ -10,7 +10,6 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useHoverSetting } from "@/components/HoverCard";
 import { ZONE_IDS, type Action, type CardDef, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
 import { useCornerPreview } from "./CornerPreview";
 import type { PlaytestDialog } from "./PlaytestDialogs";
@@ -112,8 +111,7 @@ export function PlaytestBoard({
   dialogOpen: boolean;
 }) {
   const state = game.state;
-  const [hoverOn] = useHoverSetting();
-  const hover = useCornerPreview(hoverOn);
+  const hover = useCornerPreview();
   const boardRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);

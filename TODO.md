@@ -29,6 +29,12 @@ history, the release notes and `web/README.md`.)
   (battlefield menu, remembered per browser); a tapped card stays turned while dragged. Not tried by hand in a
   browser yet: the owner tests it. On phones a finger drag on the empty board scrolls the page, so the box is
   mouse-only there.
+- **Later that day, website only:** the owner still saw no big card picture. Cause: it followed the deck page's
+  "card on hover" setting and the browser's "(hover: hover)" answer, so it stayed off without a sign. Now
+  `useCornerPreview()` is always on for a mouse or pen and skips only touch (pointer type noted on window
+  pointerdown/pointermove). Checked in a scripted Edge (Playwright, faked deck API): it shows with the setting off, a tap
+  shows nothing, and the old code showed nothing with the setting off. If the owner still sees nothing: ask for a
+  hard refresh (Ctrl+F5) first.
 - **Also website, 2026-11-17:** win turn in 4 Web Workers with a first estimate after 1,000 games; the Bracket score
   shows the higher of realistic/baseline first (`shownBracket`); MDFC count and flip button use the deck's own
   printing (`detailsId`).
