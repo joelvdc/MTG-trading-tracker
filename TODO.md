@@ -14,16 +14,24 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-17, after app 1.100)
-- **Latest (website only, 2026-11-17):** the deck page's win turn runs the app's 4 batches in 4 Web Workers and
-  merges them (`winBatchJson`/`winMergeJson`, exactly the app's result); a first estimate after 1,000 games ("≈"
-  power, table) within a few seconds. On the owner's 4-core laptop 26 s → 13 s. Optional step 2 (leaner simulation,
-  also for the app) not started.
-- **Also website, 2026-11-17:** the Bracket score and the Decks list chip show the higher of realistic/baseline first
-  ("3 · Upgraded · realistic 2", `shownBracket` in deckshared.ts; the app keeps both side by side). The MDFC count,
-  flip button and card pop-up look a card up by the deck's own printing (`detailsId`), not the owned printing shown
-  (Bala Ged Recovery in Ruby was missed: 39 → 40, as Archidekt and the app). Next: step 2 (leaner simulation, see
-  "Next: leaner win-turn simulation" below), to be done from another session.
+## Right now (2026-11-17, after app 1.101)
+- **Latest: app 1.101 (2026-11-17, no sync change, WinOddsCalc.VERSION still 13):** a faster win turn with exactly the
+  same games. Kept: the land choice (`ManaOddsCalc.chooseLand`/`entersUntapped` take the pool, sink, battlefield and hand
+  lazily; `Game.playLand` builds `landsOut()` once) and `Features.chosenPump` (no Renewed Solidarity walk in decks
+  without it). Node, fixture, 10,000 games on one core: 22.8 s → ~10 s; JVM (Ruby, 4 threads): 3.0 → 2.4 s. Tried and
+  dropped (no gain, measured): set lookups in `Entry.isA` (slower in JS) and a rewritten `ManaOddsCalc.pay`. Checked:
+  the 21 Ready to Play decks + fixture at 10,000 games, raw tallies identical before/after; new
+  `web/test/winodds-tallies.test.ts` pins the fixture's exact counts (re-record only with a VERSION bump). Next easy
+  wins, if ever wanted, need a fresh profile (remaining time is spread over list copies in the turn loop).
+- **Same day, website only:** playtester: the big card picture shows when the mouse rests on a card (no more restart
+  on every move), inside the battlefield's top-right corner; selection box on the empty battlefield + Ctrl-click,
+  group drag/tap/move/counters as one undo step (`{type:"group"}` in playtest.ts), T taps the selection; snap grid
+  (battlefield menu, remembered per browser); a tapped card stays turned while dragged. Not tried by hand in a
+  browser yet: the owner tests it. On phones a finger drag on the empty board scrolls the page, so the box is
+  mouse-only there.
+- **Also website, 2026-11-17:** win turn in 4 Web Workers with a first estimate after 1,000 games; the Bracket score
+  shows the higher of realistic/baseline first (`shownBracket`); MDFC count and flip button use the deck's own
+  printing (`detailsId`).
 - **Latest: app 1.100 (2026-11-17, no sync change):** the deck page's Land heading counts MDFC lands outside it,
   "Land (37, 40 with MDFCs)" (`MdfcLands` in data/DeckStats.kt, tests in Release1100Test). Same day, website (no app
   needed): precon pages work out the win turn and show Power (from the
@@ -83,27 +91,6 @@ history, the release notes and `web/README.md`.)
 - **Waiting on the owner:** playtester feedback (now due) and a working AI primer on the website. Review follow-ups for later under "From the code reviews". Ideas still
   collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
 
-## Next: leaner win-turn simulation ("step 2", owner wants it, 2026-11-17)
-Owner (2026-11-17): "is there any way to speed up the calculation time of the win-turn simulation?" Step 1 (website
-plays the app's 4 batches in 4 Web Workers + a first estimate after 1,000 games) is done. Step 2: make the simulation
-itself cheaper (`WinOddsCalc` in `app/src/main/java/com/mtgtrader/data/WinOdds.kt`), so the app, the website (it
-compiles that same file to JS via `web/winodds-kt`) and the server cron all get faster.
-- Measured 2026-11-17 on the owner's laptop (i7-1165G7, 4 cores), Node, 61-card fixture `web/test/fixtures/winodds-small.json`:
-  10,000 games 26 s in one thread (`winOddsJson`), 13 s in 4 workers.
-- CPU profile (3,000 games, Kotlin/JS): no single hotspot; time spread over Kotlin stdlib overhead: ArrayList growth
-  (`increaseLength`), HashMap creation, iterators, `sortArrayWith`, `charSequenceGet` + `uppercaseChar` (case-insensitive
-  string compares in the game loop, e.g. `equals(kind, true)` in `Entry.isA` and the lords/kinds checks), `isInterface`
-  checks, garbage collection. Likely wins: precompute lower-cased/interned kinds and subtypes per card once (outside
-  the game loop), avoid `filter`/`map`/`sortedBy` lists per turn (reuse buffers, plain loops), avoid boxing in maps.
-- **Hard rule: results must stay identical** (same `Random` calls in the same order, same choices), so
-  `WinOddsCalc.VERSION` doesn't change and kept win turns stay valid. Checks: the app's win-odds unit tests and
-  `web/test/winodds.test.ts` (compares with the app's answer and checks 4 batches + merge == `winOddsJson`). Measure
-  before/after with the same fixture (and in the app on the phone if possible).
-- Needs an app release (code change in the app) and regenerating `web/src/lib/winodds-js` with
-  `./gradlew -p web/winodds-kt copyToWeb` (JDK 18) in the same change; the build's `.swap` texts in
-  `web/winodds-kt/build.gradle.kts` must still match WinOdds.kt.
-- Open question: aim for a target (e.g. 2× faster) or stop when the easy wins are taken?
-
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
 (OpenCode Go) writes all code, Opus plans, reviews, tests and releases (`/deepseek`).
@@ -124,6 +111,8 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
   the deck page with in-page editor and Write with AI (OpenCode Go, 20 a day); health check `ai`.
 
 ## Done
+- 1.101 (2026-11-17): faster win turn (land choice, Renewed Solidarity check), same games; website playtester:
+  hover picture, multi-select with group actions, snap grid, tapped cards stay turned while dragged.
 - Website (2026-11-17): playtester corner preview, zoom, battlefield menu (tap all, proliferate), View card,
   custom tokens, real card back; deck page primer folds, tighter Stats.
 - Website (2026-11-16): Next.js 16.4.6 security update.
