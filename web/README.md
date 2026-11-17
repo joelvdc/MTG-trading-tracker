@@ -68,8 +68,12 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   16,000 cards in about 2½ minutes; if a page fails the old table stays. The categories and their order: Ramp (ramp),
   Removal (removal, sweeper, counterspell), Draw (draw), Tutor (tutor), Recursion (recursion), Protection
   (protection). The first decides the card's section, the others go on the deck line as extra categories; deleting a
-  category moves its cards to their next one. Cards without a tag go by card type. The website doesn't contact
-  Archidekt (owner's decision, 2026-11-06).
+  category moves its cards to their next one. Cards without a tag go by card type. Since 2026-11-17 a card whose
+  front face is a land never gets a tag category (Scryfall tags Evolving Wilds "tutor"): the table leaves lands out
+  (`frontIsLand`; a table built before `RULES_SINCE` is rebuilt once) and `autoFor` places them by type anyway, so
+  they go in Land; an MDFC with a spell on the front keeps its tags. The Land heading counts MDFC lands elsewhere in
+  the deck in brackets, like Archidekt ("Land · 37 (40 with MDFCs)", `lib/mdfclands.ts`; not on shared links, which
+  carry no type lines). The website doesn't contact Archidekt (owner's decision, 2026-11-06).
 - **Nightly job** (`lib/nightly.ts`, `/api/cron/nightly`, 06:30 UTC after the price jobs), for every account with a
   sync file: the day's collection value with the app's own keys (ValueHistory.snapshotValues: every source and price
   type, `pays@cardkingdom`, per binder `b:<uid>:…`, Unsorted `b:~:…`) into `value_history`; and the wishlist's alert
@@ -117,7 +121,10 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   `/decks/[id]`): `GET /api/precons/view?deck=` builds the deck in memory from the user's sync file copy, never saved
   (`lib/deckanswer.ts`, the same answer as `GET /api/decks/[id]`; precon lines cached a day per server instance), so
   prices and owned marks are the user's own. Buttons: Make it my deck (`from-precon`), Add its cards to my collection
-  (`/orders?precon=<fileName>` opens the Add a precon dialog with the deck picked), Copy decklist.
+  (`/orders?precon=<fileName>` opens the Add a precon dialog with the deck picked), Copy decklist. Scores: Power
+  (from the win turn, `powerSource: "APP"`) and Missing, no Bracket. The win turn is worked out in the browser on
+  the first visit and kept once per precon for every account (table `precon_win_turns`, `POST /api/precons/winturn`,
+  kept only when its list key matches the server's), so later visits show it at once.
 
 - **Shared links** (`lib/shares.ts`, `lib/shareweb.ts`, since app 1.89): Share on the deck page, the game window and
   the Collection page (whole collection, or the binder picked), and in the app (`POST /api/app/share` with
