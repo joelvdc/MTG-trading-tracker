@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { StatsCard } from "../src/lib/deckstats";
 import { fingerprint, winDamageNote, winInput, winKey, winWindow, type WinResult } from "../src/lib/winodds";
-import { winOddsJson } from "../src/lib/winodds-js/winodds-kt.mjs";
+import { winBatchJson, winMergeJson, winOddsJson } from "../src/lib/winodds-js/winodds-kt.mjs";
 
 type FixtureCard = Omit<StatsCard, "tokens"> & { tokens: string | null };
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/winodds-small.json", import.meta.url), "utf8")) as {
@@ -30,6 +30,28 @@ describe("win turn (the app's WinOdds.kt compiled to JavaScript)", () => {
   it("needs a commander", () => {
     const none = cards.map((c) => ({ ...c, commander: false }));
     expect(winOddsJson(winInput(none), fixture.identity, null, 50)).toBe("null");
+  });
+
+  it("plays the app's batches side by side in workers, and adds them up as the app does", () => {
+    const input = winInput(cards);
+    const tallies = [0, 1, 2, 3].map((b) => winBatchJson(input, fixture.identity, fixture.saltCard, b, 400));
+    const merged = winMergeJson(input, fixture.identity, fixture.saltCard, JSON.stringify(tallies.map((t) => JSON.parse(t))));
+    expect(merged).toBe(winOddsJson(input, fixture.identity, fixture.saltCard, 400));
+  }, 120_000);
+
+  it("snapshots a worker's tally after so many games", () => {
+    let snap: string | null = null;
+    const tally = winBatchJson(winInput(cards), fixture.identity, fixture.saltCard, 0, 400, 50, null, (t) => {
+      snap = t;
+    });
+    expect(snap).not.toBeNull();
+    expect((JSON.parse(snap as string) as { games: number }).games).toBe(50);
+    expect((JSON.parse(tally) as { games: number }).games).toBe(100);
+  }, 60_000);
+
+  it("needs a commander, in a worker too", () => {
+    const none = cards.map((c) => ({ ...c, commander: false }));
+    expect(winBatchJson(winInput(none), fixture.identity, null, 0, 50)).toBe("null");
   });
 
   it("shows the app's turns and notes", () => {

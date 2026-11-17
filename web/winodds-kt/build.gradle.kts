@@ -77,10 +77,14 @@ val prepareSources by tasks.registering {
                 .swap("m.groups[group]!!.range.first", "m.range.last + 1 - m.groupValues[group].length")
                 .swap("m.groups[3]!!.range.first", "m.range.last + 1 - m.groupValues[3].length")
                 // The batches one after another, with the same seeds (no threads in JavaScript).
-                .swap("            Thread {\n                try {\n                    results[b] = playBatch(", "            run {\n                try {\n                    results[b] = playBatch(")
+                .swap("            Thread {\n                try {\n                    results[b] = playBatch(", "            run {\n                try {\n                    results[b] = WebBatches.given(b, turns) ?: playBatch(")
                 .swap("            }.also { it.start() }\n        }\n        threads.forEach { it.join() }\n", "            }\n        }\n")
                 // Each game reports itself, for the website's progress bar (see Website.kt's WebProgress).
-                .swap("        val r = Batch(turns)\n        repeat(count) {\n", "        val r = Batch(turns)\n        repeat(count) {\n            WebProgress.game()\n"),
+                .swap("        val r = Batch(turns)\n        repeat(count) {\n", "        val r = Batch(turns)\n        repeat(count) {\n            WebProgress.game(r)\n")
+                // A batch that was just played hands in its tallies (Website.kt's winBatchJson).
+                .swap("        return r\n    }\n\n    /** One batch's tallies. */", "        WebProgress.finished(r)\n        return r\n    }\n\n    /** One batch's tallies. */")
+                // Website.kt reads a batch's tallies.
+                .swap("    private class Batch(turns: Int)", "    internal class Batch(turns: Int)"),
         )
     }
 }
@@ -96,7 +100,12 @@ val copyToWeb by tasks.registering(Sync::class) {
     doLast {
         val version = Regex("const val VERSION = (\\d+)").find(appData.resolve("WinOdds.kt").readText())!!.groupValues[1]
         // Its TypeScript type (Kotlin's own generator needs yarn and an npm download).
-        destinationDir.resolve("winodds-kt.d.mts").writeText("export declare function winOddsJson(cardsJson: string, identity: string, saltCard: string | null, games?: number | null, onProgress?: ((started: number) => void) | null): string;\nexport declare function saltCardJson(body: string): string | null;\n")
+        destinationDir.resolve("winodds-kt.d.mts").writeText(
+            "export declare function winOddsJson(cardsJson: string, identity: string, saltCard: string | null, games?: number | null, onProgress?: ((started: number) => void) | null): string;\n" +
+                "export declare function winBatchJson(cardsJson: string, identity: string, saltCard: string | null, batch: number, games?: number | null, snapshotAt?: number | null, onProgress?: ((started: number) => void) | null, onSnapshot?: ((tallyJson: string) => void) | null): string;\n" +
+                "export declare function winMergeJson(cardsJson: string, identity: string, saltCard: string | null, talliesJson: string): string;\n" +
+                "export declare function saltCardJson(body: string): string | null;\n",
+        )
         destinationDir.resolve("version.ts").writeText("// Written by web/winodds-kt (copyToWeb): the app's WinOddsCalc.VERSION.\nexport const WIN_ODDS_VERSION = $version;\n")
     }
 }

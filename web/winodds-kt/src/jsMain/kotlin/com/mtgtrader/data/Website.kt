@@ -88,13 +88,90 @@ internal class WebPower(val power: Int, val exact: Double, val turn: Double?, va
 
 private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-/** Counts the games played (the website's copy of WinOdds.kt calls [game] as each one starts), for a progress bar. */
+/**
+ * Counts the games played (the website's copy of WinOdds.kt calls [game] as each one starts), for a progress bar, and
+ * hears a batch that was just played ([finished]), for the website's workers (see [winBatchJson]).
+ */
 internal object WebProgress {
-    var onGame: (() -> Unit)? = null
+    /** Hears each game, with its batch's tallies so far (before this game). */
+    var onGame: ((WinOddsCalc.Batch) -> Unit)? = null
 
-    fun game() {
-        onGame?.invoke()
+    /** Hears a batch that was played here, with its final tallies. */
+    var onFinished: ((WinOddsCalc.Batch) -> Unit)? = null
+
+    fun game(r: WinOddsCalc.Batch) {
+        onGame?.invoke(r)
     }
+
+    fun finished(r: WinOddsCalc.Batch) {
+        onFinished?.invoke(r)
+    }
+}
+
+/**
+ * One batch of the app's games ([WinOddsCalc.Batch], which doesn't keep how many of its games it played): [games] of
+ * them, and the tallies, so a Web Worker can hand them to the page ([winBatchJson]) and [winMergeJson] can add them up.
+ */
+@Serializable
+internal class WebTally(
+    val games: Int,
+    val won: List<Int>,
+    val byCombo: List<Int>,
+    val byMaze: List<Int>,
+    val dealt: List<Long>,
+    val wins: Int,
+    val knockouts: Int,
+) {
+    companion object {
+        /** [batch]'s tallies, after [games] of its games were played. */
+        fun of(batch: WinOddsCalc.Batch, games: Int): WebTally = WebTally(
+            games, batch.won.toList(), batch.byCombo.toList(), batch.byMaze.toList(), batch.dealt.toList(), batch.wins, batch.knockouts,
+        )
+    }
+
+    /** These tallies as the batch they came from (as many turns as the list of turns played). */
+    fun batch(): WinOddsCalc.Batch {
+        val r = WinOddsCalc.Batch(won.size - 1)
+        won.forEachIndexed { t, v -> if (t < r.won.size) r.won[t] = v }
+        byCombo.forEachIndexed { t, v -> if (t < r.byCombo.size) r.byCombo[t] = v }
+        byMaze.forEachIndexed { t, v -> if (t < r.byMaze.size) r.byMaze[t] = v }
+        dealt.forEachIndexed { i, d -> if (i < r.dealt.size) r.dealt[i] = d }
+        r.wins = wins
+        r.knockouts = knockouts
+        return r
+    }
+}
+
+/**
+ * Which of the app's batches of games ([WinOddsCalc.calculate]'s batches) play here, for the website's Web Workers:
+ * [only] when one of them plays in this worker ([winBatchJson]), [given] when they were played elsewhere and their
+ * tallies are to be added up here ([winMergeJson]).
+ */
+internal object WebBatches {
+    /** The one batch that plays here; the others answer empty tallies (see [given]). */
+    var only: Int? = null
+
+    /** The tallies of the batches played elsewhere, in batch order; null to play them here (see [given]). */
+    var given: List<WinOddsCalc.Batch>? = null
+
+    /** Batch [b]'s tallies when it doesn't play here, or null for the batch that plays (its [turns] for an empty one). */
+    fun given(b: Int, turns: Int): WinOddsCalc.Batch? {
+        given?.let { return it.getOrNull(b) }
+        if (only != null && b != only) return WinOddsCalc.Batch(turns)
+        return null
+    }
+}
+
+/** [odds] as the deck page's JSON, with its power level from [salt] (see [winOddsJson]). */
+private fun webWinOddsJson(odds: WinOdds, salt: SaltCard?): String {
+    val window = odds.window
+    return json.encodeToString(
+        WebWinOdds.serializer(),
+        WebWinOdds(
+            odds, odds.label, odds.fourInTen, odds.usual, odds.nineInTen, odds.firstWin, window.first, window.last,
+            odds.damageText, odds.comboShare, odds.mazeShare, AppPowerLevel.of(odds, salt).let { WebPower(it.power, it.exact, it.turn, it.wonByEnd, it.speed, it.adjust) },
+        ),
+    )
 }
 
 /**
@@ -114,14 +191,67 @@ fun winOddsJson(cardsJson: String, identity: String, saltCard: String?, games: I
     } finally {
         WebProgress.onGame = null
     } ?: return "null"
-    val window = odds.window
-    return json.encodeToString(
-        WebWinOdds.serializer(),
-        WebWinOdds(
-            odds, odds.label, odds.fourInTen, odds.usual, odds.nineInTen, odds.firstWin, window.first, window.last,
-            odds.damageText, odds.comboShare, odds.mazeShare, AppPowerLevel.of(odds, salt).let { WebPower(it.power, it.exact, it.turn, it.wonByEnd, it.speed, it.adjust) },
-        ),
-    )
+    return webWinOddsJson(odds, salt)
+}
+
+/**
+ * One of the app's batches of games ([WinOddsCalc.calculate] plays [games] in four batches, each with its own seed), so
+ * four Web Workers can play them side by side: this worker plays batch [batch] only and answers its tallies as JSON
+ * ([WebTally]), or "null" for a deck without a commander; [winMergeJson] adds the four up, for [winOddsJson]'s answer.
+ * The arguments are [winOddsJson]'s. [snapshotAt] also answers the tallies after that many games (through [onSnapshot],
+ * for an estimate while the rest are played), and [onProgress] hears the number of games started, every 100.
+ */
+@JsExport
+fun winBatchJson(
+    cardsJson: String,
+    identity: String,
+    saltCard: String?,
+    batch: Int,
+    games: Int? = null,
+    snapshotAt: Int? = null,
+    onProgress: ((Int) -> Unit)? = null,
+    onSnapshot: ((String) -> Unit)? = null,
+): String {
+    val cards = json.decodeFromString<List<WebCard>>(cardsJson).map { it.stats() }
+    val salt = SaltCard.decode(saltCard)
+    var started = 0
+    var played = 0
+    var finished: WebTally? = null
+    WebBatches.only = batch
+    WebProgress.onGame = { r ->
+        if (played == snapshotAt) onSnapshot?.invoke(json.encodeToString(WebTally.serializer(), WebTally.of(r, played)))
+        played++
+        started++
+        if (started % 100 == 0) onProgress?.invoke(started)
+    }
+    WebProgress.onFinished = { r -> finished = WebTally.of(r, played) }
+    try {
+        WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty(), games ?: WinOddsCalc.GAMES) ?: return "null"
+    } finally {
+        WebBatches.only = null
+        WebProgress.onGame = null
+        WebProgress.onFinished = null
+    }
+    return finished?.let { json.encodeToString(WebTally.serializer(), it) } ?: "null"
+}
+
+/**
+ * The app's win turn for a deck whose games were played in separate Web Workers: [talliesJson] is their tallies (a list
+ * of [WebTally], from [winBatchJson]), which are added up here, so the answer is exactly what [winOddsJson] gives for
+ * the same deck (same batches, same seeds, same games). The other arguments are [winOddsJson]'s.
+ */
+@JsExport
+fun winMergeJson(cardsJson: String, identity: String, saltCard: String?, talliesJson: String): String {
+    val cards = json.decodeFromString<List<WebCard>>(cardsJson).map { it.stats() }
+    val salt = SaltCard.decode(saltCard)
+    val tallies = json.decodeFromString<List<WebTally>>(talliesJson)
+    WebBatches.given = tallies.map { it.batch() }
+    val odds = try {
+        WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty(), tallies.sumOf { it.games })
+    } finally {
+        WebBatches.given = null
+    } ?: return "null"
+    return webWinOddsJson(odds, salt)
 }
 
 /**
