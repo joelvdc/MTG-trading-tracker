@@ -115,3 +115,27 @@ export async function preconLines(fileName: string) {
   const origin = `Precon: ${name}` + (deck.releaseDate ? ` (${deck.releaseDate.slice(0, 4)})` : "");
   return { name, origin, lines, identity: identityOf([...found.values()], commanders) };
 }
+
+/**
+ * A cache around an async loader: each answer is kept for [lifeMs] and at most [max] answers are kept (the oldest one
+ * is dropped first). A failure isn't kept, so the next call asks again.
+ */
+export function makeCache<K, V>(load: (key: K) => Promise<V>, now: () => number = Date.now, lifeMs = 24 * 3600_000, max = 40) {
+  const kept = new Map<K, { at: number; value: V }>();
+  return async (key: K): Promise<V> => {
+    const at = now();
+    const hit = kept.get(key);
+    if (hit) {
+      if (at - hit.at <= lifeMs) return hit.value;
+      kept.delete(key);
+    }
+    const value = await load(key);
+    kept.set(key, { at, value });
+    // Map keeps insertion order, so the first key is the oldest answer.
+    while (kept.size > max) kept.delete(kept.keys().next().value as K);
+    return value;
+  };
+}
+
+/** A precon's lines, kept for a day (the deck page of a precon asks for the same deck again and again). */
+export const cachedPreconLines: (fileName: string) => ReturnType<typeof preconLines> = makeCache(preconLines);

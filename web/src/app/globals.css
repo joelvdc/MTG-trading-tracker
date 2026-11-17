@@ -843,6 +843,11 @@ a.btn {
   max-width: 1200px;
 }
 
+/* The Explore panel is placed against the whole bar, so it stays on screen however narrow the window is. */
+.topbar-in.wide {
+  position: relative;
+}
+
 .brand {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -893,9 +898,101 @@ a.btn {
   color: var(--accent);
 }
 
+/* A thin line between the sections and Explore ▾. */
+.nav-divider {
+  width: 1px;
+  min-height: 20px;
+  align-self: center;
+  margin: 0 4px;
+  background: var(--divider);
+}
+
+/* Explore ▾: a panel of shortcuts, two columns of tiles (one on narrow screens), under the bar. */
+.menu-items.explore-panel {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  top: calc(100% + 4px);
+  width: 640px;
+  max-width: calc(100vw - 24px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.menu-items.explore-panel a.explore-tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.menu-items.explore-panel a.explore-tile:hover,
+.menu-items.explore-panel a.explore-tile:focus-visible {
+  background: var(--raised);
+}
+
+.explore-icon {
+  flex: none;
+  color: var(--accent);
+}
+
+.explore-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.explore-text strong {
+  font-weight: 600;
+}
+
+.explore-go {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* The account menu: the name, then its items; it opens aligned to the right edge of the bar. */
+.menu.account > summary {
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menu.account > .menu-items {
+  max-width: calc(100vw - 24px);
+}
+
 .btn.on {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  /* Explore ▾ on a phone: the panel hangs off the whole bar (.topbar-in.wide) instead of the button, so it fits the screen. */
+  details.menu.explore {
+    position: static;
+  }
+
+  .menu-items.explore-panel {
+    grid-template-columns: 1fr;
+    left: 8px;
+    right: 8px;
+    top: 100%;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
 }
 
 @media (max-width: 560px) {
@@ -906,6 +1003,7 @@ a.btn {
   .nav {
     order: 3;
     flex-basis: 100%;
+    flex-wrap: wrap;
   }
 }
 
@@ -4685,3 +4783,90 @@ div.primer-ai-body {
 .roles-row + details.card {
   margin-top: 12px;
 }
+
+/* Precons (/precons): a set's decks as tiles, the commander's art on top of each. */
+.precon-set + .precon-set {
+  margin-top: 24px;
+}
+.precon-set .section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+.precon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.precon-tile {
+  display: block;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.precon-tile:hover,
+.precon-tile:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+.precon-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--raised);
+}
+.precon-art.no-art {
+  background: linear-gradient(to bottom right, var(--accent2), var(--raised));
+}
+.precon-tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 10px;
+}
+.precon-name {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.precon-commanders {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.precon-pips {
+  margin-top: 2px;
+}
+.precon-colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.precon-colour {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+}
+
+/* A precon's page (/precons/[file]): what it is, the three things you can do with it, then the deck itself. */
+.precon-bar {
+  border: 1px solid var(--line-soft);
+}
+.precon-bar p {
+  margin: 0 0 10px;
+}
+.precon-bar .inline {
+  flex-wrap: wrap;
+}
+.precon-bar .btn {
+  text-decoration: none;
+}
+/* Its Stats keep everything but the win turn, which belongs to a saved deck (it is the last block of the stats). */
+.precon-view .deck-stats > .odds-block:last-child {
+  display: none;
+}
+

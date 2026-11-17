@@ -4,6 +4,7 @@ import { json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
 import { accountStore } from "@/lib/accounts";
+import { loadPreconIndex } from "@/lib/preconindex";
 import { loadPrices } from "@/lib/pricestore";
 import { mailReady } from "@/lib/mailer";
 import { WEB_FORMAT } from "@/lib/syncfile";
@@ -43,11 +44,12 @@ async function aiHealth(store: ReturnType<typeof accountStore>) {
 /** For the weekly health check: no secrets, no owner data. */
 export async function GET() {
   const store = accountStore();
-  const [prices, details, ck, accounts] = await Promise.all([
+  const [prices, details, ck, accounts, precons] = await Promise.all([
     loadPrices(),
     loadDetails(),
     loadCardKingdom(),
     store ? store.count().catch(() => null) : Promise.resolve(null),
+    loadPreconIndex(),
   ]);
   const tags = store ? await store.tagCategoryStats().catch(() => null) : null;
   const nightly = store ? await store.job("nightly").catch(() => null) : null;
@@ -59,6 +61,7 @@ export async function GET() {
   const ageHours = hours(prices?.madeAt);
   const detailsAge = hours(details.madeAt);
   const ckAge = hours(ck?.madeAt);
+  const preconsAge = hours(precons?.madeAt);
   return json({
     ok: true,
     syncFormat: WEB_FORMAT,
@@ -72,6 +75,11 @@ export async function GET() {
     cardKingdomListDate: ck?.listDate ?? null,
     cardKingdomAgeHours: ckAge,
     cardKingdomFresh: ckAge !== null && ckAge < 48,
+    // The precon index (the precons page's tiles): how many decks it has, its age, and how many of MTGJSON's list it lacks.
+    preconIndexDecks: precons?.decks.length ?? 0,
+    preconIndexAgeHours: preconsAge,
+    preconIndexMissing: precons ? precons.listCount - precons.decks.length : null,
+    preconIndexFresh: preconsAge !== null && preconsAge < 48,
     // The accounts database (step C): reachable, and how many accounts (no names).
     database: accounts !== null,
     accounts,

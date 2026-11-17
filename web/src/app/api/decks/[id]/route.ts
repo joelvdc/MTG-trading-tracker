@@ -1,14 +1,13 @@
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
-import { ensureDeckDetails, statsCard, type DeckInfo } from "@/lib/deckdetails";
+import { deckAnswer } from "@/lib/deckanswer";
+import { ensureDeckDetails, type DeckInfo } from "@/lib/deckdetails";
 import { diffLines, recordHistory } from "@/lib/deckhistory";
 import { parsePackages, type DeckPackage } from "@/lib/deckpackages";
-import { parseCardTags } from "@/lib/deckroles";
 import { nameKey } from "@/lib/decknotes";
-import { deckView, missingPlan, ownedByName, syncDecks } from "@/lib/decks";
+import { missingPlan, ownedByName, syncDecks } from "@/lib/decks";
 import { loadPrices } from "@/lib/pricestore";
-import { deckLegality } from "@/lib/legalstore";
 import { editSync, loadSync } from "@/lib/store";
 import { prefs } from "@/lib/syncfile";
 import { applyEdit, EditError } from "@/lib/wishlist";
@@ -33,7 +32,6 @@ import {
   setRetired,
   detachDeck,
   inOrder,
-  maybeCategoryOf,
   moveLines,
   removeLines,
   renameCategory,
@@ -52,16 +50,12 @@ import {
 import { isBasicName, type DeckCard, type SyncDeck } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import type { CardRef } from "@/lib/syncfile";
-import { autoCategories, categoriesByName } from "@/lib/autocategories";
+import { autoCategories } from "@/lib/autocategories";
 import { loadFromArchidekt, scoreAgain, updateOne } from "@/lib/deckload";
 import { lookupCollectionFull, type LookedUp } from "@/lib/scryfall";
 import { deckToText, type ExportFormat } from "@/lib/deckexport";
 import { previewText, textLines } from "@/lib/deckimport";
 import { textCardCount } from "@/lib/decktext";
-import { isUser } from "@/lib/session";
-import { deckStatsCards, keptWins, parseWin } from "@/lib/winturns";
-import { gamesOf } from "@/lib/games";
-import { gamesOfDeck } from "@/lib/gameshared";
 
 export const dynamic = "force-dynamic";
 // Commander Salt can take a while (it retries its import), so up to two minutes.
@@ -84,49 +78,9 @@ export async function GET(_req: Request, { params }: Params) {
   try {
     const id = deckId((await params).id);
     const [{ file }, prices, details, ck] = await Promise.all([loadSync(a), loadPrices(), loadDetails(), loadCardKingdom()]);
-    const synced = id === null ? null : (syncDecks(file).find((d) => d.deck.archidektId === id) ?? null);
-    // The cards' own tags and their automatic categories, for the role line and the deck search; none when either fails.
-    const cardTags = parseCardTags(prefs(file).cardTags);
-    let autoByName: Record<string, string[]> = {};
-    if (synced) {
-      try {
-        autoByName = await categoriesByName([...new Set(synced.cards.map((c) => c.card.name))]);
-      } catch {
-        autoByName = {};
-      }
-    }
-    const view = id === null || !synced ? null : deckView(file, id, prices, details, ck, { cardTags, auto: autoByName });
-    if (!view || !synced) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
-    let info: Awaited<ReturnType<typeof ensureDeckDetails>> = {};
-    let detailsError: string | null = null;
-    try {
-      // The maybeboard's cards too: their lines show the mana cost and the filter reads their rules text.
-      info = await ensureDeckDetails([...new Set(synced.cards.map((c) => c.card.scryfallId))]);
-    } catch (e) {
-      detailsError = e instanceof Error ? e.message : "Scryfall couldn't be reached.";
-    }
-    const stats = deckStatsCards(synced, info);
-    // The maybeboard's cards with their details, apart: the stats and the win turn leave them out.
-    const maybeStats = synced.cards
-      .filter((c) => c.maybeboard)
-      .map((c) => statsCard({ name: c.card.name, scryfallId: c.card.scryfallId, quantity: c.quantity, cmc: c.cmc, types: c.types, commander: false }, info[c.card.scryfallId]));
-    // The category each maybeboard line shows under when the maybeboard is split (display only; autoCategories
-    // answers an empty map when the table can't be read, and the lines then go by card type).
-    const maybeLines = synced.cards.filter((c) => c.maybeboard);
-    const auto = maybeLines.length ? await autoCategories(maybeLines.map((c) => ({ scryfallId: c.card.scryfallId, name: c.card.name }))) : new Map();
-    const maybeCategories = Object.fromEntries(maybeLines.map((c) => [c.lineUid, maybeCategoryOf(c, auto)]));
-    const tokenInfo: Record<string, { oi: string | null; pt: string | null }> = {};
-    // Scryfall's layout per printing, to tell which cards have a back face to flip to.
-    const layouts: Record<string, string> = {};
-    for (const s of [...stats, ...maybeStats]) if (info[s.scryfallId]?.y) layouts[s.scryfallId] = info[s.scryfallId].y!;
-    for (const s of stats) for (const t of s.tokens ?? []) if (info[t.id]) tokenInfo[t.id] = { oi: info[t.id].oi, pt: info[t.id].pt };
-    // The Commander Salt data as the app keeps it, for the win turn (its combos) and the app's power level.
-    // The win turn kept on the website for this list, if there is one (lib/winturns.ts); the page checks its key.
-    const kept = isUser(a) && id !== null ? (await keptWins(a.accountId)).get(id) : undefined;
-    const winTurn = kept ? { key: kept.key, win: parseWin(kept) } : null;
-    // Commander legality, looking up the rules of cards the website doesn't know yet (a few seconds at most).
-    const legality = await deckLegality(synced, true, Date.now(), Date.now() + 6_000).catch(() => null);
-    return json({ ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn, games: gamesOfDeck(gamesOf(file), id!), legality });
+    const answer = id === null ? null : await deckAnswer(a, file, id, prices, details, ck);
+    if (!answer) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
+    return json(answer);
   } catch (e) {
     return errorResponse(e);
   }

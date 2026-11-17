@@ -14,18 +14,16 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-17, after the playtester website update)
-- **Latest (website only, 2026-11-17, no app version, no sync change):** playtester feedback round. A big card
-  picture in the playing field's top-right corner once the mouse rests ~0.3 s on a card (`CornerPreview.tsx`, follows
-  the "Card on hover" setting); zoom − 100% + at the top right (50–200 %, `--pt-zoom`, remembered as `mtg.ptZoom`);
-  right-click menu on the empty battlefield (untap/tap all, next turn, draw, proliferate, tokens, search, shuffle,
-  undo; engine actions `tapAll` and `proliferate`); "View card" in a card's menu (picture, text, rulings); custom
-  tokens ("Make your own" in the token dialog, `CardDef.custom`, drawn by `CustomFace`); the real card back
-  (`web/public/card-back.jpg`, Scryfall's back image, under the Fan Content Policy notice already in the footer).
-  Deck page: the Primer folds like Tokens and Stats (fold key `primer`; "Primer ↓" unfolds it), and the Stats
-  blocks have less empty space.
-- **Expected to look odd:** at a high zoom, cards placed close together on the battlefield overlap (positions are
-  kept as percentages). A custom token has no big corner preview (no picture); View card shows its drawn card.
+## Right now (2026-11-17, after the precons and top bar website update)
+- **Latest (website only, 2026-11-17, no app version, no sync change):** new top bar (Collection, Wishlist, Decks,
+  Games, Trades, Explore ▾ panel, account menu with Orders/Settings/Log out) and Commander precons: `/precons` grid
+  from a daily index (`lib/preconindex.ts`, Blob `precons/index.json.gz`, filled by `/api/cron/sources`) and
+  `/precons/<fileName>`, the deck page in read-only precon mode (`DeckScreen.tsx`, `/api/precons/view`, `deckanswer.ts`)
+  with Make it my deck, Add its cards to my collection (`/orders?precon=`), Copy decklist. Details: `web/README.md`.
+- **Expected to look odd:** precon tiles have no picture, commander or colours until the daily 06:00 UTC job has read
+  that deck (the first run should read them all; a deck added later shows bare for up to a day).
+- **Before that (website only, 2026-11-17):** playtester feedback round (corner preview, zoom, battlefield menu,
+  View card, custom tokens, real card back; Primer folds). At a high zoom, cards placed close together overlap.
 - **Before that:** app 1.99 + website (2026-11-16, no sync change): primer card links `[[Card name]]` (shared rules
   `DeckNotes.linkSegments/linkMatches` and `web/src/lib/decknotes.ts`, cases in
   `web/test/fixtures/primerlinks-cases.json`). Website: `/` card list in the primer editor, links open the card window
