@@ -4773,3 +4773,90 @@ div.primer-ai-body {
 .roles-row + details.card {
   margin-top: 12px;
 }
+
+/* Precons (/precons): a set's decks as tiles, the commander's art on top of each. */
+.precon-set + .precon-set {
+  margin-top: 24px;
+}
+.precon-set .section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+.precon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.precon-tile {
+  display: block;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.precon-tile:hover,
+.precon-tile:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+.precon-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--raised);
+}
+.precon-art.no-art {
+  background: linear-gradient(to bottom right, var(--accent2), var(--raised));
+}
+.precon-tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 10px;
+}
+.precon-name {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.precon-commanders {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.precon-pips {
+  margin-top: 2px;
+}
+.precon-colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.precon-colour {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+}
+
+/* A precon's page (/precons/[file]): what it is, the three things you can do with it, then the deck itself. */
+.precon-bar {
+  border: 1px solid var(--line-soft);
+}
+.precon-bar p {
+  margin: 0 0 10px;
+}
+.precon-bar .inline {
+  flex-wrap: wrap;
+}
+.precon-bar .btn {
+  text-decoration: none;
+}
+/* Its Stats keep everything but the win turn, which belongs to a saved deck (it is the last block of the stats). */
+.precon-view .deck-stats > .odds-block:last-child {
+  display: none;
+}
+
