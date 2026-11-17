@@ -38,7 +38,32 @@ const COUNTER_KINDS: { kind: string; label: string }[] = [
 type Menu =
   | { kind: "card"; id: string; x: number; y: number }
   | { kind: "library"; x: number; y: number }
-  | { kind: "board"; x: number; y: number };
+  | { kind: "board"; x: number; y: number }
+  | { kind: "group"; x: number; y: number };
+
+/** A selection box in progress: where the press started on the board, in the board's own pixels. */
+interface BoxStart {
+  x: number;
+  y: number;
+  pointerId: number;
+  /** Ctrl, Meta or Shift: the box adds its cards to the selection instead of replacing it. */
+  additive: boolean;
+  /** The board's rectangle, which stays the same while the box is drawn. */
+  rect: DOMRect;
+}
+
+/** A box being dragged on the board, in board pixels. */
+interface SelectBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** A board position in percent, kept on the board (as the engine's own clamp does). */
+function clampPercent(n: number): number {
+  return Math.min(100, Math.max(0, n));
+}
 
 /** A press that may still become a drag, a long press or a click. Kept in a ref (it changes on every move). */
 interface Press {
@@ -78,10 +103,13 @@ export function PlaytestBoard({
   game,
   dispatch,
   openDialog,
+  dialogOpen,
 }: {
   game: Game;
   dispatch: (a: Action) => void;
   openDialog: (d: PlaytestDialog) => void;
+  /** A dialog is on screen, so the board's own keys stay quiet. */
+  dialogOpen: boolean;
 }) {
   const state = game.state;
   const [hoverOn] = useHoverSetting();
@@ -92,9 +120,76 @@ export function PlaytestBoard({
   const [drag, setDrag] = useState<DragView | null>(null);
   const [dropAt, setDropAt] = useState<DropTarget | null>(null);
   const [snap, setSnap] = useState(true);
+  // The battlefield cards that are selected (their ids), for acting on several at once.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [box, setBox] = useState<SelectBox | null>(null);
+  const boxStart = useRef<BoxStart | null>(null);
   const press = useRef<Press | null>(null);
 
   const zoneOf = (id: string): ZoneId | null => ZONE_IDS.find((z) => state.zones[z].includes(id)) ?? null;
+
+  /** The selected cards that are still on the battlefield, in board order. */
+  const selectedIds = (): string[] => state.zones.battlefield.filter((id) => selected.has(id));
+
+  /** Sends several actions as one undo step. */
+  const group = (actions: Action[]) => dispatch({ type: "group", actions });
+
+  /** The same action for every selected card, as one group. */
+  const eachSelected = (action: (id: string) => Action) => group(selectedIds().map(action));
+
+  /** Taps (or untaps) the selected cards that have to change, as one group. */
+  const setTapped = (tapped: boolean) => {
+    const ids = selectedIds().filter((id) => state.cards[id].tapped !== tapped);
+    if (ids.length > 0) group(ids.map((id) => ({ type: "tap", id })));
+  };
+
+  /** A click (or T) on the selection: tap the untapped cards, or untap them all when every one is tapped. */
+  const tapSelection = () => {
+    const ids = selectedIds();
+    setTapped(ids.some((id) => !state.cards[id].tapped));
+  };
+
+  /** Moves every selected card to a zone as one group, then lets the selection go. */
+  const moveSelected = (to: ZoneId, position?: "top" | "bottom") => {
+    const ids = selectedIds();
+    if (ids.length > 0) group(ids.map((id) => ({ type: "move", id, to, ...(position ? { position } : {}) })));
+    setSelected(new Set());
+  };
+
+  // A card that leaves the battlefield (or the game) is no longer selected.
+  useEffect(() => {
+    setSelected((old) => {
+      if (old.size === 0) return old;
+      const onBoard = new Set(state.zones.battlefield);
+      const kept = new Set([...old].filter((id) => onBoard.has(id)));
+      return kept.size === old.size ? old : kept;
+    });
+  }, [state.zones.battlefield]);
+
+  // Esc lets go of the selection, unless a menu is open (Esc closes that one instead).
+  useEffect(() => {
+    if (selected.size === 0 || menu) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(new Set());
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [selected, menu]);
+
+  // T taps or untaps the selection, as a click on it does (the page's T opens the token dialog when nothing is selected).
+  useEffect(() => {
+    if (selected.size === 0) return;
+    const key = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      if (dialogOpen || state.peek || e.ctrlKey || e.metaKey || e.altKey || e.key.toLowerCase() !== "t") return;
+      e.preventDefault();
+      tapSelection();
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+    // tapSelection reads the selected cards and their tapped state, both of which are in these dependencies.
+  }, [selected, state, dialogOpen]);
 
   // The "Snap to grid" choice, remembered per browser; on unless switched off.
   useEffect(() => {
@@ -141,7 +236,11 @@ export function PlaytestBoard({
   const contextMenu = (id: string) => (e: ReactMouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    openMenuAt(id, e.clientX, e.clientY);
+    // A right-click on a card of a bigger selection acts on the whole selection.
+    if (selected.has(id) && selected.size > 1) {
+      hover.hide();
+      setMenu({ kind: "group", x: e.clientX, y: e.clientY });
+    } else openMenuAt(id, e.clientX, e.clientY);
   };
 
   /** A right-click on the empty battlefield: the board's own menu (a card's menu stops the event first). */
@@ -151,8 +250,8 @@ export function PlaytestBoard({
     setMenu({ kind: "board", x: e.clientX, y: e.clientY });
   };
 
-  /** An item of the board menu that closes the menu after it runs. */
-  const boardItem = (label: string, run: () => void) => (
+  /** An item of one of the board's menus that closes the menu after it runs. */
+  const menuItem = (label: string, run: () => void) => (
     <button
       onClick={() => {
         setMenu(null);
@@ -206,7 +305,9 @@ export function PlaytestBoard({
       p.timer = window.setTimeout(() => {
         if (press.current !== p || p.dragging) return;
         p.longPress = true;
-        setMenu({ kind: "card", id, x: opensAt.x, y: opensAt.y });
+        // A long press on a card of a bigger selection opens the selection's menu, as a right-click does.
+        if (selected.has(id) && selected.size > 1) setMenu({ kind: "group", x: opensAt.x, y: opensAt.y });
+        else setMenu({ kind: "card", id, x: opensAt.x, y: opensAt.y });
       }, LONG_PRESS_MS);
     }
     press.current = p;
@@ -221,6 +322,8 @@ export function PlaytestBoard({
       window.clearTimeout(p.timer);
       hover.hide();
       setMenu(null);
+      // Dragging a card that is not part of the selection works on its own, so the selection goes.
+      if (!selected.has(p.id) && selected.size > 0) setSelected(new Set());
     }
     setDrag({ id: p.id, x: e.clientX, y: e.clientY, offsetX: p.offsetX, offsetY: p.offsetY, width: p.width, height: p.height });
     setDropAt(targetAt(e.clientX, e.clientY));
@@ -256,11 +359,104 @@ export function PlaytestBoard({
     endPress(e);
   }
 
+  /** A press on the empty battlefield starts a selection box (a finger works too). */
+  function onBoardPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.button !== 0 || state.phase !== "playing") return;
+    // A press on a card is the card's own (tapping, dragging); only the bare board starts a box.
+    if ((e.target as HTMLElement).closest(".pt-card")) return;
+    const board = boardRef.current;
+    if (!board) return;
+    const rect = board.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    boxStart.current = {
+      x,
+      y,
+      pointerId: e.pointerId,
+      additive: e.ctrlKey || e.metaKey || e.shiftKey,
+      rect,
+    };
+    setBox({ left: x, top: y, width: 0, height: 0 });
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // The pointer is already gone: the box then ends on the next move.
+    }
+  }
+
+  function onBoardPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const start = boxStart.current;
+    if (!start || start.pointerId !== e.pointerId) return;
+    const x = e.clientX - start.rect.left;
+    const y = e.clientY - start.rect.top;
+    setBox({
+      left: Math.min(start.x, x),
+      top: Math.min(start.y, y),
+      width: Math.abs(x - start.x),
+      height: Math.abs(y - start.y),
+    });
+  }
+
+  /** Ends the box: every card it touches becomes selected (a plain click on the board selects nothing). */
+  function onBoardPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    const start = boxStart.current;
+    if (!start || start.pointerId !== e.pointerId) return;
+    boxStart.current = null;
+    setBox(null);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Already released.
+    }
+    const x = e.clientX - start.rect.left;
+    const y = e.clientY - start.rect.top;
+    // The box in the window's coordinates, to compare with the cards' own rectangles.
+    const left = start.rect.left + Math.min(start.x, x);
+    const top = start.rect.top + Math.min(start.y, y);
+    const width = Math.abs(x - start.x);
+    const height = Math.abs(y - start.y);
+    if (width < 4 && height < 4) {
+      // A click on the empty board lets the selection go.
+      setSelected(new Set());
+      return;
+    }
+    const inside = new Set<string>();
+    const board = boardRef.current;
+    if (board) {
+      for (const el of board.querySelectorAll<HTMLElement>("[data-card-id]")) {
+        const r = el.getBoundingClientRect();
+        if (r.right < left || r.left > left + width || r.bottom < top || r.top > top + height) continue;
+        const id = el.dataset.cardId;
+        if (id) inside.add(id);
+      }
+    }
+    setSelected((old) => (start.additive ? new Set([...old, ...inside]) : inside));
+  }
+
+  function onBoardPointerCancel(e: ReactPointerEvent<HTMLDivElement>) {
+    const start = boxStart.current;
+    if (!start || start.pointerId !== e.pointerId) return;
+    boxStart.current = null;
+    setBox(null);
+  }
+
   /** A click (no drag, no long press) on a card, which means different things in each zone. */
   function clickCard(p: Press, e: ReactPointerEvent<HTMLElement>) {
     if (p.zone === "battlefield") {
+      // Ctrl, Cmd or Shift adds or removes one card from the selection instead of tapping it.
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        setSelected((old) => {
+          const next = new Set(old);
+          if (next.has(p.id)) next.delete(p.id);
+          else next.add(p.id);
+          return next;
+        });
+        return;
+      }
       // With a mouse a tap toggles; with a finger it opens the card's menu (a tap is too easy to miss otherwise).
       if (p.pointerType === "touch") openMenuAt(p.id, e.clientX, e.clientY);
+      // A selected card taps or untaps the whole selection instead, as one undo step.
+      else if (selected.has(p.id)) tapSelection();
       else dispatch({ type: "tap", id: p.id });
       return;
     }
@@ -277,6 +473,8 @@ export function PlaytestBoard({
 
   /** Puts the dragged card where it was let go. */
   function dropCard(p: Press, target: DropTarget, e: ReactPointerEvent<HTMLElement>) {
+    // A card of a bigger selection moves (or is dropped) together with the rest of it.
+    const together = p.zone === "battlefield" && selected.has(p.id) && selected.size > 1;
     if (target === "battlefield") {
       const board = boardRef.current;
       if (!board) return;
@@ -300,16 +498,30 @@ export function PlaytestBoard({
       const maxY = Math.max(0, rect.height - p.height);
       const x = (Math.max(0, Math.min(maxX, x0)) / rect.width) * 100;
       const y = (Math.max(0, Math.min(maxY, y0)) / rect.height) * 100;
+      if (p.zone === "battlefield" && together) {
+        // The held card lands where it would alone; the others move by the same amount of the board.
+        const from = state.cards[p.id];
+        const dx = x - from.x;
+        const dy = y - from.y;
+        eachSelected((id) => {
+          const card = state.cards[id];
+          return { type: "position", id, x: clampPercent(card.x + dx), y: clampPercent(card.y + dy) };
+        });
+        return;
+      }
       if (p.zone === "battlefield") dispatch({ type: "position", id: p.id, x, y });
       else dispatch({ type: "move", id: p.id, to: "battlefield", x, y });
       return;
     }
     if (target === "library") {
-      dispatch({ type: "move", id: p.id, to: "library", position: e.shiftKey ? "bottom" : "top" });
+      const position = e.shiftKey ? "bottom" : "top";
+      if (together) moveSelected("library", position);
+      else dispatch({ type: "move", id: p.id, to: "library", position });
       return;
     }
     if (p.zone === target) return;
-    dispatch({ type: "move", id: p.id, to: target });
+    if (together) moveSelected(target);
+    else dispatch({ type: "move", id: p.id, to: target });
   }
 
   /** Plays a hand card straight to the battlefield (a double-click). */
@@ -339,7 +551,13 @@ export function PlaytestBoard({
   /** A card wherever it is on the board, in the hand or in the command zone. */
   const cardBox = (card: CardInstance, extra: string) => (
     <div
-      className={"pt-card" + extra + (drag?.id === card.id ? " dragging" : "")}
+      // The card held fades, and so do the other selected cards while the whole selection is dragged.
+      className={
+        "pt-card" +
+        extra +
+        (selected.has(card.id) ? " selected" : "") +
+        (drag && (drag.id === card.id || selected.has(card.id)) ? " dragging" : "")
+      }
       role="button"
       tabIndex={0}
       aria-label={card.def.name}
@@ -369,16 +587,23 @@ export function PlaytestBoard({
         ref={boardRef}
         data-drop="battlefield"
         onContextMenu={boardMenu}
+        onPointerDown={onBoardPointerDown}
+        onPointerMove={onBoardPointerMove}
+        onPointerUp={onBoardPointerUp}
+        onPointerCancel={onBoardPointerCancel}
       >
         {hover.picture}
         {state.zones.battlefield.map((id) => {
           const card = state.cards[id];
           return (
-            <div key={id} className="pt-board-card" style={{ left: `${card.x}%`, top: `${card.y}%` }}>
+            <div key={id} className="pt-board-card" data-card-id={id} style={{ left: `${card.x}%`, top: `${card.y}%` }}>
               {cardBox(card, card.tapped ? " tapped" : "")}
             </div>
           );
         })}
+        {box && (
+          <div className="pt-select-box" style={{ left: box.left, top: box.top, width: box.width, height: box.height }} />
+        )}
         {state.phase === "mulligan" && (
           <div className="pt-banner">
             <span>
@@ -619,20 +844,38 @@ export function PlaytestBoard({
 
       {menu && menu.kind === "board" && (
         <FloatMenu menuRef={menuRef} x={menu.x} y={menu.y} title="Battlefield">
-          {boardItem("Untap all (U)", () => dispatch({ type: "untapAll" }))}
-          {boardItem("Tap all", () => dispatch({ type: "tapAll" }))}
-          {boardItem("Next turn: untap and draw (N)", () => dispatch({ type: "nextTurn" }))}
-          {boardItem("Draw a card (D)", () => dispatch({ type: "draw" }))}
-          {boardItem("Proliferate", () => dispatch({ type: "proliferate" }))}
+          {menuItem("Untap all (U)", () => dispatch({ type: "untapAll" }))}
+          {menuItem("Tap all", () => dispatch({ type: "tapAll" }))}
+          {menuItem("Next turn: untap and draw (N)", () => dispatch({ type: "nextTurn" }))}
+          {menuItem("Draw a card (D)", () => dispatch({ type: "draw" }))}
+          {menuItem("Proliferate", () => dispatch({ type: "proliferate" }))}
           <span className="pt-menu-sep" />
-          {boardItem("Create token… (T)", () => openDialog({ kind: "token" }))}
-          {boardItem("Custom token…", () => openDialog({ kind: "token", custom: true }))}
-          {boardItem("Search the library…", () => openDialog({ kind: "search" }))}
-          {boardItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
+          {menuItem("Create token… (T)", () => openDialog({ kind: "token" }))}
+          {menuItem("Custom token…", () => openDialog({ kind: "token", custom: true }))}
+          {menuItem("Search the library…", () => openDialog({ kind: "search" }))}
+          {menuItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
           <span className="pt-menu-sep" />
-          {boardItem(`Snap to grid: ${snap ? "on" : "off"}`, () => changeSnap(!snap))}
+          {menuItem(`Snap to grid: ${snap ? "on" : "off"}`, () => changeSnap(!snap))}
           <span className="pt-menu-sep" />
-          {boardItem("Undo (Z)", () => dispatch({ type: "undo" }))}
+          {menuItem("Undo (Z)", () => dispatch({ type: "undo" }))}
+        </FloatMenu>
+      )}
+
+      {menu && menu.kind === "group" && (
+        <FloatMenu menuRef={menuRef} x={menu.x} y={menu.y} title={`${selected.size} cards`}>
+          {menuItem("Tap", () => setTapped(true))}
+          {menuItem("Untap", () => setTapped(false))}
+          {menuItem("+1/+1 counter", () => eachSelected((id) => ({ type: "counter", id, kind: "+1/+1", delta: 1 })))}
+          {menuItem("Remove +1/+1 counter", () => eachSelected((id) => ({ type: "counter", id, kind: "+1/+1", delta: -1 })))}
+          {menuItem("Turn face down / face up", () => eachSelected((id) => ({ type: "faceDown", id })))}
+          <span className="pt-menu-sep" />
+          {menuItem("To graveyard", () => moveSelected("graveyard"))}
+          {menuItem("To exile", () => moveSelected("exile"))}
+          {menuItem("To hand", () => moveSelected("hand"))}
+          {menuItem("To top of library", () => moveSelected("library", "top"))}
+          {menuItem("To bottom of library", () => moveSelected("library", "bottom"))}
+          <span className="pt-menu-sep" />
+          {menuItem("Clear selection", () => setSelected(new Set()))}
         </FloatMenu>
       )}
 

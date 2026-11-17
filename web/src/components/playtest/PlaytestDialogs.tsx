@@ -88,9 +88,10 @@ const SHORTCUTS: [string, string][] = [
   ["M", "Mulligan (opening hand)"],
   ["K", "Keep the opening hand"],
   ["Z or Ctrl+Z", "Undo"],
-  ["T", "Create a token"],
+  ["T", "Tap or untap the selected cards (otherwise: create a token)"],
   ["?", "These shortcuts"],
-  ["Esc", "Close a menu or dialog"],
+  ["Esc", "Close a menu or dialog, or clear the selection"],
+  ["Drag on the empty battlefield", "Select cards (Ctrl-click adds one)"],
 ];
 
 /** A card's picture: the face that is up, and nothing when it is face down. */

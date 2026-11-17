@@ -879,6 +879,79 @@ describe("undo", () => {
   });
 });
 
+describe("groups", () => {
+  /** Sol Ring and Llanowar Elves on the battlefield. */
+  function twoOnBoard(): { g: Game; ring: string; elf: string } {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    const elf = idOf(g, "Llanowar Elves");
+    g = act(g, { type: "move", id: ring, to: "battlefield" });
+    g = act(g, { type: "move", id: elf, to: "battlefield" });
+    return { g, ring, elf };
+  }
+
+  it("taps several cards and one undo takes it all back", () => {
+    const { g, ring, elf } = twoOnBoard();
+    const steps = g.past.length;
+    const after = act(g, {
+      type: "group",
+      actions: [
+        { type: "tap", id: ring },
+        { type: "tap", id: elf },
+      ],
+    });
+    expect(after.state.cards[ring].tapped).toBe(true);
+    expect(after.state.cards[elf].tapped).toBe(true);
+    expect(after.past).toHaveLength(steps + 1);
+
+    const undone = act(after, { type: "undo" });
+    expect(undone.state.cards[ring].tapped).toBe(false);
+    expect(undone.state.cards[elf].tapped).toBe(false);
+    expect(undone.past).toHaveLength(steps);
+  });
+
+  it("moves several cards to the graveyard, and one undo brings them back", () => {
+    const { g, ring, elf } = twoOnBoard();
+    const after = act(g, {
+      type: "group",
+      actions: [
+        { type: "move", id: ring, to: "graveyard" },
+        { type: "move", id: elf, to: "graveyard" },
+      ],
+    });
+    expect(after.state.zones.graveyard).toEqual([ring, elf]);
+    expect(after.state.zones.battlefield).toEqual([]);
+
+    const undone = act(after, { type: "undo" });
+    expect(undone.state.zones.battlefield).toEqual([ring, elf]);
+    expect(undone.state.zones.graveyard).toEqual([]);
+  });
+
+  it("takes no undo step for a group of positions", () => {
+    const { g, ring } = twoOnBoard();
+    const steps = g.past.length;
+    const after = act(g, {
+      type: "group",
+      actions: [{ type: "position", id: ring, x: 40, y: 50 }],
+    });
+    expect(after.state.cards[ring].x).toBe(40);
+    expect(after.state.cards[ring].y).toBe(50);
+    expect(after.past).toHaveLength(steps);
+  });
+
+  it("returns the same game when nothing in it changes", () => {
+    const { g, ring } = twoOnBoard();
+    expect(act(g, { type: "group", actions: [] })).toBe(g);
+    expect(act(g, { type: "group", actions: [{ type: "tap", id: "c999" }] })).toBe(g);
+    // Undo, restart and a group inside a group are ignored.
+    const ignored = act(g, {
+      type: "group",
+      actions: [{ type: "undo" }, { type: "restart", seed: 5 }, { type: "group", actions: [{ type: "tap", id: ring }] }],
+    });
+    expect(ignored).toBe(g);
+  });
+});
+
 describe("restart", () => {
   it("deals the same cards again from a new seed", () => {
     let g = playing();

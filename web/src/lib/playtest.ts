@@ -131,7 +131,9 @@ export type Action =
   | { type: "tax"; id: string; delta: number }
   | { type: "nextTurn" }
   | { type: "restart"; seed: number }
-  | { type: "undo" };
+  | { type: "undo" }
+  /** Several actions as one step: one undo takes them all back (a group inside a group is ignored). */
+  | { type: "group"; actions: Action[] };
 
 const MAX_LOG = 200;
 /** How many states undo can go back. */
@@ -426,6 +428,18 @@ export function act(game: Game, action: Action): Game {
         drawOnFirstTurn: state.drawOnFirstTurn,
       });
       return { state: fresh.state, past: [] };
+    }
+
+    case "group": {
+      if (!Array.isArray(action.actions)) return game;
+      // A group inside a group, undo and restart make no sense here: they are left out.
+      const steps = action.actions.filter((a) => a.type !== "group" && a.type !== "undo" && a.type !== "restart");
+      let inner: Game = { state, past: [] };
+      for (const step of steps) inner = act(inner, step);
+      if (inner.state === state) return game;
+      // Moving cards around the board is not an undo step (as for one "position"): only anything else is.
+      const movingOnly = steps.every((a) => a.type === "position");
+      return movingOnly ? { state: inner.state, past: game.past } : commit(game, inner.state);
     }
 
     case "keep": {

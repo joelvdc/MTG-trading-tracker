@@ -239,6 +239,8 @@ export default function PlaytestPage() {
           dispatch({ type: "undo" });
           break;
         case "t":
+          // With cards selected, T taps or untaps them (the board's own key does that); otherwise it makes a token.
+          if (document.querySelector(".pt-card.selected")) break;
           e.preventDefault();
           setDialog({ kind: "token" });
           break;
@@ -379,7 +381,7 @@ export default function PlaytestPage() {
         </div>
       </header>
 
-      <PlaytestBoard game={game} dispatch={dispatch} openDialog={(d) => setDialog(d)} />
+      <PlaytestBoard game={game} dispatch={dispatch} openDialog={(d) => setDialog(d)} dialogOpen={dialog !== null || peek !== null} />
       <PlaytestDialogs
         dialog={peek ? { kind: "peek" } : dialog}
         game={game}
