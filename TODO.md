@@ -35,6 +35,13 @@ history, the release notes and `web/README.md`.)
   pointerdown/pointermove). Checked in a scripted Edge (Playwright, faked deck API): it shows with the setting off, a tap
   shows nothing, and the old code showed nothing with the setting off. If the owner still sees nothing: ask for a
   hard refresh (Ctrl+F5) first.
+- **Website, 2026-11-18:** playtester: "Hand N" heading above the hand; the top card of library/graveyard/exile can
+  be dragged anywhere (library card shown as a back while dragged unless the top is revealed; a click after a drag
+  is swallowed via `justDragged`); right-click (or long press) on library = library menu, on graveyard/exile = new
+  pile menu (top card moves, graveyard "Token copy", all to hand/exile/graveyard, shuffle all into library, each one
+  undo step); `copy` also takes a graveyard card (token on the battlefield, card stays); battlefield "Copy" renamed
+  "Create token copy"; "Token copy" button in the graveyard list. Checked by a scripted Edge run (drags from each
+  pile, menus, copy, shuffle, undo); not yet by the owner.
 - **Also website, 2026-11-17:** win turn in 4 Web Workers with a first estimate after 1,000 games; the Bracket score
   shows the higher of realistic/baseline first (`shownBracket`); MDFC count and flip button use the deck's own
   printing (`detailsId`).
