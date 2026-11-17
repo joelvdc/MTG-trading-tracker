@@ -843,6 +843,11 @@ a.btn {
   max-width: 1200px;
 }
 
+/* The Explore panel is placed against the whole bar, so it stays on screen however narrow the window is. */
+.topbar-in.wide {
+  position: relative;
+}
+
 .brand {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -893,9 +898,91 @@ a.btn {
   color: var(--accent);
 }
 
+/* A thin line between the sections and Explore ▾. */
+.nav-divider {
+  width: 1px;
+  min-height: 20px;
+  align-self: center;
+  margin: 0 4px;
+  background: var(--divider);
+}
+
+/* Explore ▾: a panel of shortcuts, two columns of tiles (one on narrow screens), under the bar. */
+.menu-items.explore-panel {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  top: calc(100% + 4px);
+  width: 640px;
+  max-width: calc(100vw - 24px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.menu-items.explore-panel a.explore-tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.menu-items.explore-panel a.explore-tile:hover,
+.menu-items.explore-panel a.explore-tile:focus-visible {
+  background: var(--raised);
+}
+
+.explore-icon {
+  flex: none;
+  color: var(--accent);
+}
+
+.explore-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.explore-text strong {
+  font-weight: 600;
+}
+
+.explore-go {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* The account menu: the name, then its items; it opens aligned to the right edge of the bar. */
+.menu.account > summary {
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menu.account > .menu-items {
+  max-width: calc(100vw - 24px);
+}
+
 .btn.on {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .menu-items.explore-panel {
+    grid-template-columns: 1fr;
+    width: calc(100vw - 16px);
+  }
 }
 
 @media (max-width: 560px) {
@@ -906,6 +993,7 @@ a.btn {
   .nav {
     order: 3;
     flex-basis: 100%;
+    flex-wrap: wrap;
   }
 }
 
