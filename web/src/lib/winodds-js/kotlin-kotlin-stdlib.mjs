@@ -201,6 +201,7 @@ initMetadataForClass(ErrorKClass, 'ErrorKClass', ErrorKClass, VOID, [KClass]);
 initMetadataForClass(PrimitiveKClassImpl, 'PrimitiveKClassImpl', VOID, KClassImpl);
 initMetadataForClass(SimpleKClassImpl, 'SimpleKClassImpl', VOID, KClassImpl);
 initMetadataForInterface(KProperty1, 'KProperty1');
+initMetadataForInterface(KProperty0, 'KProperty0');
 initMetadataForClass(KTypeImpl, 'KTypeImpl');
 initMetadataForObject(PrimitiveClasses, 'PrimitiveClasses');
 initMetadataForClass(CharacterCodingException, 'CharacterCodingException', CharacterCodingException_init_$Create$, Exception);
@@ -831,26 +832,6 @@ function plus(_this__u8e3s4, element) {
   result.h(element);
   return result;
 }
-function sortedWith(_this__u8e3s4, comparator) {
-  if (isInterface(_this__u8e3s4, Collection)) {
-    if (_this__u8e3s4.p() <= 1)
-      return toList_2(_this__u8e3s4);
-    // Inline function 'kotlin.apply' call
-    // Inline function 'kotlin.collections.toTypedArray' call
-    var tmp = copyToArray(_this__u8e3s4);
-    var this_0 = isArray(tmp) ? tmp : THROW_CCE();
-    // Inline function 'kotlin.contracts.contract' call
-    // Inline function 'kotlin.collections.sortedWith.<anonymous>' call
-    sortWith(this_0, comparator);
-    return asList(this_0);
-  }
-  // Inline function 'kotlin.apply' call
-  var this_1 = toMutableList_3(_this__u8e3s4);
-  // Inline function 'kotlin.contracts.contract' call
-  // Inline function 'kotlin.collections.sortedWith.<anonymous>' call
-  sortWith_0(this_1, comparator);
-  return this_1;
-}
 function toMutableList_2(_this__u8e3s4) {
   return ArrayList_init_$Create$_1(_this__u8e3s4);
 }
@@ -896,6 +877,26 @@ function plus_0(_this__u8e3s4, elements) {
 }
 function distinct(_this__u8e3s4) {
   return toList_2(toMutableSet(_this__u8e3s4));
+}
+function sortedWith(_this__u8e3s4, comparator) {
+  if (isInterface(_this__u8e3s4, Collection)) {
+    if (_this__u8e3s4.p() <= 1)
+      return toList_2(_this__u8e3s4);
+    // Inline function 'kotlin.apply' call
+    // Inline function 'kotlin.collections.toTypedArray' call
+    var tmp = copyToArray(_this__u8e3s4);
+    var this_0 = isArray(tmp) ? tmp : THROW_CCE();
+    // Inline function 'kotlin.contracts.contract' call
+    // Inline function 'kotlin.collections.sortedWith.<anonymous>' call
+    sortWith(this_0, comparator);
+    return asList(this_0);
+  }
+  // Inline function 'kotlin.apply' call
+  var this_1 = toMutableList_3(_this__u8e3s4);
+  // Inline function 'kotlin.contracts.contract' call
+  // Inline function 'kotlin.collections.sortedWith.<anonymous>' call
+  sortWith_0(this_1, comparator);
+  return this_1;
 }
 function contains_5(_this__u8e3s4, element) {
   if (isInterface(_this__u8e3s4, Collection))
@@ -2148,6 +2149,9 @@ function noWhenBranchMatchedException() {
 function THROW_CCE() {
   throw ClassCastException_init_$Create$();
 }
+function THROW_ISE() {
+  throw IllegalStateException_init_$Create$();
+}
 function get_ZERO() {
   _init_properties_longJs_kt__elc2w5();
   return ZERO;
@@ -2798,6 +2802,10 @@ function getInterfaceMaskFor(obj, superType) {
     tmp = tmp0_elvis_lhs;
   }
   return tmp;
+}
+function getLocalDelegateReference(name, superType, mutable, lambda) {
+  _init_properties_reflectRuntime_kt__5r4uu3();
+  return getPropertyCallableRef(name, 0, superType, lambda, mutable ? lambda : null);
 }
 var properties_initialized_reflectRuntime_kt_inkhwd;
 function _init_properties_reflectRuntime_kt__5r4uu3() {
@@ -5755,6 +5763,8 @@ protoOf(SimpleKClassImpl).i9 = function (value) {
   return jsIsType(value, this.g9());
 };
 function KProperty1() {
+}
+function KProperty0() {
 }
 function createKType(classifier, arguments_0, isMarkedNullable) {
   return new KTypeImpl(classifier, asList(arguments_0), isMarkedNullable);
@@ -11252,6 +11262,10 @@ function LazyThreadSafetyMode_PUBLICATION_getInstance() {
   LazyThreadSafetyMode_initEntries();
   return LazyThreadSafetyMode_PUBLICATION_instance;
 }
+function LazyThreadSafetyMode_NONE_getInstance() {
+  LazyThreadSafetyMode_initEntries();
+  return LazyThreadSafetyMode_NONE_instance;
+}
 function _Result___init__impl__xyqfz8(value) {
   return value;
 }
@@ -12688,6 +12702,7 @@ export {
   VOID as VOID7hggqo3abtya,
   RegexOption_IGNORE_CASE_getInstance as RegexOption_IGNORE_CASE_getInstance2fmuzo7a7o03f,
   RegexOption_MULTILINE_getInstance as RegexOption_MULTILINE_getInstance3k2g13u4fg7g,
+  LazyThreadSafetyMode_NONE_getInstance as LazyThreadSafetyMode_NONE_getInstance29obelyddqkpt,
   LazyThreadSafetyMode_PUBLICATION_getInstance as LazyThreadSafetyMode_PUBLICATION_getInstance23f213579at67,
   ArrayList_init_$Create$_0 as ArrayList_init_$Create$3m1kyiqequwm5,
   ArrayList_init_$Create$ as ArrayList_init_$Create$2rimpp4x9tjd3,
@@ -12890,6 +12905,7 @@ export {
   equals as equals2au1ep9vhcato,
   fillArrayVal as fillArrayVali8eppxapiek4,
   getBooleanHashCode as getBooleanHashCode1bbj3u6b3v0a7,
+  getLocalDelegateReference as getLocalDelegateReferencenlta2y7wt3po,
   getNumberHashCode as getNumberHashCode2l4nbdcihl25f,
   getPropertyCallableRef as getPropertyCallableRef1ajb9in178r5r,
   getStringHashCode as getStringHashCode26igk1bx568vk,
@@ -12938,6 +12954,7 @@ export {
   step as step18s9qzr5xwxat,
   until as until1jbpn0z3f8lbg,
   KClass as KClass1cc9rfeybg8hs,
+  KProperty0 as KProperty02ce7r476m8633,
   KProperty1 as KProperty1ca4yb4wlo496,
   KTypeParameter as KTypeParameter1s8efufd4mbj5,
   count as count1ygc0p0bu4uw8,
@@ -12995,6 +13012,7 @@ export {
   Pair as Paire9pteg33gng7,
   Result as Result3t1vadv16kmzk,
   THROW_CCE as THROW_CCE2g6jy02ryeudk,
+  THROW_ISE as THROW_ISE25y4rao9gcv5s,
   Triple as Triple1vhi3d0dgpnjb,
   UByteArray as UByteArray2qu4d6gwssdf9,
   UByte as UBytep4j7r1t64gz1,
