@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { StatsCard } from "@/lib/deckstats";
 import { winInput, winKey, type WinResult } from "@/lib/winodds";
 import { api } from "./api";
@@ -19,10 +19,14 @@ export type KeptWin = { key: string; win: WinResult | null } | null;
  * The deck's win turn (the app's WinOddsStore): the one the website worked out for this list ([kept], when its key is
  * this list's), or kept in this browser until the deck's cards, colours or combos change, else worked out in a Web
  * Worker (half a minute or so) and handed to the website to keep. [ready] is false while card details are missing.
- * The key is lib/winodds.ts winKey (the same one the server uses, so they agree).
+ * The key is lib/winodds.ts winKey (the same one the server uses, so they agree). [save] keeps a finished result
+ * somewhere other than the saved deck's own answer (a precon); without it the result goes to the deck's winturn address.
  */
-export function useWinOdds(deckId: number, cards: StatsCard[], identity: string, saltCard: string | null, ready: boolean, kept: KeptWin = null): WinState {
+export function useWinOdds(deckId: number, cards: StatsCard[], identity: string, saltCard: string | null, ready: boolean, kept: KeptWin = null, save?: (key: string, result: string) => void): WinState {
   const [state, setState] = useState<WinState>({ status: "off" });
+  // The latest [save], so a page passing a new function each render doesn't start the work again.
+  const saveRef = useRef(save);
+  saveRef.current = save;
   useEffect(() => {
     if (!ready || !cards.some((c) => c.commander)) {
       setState({ status: "off" });
@@ -56,8 +60,10 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
         return;
       }
       const win = JSON.parse(e.data.result) as WinResult | null;
-      // Kept on the website too, for the Decks list, the rule-zero cards and other devices (best effort).
-      void api(`/api/decks/${deckId}/winturn`, { key, result: e.data.result }).catch(() => undefined);
+      // Kept on the website too (best effort): a precon under its own name, a saved deck for the Decks list, the
+      // rule-zero cards and other devices.
+      if (saveRef.current) saveRef.current(key, e.data.result);
+      else void api(`/api/decks/${deckId}/winturn`, { key, result: e.data.result }).catch(() => undefined);
       try {
         localStorage.setItem(KEY + deckId, JSON.stringify({ key, win }));
       } catch {
