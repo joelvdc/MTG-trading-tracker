@@ -125,7 +125,8 @@ export function useWinOdds(deckId: number, cards: StatsCard[], identity: string,
 
     /** A worker that merges tallies: the estimate (after a few games of each batch), or the answer (the 4 full tallies). */
     const merge = (list: string[], answer: boolean) => {
-      startWorker({ mode: "merge", cards: input, identity, saltCard, tallies: JSON.stringify(list) }, (data, worker) => {
+      // Each tally is already JSON text: joined into one JSON list (not JSON.stringify, which would quote them).
+      startWorker({ mode: "merge", cards: input, identity, saltCard, tallies: `[${list.join(",")}]` }, (data, worker) => {
         worker.terminate();
         if (data.result === undefined) {
           fail("No answer.");
