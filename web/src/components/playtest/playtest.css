@@ -124,16 +124,19 @@
   position: relative;
 }
 
-/* The big picture of the card the mouse rests on, in the playing field's top-right corner (like Moxfield). */
+/* The big picture of the card the mouse rests on, in the battlefield's top-right corner (like Moxfield). It lies inside
+   the board, lets the mouse through, and never grows taller than the board. */
 .pt-preview {
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 20;
-  width: min(300px, 42vw);
+  width: min(300px, 40%);
+  max-height: calc(100% - 16px);
   aspect-ratio: 488 / 680;
+  object-fit: contain;
   border-radius: 14px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  z-index: 20;
   pointer-events: none;
 }
 
@@ -144,7 +147,15 @@
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
-  background: var(--surface);
+  background-color: var(--surface);
+}
+
+/* The faint dotted grid that shows where a dropped card snaps, only while snapping is on (the battlefield menu's
+   "Snap to grid"). Its step is a quarter of a card's width (92px), following the zoom buttons, and the same step
+   PlaytestBoard.tsx rounds a dropped card's spot to. */
+.pt-board.snap {
+  background-image: radial-gradient(circle, var(--line-soft) 1px, transparent 1.2px);
+  background-size: calc(23px * var(--pt-zoom, 1)) calc(23px * var(--pt-zoom, 1));
 }
 
 .pt-side {
@@ -561,6 +572,11 @@
   .pt-board {
     grid-column: 1;
     grid-row: 1;
+  }
+
+  /* On phones the card is 64px wide, so the grid's step is a quarter of that. */
+  .pt-board.snap {
+    background-size: calc(16px * var(--pt-zoom, 1)) calc(16px * var(--pt-zoom, 1));
   }
 
   /* The four piles (library, graveyard, exile, command zone) share the width equally, so none is cut off. */

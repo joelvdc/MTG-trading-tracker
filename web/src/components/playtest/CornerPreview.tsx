@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 /** How long (ms) the mouse rests on a card before its big picture shows. */
-const REST_MS = 300;
+const REST_MS = 150;
 
 /**
  * The big picture of the card the mouse rests on, for the playing field's top-right corner (like Moxfield): [follow] for
@@ -13,6 +13,8 @@ const REST_MS = 300;
 export function useCornerPreview(enabled: boolean) {
   const [shown, setShown] = useState<string | null>(null);
   const shownRef = useRef<string | null>(null);
+  /** The picture a running timer will show, so its own mouse moves don't restart the wait. */
+  const pendingRef = useRef<string | null>(null);
   const timer = useRef<number | null>(null);
 
   const clearTimer = () => {
@@ -24,6 +26,7 @@ export function useCornerPreview(enabled: boolean) {
 
   const hide = () => {
     clearTimer();
+    pendingRef.current = null;
     shownRef.current = null;
     setShown(null);
   };
@@ -37,13 +40,17 @@ export function useCornerPreview(enabled: boolean) {
 
   const follow = (url: string | null) => (e: MouseEvent) => {
     if (!enabled || !url || !window.matchMedia("(hover: hover)").matches) return;
-    if (shownRef.current === url) return;
-    // Another card: the old picture goes at once, and the new one waits for the mouse to rest (every move restarts it).
+    // This card's picture is already up, or already on its way: its own mouse moves change nothing (like Moxfield).
+    if (shownRef.current === url || pendingRef.current === url) return;
+    // Another card: the old picture goes at once, and the new one waits for the mouse to rest. Moving about on the same
+    // card leaves the timer alone, so it does show.
     clearTimer();
+    pendingRef.current = url;
     shownRef.current = null;
     setShown(null);
     timer.current = window.setTimeout(() => {
       timer.current = null;
+      pendingRef.current = null;
       shownRef.current = url;
       setShown(url);
     }, REST_MS);

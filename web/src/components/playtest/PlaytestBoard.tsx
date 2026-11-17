@@ -24,6 +24,8 @@ const DROP_TARGETS: DropTarget[] = ["battlefield", "hand", "library", "graveyard
 const START_PX = 6;
 /** How long (ms) a finger rests on a card before its menu opens. */
 const LONG_PRESS_MS = 500;
+/** Where the browser remembers whether dropped cards snap to the grid. */
+const SNAP_KEY = "mtg.playtest.snap";
 
 /** The counters the card menu offers with − and + (the engine's kinds). */
 const COUNTER_KINDS: { kind: string; label: string }[] = [
@@ -89,9 +91,28 @@ export function PlaytestBoard({
   const [menu, setMenu] = useState<Menu | null>(null);
   const [drag, setDrag] = useState<DragView | null>(null);
   const [dropAt, setDropAt] = useState<DropTarget | null>(null);
+  const [snap, setSnap] = useState(true);
   const press = useRef<Press | null>(null);
 
   const zoneOf = (id: string): ZoneId | null => ZONE_IDS.find((z) => state.zones[z].includes(id)) ?? null;
+
+  // The "Snap to grid" choice, remembered per browser; on unless switched off.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SNAP_KEY) === "off") setSnap(false);
+    } catch {
+      // Storage unavailable: stays on.
+    }
+  }, []);
+
+  const changeSnap = (on: boolean) => {
+    setSnap(on);
+    try {
+      localStorage.setItem(SNAP_KEY, on ? "on" : "off");
+    } catch {
+      // Not remembered; fine.
+    }
+  };
 
   // A menu closes on a click anywhere else (the one that opens it comes first) or on Esc.
   useEffect(() => {
@@ -155,7 +176,10 @@ export function PlaytestBoard({
     const zone = zoneOf(id);
     if (zone === null) return;
     const el = e.currentTarget;
-    const rect = el.getBoundingClientRect();
+    // A tapped battlefield card is drawn turned 90°, so its own rectangle is the rotated box and a drop measured from it
+    // would jump. Its unrotated wrapper (.pt-board-card) is the card's normal box: measure the press from that instead.
+    const box = (zone === "battlefield" ? el.closest<HTMLElement>(".pt-board-card") : null) ?? el;
+    const rect = box.getBoundingClientRect();
     const p: Press = {
       id,
       zone,
@@ -165,8 +189,8 @@ export function PlaytestBoard({
       startY: e.clientY,
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
-      width: el.offsetWidth || rect.width,
-      height: el.offsetHeight || rect.height,
+      width: box.offsetWidth || rect.width,
+      height: box.offsetHeight || rect.height,
       dragging: false,
       longPress: false,
       timer: 0,
@@ -261,10 +285,21 @@ export function PlaytestBoard({
       // The card lands with its top left corner where it was held, kept inside the board.
       const left = e.clientX - p.offsetX - rect.left;
       const top = e.clientY - p.offsetY - rect.top;
+      // With the grid on, the corner goes to the nearest dotted line first (the same step the board draws).
+      let x0 = left;
+      let y0 = top;
+      if (snap) {
+        const zoom = parseFloat(getComputedStyle(board).getPropertyValue("--pt-zoom")) || 1;
+        const step = (window.matchMedia("(max-width: 760px)").matches ? 16 : 23) * zoom;
+        if (step > 0) {
+          x0 = Math.round(left / step) * step;
+          y0 = Math.round(top / step) * step;
+        }
+      }
       const maxX = Math.max(0, rect.width - p.width);
       const maxY = Math.max(0, rect.height - p.height);
-      const x = (Math.max(0, Math.min(maxX, left)) / rect.width) * 100;
-      const y = (Math.max(0, Math.min(maxY, top)) / rect.height) * 100;
+      const x = (Math.max(0, Math.min(maxX, x0)) / rect.width) * 100;
+      const y = (Math.max(0, Math.min(maxY, y0)) / rect.height) * 100;
       if (p.zone === "battlefield") dispatch({ type: "position", id: p.id, x, y });
       else dispatch({ type: "move", id: p.id, to: "battlefield", x, y });
       return;
@@ -329,7 +364,13 @@ export function PlaytestBoard({
 
   return (
     <div className={drag ? "pt-body dragging" : "pt-body"}>
-      <div className={"pt-board" + dropClass("battlefield")} ref={boardRef} data-drop="battlefield" onContextMenu={boardMenu}>
+      <div
+        className={"pt-board" + (snap ? " snap" : "") + dropClass("battlefield")}
+        ref={boardRef}
+        data-drop="battlefield"
+        onContextMenu={boardMenu}
+      >
+        {hover.picture}
         {state.zones.battlefield.map((id) => {
           const card = state.cards[id];
           return (
@@ -478,15 +519,13 @@ export function PlaytestBoard({
         })}
       </div>
 
-      {hover.picture}
-
       {drag && ghost && (
         <div
           className="pt-ghost"
           aria-hidden="true"
           style={{ left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width, height: drag.height }}
         >
-          <div className="pt-card">
+          <div className={"pt-card" + (ghost.tapped && zoneOf(ghost.id) === "battlefield" ? " tapped" : "")}>
             <CardFace card={ghost} />
           </div>
         </div>
@@ -590,6 +629,8 @@ export function PlaytestBoard({
           {boardItem("Custom token…", () => openDialog({ kind: "token", custom: true }))}
           {boardItem("Search the library…", () => openDialog({ kind: "search" }))}
           {boardItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
+          <span className="pt-menu-sep" />
+          {boardItem(`Snap to grid: ${snap ? "on" : "off"}`, () => changeSnap(!snap))}
           <span className="pt-menu-sep" />
           {boardItem("Undo (Z)", () => dispatch({ type: "undo" }))}
         </FloatMenu>
