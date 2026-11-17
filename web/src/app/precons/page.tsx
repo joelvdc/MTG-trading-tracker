@@ -166,15 +166,19 @@ export default function PreconsPage() {
                   <div className="precon-grid">
                     {g.decks.map((d) => {
                       const art = artCrop(d.commanders[0]?.scryfallId);
+                      // A deck the index hasn't read yet has no commanders and no colours: show neither line rather than "No commander".
+                      const known = d.commanders.length > 0;
                       return (
                         <Link key={d.fileName} className="precon-tile" href={`/precons/${encodeURIComponent(d.fileName)}`}>
                           {art ? <img className="precon-art" src={art} alt="" loading="lazy" /> : <div className="precon-art no-art" aria-hidden="true" />}
                           <div className="precon-tile-text">
                             <strong className="precon-name">{d.name}</strong>
-                            <span className="precon-commanders">{d.commanders.map((c) => c.name).join(" + ") || "No commander"}</span>
-                            <span className="precon-pips">
-                              <ColourPips identity={d.colorIdentity} size={14} />
-                            </span>
+                            {known && <span className="precon-commanders">{d.commanders.map((c) => c.name).join(" + ")}</span>}
+                            {known && (
+                              <span className="precon-pips">
+                                <ColourPips identity={d.colorIdentity} size={14} />
+                              </span>
+                            )}
                           </div>
                         </Link>
                       );

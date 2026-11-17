@@ -43,6 +43,12 @@ type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCa
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
 
+/** "Feb 2024" for a precon's release date ("2024-02-09"), or "" when there is none (the precons page's wording). */
+function monthYear(date: string): string {
+  const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
 /** The deck's folded card sections, remembered in this browser per deck. */
 /** What is being dragged on the deck page: a category (to order them) or, in a local deck, a card (to another category). */
 type DragItem = { kind: "cat"; title: string } | { kind: "card"; uid: string; from: string };
@@ -592,7 +598,13 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                 precon ? null : d.folderName,
                 `${d.cardCount} cards`,
                 money(shaped.value),
-                view.modifiedAt != null ? `Modified ${formatDate(view.modifiedAt)}` : null,
+                precon
+                  ? view.precon?.releaseDate
+                    ? `Released ${monthYear(view.precon.releaseDate)}`
+                    : null
+                  : view.modifiedAt != null
+                    ? `Modified ${formatDate(view.modifiedAt)}`
+                    : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}

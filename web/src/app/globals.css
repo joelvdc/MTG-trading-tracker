@@ -979,9 +979,19 @@ a.btn {
 }
 
 @media (max-width: 640px) {
+  /* Explore ▾ on a phone: the panel hangs off the whole bar (.topbar-in.wide) instead of the button, so it fits the screen. */
+  details.menu.explore {
+    position: static;
+  }
+
   .menu-items.explore-panel {
     grid-template-columns: 1fr;
-    width: calc(100vw - 16px);
+    left: 8px;
+    right: 8px;
+    top: 100%;
+    width: auto;
+    max-width: none;
+    transform: none;
   }
 }
 
