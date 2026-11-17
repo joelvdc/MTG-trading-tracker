@@ -19,6 +19,10 @@ history, the release notes and `web/README.md`.)
   merges them (`winBatchJson`/`winMergeJson`, exactly the app's result); a first estimate after 1,000 games ("≈"
   power, table) within a few seconds. On the owner's 4-core laptop 26 s → 13 s. Optional step 2 (leaner simulation,
   also for the app) not started.
+- **Also website, 2026-11-17:** the Bracket score and the Decks list chip show the higher of realistic/baseline first
+  ("3 · Upgraded · realistic 2", `shownBracket` in deckshared.ts; the app keeps both side by side). The MDFC count,
+  flip button and card pop-up look a card up by the deck's own printing (`detailsId`), not the owned printing shown
+  (Bala Ged Recovery in Ruby was missed: 39 → 40, as Archidekt and the app). Next: step 2 (leaner simulation).
 - **Latest: app 1.100 (2026-11-17, no sync change):** the deck page's Land heading counts MDFC lands outside it,
   "Land (37, 40 with MDFCs)" (`MdfcLands` in data/DeckStats.kt, tests in Release1100Test). Same day, website (no app
   needed): precon pages work out the win turn and show Power (from the
