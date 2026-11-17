@@ -280,16 +280,22 @@ function WinningBlock({ win, missing }: { win: WinState; missing: number }) {
   return (
     <Fold title="Winning the game" className="stat-block odds-block">
       {win.status === "working" ? (
-        <div role="progressbar" aria-valuemin={0} aria-valuemax={win.games} aria-valuenow={win.started} aria-label="Games played">
-          <div className="progress">
-            <span style={{ width: `${(win.started / win.games) * 100}%` }} />
+        <>
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={win.games} aria-valuenow={win.started} aria-label="Games played">
+            <div className="progress">
+              <span style={{ width: `${(win.started / win.games) * 100}%` }} />
+            </div>
+            <p className="muted small">
+              {win.estimate
+                ? `First estimate from the first ${win.estimate.odds.games.toLocaleString("en-GB")} games; playing the rest: ` +
+                  `${win.started.toLocaleString("en-GB")} of ${win.games.toLocaleString("en-GB")}…`
+                : `Playing the deck: ${win.started.toLocaleString("en-GB")} of ${win.games.toLocaleString("en-GB")} games… (in this browser; kept here afterwards)`}
+            </p>
           </div>
-          <p className="muted small">
-            Playing the deck: {win.started.toLocaleString("en-GB")} of {win.games.toLocaleString("en-GB")} games… (in this browser; kept here afterwards)
-          </p>
-        </div>
+          {win.estimate && <WinningTable w={win.estimate} about={about} setAbout={setAbout} />}
+        </>
       ) : win.status === "off" ? (
-        <p className="muted small">Playing the deck 10,000 times… (half a minute or so, in this browser; kept here afterwards)</p>
+        <p className="muted small">Playing the deck 10,000 times… (about ten seconds, in this browser; kept here afterwards)</p>
       ) : win.status === "failed" ? (
         <p className="warn-text small">Couldn&apos;t work the win turn out: {win.error}</p>
       ) : win.win === null ? (

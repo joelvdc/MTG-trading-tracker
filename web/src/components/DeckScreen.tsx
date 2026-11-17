@@ -674,7 +674,15 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           <section className="card deck-scores">
             <div className="score">
               <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
-              <strong>{power != null ? formatPower(power, powerFrom) : powerFrom === "APP" && win.status === "working" ? "…" : "–"}</strong>
+              <strong>
+                {power != null
+                  ? formatPower(power, powerFrom)
+                  : powerFrom === "APP" && win.status === "working"
+                    ? win.estimate
+                      ? "≈ " + formatPower(win.estimate.power.power, powerFrom)
+                      : "…"
+                    : "–"}
+              </strong>
             </div>
             <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
               <span className="muted small">Missing</span>
@@ -705,7 +713,15 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               onClick={() => setRz("POWER")}
             >
               <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
-              <strong>{power != null ? formatPower(power, powerFrom) : powerFrom === "APP" && win.status === "working" ? "…" : "–"}</strong>
+              <strong>
+                {power != null
+                  ? formatPower(power, powerFrom)
+                  : powerFrom === "APP" && win.status === "working"
+                    ? win.estimate
+                      ? "≈ " + formatPower(win.estimate.power.power, powerFrom)
+                      : "…"
+                    : "–"}
+              </strong>
               {d.archetype && <span className="small">{d.archetype}</span>}
             </button>
             <div className="score">
