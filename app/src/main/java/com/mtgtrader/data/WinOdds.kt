@@ -2462,6 +2462,8 @@ object WinOddsCalc {
         val minusPayoffs = cards.any { it.minusPayoff }
         val counterBurn = cards.any { it.counterBurn }
         val sunbird = cards.any { it.sunbird }
+        /** Since 1.101: Renewed Solidarity's +N/+0 (chosenPump). */
+        val chosenPump = cards.any { it.chosenPump > 0 }
     }
 
     /** One game, played alone turn by turn. */
@@ -3774,6 +3776,7 @@ object WinOddsCalc {
         }
 
         fun chosenBonus(b: Entry): Int {
+            if (!f.chosenPump) return 0
             val kind = chosenType ?: return 0
             return if (b.creature && b.isA(kind)) board.sumOf { it.card?.chosenPump ?: 0 } else 0
         }
