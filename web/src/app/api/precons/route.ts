@@ -2,6 +2,7 @@ import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { applyCollectionEdit } from "@/lib/collection";
 import { addBought, makeOrder, PRECON, recordOrders } from "@/lib/orders";
 import { deckCards, deckUrl, orderedOf, searchPrecons, split } from "@/lib/precons";
+import { browseList, loadPreconIndex } from "@/lib/preconindex";
 import { mtgjson, preconList as decks } from "@/lib/preconfetch";
 import { loadPrices } from "@/lib/pricestore";
 import { lookupCollection } from "@/lib/scryfall";
@@ -27,12 +28,13 @@ async function pricedDeck(fileName: string) {
   return { info, cards };
 }
 
-/** ?q= searches the Commander precons; ?deck= gives one deck's cards and what they are worth. */
+/** ?q= searches the Commander precons; ?deck= gives one deck's cards and what they are worth; ?browse=1 the tiles' list. */
 export async function GET(req: Request) {
   const a = await currentAccount();
   if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
   try {
     const u = new URL(req.url);
+    if (u.searchParams.get("browse") === "1") return json({ decks: browseList(await loadPreconIndex(), await decks()) });
     const deck = u.searchParams.get("deck");
     if (deck) {
       const { info, cards } = await pricedDeck(deck);
