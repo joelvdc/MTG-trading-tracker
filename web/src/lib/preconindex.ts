@@ -160,6 +160,27 @@ export async function buildPreconIndex(deadline: number): Promise<{ decks: numbe
   return { decks: decks.length, added: added.length, missing: list.length - decks.length };
 }
 
+let filling = false;
+let lastFill = 0;
+
+/**
+ * Fills in the decks the index lacks right away (the precons page asks for it after answering, when some tiles are
+ * bare), so a new deck or an empty index doesn't wait for the daily job. At most one run per server instance at a
+ * time, and not again within 10 minutes there.
+ */
+export async function fillPreconIndexSoon(): Promise<void> {
+  if (filling || Date.now() - lastFill < 10 * 60_000) return;
+  filling = true;
+  lastFill = Date.now();
+  try {
+    await buildPreconIndex(Date.now() + 40_000);
+  } catch (e) {
+    console.warn(`Precon index: ${e instanceof Error ? e.message : e}`);
+  } finally {
+    filling = false;
+  }
+}
+
 /** A card's art, cropped to the picture, on Scryfall's image server. */
 export function artUrl(scryfallId: string): string {
   return `https://cards.scryfall.io/art_crop/front/${scryfallId[0]}/${scryfallId[1]}/${scryfallId}.jpg`;

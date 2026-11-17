@@ -45,6 +45,20 @@ export default function PreconsPage() {
   const [year, setYear] = useState("");
   // Whether the address has been read: the search, colours and year are in it, and only then written back.
   const [ready, setReady] = useState(false);
+  // The website is still reading some decks' commanders and pictures: the list is asked for again every 45 s.
+  const [filling, setFilling] = useState(false);
+  const [tries, setTries] = useState(0);
+
+  useEffect(() => {
+    if (!filling || tries >= 8) return;
+    const t = setTimeout(async () => {
+      const d = await api<{ decks?: PreconEntry[]; filling?: boolean }>("/api/precons?browse=1");
+      if (d.ok && Array.isArray(d.data.decks)) setDecks(d.data.decks);
+      setFilling(d.ok && d.data.filling === true);
+      setTries((n) => n + 1);
+    }, 45_000);
+    return () => clearTimeout(t);
+  }, [filling, tries]);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -56,11 +70,12 @@ export default function PreconsPage() {
 
   useEffect(() => {
     (async () => {
-      const [s, d] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<{ decks?: PreconEntry[] }>("/api/precons?browse=1")]);
+      const [s, d] = await Promise.all([api<{ loggedIn: boolean; folder?: string }>("/api/session"), api<{ decks?: PreconEntry[]; filling?: boolean }>("/api/precons?browse=1")]);
       if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
       setFolder(s.data.folder ?? "");
       if (d.ok && Array.isArray(d.data.decks)) setDecks(d.data.decks);
       else setError(d.data.error ?? "Could not get MTGJSON's list of decks.");
+      setFilling(d.ok && d.data.filling === true);
     })();
   }, []);
 
@@ -155,6 +170,7 @@ export default function PreconsPage() {
         {decks && (
           <>
             <p className="muted small">{shown.length === decks.length ? `${decks.length} precon${decks.length === 1 ? "" : "s"}` : `${shown.length} of ${decks.length} precons`}</p>
+            {filling && <p className="muted small">Fetching the commanders and pictures of some decks; they appear here by themselves within a few minutes.</p>}
             {shown.length === 0 ? (
               <p className="muted center">No precon matches.</p>
             ) : (

@@ -120,7 +120,7 @@ export function TopBar({
   page,
   folder,
 }: {
-  page: "collection" | "wishlist" | "stats" | "decks" | "games" | "orders" | "trades" | "settings" | "precons";
+  page: "collection" | "stats" | "decks" | "games" | "orders" | "trades" | "settings" | "precons";
   folder?: string;
 }) {
   useEffect(() => {
@@ -156,7 +156,6 @@ export function TopBar({
         </div>
         <nav className="nav" aria-label="Sections">
           {link("/collection", "Collection", page === "collection" || page === "stats")}
-          {link("/collection?binder=wishlist", "Wishlist", page === "wishlist")}
           {link("/decks", "Decks", page === "decks")}
           {link("/games", "Games", page === "games")}
           {link("/trades", "Trades", page === "trades")}

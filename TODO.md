@@ -15,13 +15,13 @@ How to use this file:
 history, the release notes and `web/README.md`.)
 
 ## Right now (2026-11-17, after the precons and top bar website update)
-- **Latest (website only, 2026-11-17, no app version, no sync change):** new top bar (Collection, Wishlist, Decks,
-  Games, Trades, Explore ▾ panel, account menu with Orders/Settings/Log out) and Commander precons: `/precons` grid
+- **Latest (website only, 2026-11-17, no app version, no sync change):** new top bar (Collection, Decks, Games, Trades
+  (Wishlist link removed again on request; it stays inside Collection), Explore ▾ panel, account menu with Orders/Settings/Log out) and Commander precons: `/precons` grid
   from a daily index (`lib/preconindex.ts`, Blob `precons/index.json.gz`, filled by `/api/cron/sources`) and
   `/precons/<fileName>`, the deck page in read-only precon mode (`DeckScreen.tsx`, `/api/precons/view`, `deckanswer.ts`)
   with Make it my deck, Add its cards to my collection (`/orders?precon=`), Copy decklist. Details: `web/README.md`.
-- **Expected to look odd:** precon tiles have no picture, commander or colours until the daily 06:00 UTC job has read
-  that deck (the first run should read them all; a deck added later shows bare for up to a day).
+- **Expected to look odd:** a precon tile has no picture, commander or colours until the index has read that deck;
+  opening /precons starts reading the missing ones (the page refreshes itself), the daily 06:00 UTC job too.
 - **Before that (website only, 2026-11-17):** playtester feedback round (corner preview, zoom, battlefield menu,
   View card, custom tokens, real card back; Primer folds). At a high zoom, cards placed close together overlap.
 - **Before that:** app 1.99 + website (2026-11-16, no sync change): primer card links `[[Card name]]` (shared rules

@@ -103,14 +103,16 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`), the nightly job (`nightly`
   counts, `nightlyAgeHours`, `nightlyFresh`), the precon index (`preconIndexDecks`, `preconIndexAgeHours`,
   `preconIndexMissing`, `preconIndexFresh`) and whether the settings are complete (no secrets).
-- **Top bar** (`components/Nav.tsx`, 2026-11-17): Collection, Wishlist, Decks, Games, Trades, then **Explore ▾** (a
+- **Top bar** (`components/Nav.tsx`, 2026-11-17): Collection (the wishlist stays a binder inside it), Decks, Games, Trades, then **Explore ▾** (a
   panel of tiles: Commander precons, Recommendations, Collection stats, Cards in several decks, Rule-zero cards, Trade
   binder) and the account menu on the right (Orders, Settings, Log out).
 - **Commander precons** (2026-11-17): `/precons` shows every Commander precon as tiles (commander art, colours),
   grouped by set, with search, colour and year filters. MTGJSON's `DeckList.json` has no commanders or colours, so the
   daily `/api/cron/sources` job keeps an index in a private Blob (`lib/preconindex.ts`, `precons/index.json.gz`): only
   decks it doesn't have yet are read (4 at a time, at most 50 s a day), set names from MTGJSON's `SetList.json`,
-  colour identities from Scryfall's `/cards/collection`; until a deck is in the index its tile has no picture.
+  colour identities from Scryfall's `/cards/collection`; until a deck is in the index its tile has no picture; when tiles are bare, `?browse=1` also starts
+  filling the index after answering (`fillPreconIndexSoon`, `after()`, 40 s, once per 10 minutes per instance) and the
+  page asks again every 45 s.
   `/precons/<fileName>` is the deck page in read-only precon mode (`components/DeckScreen.tsx`, shared with
   `/decks/[id]`): `GET /api/precons/view?deck=` builds the deck in memory from the user's sync file copy, never saved
   (`lib/deckanswer.ts`, the same answer as `GET /api/decks/[id]`; precon lines cached a day per server instance), so

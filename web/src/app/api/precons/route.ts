@@ -2,7 +2,8 @@ import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { applyCollectionEdit } from "@/lib/collection";
 import { addBought, makeOrder, PRECON, recordOrders } from "@/lib/orders";
 import { deckCards, deckUrl, orderedOf, searchPrecons, split } from "@/lib/precons";
-import { browseList, loadPreconIndex } from "@/lib/preconindex";
+import { after } from "next/server";
+import { browseList, fillPreconIndexSoon, loadPreconIndex } from "@/lib/preconindex";
 import { mtgjson, preconList as decks } from "@/lib/preconfetch";
 import { loadPrices } from "@/lib/pricestore";
 import { lookupCollection } from "@/lib/scryfall";
@@ -34,7 +35,13 @@ export async function GET(req: Request) {
   if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
   try {
     const u = new URL(req.url);
-    if (u.searchParams.get("browse") === "1") return json({ decks: browseList(await loadPreconIndex(), await decks()) });
+    if (u.searchParams.get("browse") === "1") {
+      const list = browseList(await loadPreconIndex(), await decks());
+      // Decks the index hasn't read yet (no commander) are read now, after answering; the page asks again later.
+      const bare = list.filter((d) => d.commanders.length === 0 && d.cards === 0).length;
+      if (bare > 0) after(fillPreconIndexSoon);
+      return json({ decks: list, filling: bare > 0 });
+    }
     const deck = u.searchParams.get("deck");
     if (deck) {
       const { info, cards } = await pricedDeck(deck);

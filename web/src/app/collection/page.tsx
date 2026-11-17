@@ -354,7 +354,7 @@ export default function CollectionPage() {
   if (!view) {
     return (
       <>
-        <TopBar page={isWish ? "wishlist" : "collection"} folder={folder} />
+        <TopBar page="collection" folder={folder} />
         <main className="page wide">
           {loadError ? (
             <div className="stack">
@@ -425,7 +425,7 @@ export default function CollectionPage() {
 
   return (
     <>
-      <TopBar page={isWish ? "wishlist" : "collection"} folder={folder} />
+      <TopBar page="collection" folder={folder} />
       <main className={picked.length > 0 ? "page wide with-bulk" : "page wide"}>
         {view.readOnly && (
           <div className="bar warn">
