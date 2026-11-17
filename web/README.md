@@ -101,7 +101,21 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
 - `/api/health` answers `syncFormat`, price freshness, the card details and Card Kingdom stores (`cardDetails`,
   `cardKingdomRows`, `cardKingdomListDate`, `cardKingdomFresh`), whether the accounts database answers (`database`,
   `accounts`: how many, no names), the auto categories table (`categoryCards`, `categoriesAgeHours`, `categoriesFresh`), the nightly job (`nightly`
-  counts, `nightlyAgeHours`, `nightlyFresh`) and whether the settings are complete (no secrets).
+  counts, `nightlyAgeHours`, `nightlyFresh`), the precon index (`preconIndexDecks`, `preconIndexAgeHours`,
+  `preconIndexMissing`, `preconIndexFresh`) and whether the settings are complete (no secrets).
+- **Top bar** (`components/Nav.tsx`, 2026-11-17): Collection, Wishlist, Decks, Games, Trades, then **Explore ▾** (a
+  panel of tiles: Commander precons, Recommendations, Collection stats, Cards in several decks, Rule-zero cards, Trade
+  binder) and the account menu on the right (Orders, Settings, Log out).
+- **Commander precons** (2026-11-17): `/precons` shows every Commander precon as tiles (commander art, colours),
+  grouped by set, with search, colour and year filters. MTGJSON's `DeckList.json` has no commanders or colours, so the
+  daily `/api/cron/sources` job keeps an index in a private Blob (`lib/preconindex.ts`, `precons/index.json.gz`): only
+  decks it doesn't have yet are read (4 at a time, at most 50 s a day), set names from MTGJSON's `SetList.json`,
+  colour identities from Scryfall's `/cards/collection`; until a deck is in the index its tile has no picture.
+  `/precons/<fileName>` is the deck page in read-only precon mode (`components/DeckScreen.tsx`, shared with
+  `/decks/[id]`): `GET /api/precons/view?deck=` builds the deck in memory from the user's sync file copy, never saved
+  (`lib/deckanswer.ts`, the same answer as `GET /api/decks/[id]`; precon lines cached a day per server instance), so
+  prices and owned marks are the user's own. Buttons: Make it my deck (`from-precon`), Add its cards to my collection
+  (`/orders?precon=<fileName>` opens the Add a precon dialog with the deck picked), Copy decklist.
 
 - **Shared links** (`lib/shares.ts`, `lib/shareweb.ts`, since app 1.89): Share on the deck page, the game window and
   the Collection page (whole collection, or the binder picked), and in the app (`POST /api/app/share` with
