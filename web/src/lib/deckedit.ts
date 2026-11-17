@@ -65,6 +65,16 @@ export function included(category: string, info: Category[]): boolean {
 /** The category of a card without an auto category: its card type (DeckEditor.fallbackCategory). */
 export const fallbackCategory = (types: string) => primaryType(types);
 
+/**
+ * Whether a card's front face is a land, from its type line or its types as a deck line keeps them ("Land",
+ * "Legendary Land — Urza's", "Artifact Land", "Basic Land — Island"). A land never gets a tag category (Scryfall tags
+ * Evolving Wilds "tutor"): it goes in the Land category. A modal card with a spell on the front ("Sorcery // Land")
+ * isn't one. Lives here, not in lib/autocategories.ts, so the deck editor can use it without the server's modules.
+ */
+export function frontIsLand(typeLine: string): boolean {
+  return /\bLand\b/.test(typeLine.split(" // ")[0]);
+}
+
 /** Every category of a line, [category] first (DeckCard.categoryList). */
 export function categoryList(c: DeckCard): string[] {
   const l = (c.categories ?? "").split("\n").filter((x) => x.trim());
@@ -73,10 +83,12 @@ export function categoryList(c: DeckCard): string[] {
 
 /**
  * The category a maybeboard line is shown under when the maybeboard is split into categories (display only): a
- * category of its own besides the maybeboard's, else its first auto category (Scryfall's tags), else its card type.
+ * category of its own besides the maybeboard's, else its first auto category (Scryfall's tags), else its card type. A
+ * land has no auto category at all (frontIsLand), so it uses its own or its card type.
  */
 export function maybeCategoryOf(c: DeckCard, auto: Map<string, { category: string | null }>): string {
   const own = categoryList(c).find((x) => !same(x, c.category) && !same(x, MAYBEBOARD));
+  if (frontIsLand(c.types)) return own ?? fallbackCategory(c.types);
   return own ?? auto.get(c.card.scryfallId)?.category ?? fallbackCategory(c.types);
 }
 
@@ -116,9 +128,11 @@ export interface Lookups {
 
 /**
  * Where a card goes "in its auto category": its first auto category (not [skip], the category being deleted) and its
- * other ones as extra categories; by card type when it has none.
+ * other ones as extra categories; by card type when it has none. A land always goes by its card type, whatever the
+ * table says (it never gets a tag category), also before the table is rebuilt with that rule.
  */
 export function autoFor(look: Lookups, scryfallId: string, types: string, skip: string | null = null): { to: string; extra: string[] } {
+  if (frontIsLand(types)) return { to: fallbackCategory(types), extra: [] };
   const a = look.auto.get(scryfallId);
   const all = [a?.category, ...(a?.extra ?? [])].filter((x): x is string => !!x && !(skip !== null && same(x, skip)));
   return all.length ? { to: all[0], extra: all.slice(1) } : { to: fallbackCategory(types), extra: [] };
