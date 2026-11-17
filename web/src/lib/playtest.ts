@@ -125,6 +125,7 @@ export type Action =
   | { type: "flip"; id: string }
   | { type: "faceDown"; id: string }
   | { type: "counter"; id: string; kind: string; delta: number }
+  /** A token copy of a battlefield permanent, or of a card in the graveyard (which stays in the graveyard). */
   | { type: "copy"; id: string }
   | { type: "token"; def: CardDef; count: number }
   | { type: "player"; key: PlayerKey; delta: number }
@@ -739,25 +740,33 @@ export function act(game: Game, action: Action): Game {
     }
 
     case "copy": {
-      if (!playing || zoneOf(state, action.id) !== "battlefield") return game;
+      // A token copy of a permanent on the battlefield, or of a card in the graveyard (the card itself stays there).
+      if (!playing) return game;
+      const from = zoneOf(state, action.id);
+      if (from !== "battlefield" && from !== "graveyard") return game;
       const next = cloneState(state);
       const origin = next.cards[action.id];
       const id = `t${next.nextId++}`;
+      const fromGraveyard = from === "graveyard";
+      // From the battlefield the copy lands next to it; from the graveyard it enters on a spot of its own.
+      const spot = fromGraveyard
+        ? battlefieldSpot(next, origin.def)
+        : { x: clampPercent(origin.x + 3), y: clampPercent(origin.y + 3) };
       next.cards[id] = {
         id,
         def: origin.def,
         token: true,
         copyOf: action.id,
         tapped: false,
-        flipped: origin.flipped,
+        flipped: fromGraveyard ? false : origin.flipped,
         faceDown: false,
         counters: [],
-        x: clampPercent(origin.x + 3),
-        y: clampPercent(origin.y + 3),
+        x: spot.x,
+        y: spot.y,
         revealed: false,
       };
       next.zones.battlefield.push(id);
-      addLog(next, `Created a token copy of ${origin.def.name}.`);
+      addLog(next, `Created a token copy of ${origin.def.name}${fromGraveyard ? " from the graveyard" : ""}.`);
       return commit(game, next);
     }
 

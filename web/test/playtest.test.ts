@@ -727,6 +727,49 @@ describe("copies and tokens", () => {
     expect(act(g, { type: "copy", id: g.state.zones.hand[0] })).toBe(g);
   });
 
+  it("makes a token copy of a card in the graveyard, which stays there", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    g = act(g, { type: "move", id: ring, to: "graveyard" });
+    const graveyard = g.state.zones.graveyard.slice();
+    const after = act(g, { type: "copy", id: ring });
+    expect(after.state.zones.battlefield).toHaveLength(1);
+    const copyId = after.state.zones.battlefield[0];
+    const copy = after.state.cards[copyId];
+    expect(copyId).toMatch(/^t\d+$/);
+    expect(copy.token).toBe(true);
+    expect(copy.copyOf).toBe(ring);
+    expect(copy.def).toBe(solRing);
+    expect(copy.tapped).toBe(false);
+    expect(copy.flipped).toBe(false);
+    expect(copy.faceDown).toBe(false);
+    expect(copy.counters).toEqual([]);
+    expect(copy.revealed).toBe(false);
+    expect(after.state.zones.graveyard).toEqual(graveyard);
+    expect(after.state.cards[ring].def).toBe(solRing);
+    expect(after.state.log.at(-1)?.text).toBe("Created a token copy of Sol Ring from the graveyard.");
+  });
+
+  it("takes back a graveyard copy with one undo", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    g = act(g, { type: "move", id: ring, to: "graveyard" });
+    const after = act(g, { type: "copy", id: ring });
+    const back = act(after, { type: "undo" });
+    expect(back.state).toEqual(g.state);
+    expect(back.state.zones.battlefield).toEqual([]);
+  });
+
+  it("refuses to copy a card in the hand, the library or exile", () => {
+    const g = playing();
+    expect(act(g, { type: "copy", id: g.state.zones.hand[0] })).toBe(g);
+    expect(act(g, { type: "copy", id: g.state.zones.library[0] })).toBe(g);
+    const top = g.state.zones.library[0];
+    const exiled = act(g, { type: "exileTop", count: 1 });
+    expect(exiled.state.zones.exile).toEqual([top]);
+    expect(act(exiled, { type: "copy", id: top })).toBe(exiled);
+  });
+
   it("creates token cards, up to twenty at a time", () => {
     let g = playing();
     const treasure = card("Treasure", { typeLine: "Artifact — Treasure" });
