@@ -40,12 +40,10 @@ describe("win turn (the app's WinOdds.kt compiled to JavaScript)", () => {
   }, 120_000);
 
   it("snapshots a worker's tally after so many games", () => {
-    let snap: string | null = null;
-    const tally = winBatchJson(winInput(cards), fixture.identity, fixture.saltCard, 0, 400, 50, null, (t) => {
-      snap = t;
-    });
-    expect(snap).not.toBeNull();
-    expect((JSON.parse(snap as string) as { games: number }).games).toBe(50);
+    const snaps: string[] = [];
+    const tally = winBatchJson(winInput(cards), fixture.identity, fixture.saltCard, 0, 400, 50, null, (t) => snaps.push(t));
+    expect(snaps).toHaveLength(1);
+    expect((JSON.parse(snaps[0]) as { games: number }).games).toBe(50);
     expect((JSON.parse(tally) as { games: number }).games).toBe(100);
   }, 60_000);
 

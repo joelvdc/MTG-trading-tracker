@@ -15,6 +15,10 @@ How to use this file:
 history, the release notes and `web/README.md`.)
 
 ## Right now (2026-11-17, after app 1.100)
+- **Latest (website only, 2026-11-17):** the deck page's win turn runs the app's 4 batches in 4 Web Workers and
+  merges them (`winBatchJson`/`winMergeJson`, exactly the app's result); a first estimate after 1,000 games ("≈"
+  power, table) within a few seconds. On the owner's 4-core laptop 26 s → 13 s. Optional step 2 (leaner simulation,
+  also for the app) not started.
 - **Latest: app 1.100 (2026-11-17, no sync change):** the deck page's Land heading counts MDFC lands outside it,
   "Land (37, 40 with MDFCs)" (`MdfcLands` in data/DeckStats.kt, tests in Release1100Test). Same day, website (no app
   needed): precon pages work out the win turn and show Power (from the

@@ -222,10 +222,14 @@ moved) and writes the result to `src/lib/winodds-js/` (committed). **After chang
 from the repository root with JDK 18:
 `./gradlew -p web/winodds-kt copyToWeb`, then `npm test` in `web/` (`test/winodds.test.ts` compares it with the app's
 answer for a small deck, `test/fixtures/winodds-small.json`; refresh that answer when the model changes on purpose).
-The browser runs it in a Web Worker (`src/lib/winodds.worker.ts`) and keeps each deck's result in `localStorage`
-until its cards, colours, combos or `WinOddsCalc.VERSION` change. For the progress bar the build adds one call at the
-start of each game (`WebProgress.game()` in `Website.kt`); the worker posts the games started every 100, which doesn't
-change the result.
+The browser plays the app's 4 batches of games (each with its own seed from `Random(52)`) side by side, one Web Worker
+each (`src/lib/winodds.worker.ts`, `winBatchJson`), and a fifth worker adds their tallies up (`winMergeJson`), so the
+answer is exactly the app's (and `winOddsJson`'s; a test checks this) in about a quarter to a half of the time. After
+250 games of each batch it merges those snapshots into a first estimate (1,000 games), shown with "≈" while the rest
+are played. It keeps each deck's result in `localStorage` until its cards, colours, combos or `WinOddsCalc.VERSION`
+change. The build adds, in its copy of WinOdds.kt only, one call at the start of each game and one when a batch ends
+(`WebProgress.game(r)` / `finished(r)` in `Website.kt`) and lets `WebBatches` skip or hand in batches; the app's own
+file is untouched and the server (`lib/winturns.ts`) still uses `winOddsJson`.
 
 **When the app's sync format changes** (`Sync.FORMAT` in `app/.../data/Sync.kt`): update `web/src/lib/syncfile.ts`
 (`WEB_FORMAT` and the types) in the same release, and refresh the shared sample files:

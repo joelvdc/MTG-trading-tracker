@@ -166,6 +166,9 @@ import {
   AbstractMutableSetthfi6jds1k2h as AbstractMutableSet,
   binarySearch1nmlzx9onl5pm as binarySearch,
   isComparableviyv6ctzm76u as isComparable,
+  toList2z3tifmtru5ra as toList_0,
+  toList1gki15lkq3qne as toList_1,
+  getOrNull1go7ef9ldk0df as getOrNull,
 } from './kotlin-kotlin-stdlib.mjs';
 import {
   StringSerializer_getInstance100dxy5jlaaom as StringSerializer_getInstance,
@@ -182,6 +185,7 @@ import {
   BooleanSerializer_getInstance1a8uvzxl1s4k4 as BooleanSerializer_getInstance,
   serializer1i4e9ym37oxmo as serializer,
   KSerializerzf77vz1967fq as KSerializer,
+  LongSerializer_getInstance1b6u8yq9dg9zr as LongSerializer_getInstance,
 } from './kotlinx-serialization-kotlinx-serialization-core.mjs';
 import {
   Jsonsmkyu9xjl7fv as Json,
@@ -294,6 +298,10 @@ initMetadataForCompanion(Companion_8);
 initMetadataForObject($serializer_6, '$serializer', VOID, VOID, [GeneratedSerializer]);
 initMetadataForClass(WebPower, 'WebPower', VOID, VOID, VOID, VOID, VOID, {0: $serializer_getInstance_6});
 initMetadataForObject(WebProgress, 'WebProgress');
+initMetadataForCompanion(Companion_9);
+initMetadataForObject($serializer_7, '$serializer', VOID, VOID, [GeneratedSerializer]);
+initMetadataForClass(WebTally, 'WebTally', VOID, VOID, VOID, VOID, VOID, {0: $serializer_getInstance_7});
+initMetadataForObject(WebBatches, 'WebBatches');
 //endregion
 function AppPowerReading(power, exact, turn, wonByEnd, speed, adjust) {
   this.q1e_1 = power;
@@ -347,9 +355,9 @@ protoOf(AppPowerLevel).x1e = function (byTurn, percent) {
   $l$block: {
     // Inline function 'kotlin.collections.indexOfFirst' call
     var index = 0;
-    var tmp0_iterator = byTurn.j();
-    while (tmp0_iterator.k()) {
-      var item = tmp0_iterator.l();
+    var tmp0_iterator = byTurn.m();
+    while (tmp0_iterator.n()) {
+      var item = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.AppPowerLevel.turnFor.<anonymous>' call
       if (item >= percent) {
         tmp$ret$1 = index;
@@ -362,13 +370,13 @@ protoOf(AppPowerLevel).x1e = function (byTurn, percent) {
   var i = tmp$ret$1;
   if (i < 0)
     return null;
-  var before = i === 0 ? 0 : byTurn.o(i - 1 | 0);
-  return i + (percent - before | 0) / (byTurn.o(i) - before | 0);
+  var before = i === 0 ? 0 : byTurn.r(i - 1 | 0);
+  return i + (percent - before | 0) / (byTurn.r(i) - before | 0);
 };
 protoOf(AppPowerLevel).y1e = function (turn) {
-  var _iterator__ex2g4s = zipWithNext(this.w1e_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var _destruct__k2r9zo = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = zipWithNext(this.w1e_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var _destruct__k2r9zo = _iterator__ex2g4s.o();
     var a = _destruct__k2r9zo.ce();
     var b = _destruct__k2r9zo.de();
     if (turn <= b.ae_1)
@@ -493,7 +501,7 @@ protoOf(StatsCard).u1g = function () {
     var this_0 = _get_faceTypes__bjx3d7(this);
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -501,9 +509,9 @@ protoOf(StatsCard).u1g = function () {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       if (landFace(this, element)) {
         tmp$ret$0 = true;
         break $l$block_0;
@@ -524,9 +532,9 @@ protoOf(StatsCard).v1g = function () {
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEachIndexed' call
   var index = 0;
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapIndexedNotNullTo.<anonymous>' call
     var tmp1 = index;
     index = tmp1 + 1 | 0;
@@ -537,8 +545,8 @@ protoOf(StatsCard).v1g = function () {
       // Inline function 'kotlin.collections.getOrElse' call
       // Inline function 'kotlin.contracts.contract' call
       var tmp_0;
-      if (0 <= i ? i < texts.m() : false) {
-        tmp_0 = texts.o(i);
+      if (0 <= i ? i < texts.p() : false) {
+        tmp_0 = texts.r(i);
       } else {
         // Inline function 'com.mtgtrader.data.StatsCard.<get-landFaces>.<anonymous>.<anonymous>' call
         tmp_0 = '';
@@ -564,18 +572,18 @@ protoOf(StatsCard).w1g = function () {
   // Inline function 'kotlin.collections.flatMapTo' call
   var this_0 = this.v1g();
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.StatsCard.<get-landTypes>.<anonymous>' call
     var t = element.ce();
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = split_0(substringAfter(t, ' \u2014 ', ''), charArrayOf([_Char___init__impl__6a9atx(32)]));
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.StatsCard.<get-landTypes>.<anonymous>.<anonymous>' call
       // Inline function 'kotlin.text.isNotEmpty' call
       if (charSequenceLength(element_0) > 0) {
@@ -594,7 +602,7 @@ protoOf(StatsCard).x1g = function () {
     var this_0 = this.v1g();
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -602,9 +610,9 @@ protoOf(StatsCard).x1g = function () {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.StatsCard.<get-isBasic>.<anonymous>' call
       var t = element.ce();
       if (split_0(substringBefore(t, ' \u2014 '), charArrayOf([_Char___init__impl__6a9atx(32)])).u('Basic')) {
@@ -699,45 +707,45 @@ function DeckStats() {
 }
 protoOf(DeckStats).g1h = function (card, lands) {
   var out = HashMap_init_$Create$();
-  var _iterator__ex2g4s = card.v1g().j();
-  while (_iterator__ex2g4s.k()) {
-    var text = _iterator__ex2g4s.l().de();
-    var _iterator__ex2g4s_0 = this.f1h_1.qb(text).j();
-    $l$loop: while (_iterator__ex2g4s_0.k()) {
-      var m = _iterator__ex2g4s_0.l();
-      var what = m.qc().o(1);
+  var _iterator__ex2g4s = card.v1g().m();
+  while (_iterator__ex2g4s.n()) {
+    var text = _iterator__ex2g4s.o().de();
+    var _iterator__ex2g4s_0 = this.f1h_1.qb(text).m();
+    $l$loop: while (_iterator__ex2g4s_0.n()) {
+      var m = _iterator__ex2g4s_0.o();
+      var what = m.qc().r(1);
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.d1h_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.DeckStats.fetches.<anonymous>' call
         if (Regex_init_$Create$('\\b' + element + '\\b').nb(what)) {
           destination.h(element);
         }
       }
       var types = destination;
-      if (types.n() && !Regex_init_$Create$_0('\\bland\\b', RegexOption_IGNORE_CASE_getInstance()).nb(what))
+      if (types.q() && !Regex_init_$Create$_0('\\bland\\b', RegexOption_IGNORE_CASE_getInstance()).nb(what))
         continue $l$loop;
       var basic = Regex_init_$Create$_0('\\bbasic\\b', RegexOption_IGNORE_CASE_getInstance()).nb(what);
-      var _iterator__ex2g4s_1 = lands.j();
-      $l$loop_2: while (_iterator__ex2g4s_1.k()) {
-        var l = _iterator__ex2g4s_1.l();
+      var _iterator__ex2g4s_1 = lands.m();
+      $l$loop_2: while (_iterator__ex2g4s_1.n()) {
+        var l = _iterator__ex2g4s_1.o();
         if (l.h1g_1 === card.h1g_1)
           continue $l$loop_2;
         if (basic && !l.x1g())
           continue $l$loop_2;
         var tmp;
         // Inline function 'kotlin.collections.isNotEmpty' call
-        if (!types.n()) {
+        if (!types.q()) {
           var tmp$ret$4;
           $l$block_0: {
             // Inline function 'kotlin.collections.none' call
             var tmp_0;
             if (isInterface(types, Collection)) {
-              tmp_0 = types.n();
+              tmp_0 = types.q();
             } else {
               tmp_0 = false;
             }
@@ -745,9 +753,9 @@ protoOf(DeckStats).g1h = function (card, lands) {
               tmp$ret$4 = true;
               break $l$block_0;
             }
-            var tmp0_iterator_0 = types.j();
-            while (tmp0_iterator_0.k()) {
-              var element_0 = tmp0_iterator_0.l();
+            var tmp0_iterator_0 = types.m();
+            while (tmp0_iterator_0.n()) {
+              var element_0 = tmp0_iterator_0.o();
               // Inline function 'com.mtgtrader.data.DeckStats.fetches.<anonymous>' call
               if (l.w1g().u(element_0)) {
                 tmp$ret$4 = false;
@@ -793,11 +801,11 @@ protoOf(DeckStats).g1h = function (card, lands) {
   }
   // Inline function 'kotlin.collections.mapValues' call
   // Inline function 'kotlin.collections.mapValuesTo' call
-  var destination_0 = LinkedHashMap_init_$Create$(mapCapacity(out.m()));
+  var destination_0 = LinkedHashMap_init_$Create$(mapCapacity(out.p()));
   // Inline function 'kotlin.collections.associateByTo' call
-  var tmp0_iterator_1 = out.f2().j();
-  while (tmp0_iterator_1.k()) {
-    var element_3 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = out.f2().m();
+  while (tmp0_iterator_1.n()) {
+    var element_3 = tmp0_iterator_1.o();
     // Inline function 'kotlin.collections.mapValuesTo.<anonymous>' call
     var tmp_2 = element_3.y1();
     // Inline function 'com.mtgtrader.data.DeckStats.fetches.<anonymous>' call
@@ -832,20 +840,20 @@ function manaAmount($this, text, line) {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.sequences.maxOfOrNull' call
-    var iterator = line.qb(text).j();
-    if (!iterator.k()) {
+    var iterator = line.qb(text).m();
+    if (!iterator.n()) {
       tmp$ret$0 = null;
       break $l$block;
     }
     var tmp$ret$1;
     $l$block_0: {
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.manaAmount.<anonymous>' call
-      var m = iterator.l();
-      if (line === ManaOddsCalc_getInstance().r1h_1 && ManaOddsCalc_getInstance().u1h_1.nb(m.qc().o(1))) {
+      var m = iterator.o();
+      if (line === ManaOddsCalc_getInstance().r1h_1 && ManaOddsCalc_getInstance().u1h_1.nb(m.qc().r(1))) {
         tmp$ret$1 = 1;
         break $l$block_0;
       }
-      var what = substringBefore(substringBefore_0(m.qc().o(1), _Char___init__impl__6a9atx(46)), ' or ');
+      var what = substringBefore(substringBefore_0(m.qc().r(1), _Char___init__impl__6a9atx(46)), ' or ');
       var tmp;
       if (startsWith(what, 'two mana', true)) {
         tmp = 2;
@@ -869,16 +877,16 @@ function manaAmount($this, text, line) {
       tmp$ret$1 = tmp;
     }
     var maxValue = tmp$ret$1;
-    while (iterator.k()) {
+    while (iterator.n()) {
       var tmp$ret$4;
       $l$block_1: {
         // Inline function 'com.mtgtrader.data.ManaOddsCalc.manaAmount.<anonymous>' call
-        var m_0 = iterator.l();
-        if (line === ManaOddsCalc_getInstance().r1h_1 && ManaOddsCalc_getInstance().u1h_1.nb(m_0.qc().o(1))) {
+        var m_0 = iterator.o();
+        if (line === ManaOddsCalc_getInstance().r1h_1 && ManaOddsCalc_getInstance().u1h_1.nb(m_0.qc().r(1))) {
           tmp$ret$4 = 1;
           break $l$block_1;
         }
-        var what_0 = substringBefore(substringBefore_0(m_0.qc().o(1), _Char___init__impl__6a9atx(46)), ' or ');
+        var what_0 = substringBefore(substringBefore_0(m_0.qc().r(1), _Char___init__impl__6a9atx(46)), ' or ');
         var tmp_1;
         if (startsWith(what_0, 'two mana', true)) {
           tmp_1 = 2;
@@ -921,7 +929,7 @@ function Cost(generic, pips) {
   this.i1i_1 = pips;
 }
 protoOf(Cost).j1i = function () {
-  return this.h1i_1 + this.i1i_1.m() | 0;
+  return this.h1i_1 + this.i1i_1.p() | 0;
 };
 protoOf(Cost).toString = function () {
   return 'Cost(generic=' + this.h1i_1 + ', pips=' + toString(this.i1i_1) + ')';
@@ -1132,16 +1140,16 @@ protoOf(sam$kotlin_Comparator$0_1).hashCode = function () {
   return hashCode(this.j3());
 };
 function untapCondition$n(m) {
-  return WinOddsCalc_getInstance().z1p(m.qc().o(1));
+  return WinOddsCalc_getInstance().z1p(m.qc().r(1));
 }
 function untapCondition$types(m) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = drop(m.qc(), 1);
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.ManaOddsCalc.untapCondition.types.<anonymous>' call
     // Inline function 'kotlin.text.isNotEmpty' call
     if (charSequenceLength(element) > 0) {
@@ -1151,23 +1159,23 @@ function untapCondition$types(m) {
   return toSet(destination);
 }
 function pay$match(pips, left, amounts, i) {
-  if (i === pips.m())
+  if (i === pips.p())
     return true;
   var inductionVariable = 0;
-  var last = left.m() - 1 | 0;
+  var last = left.p() - 1 | 0;
   if (inductionVariable <= last)
     do {
       var j = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       var tmp;
-      if (amounts.o(j) > 0) {
+      if (amounts.r(j) > 0) {
         var tmp$ret$0;
         $l$block_0: {
           // Inline function 'kotlin.collections.any' call
-          var this_0 = left.o(j).ae_1;
+          var this_0 = left.r(j).ae_1;
           var tmp_0;
           if (isInterface(this_0, Collection)) {
-            tmp_0 = this_0.n();
+            tmp_0 = this_0.q();
           } else {
             tmp_0 = false;
           }
@@ -1175,12 +1183,12 @@ function pay$match(pips, left, amounts, i) {
             tmp$ret$0 = false;
             break $l$block_0;
           }
-          var tmp0_iterator = this_0.j();
-          while (tmp0_iterator.k()) {
-            var element = tmp0_iterator.l();
+          var tmp0_iterator = this_0.m();
+          while (tmp0_iterator.n()) {
+            var element = tmp0_iterator.o();
             // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.match.<anonymous>' call
             var it = element.k1_1;
-            if (pips.o(i).u(new Char(it))) {
+            if (pips.r(i).u(new Char(it))) {
               tmp$ret$0 = true;
               break $l$block_0;
             }
@@ -1192,11 +1200,11 @@ function pay$match(pips, left, amounts, i) {
         tmp = false;
       }
       if (tmp) {
-        var _unary__edvuaz = amounts.o(j);
+        var _unary__edvuaz = amounts.r(j);
         amounts.w(j, _unary__edvuaz - 1 | 0);
         if (pay$match(pips, left, amounts, i + 1 | 0))
           return true;
-        var _unary__edvuaz_0 = amounts.o(j);
+        var _unary__edvuaz_0 = amounts.r(j);
         amounts.w(j, _unary__edvuaz_0 + 1 | 0);
       }
     }
@@ -1263,9 +1271,9 @@ function ManaOddsCalc$chooseLand$lambda_2($this, $mana, $have) {
     } else {
       // Inline function 'kotlin.comparisons.compareValuesBy' call
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.chooseLand.<anonymous>' call
-      var tmp_0 = minus_0(minus($mana(b).l1i_1, $have), new Char(_Char___init__impl__6a9atx(67))).m();
+      var tmp_0 = minus_0(minus($mana(b).l1i_1, $have), new Char(_Char___init__impl__6a9atx(67))).p();
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.chooseLand.<anonymous>' call
-      var tmp$ret$1 = minus_0(minus($mana(a).l1i_1, $have), new Char(_Char___init__impl__6a9atx(67))).m();
+      var tmp$ret$1 = minus_0(minus($mana(a).l1i_1, $have), new Char(_Char___init__impl__6a9atx(67))).p();
       tmp = compareValues(tmp_0, tmp$ret$1);
     }
     return tmp;
@@ -1280,9 +1288,9 @@ function ManaOddsCalc$chooseLand$lambda_3($this, $mana) {
     } else {
       // Inline function 'kotlin.comparisons.compareValuesBy' call
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.chooseLand.<anonymous>' call
-      var tmp_0 = minus_0($mana(b).l1i_1, new Char(_Char___init__impl__6a9atx(67))).m();
+      var tmp_0 = minus_0($mana(b).l1i_1, new Char(_Char___init__impl__6a9atx(67))).p();
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.chooseLand.<anonymous>' call
-      var tmp$ret$1 = minus_0($mana(a).l1i_1, new Char(_Char___init__impl__6a9atx(67))).m();
+      var tmp$ret$1 = minus_0($mana(a).l1i_1, new Char(_Char___init__impl__6a9atx(67))).p();
       tmp = compareValues(tmp_0, tmp$ret$1);
     }
     return tmp;
@@ -1291,17 +1299,17 @@ function ManaOddsCalc$chooseLand$lambda_3($this, $mana) {
 function ManaOddsCalc$pay$lambda(a, b) {
   // Inline function 'kotlin.comparisons.compareValuesBy' call
   // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
-  var tmp = a.ae_1.m();
+  var tmp = a.ae_1.p();
   // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
-  var tmp$ret$1 = b.ae_1.m();
+  var tmp$ret$1 = b.ae_1.p();
   return compareValues(tmp, tmp$ret$1);
 }
 function ManaOddsCalc$pay$lambda_0(a, b) {
   // Inline function 'kotlin.comparisons.compareValuesBy' call
   // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
-  var tmp = a.m();
+  var tmp = a.p();
   // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
-  var tmp$ret$1 = b.m();
+  var tmp$ret$1 = b.p();
   return compareValues(tmp, tmp$ret$1);
 }
 function Kind_LAND_getInstance() {
@@ -1359,12 +1367,12 @@ protoOf(ManaOddsCalc).a1q = function (text) {
   var pips = ArrayList_init_$Create$();
   // Inline function 'kotlin.text.orEmpty' call
   var tmp$ret$1 = text == null ? '' : text;
-  var _iterator__ex2g4s = this.l1h_1.qb(substringBefore(tmp$ret$1, ' // ')).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var m = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = this.l1h_1.qb(substringBefore(tmp$ret$1, ' // ')).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var m = _iterator__ex2g4s.o();
     // Inline function 'kotlin.text.uppercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var s = m.qc().o(1).toUpperCase();
+    var s = m.qc().r(1).toUpperCase();
     if (!(toIntOrNull(s) == null))
       generic = generic + toInt(s) | 0;
     else if (s.length === 1 && (contains('WUBRG', charSequenceGet(s, 0)) || charSequenceGet(s, 0) === _Char___init__impl__6a9atx(67))) {
@@ -1381,9 +1389,9 @@ protoOf(ManaOddsCalc).a1q = function (text) {
       // Inline function 'kotlin.collections.mapNotNullTo' call
       var destination = ArrayList_init_$Create$();
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator = parts.j();
-      while (tmp0_iterator.k()) {
-        var element_0 = tmp0_iterator.l();
+      var tmp0_iterator = parts.m();
+      while (tmp0_iterator.n()) {
+        var element_0 = tmp0_iterator.o();
         // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
         // Inline function 'com.mtgtrader.data.ManaOddsCalc.cost.<anonymous>' call
         var tmp0_safe_receiver = singleOrNull(element_0);
@@ -1419,7 +1427,7 @@ protoOf(ManaOddsCalc).a1q = function (text) {
       }
       var colours = toSet(destination);
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!colours.n()) {
+      if (!colours.q()) {
         // Inline function 'kotlin.collections.plusAssign' call
         pips.h(colours);
       }
@@ -1432,9 +1440,9 @@ protoOf(ManaOddsCalc).b1q = function (colours) {
   var this_0 = this.k1h_1;
   var result = LinkedHashMap_init_$Create$_0();
   // Inline function 'kotlin.collections.iterator' call
-  var tmp0_iterator = this_0.f2().j();
-  while (tmp0_iterator.k()) {
-    var entry = tmp0_iterator.l();
+  var tmp0_iterator = this_0.f2().m();
+  while (tmp0_iterator.n()) {
+    var entry = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.ManaOddsCalc.basicTypes.<anonymous>' call
     var it = entry.z1().k1_1;
     if (colours.u(new Char(it))) {
@@ -1483,7 +1491,7 @@ protoOf(ManaOddsCalc).c1q = function (colours, have) {
       // Inline function 'kotlin.collections.count' call
       var tmp;
       if (isInterface(have, Collection)) {
-        tmp = have.n();
+        tmp = have.q();
       } else {
         tmp = false;
       }
@@ -1492,9 +1500,9 @@ protoOf(ManaOddsCalc).c1q = function (colours, have) {
         break $l$block_0;
       }
       var count = 0;
-      var tmp0_iterator = have.j();
-      while (tmp0_iterator.k()) {
-        var element_0 = tmp0_iterator.l();
+      var tmp0_iterator = have.m();
+      while (tmp0_iterator.n()) {
+        var element_0 = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.ManaOddsCalc.rampColour.<anonymous>.<anonymous>' call
         if (element_0.u(new Char(c))) {
           count = count + 1 | 0;
@@ -1516,7 +1524,7 @@ protoOf(ManaOddsCalc).c1q = function (colours, have) {
           // Inline function 'kotlin.collections.count' call
           var tmp_0;
           if (isInterface(have, Collection)) {
-            tmp_0 = have.n();
+            tmp_0 = have.q();
           } else {
             tmp_0 = false;
           }
@@ -1525,9 +1533,9 @@ protoOf(ManaOddsCalc).c1q = function (colours, have) {
             break $l$block_1;
           }
           var count_0 = 0;
-          var tmp0_iterator_0 = have.j();
-          while (tmp0_iterator_0.k()) {
-            var element_1 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = have.m();
+          while (tmp0_iterator_0.n()) {
+            var element_1 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.ManaOddsCalc.rampColour.<anonymous>.<anonymous>' call
             if (element_1.u(new Char(e))) {
               count_0 = count_0 + 1 | 0;
@@ -1577,15 +1585,15 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
        while (inductionVariable < last);
     var tmp$ret$6 = destination.toString();
     var colours = toSet_0(tmp$ret$6);
-    var fetch = colours.n() && contains_0(faces, 'search your library');
+    var fetch = colours.q() && contains_0(faces, 'search your library');
     if (fetch) {
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = DeckStats_getInstance().g1h(c, lands).d2();
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator = this_1.j();
-      while (tmp0_iterator.k()) {
-        var element_0 = tmp0_iterator.l();
+      var tmp0_iterator = this_1.m();
+      while (tmp0_iterator.n()) {
+        var element_0 = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
         var it = element_0.k1_1;
         if (own.u(new Char(it))) {
@@ -1605,7 +1613,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     var this_2 = colours;
     // Inline function 'kotlin.contracts.contract' call
     var tmp_1;
-    if (this_2.n()) {
+    if (this_2.q()) {
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
       tmp_1 = setOf_0(new Char(_Char___init__impl__6a9atx(67)));
     } else {
@@ -1622,7 +1630,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
-      tmp_5 = WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(1));
+      tmp_5 = WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(1));
     }
     var tmp2_elvis_lhs = tmp_5;
     var tmp_6 = tmp2_elvis_lhs == null ? 0 : tmp2_elvis_lhs;
@@ -1634,7 +1642,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
-      tmp_7 = WinOddsCalc_getInstance().z1p(tmp3_safe_receiver.qc().o(1));
+      tmp_7 = WinOddsCalc_getInstance().z1p(tmp3_safe_receiver.qc().r(1));
     }
     var tmp4_elvis_lhs = tmp_7;
     var tmp_8 = tmp4_elvis_lhs == null ? 0 : tmp4_elvis_lhs;
@@ -1642,9 +1650,9 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     var this_3 = c.w1g();
     // Inline function 'kotlin.collections.mapTo' call
     var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_3, 10));
-    var tmp0_iterator_0 = this_3.j();
-    while (tmp0_iterator_0.k()) {
-      var item = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_3.m();
+    while (tmp0_iterator_0.n()) {
+      var item = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
       // Inline function 'kotlin.text.lowercase' call
       // Inline function 'kotlin.js.asDynamic' call
@@ -1698,7 +1706,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
   var tmp_12;
   var tmp_13;
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!produced.n()) {
+  if (!produced.q()) {
     tmp_13 = c.k1g_1 <= 4;
   } else {
     tmp_13 = false;
@@ -1727,9 +1735,9 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     var this_5 = this.k1h_1;
     var result = LinkedHashMap_init_$Create$_0();
     // Inline function 'kotlin.collections.iterator' call
-    var tmp0_iterator_1 = this_5.f2().j();
-    while (tmp0_iterator_1.k()) {
-      var entry = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = this_5.f2().m();
+    while (tmp0_iterator_1.n()) {
+      var entry = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
       var it_0 = entry.y1();
       if (contains_0(what, it_0)) {
@@ -1739,9 +1747,9 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_6 = result.e2();
     var destination_3 = ArrayList_init_$Create$();
-    var tmp0_iterator_2 = this_6.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_6.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
       var it_1 = element_2.k1_1;
       if (own.u(new Char(it_1))) {
@@ -1753,7 +1761,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     // Inline function 'kotlin.collections.ifEmpty' call
     // Inline function 'kotlin.contracts.contract' call
     var tmp_14;
-    if (named.n()) {
+    if (named.q()) {
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
       tmp_14 = own;
     } else {
@@ -1762,7 +1770,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     var this_7 = tmp_14;
     // Inline function 'kotlin.contracts.contract' call
     var tmp_15;
-    if (this_7.n()) {
+    if (this_7.q()) {
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.classify.<anonymous>' call
       tmp_15 = setOf_0(new Char(_Char___init__impl__6a9atx(67)));
     } else {
@@ -1775,7 +1783,7 @@ protoOf(ManaOddsCalc).d1q = function (c, own, lands) {
     if (!split_0) {
       // Inline function 'kotlin.text.lowercase' call
       // Inline function 'kotlin.js.asDynamic' call
-      tmp_17 = ensureNotNull(this.n1h_1.ob(face)).qc().o(2).toLowerCase() === 'two';
+      tmp_17 = ensureNotNull(this.n1h_1.ob(face)).qc().r(2).toLowerCase() === 'two';
     } else {
       tmp_17 = false;
     }
@@ -1820,7 +1828,7 @@ protoOf(ManaOddsCalc).e1q = function (text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    return new Untap(VOID, VOID, VOID, setOf_0(tmp2_safe_receiver.qc().o(2)), VOID, untapCondition$n(tmp2_safe_receiver));
+    return new Untap(VOID, VOID, VOID, setOf_0(tmp2_safe_receiver.qc().r(2)), VOID, untapCondition$n(tmp2_safe_receiver));
   }
   var tmp3_safe_receiver = this.e1i_1.ob(text);
   if (tmp3_safe_receiver == null)
@@ -1897,14 +1905,14 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
     return false;
   if (!(u.e1j_1 == null) && out.l1j_1 > u.e1j_1)
     return false;
-  if (u.z1i_1.n())
+  if (u.z1i_1.q())
     return true;
   if (u.b1j_1 > 0) {
     // Inline function 'kotlin.collections.sumOf' call
     var sum = 0;
-    var tmp0_iterator = u.z1i_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = u.z1i_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       var tmp_0 = sum;
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.entersUntapped.<anonymous>' call
       var tmp0_elvis_lhs_0 = out.i1j_1.c2(element);
@@ -1919,7 +1927,7 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
       // Inline function 'kotlin.collections.any' call
       var tmp_2;
       if (isInterface(hand, Collection)) {
-        tmp_2 = hand.n();
+        tmp_2 = hand.q();
       } else {
         tmp_2 = false;
       }
@@ -1927,9 +1935,9 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
         tmp$ret$2 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_0 = hand.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = hand.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.ManaOddsCalc.entersUntapped.<anonymous>' call
         var tmp_3;
         if (element_0.k1i_1.equals(Kind_LAND_getInstance())) {
@@ -1939,7 +1947,7 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
             var this_0 = element_0.u1i_1;
             var tmp_4;
             if (isInterface(this_0, Collection)) {
-              tmp_4 = this_0.n();
+              tmp_4 = this_0.q();
             } else {
               tmp_4 = false;
             }
@@ -1947,9 +1955,9 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
               tmp$ret$3 = false;
               break $l$block_1;
             }
-            var tmp0_iterator_1 = this_0.j();
-            while (tmp0_iterator_1.k()) {
-              var element_1 = tmp0_iterator_1.l();
+            var tmp0_iterator_1 = this_0.m();
+            while (tmp0_iterator_1.n()) {
+              var element_1 = tmp0_iterator_1.o();
               // Inline function 'com.mtgtrader.data.ManaOddsCalc.entersUntapped.<anonymous>.<anonymous>' call
               if (u.z1i_1.u(element_1)) {
                 tmp$ret$3 = true;
@@ -1977,7 +1985,7 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
       var this_1 = out.h1j_1;
       var tmp_5;
       if (isInterface(this_1, Collection)) {
-        tmp_5 = this_1.n();
+        tmp_5 = this_1.q();
       } else {
         tmp_5 = false;
       }
@@ -1985,9 +1993,9 @@ protoOf(ManaOddsCalc).f1q = function (land, out, hand) {
         tmp$ret$6 = false;
         break $l$block_4;
       }
-      var tmp0_iterator_2 = this_1.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = this_1.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.ManaOddsCalc.entersUntapped.<anonymous>' call
         if (u.z1i_1.u(element_2)) {
           tmp$ret$6 = true;
@@ -2007,9 +2015,9 @@ protoOf(ManaOddsCalc).g1q = function (pool, costs) {
   // Inline function 'kotlin.comparisons.compareByDescending' call
   var tmp = ManaOddsCalc$spend$lambda;
   var tmp$ret$0 = new sam$kotlin_Comparator$0(tmp);
-  var _iterator__ex2g4s = sortedWith(costs, tmp$ret$0).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var c = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = sortedWith(costs, tmp$ret$0).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var c = _iterator__ex2g4s.o();
     var tmp0_elvis_lhs = this.h1q(left, c);
     var tmp_0;
     if (tmp0_elvis_lhs == null) {
@@ -2026,9 +2034,9 @@ protoOf(ManaOddsCalc).i1q = function (lands, mana, untapped, have, pool, costs, 
   // Inline function 'kotlin.collections.associateWith' call
   var result = LinkedHashMap_init_$Create$(coerceAtLeast_0(mapCapacity(collectionSizeOrDefault(lands, 10)), 16));
   // Inline function 'kotlin.collections.associateWithTo' call
-  var tmp0_iterator = lands.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = lands.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     result.k2(element, untapped(element));
   }
   var up = result;
@@ -2038,7 +2046,7 @@ protoOf(ManaOddsCalc).i1q = function (lands, mana, untapped, have, pool, costs, 
     // Inline function 'kotlin.collections.any' call
     var tmp;
     if (isInterface(lands, Collection)) {
-      tmp = lands.n();
+      tmp = lands.q();
     } else {
       tmp = false;
     }
@@ -2046,9 +2054,9 @@ protoOf(ManaOddsCalc).i1q = function (lands, mana, untapped, have, pool, costs, 
       tmp$ret$2 = false;
       break $l$block_0;
     }
-    var tmp0_iterator_0 = lands.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = lands.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.chooseLand.<anonymous>' call
       if (getValue(up, element_0) && (sink || ManaOddsCalc_getInstance().g1q(plus(pool, to(mana(element_0).l1i_1, mana(element_0).o1i_1)), costs) > now)) {
         tmp$ret$2 = true;
@@ -2093,7 +2101,7 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
         var this_0 = hand;
         var tmp;
         if (isInterface(this_0, Collection)) {
-          tmp = this_0.n();
+          tmp = this_0.q();
         } else {
           tmp = false;
         }
@@ -2102,9 +2110,9 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
           break $l$block;
         }
         var count = 0;
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>' call
           if (mana(element).k1i_1.equals(Kind_LAND_getInstance())) {
             count = count + 1 | 0;
@@ -2131,9 +2139,9 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
           var this_1 = hand;
           var first_0 = ArrayList_init_$Create$();
           var second = ArrayList_init_$Create$();
-          var tmp0_iterator_0 = this_1.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_1.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>.<anonymous>' call
             if (mana(element_0).k1i_1.equals(Kind_LAND_getInstance())) {
               first_0.h(element_0);
@@ -2144,63 +2152,63 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
           var _destruct__k2r9zo = new Pair(first_0, second);
           var l = _destruct__k2r9zo.ce();
           var s = _destruct__k2r9zo.de();
-          if (l.m() > 3) {
+          if (l.p() > 3) {
             var tmp_0 = hand;
             var tmp$ret$5;
             $l$block_0: {
               // Inline function 'kotlin.collections.minBy' call
-              var iterator = l.j();
-              if (!iterator.k())
+              var iterator = l.m();
+              if (!iterator.n())
                 throw NoSuchElementException_init_$Create$();
-              var minElem = iterator.l();
-              if (!iterator.k()) {
+              var minElem = iterator.o();
+              if (!iterator.n()) {
                 tmp$ret$5 = minElem;
                 break $l$block_0;
               }
               // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>.<anonymous>' call
-              var minValue = mana(minElem).l1i_1.m();
+              var minValue = mana(minElem).l1i_1.p();
               do {
-                var e = iterator.l();
+                var e = iterator.o();
                 // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>.<anonymous>' call
-                var v = mana(e).l1i_1.m();
+                var v = mana(e).l1i_1.p();
                 if (compareTo(minValue, v) > 0) {
                   minElem = e;
                   minValue = v;
                 }
               }
-               while (iterator.k());
+               while (iterator.n());
               tmp$ret$5 = minElem;
             }
             tmp_0.g2(tmp$ret$5);
           } else {
             // Inline function 'kotlin.collections.isNotEmpty' call
-            if (!s.n())
+            if (!s.q())
               hand.g2(first(s));
             else {
               var tmp_1 = hand;
               var tmp$ret$9;
               $l$block_1: {
                 // Inline function 'kotlin.collections.minBy' call
-                var iterator_0 = l.j();
-                if (!iterator_0.k())
+                var iterator_0 = l.m();
+                if (!iterator_0.n())
                   throw NoSuchElementException_init_$Create$();
-                var minElem_0 = iterator_0.l();
-                if (!iterator_0.k()) {
+                var minElem_0 = iterator_0.o();
+                if (!iterator_0.n()) {
                   tmp$ret$9 = minElem_0;
                   break $l$block_1;
                 }
                 // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>.<anonymous>' call
-                var minValue_0 = mana(minElem_0).l1i_1.m();
+                var minValue_0 = mana(minElem_0).l1i_1.p();
                 do {
-                  var e_0 = iterator_0.l();
+                  var e_0 = iterator_0.o();
                   // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>.<anonymous>' call
-                  var v_0 = mana(e_0).l1i_1.m();
+                  var v_0 = mana(e_0).l1i_1.p();
                   if (compareTo(minValue_0, v_0) > 0) {
                     minElem_0 = e_0;
                     minValue_0 = v_0;
                   }
                 }
-                 while (iterator_0.k());
+                 while (iterator_0.n());
                 tmp$ret$9 = minElem_0;
               }
               tmp_1.g2(tmp$ret$9);
@@ -2214,7 +2222,7 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
         var this_2 = hand;
         var tmp_2;
         if (isInterface(this_2, Collection)) {
-          tmp_2 = this_2.n();
+          tmp_2 = this_2.q();
         } else {
           tmp_2 = false;
         }
@@ -2223,9 +2231,9 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
           break $l$block_2;
         }
         var count_0 = 0;
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.ManaOddsCalc.keepHand.<anonymous>' call
           if (mana(element_1).k1i_1.equals(Kind_LAND_getInstance())) {
             count_0 = count_0 + 1 | 0;
@@ -2247,9 +2255,9 @@ protoOf(ManaOddsCalc).j1q = function (deck, random, mana) {
 protoOf(ManaOddsCalc).h1q = function (sources, cost) {
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator = sources.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = sources.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp = sum;
     // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
     sum = tmp + element.be_1 | 0;
@@ -2260,9 +2268,9 @@ protoOf(ManaOddsCalc).h1q = function (sources, cost) {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(sources, 10));
-  var tmp0_iterator_0 = sources.j();
-  while (tmp0_iterator_0.k()) {
-    var item = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = sources.m();
+  while (tmp0_iterator_0.n()) {
+    var item = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
     var tmp$ret$2 = to(item.ae_1, item.be_1);
     destination.h(tmp$ret$2);
@@ -2275,9 +2283,9 @@ protoOf(ManaOddsCalc).h1q = function (sources, cost) {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(left, 10));
-  var tmp0_iterator_1 = left.j();
-  while (tmp0_iterator_1.k()) {
-    var item_0 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = left.m();
+  while (tmp0_iterator_1.n()) {
+    var item_0 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
     var tmp$ret$7 = item_0.be_1;
     destination_0.h(tmp$ret$7);
@@ -2293,16 +2301,16 @@ protoOf(ManaOddsCalc).h1q = function (sources, cost) {
     return null;
   var generic = cost.h1i_1;
   var inductionVariable = 0;
-  var last = left.m() - 1 | 0;
+  var last = left.p() - 1 | 0;
   if (inductionVariable <= last)
     do {
       var j = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'kotlin.comparisons.minOf' call
       var a = generic;
-      var b = amounts.o(j);
+      var b = amounts.r(j);
       var use = Math.min(a, b);
-      amounts.w(j, amounts.o(j) - use | 0);
+      amounts.w(j, amounts.r(j) - use | 0);
       generic = generic - use | 0;
     }
      while (inductionVariable <= last);
@@ -2321,18 +2329,18 @@ protoOf(ManaOddsCalc).h1q = function (sources, cost) {
       inductionVariable_0 = inductionVariable_0 + 1 | 0;
       // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
       var it = element_0;
-      if (amounts.o(it) > 0) {
+      if (amounts.r(it) > 0) {
         destination_1.h(element_0);
       }
     }
      while (!(element_0 === last_0));
   // Inline function 'kotlin.collections.mapTo' call
   var destination_2 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_1, 10));
-  var tmp0_iterator_2 = destination_1.j();
-  while (tmp0_iterator_2.k()) {
-    var item_1 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = destination_1.m();
+  while (tmp0_iterator_2.n()) {
+    var item_1 = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.ManaOddsCalc.pay.<anonymous>' call
-    var tmp$ret$16 = to(left.o(item_1).ae_1, amounts.o(item_1));
+    var tmp$ret$16 = to(left.r(item_1).ae_1, amounts.r(item_1));
     destination_2.h(tmp$ret$16);
   }
   return destination_2;
@@ -2842,9 +2850,9 @@ function SaltCard$allCombos$delegate$lambda$lambda_0($this) {
     } else {
       // Inline function 'kotlin.comparisons.compareValuesBy' call
       // Inline function 'com.mtgtrader.data.SaltCard.allCombos$delegate.<anonymous>.<anonymous>' call
-      var tmp_0 = a.t1q_1.m();
+      var tmp_0 = a.t1q_1.p();
       // Inline function 'com.mtgtrader.data.SaltCard.allCombos$delegate.<anonymous>.<anonymous>' call
-      var tmp$ret$1 = b.t1q_1.m();
+      var tmp$ret$1 = b.t1q_1.p();
       tmp = compareValues(tmp_0, tmp$ret$1);
     }
     return tmp;
@@ -2857,18 +2865,18 @@ function SaltCard$allCombos$delegate$lambda(this$0) {
     var this_0 = this$0.d1g_1;
     // Inline function 'kotlin.collections.mapTo' call
     var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var item = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var item = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.SaltCard.allCombos$delegate.<anonymous>.<anonymous>' call
       // Inline function 'kotlin.collections.map' call
       var this_1 = item.t1q_1;
       var tmp1_map_$receiver = Companion_getInstance_0();
       // Inline function 'kotlin.collections.mapTo' call
       var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_1, 10));
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var item_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var item_0 = tmp0_iterator_0.o();
         var tmp$ret$0 = tmp1_map_$receiver.n1q(item_0);
         destination_0.h(tmp$ret$0);
       }
@@ -2880,17 +2888,17 @@ function SaltCard$allCombos$delegate$lambda(this$0) {
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var destination_1 = ArrayList_init_$Create$();
-    var tmp0_iterator_1 = counted.j();
-    while (tmp0_iterator_1.k()) {
-      var element = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = counted.m();
+    while (tmp0_iterator_1.n()) {
+      var element = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.SaltCard.allCombos$delegate.<anonymous>.<anonymous>' call
       // Inline function 'kotlin.collections.map' call
       var tmp1_map_$receiver_0 = Companion_getInstance_0();
       // Inline function 'kotlin.collections.mapTo' call
       var destination_2 = ArrayList_init_$Create$_0(collectionSizeOrDefault(element, 10));
-      var tmp0_iterator_2 = element.j();
-      while (tmp0_iterator_2.k()) {
-        var item_1 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = element.m();
+      while (tmp0_iterator_2.n()) {
+        var item_1 = tmp0_iterator_2.o();
         var tmp$ret$6 = tmp1_map_$receiver_0.n1q(item_1);
         destination_2.h(tmp$ret$6);
       }
@@ -2900,9 +2908,9 @@ function SaltCard$allCombos$delegate$lambda(this$0) {
     }
     // Inline function 'kotlin.collections.mapTo' call
     var destination_3 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_1, 10));
-    var tmp0_iterator_3 = destination_1.j();
-    while (tmp0_iterator_3.k()) {
-      var item_2 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = destination_1.m();
+    while (tmp0_iterator_3.n()) {
+      var item_2 = tmp0_iterator_3.o();
       // Inline function 'com.mtgtrader.data.SaltCard.allCombos$delegate.<anonymous>.<anonymous>' call
       var tmp$ret$12 = new SaltCombo(item_2, true);
       destination_3.h(tmp$ret$12);
@@ -2918,9 +2926,9 @@ function SaltCard$allCombos$delegate$lambda(this$0) {
   };
 }
 function invoke$tag(m, names, t) {
-  var tmp0_iterator = names.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = names.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.SaltCard.SaltCard$tagsByCard$delegate$lambda.invoke.tag.<anonymous>' call
     // Inline function 'kotlin.collections.plusAssign' call
     // Inline function 'kotlin.collections.getOrPut' call
@@ -2943,15 +2951,15 @@ function SaltCard$tagsByCard$delegate$lambda(this$0) {
   return function () {
     var m = HashMap_init_$Create$();
     invoke$tag(m, this$0.m1f_1, BracketTag_GAME_CHANGER_getInstance());
-    var tmp0_iterator = this$0.z1q().j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this$0.z1q().m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.SaltCard.tagsByCard$delegate.<anonymous>.<anonymous>' call
-      invoke$tag(m, element.t1q_1, Companion_instance_2.a1r(element.u1q_1, element.t1q_1.m()));
+      invoke$tag(m, element.t1q_1, Companion_instance_2.a1r(element.u1q_1, element.t1q_1.p()));
     }
-    var tmp0_iterator_0 = m.e2().j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = m.e2().m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.SaltCard.tagsByCard$delegate.<anonymous>.<anonymous>' call
       if (element_0.u(BracketTag_COMBO_getInstance())) {
         // Inline function 'kotlin.collections.minusAssign' call
@@ -2988,9 +2996,9 @@ function SaltCard$_init_$lambda$lambda_4i0qwg_0($this) {
     } else {
       // Inline function 'kotlin.comparisons.compareValuesBy' call
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
-      var tmp_0 = a.t1q_1.m();
+      var tmp_0 = a.t1q_1.p();
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
-      var tmp$ret$1 = b.t1q_1.m();
+      var tmp$ret$1 = b.t1q_1.p();
       tmp = compareValues(tmp_0, tmp$ret$1);
     }
     return tmp;
@@ -3003,18 +3011,18 @@ function SaltCard$_init_$lambda_qm05ob(this$0) {
     var this_0 = this$0.d1g_1;
     // Inline function 'kotlin.collections.mapTo' call
     var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var item = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var item = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
       // Inline function 'kotlin.collections.map' call
       var this_1 = item.t1q_1;
       var tmp1_map_$receiver = Companion_getInstance_0();
       // Inline function 'kotlin.collections.mapTo' call
       var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_1, 10));
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var item_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var item_0 = tmp0_iterator_0.o();
         var tmp$ret$0 = tmp1_map_$receiver.n1q(item_0);
         destination_0.h(tmp$ret$0);
       }
@@ -3026,17 +3034,17 @@ function SaltCard$_init_$lambda_qm05ob(this$0) {
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var destination_1 = ArrayList_init_$Create$();
-    var tmp0_iterator_1 = counted.j();
-    while (tmp0_iterator_1.k()) {
-      var element = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = counted.m();
+    while (tmp0_iterator_1.n()) {
+      var element = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
       // Inline function 'kotlin.collections.map' call
       var tmp1_map_$receiver_0 = Companion_getInstance_0();
       // Inline function 'kotlin.collections.mapTo' call
       var destination_2 = ArrayList_init_$Create$_0(collectionSizeOrDefault(element, 10));
-      var tmp0_iterator_2 = element.j();
-      while (tmp0_iterator_2.k()) {
-        var item_1 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = element.m();
+      while (tmp0_iterator_2.n()) {
+        var item_1 = tmp0_iterator_2.o();
         var tmp$ret$6 = tmp1_map_$receiver_0.n1q(item_1);
         destination_2.h(tmp$ret$6);
       }
@@ -3046,9 +3054,9 @@ function SaltCard$_init_$lambda_qm05ob(this$0) {
     }
     // Inline function 'kotlin.collections.mapTo' call
     var destination_3 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_1, 10));
-    var tmp0_iterator_3 = destination_1.j();
-    while (tmp0_iterator_3.k()) {
-      var item_2 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = destination_1.m();
+    while (tmp0_iterator_3.n()) {
+      var item_2 = tmp0_iterator_3.o();
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
       var tmp$ret$12 = new SaltCombo(item_2, true);
       destination_3.h(tmp$ret$12);
@@ -3064,9 +3072,9 @@ function SaltCard$_init_$lambda_qm05ob(this$0) {
   };
 }
 function invoke$tag_0(m, names, t) {
-  var tmp0_iterator = names.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = names.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.SaltCard.SaltCard$<init>$lambda.invoke.tag.<anonymous>' call
     // Inline function 'kotlin.collections.plusAssign' call
     // Inline function 'kotlin.collections.getOrPut' call
@@ -3089,15 +3097,15 @@ function SaltCard$_init_$lambda_qm05ob_0(this$0) {
   return function () {
     var m = HashMap_init_$Create$();
     invoke$tag_0(m, this$0.m1f_1, BracketTag_GAME_CHANGER_getInstance());
-    var tmp0_iterator = this$0.z1q().j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this$0.z1q().m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
-      invoke$tag_0(m, element.t1q_1, Companion_instance_2.a1r(element.u1q_1, element.t1q_1.m()));
+      invoke$tag_0(m, element.t1q_1, Companion_instance_2.a1r(element.u1q_1, element.t1q_1.p()));
     }
-    var tmp0_iterator_0 = m.e2().j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = m.e2().m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.SaltCard.<init>.<anonymous>.<anonymous>' call
       if (element_0.u(BracketTag_COMBO_getInstance())) {
         // Inline function 'kotlin.collections.minusAssign' call
@@ -3773,9 +3781,9 @@ function parse$cardList(categories, cards, key) {
   var this_0 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     var tmp0_safe_receiver = idOf(SaltCardParser_instance, element);
     if (tmp0_safe_receiver == null)
@@ -3788,9 +3796,9 @@ function parse$cardList(categories, cards, key) {
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination, 10));
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var item = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var item = tmp0_iterator_0.o();
     var tmp$ret$5 = parse$name(cards, item);
     destination_0.h(tmp$ret$5);
   }
@@ -3806,9 +3814,9 @@ function parse$comboList(categories, combosById, cards, key) {
   var this_0 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     var tmp0_safe_receiver = idOf(SaltCardParser_instance, element);
     if (tmp0_safe_receiver == null)
@@ -3821,9 +3829,9 @@ function parse$comboList(categories, combosById, cards, key) {
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination, 10));
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var item = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var item = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.comboList.<anonymous>' call
     var tmp0_safe_receiver_0 = combosById.c2(item);
     var tmp;
@@ -3833,9 +3841,9 @@ function parse$comboList(categories, combosById, cards, key) {
       // Inline function 'kotlin.collections.map' call
       // Inline function 'kotlin.collections.mapTo' call
       var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(tmp0_safe_receiver_0, 10));
-      var tmp0_iterator_1 = tmp0_safe_receiver_0.j();
-      while (tmp0_iterator_1.k()) {
-        var item_0 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = tmp0_safe_receiver_0.m();
+      while (tmp0_iterator_1.n()) {
+        var item_0 = tmp0_iterator_1.o();
         var tmp$ret$5 = parse$name(cards, item_0);
         destination_1.h(tmp$ret$5);
       }
@@ -3857,9 +3865,9 @@ function parse$scored(scoring, cards, key) {
   var this_0 = tmp0_elvis_lhs == null ? emptySet() : tmp0_elvis_lhs;
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     var tmp$ret$1 = parse$name(cards, item);
     destination.h(tmp$ret$1);
   }
@@ -3928,9 +3936,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   var this_0 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     var tmp0_safe_receiver = element instanceof JsonObject ? element : null;
@@ -3947,9 +3955,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   var capacity = coerceAtLeast_0(mapCapacity(collectionSizeOrDefault(comboObjects, 10)), 16);
   // Inline function 'kotlin.collections.associateTo' call
   var destination_0 = LinkedHashMap_init_$Create$(capacity);
-  var tmp0_iterator_0 = comboObjects.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = comboObjects.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'kotlin.collections.plusAssign' call
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     // Inline function 'kotlin.text.orEmpty' call
@@ -3962,9 +3970,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     var this_1 = tmp0_elvis_lhs_1 == null ? emptyList() : tmp0_elvis_lhs_1;
     var destination_1 = ArrayList_init_$Create$();
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_1 = this_1.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = this_1.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
       var tmp0_safe_receiver_0 = idOf(SaltCardParser_instance, element_1);
       if (tmp0_safe_receiver_0 == null)
@@ -3983,9 +3991,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   // Inline function 'kotlin.collections.flatMapTo' call
   var this_2 = listOf(['twoCardCombos', 'earlyGameInfiniteCombos']);
   var destination_2 = ArrayList_init_$Create$();
-  var tmp0_iterator_2 = this_2.j();
-  while (tmp0_iterator_2.k()) {
-    var element_2 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = this_2.m();
+  while (tmp0_iterator_2.n()) {
+    var element_2 = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     // Inline function 'kotlin.collections.mapNotNull' call
     // Inline function 'kotlin.collections.orEmpty' call
@@ -3995,9 +4003,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     var this_3 = tmp0_elvis_lhs_2 == null ? emptyList() : tmp0_elvis_lhs_2;
     var destination_3 = ArrayList_init_$Create$();
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_3 = this_3.j();
-    while (tmp0_iterator_3.k()) {
-      var element_3 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = this_3.m();
+    while (tmp0_iterator_3.n()) {
+      var element_3 = tmp0_iterator_3.o();
       // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
       var tmp0_safe_receiver_1 = idOf(SaltCardParser_instance, element_3);
       if (tmp0_safe_receiver_1 == null)
@@ -4016,9 +4024,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination_4 = ArrayList_init_$Create$_0(collectionSizeOrDefault(comboObjects, 10));
-  var tmp0_iterator_4 = comboObjects.j();
-  while (tmp0_iterator_4.k()) {
-    var item = tmp0_iterator_4.l();
+  var tmp0_iterator_4 = comboObjects.m();
+  while (tmp0_iterator_4.n()) {
+    var item = tmp0_iterator_4.o();
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     // Inline function 'kotlin.collections.map' call
     // Inline function 'kotlin.collections.mapNotNull' call
@@ -4028,9 +4036,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     var this_4 = tmp0_elvis_lhs_3 == null ? emptyList() : tmp0_elvis_lhs_3;
     var destination_5 = ArrayList_init_$Create$();
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_5 = this_4.j();
-    while (tmp0_iterator_5.k()) {
-      var element_4 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = this_4.m();
+    while (tmp0_iterator_5.n()) {
+      var element_4 = tmp0_iterator_5.o();
       // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
       var tmp0_safe_receiver_2 = idOf(SaltCardParser_instance, element_4);
       if (tmp0_safe_receiver_2 == null)
@@ -4043,9 +4051,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     }
     // Inline function 'kotlin.collections.mapTo' call
     var destination_6 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_5, 10));
-    var tmp0_iterator_6 = destination_5.j();
-    while (tmp0_iterator_6.k()) {
-      var item_0 = tmp0_iterator_6.l();
+    var tmp0_iterator_6 = destination_5.m();
+    while (tmp0_iterator_6.n()) {
+      var item_0 = tmp0_iterator_6.o();
       var tmp$ret$27 = parse$name(cards, item_0);
       destination_6.h(tmp$ret$27);
     }
@@ -4058,9 +4066,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     var this_5 = tmp0_elvis_lhs_4 == null ? emptyList() : tmp0_elvis_lhs_4;
     var destination_7 = ArrayList_init_$Create$();
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_7 = this_5.j();
-    while (tmp0_iterator_7.k()) {
-      var element_5 = tmp0_iterator_7.l();
+    var tmp0_iterator_7 = this_5.m();
+    while (tmp0_iterator_7.n()) {
+      var element_5 = tmp0_iterator_7.o();
       // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
       // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>.<anonymous>' call
       var tmp0_safe_receiver_3 = element_5 instanceof JsonPrimitive ? element_5 : null;
@@ -4084,9 +4092,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     // Inline function 'kotlin.collections.flatMapTo' call
     var this_6 = listOf(['easyPrerequisites', 'notablePrerequisites', 'preconditions']);
     var destination_8 = ArrayList_init_$Create$();
-    var tmp0_iterator_8 = this_6.j();
-    while (tmp0_iterator_8.k()) {
-      var element_6 = tmp0_iterator_8.l();
+    var tmp0_iterator_8 = this_6.m();
+    while (tmp0_iterator_8.n()) {
+      var element_6 = tmp0_iterator_8.o();
       // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>.<anonymous>' call
       // Inline function 'kotlin.collections.orEmpty' call
       var tmp0_safe_receiver_6 = obj(item, SaltCardParser_instance, 'complexity');
@@ -4098,9 +4106,9 @@ protoOf(SaltCardParser).s1r = function (root) {
     // Inline function 'kotlin.collections.mapNotNullTo' call
     var destination_9 = ArrayList_init_$Create$();
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_9 = destination_8.j();
-    while (tmp0_iterator_9.k()) {
-      var element_7 = tmp0_iterator_9.l();
+    var tmp0_iterator_9 = destination_8.m();
+    while (tmp0_iterator_9.n()) {
+      var element_7 = tmp0_iterator_9.o();
       // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
       // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>.<anonymous>' call
       var tmp0_safe_receiver_7 = element_7 instanceof JsonObject ? element_7 : null;
@@ -4143,12 +4151,12 @@ protoOf(SaltCardParser).s1r = function (root) {
   }
   // Inline function 'kotlin.collections.filterTo' call
   var destination_10 = ArrayList_init_$Create$();
-  var tmp0_iterator_10 = destination_4.j();
-  while (tmp0_iterator_10.k()) {
-    var element_8 = tmp0_iterator_10.l();
+  var tmp0_iterator_10 = destination_4.m();
+  while (tmp0_iterator_10.n()) {
+    var element_8 = tmp0_iterator_10.o();
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!element_8.t1q_1.n()) {
+    if (!element_8.t1q_1.q()) {
       destination_10.h(element_8);
     }
   }
@@ -4172,9 +4180,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   var this_7 = tmp0_elvis_lhs_6 == null ? emptyList() : tmp0_elvis_lhs_6;
   var destination_11 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_11 = this_7.j();
-  while (tmp0_iterator_11.k()) {
-    var element_9 = tmp0_iterator_11.l();
+  var tmp0_iterator_11 = this_7.m();
+  while (tmp0_iterator_11.n()) {
+    var element_9 = tmp0_iterator_11.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     var tmp0_safe_receiver_9 = element_9 instanceof JsonObject ? element_9 : null;
@@ -4188,9 +4196,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   }
   // Inline function 'kotlin.collections.filterTo' call
   var destination_12 = ArrayList_init_$Create$();
-  var tmp0_iterator_12 = destination_11.j();
-  while (tmp0_iterator_12.k()) {
-    var element_10 = tmp0_iterator_12.l();
+  var tmp0_iterator_12 = destination_11.m();
+  while (tmp0_iterator_12.n()) {
+    var element_10 = tmp0_iterator_12.o();
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     if (!(str(element_10, SaltCardParser_instance, 'id') === 'twoCardCombo')) {
       destination_12.h(element_10);
@@ -4199,9 +4207,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var destination_13 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_13 = destination_12.j();
-  while (tmp0_iterator_13.k()) {
-    var element_11 = tmp0_iterator_13.l();
+  var tmp0_iterator_13 = destination_12.m();
+  while (tmp0_iterator_13.n()) {
+    var element_11 = tmp0_iterator_13.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     var tmp0_safe_receiver_10 = str(element_11, SaltCardParser_instance, 'label');
@@ -4233,9 +4241,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   // Inline function 'kotlin.collections.flatMapTo' call
   var this_8 = listOf(['wincon_stompy', 'wincon_burn']);
   var destination_14 = ArrayList_init_$Create$();
-  var tmp0_iterator_14 = this_8.j();
-  while (tmp0_iterator_14.k()) {
-    var element_12 = tmp0_iterator_14.l();
+  var tmp0_iterator_14 = this_8.m();
+  while (tmp0_iterator_14.n()) {
+    var element_12 = tmp0_iterator_14.o();
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     // Inline function 'kotlin.collections.orEmpty' call
     var tmp1_safe_receiver_3 = scoring == null ? null : obj(scoring, SaltCardParser_instance, element_12);
@@ -4246,9 +4254,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_15 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_14, 10));
-  var tmp0_iterator_15 = destination_14.j();
-  while (tmp0_iterator_15.k()) {
-    var item_1 = tmp0_iterator_15.l();
+  var tmp0_iterator_15 = destination_14.m();
+  while (tmp0_iterator_15.n()) {
+    var item_1 = tmp0_iterator_15.o();
     var tmp$ret$73 = parse$name(cards, item_1);
     destination_15.h(tmp$ret$73);
   }
@@ -4267,9 +4275,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   var this_10 = get_entries_0();
   var destination_16 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_16 = this_10.j();
-  while (tmp0_iterator_16.k()) {
-    var element_13 = tmp0_iterator_16.l();
+  var tmp0_iterator_16 = this_10.m();
+  while (tmp0_iterator_16.n()) {
+    var element_13 = tmp0_iterator_16.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     var tmp1_safe_receiver_4 = spike == null ? null : num(spike, SaltCardParser_instance, element_13.c1f_1);
@@ -4307,9 +4315,9 @@ protoOf(SaltCardParser).s1r = function (root) {
   var this_11 = get_entries();
   var destination_17 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_17 = this_11.j();
-  while (tmp0_iterator_17.k()) {
-    var element_14 = tmp0_iterator_17.l();
+  var tmp0_iterator_17 = this_11.m();
+  while (tmp0_iterator_17.n()) {
+    var element_14 = tmp0_iterator_17.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>' call
     var tmp1_safe_receiver_5 = scoring == null ? null : obj(scoring, SaltCardParser_instance, element_14.p1r_1);
@@ -4321,7 +4329,7 @@ protoOf(SaltCardParser).s1r = function (root) {
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.SaltCardParser.parse.<anonymous>.<anonymous>' call
       var tmp0_safe_receiver_13 = obj(tmp1_safe_receiver_5, SaltCardParser_instance, 'list');
-      var tmp1_elvis_lhs = tmp0_safe_receiver_13 == null ? null : tmp0_safe_receiver_13.m();
+      var tmp1_elvis_lhs = tmp0_safe_receiver_13 == null ? null : tmp0_safe_receiver_13.p();
       tmp_24 = to(element_14.p1r_1, tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs);
     }
     var tmp0_safe_receiver_14 = tmp_24;
@@ -4655,7 +4663,7 @@ function WinOdds(games, byTurn, byCombo, damage, commanderKnockouts, counted, by
   this.l1f_1 = byMaze;
 }
 protoOf(WinOdds).y1r = function () {
-  return this.g1f_1.m();
+  return this.g1f_1.p();
 };
 protoOf(WinOdds).z1r = function (percent) {
   // Inline function 'kotlin.takeIf' call
@@ -4663,9 +4671,9 @@ protoOf(WinOdds).z1r = function (percent) {
   $l$block: {
     // Inline function 'kotlin.collections.indexOfFirst' call
     var index = 0;
-    var tmp0_iterator = this.g1f_1.j();
-    while (tmp0_iterator.k()) {
-      var item = tmp0_iterator.l();
+    var tmp0_iterator = this.g1f_1.m();
+    while (tmp0_iterator.n()) {
+      var item = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.WinOdds.turnFor.<anonymous>' call
       if (item >= percent) {
         tmp$ret$1 = index;
@@ -4741,9 +4749,9 @@ protoOf(WinOdds).g1s = function () {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.i1f_1.f2();
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOdds.<get-damageText>.<anonymous>' call
     if (element.z1() >= 3) {
       destination.h(element);
@@ -5326,7 +5334,7 @@ function anything($this) {
     tmp_14 = true;
   } else {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    tmp_14 = !$this.p1u_1.n();
+    tmp_14 = !$this.p1u_1.q();
   }
   if (tmp_14) {
     tmp_13 = true;
@@ -5397,7 +5405,7 @@ function anything($this) {
     tmp_0 = true;
   } else {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    tmp_0 = !$this.y1v_1.n();
+    tmp_0 = !$this.y1v_1.q();
   }
   if (tmp_0) {
     tmp = true;
@@ -5426,7 +5434,7 @@ function WinOddsCalc$WinCard$newUse$delegate$lambda(this$0) {
     var tmp_14;
     var tmp_15;
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!this$0.n1y_1.n()) {
+    if (!this$0.n1y_1.q()) {
       tmp_15 = true;
     } else {
       var tmp$ret$1;
@@ -5435,7 +5443,7 @@ function WinOddsCalc$WinCard$newUse$delegate$lambda(this$0) {
         var this_0 = this$0.o1y_1;
         var tmp_16;
         if (isInterface(this_0, Collection)) {
-          tmp_16 = this_0.n();
+          tmp_16 = this_0.q();
         } else {
           tmp_16 = false;
         }
@@ -5443,9 +5451,9 @@ function WinOddsCalc$WinCard$newUse$delegate$lambda(this$0) {
           tmp$ret$1 = false;
           break $l$block_0;
         }
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.WinCard.newUse$delegate.<anonymous>.<anonymous>' call
           if ((((((element.c26_1 + element.d26_1 | 0) + element.f26_1 | 0) + element.g26_1 | 0) + element.h26_1 | 0) + element.j26_1 | 0) > 0 || element.i26_1 || !(element.k26_1 == null) || !(element.l26_1 == null)) {
             tmp$ret$1 = true;
@@ -5638,7 +5646,7 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
         var this_0 = this$0.c20_1;
         var tmp_87;
         if (isInterface(this_0, Collection)) {
-          tmp_87 = this_0.n();
+          tmp_87 = this_0.q();
         } else {
           tmp_87 = false;
         }
@@ -5646,9 +5654,9 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
           tmp$ret$0 = false;
           break $l$block_0;
         }
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.WinCard.use55$delegate.<anonymous>.<anonymous>' call
           if (element.p26()) {
             tmp$ret$0 = true;
@@ -5668,7 +5676,7 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
         var this_1 = this$0.d20_1;
         var tmp_88;
         if (isInterface(this_1, Collection)) {
-          tmp_88 = this_1.n();
+          tmp_88 = this_1.q();
         } else {
           tmp_88 = false;
         }
@@ -5676,9 +5684,9 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
           tmp$ret$2 = false;
           break $l$block_2;
         }
-        var tmp0_iterator_0 = this_1.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = this_1.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           // Inline function 'com.mtgtrader.data.WinCard.use55$delegate.<anonymous>.<anonymous>' call
           if (element_0.p26()) {
             tmp$ret$2 = true;
@@ -5695,7 +5703,7 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
       var tmp_89;
       if (this$0.p1z_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_89 = !this$0.t1z_1.n();
+        tmp_89 = !this$0.t1z_1.q();
       } else {
         tmp_89 = false;
       }
@@ -5705,13 +5713,13 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
       tmp_83 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_83 = !this$0.e20_1.n();
+      tmp_83 = !this$0.e20_1.q();
     }
     if (tmp_83) {
       tmp_82 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_82 = !this$0.f20_1.n();
+      tmp_82 = !this$0.f20_1.q();
     }
     if (tmp_82) {
       tmp_81 = true;
@@ -5742,7 +5750,7 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
       tmp_76 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_76 = !this$0.l20_1.n();
+      tmp_76 = !this$0.l20_1.q();
     }
     if (tmp_76) {
       tmp_75 = true;
@@ -5883,7 +5891,7 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
       tmp_48 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_48 = !this$0.e22_1.n();
+      tmp_48 = !this$0.e22_1.q();
     }
     if (tmp_48) {
       tmp_47 = true;
@@ -6029,19 +6037,19 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
       tmp_19 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_19 = !this$0.s21_1.n();
+      tmp_19 = !this$0.s21_1.q();
     }
     if (tmp_19) {
       tmp_18 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_18 = !this$0.t21_1.n();
+      tmp_18 = !this$0.t21_1.q();
     }
     if (tmp_18) {
       tmp_17 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_17 = !this$0.u21_1.n();
+      tmp_17 = !this$0.u21_1.q();
     }
     if (tmp_17) {
       tmp_16 = true;
@@ -6102,7 +6110,7 @@ function WinOddsCalc$WinCard$use55$delegate$lambda(this$0) {
       tmp_5 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_5 = !this$0.q24_1.n();
+      tmp_5 = !this$0.q24_1.q();
     }
     if (tmp_5) {
       tmp_4 = true;
@@ -6656,7 +6664,7 @@ function sacrificeForDeaths$_anonymous_$deathWorth_n263ku(alive, this$0, outletW
       var this_0 = this$0.f29_1;
       var tmp_1;
       if (isInterface(this_0, Collection)) {
-        tmp_1 = this_0.n();
+        tmp_1 = this_0.q();
       } else {
         tmp_1 = false;
       }
@@ -6665,9 +6673,9 @@ function sacrificeForDeaths$_anonymous_$deathWorth_n263ku(alive, this$0, outletW
         break $l$block;
       }
       var count = 0;
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>$deathWorth.<anonymous>' call
         var tmp_2;
         var tmp0_safe_receiver = element.s27_1;
@@ -6721,7 +6729,7 @@ function sacrificeOnce$cost(lands, e) {
   } else {
     var tmp0_safe_receiver = e.s27_1;
     var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.i1w_1;
-    var tmp_0 = (((3 + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0) + e.u27_1 | 0) + e.a28_1 | 0) + imul(4, e.g28_1.m()) | 0;
+    var tmp_0 = (((3 + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0) + e.u27_1 | 0) + e.a28_1 | 0) + imul(4, e.g28_1.p()) | 0;
     var tmp_1;
     var tmp2_safe_receiver = e.s27_1;
     var tmp_2;
@@ -6740,13 +6748,13 @@ function sacrificeOnce$cost(lands, e) {
         tmp_7 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_7 = !tmp2_safe_receiver.d1x_1.n();
+        tmp_7 = !tmp2_safe_receiver.d1x_1.q();
       }
       if (tmp_7) {
         tmp_6 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_6 = !tmp2_safe_receiver.e1x_1.n();
+        tmp_6 = !tmp2_safe_receiver.e1x_1.q();
       }
       if (tmp_6) {
         tmp_5 = true;
@@ -6786,7 +6794,7 @@ function sacrificeOnce$search(bestCost, free, $ability, best, bestMask, candidat
   if (size === $ability.d2b_1)
     return Unit_instance;
   var inductionVariable = from;
-  var last = candidates.m();
+  var last = candidates.p();
   if (inductionVariable < last)
     do {
       var i = inductionVariable;
@@ -6829,7 +6837,7 @@ function _no_name_provided__qut3iv($this) {
   this.r2b_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv).z3 = function () {
-  return this.r2b_1.j();
+  return this.r2b_1.m();
 };
 protoOf(_no_name_provided__qut3iv).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
@@ -6842,7 +6850,7 @@ function _no_name_provided__qut3iv_0($this) {
   this.t2b_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_0).z3 = function () {
-  return this.t2b_1.j();
+  return this.t2b_1.m();
 };
 protoOf(_no_name_provided__qut3iv_0).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
@@ -6863,7 +6871,7 @@ function _no_name_provided__qut3iv_1($this) {
   this.u2b_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_1).z3 = function () {
-  return this.u2b_1.j();
+  return this.u2b_1.m();
 };
 protoOf(_no_name_provided__qut3iv_1).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.Game.chosenType.<anonymous>' call
@@ -6972,7 +6980,7 @@ function WinOddsCalc$Game$cast$lambda(this$0) {
       var this_0 = this$0.f29_1;
       var tmp_1;
       if (isInterface(this_0, Collection)) {
-        tmp_1 = this_0.n();
+        tmp_1 = this_0.q();
       } else {
         tmp_1 = false;
       }
@@ -6980,9 +6988,9 @@ function WinOddsCalc$Game$cast$lambda(this$0) {
         tmp$ret$0 = true;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.s1y_1) === true) {
@@ -6999,7 +7007,7 @@ function WinOddsCalc$Game$cast$lambda(this$0) {
         var this_1 = this$0.x28_1;
         var tmp_2;
         if (isInterface(this_1, Collection)) {
-          tmp_2 = this_1.n();
+          tmp_2 = this_1.q();
         } else {
           tmp_2 = false;
         }
@@ -7007,9 +7015,9 @@ function WinOddsCalc$Game$cast$lambda(this$0) {
           tmp$ret$2 = true;
           break $l$block_2;
         }
-        var tmp0_iterator_0 = this_1.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = this_1.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>.<anonymous>' call
           if (element_0.s1y_1) {
             tmp$ret$2 = false;
@@ -7039,7 +7047,7 @@ function WinOddsCalc$Game$cast$lambda_0(it) {
       var this_0 = it.l1y_1;
       var tmp_0;
       if (isInterface(this_0, Collection)) {
-        tmp_0 = this_0.n();
+        tmp_0 = this_0.q();
       } else {
         tmp_0 = false;
       }
@@ -7047,9 +7055,9 @@ function WinOddsCalc$Game$cast$lambda_0(it) {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>.<anonymous>' call
         if (Companion_getInstance_6().a27_1.u(element)) {
           tmp$ret$0 = true;
@@ -7068,7 +7076,7 @@ function _no_name_provided__qut3iv_2($this) {
   this.y2b_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_2).z3 = function () {
-  return this.y2b_1.j();
+  return this.y2b_1.m();
 };
 protoOf(_no_name_provided__qut3iv_2).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.Game.chosenType$delegate.<anonymous>.<anonymous>' call
@@ -7086,9 +7094,9 @@ function WinOddsCalc$Game$chosenType$delegate$lambda(this$0) {
     // Inline function 'kotlin.collections.flatMapTo' call
     var this_0 = plus_0(plus_0(this$0.x28_1, this$0.y28_1), this$0.z28_1);
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.chosenType$delegate.<anonymous>.<anonymous>' call
       var tmp = listOfNotNull([element.m1y_1, element.e21_1]);
       // Inline function 'kotlin.collections.mapNotNull' call
@@ -7096,9 +7104,9 @@ function WinOddsCalc$Game$chosenType$delegate$lambda(this$0) {
       var this_1 = element.z2b();
       var destination_0 = ArrayList_init_$Create$();
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
         // Inline function 'com.mtgtrader.data.Game.chosenType$delegate.<anonymous>.<anonymous>.<anonymous>' call
         var tmp0_safe_receiver = element_0.h1t_1;
@@ -7115,9 +7123,9 @@ function WinOddsCalc$Game$chosenType$delegate$lambda(this$0) {
     }
     // Inline function 'kotlin.collections.flatMapTo' call
     var destination_1 = ArrayList_init_$Create$();
-    var tmp0_iterator_1 = destination.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = destination.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.chosenType$delegate.<anonymous>.<anonymous>' call
       var list_0 = element_1.c2c_1;
       addAll(destination_1, list_0);
@@ -7127,20 +7135,20 @@ function WinOddsCalc$Game$chosenType$delegate$lambda(this$0) {
     var tmp$ret$11;
     $l$block_0: {
       // Inline function 'kotlin.collections.maxByOrNull' call
-      var iterator = this_2.f2().j();
-      if (!iterator.k()) {
+      var iterator = this_2.f2().m();
+      if (!iterator.n()) {
         tmp$ret$11 = null;
         break $l$block_0;
       }
-      var maxElem = iterator.l();
-      if (!iterator.k()) {
+      var maxElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$11 = maxElem;
         break $l$block_0;
       }
       // Inline function 'com.mtgtrader.data.Game.chosenType$delegate.<anonymous>.<anonymous>' call
       var maxValue = maxElem.z1();
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.Game.chosenType$delegate.<anonymous>.<anonymous>' call
         var v = e.z1();
         if (compareTo(maxValue, v) < 0) {
@@ -7148,7 +7156,7 @@ function WinOddsCalc$Game$chosenType$delegate$lambda(this$0) {
           maxValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$11 = maxElem;
     }
     var tmp0_safe_receiver_0 = tmp$ret$11;
@@ -7159,7 +7167,7 @@ function _no_name_provided__qut3iv_3($this) {
   this.i2c_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_3).z3 = function () {
-  return this.i2c_1.j();
+  return this.i2c_1.m();
 };
 protoOf(_no_name_provided__qut3iv_3).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
@@ -7298,9 +7306,9 @@ function WinOddsCalc$Game$comboReady$lambda(a, b) {
 function WinOddsCalc$Game$tutor$lambda(a, b) {
   // Inline function 'kotlin.comparisons.compareValuesBy' call
   // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
-  var tmp = a.be_1.m();
+  var tmp = a.be_1.p();
   // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
-  var tmp$ret$1 = b.be_1.m();
+  var tmp$ret$1 = b.be_1.p();
   return compareValues(tmp, tmp$ret$1);
 }
 function WinOddsCalc$Game$equip$lambda(a, b) {
@@ -7348,9 +7356,9 @@ function ComboPlan(names, wins, loops, tokens, creatures, opponentCreature, enab
   var tmp1_map_$receiver = Companion_getInstance_0();
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     var tmp$ret$0 = tmp1_map_$receiver.n1q(item);
     destination.h(tmp$ret$0);
   }
@@ -8118,9 +8126,9 @@ function WinCard(name, mana, cost, manaValue) {
 protoOf(WinCard).o2d = function () {
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator = this.g24_1.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this.g24_1.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp = sum;
     // Inline function 'com.mtgtrader.data.WinCard.<get-ritualMana>.<anonymous>' call
     sum = tmp + element.be_1 | 0;
@@ -8168,7 +8176,7 @@ protoOf(WinCard).s2d = function () {
       var this_0 = this.q24_1;
       var tmp_5;
       if (isInterface(this_0, Collection)) {
-        tmp_5 = this_0.n();
+        tmp_5 = this_0.q();
       } else {
         tmp_5 = false;
       }
@@ -8176,9 +8184,9 @@ protoOf(WinCard).s2d = function () {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.WinCard.<get-dealsDamage>.<anonymous>' call
         if (element.h2d_1 > 0) {
           tmp$ret$0 = true;
@@ -8219,9 +8227,9 @@ protoOf(WinCard).z2b = function () {
   var this_0 = this.t1z_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinCard.abilities.<anonymous>' call
     var tmp$ret$0 = item.be_1;
     destination.h(tmp$ret$0);
@@ -8231,9 +8239,9 @@ protoOf(WinCard).z2b = function () {
   var this_1 = this.e22_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_1, 10));
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var item_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var item_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.WinCard.abilities.<anonymous>' call
     var tmp$ret$3 = item_0.be_1;
     destination_0.h(tmp$ret$3);
@@ -8261,7 +8269,7 @@ protoOf(WinCard).v2d = function () {
       var this_0 = this.c20_1;
       var tmp_10;
       if (isInterface(this_0, Collection)) {
-        tmp_10 = this_0.n();
+        tmp_10 = this_0.q();
       } else {
         tmp_10 = false;
       }
@@ -8269,9 +8277,9 @@ protoOf(WinCard).v2d = function () {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.WinCard.<get-graveyardUse>.<anonymous>' call
         if (element.d1w()) {
           tmp$ret$0 = true;
@@ -8291,7 +8299,7 @@ protoOf(WinCard).v2d = function () {
       var this_1 = this.d20_1;
       var tmp_11;
       if (isInterface(this_1, Collection)) {
-        tmp_11 = this_1.n();
+        tmp_11 = this_1.q();
       } else {
         tmp_11 = false;
       }
@@ -8299,9 +8307,9 @@ protoOf(WinCard).v2d = function () {
         tmp$ret$2 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.WinCard.<get-graveyardUse>.<anonymous>' call
         if (element_0.d1w()) {
           tmp$ret$2 = true;
@@ -8321,7 +8329,7 @@ protoOf(WinCard).v2d = function () {
       var this_2 = this.t1z_1;
       var tmp_12;
       if (isInterface(this_2, Collection)) {
-        tmp_12 = this_2.n();
+        tmp_12 = this_2.q();
       } else {
         tmp_12 = false;
       }
@@ -8329,9 +8337,9 @@ protoOf(WinCard).v2d = function () {
         tmp$ret$4 = false;
         break $l$block_4;
       }
-      var tmp0_iterator_1 = this_2.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_2.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.WinCard.<get-graveyardUse>.<anonymous>' call
         if (element_1.be_1.d1w()) {
           tmp$ret$4 = true;
@@ -8399,7 +8407,7 @@ protoOf(WinCard).w2d = function () {
       var this_0 = this.c20_1;
       var tmp_4;
       if (isInterface(this_0, Collection)) {
-        tmp_4 = this_0.n();
+        tmp_4 = this_0.q();
       } else {
         tmp_4 = false;
       }
@@ -8407,9 +8415,9 @@ protoOf(WinCard).w2d = function () {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.WinCard.<get-copyUse>.<anonymous>' call
         if (element.e1w()) {
           tmp$ret$0 = true;
@@ -8429,7 +8437,7 @@ protoOf(WinCard).w2d = function () {
       var this_1 = this.t1z_1;
       var tmp_5;
       if (isInterface(this_1, Collection)) {
-        tmp_5 = this_1.n();
+        tmp_5 = this_1.q();
       } else {
         tmp_5 = false;
       }
@@ -8437,9 +8445,9 @@ protoOf(WinCard).w2d = function () {
         tmp$ret$2 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.WinCard.<get-copyUse>.<anonymous>' call
         if (element_0.be_1.e1w()) {
           tmp$ret$2 = true;
@@ -8469,9 +8477,9 @@ protoOf(WinCard).w2d = function () {
 };
 function read62($this, w, text, own) {
   if (!w.k1w_1) {
-    var _iterator__ex2g4s = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-    $l$loop: while (_iterator__ex2g4s.k()) {
-      var raw = _iterator__ex2g4s.l();
+    var _iterator__ex2g4s = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+    $l$loop: while (_iterator__ex2g4s.n()) {
+      var raw = _iterator__ex2g4s.o();
       // Inline function 'kotlin.text.replace' call
       // Inline function 'kotlin.text.trim' call
       // Inline function 'kotlin.text.trim' call
@@ -8488,16 +8496,16 @@ function read62($this, w, text, own) {
         var tmp = w;
         // Inline function 'kotlin.collections.map' call
         // Inline function 'kotlin.sequences.groupingBy' call
-        var tmp_0 = Regex_init_$Create$_0('\\{([wubrgc])\\}', WinOddsCalc_getInstance().p1k_1).qb(tmp0_safe_receiver.qc().o(1));
+        var tmp_0 = Regex_init_$Create$_0('\\{([wubrgc])\\}', WinOddsCalc_getInstance().p1k_1).qb(tmp0_safe_receiver.qc().r(1));
         var this_2 = map(tmp_0, WinOddsCalc$read62$lambda);
         var tmp$ret$3 = new _no_name_provided__qut3iv_4(this_2);
         var this_3 = eachCount(tmp$ret$3);
         // Inline function 'kotlin.collections.mapTo' call
-        var destination = ArrayList_init_$Create$_0(this_3.m());
+        var destination = ArrayList_init_$Create$_0(this_3.p());
         // Inline function 'kotlin.collections.iterator' call
-        var tmp0_iterator = this_3.f2().j();
-        while (tmp0_iterator.k()) {
-          var item = tmp0_iterator.l();
+        var tmp0_iterator = this_3.f2().m();
+        while (tmp0_iterator.n()) {
+          var item = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.WinOddsCalc.read62.<anonymous>.<anonymous>' call
           // Inline function 'kotlin.collections.component1' call
           var colour = item.y1().k1_1;
@@ -8518,14 +8526,14 @@ function read62($this, w, text, own) {
         // Inline function 'kotlin.collections.ifEmpty' call
         // Inline function 'kotlin.contracts.contract' call
         var tmp_2;
-        if (own.n()) {
+        if (own.q()) {
           // Inline function 'com.mtgtrader.data.WinOddsCalc.read62.<anonymous>.<anonymous>' call
           tmp_2 = setOf_0(new Char(_Char___init__impl__6a9atx(67)));
         } else {
           tmp_2 = own;
         }
         var tmp$ret$12 = tmp_2;
-        tmp_1.g24_1 = listOf_0(to(tmp$ret$12, WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(1))));
+        tmp_1.g24_1 = listOf_0(to(tmp$ret$12, WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(1))));
       }
       var tmp2_safe_receiver = Regex_init_$Create$_0("^add \\{([wubrgc])\\} for each card in target opponent's hand", $this.p1k_1).ob(line);
       if (tmp2_safe_receiver == null)
@@ -8536,7 +8544,7 @@ function read62($this, w, text, own) {
         var tmp_3 = w;
         // Inline function 'kotlin.text.uppercase' call
         // Inline function 'kotlin.js.asDynamic' call
-        var tmp$ret$15 = tmp2_safe_receiver.qc().o(1).toUpperCase();
+        var tmp$ret$15 = tmp2_safe_receiver.qc().r(1).toUpperCase();
         tmp_3.g24_1 = listOf_0(to(setOf_0(new Char(charSequenceGet(tmp$ret$15, 0))), 5));
       }
       var tmp3_safe_receiver = Regex_init_$Create$_0('^add \\{([wubrgc])\\} for each tapped land your opponents control', $this.p1k_1).ob(line);
@@ -8548,12 +8556,12 @@ function read62($this, w, text, own) {
         var tmp_4 = w;
         // Inline function 'kotlin.text.uppercase' call
         // Inline function 'kotlin.js.asDynamic' call
-        var tmp$ret$18 = tmp3_safe_receiver.qc().o(1).toUpperCase();
+        var tmp$ret$18 = tmp3_safe_receiver.qc().r(1).toUpperCase();
         tmp_4.g24_1 = listOf_0(to(setOf_0(new Char(charSequenceGet(tmp$ret$18, 0))), 0));
         w.e25_1 = true;
       }
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!w.g24_1.n())
+      if (!w.g24_1.q())
         break $l$loop;
     }
   }
@@ -8566,12 +8574,12 @@ function read62($this, w, text, own) {
     var tmp_5 = w;
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.text.trim' call
-    var this_4 = tmp4_safe_receiver.qc().o(2);
+    var this_4 = tmp4_safe_receiver.qc().r(2);
     // Inline function 'kotlin.js.asDynamic' call
     tmp_5.n24_1 = toString(trim(isCharSequence(this_4) ? this_4 : THROW_CCE())).toLowerCase();
     var tmp_6 = w;
     // Inline function 'kotlin.text.isNotEmpty' call
-    var this_5 = tmp4_safe_receiver.qc().o(1);
+    var this_5 = tmp4_safe_receiver.qc().r(1);
     tmp_6.o24_1 = charSequenceLength(this_5) > 0;
   }
   var tmp5_safe_receiver = $this.z1o_1.ob(text);
@@ -8580,10 +8588,10 @@ function read62($this, w, text, own) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var n_0 = WinOddsCalc_getInstance().z1p(tmp5_safe_receiver.qc().o(1));
+    var n_0 = WinOddsCalc_getInstance().z1p(tmp5_safe_receiver.qc().r(1));
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var tmp$ret$27 = tmp5_safe_receiver.qc().o(2).toLowerCase();
+    var tmp$ret$27 = tmp5_safe_receiver.qc().r(2).toLowerCase();
     if (contains_0(tmp$ret$27, 'each of your turns'))
       w.h24_1 = n_0;
     else {
@@ -8610,7 +8618,7 @@ function read69($this, w, text) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        w.i25_1 = ManaOddsCalc_getInstance().a1q(tmp0_safe_receiver.qc().o(1));
+        w.i25_1 = ManaOddsCalc_getInstance().a1q(tmp0_safe_receiver.qc().r(1));
       }
     }
     var tmp1_safe_receiver = Regex_init_$Create$('exile the top (\\w+) cards of your library\\. (?:until end of turn, )?you may play (?:them|those cards) this turn').ob(low);
@@ -8619,7 +8627,7 @@ function read69($this, w, text) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      w.b1x_1 = w.b1x_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(1)) - 1 | 0, 0) | 0;
+      w.b1x_1 = w.b1x_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(1)) - 1 | 0, 0) | 0;
     }
   }
   if (w.l1y_1.u('Saga'))
@@ -8631,7 +8639,7 @@ function read69($this, w, text) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      w.k25_1 = toInt(tmp2_safe_receiver.qc().o(1));
+      w.k25_1 = toInt(tmp2_safe_receiver.qc().r(1));
     }
   }
   var tmp3_safe_receiver = Regex_init_$Create$_0('^toxic (\\d+)', RegexOption_MULTILINE_getInstance()).ob(low);
@@ -8640,7 +8648,7 @@ function read69($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.l25_1 = toInt(tmp3_safe_receiver.qc().o(1));
+    w.l25_1 = toInt(tmp3_safe_receiver.qc().r(1));
   }
   var tmp4_safe_receiver = Regex_init_$Create$('(?:enchanted|equipped) creature [^.]*has toxic (\\d+)').ob(low);
   if (tmp4_safe_receiver == null)
@@ -8648,16 +8656,16 @@ function read69($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.m25_1 = toInt(tmp4_safe_receiver.qc().o(1));
+    w.m25_1 = toInt(tmp4_safe_receiver.qc().r(1));
   }
   if (contains_0(low, 'you win the game if there are twenty or more counters on it or you have twenty or more cards in hand'))
     w.n25_1 = true;
 }
 function readChapters($this, w, text) {
   var byChapter = HashMap_init_$Create$();
-  var _iterator__ex2g4s = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-  $l$loop_0: while (_iterator__ex2g4s.k()) {
-    var raw = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+  $l$loop_0: while (_iterator__ex2g4s.n()) {
+    var raw = _iterator__ex2g4s.o();
     // Inline function 'kotlin.text.trim' call
     var tmp$ret$0 = toString(trim(isCharSequence(raw) ? raw : THROW_CCE()));
     var tmp0_elvis_lhs = $this.d1p_1.ob(tmp$ret$0);
@@ -8670,13 +8678,13 @@ function readChapters($this, w, text) {
     var m = tmp;
     // Inline function 'kotlin.text.trim' call
     // Inline function 'kotlin.text.replace' call
-    var this_0 = m.qc().o(2);
+    var this_0 = m.qc().r(2);
     var this_1 = $this.j1o_1.rb(this_0, '');
     var effect = toString(trim(isCharSequence(this_1) ? this_1 : THROW_CCE()));
     var a = new Ability();
     var tmp1_safe_receiver = Regex_init_$Create$_0('gains "([^"]*)"', $this.p1k_1).ob(effect);
     var tmp2_safe_receiver = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.qc();
-    var grant = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.o(1);
+    var grant = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.r(1);
     if (!(grant == null)) {
       if (Regex_init_$Create$_0('^\\{T\\}: Add', $this.p1k_1).nb(grant))
         continue $l$loop_0;
@@ -8688,16 +8696,16 @@ function readChapters($this, w, text) {
         var tmp_0 = a;
         // Inline function 'kotlin.collections.map' call
         // Inline function 'kotlin.sequences.groupingBy' call
-        var tmp_1 = Regex_init_$Create$_0('\\{([wubrgc])\\}', $this.p1k_1).qb(ensureNotNull($this.x1o_1.ob(effect)).qc().o(1));
+        var tmp_1 = Regex_init_$Create$_0('\\{([wubrgc])\\}', $this.p1k_1).qb(ensureNotNull($this.x1o_1.ob(effect)).qc().r(1));
         var this_2 = map(tmp_1, WinOddsCalc$readChapters$lambda);
         var tmp$ret$3 = new _no_name_provided__qut3iv_5(this_2);
         var this_3 = eachCount(tmp$ret$3);
         // Inline function 'kotlin.collections.mapTo' call
-        var destination = ArrayList_init_$Create$_0(this_3.m());
+        var destination = ArrayList_init_$Create$_0(this_3.p());
         // Inline function 'kotlin.collections.iterator' call
-        var tmp0_iterator = this_3.f2().j();
-        while (tmp0_iterator.k()) {
-          var item = tmp0_iterator.l();
+        var tmp0_iterator = this_3.f2().m();
+        while (tmp0_iterator.n()) {
+          var item = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.WinOddsCalc.readChapters.<anonymous>' call
           // Inline function 'kotlin.collections.component1' call
           var colour = item.y1().k1_1;
@@ -8719,9 +8727,9 @@ function readChapters($this, w, text) {
       }
     }
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_0 = split(m.qc().o(1), [', ']).j();
-    while (tmp0_iterator_0.k()) {
-      var element = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = split(m.qc().r(1), [', ']).m();
+    while (tmp0_iterator_0.n()) {
+      var element = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readChapters.<anonymous>' call
       // Inline function 'kotlin.collections.set' call
       var key = getValue(WinOddsCalc_getInstance().e1p_1, element);
@@ -8770,7 +8778,7 @@ function spree($this, c, own, lands, comboKeys) {
     // Inline function 'kotlin.collections.none' call
     var tmp_0;
     if (isInterface(lines, Collection)) {
-      tmp_0 = lines.n();
+      tmp_0 = lines.q();
     } else {
       tmp_0 = false;
     }
@@ -8778,9 +8786,9 @@ function spree($this, c, own, lands, comboKeys) {
       tmp$ret$0 = true;
       break $l$block_0;
     }
-    var tmp0_iterator = lines.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = lines.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>' call
       // Inline function 'kotlin.text.trim' call
       var tmp$ret$1 = toString(trim(isCharSequence(element) ? element : THROW_CCE()));
@@ -8797,9 +8805,9 @@ function spree($this, c, own, lands, comboKeys) {
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_0 = lines.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = lines.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>' call
     var tmp_1 = WinOddsCalc_getInstance().u1p_1;
@@ -8815,14 +8823,14 @@ function spree($this, c, own, lands, comboKeys) {
     }
   }
   var modes = destination;
-  if (modes.n())
+  if (modes.q())
     return null;
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_1 = lines.j();
-  while (tmp0_iterator_1.k()) {
-    var element_1 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = lines.m();
+  while (tmp0_iterator_1.n()) {
+    var element_1 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>' call
     var tmp_2;
     // Inline function 'kotlin.text.trim' call
@@ -8844,9 +8852,9 @@ function spree($this, c, own, lands, comboKeys) {
   // Inline function 'kotlin.collections.associateWith' call
   var result = LinkedHashMap_init_$Create$(coerceAtLeast_0(mapCapacity(collectionSizeOrDefault(modes, 10)), 16));
   // Inline function 'kotlin.collections.associateWithTo' call
-  var tmp0_iterator_2 = modes.j();
-  while (tmp0_iterator_2.k()) {
-    var element_2 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = modes.m();
+  while (tmp0_iterator_2.n()) {
+    var element_2 = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>' call
     var tmp$ret$13 = modeScore(WinOddsCalc_getInstance(), WinOddsCalc_getInstance().x2d(spree$with(base, c, listOf_0(element_2)), own, lands, comboKeys)) - plain | 0;
     result.k2(element_2, tmp$ret$13);
@@ -8856,28 +8864,28 @@ function spree($this, c, own, lands, comboKeys) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_1 = ArrayList_init_$Create$();
-  var tmp0_iterator_3 = modes.j();
-  while (tmp0_iterator_3.k()) {
-    var element_3 = tmp0_iterator_3.l();
+  var tmp0_iterator_3 = modes.m();
+  while (tmp0_iterator_3.n()) {
+    var element_3 = tmp0_iterator_3.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>' call
-    if (getValue(scores, element_3) > 0 && getValue(scores, element_3) >= ManaOddsCalc_getInstance().a1q(element_3.qc().o(1)).j1i()) {
+    if (getValue(scores, element_3) > 0 && getValue(scores, element_3) >= ManaOddsCalc_getInstance().a1q(element_3.qc().r(1)).j1i()) {
       destination_1.h(element_3);
     }
   }
   // Inline function 'kotlin.contracts.contract' call
   var tmp_4;
-  if (destination_1.n()) {
+  if (destination_1.q()) {
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>' call
     var tmp$ret$19;
     $l$block_2: {
       // Inline function 'kotlin.collections.maxByOrNull' call
-      var iterator = modes.j();
-      if (!iterator.k()) {
+      var iterator = modes.m();
+      if (!iterator.n()) {
         tmp$ret$19 = null;
         break $l$block_2;
       }
-      var maxElem = iterator.l();
-      if (!iterator.k()) {
+      var maxElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$19 = maxElem;
         break $l$block_2;
       }
@@ -8885,7 +8893,7 @@ function spree($this, c, own, lands, comboKeys) {
       var it = maxElem;
       var maxValue = getValue(scores, it);
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.<anonymous>.<anonymous>' call
         var v = getValue(scores, e);
         if (compareTo(maxValue, v) < 0) {
@@ -8893,7 +8901,7 @@ function spree($this, c, own, lands, comboKeys) {
           maxValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$19 = maxElem;
     }
     tmp_4 = listOfNotNull_0(tmp$ret$19);
@@ -8931,9 +8939,9 @@ function chooseModes($this, c, own, lands, comboKeys, text) {
   $l$block: {
     // Inline function 'kotlin.collections.indexOfFirst' call
     var index = 0;
-    var tmp0_iterator = lines.j();
-    while (tmp0_iterator.k()) {
-      var item = tmp0_iterator.l();
+    var tmp0_iterator = lines.m();
+    while (tmp0_iterator.n()) {
+      var item = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.chooseModes.<anonymous>' call
       var tmp = WinOddsCalc_getInstance().i1p_1;
       // Inline function 'kotlin.text.trim' call
@@ -8952,9 +8960,9 @@ function chooseModes($this, c, own, lands, comboKeys, text) {
   var end = {_v: i + 1 | 0};
   $l$loop: while (true) {
     var tmp_0;
-    if (end._v < lines.m()) {
+    if (end._v < lines.p()) {
       // Inline function 'kotlin.text.trim' call
-      var this_0 = lines.o(end._v);
+      var this_0 = lines.r(end._v);
       var tmp$ret$3 = toString(trim(isCharSequence(this_0) ? this_0 : THROW_CCE()));
       tmp_0 = startsWith(tmp$ret$3, '\u2022');
     } else {
@@ -8968,15 +8976,15 @@ function chooseModes($this, c, own, lands, comboKeys, text) {
   var modes = lines.x1(i + 1 | 0, end._v);
   var tmp_1;
   // Inline function 'kotlin.text.trim' call
-  var this_1 = lines.o(i);
+  var this_1 = lines.r(i);
   var tmp$ret$4 = toString(trim(isCharSequence(this_1) ? this_1 : THROW_CCE()));
-  if (equals_0(ensureNotNull($this.i1p_1.ob(tmp$ret$4)).qc().o(1), 'two', true)) {
+  if (equals_0(ensureNotNull($this.i1p_1.ob(tmp$ret$4)).qc().r(1), 'two', true)) {
     tmp_1 = 2;
   } else {
     tmp_1 = 1;
   }
   var picks = tmp_1;
-  if (modes.m() <= picks)
+  if (modes.p() <= picks)
     return text;
   // Inline function 'kotlin.collections.sortedByDescending' call
   // Inline function 'kotlin.comparisons.compareByDescending' call
@@ -8987,9 +8995,9 @@ function chooseModes($this, c, own, lands, comboKeys, text) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = modes.j();
-  while (tmp0_iterator_0.k()) {
-    var element = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = modes.m();
+  while (tmp0_iterator_0.n()) {
+    var element = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.chooseModes.<anonymous>' call
     if (best.u(element)) {
       destination.h(element);
@@ -9006,12 +9014,12 @@ function modeScore($this, w) {
   } else {
     tmp_0 = 0;
   }
-  var tmp_1 = (((((((tmp + tmp_0 | 0) + w.x1x_1 | 0) + imul(2, w.y1x_1) | 0) + w.a1y_1 | 0) + imul(3, (w.n1y_1.m() + w.d1x_1.m() | 0) + w.e1x_1.m() | 0) | 0) + (w.g1w_1.k1i_1.equals(Kind_RAMP_getInstance()) ? 2 : 0) | 0) + w.o2d() | 0) + imul(2, w.h24_1 + w.i24_1 | 0) | 0;
+  var tmp_1 = (((((((tmp + tmp_0 | 0) + w.x1x_1 | 0) + imul(2, w.y1x_1) | 0) + w.a1y_1 | 0) + imul(3, (w.n1y_1.p() + w.d1x_1.p() | 0) + w.e1x_1.p() | 0) | 0) + (w.g1w_1.k1i_1.equals(Kind_RAMP_getInstance()) ? 2 : 0) | 0) + w.o2d() | 0) + imul(2, w.h24_1 + w.i24_1 | 0) | 0;
   // Inline function 'kotlin.collections.sumOf' call
   var sum_0 = 0;
-  var tmp0_iterator = w.z2b().j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = w.z2b().m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp_2 = sum_0;
     // Inline function 'com.mtgtrader.data.WinOddsCalc.modeScore.<anonymous>' call
     var tmp_3 = (imul(2, element.d1t_1) + imul(3, element.e1t_1) | 0) + element.f1t_1 | 0;
@@ -9035,19 +9043,19 @@ function readSacrifice($this, w, cost) {
   var tmp = w;
   var tmp0_safe_receiver = Regex_init_$Create$('fabricate (\\d+)').ob(t);
   var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.qc();
-  var tmp2_safe_receiver = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.o(1);
+  var tmp2_safe_receiver = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.r(1);
   var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : toInt(tmp2_safe_receiver);
   tmp.f1z_1 = tmp3_elvis_lhs == null ? 0 : tmp3_elvis_lhs;
   var tmp_0 = w;
   var tmp4_safe_receiver = Regex_init_$Create$('whenever a land you control is put into a graveyard from the battlefield, create (?:a|an) (\\d+)/').ob(t);
   var tmp5_safe_receiver = tmp4_safe_receiver == null ? null : tmp4_safe_receiver.qc();
-  var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.o(1);
+  var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.r(1);
   var tmp7_elvis_lhs = tmp6_safe_receiver == null ? null : toInt(tmp6_safe_receiver);
   tmp_0.g1z_1 = tmp7_elvis_lhs == null ? 0 : tmp7_elvis_lhs;
   var tmp_1 = w;
   var tmp8_safe_receiver = Regex_init_$Create$('whenever you sacrifice a land, create (?:a|an) (?:tapped )?(\\d+)/').ob(t);
   var tmp9_safe_receiver = tmp8_safe_receiver == null ? null : tmp8_safe_receiver.qc();
-  var tmp10_safe_receiver = tmp9_safe_receiver == null ? null : tmp9_safe_receiver.o(1);
+  var tmp10_safe_receiver = tmp9_safe_receiver == null ? null : tmp9_safe_receiver.r(1);
   var tmp11_elvis_lhs = tmp10_safe_receiver == null ? null : toInt(tmp10_safe_receiver);
   tmp_1.h1z_1 = tmp11_elvis_lhs == null ? 0 : tmp11_elvis_lhs;
   w.j1z_1 = contains_0(t, 'sacrifices another permanent, put a +1/+1 counter on each creature you control');
@@ -9061,7 +9069,7 @@ function readSacrifice($this, w, cost) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readSacrifice.<anonymous>' call
-    tmp_3 = WinOddsCalc_getInstance().z1p(tmp12_safe_receiver.qc().o(1));
+    tmp_3 = WinOddsCalc_getInstance().z1p(tmp12_safe_receiver.qc().r(1));
   }
   var tmp13_elvis_lhs = tmp_3;
   tmp_2.l1z_1 = tmp13_elvis_lhs == null ? 0 : tmp13_elvis_lhs;
@@ -9075,7 +9083,7 @@ function readSacrifice($this, w, cost) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       var tmp_4 = w;
-      var tmp0_elvis_lhs = toIntOrNull(tmp14_safe_receiver.qc().o(1));
+      var tmp0_elvis_lhs = toIntOrNull(tmp14_safe_receiver.qc().r(1));
       tmp_4.d21_1 = tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs;
       var tmp_5 = w;
       var tmp_6 = WinOddsCalc_getInstance();
@@ -9103,7 +9111,7 @@ function read55($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.k20_1 = toInt(tmp0_safe_receiver.qc().o(1));
+    w.k20_1 = toInt(tmp0_safe_receiver.qc().r(1));
   }
   if (contains_0(t, 'nontoken creatures you control have riot'))
     w.i20_1 = 'nontoken';
@@ -9120,13 +9128,13 @@ function read55($this, w, text) {
     var tmp = w;
     // Inline function 'kotlin.text.trim' call
     // Inline function 'kotlin.text.ifEmpty' call
-    var this_0 = tmp1_safe_receiver.qc().o(1);
+    var this_0 = tmp1_safe_receiver.qc().r(1);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_0;
     // Inline function 'kotlin.text.isEmpty' call
     if (charSequenceLength(this_0) === 0) {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.read55.<anonymous>.<anonymous>' call
-      tmp_0 = tmp1_safe_receiver.qc().o(2);
+      tmp_0 = tmp1_safe_receiver.qc().r(2);
     } else {
       tmp_0 = this_0;
     }
@@ -9142,7 +9150,7 @@ function read55($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.n20_1 = toInt(tmp2_safe_receiver.qc().o(1));
+    w.n20_1 = toInt(tmp2_safe_receiver.qc().r(1));
   }
   w.o20_1 = contains_0(t, 'treasures you control have "{t}, sacrifice this artifact: add two mana');
   w.p20_1 = contains_0(t, 'if you would create one or more treasure tokens, instead create those tokens plus an additional treasure token');
@@ -9153,7 +9161,7 @@ function read55($this, w, text) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     var tmp_1 = w;
-    var tmp_2 = mapOf([to('white', new Char(_Char___init__impl__6a9atx(87))), to('blue', new Char(_Char___init__impl__6a9atx(85))), to('black', new Char(_Char___init__impl__6a9atx(66))), to('red', new Char(_Char___init__impl__6a9atx(82))), to('green', new Char(_Char___init__impl__6a9atx(71)))]).c2(tmp3_safe_receiver.qc().o(1));
+    var tmp_2 = mapOf([to('white', new Char(_Char___init__impl__6a9atx(87))), to('blue', new Char(_Char___init__impl__6a9atx(85))), to('black', new Char(_Char___init__impl__6a9atx(66))), to('red', new Char(_Char___init__impl__6a9atx(82))), to('green', new Char(_Char___init__impl__6a9atx(71)))]).c2(tmp3_safe_receiver.qc().r(1));
     tmp_1.q20_1 = tmp_2 == null ? null : tmp_2.k1_1;
   }
   var tmp_3 = w.q20_1;
@@ -9166,7 +9174,7 @@ function read55($this, w, text) {
   var tmp_4 = w;
   var tmp4_safe_receiver = $this.y1m_1.ob(t);
   var tmp5_safe_receiver = tmp4_safe_receiver == null ? null : tmp4_safe_receiver.qc();
-  var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.o(1);
+  var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.r(1);
   var tmp7_elvis_lhs = tmp6_safe_receiver == null ? null : toInt(tmp6_safe_receiver);
   tmp_4.a21_1 = tmp7_elvis_lhs == null ? 0 : tmp7_elvis_lhs;
   w.b21_1 = contains_0(t, 'rather than pay the equip cost of the first equip ability you activate during each of your turns');
@@ -9181,7 +9189,7 @@ function read55($this, w, text) {
     var tmp_5 = w;
     // Inline function 'kotlin.text.ifEmpty' call
     // Inline function 'kotlin.text.trim' call
-    var this_2 = tmp8_safe_receiver.qc().o(1);
+    var this_2 = tmp8_safe_receiver.qc().r(1);
     var this_3 = toString(trim(isCharSequence(this_2) ? this_2 : THROW_CCE()));
     // Inline function 'kotlin.contracts.contract' call
     var tmp_6;
@@ -9200,7 +9208,7 @@ function read55($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.k21_1 = tmp9_safe_receiver.qc().o(1);
+    w.k21_1 = tmp9_safe_receiver.qc().r(1);
   }
   var tmp10_safe_receiver = $this.h1n_1.ob(text);
   if (tmp10_safe_receiver == null)
@@ -9216,7 +9224,7 @@ function read55($this, w, text) {
     if (contains_0(tmp$ret$15, 'jump-start')) {
       tmp_8 = w.h1w_1;
     } else {
-      tmp_8 = ManaOddsCalc_getInstance().a1q(tmp10_safe_receiver.qc().o(1));
+      tmp_8 = ManaOddsCalc_getInstance().a1q(tmp10_safe_receiver.qc().r(1));
     }
     tmp_7.l21_1 = tmp_8;
   }
@@ -9244,14 +9252,14 @@ function tokenKind($this, line) {
   var m = tmp;
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.text.trim' call
-  var this_0 = m.qc().o(3);
+  var this_0 = m.qc().r(3);
   var tmp$ret$0 = toString(trim(isCharSequence(this_0) ? this_0 : THROW_CCE()));
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = split_0(tmp$ret$0, charArrayOf([_Char___init__impl__6a9atx(32)]));
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_1.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_1.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.tokenKind.<anonymous>' call
     // Inline function 'kotlin.text.isNotBlank' call
     if (!isBlank(element)) {
@@ -9264,9 +9272,9 @@ function tokenKind($this, line) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = words.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = words.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.tokenKind.<anonymous>' call
     var tmp_1 = setOf(['artifact', 'enchantment']);
     // Inline function 'kotlin.text.lowercase' call
@@ -9278,9 +9286,9 @@ function tokenKind($this, line) {
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_0, 10));
-  var tmp0_iterator_1 = destination_0.j();
-  while (tmp0_iterator_1.k()) {
-    var item = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = destination_0.m();
+  while (tmp0_iterator_1.n()) {
+    var item = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.tokenKind.<anonymous>' call
     // Inline function 'kotlin.text.replaceFirstChar' call
     // Inline function 'kotlin.text.lowercase' call
@@ -9310,9 +9318,9 @@ function tokenKind($this, line) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_2 = ArrayList_init_$Create$();
-  var tmp0_iterator_2 = words.j();
-  while (tmp0_iterator_2.k()) {
-    var element_1 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = words.m();
+  while (tmp0_iterator_2.n()) {
+    var element_1 = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.tokenKind.<anonymous>' call
     var tmp_4;
     var tmp_5 = WinOddsCalc_getInstance().b1m_1;
@@ -9334,9 +9342,9 @@ function tokenKind($this, line) {
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_3 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_2, 10));
-  var tmp0_iterator_3 = destination_2.j();
-  while (tmp0_iterator_3.k()) {
-    var item_0 = tmp0_iterator_3.l();
+  var tmp0_iterator_3 = destination_2.m();
+  while (tmp0_iterator_3.n()) {
+    var item_0 = tmp0_iterator_3.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.tokenKind.<anonymous>' call
     // Inline function 'kotlin.text.replaceFirstChar' call
     var tmp_7;
@@ -9373,7 +9381,7 @@ function tokenKind($this, line) {
   var tmp$ret$46 = line.substring(startIndex_0);
   var tmp1_safe_receiver = tmp_9.ob(substringBefore(tmp$ret$46, '\n'));
   var tmp2_safe_receiver = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.qc();
-  var per = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.o(1);
+  var per = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.r(1);
   var tmp_10;
   if (Regex_init_$Create$('^[^"]*\\bhaste\\b').nb(after)) {
     tmp_10 = true;
@@ -9386,10 +9394,10 @@ function tokenKind($this, line) {
     tmp_10 = tmp_11.nb(tmp$ret$48);
   }
   var haste = tmp_10;
-  var tmp3_elvis_lhs = toIntOrNull(m.qc().o(1));
+  var tmp3_elvis_lhs = toIntOrNull(m.qc().r(1));
   var tmp_12 = tmp3_elvis_lhs == null ? 0 : tmp3_elvis_lhs;
   var tmp_13 = contains_0(after, 'with flying') || contains_0(take_0(substringBefore(after, ' and '), 20), 'flying');
-  var tmp4_elvis_lhs = toIntOrNull(m.qc().o(2));
+  var tmp4_elvis_lhs = toIntOrNull(m.qc().r(2));
   var tmp_14 = tmp4_elvis_lhs == null ? -1 : tmp4_elvis_lhs;
   var tmp_15 = Regex_init_$Create$('with toxic (\\d+)');
   // Inline function 'kotlin.text.lowercase' call
@@ -9400,7 +9408,7 @@ function tokenKind($this, line) {
   var tmp$ret$52 = line.substring(startIndex_2).toLowerCase();
   var tmp5_safe_receiver = tmp_15.ob(tmp$ret$52);
   var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.qc();
-  var tmp7_safe_receiver = tmp6_safe_receiver == null ? null : tmp6_safe_receiver.o(1);
+  var tmp7_safe_receiver = tmp6_safe_receiver == null ? null : tmp6_safe_receiver.r(1);
   var tmp8_elvis_lhs = tmp7_safe_receiver == null ? null : toInt(tmp7_safe_receiver);
   return new TokenKind(tmp_12, types, subtypes, tmp_13, per, haste, tmp_14, tmp8_elvis_lhs == null ? 0 : tmp8_elvis_lhs);
 }
@@ -9449,10 +9457,10 @@ function readKindTrigger($this, w, line, low) {
     tmp = tmp0_elvis_lhs;
   }
   var m = tmp;
-  var kind = m.qc().o(3);
+  var kind = m.qc().r(3);
   if (setOf(['creature', 'land', 'nontoken']).u(kind))
     return false;
-  var self_0 = !(m.qc().o(1) === 'another ') || contains_0(m.z1(), ' or another');
+  var self_0 = !(m.qc().r(1) === 'another ') || contains_0(m.z1(), ' or another');
   // Inline function 'kotlin.text.substring' call
   var startIndex = m.tb().b1_1 + 1 | 0;
   // Inline function 'kotlin.js.asDynamic' call
@@ -9463,7 +9471,7 @@ function readKindTrigger($this, w, line, low) {
   var d = $this.r1k_1.ob(rest);
   var tmp1_safe_receiver = $this.d1m_1.ob(rest);
   var tmp2_safe_receiver = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.qc();
-  var tmp3_safe_receiver = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.o(1);
+  var tmp3_safe_receiver = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.r(1);
   var tmp_0;
   if (tmp3_safe_receiver == null) {
     tmp_0 = null;
@@ -9481,13 +9489,13 @@ function readKindTrigger($this, w, line, low) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
     // Inline function 'kotlin.text.ifEmpty' call
-    var this_0 = e.qc().o(1);
+    var this_0 = e.qc().r(1);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_2;
     // Inline function 'kotlin.text.isEmpty' call
     if (charSequenceLength(this_0) === 0) {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>.<anonymous>' call
-      tmp_2 = e.qc().o(2);
+      tmp_2 = e.qc().r(2);
     } else {
       tmp_2 = this_0;
     }
@@ -9502,13 +9510,13 @@ function readKindTrigger($this, w, line, low) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
     // Inline function 'kotlin.text.ifEmpty' call
-    var this_1 = o.qc().o(1);
+    var this_1 = o.qc().r(1);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_4;
     // Inline function 'kotlin.text.isEmpty' call
     if (charSequenceLength(this_1) === 0) {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>.<anonymous>' call
-      tmp_4 = o.qc().o(2);
+      tmp_4 = o.qc().r(2);
     } else {
       tmp_4 = this_1;
     }
@@ -9518,7 +9526,7 @@ function readKindTrigger($this, w, line, low) {
   // Inline function 'kotlin.collections.plusAssign' call
   var this_2 = w.o1y_1;
   // Inline function 'kotlin.text.isNotEmpty' call
-  var this_3 = m.qc().o(2);
+  var this_3 = m.qc().r(2);
   var tmp16_nontoken = charSequenceLength(this_3) > 0;
   var tmp17_drainEach = $this.z1p(eachAmount);
   var tmp18_drainOne = e == null ? $this.z1p(oneAmount) : 0;
@@ -9539,7 +9547,7 @@ function readKindTrigger($this, w, line, low) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
-    tmp_6 = WinOddsCalc_getInstance().z1p(c.qc().o(1));
+    tmp_6 = WinOddsCalc_getInstance().z1p(c.qc().r(1));
   }
   var tmp8_elvis_lhs = tmp_6;
   var tmp20_tokens = tmp8_elvis_lhs == null ? 0 : tmp8_elvis_lhs;
@@ -9550,7 +9558,7 @@ function readKindTrigger($this, w, line, low) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
-    tmp_7 = WinOddsCalc_getInstance().z1p(d.qc().o(1));
+    tmp_7 = WinOddsCalc_getInstance().z1p(d.qc().r(1));
   }
   var tmp10_elvis_lhs = tmp_7;
   var tmp21_draw = tmp10_elvis_lhs == null ? 0 : tmp10_elvis_lhs;
@@ -9565,7 +9573,7 @@ function readKindTrigger($this, w, line, low) {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_9;
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
-    if (equals_0(tmp11_safe_receiver.qc().o(2), 'treasure', true)) {
+    if (equals_0(tmp11_safe_receiver.qc().r(2), 'treasure', true)) {
       tmp_9 = tmp11_safe_receiver;
     } else {
       tmp_9 = null;
@@ -9580,7 +9588,7 @@ function readKindTrigger($this, w, line, low) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
-    tmp_10 = WinOddsCalc_getInstance().z1p(tmp12_safe_receiver.qc().o(1));
+    tmp_10 = WinOddsCalc_getInstance().z1p(tmp12_safe_receiver.qc().r(1));
   }
   var tmp13_elvis_lhs = tmp_10;
   var tmp24_treasures = tmp13_elvis_lhs == null ? 0 : tmp13_elvis_lhs;
@@ -9621,15 +9629,15 @@ function readKindTrigger($this, w, line, low) {
   // Inline function 'kotlin.sequences.associateTo' call
   var this_4 = filter(tmp_15, WinOddsCalc$readKindTrigger$lambda);
   var destination = LinkedHashMap_init_$Create$_0();
-  var tmp0_iterator = this_4.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_4.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.plusAssign' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readKindTrigger.<anonymous>' call
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var tmp$ret$30 = element.qc().o(2).toLowerCase();
-    var pair = to(tmp$ret$30, WinOddsCalc_getInstance().z1p(element.qc().o(1)));
+    var tmp$ret$30 = element.qc().r(2).toLowerCase();
+    var pair = to(tmp$ret$30, WinOddsCalc_getInstance().z1p(element.qc().r(1)));
     destination.k2(pair.ae_1, pair.be_1);
   }
   var tmp28_selfCounters = Regex_init_$Create$_0('put (?:a|two) \\+1/\\+1 counters? on (?:this creature|it\\b)', RegexOption_IGNORE_CASE_getInstance()).nb(rest) && !Regex_init_$Create$_0('on each creature', RegexOption_IGNORE_CASE_getInstance()).nb(rest) ? 1 : 0;
@@ -9653,10 +9661,10 @@ function readArtifacts($this, w, line) {
   // Inline function 'kotlin.text.lowercase' call
   // Inline function 'kotlin.js.asDynamic' call
   var low = line.toLowerCase();
-  var n = $this.z1p(m.qc().o(1));
+  var n = $this.z1p(m.qc().r(1));
   // Inline function 'kotlin.text.lowercase' call
   // Inline function 'kotlin.js.asDynamic' call
-  var kind = m.qc().o(2).toLowerCase();
+  var kind = m.qc().r(2).toLowerCase();
   var t = kind === 'treasure' ? n : 0;
   if (startsWith(low, 'landfall') || (startsWith(low, 'whenever a land') && contains_0(low, 'enters'))) {
     w.z1x_1 = w.z1x_1 + n | 0;
@@ -9690,8 +9698,8 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.m1t_1 = a.m1t_1 + WinOddsCalc_getInstance().z1p(tmp0_safe_receiver.qc().o(1)) | 0;
-    a.n1t_1 = a.n1t_1 + WinOddsCalc_getInstance().z1p(tmp0_safe_receiver.qc().o(2)) | 0;
+    a.m1t_1 = a.m1t_1 + WinOddsCalc_getInstance().z1p(tmp0_safe_receiver.qc().r(1)) | 0;
+    a.n1t_1 = a.n1t_1 + WinOddsCalc_getInstance().z1p(tmp0_safe_receiver.qc().r(2)) | 0;
   }
   var tmp1_safe_receiver = $this.n1n_1.ob(low);
   if (tmp1_safe_receiver == null)
@@ -9699,8 +9707,8 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.n1t_1 = a.n1t_1 + WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(1)) | 0;
-    a.m1t_1 = a.m1t_1 + WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(2)) | 0;
+    a.n1t_1 = a.n1t_1 + WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(1)) | 0;
+    a.m1t_1 = a.m1t_1 + WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(2)) | 0;
   }
   if ($this.o1n_1.nb(low))
     a.o1t_1 = true;
@@ -9713,7 +9721,7 @@ function readAbility($this, a, text, w, full) {
     } else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      a.p1t_1 = toInt(tmp2_safe_receiver.qc().o(1));
+      a.p1t_1 = toInt(tmp2_safe_receiver.qc().r(1));
       tmp_0 = Unit_instance;
     }
     tmp = !(tmp_0 == null);
@@ -9721,9 +9729,9 @@ function readAbility($this, a, text, w, full) {
     tmp = false;
   }
   // Inline function 'kotlin.sequences.forEach' call
-  var tmp0_iterator = $this.p1n_1.qb(low).j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = $this.p1n_1.qb(low).m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>' call
     // Inline function 'kotlin.text.substring' call
     // Inline function 'kotlin.comparisons.maxOf' call
@@ -9733,7 +9741,7 @@ function readAbility($this, a, text, w, full) {
     // Inline function 'kotlin.js.asDynamic' call
     var tmp$ret$7 = low.substring(startIndex, endIndex);
     if (!contains_0(tmp$ret$7, 'target player')) {
-      a.k1t_1 = a.k1t_1 + WinOddsCalc_getInstance().z1p(element.qc().o(1)) | 0;
+      a.k1t_1 = a.k1t_1 + WinOddsCalc_getInstance().z1p(element.qc().r(1)) | 0;
     }
   }
   var tmp3_safe_receiver = $this.q1n_1.ob(low);
@@ -9742,7 +9750,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.l1t_1 = a.l1t_1 + toInt(tmp3_safe_receiver.qc().o(1)) | 0;
+    a.l1t_1 = a.l1t_1 + toInt(tmp3_safe_receiver.qc().r(1)) | 0;
   }
   if (contains_0(low, 'from your hand on the bottom of your library')) {
     a.q1t_1 = a.q1t_1 + 1 | 0;
@@ -9759,7 +9767,7 @@ function readAbility($this, a, text, w, full) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
-      var it = tmp4_safe_receiver.qc().o(1);
+      var it = tmp4_safe_receiver.qc().r(1);
       var tmp_3;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(it) === 0) {
@@ -9773,7 +9781,7 @@ function readAbility($this, a, text, w, full) {
       }
       tmp_1.r1t_1 = tmp_2 + tmp_3 | 0;
       // Inline function 'kotlin.text.trim' call
-      var this_0 = tmp4_safe_receiver.qc().o(2);
+      var this_0 = tmp4_safe_receiver.qc().r(2);
       var kind = toString(trim(isCharSequence(this_0) ? this_0 : THROW_CCE()));
       var tmp_4 = a;
       // Inline function 'kotlin.takeIf' call
@@ -9802,7 +9810,7 @@ function readAbility($this, a, text, w, full) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      a.r1t_1 = a.r1t_1 + WinOddsCalc_getInstance().z1p(tmp5_safe_receiver.qc().o(1)) | 0;
+      a.r1t_1 = a.r1t_1 + WinOddsCalc_getInstance().z1p(tmp5_safe_receiver.qc().r(1)) | 0;
     }
   }
   var tmp6_safe_receiver = $this.t1n_1.ob(low);
@@ -9811,7 +9819,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.r1t_1 = WinOddsCalc_getInstance().z1p(tmp6_safe_receiver.qc().o(1));
+    a.r1t_1 = WinOddsCalc_getInstance().z1p(tmp6_safe_receiver.qc().r(1));
     a.t1t_1 = true;
   }
   if (a.r1t_1 === 0 && $this.u1n_1.nb(low))
@@ -9826,12 +9834,12 @@ function readAbility($this, a, text, w, full) {
     var tmp_7 = a;
     var tmp_8;
     // Inline function 'kotlin.text.isNotEmpty' call
-    var this_1 = tmp7_safe_receiver.qc().o(2);
+    var this_1 = tmp7_safe_receiver.qc().r(2);
     if (charSequenceLength(this_1) > 0) {
       tmp_8 = 'chosen';
     } else {
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_2 = tmp7_safe_receiver.qc().o(1);
+      var this_2 = tmp7_safe_receiver.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_9;
       // Inline function 'kotlin.text.isEmpty' call
@@ -9846,7 +9854,7 @@ function readAbility($this, a, text, w, full) {
     tmp_7.s1t_1 = tmp_8;
     var tmp_10 = a;
     // Inline function 'kotlin.text.isNotEmpty' call
-    var this_3 = tmp7_safe_receiver.qc().o(3);
+    var this_3 = tmp7_safe_receiver.qc().r(3);
     tmp_10.u1t_1 = charSequenceLength(this_3) > 0;
     if (contains_0(low, 'each of them is a 1/1'))
       a.v1t_1 = true;
@@ -9862,7 +9870,7 @@ function readAbility($this, a, text, w, full) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
-    var it_0 = tmp8_safe_receiver.qc().o(1);
+    var it_0 = tmp8_safe_receiver.qc().r(1);
     var tmp_13;
     // Inline function 'kotlin.text.isEmpty' call
     if (charSequenceLength(it_0) === 0) {
@@ -9874,7 +9882,7 @@ function readAbility($this, a, text, w, full) {
     var tmp_14 = a;
     // Inline function 'kotlin.text.ifEmpty' call
     // Inline function 'kotlin.text.trim' call
-    var this_4 = tmp8_safe_receiver.qc().o(2);
+    var this_4 = tmp8_safe_receiver.qc().r(2);
     var this_5 = toString(trim(isCharSequence(this_4) ? this_4 : THROW_CCE()));
     // Inline function 'kotlin.contracts.contract' call
     var tmp_15;
@@ -9893,7 +9901,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.y1t_1 = a.y1t_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp9_safe_receiver.qc().o(1)), 1) | 0;
+    a.y1t_1 = a.y1t_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp9_safe_receiver.qc().r(1)), 1) | 0;
   }
   var tmp10_safe_receiver = $this.y1n_1.ob(low);
   if (tmp10_safe_receiver == null)
@@ -9912,7 +9920,7 @@ function readAbility($this, a, text, w, full) {
       tmp_16 = false;
     }
     if (tmp_16) {
-      a.z1t_1 = a.z1t_1 + imul(WinOddsCalc_getInstance().z1p(tmp10_safe_receiver.qc().o(1)), w.r21_1 ? 2 : 1) | 0;
+      a.z1t_1 = a.z1t_1 + imul(WinOddsCalc_getInstance().z1p(tmp10_safe_receiver.qc().r(1)), w.r21_1 ? 2 : 1) | 0;
     }
   }
   if ($this.z1n_1.nb(low))
@@ -9939,7 +9947,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.e1u_1 = tmp12_safe_receiver.qc().o(1);
+    a.e1u_1 = tmp12_safe_receiver.qc().r(1);
   }
   var tmp13_safe_receiver = $this.d1o_1.ob(low);
   if (tmp13_safe_receiver == null)
@@ -9947,7 +9955,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.f1u_1 = toInt(tmp13_safe_receiver.qc().o(1));
+    a.f1u_1 = toInt(tmp13_safe_receiver.qc().r(1));
   }
   if ($this.e1o_1.nb(low) && !Regex_init_$Create$("create a token that's a copy of it").nb(low)) {
     var tmp_17 = a;
@@ -9974,7 +9982,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.q1u_1 = a.q1u_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp14_safe_receiver.qc().o(1)), 1) | 0;
+    a.q1u_1 = a.q1u_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp14_safe_receiver.qc().r(1)), 1) | 0;
   }
   var tmp15_safe_receiver = Regex_init_$Create$('put (a|two|three) \\+1/\\+1 counters? on each (?:other )?creature you control').ob(low);
   if (tmp15_safe_receiver == null)
@@ -9982,7 +9990,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.r1u_1 = a.r1u_1 + WinOddsCalc_getInstance().z1p(tmp15_safe_receiver.qc().o(1)) | 0;
+    a.r1u_1 = a.r1u_1 + WinOddsCalc_getInstance().z1p(tmp15_safe_receiver.qc().r(1)) | 0;
   }
   var tmp16_safe_receiver = Regex_init_$Create$('put (a|two|three) \\+1/\\+1 counters? on (?:another )?target (?:attacking )?creature').ob(low);
   if (tmp16_safe_receiver == null)
@@ -9990,7 +9998,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.s1u_1 = a.s1u_1 + WinOddsCalc_getInstance().z1p(tmp16_safe_receiver.qc().o(1)) | 0;
+    a.s1u_1 = a.s1u_1 + WinOddsCalc_getInstance().z1p(tmp16_safe_receiver.qc().r(1)) | 0;
   }
   if (contains_0(low, 'put a +1/+1 counter on each of those creatures')) {
     if (full)
@@ -10012,16 +10020,16 @@ function readAbility($this, a, text, w, full) {
   if (contains_0(low, 'there is an additional combat phase'))
     a.d1v_1 = true;
   // Inline function 'kotlin.sequences.forEach' call
-  var tmp0_iterator_0 = $this.o1l_1.qb(low).j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = $this.o1l_1.qb(low).m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>' call
-    if (!(element_0.qc().o(2) === 'treasure')) {
+    if (!(element_0.qc().r(2) === 'treasure')) {
       // Inline function 'kotlin.collections.set' call
       var this_6 = a.p1u_1;
-      var key = element_0.qc().o(2);
-      var tmp0_elvis_lhs = a.p1u_1.c2(element_0.qc().o(2));
-      var value = (tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs) + WinOddsCalc_getInstance().z1p(element_0.qc().o(1)) | 0;
+      var key = element_0.qc().r(2);
+      var tmp0_elvis_lhs = a.p1u_1.c2(element_0.qc().r(2));
+      var value = (tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs) + WinOddsCalc_getInstance().z1p(element_0.qc().r(1)) | 0;
       this_6.k2(key, value);
     }
   }
@@ -10035,7 +10043,7 @@ function readAbility($this, a, text, w, full) {
     var tmp_22 = a.i1v_1;
     var tmp_23;
     // Inline function 'kotlin.text.isNotEmpty' call
-    var this_7 = tmp17_safe_receiver.qc().o(1);
+    var this_7 = tmp17_safe_receiver.qc().r(1);
     if (charSequenceLength(this_7) > 0) {
       tmp_23 = 2;
     } else {
@@ -10051,7 +10059,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.j1v_1 = a.j1v_1 + WinOddsCalc_getInstance().z1p(tmp18_safe_receiver.qc().o(1)) | 0;
+    a.j1v_1 = a.j1v_1 + WinOddsCalc_getInstance().z1p(tmp18_safe_receiver.qc().r(1)) | 0;
   }
   var tmp19_safe_receiver = Regex_init_$Create$('you get an emblem with "creatures you control get \\+(\\d+)/\\+\\d+').ob(low);
   if (tmp19_safe_receiver == null)
@@ -10059,7 +10067,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.l1v_1 = toInt(tmp19_safe_receiver.qc().o(1));
+    a.l1v_1 = toInt(tmp19_safe_receiver.qc().r(1));
   }
   if (a.r1t_1 === 0 && Regex_init_$Create$('(?:return|put) enchanted creature card (?:to|onto) the battlefield').nb(low))
     a.r1t_1 = 1;
@@ -10073,13 +10081,13 @@ function readAbility($this, a, text, w, full) {
     var tmp_25 = a.m1v_1;
     var tmp_26 = WinOddsCalc_getInstance();
     // Inline function 'kotlin.text.ifEmpty' call
-    var this_8 = tmp20_safe_receiver.qc().o(1);
+    var this_8 = tmp20_safe_receiver.qc().r(1);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_27;
     // Inline function 'kotlin.text.isEmpty' call
     if (charSequenceLength(this_8) === 0) {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
-      tmp_27 = tmp20_safe_receiver.qc().o(2);
+      tmp_27 = tmp20_safe_receiver.qc().r(2);
     } else {
       tmp_27 = this_8;
     }
@@ -10090,9 +10098,9 @@ function readAbility($this, a, text, w, full) {
   var tmp$ret$57;
   $l$block: {
     // Inline function 'kotlin.sequences.firstOrNull' call
-    var tmp0_iterator_1 = $this.o1p_1.qb(low).j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = $this.o1p_1.qb(low).m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>' call
       if (!startsWith_0(low, ' you control', element_1.tb().b1_1 + 1 | 0)) {
         tmp$ret$57 = element_1;
@@ -10109,9 +10117,9 @@ function readAbility($this, a, text, w, full) {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_28 = a;
     var tmp_29 = a.o1v_1;
-    var tmp_30 = coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp21_safe_receiver.qc().o(1)), 1);
+    var tmp_30 = coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp21_safe_receiver.qc().r(1)), 1);
     // Inline function 'kotlin.takeIf' call
-    var this_9 = tmp21_safe_receiver.qc().o(2);
+    var this_9 = tmp21_safe_receiver.qc().r(2);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_31;
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
@@ -10140,7 +10148,7 @@ function readAbility($this, a, text, w, full) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      a.p1v_1 = a.p1v_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp22_safe_receiver.qc().o(1)), 1) | 0;
+      a.p1v_1 = a.p1v_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp22_safe_receiver.qc().r(1)), 1) | 0;
     }
   }
   var tmp23_safe_receiver = $this.q1p_1.ob(low);
@@ -10149,7 +10157,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.q1v_1 = a.q1v_1 + WinOddsCalc_getInstance().z1p(tmp23_safe_receiver.qc().o(1)) | 0;
+    a.q1v_1 = a.q1v_1 + WinOddsCalc_getInstance().z1p(tmp23_safe_receiver.qc().r(1)) | 0;
   }
   var tmp24_safe_receiver = $this.s1p_1.ob(low);
   if (tmp24_safe_receiver == null)
@@ -10157,7 +10165,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.r1v_1 = a.r1v_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp24_safe_receiver.qc().o(1)), 1) | 0;
+    a.r1v_1 = a.r1v_1 + coerceAtLeast_0(WinOddsCalc_getInstance().z1p(tmp24_safe_receiver.qc().r(1)), 1) | 0;
   }
   if (!full)
     return Unit_instance;
@@ -10180,7 +10188,7 @@ function readAbility($this, a, text, w, full) {
       // Inline function 'kotlin.js.asDynamic' call
       var tmp$ret$68 = low.substring(0, endIndex_0);
       if (!contains_0(tmp$ret$68, 'opponent')) {
-        a.d1t_1 = a.d1t_1 + WinOddsCalc_getInstance().z1p(tmp25_safe_receiver.qc().o(1)) | 0;
+        a.d1t_1 = a.d1t_1 + WinOddsCalc_getInstance().z1p(tmp25_safe_receiver.qc().r(1)) | 0;
       }
     }
   }
@@ -10199,13 +10207,13 @@ function readAbility($this, a, text, w, full) {
       var tmp_34 = a.e1t_1;
       var tmp_35 = WinOddsCalc_getInstance();
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_10 = tmp26_safe_receiver.qc().o(1);
+      var this_10 = tmp26_safe_receiver.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_36;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_10) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
-        tmp_36 = tmp26_safe_receiver.qc().o(2);
+        tmp_36 = tmp26_safe_receiver.qc().r(2);
       } else {
         tmp_36 = this_10;
       }
@@ -10224,13 +10232,13 @@ function readAbility($this, a, text, w, full) {
       var tmp_38 = a.f1t_1;
       var tmp_39 = WinOddsCalc_getInstance();
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_11 = tmp27_safe_receiver.qc().o(1);
+      var this_11 = tmp27_safe_receiver.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_40;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_11) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
-        tmp_40 = tmp27_safe_receiver.qc().o(2);
+        tmp_40 = tmp27_safe_receiver.qc().r(2);
       } else {
         tmp_40 = this_11;
       }
@@ -10244,7 +10252,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.s1v_1 = tmp28_safe_receiver.qc().o(2);
+    a.s1v_1 = tmp28_safe_receiver.qc().r(2);
   }
   if (a.z1t_1 === 0 && !a.a1u_1 && !a.b1u_1 && !a.x1u_1 && !a.e1v_1 && !a.g1v_1) {
     var tmp29_safe_receiver = $this.q1k_1.ob(low);
@@ -10253,7 +10261,7 @@ function readAbility($this, a, text, w, full) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      a.g1t_1 = a.g1t_1 + (contains_0(low, 'for each opponent, create') ? 3 : WinOddsCalc_getInstance().z1p(tmp29_safe_receiver.qc().o(1))) | 0;
+      a.g1t_1 = a.g1t_1 + (contains_0(low, 'for each opponent, create') ? 3 : WinOddsCalc_getInstance().z1p(tmp29_safe_receiver.qc().r(1))) | 0;
       var tmp_41 = a;
       var tmp_42 = WinOddsCalc_getInstance();
       // Inline function 'kotlin.text.substring' call
@@ -10261,14 +10269,14 @@ function readAbility($this, a, text, w, full) {
       // Inline function 'kotlin.js.asDynamic' call
       var tmp$ret$80 = text.substring(startIndex_1);
       tmp_41.h1t_1 = tokenKind(tmp_42, tmp$ret$80);
-      if (equals_0(tmp29_safe_receiver.qc().o(1), 'x', true)) {
+      if (equals_0(tmp29_safe_receiver.qc().r(1), 'x', true)) {
         var tmp0_safe_receiver_1 = WinOddsCalc_getInstance().d1m_1.ob(low);
         if (tmp0_safe_receiver_1 == null)
           null;
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          a.f1v_1 = tmp0_safe_receiver_1.qc().o(1);
+          a.f1v_1 = tmp0_safe_receiver_1.qc().r(1);
         }
       }
       if (contains_0(low, 'tapped and attacking'))
@@ -10276,12 +10284,12 @@ function readAbility($this, a, text, w, full) {
     }
   }
   // Inline function 'kotlin.sequences.forEach' call
-  var tmp0_iterator_2 = $this.o1l_1.qb(low).j();
-  while (tmp0_iterator_2.k()) {
-    var element_2 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = $this.o1l_1.qb(low).m();
+  while (tmp0_iterator_2.n()) {
+    var element_2 = tmp0_iterator_2.o();
     $l$block_0: {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>' call
-      var n = WinOddsCalc_getInstance().z1p(element_2.qc().o(1));
+      var n = WinOddsCalc_getInstance().z1p(element_2.qc().r(1));
       var tmp0_safe_receiver_2 = WinOddsCalc_getInstance().h1o_1.ob(low);
       var tmp_43;
       if (tmp0_safe_receiver_2 == null) {
@@ -10291,7 +10299,7 @@ function readAbility($this, a, text, w, full) {
         // Inline function 'kotlin.contracts.contract' call
         var tmp_44;
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readAbility.<anonymous>.<anonymous>' call
-        if (element_2.qc().o(2) === 'treasure') {
+        if (element_2.qc().r(2) === 'treasure') {
           tmp_44 = tmp0_safe_receiver_2;
         } else {
           tmp_44 = null;
@@ -10304,12 +10312,12 @@ function readAbility($this, a, text, w, full) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        a.n1u_1 = toInt(tmp1_safe_receiver_0.qc().o(1));
+        a.n1u_1 = toInt(tmp1_safe_receiver_0.qc().r(1));
       }
       if (contains_0(low, 'for each artifact that player controls')) {
         break $l$block_0;
       }
-      if (element_2.qc().o(2) === 'treasure') {
+      if (element_2.qc().r(2) === 'treasure') {
         a.j1t_1 = a.j1t_1 + n | 0;
       } else {
         a.i1t_1 = a.i1t_1 + n | 0;
@@ -10334,7 +10342,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.k1u_1 = a.k1u_1 + toInt(tmp30_safe_receiver.qc().o(1)) | 0;
+    a.k1u_1 = a.k1u_1 + toInt(tmp30_safe_receiver.qc().r(1)) | 0;
   }
   var tmp31_safe_receiver = $this.i1o_1.ob(low);
   if (tmp31_safe_receiver == null)
@@ -10342,7 +10350,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.m1u_1 = toInt(tmp31_safe_receiver.qc().o(1));
+    a.m1u_1 = toInt(tmp31_safe_receiver.qc().r(1));
   }
   var tmp32_safe_receiver = Regex_init_$Create$('(?:other )?creatures you control get \\+(\\d+)/\\+\\d+ until end of turn').ob(low);
   if (tmp32_safe_receiver == null)
@@ -10350,7 +10358,7 @@ function readAbility($this, a, text, w, full) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.l1u_1 = a.l1u_1 + toInt(tmp32_safe_receiver.qc().o(1)) | 0;
+    a.l1u_1 = a.l1u_1 + toInt(tmp32_safe_receiver.qc().r(1)) | 0;
   }
 }
 function abilityCost($this, head, a) {
@@ -10372,7 +10380,7 @@ function abilityCost($this, head, a) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.c1u_1 = WinOddsCalc_getInstance().z1p(tmp0_safe_receiver.qc().o(1));
+    a.c1u_1 = WinOddsCalc_getInstance().z1p(tmp0_safe_receiver.qc().r(1));
     rest = replace(rest, tmp0_safe_receiver.z1(), '');
   }
   if (contains_0(low, 'discard a card')) {
@@ -10385,8 +10393,8 @@ function abilityCost($this, head, a) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.t1v_1 = tmp1_safe_receiver.qc().o(2);
-    a.u1v_1 = tmp1_safe_receiver.qc().o(1) === 'another';
+    a.t1v_1 = tmp1_safe_receiver.qc().r(2);
+    a.u1v_1 = tmp1_safe_receiver.qc().r(1) === 'another';
     rest = replace(rest, tmp1_safe_receiver.z1(), '');
   }
   var tmp2_safe_receiver = Regex_init_$Create$('blight (\\w+)').ob(low);
@@ -10395,7 +10403,7 @@ function abilityCost($this, head, a) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    a.v1v_1 = WinOddsCalc_getInstance().z1p(tmp2_safe_receiver.qc().o(1));
+    a.v1v_1 = WinOddsCalc_getInstance().z1p(tmp2_safe_receiver.qc().r(1));
     rest = replace(rest, tmp2_safe_receiver.z1(), '');
   }
   var tmp3_safe_receiver = Regex_init_$Create$('remove an? (?:\\+1/\\+1 )?counter from a creature you control').ob(low);
@@ -10468,19 +10476,19 @@ function readLine($this, w, raw) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      if (equals_0(tmp0_safe_receiver.qc().o(2), 'x', true))
+      if (equals_0(tmp0_safe_receiver.qc().r(2), 'x', true))
         return Unit_instance;
-      var tmp = toInt(tmp0_safe_receiver.qc().o(2));
+      var tmp = toInt(tmp0_safe_receiver.qc().r(2));
       var tmp_0;
       var tmp_1;
-      if (tmp0_safe_receiver.qc().o(1) === '+') {
+      if (tmp0_safe_receiver.qc().r(1) === '+') {
         tmp_1 = true;
       } else {
         var tmp_2;
         // Inline function 'kotlin.text.isEmpty' call
-        var this_6 = tmp0_safe_receiver.qc().o(1);
+        var this_6 = tmp0_safe_receiver.qc().r(1);
         if (charSequenceLength(this_6) === 0) {
-          tmp_2 = tmp0_safe_receiver.qc().o(2) === '0';
+          tmp_2 = tmp0_safe_receiver.qc().r(2) === '0';
         } else {
           tmp_2 = false;
         }
@@ -10493,7 +10501,7 @@ function readLine($this, w, raw) {
       }
       var cost = imul(tmp, tmp_0);
       var a = new Ability();
-      readAbility(WinOddsCalc_getInstance(), a, tmp0_safe_receiver.qc().o(3), w, true);
+      readAbility(WinOddsCalc_getInstance(), a, tmp0_safe_receiver.qc().r(3), w, true);
       // Inline function 'kotlin.collections.plusAssign' call
       var this_7 = w.t1z_1;
       var element = to(cost, a);
@@ -10508,7 +10516,7 @@ function readLine($this, w, raw) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.w1x_1 = new SacrificeAbility(WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(1)), WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(2)), toInt(tmp1_safe_receiver.qc().o(3)), WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(4)));
+    w.w1x_1 = new SacrificeAbility(WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(1)), WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(2)), toInt(tmp1_safe_receiver.qc().r(3)), WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(4)));
     return Unit_instance;
   }
   if ($this.y1k_1.mb(low)) {
@@ -10524,7 +10532,7 @@ function readLine($this, w, raw) {
       // Inline function 'kotlin.collections.count' call
       var tmp_5;
       if (isInterface(words, Collection)) {
-        tmp_5 = words.n();
+        tmp_5 = words.q();
       } else {
         tmp_5 = false;
       }
@@ -10533,9 +10541,9 @@ function readLine($this, w, raw) {
         break $l$block;
       }
       var count = 0;
-      var tmp0_iterator = words.j();
-      while (tmp0_iterator.k()) {
-        var element_0 = tmp0_iterator.l();
+      var tmp0_iterator = words.m();
+      while (tmp0_iterator.n()) {
+        var element_0 = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>' call
         if (element_0 === 'cascade') {
           count = count + 1 | 0;
@@ -10590,10 +10598,10 @@ function readLine($this, w, raw) {
       }
       var tmp_6 = WinOddsCalc_getInstance();
       var tmp_7 = line;
-      var tmp_8 = tmp2_safe_receiver.qc().o(2);
+      var tmp_8 = tmp2_safe_receiver.qc().r(2);
       var tmp_9;
       // Inline function 'kotlin.text.isNotEmpty' call
-      var this_9 = tmp2_safe_receiver.qc().o(1);
+      var this_9 = tmp2_safe_receiver.qc().r(1);
       if (charSequenceLength(this_9) > 0) {
         tmp_9 = 2;
       } else {
@@ -10611,11 +10619,11 @@ function readLine($this, w, raw) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var what = tmp3_safe_receiver.qc().o(2).toLowerCase();
+    var what = tmp3_safe_receiver.qc().r(2).toLowerCase();
     var tmp_10;
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    if (tmp3_safe_receiver.qc().o(1).toLowerCase() === 'a player') {
+    if (tmp3_safe_receiver.qc().r(1).toLowerCase() === 'a player') {
       tmp_10 = !contains_0(what, 'their first spell');
     } else {
       tmp_10 = false;
@@ -10635,13 +10643,13 @@ function readLine($this, w, raw) {
       // Inline function 'kotlin.takeIf' call
       var tmp_11 = WinOddsCalc_getInstance();
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_11 = e.qc().o(1);
+      var this_11 = e.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_12;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_11) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>.<anonymous>' call
-        tmp_12 = e.qc().o(2);
+        tmp_12 = e.qc().r(2);
       } else {
         tmp_12 = this_11;
       }
@@ -10669,13 +10677,13 @@ function readLine($this, w, raw) {
       // Inline function 'kotlin.takeIf' call
       var tmp_14 = WinOddsCalc_getInstance();
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_14 = o.qc().o(1);
+      var this_14 = o.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_15;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_14) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>.<anonymous>' call
-        tmp_15 = o.qc().o(2);
+        tmp_15 = o.qc().r(2);
       } else {
         tmp_15 = this_14;
       }
@@ -10711,7 +10719,7 @@ function readLine($this, w, raw) {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_18;
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>' call
-    if (!equals_0(tmp4_safe_receiver.qc().o(1), 'a ', true) || WinOddsCalc_getInstance().t1k_1.nb(line) || WinOddsCalc_getInstance().u1k_1.nb(line) || WinOddsCalc_getInstance().f1m_1.nb(line)) {
+    if (!equals_0(tmp4_safe_receiver.qc().r(1), 'a ', true) || WinOddsCalc_getInstance().t1k_1.nb(line) || WinOddsCalc_getInstance().u1k_1.nb(line) || WinOddsCalc_getInstance().f1m_1.nb(line)) {
       tmp_18 = tmp4_safe_receiver;
     } else {
       tmp_18 = null;
@@ -10723,7 +10731,7 @@ function readLine($this, w, raw) {
     var head = substringBefore_0(low, _Char___init__impl__6a9atx(44));
     var tmp_19;
     var tmp6_safe_receiver = enters == null ? null : enters.qc();
-    var tmp7_safe_receiver = tmp6_safe_receiver == null ? null : tmp6_safe_receiver.o(3);
+    var tmp7_safe_receiver = tmp6_safe_receiver == null ? null : tmp6_safe_receiver.r(3);
     var tmp_20;
     if (tmp7_safe_receiver == null) {
       tmp_20 = null;
@@ -10739,7 +10747,7 @@ function readLine($this, w, raw) {
     }
     var land = tmp_19;
     var tmp9_safe_receiver = enters == null ? null : enters.qc();
-    var tmp10_safe_receiver = tmp9_safe_receiver == null ? null : tmp9_safe_receiver.o(2);
+    var tmp10_safe_receiver = tmp9_safe_receiver == null ? null : tmp9_safe_receiver.r(2);
     var tmp_21;
     if (tmp10_safe_receiver == null) {
       tmp_21 = null;
@@ -10753,13 +10761,13 @@ function readLine($this, w, raw) {
     if (!(e_0 == null)) {
       // Inline function 'kotlin.takeIf' call
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_17 = e_0.qc().o(1);
+      var this_17 = e_0.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_22;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_17) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>' call
-        tmp_22 = e_0.qc().o(2);
+        tmp_22 = e_0.qc().r(2);
       } else {
         tmp_22 = this_17;
       }
@@ -10786,13 +10794,13 @@ function readLine($this, w, raw) {
     } else if (!(o_0 == null)) {
       // Inline function 'kotlin.takeIf' call
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_20 = o_0.qc().o(1);
+      var this_20 = o_0.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_24;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_20) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>' call
-        tmp_24 = o_0.qc().o(2);
+        tmp_24 = o_0.qc().r(2);
       } else {
         tmp_24 = this_20;
       }
@@ -10832,7 +10840,7 @@ function readLine($this, w, raw) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        w.r20_1 = w.r20_1 + WinOddsCalc_getInstance().z1p(tmp13_safe_receiver.qc().o(1)) | 0;
+        w.r20_1 = w.r20_1 + WinOddsCalc_getInstance().z1p(tmp13_safe_receiver.qc().r(1)) | 0;
         var tmp_26 = w;
         var tmp_27 = WinOddsCalc_getInstance();
         // Inline function 'kotlin.text.substring' call
@@ -10848,7 +10856,7 @@ function readLine($this, w, raw) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        w.t20_1 = tmp14_safe_receiver.qc().o(1);
+        w.t20_1 = tmp14_safe_receiver.qc().r(1);
       }
     }
     return Unit_instance;
@@ -10859,13 +10867,13 @@ function readLine($this, w, raw) {
     var tmp_28;
     if (!(e_1 == null)) {
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_25 = e_1.qc().o(1);
+      var this_25 = e_1.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_29;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_25) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>' call
-        tmp_29 = e_1.qc().o(2);
+        tmp_29 = e_1.qc().r(2);
       } else {
         tmp_29 = this_25;
       }
@@ -10873,13 +10881,13 @@ function readLine($this, w, raw) {
       tmp_28 = $this.z1p(tmp$ret$62);
     } else {
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_26 = ensureNotNull(o_1).qc().o(1);
+      var this_26 = ensureNotNull(o_1).qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_30;
       // Inline function 'kotlin.text.isEmpty' call
       if (charSequenceLength(this_26) === 0) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readLine.<anonymous>' call
-        tmp_30 = o_1.qc().o(2);
+        tmp_30 = o_1.qc().r(2);
       } else {
         tmp_30 = this_26;
       }
@@ -10928,9 +10936,9 @@ function readLine($this, w, raw) {
     var tmp$ret$69 = this_28.substring(startIndex_1);
     var tmp0_safe_receiver_1 = tokenKind(tmp_33, tmp$ret$69);
     var per = !((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.e2c_1) == null);
-    var tmp_34 = WinOddsCalc_getInstance().z1p(tmp15_safe_receiver.qc().o(1));
+    var tmp_34 = WinOddsCalc_getInstance().z1p(tmp15_safe_receiver.qc().r(1));
     // Inline function 'kotlin.takeIf' call
-    var tmp1_elvis_lhs = toIntOrNull(tmp15_safe_receiver.qc().o(2));
+    var tmp1_elvis_lhs = toIntOrNull(tmp15_safe_receiver.qc().r(2));
     var this_29 = tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs;
     // Inline function 'kotlin.contracts.contract' call
     var tmp_35;
@@ -10942,7 +10950,7 @@ function readLine($this, w, raw) {
     }
     var tmp2_elvis_lhs = tmp_35;
     var p = imul(tmp_34, tmp2_elvis_lhs == null ? 1 : tmp2_elvis_lhs);
-    var n_0 = WinOddsCalc_getInstance().z1p(tmp15_safe_receiver.qc().o(1));
+    var n_0 = WinOddsCalc_getInstance().z1p(tmp15_safe_receiver.qc().r(1));
     if (recurring || tap) {
       w.s1w_1 = w.s1w_1 + p | 0;
       w.u1w_1 = w.u1w_1 + n_0 | 0;
@@ -10957,7 +10965,7 @@ function readLine($this, w, raw) {
     } else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      w.i21_1 = tmp3_safe_receiver_0.qc().o(1);
+      w.i21_1 = tmp3_safe_receiver_0.qc().r(1);
       tmp_36 = Unit_instance;
     }
   }
@@ -10994,7 +11002,7 @@ function readLine($this, w, raw) {
       if (tmp_37) {
         break $l$block_1;
       }
-      var n_1 = WinOddsCalc_getInstance().z1p(tmp16_safe_receiver.qc().o(1));
+      var n_1 = WinOddsCalc_getInstance().z1p(tmp16_safe_receiver.qc().r(1));
       if (late && !tap) {
         w.f24_1 = w.f24_1 + n_1 | 0;
       }
@@ -11018,9 +11026,9 @@ function readLine($this, w, raw) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      var n_2 = toInt(tmp17_safe_receiver.qc().o(5));
+      var n_2 = toInt(tmp17_safe_receiver.qc().r(5));
       if (contains_0(low, 'until end of turn')) {
-        if ('creatures' === tmp17_safe_receiver.qc().o(3)) {
+        if ('creatures' === tmp17_safe_receiver.qc().r(3)) {
           w.a1x_1 = w.a1x_1 + n_2 | 0;
         }
       } else if (w.k1w_1 && !startsWith(low, 'when')) {
@@ -11040,11 +11048,11 @@ function readLine($this, w, raw) {
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'kotlin.text.lowercase' call
       // Inline function 'kotlin.js.asDynamic' call
-      if (tmp18_safe_receiver.qc().o(1).toLowerCase() === 'x')
+      if (tmp18_safe_receiver.qc().r(1).toLowerCase() === 'x')
         w.p1x_1 = true;
       else {
         if (w.o1x_1 === 0)
-          w.o1x_1 = toInt(tmp18_safe_receiver.qc().o(1));
+          w.o1x_1 = toInt(tmp18_safe_receiver.qc().r(1));
       }
     }
     if ($this.k1l_1.nb(line))
@@ -11058,7 +11066,7 @@ function readLine($this, w, raw) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      w.s1x_1 = w.s1x_1 + toInt(tmp19_safe_receiver.qc().o(1)) | 0;
+      w.s1x_1 = w.s1x_1 + toInt(tmp19_safe_receiver.qc().r(1)) | 0;
     }
     var tmp20_safe_receiver = $this.c1m_1.ob(line);
     if (tmp20_safe_receiver == null)
@@ -11070,7 +11078,7 @@ function readLine($this, w, raw) {
       var tmp_43;
       // Inline function 'kotlin.text.lowercase' call
       // Inline function 'kotlin.js.asDynamic' call
-      var tmp$ret$86 = tmp20_safe_receiver.qc().o(1).toLowerCase();
+      var tmp$ret$86 = tmp20_safe_receiver.qc().r(1).toLowerCase();
       if (contains_0(tmp$ret$86, 'many')) {
         tmp_43 = -1;
       } else {
@@ -11089,14 +11097,14 @@ function readLords($this, w, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var n = toInt(tmp0_safe_receiver.qc().o(3));
+    var n = toInt(tmp0_safe_receiver.qc().r(3));
     // Inline function 'kotlin.collections.plusAssign' call
     var this_0 = w.e20_1;
-    var element = new Lord(tmp0_safe_receiver.qc().o(1), n, false);
+    var element = new Lord(tmp0_safe_receiver.qc().r(1), n, false);
     this_0.h(element);
     // Inline function 'kotlin.collections.plusAssign' call
     var this_1 = w.e20_1;
-    var element_0 = new Lord(tmp0_safe_receiver.qc().o(2), n, true);
+    var element_0 = new Lord(tmp0_safe_receiver.qc().r(2), n, true);
     this_1.h(element_0);
     w.z1w_1 = w.z1w_1 + n | 0;
     return true;
@@ -11109,17 +11117,17 @@ function readLords($this, w, low) {
     tmp = tmp1_elvis_lhs;
   }
   var m = tmp;
-  var n_0 = toInt(m.qc().o(5));
+  var n_0 = toInt(m.qc().r(5));
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.text.trim' call
-  var this_2 = m.qc().o(2);
+  var this_2 = m.qc().r(2);
   var tmp$ret$1 = toString(trim(isCharSequence(this_2) ? this_2 : THROW_CCE()));
   // Inline function 'kotlin.collections.filterTo' call
   var this_3 = split_0(tmp$ret$1, charArrayOf([_Char___init__impl__6a9atx(32)]));
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_3.j();
-  while (tmp0_iterator.k()) {
-    var element_1 = tmp0_iterator.l();
+  var tmp0_iterator = this_3.m();
+  while (tmp0_iterator.n()) {
+    var element_1 = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readLords.<anonymous>' call
     var tmp_0;
     var tmp_1;
@@ -11139,12 +11147,12 @@ function readLords($this, w, low) {
     }
   }
   var words = destination;
-  var noun = m.qc().o(3);
+  var noun = m.qc().r(3);
   var tmp_2;
   // Inline function 'kotlin.text.isNotEmpty' call
-  var this_4 = m.qc().o(4);
+  var this_4 = m.qc().r(4);
   if (charSequenceLength(this_4) > 0) {
-    tmp_2 = m.qc().o(4) + (contains_0(m.z1(), 'and/or tokens') ? '|token' : '');
+    tmp_2 = m.qc().r(4) + (contains_0(m.z1(), 'and/or tokens') ? '|token' : '');
   } else {
     if (!(noun === 'creatures')) {
       tmp_2 = removeSuffix(noun, 's');
@@ -11156,7 +11164,7 @@ function readLords($this, w, low) {
   // Inline function 'kotlin.collections.plusAssign' call
   var this_5 = w.e20_1;
   // Inline function 'kotlin.text.isNotEmpty' call
-  var this_6 = m.qc().o(1);
+  var this_6 = m.qc().r(1);
   var tmp$ret$7 = charSequenceLength(this_6) > 0;
   var element_2 = new Lord(kind, n_0, tmp$ret$7, contains_0(low, "as long as you have the city's blessing"));
   this_5.h(element_2);
@@ -11180,7 +11188,7 @@ function read70($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.q25_1 = toInt(tmp0_safe_receiver.qc().o(1));
+    w.q25_1 = toInt(tmp0_safe_receiver.qc().r(1));
     return true;
   }
   if (startsWith(low, 'at the beginning of your end step, untap all lands you control')) {
@@ -11189,24 +11197,24 @@ function read70($this, w, line, low) {
   }
   var dies = Regex_init_$Create$('^when (?:this creature|[^,]{1,30}) dies, (.*)').ob(low);
   if (!(dies == null)) {
-    if (contains_0(dies.qc().o(1), "create a token that's a copy of it")) {
+    if (contains_0(dies.qc().r(1), "create a token that's a copy of it")) {
       w.s25_1 = true;
       return true;
     }
     var a = new Ability();
     // Inline function 'kotlin.text.substring' call
-    var startIndex = (dies.tb().b1_1 + 1 | 0) - dies.qc().o(1).length | 0;
+    var startIndex = (dies.tb().b1_1 + 1 | 0) - dies.qc().r(1).length | 0;
     // Inline function 'kotlin.js.asDynamic' call
     var tmp$ret$2 = line.substring(startIndex);
     readAbility($this, a, tmp$ret$2, w, true);
-    if (a.g1t_1 === 0 && (a.j1t_1 + a.i1t_1 | 0) === 0 && a.p1u_1.n()) {
-      var tmp1_safe_receiver = Regex_init_$Create$('^create (a|an|one|two|three) ').ob(dies.qc().o(1));
+    if (a.g1t_1 === 0 && (a.j1t_1 + a.i1t_1 | 0) === 0 && a.p1u_1.q()) {
+      var tmp1_safe_receiver = Regex_init_$Create$('^create (a|an|one|two|three) ').ob(dies.qc().r(1));
       if (tmp1_safe_receiver == null)
         null;
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        a.g1t_1 = WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().o(1));
+        a.g1t_1 = WinOddsCalc_getInstance().z1p(tmp1_safe_receiver.qc().r(1));
       }
     }
     if (a.g1t_1 > 0 && a.h1t_1 == null)
@@ -11233,7 +11241,7 @@ function read70($this, w, line, low) {
       var kind = tmp;
       var tmp_0 = w;
       // Inline function 'kotlin.takeIf' call
-      var this_0 = tmp2_safe_receiver.qc().o(1);
+      var this_0 = tmp2_safe_receiver.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_1;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.read70.<anonymous>.<anonymous>' call
@@ -11281,7 +11289,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.s23_1 = toInt(tmp0_safe_receiver.qc().o(1));
+    w.s23_1 = toInt(tmp0_safe_receiver.qc().r(1));
     return true;
   }
   var tmp1_safe_receiver = $this.a1l_1.ob(low);
@@ -11290,7 +11298,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.r23_1 = toInt(tmp1_safe_receiver.qc().o(1));
+    w.r23_1 = toInt(tmp1_safe_receiver.qc().r(1));
     return true;
   }
   var tmp2_safe_receiver = $this.b1l_1.ob(low);
@@ -11299,7 +11307,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.t23_1 = toInt(tmp2_safe_receiver.qc().o(1));
+    w.t23_1 = toInt(tmp2_safe_receiver.qc().r(1));
     return true;
   }
   if (contains_0(low, 'whenever you cast a spell with cascade, return this card from your graveyard to your hand')) {
@@ -11312,7 +11320,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.v23_1 = WinOddsCalc_getInstance().z1p(tmp3_safe_receiver.qc().o(1));
+    w.v23_1 = WinOddsCalc_getInstance().z1p(tmp3_safe_receiver.qc().r(1));
     return true;
   }
   if (read64($this, w, line, low))
@@ -11323,7 +11331,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    switch (tmp4_safe_receiver.qc().o(1)) {
+    switch (tmp4_safe_receiver.qc().r(1)) {
       case 'you':
         readAbility(WinOddsCalc_getInstance(), w.v21_1, readSpecial$after(line, tmp4_safe_receiver, 2), w, true);
         break;
@@ -11349,7 +11357,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.y21_1 = toInt(tmp5_safe_receiver.qc().o(1));
+    w.y21_1 = toInt(tmp5_safe_receiver.qc().r(1));
     return true;
   }
   if ($this.n1o_1.nb(low)) {
@@ -11379,7 +11387,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var rest = tmp7_safe_receiver.qc().o(2);
+    var rest = tmp7_safe_receiver.qc().r(2);
     if ((contains_0(rest, 'create') || contains_0(rest, 'draw')) && WinOddsCalc_getInstance().t1k_1.ob(rest) == null && WinOddsCalc_getInstance().u1k_1.ob(rest) == null && !contains_0(rest, 'damage')) {
       var a = new Ability();
       readAbility(WinOddsCalc_getInstance(), a, readSpecial$after(line, tmp7_safe_receiver, 2), w, true);
@@ -11387,7 +11395,7 @@ function readSpecial($this, w, line, low) {
         // Inline function 'kotlin.collections.plusAssign' call
         var this_0 = w.e22_1;
         // Inline function 'kotlin.text.ifEmpty' call
-        var this_1 = tmp7_safe_receiver.qc().o(1);
+        var this_1 = tmp7_safe_receiver.qc().r(1);
         // Inline function 'kotlin.contracts.contract' call
         var tmp_1;
         // Inline function 'kotlin.text.isEmpty' call
@@ -11410,16 +11418,16 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var rest_0 = tmp8_safe_receiver.qc().o(3);
+    var rest_0 = tmp8_safe_receiver.qc().r(3);
     if (WinOddsCalc_getInstance().t1k_1.ob(rest_0) == null && WinOddsCalc_getInstance().u1k_1.ob(rest_0) == null && !WinOddsCalc_getInstance().f1m_1.nb(rest_0) && (contains_0(rest_0, 'create') || contains_0(rest_0, 'counter'))) {
       readAbility(WinOddsCalc_getInstance(), w.f22_1, readSpecial$after(line, tmp8_safe_receiver, 3), w, true);
       var tmp_2 = w;
       // Inline function 'kotlin.text.isNotEmpty' call
-      var this_2 = tmp8_safe_receiver.qc().o(1);
+      var this_2 = tmp8_safe_receiver.qc().r(1);
       tmp_2.g22_1 = charSequenceLength(this_2) > 0;
       var tmp_3 = w;
       // Inline function 'kotlin.text.isNotEmpty' call
-      var this_3 = tmp8_safe_receiver.qc().o(2);
+      var this_3 = tmp8_safe_receiver.qc().r(2);
       tmp_3.h22_1 = charSequenceLength(this_3) > 0;
       return true;
     }
@@ -11437,7 +11445,7 @@ function readSpecial($this, w, line, low) {
     readAbility(WinOddsCalc_getInstance(), w.i22_1, readSpecial$after(line, tmp9_safe_receiver, 2), w, true);
     var tmp_4 = w.i22_1;
     // Inline function 'kotlin.takeIf' call
-    var this_4 = tmp9_safe_receiver.qc().o(1);
+    var this_4 = tmp9_safe_receiver.qc().r(1);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_5;
     // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>.<anonymous>' call
@@ -11463,9 +11471,9 @@ function readSpecial($this, w, line, low) {
       // Inline function 'kotlin.collections.map' call
       // Inline function 'kotlin.collections.mapTo' call
       var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(tmp1_safe_receiver_0, 10));
-      var tmp0_iterator = tmp1_safe_receiver_0.j();
-      while (tmp0_iterator.k()) {
-        var item = tmp0_iterator.l();
+      var tmp0_iterator = tmp1_safe_receiver_0.m();
+      while (tmp0_iterator.n()) {
+        var item = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>.<anonymous>' call
         // Inline function 'kotlin.text.trim' call
         var tmp$ret$22 = toString(trim(isCharSequence(item) ? item : THROW_CCE()));
@@ -11482,9 +11490,9 @@ function readSpecial($this, w, line, low) {
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = tmp2_safe_receiver_0.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = tmp2_safe_receiver_0.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>.<anonymous>' call
         var tmp_9;
         // Inline function 'kotlin.text.isNotBlank' call
@@ -11538,7 +11546,7 @@ function readSpecial($this, w, line, low) {
     readAbility(WinOddsCalc_getInstance(), w.k22_1, readSpecial$after(line, tmp11_safe_receiver, 2), w, true);
     var tmp_12 = w;
     // Inline function 'kotlin.text.isNotEmpty' call
-    var this_5 = tmp11_safe_receiver.qc().o(1);
+    var this_5 = tmp11_safe_receiver.qc().r(1);
     tmp_12.l22_1 = charSequenceLength(this_5) > 0;
     return true;
   }
@@ -11557,7 +11565,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.m22_1 = toInt(tmp13_safe_receiver.qc().o(1));
+    w.m22_1 = toInt(tmp13_safe_receiver.qc().r(1));
     return true;
   }
   if (contains_0(low, "create a token that's a copy of enchanted artifact") && contains_0(low, 'eight or more artifacts with the same name')) {
@@ -11587,10 +11595,10 @@ function readSpecial($this, w, line, low) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     var tmp_13 = w;
-    var tmp_14 = tmp14_safe_receiver.qc().o(2);
+    var tmp_14 = tmp14_safe_receiver.qc().r(2);
     // Inline function 'kotlin.text.uppercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var tmp$ret$40 = tmp14_safe_receiver.qc().o(1).toUpperCase();
+    var tmp$ret$40 = tmp14_safe_receiver.qc().r(1).toUpperCase();
     tmp_13.t22_1 = to(tmp_14, new Char(charSequenceGet(tmp$ret$40, 0)));
     return true;
   }
@@ -11603,7 +11611,7 @@ function readSpecial($this, w, line, low) {
     var tmp_15 = w;
     // Inline function 'kotlin.text.uppercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var tmp$ret$43 = tmp15_safe_receiver.qc().o(1).toUpperCase();
+    var tmp$ret$43 = tmp15_safe_receiver.qc().r(1).toUpperCase();
     tmp_15.t22_1 = to('token', new Char(charSequenceGet(tmp$ret$43, 0)));
     return true;
   }
@@ -11616,7 +11624,7 @@ function readSpecial($this, w, line, low) {
     var tmp_16 = w;
     // Inline function 'kotlin.text.uppercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var tmp$ret$46 = tmp16_safe_receiver.qc().o(1).toUpperCase();
+    var tmp$ret$46 = tmp16_safe_receiver.qc().r(1).toUpperCase();
     tmp_16.t22_1 = to('artifact', new Char(charSequenceGet(tmp$ret$46, 0)));
     return true;
   }
@@ -11686,7 +11694,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.i23_1 = WinOddsCalc_getInstance().z1p(tmp17_safe_receiver.qc().o(1));
+    w.i23_1 = WinOddsCalc_getInstance().z1p(tmp17_safe_receiver.qc().r(1));
     return true;
   }
   if (Regex_init_$Create$('^when this aura enters, put a \\+1/\\+1 counter on enchanted creature').nb(low)) {
@@ -11712,7 +11720,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.n23_1 = toInt(tmp18_safe_receiver.qc().o(1));
+    w.n23_1 = toInt(tmp18_safe_receiver.qc().r(1));
     return true;
   }
   if (contains_0(low, 'noncreature artifact you control becomes a 0/0 artifact creature')) {
@@ -11725,7 +11733,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.u20_1 = toInt(tmp19_safe_receiver.qc().o(1));
+    w.u20_1 = toInt(tmp19_safe_receiver.qc().r(1));
     return true;
   }
   if (Regex_init_$Create$('^whenever a creature token you control enters, put a \\+1/\\+1 counter on (?:this creature|' + short + '|' + full + ')').nb(low)) {
@@ -11746,7 +11754,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.a24_1 = to(ManaOddsCalc_getInstance().a1q(tmp20_safe_receiver.qc().o(1)), WinOddsCalc_getInstance().z1p(tmp20_safe_receiver.qc().o(2)));
+    w.a24_1 = to(ManaOddsCalc_getInstance().a1q(tmp20_safe_receiver.qc().r(1)), WinOddsCalc_getInstance().z1p(tmp20_safe_receiver.qc().r(2)));
     return true;
   }
   var tmp21_safe_receiver = $this.q1m_1.ob(low);
@@ -11755,7 +11763,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.v20_1 = toInt(tmp21_safe_receiver.qc().o(1));
+    w.v20_1 = toInt(tmp21_safe_receiver.qc().r(1));
     return true;
   }
   var tmp22_safe_receiver = $this.r1m_1.ob(low);
@@ -11764,7 +11772,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.w20_1 = toInt(tmp22_safe_receiver.qc().o(1));
+    w.w20_1 = toInt(tmp22_safe_receiver.qc().r(1));
     return true;
   }
   var tmp23_safe_receiver = $this.c1n_1.ob(low);
@@ -11775,7 +11783,7 @@ function readSpecial($this, w, line, low) {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_17 = w;
     var tmp0_elvis_lhs = tokenKind(WinOddsCalc_getInstance(), line);
-    tmp_17.g21_1 = tmp0_elvis_lhs == null ? new TokenKind(toInt(tmp23_safe_receiver.qc().o(1)), WinOddsCalc_getInstance().x1p_1, emptySet()) : tmp0_elvis_lhs;
+    tmp_17.g21_1 = tmp0_elvis_lhs == null ? new TokenKind(toInt(tmp23_safe_receiver.qc().r(1)), WinOddsCalc_getInstance().x1p_1, emptySet()) : tmp0_elvis_lhs;
     return true;
   }
   if ($this.d1n_1.nb(low)) {
@@ -11788,7 +11796,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.o21_1 = toInt(tmp24_safe_receiver.qc().o(1));
+    w.o21_1 = toInt(tmp24_safe_receiver.qc().r(1));
     return true;
   }
   var tmp25_safe_receiver = $this.m1m_1.ob(low);
@@ -11797,34 +11805,34 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var n = toInt(tmp25_safe_receiver.qc().o(3));
+    var n = toInt(tmp25_safe_receiver.qc().r(3));
     var tmp_18 = w;
     var tmp_19;
-    if (contains_0(tmp25_safe_receiver.qc().o(2), 'other than your hand')) {
+    if (contains_0(tmp25_safe_receiver.qc().r(2), 'other than your hand')) {
       tmp_19 = listOf_0(to('\x00not from hand', n));
     } else {
-      if (contains_0(tmp25_safe_receiver.qc().o(2), 'graveyard')) {
+      if (contains_0(tmp25_safe_receiver.qc().r(2), 'graveyard')) {
         tmp_19 = listOf_0(to('\x00graveyard', n));
       } else {
         // Inline function 'kotlin.text.isNotEmpty' call
-        var this_6 = tmp25_safe_receiver.qc().o(2);
+        var this_6 = tmp25_safe_receiver.qc().r(2);
         if (charSequenceLength(this_6) > 0) {
           tmp_19 = emptyList();
         } else {
           // Inline function 'kotlin.text.isEmpty' call
-          var this_7 = tmp25_safe_receiver.qc().o(1);
+          var this_7 = tmp25_safe_receiver.qc().r(1);
           if (charSequenceLength(this_7) === 0) {
             tmp_19 = listOf_0(to('spell', n));
           } else {
             // Inline function 'kotlin.collections.map' call
             // Inline function 'kotlin.text.split' call
-            var this_8 = tmp25_safe_receiver.qc().o(1);
+            var this_8 = tmp25_safe_receiver.qc().r(1);
             var this_9 = Regex_init_$Create$(' and/or | and ').zb(this_8, 0);
             // Inline function 'kotlin.collections.mapTo' call
             var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_9, 10));
-            var tmp0_iterator_1 = this_9.j();
-            while (tmp0_iterator_1.k()) {
-              var item_0 = tmp0_iterator_1.l();
+            var tmp0_iterator_1 = this_9.m();
+            while (tmp0_iterator_1.n()) {
+              var item_0 = tmp0_iterator_1.o();
               // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>.<anonymous>' call
               // Inline function 'kotlin.text.trim' call
               var tmp$ret$59 = toString(trim(isCharSequence(item_0) ? item_0 : THROW_CCE()));
@@ -11845,7 +11853,7 @@ function readSpecial($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.c21_1 = ManaOddsCalc_getInstance().a1q(tmp26_safe_receiver.qc().o(1));
+    w.c21_1 = ManaOddsCalc_getInstance().a1q(tmp26_safe_receiver.qc().r(1));
     return true;
   }
   var tmp27_safe_receiver = $this.k1m_1.ob(low);
@@ -11855,7 +11863,7 @@ function readSpecial($this, w, line, low) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     if (w.k1w_1 && !startsWith(low, 'when'))
-      w.i20_1 = tmp27_safe_receiver.qc().o(1);
+      w.i20_1 = tmp27_safe_receiver.qc().r(1);
   }
   if ($this.i1m_1.nb(low) && (startsWith(low, 'when') || !w.k1w_1)) {
     w.h20_1 = true;
@@ -11868,18 +11876,18 @@ function readSpecial($this, w, line, low) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.text.isNotEmpty' call
-    var this_10 = tmp28_safe_receiver.qc().o(5);
+    var this_10 = tmp28_safe_receiver.qc().r(5);
     var self_0 = charSequenceLength(this_10) > 0;
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.text.trim' call
-    var this_11 = tmp28_safe_receiver.qc().o(3);
+    var this_11 = tmp28_safe_receiver.qc().r(3);
     var tmp$ret$67 = toString(trim(isCharSequence(this_11) ? this_11 : THROW_CCE()));
     // Inline function 'kotlin.collections.filterTo' call
     var this_12 = split_0(tmp$ret$67, charArrayOf([_Char___init__impl__6a9atx(32)]));
     var destination_2 = ArrayList_init_$Create$();
-    var tmp0_iterator_2 = this_12.j();
-    while (tmp0_iterator_2.k()) {
-      var element_1 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_12.m();
+    while (tmp0_iterator_2.n()) {
+      var element_1 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>.<anonymous>' call
       var tmp_20;
       // Inline function 'kotlin.text.isNotBlank' call
@@ -11896,8 +11904,8 @@ function readSpecial($this, w, line, low) {
     var tmp_21;
     if (self_0) {
       tmp_21 = null;
-    } else if (!(tmp28_safe_receiver.qc().o(4) === 'creatures')) {
-      tmp_21 = removeSuffix(tmp28_safe_receiver.qc().o(4), 's');
+    } else if (!(tmp28_safe_receiver.qc().r(4) === 'creatures')) {
+      tmp_21 = removeSuffix(tmp28_safe_receiver.qc().r(4), 's');
     } else {
       var tmp0_elvis_lhs_0 = lastOrNull(words);
       tmp_21 = tmp0_elvis_lhs_0 == null ? 'creature' : tmp0_elvis_lhs_0;
@@ -11905,7 +11913,7 @@ function readSpecial($this, w, line, low) {
     var kind = tmp_21;
     // Inline function 'kotlin.collections.plusAssign' call
     var this_13 = w.f20_1;
-    var element_2 = new ActivatedPump(ManaOddsCalc_getInstance().a1q(tmp28_safe_receiver.qc().o(1)), kind, toInt(tmp28_safe_receiver.qc().o(6)));
+    var element_2 = new ActivatedPump(ManaOddsCalc_getInstance().a1q(tmp28_safe_receiver.qc().r(1)), kind, toInt(tmp28_safe_receiver.qc().r(6)));
     this_13.h(element_2);
     return true;
   }
@@ -11924,7 +11932,7 @@ function readSpecial($this, w, line, low) {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>' call
       var tmp_23 = this_14;
       // Inline function 'kotlin.text.ifEmpty' call
-      var this_15 = you.qc().o(1);
+      var this_15 = you.qc().r(1);
       // Inline function 'kotlin.contracts.contract' call
       var tmp_24;
       // Inline function 'kotlin.text.isEmpty' call
@@ -11941,7 +11949,7 @@ function readSpecial($this, w, line, low) {
       var this_16 = w.a20_1;
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>' call
-      w.z1z_1 = kind_0.qc().o(1);
+      w.z1z_1 = kind_0.qc().r(1);
       tmp_22 = this_16;
     } else {
       // Inline function 'kotlin.also' call
@@ -11962,7 +11970,7 @@ function readSpecial($this, w, line, low) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      a_0.m1u_1 = toInt(tmp29_safe_receiver.qc().o(1));
+      a_0.m1u_1 = toInt(tmp29_safe_receiver.qc().r(1));
     }
     var tmp30_safe_receiver = Regex_init_$Create$('(?:other )?creatures you control get \\+(\\d+)/').ob(low);
     var tmp_25;
@@ -11971,13 +11979,13 @@ function readSpecial($this, w, line, low) {
     } else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      w.g20_1 = w.g20_1 + toInt(tmp30_safe_receiver.qc().o(1)) | 0;
+      w.g20_1 = w.g20_1 + toInt(tmp30_safe_receiver.qc().r(1)) | 0;
       tmp_25 = Unit_instance;
     }
     if (!(tmp_25 == null))
       a_0.l1u_1 = 0;
     var tmp35_safe_receiver = selfAttack == null ? null : selfAttack.qc();
-    var tmp36_safe_receiver = tmp35_safe_receiver == null ? null : tmp35_safe_receiver.o(1);
+    var tmp36_safe_receiver = tmp35_safe_receiver == null ? null : tmp35_safe_receiver.r(1);
     var tmp_26;
     if (tmp36_safe_receiver == null) {
       tmp_26 = null;
@@ -12005,9 +12013,9 @@ function readSpecial($this, w, line, low) {
       }
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.iterator' call
-      var tmp0_iterator_3 = a_0.p1u_1.f2().j();
-      while (tmp0_iterator_3.k()) {
-        var element_3 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = a_0.p1u_1.f2().m();
+      while (tmp0_iterator_3.n()) {
+        var element_3 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>' call
         // Inline function 'kotlin.collections.component1' call
         var k = element_3.y1();
@@ -12050,7 +12058,7 @@ function readSpecial($this, w, line, low) {
       // Inline function 'kotlin.contracts.contract' call
       var tmp_31;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.readSpecial.<anonymous>' call
-      if (tmp37_safe_receiver.qc().o(3) === 'creatures') {
+      if (tmp37_safe_receiver.qc().r(3) === 'creatures') {
         tmp_31 = tmp37_safe_receiver;
       } else {
         tmp_31 = null;
@@ -12063,7 +12071,7 @@ function readSpecial($this, w, line, low) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      w.a1x_1 = w.a1x_1 + toInt(tmp38_safe_receiver.qc().o(5)) | 0;
+      w.a1x_1 = w.a1x_1 + toInt(tmp38_safe_receiver.qc().r(5)) | 0;
       return true;
     }
   }
@@ -12078,11 +12086,11 @@ function read64($this, w, line, low) {
     // Inline function 'kotlin.contracts.contract' call
     $l$block_0: {
       // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>' call
-      var qualifier = tmp0_safe_receiver.qc().o(4);
+      var qualifier = tmp0_safe_receiver.qc().r(4);
       if (qualifier === 'attacking' || qualifier === 'blocking') {
         break $l$block_0;
       }
-      var rest = tmp0_safe_receiver.qc().o(7);
+      var rest = tmp0_safe_receiver.qc().r(7);
       var e = WinOddsCalc_getInstance().t1k_1.ob(rest);
       var o = e == null ? WinOddsCalc_getInstance().u1k_1.ob(rest) : null;
       var tmp0_safe_receiver_0 = WinOddsCalc_getInstance().r1k_1.ob(rest);
@@ -12121,13 +12129,13 @@ function read64($this, w, line, low) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>.<anonymous>' call
         var tmp_3 = WinOddsCalc_getInstance();
         // Inline function 'kotlin.text.ifEmpty' call
-        var this_0 = e.qc().o(1);
+        var this_0 = e.qc().r(1);
         // Inline function 'kotlin.contracts.contract' call
         var tmp_4;
         // Inline function 'kotlin.text.isEmpty' call
         if (charSequenceLength(this_0) === 0) {
           // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>.<anonymous>.<anonymous>' call
-          tmp_4 = e.qc().o(2);
+          tmp_4 = e.qc().r(2);
         } else {
           tmp_4 = this_0;
         }
@@ -12146,13 +12154,13 @@ function read64($this, w, line, low) {
           // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>.<anonymous>' call
           var tmp_7 = WinOddsCalc_getInstance();
           // Inline function 'kotlin.text.ifEmpty' call
-          var this_1 = o.qc().o(1);
+          var this_1 = o.qc().r(1);
           // Inline function 'kotlin.contracts.contract' call
           var tmp_8;
           // Inline function 'kotlin.text.isEmpty' call
           if (charSequenceLength(this_1) === 0) {
             // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>.<anonymous>.<anonymous>' call
-            tmp_8 = o.qc().o(2);
+            tmp_8 = o.qc().r(2);
           } else {
             tmp_8 = this_1;
           }
@@ -12172,7 +12180,7 @@ function read64($this, w, line, low) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>.<anonymous>' call
-        tmp_9 = WinOddsCalc_getInstance().z1p(d.qc().o(1));
+        tmp_9 = WinOddsCalc_getInstance().z1p(d.qc().r(1));
       }
       var tmp6_elvis_lhs = tmp_9;
       var draw = tmp6_elvis_lhs == null ? 0 : tmp6_elvis_lhs;
@@ -12188,7 +12196,7 @@ function read64($this, w, line, low) {
         // Inline function 'com.mtgtrader.data.WinOddsCalc.read64.<anonymous>.<anonymous>' call
         // Inline function 'kotlin.text.lowercase' call
         // Inline function 'kotlin.js.asDynamic' call
-        tmp_10 = tmp0_safe_receiver.qc().o(5).toLowerCase();
+        tmp_10 = tmp0_safe_receiver.qc().r(5).toLowerCase();
       } else {
         tmp_10 = qualifier;
       }
@@ -12206,9 +12214,9 @@ function read64($this, w, line, low) {
       var this_3 = w.q24_1;
       var tmp_12 = !(e == null);
       // Inline function 'kotlin.text.isNotEmpty' call
-      var this_4 = tmp0_safe_receiver.qc().o(1);
+      var this_4 = tmp0_safe_receiver.qc().r(1);
       var tmp$ret$24 = charSequenceLength(this_4) > 0;
-      var element = new DeathDrain(tmp_12, amount, draw, tmp$ret$24, tmp0_safe_receiver.qc().o(2) === 'another ', tmp0_safe_receiver.qc().o(3) === 'nontoken ', kind);
+      var element = new DeathDrain(tmp_12, amount, draw, tmp$ret$24, tmp0_safe_receiver.qc().r(2) === 'another ', tmp0_safe_receiver.qc().r(3) === 'nontoken ', kind);
       this_3.h(element);
       return true;
     }
@@ -12222,12 +12230,12 @@ function read64($this, w, line, low) {
     var a = new Ability();
     var tmp_13 = WinOddsCalc_getInstance();
     // Inline function 'kotlin.text.substring' call
-    var startIndex = (tmp1_safe_receiver.tb().b1_1 + 1 | 0) - tmp1_safe_receiver.qc().o(3).length | 0;
+    var startIndex = (tmp1_safe_receiver.tb().b1_1 + 1 | 0) - tmp1_safe_receiver.qc().r(3).length | 0;
     // Inline function 'kotlin.js.asDynamic' call
     var tmp$ret$27 = line.substring(startIndex);
     readAbility(tmp_13, a, tmp$ret$27, w, true);
     w.r24_1 = a;
-    w.s24_1 = tmp1_safe_receiver.qc().o(2) === 'another';
+    w.s24_1 = tmp1_safe_receiver.qc().r(2) === 'another';
     return true;
   }
   var put = '^whenever you put one or more -1/-1 counters on a creature, ';
@@ -12257,7 +12265,7 @@ function read64($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.v24_1 = toInt(tmp4_safe_receiver.qc().o(1));
+    w.v24_1 = toInt(tmp4_safe_receiver.qc().r(1));
     return true;
   }
   if (Regex_init_$Create$('^whenever a -1/-1 counter is put on a creature, (?:you may )?create an? ').nb(low)) {
@@ -12288,7 +12296,7 @@ function read64($this, w, line, low) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.a25_1 = WinOddsCalc_getInstance().z1p(tmp6_safe_receiver.qc().o(1));
+    w.a25_1 = WinOddsCalc_getInstance().z1p(tmp6_safe_receiver.qc().r(1));
     return true;
   }
   if (Regex_init_$Create$("^whenever you cast a spell from your hand, reveal the top x cards of your library, where x is that spell's mana value\\. you may cast a spell with mana value x or less").nb(low)) {
@@ -12370,7 +12378,7 @@ function readGear($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.h1x_1 = toInt(tmp0_safe_receiver.qc().o(1));
+    w.h1x_1 = toInt(tmp0_safe_receiver.qc().r(1));
   }
   var tmp1_safe_receiver = $this.e1l_1.ob(text);
   if (tmp1_safe_receiver == null)
@@ -12380,7 +12388,7 @@ function readGear($this, w, text) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var what = tmp1_safe_receiver.qc().o(1).toLowerCase();
+    var what = tmp1_safe_receiver.qc().r(1).toLowerCase();
     w.i1x_1 = contains_0(what, 'color') ? ForEach_COLOURS_getInstance() : contains_0(what, 'card in your hand') ? ForEach_HAND_getInstance() : contains_0(what, 'artifact') ? ForEach_ARTIFACTS_ENCHANTMENTS_getInstance() : contains_0(what, 'enchantment') ? ForEach_ENCHANTMENTS_getInstance() : ForEach_ONE_getInstance();
   }
   var tmp2_safe_receiver = $this.f1l_1.ob(text);
@@ -12389,7 +12397,7 @@ function readGear($this, w, text) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    w.j1x_1 = toInt(tmp2_safe_receiver.qc().o(1));
+    w.j1x_1 = toInt(tmp2_safe_receiver.qc().r(1));
   }
   w.k1x_1 = $this.g1l_1.nb(text);
   w.l1x_1 = $this.h1l_1.nb(text);
@@ -12411,7 +12419,7 @@ function useful($this, c, spellTriggers, creatureTriggers, fodder) {
     tmp_1 = true;
   } else {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    tmp_1 = !c.g24_1.n();
+    tmp_1 = !c.g24_1.q();
   }
   if (tmp_1) {
     tmp_0 = true;
@@ -12458,13 +12466,13 @@ function useful($this, c, spellTriggers, creatureTriggers, fodder) {
               tmp_22 = true;
             } else {
               // Inline function 'kotlin.collections.isNotEmpty' call
-              tmp_22 = !c.d1x_1.n();
+              tmp_22 = !c.d1x_1.q();
             }
             if (tmp_22) {
               tmp_21 = true;
             } else {
               // Inline function 'kotlin.collections.isNotEmpty' call
-              tmp_21 = !c.e1x_1.n();
+              tmp_21 = !c.e1x_1.q();
             }
             if (tmp_21) {
               tmp_20 = true;
@@ -12530,7 +12538,7 @@ function useful($this, c, spellTriggers, creatureTriggers, fodder) {
               tmp_8 = true;
             } else {
               // Inline function 'kotlin.collections.isNotEmpty' call
-              tmp_8 = !c.j25_1.n();
+              tmp_8 = !c.j25_1.q();
             }
             if (tmp_8) {
               tmp_7 = true;
@@ -12580,23 +12588,23 @@ function playBatch($this, count, random, deck, leaders, own, plans, features, tu
       var index = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.playBatch.<anonymous>' call
-      WebProgress_instance.z2d();
+      WebProgress_instance.a2e(r);
       var tmp = ManaOddsCalc_getInstance();
       var _destruct__k2r9zo = tmp.j1q(deck, random, WinOddsCalc$playBatch$lambda);
       var hand = _destruct__k2r9zo.ce();
       var rest = _destruct__k2r9zo.de();
       var game = new Game(hand, toMutableList(rest), leaders, own, plans, features);
-      var turn = game.a2e(turns);
+      var turn = game.b2e(turns);
       if (turn > 0) {
-        var _array__4zh2yp = r.b2e_1;
+        var _array__4zh2yp = r.c2e_1;
         _array__4zh2yp[turn] = _array__4zh2yp[turn] + 1 | 0;
-        r.f2e_1 = r.f2e_1 + 1 | 0;
+        r.g2e_1 = r.g2e_1 + 1 | 0;
         if (game.o29_1) {
-          var _array__4zh2yp_0 = r.c2e_1;
+          var _array__4zh2yp_0 = r.d2e_1;
           _array__4zh2yp_0[turn] = _array__4zh2yp_0[turn] + 1 | 0;
         }
         if (game.v29_1) {
-          var _array__4zh2yp_1 = r.d2e_1;
+          var _array__4zh2yp_1 = r.e2e_1;
           _array__4zh2yp_1[turn] = _array__4zh2yp_1[turn] + 1 | 0;
         }
         // Inline function 'kotlin.collections.forEachIndexed' call
@@ -12610,33 +12618,34 @@ function playBatch($this, count, random, deck, leaders, own, plans, features, tu
           // Inline function 'com.mtgtrader.data.WinOddsCalc.playBatch.<anonymous>.<anonymous>' call
           var tmp1 = index_0;
           index_0 = tmp1 + 1 | 0;
-          var _array__4zh2yp_2 = r.e2e_1;
+          var _array__4zh2yp_2 = r.f2e_1;
           _array__4zh2yp_2[tmp1] = _array__4zh2yp_2[tmp1].g(item);
         }
         if (game.r29_1) {
-          r.g2e_1 = r.g2e_1 + 1 | 0;
+          r.h2e_1 = r.h2e_1 + 1 | 0;
         }
       }
     }
      while (inductionVariable < count);
+  WebProgress_instance.i2e(r);
   return r;
 }
 function Batch(turns) {
-  this.b2e_1 = new Int32Array(turns + 1 | 0);
   this.c2e_1 = new Int32Array(turns + 1 | 0);
   this.d2e_1 = new Int32Array(turns + 1 | 0);
-  this.e2e_1 = longArray(WinOddsCalc_getInstance().i1k_1.m());
-  this.f2e_1 = 0;
+  this.e2e_1 = new Int32Array(turns + 1 | 0);
+  this.f2e_1 = longArray(WinOddsCalc_getInstance().i1k_1.p());
   this.g2e_1 = 0;
+  this.h2e_1 = 0;
 }
 function Source(colours, amount, from, creature, until) {
   creature = creature === VOID ? false : creature;
   until = until === VOID ? 2147483647 : until;
-  this.h2e_1 = colours;
-  this.i2e_1 = amount;
-  this.j2e_1 = from;
-  this.k2e_1 = creature;
-  this.l2e_1 = until;
+  this.j2e_1 = colours;
+  this.k2e_1 = amount;
+  this.l2e_1 = from;
+  this.m2e_1 = creature;
+  this.n2e_1 = until;
 }
 function Entry(card, turn, power, creature, haste, double, types, subtypes) {
   var tmp;
@@ -12720,7 +12729,7 @@ function Entry(card, turn, power, creature, haste, double, types, subtypes) {
   tmp_5.v28_1 = tmp_7;
   this.w28_1 = 0;
 }
-protoOf(Entry).m2e = function (kind) {
+protoOf(Entry).o2e = function (kind) {
   var tmp;
   var tmp_0;
   var tmp_1;
@@ -12733,7 +12742,7 @@ protoOf(Entry).m2e = function (kind) {
       var this_0 = this.z27_1;
       var tmp_2;
       if (isInterface(this_0, Collection)) {
-        tmp_2 = this_0.n();
+        tmp_2 = this_0.q();
       } else {
         tmp_2 = false;
       }
@@ -12741,9 +12750,9 @@ protoOf(Entry).m2e = function (kind) {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Entry.isA.<anonymous>' call
         if (equals_0(element, kind, true)) {
           tmp$ret$0 = true;
@@ -12763,7 +12772,7 @@ protoOf(Entry).m2e = function (kind) {
       var this_1 = this.y27_1;
       var tmp_3;
       if (isInterface(this_1, Collection)) {
-        tmp_3 = this_1.n();
+        tmp_3 = this_1.q();
       } else {
         tmp_3 = false;
       }
@@ -12771,9 +12780,9 @@ protoOf(Entry).m2e = function (kind) {
         tmp$ret$2 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Entry.isA.<anonymous>' call
         if (equals_0(element_0, kind, true)) {
           tmp$ret$2 = true;
@@ -12798,7 +12807,7 @@ function Features(cards) {
     // Inline function 'kotlin.collections.any' call
     var tmp_0;
     if (isInterface(cards, Collection)) {
-      tmp_0 = cards.n();
+      tmp_0 = cards.q();
     } else {
       tmp_0 = false;
     }
@@ -12806,9 +12815,9 @@ function Features(cards) {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = cards.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = cards.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Features.myriadFor.<anonymous>' call
       if (!(element.j20_1 == null)) {
         tmp$ret$0 = true;
@@ -12817,14 +12826,14 @@ function Features(cards) {
     }
     tmp$ret$0 = false;
   }
-  tmp.n2e_1 = tmp$ret$0;
+  tmp.p2e_1 = tmp$ret$0;
   var tmp_1 = this;
   var tmp$ret$2;
   $l$block_2: {
     // Inline function 'kotlin.collections.any' call
     var tmp_2;
     if (isInterface(cards, Collection)) {
-      tmp_2 = cards.n();
+      tmp_2 = cards.q();
     } else {
       tmp_2 = false;
     }
@@ -12832,26 +12841,26 @@ function Features(cards) {
       tmp$ret$2 = false;
       break $l$block_2;
     }
-    var tmp0_iterator_0 = cards.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = cards.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Features.lords.<anonymous>' call
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_0.e20_1.n()) {
+      if (!element_0.e20_1.q()) {
         tmp$ret$2 = true;
         break $l$block_2;
       }
     }
     tmp$ret$2 = false;
   }
-  tmp_1.o2e_1 = tmp$ret$2;
+  tmp_1.q2e_1 = tmp$ret$2;
   var tmp_3 = this;
   var tmp$ret$5;
   $l$block_4: {
     // Inline function 'kotlin.collections.any' call
     var tmp_4;
     if (isInterface(cards, Collection)) {
-      tmp_4 = cards.n();
+      tmp_4 = cards.q();
     } else {
       tmp_4 = false;
     }
@@ -12859,9 +12868,9 @@ function Features(cards) {
       tmp$ret$5 = false;
       break $l$block_4;
     }
-    var tmp0_iterator_1 = cards.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = cards.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Features.hasteFor.<anonymous>' call
       if (!(element_1.i20_1 == null)) {
         tmp$ret$5 = true;
@@ -12870,14 +12879,14 @@ function Features(cards) {
     }
     tmp$ret$5 = false;
   }
-  tmp_3.p2e_1 = tmp$ret$5;
+  tmp_3.r2e_1 = tmp$ret$5;
   var tmp_5 = this;
   var tmp$ret$7;
   $l$block_6: {
     // Inline function 'kotlin.collections.any' call
     var tmp_6;
     if (isInterface(cards, Collection)) {
-      tmp_6 = cards.n();
+      tmp_6 = cards.q();
     } else {
       tmp_6 = false;
     }
@@ -12885,9 +12894,9 @@ function Features(cards) {
       tmp$ret$7 = false;
       break $l$block_6;
     }
-    var tmp0_iterator_2 = cards.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = cards.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Features.drawTriggers.<anonymous>' call
       if (element_2.f23_1 || element_2.v21_1.p26()) {
         tmp$ret$7 = true;
@@ -12896,14 +12905,14 @@ function Features(cards) {
     }
     tmp$ret$7 = false;
   }
-  tmp_5.q2e_1 = tmp$ret$7;
+  tmp_5.s2e_1 = tmp$ret$7;
   var tmp_7 = this;
   var tmp$ret$9;
   $l$block_8: {
     // Inline function 'kotlin.collections.any' call
     var tmp_8;
     if (isInterface(cards, Collection)) {
-      tmp_8 = cards.n();
+      tmp_8 = cards.q();
     } else {
       tmp_8 = false;
     }
@@ -12911,9 +12920,9 @@ function Features(cards) {
       tmp$ret$9 = false;
       break $l$block_8;
     }
-    var tmp0_iterator_3 = cards.j();
-    while (tmp0_iterator_3.k()) {
-      var element_3 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = cards.m();
+    while (tmp0_iterator_3.n()) {
+      var element_3 = tmp0_iterator_3.o();
       // Inline function 'com.mtgtrader.data.Features.counterMods.<anonymous>' call
       if (element_3.b23_1 > 0 || element_3.c23_1 || element_3.d23_1 || element_3.e23_1) {
         tmp$ret$9 = true;
@@ -12922,14 +12931,14 @@ function Features(cards) {
     }
     tmp$ret$9 = false;
   }
-  tmp_7.r2e_1 = tmp$ret$9;
+  tmp_7.t2e_1 = tmp$ret$9;
   var tmp_9 = this;
   var tmp$ret$11;
   $l$block_10: {
     // Inline function 'kotlin.collections.any' call
     var tmp_10;
     if (isInterface(cards, Collection)) {
-      tmp_10 = cards.n();
+      tmp_10 = cards.q();
     } else {
       tmp_10 = false;
     }
@@ -12937,9 +12946,9 @@ function Features(cards) {
       tmp$ret$11 = false;
       break $l$block_10;
     }
-    var tmp0_iterator_4 = cards.j();
-    while (tmp0_iterator_4.k()) {
-      var element_4 = tmp0_iterator_4.l();
+    var tmp0_iterator_4 = cards.m();
+    while (tmp0_iterator_4.n()) {
+      var element_4 = tmp0_iterator_4.o();
       // Inline function 'com.mtgtrader.data.Features.tokenTriggers.<anonymous>' call
       if ((element_4.u20_1 + element_4.v20_1 | 0) > 0 || element_4.q22_1 || element_4.r22_1 || element_4.y23_1) {
         tmp$ret$11 = true;
@@ -12948,14 +12957,14 @@ function Features(cards) {
     }
     tmp$ret$11 = false;
   }
-  tmp_9.s2e_1 = tmp$ret$11;
+  tmp_9.u2e_1 = tmp$ret$11;
   var tmp_11 = this;
   var tmp$ret$13;
   $l$block_12: {
     // Inline function 'kotlin.collections.any' call
     var tmp_12;
     if (isInterface(cards, Collection)) {
-      tmp_12 = cards.n();
+      tmp_12 = cards.q();
     } else {
       tmp_12 = false;
     }
@@ -12963,9 +12972,9 @@ function Features(cards) {
       tmp$ret$13 = false;
       break $l$block_12;
     }
-    var tmp0_iterator_5 = cards.j();
-    while (tmp0_iterator_5.k()) {
-      var element_5 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = cards.m();
+    while (tmp0_iterator_5.n()) {
+      var element_5 = tmp0_iterator_5.o();
       // Inline function 'com.mtgtrader.data.Features.tokenCounters.<anonymous>' call
       if (element_5.x23_1) {
         tmp$ret$13 = true;
@@ -12974,14 +12983,14 @@ function Features(cards) {
     }
     tmp$ret$13 = false;
   }
-  tmp_11.t2e_1 = tmp$ret$13;
+  tmp_11.v2e_1 = tmp$ret$13;
   var tmp_13 = this;
   var tmp$ret$15;
   $l$block_14: {
     // Inline function 'kotlin.collections.any' call
     var tmp_14;
     if (isInterface(cards, Collection)) {
-      tmp_14 = cards.n();
+      tmp_14 = cards.q();
     } else {
       tmp_14 = false;
     }
@@ -12989,9 +12998,9 @@ function Features(cards) {
       tmp$ret$15 = false;
       break $l$block_14;
     }
-    var tmp0_iterator_6 = cards.j();
-    while (tmp0_iterator_6.k()) {
-      var element_6 = tmp0_iterator_6.l();
+    var tmp0_iterator_6 = cards.m();
+    while (tmp0_iterator_6.n()) {
+      var element_6 = tmp0_iterator_6.o();
       // Inline function 'com.mtgtrader.data.Features.sacrificePayoffs.<anonymous>' call
       if (element_6.p2d()) {
         tmp$ret$15 = true;
@@ -13000,14 +13009,14 @@ function Features(cards) {
     }
     tmp$ret$15 = false;
   }
-  tmp_13.u2e_1 = tmp$ret$15;
+  tmp_13.w2e_1 = tmp$ret$15;
   var tmp_15 = this;
   var tmp$ret$17;
   $l$block_16: {
     // Inline function 'kotlin.collections.any' call
     var tmp_16;
     if (isInterface(cards, Collection)) {
-      tmp_16 = cards.n();
+      tmp_16 = cards.q();
     } else {
       tmp_16 = false;
     }
@@ -13015,9 +13024,9 @@ function Features(cards) {
       tmp$ret$17 = false;
       break $l$block_16;
     }
-    var tmp0_iterator_7 = cards.j();
-    while (tmp0_iterator_7.k()) {
-      var element_7 = tmp0_iterator_7.l();
+    var tmp0_iterator_7 = cards.m();
+    while (tmp0_iterator_7.n()) {
+      var element_7 = tmp0_iterator_7.o();
       // Inline function 'com.mtgtrader.data.Features.opponentTurns.<anonymous>' call
       if (element_7.w21_1.p26() || element_7.y21_1 > 0 || element_7.z21_1 || element_7.a22_1 > 0 || element_7.b22_1 || element_7.c22_1.p26() || element_7.l23_1) {
         tmp$ret$17 = true;
@@ -13026,14 +13035,14 @@ function Features(cards) {
     }
     tmp$ret$17 = false;
   }
-  tmp_15.v2e_1 = tmp$ret$17;
+  tmp_15.x2e_1 = tmp$ret$17;
   var tmp_17 = this;
   var tmp$ret$19;
   $l$block_18: {
     // Inline function 'kotlin.collections.any' call
     var tmp_18;
     if (isInterface(cards, Collection)) {
-      tmp_18 = cards.n();
+      tmp_18 = cards.q();
     } else {
       tmp_18 = false;
     }
@@ -13041,16 +13050,16 @@ function Features(cards) {
       tmp$ret$19 = false;
       break $l$block_18;
     }
-    var tmp0_iterator_8 = cards.j();
-    while (tmp0_iterator_8.k()) {
-      var element_8 = tmp0_iterator_8.l();
+    var tmp0_iterator_8 = cards.m();
+    while (tmp0_iterator_8.n()) {
+      var element_8 = tmp0_iterator_8.o();
       // Inline function 'com.mtgtrader.data.Features.castTriggers55.<anonymous>' call
       var tmp_19;
       if (element_8.d22_1.p26()) {
         tmp_19 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_19 = !element_8.e22_1.n();
+        tmp_19 = !element_8.e22_1.q();
       }
       if (tmp_19) {
         tmp$ret$19 = true;
@@ -13059,14 +13068,14 @@ function Features(cards) {
     }
     tmp$ret$19 = false;
   }
-  tmp_17.w2e_1 = tmp$ret$19;
+  tmp_17.y2e_1 = tmp$ret$19;
   var tmp_20 = this;
   var tmp$ret$22;
   $l$block_20: {
     // Inline function 'kotlin.collections.any' call
     var tmp_21;
     if (isInterface(cards, Collection)) {
-      tmp_21 = cards.n();
+      tmp_21 = cards.q();
     } else {
       tmp_21 = false;
     }
@@ -13074,9 +13083,9 @@ function Features(cards) {
       tmp$ret$22 = false;
       break $l$block_20;
     }
-    var tmp0_iterator_9 = cards.j();
-    while (tmp0_iterator_9.k()) {
-      var element_9 = tmp0_iterator_9.l();
+    var tmp0_iterator_9 = cards.m();
+    while (tmp0_iterator_9.n()) {
+      var element_9 = tmp0_iterator_9.o();
       // Inline function 'com.mtgtrader.data.Features.creatureEnter.<anonymous>' call
       if (element_9.f22_1.p26()) {
         tmp$ret$22 = true;
@@ -13085,14 +13094,14 @@ function Features(cards) {
     }
     tmp$ret$22 = false;
   }
-  tmp_20.x2e_1 = tmp$ret$22;
+  tmp_20.z2e_1 = tmp$ret$22;
   var tmp_22 = this;
   var tmp$ret$24;
   $l$block_22: {
     // Inline function 'kotlin.collections.any' call
     var tmp_23;
     if (isInterface(cards, Collection)) {
-      tmp_23 = cards.n();
+      tmp_23 = cards.q();
     } else {
       tmp_23 = false;
     }
@@ -13100,26 +13109,26 @@ function Features(cards) {
       tmp$ret$24 = false;
       break $l$block_22;
     }
-    var tmp0_iterator_10 = cards.j();
-    while (tmp0_iterator_10.k()) {
-      var element_10 = tmp0_iterator_10.l();
+    var tmp0_iterator_10 = cards.m();
+    while (tmp0_iterator_10.n()) {
+      var element_10 = tmp0_iterator_10.o();
       // Inline function 'com.mtgtrader.data.Features.kindTriggers.<anonymous>' call
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_10.o1y_1.n()) {
+      if (!element_10.o1y_1.q()) {
         tmp$ret$24 = true;
         break $l$block_22;
       }
     }
     tmp$ret$24 = false;
   }
-  tmp_22.y2e_1 = tmp$ret$24;
+  tmp_22.a2f_1 = tmp$ret$24;
   var tmp_24 = this;
   var tmp$ret$27;
   $l$block_24: {
     // Inline function 'kotlin.collections.any' call
     var tmp_25;
     if (isInterface(cards, Collection)) {
-      tmp_25 = cards.n();
+      tmp_25 = cards.q();
     } else {
       tmp_25 = false;
     }
@@ -13127,26 +13136,26 @@ function Features(cards) {
       tmp$ret$27 = false;
       break $l$block_24;
     }
-    var tmp0_iterator_11 = cards.j();
-    while (tmp0_iterator_11.k()) {
-      var element_11 = tmp0_iterator_11.l();
+    var tmp0_iterator_11 = cards.m();
+    while (tmp0_iterator_11.n()) {
+      var element_11 = tmp0_iterator_11.o();
       // Inline function 'com.mtgtrader.data.Features.enterTriggers.<anonymous>' call
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_11.e1x_1.n()) {
+      if (!element_11.e1x_1.q()) {
         tmp$ret$27 = true;
         break $l$block_24;
       }
     }
     tmp$ret$27 = false;
   }
-  tmp_24.z2e_1 = tmp$ret$27;
+  tmp_24.b2f_1 = tmp$ret$27;
   var tmp_26 = this;
   var tmp$ret$30;
   $l$block_26: {
     // Inline function 'kotlin.collections.any' call
     var tmp_27;
     if (isInterface(cards, Collection)) {
-      tmp_27 = cards.n();
+      tmp_27 = cards.q();
     } else {
       tmp_27 = false;
     }
@@ -13154,9 +13163,9 @@ function Features(cards) {
       tmp$ret$30 = false;
       break $l$block_26;
     }
-    var tmp0_iterator_12 = cards.j();
-    while (tmp0_iterator_12.k()) {
-      var element_12 = tmp0_iterator_12.l();
+    var tmp0_iterator_12 = cards.m();
+    while (tmp0_iterator_12.n()) {
+      var element_12 = tmp0_iterator_12.o();
       // Inline function 'com.mtgtrader.data.Features.pool55.<anonymous>' call
       if (!(element_12.t22_1 == null) || element_12.u22_1) {
         tmp$ret$30 = true;
@@ -13165,14 +13174,14 @@ function Features(cards) {
     }
     tmp$ret$30 = false;
   }
-  tmp_26.a2f_1 = tmp$ret$30;
+  tmp_26.c2f_1 = tmp$ret$30;
   var tmp_28 = this;
   var tmp$ret$32;
   $l$block_28: {
     // Inline function 'kotlin.collections.any' call
     var tmp_29;
     if (isInterface(cards, Collection)) {
-      tmp_29 = cards.n();
+      tmp_29 = cards.q();
     } else {
       tmp_29 = false;
     }
@@ -13180,9 +13189,9 @@ function Features(cards) {
       tmp$ret$32 = false;
       break $l$block_28;
     }
-    var tmp0_iterator_13 = cards.j();
-    while (tmp0_iterator_13.k()) {
-      var element_13 = tmp0_iterator_13.l();
+    var tmp0_iterator_13 = cards.m();
+    while (tmp0_iterator_13.n()) {
+      var element_13 = tmp0_iterator_13.o();
       // Inline function 'com.mtgtrader.data.Features.foodMana.<anonymous>' call
       if (element_13.v22_1) {
         tmp$ret$32 = true;
@@ -13191,14 +13200,14 @@ function Features(cards) {
     }
     tmp$ret$32 = false;
   }
-  tmp_28.b2f_1 = tmp$ret$32;
+  tmp_28.d2f_1 = tmp$ret$32;
   var tmp_30 = this;
   var tmp$ret$34;
   $l$block_30: {
     // Inline function 'kotlin.collections.any' call
     var tmp_31;
     if (isInterface(cards, Collection)) {
-      tmp_31 = cards.n();
+      tmp_31 = cards.q();
     } else {
       tmp_31 = false;
     }
@@ -13206,13 +13215,13 @@ function Features(cards) {
       tmp$ret$34 = false;
       break $l$block_30;
     }
-    var tmp0_iterator_14 = cards.j();
-    while (tmp0_iterator_14.k()) {
-      var element_14 = tmp0_iterator_14.l();
+    var tmp0_iterator_14 = cards.m();
+    while (tmp0_iterator_14.n()) {
+      var element_14 = tmp0_iterator_14.o();
       // Inline function 'com.mtgtrader.data.Features.costChanges.<anonymous>' call
       var tmp_32;
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_14.l20_1.n()) {
+      if (!element_14.l20_1.q()) {
         tmp_32 = true;
       } else {
         tmp_32 = !(element_14.m20_1 == null);
@@ -13224,14 +13233,14 @@ function Features(cards) {
     }
     tmp$ret$34 = false;
   }
-  tmp_30.c2f_1 = tmp$ret$34;
+  tmp_30.e2f_1 = tmp$ret$34;
   var tmp_33 = this;
   var tmp$ret$37;
   $l$block_32: {
     // Inline function 'kotlin.collections.any' call
     var tmp_34;
     if (isInterface(cards, Collection)) {
-      tmp_34 = cards.n();
+      tmp_34 = cards.q();
     } else {
       tmp_34 = false;
     }
@@ -13239,9 +13248,9 @@ function Features(cards) {
       tmp$ret$37 = false;
       break $l$block_32;
     }
-    var tmp0_iterator_15 = cards.j();
-    while (tmp0_iterator_15.k()) {
-      var element_15 = tmp0_iterator_15.l();
+    var tmp0_iterator_15 = cards.m();
+    while (tmp0_iterator_15.n()) {
+      var element_15 = tmp0_iterator_15.o();
       // Inline function 'com.mtgtrader.data.Features.dorks.<anonymous>' call
       if (element_15.g1w_1.k1i_1.equals(Kind_CREATURE_getInstance())) {
         tmp$ret$37 = true;
@@ -13250,14 +13259,14 @@ function Features(cards) {
     }
     tmp$ret$37 = false;
   }
-  tmp_33.d2f_1 = tmp$ret$37;
+  tmp_33.f2f_1 = tmp$ret$37;
   var tmp_35 = this;
   var tmp$ret$39;
   $l$block_38: {
     // Inline function 'kotlin.collections.any' call
     var tmp_36;
     if (isInterface(cards, Collection)) {
-      tmp_36 = cards.n();
+      tmp_36 = cards.q();
     } else {
       tmp_36 = false;
     }
@@ -13265,9 +13274,9 @@ function Features(cards) {
       tmp$ret$39 = false;
       break $l$block_38;
     }
-    var tmp0_iterator_16 = cards.j();
-    while (tmp0_iterator_16.k()) {
-      var element_16 = tmp0_iterator_16.l();
+    var tmp0_iterator_16 = cards.m();
+    while (tmp0_iterator_16.n()) {
+      var element_16 = tmp0_iterator_16.o();
       // Inline function 'com.mtgtrader.data.Features.manaTokens.<anonymous>' call
       var tmp_37;
       var tmp_38;
@@ -13281,7 +13290,7 @@ function Features(cards) {
           var this_0 = element_16.o1y_1;
           var tmp_40;
           if (isInterface(this_0, Collection)) {
-            tmp_40 = this_0.n();
+            tmp_40 = this_0.q();
           } else {
             tmp_40 = false;
           }
@@ -13289,9 +13298,9 @@ function Features(cards) {
             tmp$ret$40 = false;
             break $l$block_35;
           }
-          var tmp0_iterator_17 = this_0.j();
-          while (tmp0_iterator_17.k()) {
-            var element_17 = tmp0_iterator_17.l();
+          var tmp0_iterator_17 = this_0.m();
+          while (tmp0_iterator_17.n()) {
+            var element_17 = tmp0_iterator_17.o();
             // Inline function 'com.mtgtrader.data.Features.manaTokens.<anonymous>.<anonymous>' call
             if (element_17.j26_1 > 0) {
               tmp$ret$40 = true;
@@ -13316,7 +13325,7 @@ function Features(cards) {
           var this_1 = element_16.z2b();
           var tmp_41;
           if (isInterface(this_1, Collection)) {
-            tmp_41 = this_1.n();
+            tmp_41 = this_1.q();
           } else {
             tmp_41 = false;
           }
@@ -13324,9 +13333,9 @@ function Features(cards) {
             tmp$ret$42 = false;
             break $l$block_37;
           }
-          var tmp0_iterator_18 = this_1.j();
-          while (tmp0_iterator_18.k()) {
-            var element_18 = tmp0_iterator_18.l();
+          var tmp0_iterator_18 = this_1.m();
+          while (tmp0_iterator_18.n()) {
+            var element_18 = tmp0_iterator_18.o();
             // Inline function 'com.mtgtrader.data.Features.manaTokens.<anonymous>.<anonymous>' call
             if (element_18.j1t_1 > 0) {
               tmp$ret$42 = true;
@@ -13344,14 +13353,14 @@ function Features(cards) {
     }
     tmp$ret$39 = false;
   }
-  tmp_35.e2f_1 = tmp$ret$39;
+  tmp_35.g2f_1 = tmp$ret$39;
   var tmp_42 = this;
   var tmp$ret$45;
   $l$block_46: {
     // Inline function 'kotlin.collections.any' call
     var tmp_43;
     if (isInterface(cards, Collection)) {
-      tmp_43 = cards.n();
+      tmp_43 = cards.q();
     } else {
       tmp_43 = false;
     }
@@ -13359,9 +13368,9 @@ function Features(cards) {
       tmp$ret$45 = false;
       break $l$block_46;
     }
-    var tmp0_iterator_19 = cards.j();
-    while (tmp0_iterator_19.k()) {
-      var element_19 = tmp0_iterator_19.l();
+    var tmp0_iterator_19 = cards.m();
+    while (tmp0_iterator_19.n()) {
+      var element_19 = tmp0_iterator_19.o();
       // Inline function 'com.mtgtrader.data.Features.reanimator.<anonymous>' call
       var tmp_44;
       var tmp_45;
@@ -13372,7 +13381,7 @@ function Features(cards) {
         var this_2 = listOf([element_19.u1z_1, element_19.v1z_1, element_19.b20_1]);
         var tmp_47;
         if (isInterface(this_2, Collection)) {
-          tmp_47 = this_2.n();
+          tmp_47 = this_2.q();
         } else {
           tmp_47 = false;
         }
@@ -13380,9 +13389,9 @@ function Features(cards) {
           tmp$ret$46 = false;
           break $l$block_41;
         }
-        var tmp0_iterator_20 = this_2.j();
-        while (tmp0_iterator_20.k()) {
-          var element_20 = tmp0_iterator_20.l();
+        var tmp0_iterator_20 = this_2.m();
+        while (tmp0_iterator_20.n()) {
+          var element_20 = tmp0_iterator_20.o();
           // Inline function 'com.mtgtrader.data.Features.reanimator.<anonymous>.<anonymous>' call
           if (element_20.r1t_1 > 0 || element_20.b1u_1) {
             tmp$ret$46 = true;
@@ -13400,7 +13409,7 @@ function Features(cards) {
           var this_3 = element_19.c20_1;
           var tmp_48;
           if (isInterface(this_3, Collection)) {
-            tmp_48 = this_3.n();
+            tmp_48 = this_3.q();
           } else {
             tmp_48 = false;
           }
@@ -13408,9 +13417,9 @@ function Features(cards) {
             tmp$ret$48 = false;
             break $l$block_43;
           }
-          var tmp0_iterator_21 = this_3.j();
-          while (tmp0_iterator_21.k()) {
-            var element_21 = tmp0_iterator_21.l();
+          var tmp0_iterator_21 = this_3.m();
+          while (tmp0_iterator_21.n()) {
+            var element_21 = tmp0_iterator_21.o();
             // Inline function 'com.mtgtrader.data.Features.reanimator.<anonymous>.<anonymous>' call
             if (element_21.r1t_1 > 0 || element_21.b1u_1) {
               tmp$ret$48 = true;
@@ -13430,7 +13439,7 @@ function Features(cards) {
           var this_4 = element_19.t1z_1;
           var tmp_49;
           if (isInterface(this_4, Collection)) {
-            tmp_49 = this_4.n();
+            tmp_49 = this_4.q();
           } else {
             tmp_49 = false;
           }
@@ -13438,9 +13447,9 @@ function Features(cards) {
             tmp$ret$50 = false;
             break $l$block_45;
           }
-          var tmp0_iterator_22 = this_4.j();
-          while (tmp0_iterator_22.k()) {
-            var element_22 = tmp0_iterator_22.l();
+          var tmp0_iterator_22 = this_4.m();
+          while (tmp0_iterator_22.n()) {
+            var element_22 = tmp0_iterator_22.o();
             // Inline function 'com.mtgtrader.data.Features.reanimator.<anonymous>.<anonymous>' call
             if (element_22.be_1.r1t_1 > 0) {
               tmp$ret$50 = true;
@@ -13463,14 +13472,14 @@ function Features(cards) {
     }
     tmp$ret$45 = false;
   }
-  tmp_42.f2f_1 = tmp$ret$45;
+  tmp_42.h2f_1 = tmp$ret$45;
   var tmp_50 = this;
   var tmp$ret$53;
   $l$block_48: {
     // Inline function 'kotlin.collections.any' call
     var tmp_51;
     if (isInterface(cards, Collection)) {
-      tmp_51 = cards.n();
+      tmp_51 = cards.q();
     } else {
       tmp_51 = false;
     }
@@ -13478,9 +13487,9 @@ function Features(cards) {
       tmp$ret$53 = false;
       break $l$block_48;
     }
-    var tmp0_iterator_23 = cards.j();
-    while (tmp0_iterator_23.k()) {
-      var element_23 = tmp0_iterator_23.l();
+    var tmp0_iterator_23 = cards.m();
+    while (tmp0_iterator_23.n()) {
+      var element_23 = tmp0_iterator_23.o();
       // Inline function 'com.mtgtrader.data.Features.mazeDeck.<anonymous>' call
       if (element_23.s1y_1) {
         tmp$ret$53 = true;
@@ -13489,14 +13498,14 @@ function Features(cards) {
     }
     tmp$ret$53 = false;
   }
-  tmp_50.g2f_1 = tmp$ret$53;
+  tmp_50.i2f_1 = tmp$ret$53;
   var tmp_52 = this;
   var tmp$ret$55;
   $l$block_50: {
     // Inline function 'kotlin.collections.any' call
     var tmp_53;
     if (isInterface(cards, Collection)) {
-      tmp_53 = cards.n();
+      tmp_53 = cards.q();
     } else {
       tmp_53 = false;
     }
@@ -13504,9 +13513,9 @@ function Features(cards) {
       tmp$ret$55 = false;
       break $l$block_50;
     }
-    var tmp0_iterator_24 = cards.j();
-    while (tmp0_iterator_24.k()) {
-      var element_24 = tmp0_iterator_24.l();
+    var tmp0_iterator_24 = cards.m();
+    while (tmp0_iterator_24.n()) {
+      var element_24 = tmp0_iterator_24.o();
       // Inline function 'com.mtgtrader.data.Features.fodder.<anonymous>' call
       if (!(element_24.w1x_1 == null)) {
         tmp$ret$55 = true;
@@ -13515,14 +13524,14 @@ function Features(cards) {
     }
     tmp$ret$55 = false;
   }
-  tmp_52.h2f_1 = tmp$ret$55;
+  tmp_52.j2f_1 = tmp$ret$55;
   var tmp_54 = this;
   var tmp$ret$57;
   $l$block_52: {
     // Inline function 'kotlin.collections.any' call
     var tmp_55;
     if (isInterface(cards, Collection)) {
-      tmp_55 = cards.n();
+      tmp_55 = cards.q();
     } else {
       tmp_55 = false;
     }
@@ -13530,9 +13539,9 @@ function Features(cards) {
       tmp$ret$57 = false;
       break $l$block_52;
     }
-    var tmp0_iterator_25 = cards.j();
-    while (tmp0_iterator_25.k()) {
-      var element_25 = tmp0_iterator_25.l();
+    var tmp0_iterator_25 = cards.m();
+    while (tmp0_iterator_25.n()) {
+      var element_25 = tmp0_iterator_25.o();
       // Inline function 'com.mtgtrader.data.Features.eachUpkeep.<anonymous>' call
       if (element_25.c22_1.p26() || element_25.b22_1 || element_25.n22_1 || element_25.o22_1 > 0) {
         tmp$ret$57 = true;
@@ -13541,14 +13550,14 @@ function Features(cards) {
     }
     tmp$ret$57 = false;
   }
-  tmp_54.i2f_1 = tmp$ret$57;
+  tmp_54.k2f_1 = tmp$ret$57;
   var tmp_56 = this;
   var tmp$ret$59;
   $l$block_54: {
     // Inline function 'kotlin.collections.any' call
     var tmp_57;
     if (isInterface(cards, Collection)) {
-      tmp_57 = cards.n();
+      tmp_57 = cards.q();
     } else {
       tmp_57 = false;
     }
@@ -13556,9 +13565,9 @@ function Features(cards) {
       tmp$ret$59 = false;
       break $l$block_54;
     }
-    var tmp0_iterator_26 = cards.j();
-    while (tmp0_iterator_26.k()) {
-      var element_26 = tmp0_iterator_26.l();
+    var tmp0_iterator_26 = cards.m();
+    while (tmp0_iterator_26.n()) {
+      var element_26 = tmp0_iterator_26.o();
       // Inline function 'com.mtgtrader.data.Features.eachTurn.<anonymous>' call
       if (element_26.v1z_1.p26()) {
         tmp$ret$59 = true;
@@ -13567,14 +13576,14 @@ function Features(cards) {
     }
     tmp$ret$59 = false;
   }
-  tmp_56.j2f_1 = tmp$ret$59;
+  tmp_56.l2f_1 = tmp$ret$59;
   var tmp_58 = this;
   var tmp$ret$61;
   $l$block_56: {
     // Inline function 'kotlin.collections.any' call
     var tmp_59;
     if (isInterface(cards, Collection)) {
-      tmp_59 = cards.n();
+      tmp_59 = cards.q();
     } else {
       tmp_59 = false;
     }
@@ -13582,9 +13591,9 @@ function Features(cards) {
       tmp$ret$61 = false;
       break $l$block_56;
     }
-    var tmp0_iterator_27 = cards.j();
-    while (tmp0_iterator_27.k()) {
-      var element_27 = tmp0_iterator_27.l();
+    var tmp0_iterator_27 = cards.m();
+    while (tmp0_iterator_27.n()) {
+      var element_27 = tmp0_iterator_27.o();
       // Inline function 'com.mtgtrader.data.Features.animate.<anonymous>' call
       if (element_27.m22_1 > 0 || element_27.n23_1 > 0) {
         tmp$ret$61 = true;
@@ -13593,14 +13602,14 @@ function Features(cards) {
     }
     tmp$ret$61 = false;
   }
-  tmp_58.k2f_1 = tmp$ret$61;
+  tmp_58.m2f_1 = tmp$ret$61;
   var tmp_60 = this;
   var tmp$ret$63;
   $l$block_58: {
     // Inline function 'kotlin.collections.any' call
     var tmp_61;
     if (isInterface(cards, Collection)) {
-      tmp_61 = cards.n();
+      tmp_61 = cards.q();
     } else {
       tmp_61 = false;
     }
@@ -13608,26 +13617,26 @@ function Features(cards) {
       tmp$ret$63 = false;
       break $l$block_58;
     }
-    var tmp0_iterator_28 = cards.j();
-    while (tmp0_iterator_28.k()) {
-      var element_28 = tmp0_iterator_28.l();
+    var tmp0_iterator_28 = cards.m();
+    while (tmp0_iterator_28.n()) {
+      var element_28 = tmp0_iterator_28.o();
       // Inline function 'com.mtgtrader.data.Features.pumps.<anonymous>' call
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_28.f20_1.n()) {
+      if (!element_28.f20_1.q()) {
         tmp$ret$63 = true;
         break $l$block_58;
       }
     }
     tmp$ret$63 = false;
   }
-  tmp_60.l2f_1 = tmp$ret$63;
+  tmp_60.n2f_1 = tmp$ret$63;
   var tmp_62 = this;
   var tmp$ret$66;
   $l$block_60: {
     // Inline function 'kotlin.collections.any' call
     var tmp_63;
     if (isInterface(cards, Collection)) {
-      tmp_63 = cards.n();
+      tmp_63 = cards.q();
     } else {
       tmp_63 = false;
     }
@@ -13635,9 +13644,9 @@ function Features(cards) {
       tmp$ret$66 = false;
       break $l$block_60;
     }
-    var tmp0_iterator_29 = cards.j();
-    while (tmp0_iterator_29.k()) {
-      var element_29 = tmp0_iterator_29.l();
+    var tmp0_iterator_29 = cards.m();
+    while (tmp0_iterator_29.n()) {
+      var element_29 = tmp0_iterator_29.o();
       // Inline function 'com.mtgtrader.data.Features.attack55.<anonymous>' call
       if (element_29.w1z_1.p26() || element_29.y1z_1.p26() || element_29.a20_1.p26() || element_29.g20_1 > 0) {
         tmp$ret$66 = true;
@@ -13646,14 +13655,14 @@ function Features(cards) {
     }
     tmp$ret$66 = false;
   }
-  tmp_62.m2f_1 = tmp$ret$66;
+  tmp_62.o2f_1 = tmp$ret$66;
   var tmp_64 = this;
   var tmp$ret$68;
   $l$block_62: {
     // Inline function 'kotlin.collections.any' call
     var tmp_65;
     if (isInterface(cards, Collection)) {
-      tmp_65 = cards.n();
+      tmp_65 = cards.q();
     } else {
       tmp_65 = false;
     }
@@ -13661,9 +13670,9 @@ function Features(cards) {
       tmp$ret$68 = false;
       break $l$block_62;
     }
-    var tmp0_iterator_30 = cards.j();
-    while (tmp0_iterator_30.k()) {
-      var element_30 = tmp0_iterator_30.l();
+    var tmp0_iterator_30 = cards.m();
+    while (tmp0_iterator_30.n()) {
+      var element_30 = tmp0_iterator_30.o();
       // Inline function 'com.mtgtrader.data.Features.afterCombat.<anonymous>' call
       if (element_30.i22_1.p26() || element_30.k23_1 || element_30.b20_1.p26() || element_30.k22_1.p26() || element_30.a23_1 || element_30.m23_1 || !(element_30.c21_1 == null)) {
         tmp$ret$68 = true;
@@ -13672,7 +13681,7 @@ function Features(cards) {
     }
     tmp$ret$68 = false;
   }
-  tmp_64.n2f_1 = tmp$ret$68;
+  tmp_64.p2f_1 = tmp$ret$68;
   var tmp_66 = this;
   var tmp_67;
   var tmp$ret$70;
@@ -13680,7 +13689,7 @@ function Features(cards) {
     // Inline function 'kotlin.collections.any' call
     var tmp_68;
     if (isInterface(cards, Collection)) {
-      tmp_68 = cards.n();
+      tmp_68 = cards.q();
     } else {
       tmp_68 = false;
     }
@@ -13688,9 +13697,9 @@ function Features(cards) {
       tmp$ret$70 = false;
       break $l$block_64;
     }
-    var tmp0_iterator_31 = cards.j();
-    while (tmp0_iterator_31.k()) {
-      var element_31 = tmp0_iterator_31.l();
+    var tmp0_iterator_31 = cards.m();
+    while (tmp0_iterator_31.n()) {
+      var element_31 = tmp0_iterator_31.o();
       // Inline function 'com.mtgtrader.data.Features.clues.<anonymous>' call
       if (element_31.j22_1.p26()) {
         tmp$ret$70 = true;
@@ -13707,7 +13716,7 @@ function Features(cards) {
       // Inline function 'kotlin.collections.any' call
       var tmp_69;
       if (isInterface(cards, Collection)) {
-        tmp_69 = cards.n();
+        tmp_69 = cards.q();
       } else {
         tmp_69 = false;
       }
@@ -13715,9 +13724,9 @@ function Features(cards) {
         tmp$ret$72 = false;
         break $l$block_70;
       }
-      var tmp0_iterator_32 = cards.j();
-      while (tmp0_iterator_32.k()) {
-        var element_32 = tmp0_iterator_32.l();
+      var tmp0_iterator_32 = cards.m();
+      while (tmp0_iterator_32.n()) {
+        var element_32 = tmp0_iterator_32.o();
         // Inline function 'com.mtgtrader.data.Features.clues.<anonymous>' call
         var tmp_70;
         var tmp_71;
@@ -13730,7 +13739,7 @@ function Features(cards) {
             var this_5 = element_32.z2b();
             var tmp_72;
             if (isInterface(this_5, Collection)) {
-              tmp_72 = this_5.n();
+              tmp_72 = this_5.q();
             } else {
               tmp_72 = false;
             }
@@ -13738,9 +13747,9 @@ function Features(cards) {
               tmp$ret$73 = false;
               break $l$block_67;
             }
-            var tmp0_iterator_33 = this_5.j();
-            while (tmp0_iterator_33.k()) {
-              var element_33 = tmp0_iterator_33.l();
+            var tmp0_iterator_33 = this_5.m();
+            while (tmp0_iterator_33.n()) {
+              var element_33 = tmp0_iterator_33.o();
               // Inline function 'com.mtgtrader.data.Features.clues.<anonymous>.<anonymous>' call
               if (element_33.p1u_1.a2('clue')) {
                 tmp$ret$73 = true;
@@ -13760,7 +13769,7 @@ function Features(cards) {
             var this_6 = element_32.o1y_1;
             var tmp_73;
             if (isInterface(this_6, Collection)) {
-              tmp_73 = this_6.n();
+              tmp_73 = this_6.q();
             } else {
               tmp_73 = false;
             }
@@ -13768,9 +13777,9 @@ function Features(cards) {
               tmp$ret$75 = false;
               break $l$block_69;
             }
-            var tmp0_iterator_34 = this_6.j();
-            while (tmp0_iterator_34.k()) {
-              var element_34 = tmp0_iterator_34.l();
+            var tmp0_iterator_34 = this_6.m();
+            while (tmp0_iterator_34.n()) {
+              var element_34 = tmp0_iterator_34.o();
               // Inline function 'com.mtgtrader.data.Features.clues.<anonymous>.<anonymous>' call
               if (element_34.m26_1.a2('clue')) {
                 tmp$ret$75 = true;
@@ -13790,14 +13799,14 @@ function Features(cards) {
     }
     tmp_67 = tmp$ret$72;
   }
-  tmp_66.o2f_1 = tmp_67;
+  tmp_66.q2f_1 = tmp_67;
   var tmp_74 = this;
   var tmp$ret$78;
   $l$block_76: {
     // Inline function 'kotlin.collections.any' call
     var tmp_75;
     if (isInterface(cards, Collection)) {
-      tmp_75 = cards.n();
+      tmp_75 = cards.q();
     } else {
       tmp_75 = false;
     }
@@ -13805,9 +13814,9 @@ function Features(cards) {
       tmp$ret$78 = false;
       break $l$block_76;
     }
-    var tmp0_iterator_35 = cards.j();
-    while (tmp0_iterator_35.k()) {
-      var element_35 = tmp0_iterator_35.l();
+    var tmp0_iterator_35 = cards.m();
+    while (tmp0_iterator_35.n()) {
+      var element_35 = tmp0_iterator_35.o();
       // Inline function 'com.mtgtrader.data.Features.mutagens.<anonymous>' call
       var tmp_76;
       var tmp_77;
@@ -13820,7 +13829,7 @@ function Features(cards) {
           var this_7 = element_35.z2b();
           var tmp_78;
           if (isInterface(this_7, Collection)) {
-            tmp_78 = this_7.n();
+            tmp_78 = this_7.q();
           } else {
             tmp_78 = false;
           }
@@ -13828,9 +13837,9 @@ function Features(cards) {
             tmp$ret$79 = false;
             break $l$block_73;
           }
-          var tmp0_iterator_36 = this_7.j();
-          while (tmp0_iterator_36.k()) {
-            var element_36 = tmp0_iterator_36.l();
+          var tmp0_iterator_36 = this_7.m();
+          while (tmp0_iterator_36.n()) {
+            var element_36 = tmp0_iterator_36.o();
             // Inline function 'com.mtgtrader.data.Features.mutagens.<anonymous>.<anonymous>' call
             if (element_36.p1u_1.a2('mutagen')) {
               tmp$ret$79 = true;
@@ -13850,7 +13859,7 @@ function Features(cards) {
           var this_8 = element_35.o1y_1;
           var tmp_79;
           if (isInterface(this_8, Collection)) {
-            tmp_79 = this_8.n();
+            tmp_79 = this_8.q();
           } else {
             tmp_79 = false;
           }
@@ -13858,9 +13867,9 @@ function Features(cards) {
             tmp$ret$81 = false;
             break $l$block_75;
           }
-          var tmp0_iterator_37 = this_8.j();
-          while (tmp0_iterator_37.k()) {
-            var element_37 = tmp0_iterator_37.l();
+          var tmp0_iterator_37 = this_8.m();
+          while (tmp0_iterator_37.n()) {
+            var element_37 = tmp0_iterator_37.o();
             // Inline function 'com.mtgtrader.data.Features.mutagens.<anonymous>.<anonymous>' call
             if (element_37.m26_1.a2('mutagen')) {
               tmp$ret$81 = true;
@@ -13878,14 +13887,14 @@ function Features(cards) {
     }
     tmp$ret$78 = false;
   }
-  tmp_74.p2f_1 = tmp$ret$78;
+  tmp_74.r2f_1 = tmp$ret$78;
   var tmp_80 = this;
   var tmp$ret$84;
   $l$block_78: {
     // Inline function 'kotlin.collections.any' call
     var tmp_81;
     if (isInterface(cards, Collection)) {
-      tmp_81 = cards.n();
+      tmp_81 = cards.q();
     } else {
       tmp_81 = false;
     }
@@ -13893,9 +13902,9 @@ function Features(cards) {
       tmp$ret$84 = false;
       break $l$block_78;
     }
-    var tmp0_iterator_38 = cards.j();
-    while (tmp0_iterator_38.k()) {
-      var element_38 = tmp0_iterator_38.l();
+    var tmp0_iterator_38 = cards.m();
+    while (tmp0_iterator_38.n()) {
+      var element_38 = tmp0_iterator_38.o();
       // Inline function 'com.mtgtrader.data.Features.drawnBonus.<anonymous>' call
       if (element_38.x22_1 || element_38.y22_1 || element_38.w22_1) {
         tmp$ret$84 = true;
@@ -13904,14 +13913,14 @@ function Features(cards) {
     }
     tmp$ret$84 = false;
   }
-  tmp_80.q2f_1 = tmp$ret$84;
+  tmp_80.s2f_1 = tmp$ret$84;
   var tmp_82 = this;
   var tmp$ret$86;
   $l$block_80: {
     // Inline function 'kotlin.collections.any' call
     var tmp_83;
     if (isInterface(cards, Collection)) {
-      tmp_83 = cards.n();
+      tmp_83 = cards.q();
     } else {
       tmp_83 = false;
     }
@@ -13919,9 +13928,9 @@ function Features(cards) {
       tmp$ret$86 = false;
       break $l$block_80;
     }
-    var tmp0_iterator_39 = cards.j();
-    while (tmp0_iterator_39.k()) {
-      var element_39 = tmp0_iterator_39.l();
+    var tmp0_iterator_39 = cards.m();
+    while (tmp0_iterator_39.n()) {
+      var element_39 = tmp0_iterator_39.o();
       // Inline function 'com.mtgtrader.data.Features.doubles.<anonymous>' call
       if (element_39.h23_1 || element_39.g23_1 || element_39.k20_1 > 0 || element_39.r1x_1 || element_39.s1x_1 > 0) {
         tmp$ret$86 = true;
@@ -13930,14 +13939,14 @@ function Features(cards) {
     }
     tmp$ret$86 = false;
   }
-  tmp_82.r2f_1 = tmp$ret$86;
+  tmp_82.t2f_1 = tmp$ret$86;
   var tmp_84 = this;
   var tmp$ret$88;
   $l$block_82: {
     // Inline function 'kotlin.collections.any' call
     var tmp_85;
     if (isInterface(cards, Collection)) {
-      tmp_85 = cards.n();
+      tmp_85 = cards.q();
     } else {
       tmp_85 = false;
     }
@@ -13945,9 +13954,9 @@ function Features(cards) {
       tmp$ret$88 = false;
       break $l$block_82;
     }
-    var tmp0_iterator_40 = cards.j();
-    while (tmp0_iterator_40.k()) {
-      var element_40 = tmp0_iterator_40.l();
+    var tmp0_iterator_40 = cards.m();
+    while (tmp0_iterator_40.n()) {
+      var element_40 = tmp0_iterator_40.o();
       // Inline function 'com.mtgtrader.data.Features.graveyardCasts.<anonymous>' call
       if (!(element_40.j21_1 == null) || !(element_40.k21_1 == null) || !(element_40.l21_1 == null)) {
         tmp$ret$88 = true;
@@ -13956,14 +13965,14 @@ function Features(cards) {
     }
     tmp$ret$88 = false;
   }
-  tmp_84.s2f_1 = tmp$ret$88;
+  tmp_84.u2f_1 = tmp$ret$88;
   var tmp_86 = this;
   var tmp$ret$90;
   $l$block_84: {
     // Inline function 'kotlin.collections.any' call
     var tmp_87;
     if (isInterface(cards, Collection)) {
-      tmp_87 = cards.n();
+      tmp_87 = cards.q();
     } else {
       tmp_87 = false;
     }
@@ -13971,14 +13980,14 @@ function Features(cards) {
       tmp$ret$90 = false;
       break $l$block_84;
     }
-    var tmp0_iterator_41 = cards.j();
-    while (tmp0_iterator_41.k()) {
-      var element_41 = tmp0_iterator_41.l();
+    var tmp0_iterator_41 = cards.m();
+    while (tmp0_iterator_41.n()) {
+      var element_41 = tmp0_iterator_41.o();
       // Inline function 'com.mtgtrader.data.Features.planeswalkers.<anonymous>' call
       var tmp_88;
       if (element_41.p1z_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_88 = !element_41.t1z_1.n();
+        tmp_88 = !element_41.t1z_1.q();
       } else {
         tmp_88 = false;
       }
@@ -13989,14 +13998,14 @@ function Features(cards) {
     }
     tmp$ret$90 = false;
   }
-  tmp_86.t2f_1 = tmp$ret$90;
+  tmp_86.v2f_1 = tmp$ret$90;
   var tmp_89 = this;
   var tmp$ret$93;
   $l$block_86: {
     // Inline function 'kotlin.collections.any' call
     var tmp_90;
     if (isInterface(cards, Collection)) {
-      tmp_90 = cards.n();
+      tmp_90 = cards.q();
     } else {
       tmp_90 = false;
     }
@@ -14004,24 +14013,24 @@ function Features(cards) {
       tmp$ret$93 = false;
       break $l$block_86;
     }
-    var tmp0_iterator_42 = cards.j();
-    while (tmp0_iterator_42.k()) {
-      var element_42 = tmp0_iterator_42.l();
+    var tmp0_iterator_42 = cards.m();
+    while (tmp0_iterator_42.n()) {
+      var element_42 = tmp0_iterator_42.o();
       // Inline function 'com.mtgtrader.data.Features.abilities.<anonymous>' call
       var tmp_91;
       var tmp_92;
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_42.c20_1.n()) {
+      if (!element_42.c20_1.q()) {
         tmp_92 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_92 = !element_42.d20_1.n();
+        tmp_92 = !element_42.d20_1.q();
       }
       if (tmp_92) {
         tmp_91 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_91 = !element_42.v25_1.n();
+        tmp_91 = !element_42.v25_1.q();
       }
       if (tmp_91) {
         tmp$ret$93 = true;
@@ -14030,14 +14039,14 @@ function Features(cards) {
     }
     tmp$ret$93 = false;
   }
-  tmp_89.u2f_1 = tmp$ret$93;
+  tmp_89.w2f_1 = tmp$ret$93;
   var tmp_93 = this;
   var tmp$ret$98;
   $l$block_88: {
     // Inline function 'kotlin.collections.any' call
     var tmp_94;
     if (isInterface(cards, Collection)) {
-      tmp_94 = cards.n();
+      tmp_94 = cards.q();
     } else {
       tmp_94 = false;
     }
@@ -14045,9 +14054,9 @@ function Features(cards) {
       tmp$ret$98 = false;
       break $l$block_88;
     }
-    var tmp0_iterator_43 = cards.j();
-    while (tmp0_iterator_43.k()) {
-      var element_43 = tmp0_iterator_43.l();
+    var tmp0_iterator_43 = cards.m();
+    while (tmp0_iterator_43.n()) {
+      var element_43 = tmp0_iterator_43.o();
       // Inline function 'com.mtgtrader.data.Features.sneak.<anonymous>' call
       if (!(element_43.c21_1 == null)) {
         tmp$ret$98 = true;
@@ -14056,14 +14065,14 @@ function Features(cards) {
     }
     tmp$ret$98 = false;
   }
-  tmp_93.v2f_1 = tmp$ret$98;
+  tmp_93.x2f_1 = tmp$ret$98;
   var tmp_95 = this;
   var tmp$ret$100;
   $l$block_90: {
     // Inline function 'kotlin.collections.any' call
     var tmp_96;
     if (isInterface(cards, Collection)) {
-      tmp_96 = cards.n();
+      tmp_96 = cards.q();
     } else {
       tmp_96 = false;
     }
@@ -14071,9 +14080,9 @@ function Features(cards) {
       tmp$ret$100 = false;
       break $l$block_90;
     }
-    var tmp0_iterator_44 = cards.j();
-    while (tmp0_iterator_44.k()) {
-      var element_44 = tmp0_iterator_44.l();
+    var tmp0_iterator_44 = cards.m();
+    while (tmp0_iterator_44.n()) {
+      var element_44 = tmp0_iterator_44.o();
       // Inline function 'com.mtgtrader.data.Features.xTokens.<anonymous>' call
       if (element_44.d21_1 > 0) {
         tmp$ret$100 = true;
@@ -14082,14 +14091,14 @@ function Features(cards) {
     }
     tmp$ret$100 = false;
   }
-  tmp_95.w2f_1 = tmp$ret$100;
+  tmp_95.y2f_1 = tmp$ret$100;
   var tmp_97 = this;
   var tmp$ret$102;
   $l$block_92: {
     // Inline function 'kotlin.collections.any' call
     var tmp_98;
     if (isInterface(cards, Collection)) {
-      tmp_98 = cards.n();
+      tmp_98 = cards.q();
     } else {
       tmp_98 = false;
     }
@@ -14097,9 +14106,9 @@ function Features(cards) {
       tmp$ret$102 = false;
       break $l$block_92;
     }
-    var tmp0_iterator_45 = cards.j();
-    while (tmp0_iterator_45.k()) {
-      var element_45 = tmp0_iterator_45.l();
+    var tmp0_iterator_45 = cards.m();
+    while (tmp0_iterator_45.n()) {
+      var element_45 = tmp0_iterator_45.o();
       // Inline function 'com.mtgtrader.data.Features.drawDouble.<anonymous>' call
       if (element_45.z22_1) {
         tmp$ret$102 = true;
@@ -14108,14 +14117,14 @@ function Features(cards) {
     }
     tmp$ret$102 = false;
   }
-  tmp_97.x2f_1 = tmp$ret$102;
+  tmp_97.z2f_1 = tmp$ret$102;
   var tmp_99 = this;
   var tmp$ret$104;
   $l$block_94: {
     // Inline function 'kotlin.collections.any' call
     var tmp_100;
     if (isInterface(cards, Collection)) {
-      tmp_100 = cards.n();
+      tmp_100 = cards.q();
     } else {
       tmp_100 = false;
     }
@@ -14123,9 +14132,9 @@ function Features(cards) {
       tmp$ret$104 = false;
       break $l$block_94;
     }
-    var tmp0_iterator_46 = cards.j();
-    while (tmp0_iterator_46.k()) {
-      var element_46 = tmp0_iterator_46.l();
+    var tmp0_iterator_46 = cards.m();
+    while (tmp0_iterator_46.n()) {
+      var element_46 = tmp0_iterator_46.o();
       // Inline function 'com.mtgtrader.data.Features.cascade.<anonymous>' call
       if (element_46.q23_1 || element_46.s23_1 > 0 || element_46.u23_1) {
         tmp$ret$104 = true;
@@ -14134,14 +14143,14 @@ function Features(cards) {
     }
     tmp$ret$104 = false;
   }
-  tmp_99.y2f_1 = tmp$ret$104;
+  tmp_99.a2g_1 = tmp$ret$104;
   var tmp_101 = this;
   var tmp$ret$106;
   $l$block_96: {
     // Inline function 'kotlin.collections.any' call
     var tmp_102;
     if (isInterface(cards, Collection)) {
-      tmp_102 = cards.n();
+      tmp_102 = cards.q();
     } else {
       tmp_102 = false;
     }
@@ -14149,26 +14158,26 @@ function Features(cards) {
       tmp$ret$106 = false;
       break $l$block_96;
     }
-    var tmp0_iterator_47 = cards.j();
-    while (tmp0_iterator_47.k()) {
-      var element_47 = tmp0_iterator_47.l();
+    var tmp0_iterator_47 = cards.m();
+    while (tmp0_iterator_47.n()) {
+      var element_47 = tmp0_iterator_47.o();
       // Inline function 'com.mtgtrader.data.Features.rituals.<anonymous>' call
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_47.g24_1.n()) {
+      if (!element_47.g24_1.q()) {
         tmp$ret$106 = true;
         break $l$block_96;
       }
     }
     tmp$ret$106 = false;
   }
-  tmp_101.z2f_1 = tmp$ret$106;
+  tmp_101.b2g_1 = tmp$ret$106;
   var tmp_103 = this;
   var tmp$ret$109;
   $l$block_98: {
     // Inline function 'kotlin.collections.any' call
     var tmp_104;
     if (isInterface(cards, Collection)) {
-      tmp_104 = cards.n();
+      tmp_104 = cards.q();
     } else {
       tmp_104 = false;
     }
@@ -14176,9 +14185,9 @@ function Features(cards) {
       tmp$ret$109 = false;
       break $l$block_98;
     }
-    var tmp0_iterator_48 = cards.j();
-    while (tmp0_iterator_48.k()) {
-      var element_48 = tmp0_iterator_48.l();
+    var tmp0_iterator_48 = cards.m();
+    while (tmp0_iterator_48.n()) {
+      var element_48 = tmp0_iterator_48.o();
       // Inline function 'com.mtgtrader.data.Features.spellLands.<anonymous>' call
       if (!(element_48.l24_1 == null)) {
         tmp$ret$109 = true;
@@ -14187,14 +14196,14 @@ function Features(cards) {
     }
     tmp$ret$109 = false;
   }
-  tmp_103.a2g_1 = tmp$ret$109;
+  tmp_103.c2g_1 = tmp$ret$109;
   var tmp_105 = this;
   var tmp$ret$111;
   $l$block_100: {
     // Inline function 'kotlin.collections.any' call
     var tmp_106;
     if (isInterface(cards, Collection)) {
-      tmp_106 = cards.n();
+      tmp_106 = cards.q();
     } else {
       tmp_106 = false;
     }
@@ -14202,9 +14211,9 @@ function Features(cards) {
       tmp$ret$111 = false;
       break $l$block_100;
     }
-    var tmp0_iterator_49 = cards.j();
-    while (tmp0_iterator_49.k()) {
-      var element_49 = tmp0_iterator_49.l();
+    var tmp0_iterator_49 = cards.m();
+    while (tmp0_iterator_49.n()) {
+      var element_49 = tmp0_iterator_49.o();
       // Inline function 'com.mtgtrader.data.Features.xCreature.<anonymous>' call
       if (!(element_49.n24_1 == null)) {
         tmp$ret$111 = true;
@@ -14213,14 +14222,14 @@ function Features(cards) {
     }
     tmp$ret$111 = false;
   }
-  tmp_105.b2g_1 = tmp$ret$111;
+  tmp_105.d2g_1 = tmp$ret$111;
   var tmp_107 = this;
   var tmp$ret$113;
   $l$block_104: {
     // Inline function 'kotlin.collections.any' call
     var tmp_108;
     if (isInterface(cards, Collection)) {
-      tmp_108 = cards.n();
+      tmp_108 = cards.q();
     } else {
       tmp_108 = false;
     }
@@ -14228,9 +14237,9 @@ function Features(cards) {
       tmp$ret$113 = false;
       break $l$block_104;
     }
-    var tmp0_iterator_50 = cards.j();
-    while (tmp0_iterator_50.k()) {
-      var element_50 = tmp0_iterator_50.l();
+    var tmp0_iterator_50 = cards.m();
+    while (tmp0_iterator_50.n()) {
+      var element_50 = tmp0_iterator_50.o();
       // Inline function 'com.mtgtrader.data.Features.proliferate.<anonymous>' call
       var tmp_109;
       if (element_50.m24_1 > 0) {
@@ -14242,7 +14251,7 @@ function Features(cards) {
           var this_9 = element_50.z2b();
           var tmp_110;
           if (isInterface(this_9, Collection)) {
-            tmp_110 = this_9.n();
+            tmp_110 = this_9.q();
           } else {
             tmp_110 = false;
           }
@@ -14250,9 +14259,9 @@ function Features(cards) {
             tmp$ret$114 = false;
             break $l$block_103;
           }
-          var tmp0_iterator_51 = this_9.j();
-          while (tmp0_iterator_51.k()) {
-            var element_51 = tmp0_iterator_51.l();
+          var tmp0_iterator_51 = this_9.m();
+          while (tmp0_iterator_51.n()) {
+            var element_51 = tmp0_iterator_51.o();
             // Inline function 'com.mtgtrader.data.Features.proliferate.<anonymous>.<anonymous>' call
             if (element_51.i1v_1 > 0) {
               tmp$ret$114 = true;
@@ -14270,14 +14279,14 @@ function Features(cards) {
     }
     tmp$ret$113 = false;
   }
-  tmp_107.c2g_1 = tmp$ret$113;
+  tmp_107.e2g_1 = tmp$ret$113;
   var tmp_111 = this;
   var tmp$ret$117;
   $l$block_106: {
     // Inline function 'kotlin.collections.any' call
     var tmp_112;
     if (isInterface(cards, Collection)) {
-      tmp_112 = cards.n();
+      tmp_112 = cards.q();
     } else {
       tmp_112 = false;
     }
@@ -14285,9 +14294,9 @@ function Features(cards) {
       tmp$ret$117 = false;
       break $l$block_106;
     }
-    var tmp0_iterator_52 = cards.j();
-    while (tmp0_iterator_52.k()) {
-      var element_52 = tmp0_iterator_52.l();
+    var tmp0_iterator_52 = cards.m();
+    while (tmp0_iterator_52.n()) {
+      var element_52 = tmp0_iterator_52.o();
       // Inline function 'com.mtgtrader.data.Features.deaths.<anonymous>' call
       var tmp_113;
       var tmp_114;
@@ -14295,7 +14304,7 @@ function Features(cards) {
       var tmp_116;
       var tmp_117;
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_52.q24_1.n()) {
+      if (!element_52.q24_1.q()) {
         tmp_117 = true;
       } else {
         tmp_117 = element_52.y24_1;
@@ -14327,14 +14336,14 @@ function Features(cards) {
     }
     tmp$ret$117 = false;
   }
-  tmp_111.d2g_1 = tmp$ret$117;
+  tmp_111.f2g_1 = tmp$ret$117;
   var tmp_118 = this;
   var tmp$ret$120;
   $l$block_108: {
     // Inline function 'kotlin.collections.any' call
     var tmp_119;
     if (isInterface(cards, Collection)) {
-      tmp_119 = cards.n();
+      tmp_119 = cards.q();
     } else {
       tmp_119 = false;
     }
@@ -14342,9 +14351,9 @@ function Features(cards) {
       tmp$ret$120 = false;
       break $l$block_108;
     }
-    var tmp0_iterator_53 = cards.j();
-    while (tmp0_iterator_53.k()) {
-      var element_53 = tmp0_iterator_53.l();
+    var tmp0_iterator_53 = cards.m();
+    while (tmp0_iterator_53.n()) {
+      var element_53 = tmp0_iterator_53.o();
       // Inline function 'com.mtgtrader.data.Features.freeSac.<anonymous>' call
       if (!(element_53.r24_1 == null)) {
         tmp$ret$120 = true;
@@ -14353,14 +14362,14 @@ function Features(cards) {
     }
     tmp$ret$120 = false;
   }
-  tmp_118.e2g_1 = tmp$ret$120;
+  tmp_118.g2g_1 = tmp$ret$120;
   var tmp_120 = this;
   var tmp$ret$122;
   $l$block_110: {
     // Inline function 'kotlin.collections.any' call
     var tmp_121;
     if (isInterface(cards, Collection)) {
-      tmp_121 = cards.n();
+      tmp_121 = cards.q();
     } else {
       tmp_121 = false;
     }
@@ -14368,9 +14377,9 @@ function Features(cards) {
       tmp$ret$122 = false;
       break $l$block_110;
     }
-    var tmp0_iterator_54 = cards.j();
-    while (tmp0_iterator_54.k()) {
-      var element_54 = tmp0_iterator_54.l();
+    var tmp0_iterator_54 = cards.m();
+    while (tmp0_iterator_54.n()) {
+      var element_54 = tmp0_iterator_54.o();
       // Inline function 'com.mtgtrader.data.Features.minusPayoffs.<anonymous>' call
       if (element_54.q26()) {
         tmp$ret$122 = true;
@@ -14379,14 +14388,14 @@ function Features(cards) {
     }
     tmp$ret$122 = false;
   }
-  tmp_120.f2g_1 = tmp$ret$122;
+  tmp_120.h2g_1 = tmp$ret$122;
   var tmp_122 = this;
   var tmp$ret$124;
   $l$block_112: {
     // Inline function 'kotlin.collections.any' call
     var tmp_123;
     if (isInterface(cards, Collection)) {
-      tmp_123 = cards.n();
+      tmp_123 = cards.q();
     } else {
       tmp_123 = false;
     }
@@ -14394,9 +14403,9 @@ function Features(cards) {
       tmp$ret$124 = false;
       break $l$block_112;
     }
-    var tmp0_iterator_55 = cards.j();
-    while (tmp0_iterator_55.k()) {
-      var element_55 = tmp0_iterator_55.l();
+    var tmp0_iterator_55 = cards.m();
+    while (tmp0_iterator_55.n()) {
+      var element_55 = tmp0_iterator_55.o();
       // Inline function 'com.mtgtrader.data.Features.counterBurn.<anonymous>' call
       if (element_55.b25_1) {
         tmp$ret$124 = true;
@@ -14405,14 +14414,14 @@ function Features(cards) {
     }
     tmp$ret$124 = false;
   }
-  tmp_122.g2g_1 = tmp$ret$124;
+  tmp_122.i2g_1 = tmp$ret$124;
   var tmp_124 = this;
   var tmp$ret$126;
   $l$block_114: {
     // Inline function 'kotlin.collections.any' call
     var tmp_125;
     if (isInterface(cards, Collection)) {
-      tmp_125 = cards.n();
+      tmp_125 = cards.q();
     } else {
       tmp_125 = false;
     }
@@ -14420,9 +14429,9 @@ function Features(cards) {
       tmp$ret$126 = false;
       break $l$block_114;
     }
-    var tmp0_iterator_56 = cards.j();
-    while (tmp0_iterator_56.k()) {
-      var element_56 = tmp0_iterator_56.l();
+    var tmp0_iterator_56 = cards.m();
+    while (tmp0_iterator_56.n()) {
+      var element_56 = tmp0_iterator_56.o();
       // Inline function 'com.mtgtrader.data.Features.sunbird.<anonymous>' call
       if (element_56.c25_1) {
         tmp$ret$126 = true;
@@ -14431,7 +14440,7 @@ function Features(cards) {
     }
     tmp$ret$126 = false;
   }
-  tmp_124.h2g_1 = tmp$ret$126;
+  tmp_124.j2g_1 = tmp$ret$126;
 }
 function Game(hand, rest, leaders, own, combos, f) {
   Companion_getInstance_6();
@@ -14456,7 +14465,7 @@ function Game(hand, rest, leaders, own, combos, f) {
   this.i29_1 = 0;
   var tmp_2 = this;
   var tmp_3 = 0;
-  var tmp_4 = this.z28_1.m();
+  var tmp_4 = this.z28_1.p();
   // Inline function 'kotlin.arrayOfNulls' call
   var tmp_5 = fillArrayVal(Array(tmp_4), null);
   while (tmp_3 < tmp_4) {
@@ -14464,7 +14473,7 @@ function Game(hand, rest, leaders, own, combos, f) {
     tmp_3 = tmp_3 + 1 | 0;
   }
   tmp_2.j29_1 = tmp_5;
-  this.k29_1 = longArray(WinOddsCalc_getInstance().i1k_1.m());
+  this.k29_1 = longArray(WinOddsCalc_getInstance().i1k_1.p());
   this.l29_1 = 0;
   this.m29_1 = 0;
   this.n29_1 = 0;
@@ -14476,11 +14485,11 @@ function Game(hand, rest, leaders, own, combos, f) {
   this.t29_1 = false;
   this.u29_1 = false;
   this.v29_1 = false;
-  this.w29_1 = this.c29_1.g2f_1;
+  this.w29_1 = this.c29_1.i2f_1;
   this.x29_1 = 0;
-  this.y29_1 = this.c29_1.h2f_1;
+  this.y29_1 = this.c29_1.j2f_1;
   this.z29_1 = ArrayList_init_$Create$();
-  this.a2a_1 = this.c29_1.f2f_1;
+  this.a2a_1 = this.c29_1.h2f_1;
   this.b2a_1 = 0;
   this.c2a_1 = HashSet_init_$Create$();
   this.d2a_1 = 0;
@@ -14507,16 +14516,16 @@ function Game(hand, rest, leaders, own, combos, f) {
   this.x2a_1 = false;
   this.y2a_1 = 0;
 }
-protoOf(Game).i2g = function () {
+protoOf(Game).k2g = function () {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = plus_0(this.d29_1, this.x28_1);
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.mainOptions.<anonymous>' call
-    if (useful(WinOddsCalc_getInstance(), element, this.s29_1, this.t29_1, this.y29_1) && this.j2g(element)) {
+    if (useful(WinOddsCalc_getInstance(), element, this.s29_1, this.t29_1, this.y29_1) && this.l2g(element)) {
       destination.h(element);
     }
   }
@@ -14529,13 +14538,13 @@ protoOf(Game).i2g = function () {
   var tmp$ret$4 = new sam$kotlin_Comparator$0_6(tmp_1);
   return sortedWith(tmp, tmp$ret$4);
 };
-protoOf(Game).k2g = function () {
+protoOf(Game).m2g = function () {
   this.k2a_1 = 0;
   fill(this.m2a_1, 0);
   this.p2a_1.h2();
   this.o2a_1 = false;
 };
-protoOf(Game).l2g = function (n) {
+protoOf(Game).n2g = function (n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -14549,14 +14558,14 @@ protoOf(Game).l2g = function (n) {
       // Inline function 'kotlin.repeat' call
       var tmp_0;
       var tmp_1;
-      if (!first && this.c29_1.x2f_1) {
+      if (!first && this.c29_1.z2f_1) {
         var tmp$ret$0;
         $l$block_0: {
           // Inline function 'kotlin.collections.any' call
           var this_0 = this.f29_1;
           var tmp_2;
           if (isInterface(this_0, Collection)) {
-            tmp_2 = this_0.n();
+            tmp_2 = this_0.q();
           } else {
             tmp_2 = false;
           }
@@ -14564,9 +14573,9 @@ protoOf(Game).l2g = function (n) {
             tmp$ret$0 = false;
             break $l$block_0;
           }
-          var tmp0_iterator = this_0.j();
-          while (tmp0_iterator.k()) {
-            var element = tmp0_iterator.l();
+          var tmp0_iterator = this_0.m();
+          while (tmp0_iterator.n()) {
+            var element = tmp0_iterator.o();
             // Inline function 'com.mtgtrader.data.Game.draw.<anonymous>.<anonymous>' call
             var tmp0_safe_receiver = element.s27_1;
             if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.z22_1) === true) {
@@ -14593,7 +14602,7 @@ protoOf(Game).l2g = function (n) {
           var index_0 = inductionVariable_0;
           inductionVariable_0 = inductionVariable_0 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.draw.<anonymous>.<anonymous>' call
-          this.m2g();
+          this.o2g();
         }
          while (inductionVariable_0 < times);
     }
@@ -14602,20 +14611,20 @@ protoOf(Game).l2g = function (n) {
   }
   return tmp;
 };
-protoOf(Game).m2g = function () {
-  if (this.l29_1 >= this.y28_1.m())
+protoOf(Game).o2g = function () {
+  if (this.l29_1 >= this.y28_1.p())
     return Unit_instance;
   // Inline function 'kotlin.collections.plusAssign' call
   var this_0 = this.x28_1;
   var _unary__edvuaz = this.l29_1;
   this.l29_1 = _unary__edvuaz + 1 | 0;
-  var element = this.y28_1.o(_unary__edvuaz);
+  var element = this.y28_1.r(_unary__edvuaz);
   this_0.h(element);
   this.k2a_1 = this.k2a_1 + 1 | 0;
-  if (this.c29_1.q2e_1) {
-    var _iterator__ex2g4s = toList(this.f29_1).j();
-    while (_iterator__ex2g4s.k()) {
-      var b = _iterator__ex2g4s.l();
+  if (this.c29_1.s2e_1) {
+    var _iterator__ex2g4s = toList(this.f29_1).m();
+    while (_iterator__ex2g4s.n()) {
+      var b = _iterator__ex2g4s.o();
       var tmp0_safe_receiver = b.s27_1;
       if (tmp0_safe_receiver == null)
         null;
@@ -14623,16 +14632,16 @@ protoOf(Game).m2g = function () {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         if (tmp0_safe_receiver.f23_1) {
-          this.n2g(b, 1);
+          this.p2g(b, 1);
         }
         if (this.k2a_1 === 2 && tmp0_safe_receiver.v21_1.p26() && !(tmp0_safe_receiver.x21_1 && this.n2a_1 >= 0)) {
-          this.o2g(tmp0_safe_receiver.v21_1, b);
+          this.q2g(tmp0_safe_receiver.v21_1, b);
         }
       }
     }
   }
 };
-protoOf(Game).p2g = function (i, n) {
+protoOf(Game).r2g = function (i, n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -14647,9 +14656,9 @@ protoOf(Game).p2g = function (i, n) {
         }
         var _array__4zh2yp = this.m2a_1;
         _array__4zh2yp[i] = _array__4zh2yp[i] + 1 | 0;
-        var _iterator__ex2g4s = toList(this.f29_1).j();
-        while (_iterator__ex2g4s.k()) {
-          var b = _iterator__ex2g4s.l();
+        var _iterator__ex2g4s = toList(this.f29_1).m();
+        while (_iterator__ex2g4s.n()) {
+          var b = _iterator__ex2g4s.o();
           var tmp0_safe_receiver = b.s27_1;
           if (tmp0_safe_receiver == null)
             null;
@@ -14663,10 +14672,10 @@ protoOf(Game).p2g = function (i, n) {
               _array__4zh2yp_1[3] = _array__4zh2yp_1[3].g(toLong(tmp0_safe_receiver.y21_1));
             }
             if (tmp0_safe_receiver.z21_1 && !(this.n2a_1 === i) && this.p2a_1.h(to(b, 'treasure'))) {
-              this.q2g('treasure', 1);
+              this.s2g('treasure', 1);
             }
             if (this.m2a_1[i] === 2 && tmp0_safe_receiver.w21_1.p26() && (!tmp0_safe_receiver.x21_1 || this.n2a_1 === i)) {
-              this.o2g(tmp0_safe_receiver.w21_1, b);
+              this.q2g(tmp0_safe_receiver.w21_1, b);
             }
           }
         }
@@ -14677,8 +14686,8 @@ protoOf(Game).p2g = function (i, n) {
   }
   return tmp;
 };
-protoOf(Game).r2g = function () {
-  if (!this.c29_1.v2e_1)
+protoOf(Game).t2g = function () {
+  if (!this.c29_1.x2e_1)
     return Unit_instance;
   var inductionVariable = 0;
   var last = this.g29_1.length - 1 | 0;
@@ -14689,16 +14698,16 @@ protoOf(Game).r2g = function () {
       if (this.g29_1[i] <= 0)
         continue $l$loop;
       this.n2a_1 = i;
-      this.k2g();
+      this.m2g();
       // Inline function 'kotlin.takeIf' call
       // Inline function 'kotlin.collections.sumOf' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.opponentTurns.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.b22_1) === true) {
@@ -14706,9 +14715,9 @@ protoOf(Game).r2g = function () {
         }
       }
       var sum = 0;
-      var tmp0_iterator_0 = destination.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = destination.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         var tmp = sum;
         // Inline function 'com.mtgtrader.data.Game.opponentTurns.<anonymous>' call
         sum = tmp + element_0.a28_1 | 0;
@@ -14728,12 +14737,12 @@ protoOf(Game).r2g = function () {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        this.p2g(i, tmp0_safe_receiver_0);
+        this.r2g(i, tmp0_safe_receiver_0);
       }
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_1 = toList(this.f29_1).j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = toList(this.f29_1).m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.opponentTurns.<anonymous>' call
         var tmp0_safe_receiver_1 = element_1.s27_1;
         if (tmp0_safe_receiver_1 == null)
@@ -14742,15 +14751,15 @@ protoOf(Game).r2g = function () {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           if (tmp0_safe_receiver_1.c22_1.p26()) {
-            this.o2g(tmp0_safe_receiver_1.c22_1, element_1);
+            this.q2g(tmp0_safe_receiver_1.c22_1, element_1);
           }
         }
       }
       // Inline function 'kotlin.collections.sumOf' call
       var sum_0 = 0;
-      var tmp0_iterator_2 = this.f29_1.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = this.f29_1.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         var tmp_1 = sum_0;
         // Inline function 'com.mtgtrader.data.Game.opponentTurns.<anonymous>' call
         var tmp0_safe_receiver_2 = element_2.s27_1;
@@ -14758,7 +14767,7 @@ protoOf(Game).r2g = function () {
         sum_0 = tmp_1 + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
       }
       var tmp$ret$10 = sum_0;
-      this.p2g(i, 1 + tmp$ret$10 | 0);
+      this.r2g(i, 1 + tmp$ret$10 | 0);
       var tmp_2;
       var tmp_3;
       if (this.g29_1[i] > 0) {
@@ -14793,7 +14802,7 @@ protoOf(Game).r2g = function () {
           var this_2 = this.f29_1;
           var tmp_4;
           if (isInterface(this_2, Collection)) {
-            tmp_4 = this_2.n();
+            tmp_4 = this_2.q();
           } else {
             tmp_4 = false;
           }
@@ -14801,9 +14810,9 @@ protoOf(Game).r2g = function () {
             tmp$ret$13 = false;
             break $l$block_1;
           }
-          var tmp0_iterator_3 = this_2.j();
-          while (tmp0_iterator_3.k()) {
-            var element_4 = tmp0_iterator_3.l();
+          var tmp0_iterator_3 = this_2.m();
+          while (tmp0_iterator_3.n()) {
+            var element_4 = tmp0_iterator_3.o();
             // Inline function 'com.mtgtrader.data.Game.opponentTurns.<anonymous>' call
             var tmp0_safe_receiver_3 = element_4.s27_1;
             if ((tmp0_safe_receiver_3 == null ? null : tmp0_safe_receiver_3.l23_1) === true) {
@@ -14818,28 +14827,28 @@ protoOf(Game).r2g = function () {
         tmp_2 = false;
       }
       if (tmp_2) {
-        this.l2g(1);
-        this.p2g(i, 1);
+        this.n2g(1);
+        this.r2g(i, 1);
       }
     }
      while (inductionVariable <= last);
   this.n2a_1 = -1;
 };
-protoOf(Game).n2g = function (e, n) {
+protoOf(Game).p2g = function (e, n) {
   if (n <= 0)
     return Unit_instance;
-  if (this.c29_1.g2g_1) {
-    this.s2g(n);
+  if (this.c29_1.i2g_1) {
+    this.u2g(n);
   }
-  if (!this.c29_1.r2e_1) {
+  if (!this.c29_1.t2e_1) {
     e.a28_1 = e.a28_1 + n | 0;
     return Unit_instance;
   }
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator = this.f29_1.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this.f29_1.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp = sum;
     // Inline function 'com.mtgtrader.data.Game.addCounters.<anonymous>' call
     var tmp0_safe_receiver = element.s27_1;
@@ -14854,7 +14863,7 @@ protoOf(Game).n2g = function (e, n) {
     var this_0 = this.f29_1;
     var tmp_0;
     if (isInterface(this_0, Collection)) {
-      tmp_0 = this_0.n();
+      tmp_0 = this_0.q();
     } else {
       tmp_0 = false;
     }
@@ -14863,9 +14872,9 @@ protoOf(Game).n2g = function (e, n) {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator_0 = this_0.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_0.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.addCounters.<anonymous>' call
       var tmp0_safe_receiver_0 = element_0.s27_1;
       if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.c23_1) === true) {
@@ -14887,9 +14896,9 @@ protoOf(Game).n2g = function (e, n) {
     }
      while (inductionVariable < times);
   e.a28_1 = e.a28_1 + k | 0;
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver_1 = b.s27_1;
     if (tmp0_safe_receiver_1 == null)
       null;
@@ -14897,15 +14906,15 @@ protoOf(Game).n2g = function (e, n) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       if (tmp0_safe_receiver_1.d23_1) {
-        this.t2g(k, 3);
+        this.v2g(k, 3);
       }
       if (tmp0_safe_receiver_1.e23_1 && this.p2a_1.h(to(b, 'counter'))) {
-        this.l2g(1);
+        this.n2g(1);
       }
     }
   }
 };
-protoOf(Game).u2g = function () {
+protoOf(Game).w2g = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -14913,28 +14922,28 @@ protoOf(Game).u2g = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
       if (element.v27_1 && (element.t27_1 < this.m29_1 || this.z2a(element)) && contains_1(this.z28_1, element.s27_1)) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = maxElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
     var maxValue = maxElem.u27_1;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
       var v = e.u27_1;
       if (compareTo(maxValue, v) < 0) {
@@ -14942,7 +14951,7 @@ protoOf(Game).u2g = function () {
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = maxElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -14955,21 +14964,21 @@ protoOf(Game).u2g = function () {
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
         if (element_0.v27_1 && (element_0.t27_1 < this.m29_1 || this.z2a(element_0))) {
           destination_0.h(element_0);
         }
       }
-      var iterator_0 = destination_0.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_0.m();
+      if (!iterator_0.n()) {
         tmp$ret$9 = null;
         break $l$block_2;
       }
-      var maxElem_0 = iterator_0.l();
-      if (!iterator_0.k()) {
+      var maxElem_0 = iterator_0.o();
+      if (!iterator_0.n()) {
         tmp$ret$9 = maxElem_0;
         break $l$block_2;
       }
@@ -14977,7 +14986,7 @@ protoOf(Game).u2g = function () {
       var it = maxElem_0;
       var maxValue_0 = it.u27_1 + it.a28_1 | 0;
       do {
-        var e_0 = iterator_0.l();
+        var e_0 = iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
         var v_0 = e_0.u27_1 + e_0.a28_1 | 0;
         if (compareTo(maxValue_0, v_0) < 0) {
@@ -14985,7 +14994,7 @@ protoOf(Game).u2g = function () {
           maxValue_0 = v_0;
         }
       }
-       while (iterator_0.k());
+       while (iterator_0.n());
       tmp$ret$9 = maxElem_0;
     }
     tmp = tmp$ret$9;
@@ -15002,21 +15011,21 @@ protoOf(Game).u2g = function () {
       // Inline function 'kotlin.collections.filterTo' call
       var this_2 = this.f29_1;
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = this_2.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_2.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
         if (element_1.v27_1) {
           destination_1.h(element_1);
         }
       }
-      var iterator_1 = destination_1.j();
-      if (!iterator_1.k()) {
+      var iterator_1 = destination_1.m();
+      if (!iterator_1.n()) {
         tmp$ret$15 = null;
         break $l$block_4;
       }
-      var maxElem_1 = iterator_1.l();
-      if (!iterator_1.k()) {
+      var maxElem_1 = iterator_1.o();
+      if (!iterator_1.n()) {
         tmp$ret$15 = maxElem_1;
         break $l$block_4;
       }
@@ -15024,7 +15033,7 @@ protoOf(Game).u2g = function () {
       var it_0 = maxElem_1;
       var maxValue_1 = it_0.u27_1 + it_0.a28_1 | 0;
       do {
-        var e_1 = iterator_1.l();
+        var e_1 = iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.bestForCounters.<anonymous>' call
         var v_1 = e_1.u27_1 + e_1.a28_1 | 0;
         if (compareTo(maxValue_1, v_1) < 0) {
@@ -15032,7 +15041,7 @@ protoOf(Game).u2g = function () {
           maxValue_1 = v_1;
         }
       }
-       while (iterator_1.k());
+       while (iterator_1.n());
       tmp$ret$15 = maxElem_1;
     }
     tmp_0 = tmp$ret$15;
@@ -15041,7 +15050,7 @@ protoOf(Game).u2g = function () {
   }
   return tmp_0;
 };
-protoOf(Game).q2g = function (kind, n) {
+protoOf(Game).s2g = function (kind, n) {
   if (n <= 0)
     return Unit_instance;
   var count = n;
@@ -15053,7 +15062,7 @@ protoOf(Game).q2g = function (kind, n) {
       var this_0 = this.f29_1;
       var tmp_0;
       if (isInterface(this_0, Collection)) {
-        tmp_0 = this_0.n();
+        tmp_0 = this_0.q();
       } else {
         tmp_0 = false;
       }
@@ -15061,9 +15070,9 @@ protoOf(Game).q2g = function (kind, n) {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.make.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p20_1) === true) {
@@ -15089,7 +15098,7 @@ protoOf(Game).q2g = function (kind, n) {
       var this_1 = this.f29_1;
       var tmp_3;
       if (isInterface(this_1, Collection)) {
-        tmp_3 = this_1.n();
+        tmp_3 = this_1.q();
       } else {
         tmp_3 = false;
       }
@@ -15097,9 +15106,9 @@ protoOf(Game).q2g = function (kind, n) {
         tmp$ret$2 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.make.<anonymous>' call
         var tmp0_safe_receiver_0 = element_0.s27_1;
         if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.s22_1) === true) {
@@ -15130,7 +15139,7 @@ protoOf(Game).q2g = function (kind, n) {
       var this_2 = this.f29_1;
       var tmp_6;
       if (isInterface(this_2, Collection)) {
-        tmp_6 = this_2.n();
+        tmp_6 = this_2.q();
       } else {
         tmp_6 = false;
       }
@@ -15138,9 +15147,9 @@ protoOf(Game).q2g = function (kind, n) {
         tmp$ret$4 = false;
         break $l$block_4;
       }
-      var tmp0_iterator_1 = this_2.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_2.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.make.<anonymous>' call
         var tmp0_safe_receiver_1 = element_1.s27_1;
         if ((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.p22_1) === true) {
@@ -15160,9 +15169,9 @@ protoOf(Game).q2g = function (kind, n) {
     tmp_4 = listOf_0(kind);
   }
   var kinds = tmp_4;
-  var _iterator__ex2g4s = kinds.j();
-  while (_iterator__ex2g4s.k()) {
-    var k = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = kinds.m();
+  while (_iterator__ex2g4s.n()) {
+    var k = _iterator__ex2g4s.o();
     // Inline function 'kotlin.repeat' call
     var times = count;
     // Inline function 'kotlin.contracts.contract' call
@@ -15181,18 +15190,18 @@ protoOf(Game).q2g = function (kind, n) {
         var e = this_3;
         // Inline function 'kotlin.collections.plusAssign' call
         this.f29_1.h(e);
-        this.v2g(e);
+        this.x2g(e);
       }
        while (inductionVariable < times);
   }
-  this.w2g(imul(count, kinds.m()), true);
+  this.y2g(imul(count, kinds.p()), true);
 };
-protoOf(Game).x2g = function (e) {
-  if (!this.c29_1.t2e_1)
+protoOf(Game).z2g = function (e) {
+  if (!this.c29_1.v2e_1)
     return Unit_instance;
-  var _iterator__ex2g4s = this.f29_1.j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = this.f29_1.m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp;
     if (!(b === e)) {
       var tmp0_safe_receiver = b.s27_1;
@@ -15201,25 +15210,25 @@ protoOf(Game).x2g = function (e) {
       tmp = false;
     }
     if (tmp) {
-      this.n2g(b, 1);
+      this.p2g(b, 1);
     }
   }
 };
-protoOf(Game).y2g = function (kinds) {
+protoOf(Game).a2h = function (kinds) {
   // Inline function 'kotlin.collections.iterator' call
-  var tmp0_iterator = kinds.f2().j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = kinds.f2().m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.makeAll.<anonymous>' call
     // Inline function 'kotlin.collections.component1' call
     var k = element.y1();
     // Inline function 'kotlin.collections.component2' call
     var n = element.z1();
-    this.q2g(k, n);
+    this.s2g(k, n);
   }
   return Unit_instance;
 };
-protoOf(Game).z2g = function (n, source) {
+protoOf(Game).b2h = function (n, source) {
   if (n <= 0)
     return Unit_instance;
   var inductionVariable = 0;
@@ -15237,7 +15246,7 @@ protoOf(Game).z2g = function (n, source) {
     }
      while (inductionVariable <= last);
 };
-protoOf(Game).t2g = function (n, source) {
+protoOf(Game).v2g = function (n, source) {
   if (n <= 0)
     return Unit_instance;
   var tmp$ret$3;
@@ -15260,13 +15269,13 @@ protoOf(Game).t2g = function (n, source) {
         }
       }
        while (!(element === last));
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var minElem = iterator.l();
-    if (!iterator.k()) {
+    var minElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = minElem;
       break $l$block_0;
     }
@@ -15274,7 +15283,7 @@ protoOf(Game).t2g = function (n, source) {
     var it_0 = minElem;
     var minValue = this.g29_1[it_0];
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.one.<anonymous>' call
       var v = this.g29_1[e];
       if (compareTo(minValue, v) > 0) {
@@ -15282,7 +15291,7 @@ protoOf(Game).t2g = function (n, source) {
         minValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = minElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -15298,21 +15307,21 @@ protoOf(Game).t2g = function (n, source) {
   var _array__4zh2yp_0 = this.k29_1;
   _array__4zh2yp_0[source] = _array__4zh2yp_0[source].g(toLong(n));
 };
-protoOf(Game).a2h = function (self_0, land) {
-  if (!this.c29_1.z2e_1)
+protoOf(Game).c2h = function (self_0, land) {
+  if (!this.c29_1.b2f_1)
     return Unit_instance;
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.e1x_1;
     if (tmp1_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator = tmp1_safe_receiver.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = tmp1_safe_receiver.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.entered.<anonymous>' call
         var tmp;
         if (element.o2c_1 === land && !(element.p2c_1 && b === self_0)) {
@@ -15345,16 +15354,16 @@ protoOf(Game).a2h = function (self_0, land) {
           }
           var n = tmp_1;
           if (element.q2c_1) {
-            this.z2g(n, 2);
+            this.b2h(n, 2);
           } else {
-            this.t2g(n, 2);
+            this.v2g(n, 2);
           }
         }
       }
     }
   }
 };
-protoOf(Game).b2h = function (power, kind) {
+protoOf(Game).d2h = function (power, kind) {
   // Inline function 'kotlin.also' call
   var tmp = this.m29_1;
   var tmp1_elvis_lhs = kind == null ? null : kind.b2c_1;
@@ -15402,18 +15411,18 @@ protoOf(Game).b2h = function (power, kind) {
   tmp_8.d28_1 = tmp7_elvis_lhs == null ? 0 : tmp7_elvis_lhs;
   // Inline function 'kotlin.collections.plusAssign' call
   this.f29_1.h(this_0);
-  this.w2g(1, this_0.y27_1.u('Artifact'));
+  this.y2g(1, this_0.y27_1.u('Artifact'));
+  this.z2g(this_0);
+  this.c2h(this_0, false);
+  this.e2h(this_0);
   this.x2g(this_0);
-  this.a2h(this_0, false);
-  this.c2h(this_0);
-  this.v2g(this_0);
   return this_0;
 };
-protoOf(Game).d2h = function (power, kind, $super) {
+protoOf(Game).f2h = function (power, kind, $super) {
   kind = kind === VOID ? null : kind;
-  return $super === VOID ? this.b2h(power, kind) : $super.b2h.call(this, power, kind);
+  return $super === VOID ? this.d2h(power, kind) : $super.d2h.call(this, power, kind);
 };
-protoOf(Game).e2h = function (n, total, kind) {
+protoOf(Game).g2h = function (n, total, kind) {
   if (total <= 0 && n <= 0)
     return Unit_instance;
   var count = coerceIn_0(n, 1, 30);
@@ -15431,27 +15440,27 @@ protoOf(Game).e2h = function (n, total, kind) {
       } else {
         tmp = (total / count | 0) + (index < (total % count | 0) ? 1 : 0) | 0;
       }
-      this.b2h(tmp, kind);
+      this.d2h(tmp, kind);
     }
      while (inductionVariable < count);
 };
-protoOf(Game).w2g = function (n, artifact) {
+protoOf(Game).y2g = function (n, artifact) {
   if (n <= 0)
     return Unit_instance;
   this.o2a_1 = true;
-  if (!this.c29_1.s2e_1)
+  if (!this.c29_1.u2e_1)
     return Unit_instance;
-  var _iterator__ex2g4s = this.f29_1.j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = this.f29_1.m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     if (tmp0_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.z2g(imul(tmp0_safe_receiver.u20_1, n), 3);
-      this.z2g(tmp0_safe_receiver.v20_1, 3);
+      this.b2h(imul(tmp0_safe_receiver.u20_1, n), 3);
+      this.b2h(tmp0_safe_receiver.v20_1, 3);
     }
   }
   if (!this.q2a_1) {
@@ -15462,7 +15471,7 @@ protoOf(Game).w2g = function (n, artifact) {
       var this_0 = this.f29_1;
       var tmp;
       if (isInterface(this_0, Collection)) {
-        tmp = this_0.n();
+        tmp = this_0.q();
       } else {
         tmp = false;
       }
@@ -15470,9 +15479,9 @@ protoOf(Game).w2g = function (n, artifact) {
         tmp$ret$1 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.tokenMade.<anonymous>' call
         var tmp0_safe_receiver_0 = element.s27_1;
         if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.r22_1) === true) {
@@ -15483,7 +15492,7 @@ protoOf(Game).w2g = function (n, artifact) {
       tmp$ret$1 = false;
     }
     if (tmp$ret$1) {
-      this.q2g('mutagen', 1);
+      this.s2g('mutagen', 1);
     }
     var tmp$ret$3;
     $l$block_2: {
@@ -15491,7 +15500,7 @@ protoOf(Game).w2g = function (n, artifact) {
       var this_1 = this.f29_1;
       var tmp_0;
       if (isInterface(this_1, Collection)) {
-        tmp_0 = this_1.n();
+        tmp_0 = this_1.q();
       } else {
         tmp_0 = false;
       }
@@ -15499,9 +15508,9 @@ protoOf(Game).w2g = function (n, artifact) {
         tmp$ret$3 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.tokenMade.<anonymous>' call
         var tmp0_safe_receiver_1 = element_0.s27_1;
         if ((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.q22_1) === true) {
@@ -15512,7 +15521,7 @@ protoOf(Game).w2g = function (n, artifact) {
       tmp$ret$3 = false;
     }
     if (tmp$ret$3) {
-      this.q2g('food', 1);
+      this.s2g('food', 1);
     }
     var tmp_1;
     if (artifact) {
@@ -15522,7 +15531,7 @@ protoOf(Game).w2g = function (n, artifact) {
         var this_2 = this.f29_1;
         var tmp_2;
         if (isInterface(this_2, Collection)) {
-          tmp_2 = this_2.n();
+          tmp_2 = this_2.q();
         } else {
           tmp_2 = false;
         }
@@ -15530,9 +15539,9 @@ protoOf(Game).w2g = function (n, artifact) {
           tmp$ret$5 = false;
           break $l$block_4;
         }
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.tokenMade.<anonymous>' call
           var tmp0_safe_receiver_2 = element_1.s27_1;
           if ((tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.y23_1) === true) {
@@ -15547,17 +15556,17 @@ protoOf(Game).w2g = function (n, artifact) {
       tmp_1 = false;
     }
     if (tmp_1) {
-      this.q2g('map', 1);
+      this.s2g('map', 1);
     }
     this.q2a_1 = false;
   }
 };
-protoOf(Game).c2h = function (e) {
-  if (!this.c29_1.x2e_1)
+protoOf(Game).e2h = function (e) {
+  if (!this.c29_1.z2e_1)
     return Unit_instance;
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     if (tmp0_safe_receiver == null)
       null;
@@ -15565,19 +15574,19 @@ protoOf(Game).c2h = function (e) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       if (tmp0_safe_receiver.f22_1.p26() && !(tmp0_safe_receiver.g22_1 && b === e) && !(tmp0_safe_receiver.h22_1 && e.k28_1)) {
-        this.o2g(tmp0_safe_receiver.f22_1, b);
+        this.q2g(tmp0_safe_receiver.f22_1, b);
       }
     }
   }
 };
-protoOf(Game).f2h = function (kind) {
+protoOf(Game).h2h = function (kind) {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -15586,11 +15595,11 @@ protoOf(Game).f2h = function (kind) {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.count.<anonymous>' call
-      if (element.m2e(kind)) {
+      if (element.o2e(kind)) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -15599,26 +15608,26 @@ protoOf(Game).f2h = function (kind) {
   }
   return tmp$ret$0;
 };
-protoOf(Game).g2h = function () {
+protoOf(Game).i2h = function () {
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.gateNames.<anonymous>' call
-    if (element.m2e('gate')) {
+    if (element.o2e('gate')) {
       destination.h(element);
     }
   }
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var destination_0 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.Game.gateNames.<anonymous>' call
     var tmp0_safe_receiver = element_0.s27_1;
@@ -15633,43 +15642,43 @@ protoOf(Game).g2h = function () {
   }
   return toSet(destination_0);
 };
-protoOf(Game).v2g = function (e) {
-  if (this.t2a_1 > 3 || !this.c29_1.y2e_1)
+protoOf(Game).x2g = function (e) {
+  if (this.t2a_1 > 3 || !this.c29_1.a2f_1)
     return Unit_instance;
   this.t2a_1 = this.t2a_1 + 1 | 0;
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.o1y_1;
     if (tmp1_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator = tmp1_safe_receiver.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = tmp1_safe_receiver.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         $l$block_0: {
           // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>' call
-          if (!e.m2e(element.z25_1) || (!element.a26_1 && b === e) || (element.b26_1 && e.k28_1)) {
+          if (!e.o2e(element.z25_1) || (!element.a26_1 && b === e) || (element.b26_1 && e.k28_1)) {
             break $l$block_0;
           }
           if (element.o26_1 && !this.p2a_1.h(to(b, element))) {
             break $l$block_0;
           }
-          this.y2g(element.m26_1);
+          this.a2h(element.m26_1);
           if (element.n26_1 > 0) {
-            this.n2g(b, element.n26_1);
+            this.p2g(b, element.n26_1);
           }
-          this.z2g(element.c26_1, 3);
-          this.t2g(element.d26_1, 3);
+          this.b2h(element.c26_1, 3);
+          this.v2g(element.d26_1, 3);
           var tmp0_safe_receiver_0 = element.l26_1;
           if (tmp0_safe_receiver_0 == null)
             null;
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
-            this.z2g(this.f2h(tmp0_safe_receiver_0), 3);
+            this.b2h(this.h2h(tmp0_safe_receiver_0), 3);
           }
           var tmp1_safe_receiver_0 = element.k26_1;
           if (tmp1_safe_receiver_0 == null)
@@ -15677,7 +15686,7 @@ protoOf(Game).v2g = function (e) {
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
-            this.t2g(this.f2h(tmp1_safe_receiver_0), 3);
+            this.v2g(this.h2h(tmp1_safe_receiver_0), 3);
           }
           // Inline function 'kotlin.repeat' call
           var times = element.f26_1;
@@ -15690,30 +15699,30 @@ protoOf(Game).v2g = function (e) {
               // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>.<anonymous>' call
               var tmp0_safe_receiver_1 = element.e26_1;
               var tmp1_elvis_lhs = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.a2c_1;
-              this.b2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, element.e26_1);
+              this.d2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, element.e26_1);
             }
              while (inductionVariable < times);
-          this.h2h(element.j26_1);
-          this.l2g(element.g26_1);
+          this.j2h(element.j26_1);
+          this.n2g(element.g26_1);
           if (element.h26_1 > 0) {
             // Inline function 'kotlin.collections.forEach' call
             // Inline function 'kotlin.collections.filter' call
             // Inline function 'kotlin.collections.filterTo' call
             var this_0 = this.f29_1;
             var destination = ArrayList_init_$Create$();
-            var tmp0_iterator_0 = this_0.j();
-            while (tmp0_iterator_0.k()) {
-              var element_0 = tmp0_iterator_0.l();
+            var tmp0_iterator_0 = this_0.m();
+            while (tmp0_iterator_0.n()) {
+              var element_0 = tmp0_iterator_0.o();
               // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>.<anonymous>' call
               if (element_0.v27_1) {
                 destination.h(element_0);
               }
             }
-            var tmp0_iterator_1 = destination.j();
-            while (tmp0_iterator_1.k()) {
-              var element_1 = tmp0_iterator_1.l();
+            var tmp0_iterator_1 = destination.m();
+            while (tmp0_iterator_1.n()) {
+              var element_1 = tmp0_iterator_1.o();
               // Inline function 'com.mtgtrader.data.Game.arrived.<anonymous>.<anonymous>' call
-              this.n2g(element_1, element.h26_1);
+              this.p2g(element_1, element.h26_1);
             }
           }
           if (element.i26_1) {
@@ -15728,7 +15737,7 @@ protoOf(Game).v2g = function (e) {
   }
   this.t2a_1 = this.t2a_1 - 1 | 0;
 };
-protoOf(Game).i2h = function (s) {
+protoOf(Game).k2h = function (s) {
   var tmp;
   if (s.v2c_1 === 'permanent') {
     // Inline function 'kotlin.collections.groupingBy' call
@@ -15737,9 +15746,9 @@ protoOf(Game).i2h = function (s) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
       if (element.v27_1) {
         destination.h(element);
@@ -15747,9 +15756,9 @@ protoOf(Game).i2h = function (s) {
     }
     // Inline function 'kotlin.collections.flatMapTo' call
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = destination.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = destination.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
       var list = element_0.z27_1;
       addAll(destination_0, list);
@@ -15758,7 +15767,7 @@ protoOf(Game).i2h = function (s) {
     var tmp0_elvis_lhs = maxOrNull(eachCount(tmp$ret$6).e2());
     tmp = tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs;
   } else {
-    tmp = this.f2h(s.v2c_1);
+    tmp = this.h2h(s.v2c_1);
   }
   var n = imul(tmp, s.w2c_1);
   if (n <= 0)
@@ -15766,9 +15775,9 @@ protoOf(Game).i2h = function (s) {
   switch (s.t2c_1.o2_1) {
     case 0:
       if (s.x2c_1) {
-        this.z2g(n, 3);
+        this.b2h(n, 3);
       } else {
-        this.t2g(n, 3);
+        this.v2g(n, 3);
       }
 
       break;
@@ -15788,12 +15797,12 @@ protoOf(Game).i2h = function (s) {
           // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
           var tmp0_safe_receiver = s.y2c_1;
           var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a2c_1;
-          this.b2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, s.y2c_1);
+          this.d2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, s.y2c_1);
         }
          while (inductionVariable < times);
       break;
     case 2:
-      this.l2g(n);
+      this.n2g(n);
       break;
     case 3:
       // Inline function 'kotlin.collections.forEach' call
@@ -15804,20 +15813,20 @@ protoOf(Game).i2h = function (s) {
 
       var this_1 = this.f29_1;
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = this_1.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_1.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
         if (element_1.v27_1) {
           destination_1.h(element_1);
         }
       }
 
-      var tmp0_iterator_2 = destination_1.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = destination_1.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.scaled.<anonymous>' call
-        this.n2g(element_2, n);
+        this.p2g(element_2, n);
       }
 
       break;
@@ -15836,13 +15845,13 @@ protoOf(Game).j2c = function (land, hand) {
     tmp_0 = true;
   } else {
     var tmp_1 = ManaOddsCalc_getInstance();
-    var tmp_2 = this.j2h();
+    var tmp_2 = this.l2h();
     // Inline function 'kotlin.collections.map' call
     // Inline function 'kotlin.collections.mapTo' call
     var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(hand, 10));
-    var tmp0_iterator = hand.j();
-    while (tmp0_iterator.k()) {
-      var item = tmp0_iterator.l();
+    var tmp0_iterator = hand.m();
+    while (tmp0_iterator.n()) {
+      var item = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.untapped.<anonymous>' call
       var tmp$ret$0 = item.g1w_1;
       destination.h(tmp$ret$0);
@@ -15858,7 +15867,7 @@ protoOf(Game).j2c = function (land, hand) {
       var this_0 = this.f29_1;
       var tmp_3;
       if (isInterface(this_0, Collection)) {
-        tmp_3 = this_0.n();
+        tmp_3 = this_0.q();
       } else {
         tmp_3 = false;
       }
@@ -15866,9 +15875,9 @@ protoOf(Game).j2c = function (land, hand) {
         tmp$ret$3 = false;
         break $l$block_0;
       }
-      var tmp0_iterator_0 = this_0.j();
-      while (tmp0_iterator_0.k()) {
-        var element = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_0.m();
+      while (tmp0_iterator_0.n()) {
+        var element = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.untapped.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.z1y_1;
@@ -15892,20 +15901,20 @@ protoOf(Game).j2c = function (land, hand) {
   }
   return tmp;
 };
-protoOf(Game).k2h = function (land, hand, $super) {
+protoOf(Game).m2h = function (land, hand, $super) {
   hand = hand === VOID ? this.x28_1 : hand;
   return $super === VOID ? this.j2c(land, hand) : $super.j2c.call(this, land, hand);
 };
-protoOf(Game).j2h = function () {
+protoOf(Game).l2h = function () {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
-    if (element.m2e('land')) {
+    if (element.o2e('land')) {
       destination.h(element);
     }
   }
@@ -15913,9 +15922,9 @@ protoOf(Game).j2h = function () {
   // Inline function 'kotlin.collections.flatMap' call
   // Inline function 'kotlin.collections.flatMapTo' call
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = lands.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = lands.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
     var tmp0_safe_receiver = element_0.s27_1;
     var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.g1w_1;
@@ -15925,7 +15934,7 @@ protoOf(Game).j2h = function () {
       var tmp_0 = ManaOddsCalc_getInstance();
       // Inline function 'kotlin.collections.orEmpty' call
       var tmp3_safe_receiver = element_0.i28_1;
-      var tmp0_elvis_lhs = tmp3_safe_receiver == null ? null : tmp3_safe_receiver.h2e_1;
+      var tmp0_elvis_lhs = tmp3_safe_receiver == null ? null : tmp3_safe_receiver.j2e_1;
       var tmp$ret$3 = tmp0_elvis_lhs == null ? emptySet() : tmp0_elvis_lhs;
       tmp = tmp_0.b1q(tmp$ret$3);
     } else {
@@ -15935,13 +15944,13 @@ protoOf(Game).j2h = function () {
     addAll(destination_0, list);
   }
   var types = destination_0;
-  var tmp_1 = lands.m();
+  var tmp_1 = lands.p();
   var tmp$ret$7;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
     var tmp_2;
     if (isInterface(lands, Collection)) {
-      tmp_2 = lands.n();
+      tmp_2 = lands.q();
     } else {
       tmp_2 = false;
     }
@@ -15950,9 +15959,9 @@ protoOf(Game).j2h = function () {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator_1 = lands.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = lands.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
       var tmp0_safe_receiver_0 = element_1.s27_1;
       var tmp1_safe_receiver_0 = tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.g1w_1;
@@ -15975,7 +15984,7 @@ protoOf(Game).j2h = function () {
     var this_1 = this.f29_1;
     var tmp_6;
     if (isInterface(this_1, Collection)) {
-      tmp_6 = this_1.n();
+      tmp_6 = this_1.q();
     } else {
       tmp_6 = false;
     }
@@ -15983,9 +15992,9 @@ protoOf(Game).j2h = function () {
       tmp$ret$10 = false;
       break $l$block_1;
     }
-    var tmp0_iterator_2 = this_1.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_1.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
       var tmp_7;
       if (element_2.v27_1) {
@@ -16008,7 +16017,7 @@ protoOf(Game).j2h = function () {
     var this_2 = this.f29_1;
     var tmp_9;
     if (isInterface(this_2, Collection)) {
-      tmp_9 = this_2.n();
+      tmp_9 = this_2.q();
     } else {
       tmp_9 = false;
     }
@@ -16016,9 +16025,9 @@ protoOf(Game).j2h = function () {
       tmp$ret$12 = false;
       break $l$block_3;
     }
-    var tmp0_iterator_3 = this_2.j();
-    while (tmp0_iterator_3.k()) {
-      var element_3 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = this_2.m();
+    while (tmp0_iterator_3.n()) {
+      var element_3 = tmp0_iterator_3.o();
       // Inline function 'com.mtgtrader.data.Game.landsOut.<anonymous>' call
       var tmp0_safe_receiver_2 = element_3.s27_1;
       if ((tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.p1z_1) === true) {
@@ -16034,7 +16043,7 @@ protoOf(Game).j2h = function () {
   var tmp$ret$14 = Math.min(40, b);
   return new LandsOut(tmp_1, tmp_3, tmp_4, tmp_5, tmp_8, tmp_10, tmp$ret$14);
 };
-protoOf(Game).l2h = function () {
+protoOf(Game).n2h = function () {
   var tmp;
   var tmp$ret$0;
   $l$block_0: {
@@ -16042,7 +16051,7 @@ protoOf(Game).l2h = function () {
     var this_0 = this.x28_1;
     var tmp_0;
     if (isInterface(this_0, Collection)) {
-      tmp_0 = this_0.n();
+      tmp_0 = this_0.q();
     } else {
       tmp_0 = false;
     }
@@ -16050,9 +16059,9 @@ protoOf(Game).l2h = function () {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.manaSink.<anonymous>' call
       if (element.m1z_1 || element.d21_1 > 0) {
         tmp$ret$0 = true;
@@ -16070,7 +16079,7 @@ protoOf(Game).l2h = function () {
       var this_1 = this.f29_1;
       var tmp_1;
       if (isInterface(this_1, Collection)) {
-        tmp_1 = this_1.n();
+        tmp_1 = this_1.q();
       } else {
         tmp_1 = false;
       }
@@ -16078,9 +16087,9 @@ protoOf(Game).l2h = function () {
         tmp$ret$2 = false;
         break $l$block_7;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         var tmp$ret$3;
         $l$block_2: {
           // Inline function 'com.mtgtrader.data.Game.manaSink.<anonymous>' call
@@ -16096,7 +16105,7 @@ protoOf(Game).l2h = function () {
           var tmp_3;
           var tmp_4;
           // Inline function 'kotlin.collections.isNotEmpty' call
-          if (!c.f20_1.n()) {
+          if (!c.f20_1.q()) {
             tmp_4 = true;
           } else {
             var tmp$ret$5;
@@ -16105,7 +16114,7 @@ protoOf(Game).l2h = function () {
               var this_2 = plus_0(plus_0(c.d20_1, c.c20_1), c.v25_1);
               var tmp_5;
               if (isInterface(this_2, Collection)) {
-                tmp_5 = this_2.n();
+                tmp_5 = this_2.q();
               } else {
                 tmp_5 = false;
               }
@@ -16113,9 +16122,9 @@ protoOf(Game).l2h = function () {
                 tmp$ret$5 = false;
                 break $l$block_4;
               }
-              var tmp0_iterator_1 = this_2.j();
-              while (tmp0_iterator_1.k()) {
-                var element_1 = tmp0_iterator_1.l();
+              var tmp0_iterator_1 = this_2.m();
+              while (tmp0_iterator_1.n()) {
+                var element_1 = tmp0_iterator_1.o();
                 // Inline function 'com.mtgtrader.data.Game.manaSink.<anonymous>.<anonymous>' call
                 if (element_1.c1t_1.j1i() > 0) {
                   tmp$ret$5 = true;
@@ -16137,7 +16146,7 @@ protoOf(Game).l2h = function () {
                 var this_3 = this.f29_1;
                 var tmp_7;
                 if (isInterface(this_3, Collection)) {
-                  tmp_7 = this_3.n();
+                  tmp_7 = this_3.q();
                 } else {
                   tmp_7 = false;
                 }
@@ -16145,9 +16154,9 @@ protoOf(Game).l2h = function () {
                   tmp$ret$7 = false;
                   break $l$block_6;
                 }
-                var tmp0_iterator_2 = this_3.j();
-                while (tmp0_iterator_2.k()) {
-                  var element_2 = tmp0_iterator_2.l();
+                var tmp0_iterator_2 = this_3.m();
+                while (tmp0_iterator_2.n()) {
+                  var element_2 = tmp0_iterator_2.o();
                   // Inline function 'com.mtgtrader.data.Game.manaSink.<anonymous>.<anonymous>' call
                   if (element_2.v27_1) {
                     tmp$ret$7 = true;
@@ -16175,12 +16184,12 @@ protoOf(Game).l2h = function () {
   }
   return tmp;
 };
-protoOf(Game).m2h = function () {
-  var names = this.g2h();
+protoOf(Game).o2h = function () {
+  var names = this.i2h();
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var progression = until(this.l29_1, this.y28_1.m());
+    var progression = until(this.l29_1, this.y28_1.p());
     var inductionVariable = progression.a1_1;
     var last = progression.b1_1;
     if (inductionVariable <= last)
@@ -16189,7 +16198,7 @@ protoOf(Game).m2h = function () {
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.putGate.<anonymous>' call
         var it = element;
-        if (this.y28_1.o(it).w2b() && this.y28_1.o(it).l1y_1.u('Gate') && !names.u(this.y28_1.o(it).f1w_1)) {
+        if (this.y28_1.r(it).w2b() && this.y28_1.r(it).l1y_1.u('Gate') && !names.u(this.y28_1.r(it).f1w_1)) {
           tmp$ret$1 = element;
           break $l$block;
         }
@@ -16206,7 +16215,7 @@ protoOf(Game).m2h = function () {
   }
   var i = tmp;
   var gate = this.y28_1.j2(i);
-  var source = new Source(gate.g1w_1.l1i_1, 1, this.k2h(gate) ? this.m29_1 : this.m29_1 + 1 | 0);
+  var source = new Source(gate.g1w_1.l1i_1, 1, this.m2h(gate) ? this.m29_1 : this.m29_1 + 1 | 0);
   // Inline function 'kotlin.collections.plusAssign' call
   this.e29_1.h(source);
   // Inline function 'kotlin.also' call
@@ -16217,27 +16226,27 @@ protoOf(Game).m2h = function () {
   var e = this_0;
   // Inline function 'kotlin.collections.plusAssign' call
   this.f29_1.h(e);
-  this.n2h(e);
+  this.p2h(e);
 };
-protoOf(Game).n2h = function (e) {
-  this.a2h(null, true);
+protoOf(Game).p2h = function (e) {
+  this.c2h(null, true);
   if (e == null)
     null;
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    this.v2g(e);
+    this.x2g(e);
   }
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp1_safe_receiver = b.s27_1;
     if (tmp1_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.y2g(tmp1_safe_receiver.u21_1);
+      this.a2h(tmp1_safe_receiver.u21_1);
       // Inline function 'kotlin.repeat' call
       var times = tmp1_safe_receiver.r20_1;
       // Inline function 'kotlin.contracts.contract' call
@@ -16249,7 +16258,7 @@ protoOf(Game).n2h = function (e) {
           // Inline function 'com.mtgtrader.data.Game.landEntered.<anonymous>.<anonymous>' call
           var tmp0_safe_receiver = tmp1_safe_receiver.s20_1;
           var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a2c_1;
-          this.b2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, tmp1_safe_receiver.s20_1);
+          this.d2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, tmp1_safe_receiver.s20_1);
         }
          while (inductionVariable < times);
       var tmp0_safe_receiver_0 = tmp1_safe_receiver.t20_1;
@@ -16263,30 +16272,30 @@ protoOf(Game).n2h = function (e) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_0 = this.f29_1;
         var destination = ArrayList_init_$Create$();
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.Game.landEntered.<anonymous>.<anonymous>.<anonymous>' call
-          if (element.v27_1 && element.m2e(tmp0_safe_receiver_0)) {
+          if (element.v27_1 && element.o2e(tmp0_safe_receiver_0)) {
             destination.h(element);
           }
         }
-        var tmp0_iterator_0 = destination.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = destination.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           // Inline function 'com.mtgtrader.data.Game.landEntered.<anonymous>.<anonymous>.<anonymous>' call
-          this.n2g(element_0, 1);
+          this.p2g(element_0, 1);
         }
       }
-      this.o2h(tmp1_safe_receiver.m24_1);
+      this.q2h(tmp1_safe_receiver.m24_1);
     }
   }
 };
-protoOf(Game).p2h = function (want) {
+protoOf(Game).r2h = function (want) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var progression = until(this.l29_1, this.y28_1.m());
+    var progression = until(this.l29_1, this.y28_1.p());
     var inductionVariable = progression.a1_1;
     var last = progression.b1_1;
     if (inductionVariable <= last)
@@ -16295,7 +16304,7 @@ protoOf(Game).p2h = function (want) {
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.fetchToHand.<anonymous>' call
         var it = element;
-        if (want(this.y28_1.o(it))) {
+        if (want(this.y28_1.r(it))) {
           tmp$ret$1 = element;
           break $l$block;
         }
@@ -16318,14 +16327,14 @@ protoOf(Game).p2h = function (want) {
 };
 protoOf(Game).x2b = function (c) {
   var tmp;
-  if (c.w2b() && c.l1y_1.u('Gate') && !this.g2h().u(c.f1w_1)) {
+  if (c.w2b() && c.l1y_1.u('Gate') && !this.i2h().u(c.f1w_1)) {
     var tmp$ret$0;
     $l$block_0: {
       // Inline function 'kotlin.collections.none' call
       var this_0 = this.x28_1;
       var tmp_0;
       if (isInterface(this_0, Collection)) {
-        tmp_0 = this_0.n();
+        tmp_0 = this_0.q();
       } else {
         tmp_0 = false;
       }
@@ -16333,9 +16342,9 @@ protoOf(Game).x2b = function (c) {
         tmp$ret$0 = true;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.wantedGate.<anonymous>' call
         if (element.f1w_1 === c.f1w_1) {
           tmp$ret$0 = false;
@@ -16350,11 +16359,11 @@ protoOf(Game).x2b = function (c) {
   }
   return tmp;
 };
-protoOf(Game).q2h = function (kind) {
+protoOf(Game).s2h = function (kind) {
   var tmp$ret$3;
   $l$block_1: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var progression = until(this.l29_1, this.y28_1.m());
+    var progression = until(this.l29_1, this.y28_1.p());
     var inductionVariable = progression.a1_1;
     var last = progression.b1_1;
     if (inductionVariable <= last)
@@ -16364,14 +16373,14 @@ protoOf(Game).q2h = function (kind) {
         // Inline function 'com.mtgtrader.data.Game.fetch.<anonymous>' call
         var i = element;
         var tmp;
-        if (this.y28_1.o(i).k1w_1 && !this.y28_1.o(i).w2b()) {
+        if (this.y28_1.r(i).k1w_1 && !this.y28_1.r(i).w2b()) {
           var tmp$ret$0;
           $l$block_0: {
             // Inline function 'kotlin.collections.any' call
-            var this_0 = this.y28_1.o(i).l1y_1;
+            var this_0 = this.y28_1.r(i).l1y_1;
             var tmp_0;
             if (isInterface(this_0, Collection)) {
-              tmp_0 = this_0.n();
+              tmp_0 = this_0.q();
             } else {
               tmp_0 = false;
             }
@@ -16379,9 +16388,9 @@ protoOf(Game).q2h = function (kind) {
               tmp$ret$0 = false;
               break $l$block_0;
             }
-            var tmp0_iterator = this_0.j();
-            while (tmp0_iterator.k()) {
-              var element_0 = tmp0_iterator.l();
+            var tmp0_iterator = this_0.m();
+            while (tmp0_iterator.n()) {
+              var element_0 = tmp0_iterator.o();
               // Inline function 'com.mtgtrader.data.Game.fetch.<anonymous>.<anonymous>' call
               if (equals_0(element_0, kind, true)) {
                 tmp$ret$0 = true;
@@ -16413,9 +16422,9 @@ protoOf(Game).q2h = function (kind) {
   var c = this.y28_1.j2(i_0);
   // Inline function 'kotlin.collections.plusAssign' call
   this.x28_1.h(c);
-  this.r2h(c, true);
+  this.t2h(c, true);
 };
-protoOf(Game).s2h = function (pool, tokens) {
+protoOf(Game).u2h = function (pool, tokens) {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.minByOrNull' call
@@ -16423,28 +16432,28 @@ protoOf(Game).s2h = function (pool, tokens) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.x28_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.xSpell.<anonymous>' call
       if (tokens ? element.d21_1 > 0 : element.m1z_1) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var minElem = iterator.l();
-    if (!iterator.k()) {
+    var minElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = minElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.xSpell.<anonymous>' call
     var minValue = minElem.i1w_1;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.xSpell.<anonymous>' call
       var v = e.i1w_1;
       if (compareTo(minValue, v) > 0) {
@@ -16452,7 +16461,7 @@ protoOf(Game).s2h = function (pool, tokens) {
         minValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = minElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -16463,7 +16472,7 @@ protoOf(Game).s2h = function (pool, tokens) {
     tmp = tmp0_elvis_lhs;
   }
   var c = tmp;
-  var tmp1_elvis_lhs = ManaOddsCalc_getInstance().h1q(plus_0(pool, this.t2h()), this.u2h(c));
+  var tmp1_elvis_lhs = ManaOddsCalc_getInstance().h1q(plus_0(pool, this.v2h()), this.w2h(c));
   var tmp_0;
   if (tmp1_elvis_lhs == null) {
     return null;
@@ -16473,9 +16482,9 @@ protoOf(Game).s2h = function (pool, tokens) {
   var left = tmp_0;
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator_0 = left.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = left.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     var tmp_1 = sum;
     // Inline function 'com.mtgtrader.data.Game.xSpell.<anonymous>' call
     sum = tmp_1 + element_0.be_1 | 0;
@@ -16491,23 +16500,23 @@ protoOf(Game).s2h = function (pool, tokens) {
   }
   return to(c, tmp_2);
 };
-protoOf(Game).v2h = function (pool, tokens, $super) {
+protoOf(Game).x2h = function (pool, tokens, $super) {
   tokens = tokens === VOID ? false : tokens;
-  return $super === VOID ? this.s2h(pool, tokens) : $super.s2h.call(this, pool, tokens);
+  return $super === VOID ? this.u2h(pool, tokens) : $super.u2h.call(this, pool, tokens);
 };
-protoOf(Game).w2h = function (pool) {
+protoOf(Game).y2h = function (pool) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var tmp0_iterator = this.f29_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.f29_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.maze.<anonymous>' call
       var tmp;
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.s1y_1) === true) {
         var tmp1_safe_receiver = element.i28_1;
-        var tmp2_elvis_lhs = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.j2e_1;
+        var tmp2_elvis_lhs = tmp1_safe_receiver == null ? null : tmp1_safe_receiver.l2e_1;
         tmp = (tmp2_elvis_lhs == null ? 2147483647 : tmp2_elvis_lhs) <= this.m29_1;
       } else {
         tmp = false;
@@ -16549,15 +16558,15 @@ protoOf(Game).w2h = function (pool) {
   var this_0 = this.x28_1;
   var element_0 = ensureNotNull(m.s27_1);
   this_0.h(element_0);
-  this.m2h();
-  if (this.g2h().m() >= 10)
+  this.o2h();
+  if (this.i2h().p() >= 10)
     this.v29_1 = true;
   return left;
 };
-protoOf(Game).h2h = function (n) {
-  return this.q2g('treasure', n);
+protoOf(Game).j2h = function (n) {
+  return this.s2g('treasure', n);
 };
-protoOf(Game).x2h = function () {
+protoOf(Game).z2h = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -16565,28 +16574,28 @@ protoOf(Game).x2h = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.carrier.<anonymous>' call
       if (element.v27_1 && contains_1(this.z28_1, element.s27_1)) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = maxElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.carrier.<anonymous>' call
     var maxValue = maxElem.u27_1;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.carrier.<anonymous>' call
       var v = e.u27_1;
       if (compareTo(maxValue, v) < 0) {
@@ -16594,7 +16603,7 @@ protoOf(Game).x2h = function () {
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = maxElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -16607,37 +16616,37 @@ protoOf(Game).x2h = function () {
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.carrier.<anonymous>' call
         if (element_0.v27_1) {
           destination_0.h(element_0);
         }
       }
-      var iterator_0 = destination_0.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_0.m();
+      if (!iterator_0.n()) {
         tmp$ret$9 = null;
         break $l$block_2;
       }
-      var maxElem_0 = iterator_0.l();
-      if (!iterator_0.k()) {
+      var maxElem_0 = iterator_0.o();
+      if (!iterator_0.n()) {
         tmp$ret$9 = maxElem_0;
         break $l$block_2;
       }
       // Inline function 'com.mtgtrader.data.Game.carrier.<anonymous>' call
       var it = maxElem_0;
-      var maxValue_0 = it.u27_1 + it.g28_1.m() | 0;
+      var maxValue_0 = it.u27_1 + it.g28_1.p() | 0;
       do {
-        var e_0 = iterator_0.l();
+        var e_0 = iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.carrier.<anonymous>' call
-        var v_0 = e_0.u27_1 + e_0.g28_1.m() | 0;
+        var v_0 = e_0.u27_1 + e_0.g28_1.p() | 0;
         if (compareTo(maxValue_0, v_0) < 0) {
           maxElem_0 = e_0;
           maxValue_0 = v_0;
         }
       }
-       while (iterator_0.k());
+       while (iterator_0.n());
       tmp$ret$9 = maxElem_0;
     }
     tmp = tmp$ret$9;
@@ -16646,22 +16655,22 @@ protoOf(Game).x2h = function () {
   }
   return tmp;
 };
-protoOf(Game).y2h = function (c, fromGraveyard) {
-  if (!this.c29_1.c2f_1)
+protoOf(Game).a2i = function (c, fromGraveyard) {
+  if (!this.c29_1.e2f_1)
     return c.h1w_1;
   var less = 0;
-  var _iterator__ex2g4s = this.f29_1.j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = this.f29_1.m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.l20_1;
     if (tmp1_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator = tmp1_safe_receiver.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = tmp1_safe_receiver.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.costOf.<anonymous>' call
         var kind = element.ce();
         var n = element.de();
@@ -16693,7 +16702,7 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
                 var this_0 = c.h1w_1.i1i_1;
                 var tmp_5;
                 if (isInterface(this_0, Collection)) {
-                  tmp_5 = this_0.n();
+                  tmp_5 = this_0.q();
                 } else {
                   tmp_5 = false;
                 }
@@ -16701,9 +16710,9 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
                   tmp$ret$0 = false;
                   break $l$block_0;
                 }
-                var tmp0_iterator_0 = this_0.j();
-                while (tmp0_iterator_0.k()) {
-                  var element_0 = tmp0_iterator_0.l();
+                var tmp0_iterator_0 = this_0.m();
+                while (tmp0_iterator_0.n()) {
+                  var element_0 = tmp0_iterator_0.o();
                   // Inline function 'com.mtgtrader.data.Game.costOf.<anonymous>.<anonymous>' call
                   var tmp_6 = colour;
                   if (element_0.u(tmp_6 == null ? null : new Char(tmp_6))) {
@@ -16727,7 +16736,7 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
                 var this_1 = c.l1y_1;
                 var tmp_7;
                 if (isInterface(this_1, Collection)) {
-                  tmp_7 = this_1.n();
+                  tmp_7 = this_1.q();
                 } else {
                   tmp_7 = false;
                 }
@@ -16735,9 +16744,9 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
                   tmp$ret$2 = false;
                   break $l$block_2;
                 }
-                var tmp0_iterator_1 = this_1.j();
-                while (tmp0_iterator_1.k()) {
-                  var element_1 = tmp0_iterator_1.l();
+                var tmp0_iterator_1 = this_1.m();
+                while (tmp0_iterator_1.n()) {
+                  var element_1 = tmp0_iterator_1.o();
                   // Inline function 'com.mtgtrader.data.Game.costOf.<anonymous>.<anonymous>' call
                   if (equals_0(element_1, kind, true)) {
                     tmp$ret$2 = true;
@@ -16758,7 +16767,7 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
                 var this_2 = c.v1x_1;
                 var tmp_8;
                 if (isInterface(this_2, Collection)) {
-                  tmp_8 = this_2.n();
+                  tmp_8 = this_2.q();
                 } else {
                   tmp_8 = false;
                 }
@@ -16766,9 +16775,9 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
                   tmp$ret$4 = false;
                   break $l$block_4;
                 }
-                var tmp0_iterator_2 = this_2.j();
-                while (tmp0_iterator_2.k()) {
-                  var element_2 = tmp0_iterator_2.l();
+                var tmp0_iterator_2 = this_2.m();
+                while (tmp0_iterator_2.n()) {
+                  var element_2 = tmp0_iterator_2.o();
                   // Inline function 'com.mtgtrader.data.Game.costOf.<anonymous>.<anonymous>' call
                   if (equals_0(element_2, kind, true)) {
                     tmp$ret$4 = true;
@@ -16804,7 +16813,7 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
         var this_3 = this.f29_1;
         var tmp_11;
         if (isInterface(this_3, Collection)) {
-          tmp_11 = this_3.n();
+          tmp_11 = this_3.q();
         } else {
           tmp_11 = false;
         }
@@ -16813,9 +16822,9 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
           break $l$block_5;
         }
         var count = 0;
-        var tmp0_iterator_3 = this_3.j();
-        while (tmp0_iterator_3.k()) {
-          var element_3 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = this_3.m();
+        while (tmp0_iterator_3.n()) {
+          var element_3 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.costOf.<anonymous>.<anonymous>' call
           if (element_3.k28_1) {
             count = count + 1 | 0;
@@ -16826,7 +16835,7 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
       }
       tmp_10 = tmp$ret$6;
     } else {
-      tmp_10 = this.f2h(tmp2_safe_receiver);
+      tmp_10 = this.h2h(tmp2_safe_receiver);
     }
     less = tmp_9 + tmp_10 | 0;
   }
@@ -16834,25 +16843,25 @@ protoOf(Game).y2h = function (c, fromGraveyard) {
     return c.h1w_1;
   return new Cost(coerceAtLeast_0(c.h1w_1.h1i_1 - less | 0, 0), c.h1w_1.i1i_1);
 };
-protoOf(Game).u2h = function (c, fromGraveyard, $super) {
+protoOf(Game).w2h = function (c, fromGraveyard, $super) {
   fromGraveyard = fromGraveyard === VOID ? false : fromGraveyard;
-  return $super === VOID ? this.y2h(c, fromGraveyard) : $super.y2h.call(this, c, fromGraveyard);
+  return $super === VOID ? this.a2i(c, fromGraveyard) : $super.a2i.call(this, c, fromGraveyard);
 };
-protoOf(Game).z2h = function (e) {
+protoOf(Game).b2i = function (e) {
   var tmp;
   var tmp_0;
   if (e.l28_1) {
     tmp_0 = true;
   } else {
     var tmp_1;
-    if (this.c29_1.b2f_1 && e.m28_1 === 'food') {
+    if (this.c29_1.d2f_1 && e.m28_1 === 'food') {
       var tmp$ret$0;
       $l$block_0: {
         // Inline function 'kotlin.collections.any' call
         var this_0 = this.f29_1;
         var tmp_2;
         if (isInterface(this_0, Collection)) {
-          tmp_2 = this_0.n();
+          tmp_2 = this_0.q();
         } else {
           tmp_2 = false;
         }
@@ -16860,9 +16869,9 @@ protoOf(Game).z2h = function (e) {
           tmp$ret$0 = false;
           break $l$block_0;
         }
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.Game.manaToken.<anonymous>' call
           var tmp0_safe_receiver = element.s27_1;
           if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.v22_1) === true) {
@@ -16885,8 +16894,8 @@ protoOf(Game).z2h = function (e) {
   }
   return tmp;
 };
-protoOf(Game).t2h = function () {
-  if (!this.c29_1.e2f_1)
+protoOf(Game).v2h = function () {
+  if (!this.c29_1.g2f_1)
     return emptyList();
   var tmp$ret$0;
   $l$block: {
@@ -16894,7 +16903,7 @@ protoOf(Game).t2h = function () {
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -16903,11 +16912,11 @@ protoOf(Game).t2h = function () {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.treasurePool.<anonymous>' call
-      if (this.z2h(element)) {
+      if (this.b2i(element)) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -16923,7 +16932,7 @@ protoOf(Game).t2h = function () {
     var this_1 = this.f29_1;
     var tmp_0;
     if (isInterface(this_1, Collection)) {
-      tmp_0 = this_1.n();
+      tmp_0 = this_1.q();
     } else {
       tmp_0 = false;
     }
@@ -16931,9 +16940,9 @@ protoOf(Game).t2h = function () {
       tmp$ret$2 = false;
       break $l$block_1;
     }
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.treasurePool.<anonymous>' call
       var tmp0_safe_receiver = element_0.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.o20_1) === true) {
@@ -16960,7 +16969,7 @@ protoOf(Game).t2h = function () {
       var this_2 = this.a29_1;
       // Inline function 'kotlin.contracts.contract' call
       var tmp_1;
-      if (this_2.n()) {
+      if (this_2.q()) {
         // Inline function 'com.mtgtrader.data.Game.treasurePool.<anonymous>.<anonymous>' call
         tmp_1 = setOf_0(new Char(_Char___init__impl__6a9atx(67)));
       } else {
@@ -16973,30 +16982,30 @@ protoOf(Game).t2h = function () {
      while (inductionVariable < n);
   return list;
 };
-protoOf(Game).a2i = function () {
+protoOf(Game).c2i = function () {
   var tmp;
-  if (!this.c29_1.d2f_1) {
+  if (!this.c29_1.f2f_1) {
     tmp = emptyList();
   } else {
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.dorks.<anonymous>' call
       var tmp_0;
       var tmp_1;
       var tmp_2;
       if (element.v27_1) {
         var tmp0_safe_receiver = element.i28_1;
-        tmp_2 = (tmp0_safe_receiver == null ? null : tmp0_safe_receiver.k2e_1) === true;
+        tmp_2 = (tmp0_safe_receiver == null ? null : tmp0_safe_receiver.m2e_1) === true;
       } else {
         tmp_2 = false;
       }
       if (tmp_2) {
-        tmp_1 = ensureNotNull(element.i28_1).j2e_1 <= this.m29_1;
+        tmp_1 = ensureNotNull(element.i28_1).l2e_1 <= this.m29_1;
       } else {
         tmp_1 = false;
       }
@@ -17013,29 +17022,29 @@ protoOf(Game).a2i = function () {
   }
   return tmp;
 };
-protoOf(Game).b2i = function (pool, cost) {
+protoOf(Game).d2i = function (pool, cost) {
   var tmp = ManaOddsCalc_getInstance();
   // Inline function 'kotlin.collections.map' call
-  var this_0 = this.a2i();
+  var this_0 = this.c2i();
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.canSpend.<anonymous>' call
-    var tmp$ret$0 = to(ensureNotNull(item.i28_1).h2e_1, ensureNotNull(item.i28_1).i2e_1);
+    var tmp$ret$0 = to(ensureNotNull(item.i28_1).j2e_1, ensureNotNull(item.i28_1).k2e_1);
     destination.h(tmp$ret$0);
   }
-  return !(tmp.h1q(plus_0(plus_0(pool, destination), this.t2h()), cost) == null);
+  return !(tmp.h1q(plus_0(plus_0(pool, destination), this.v2h()), cost) == null);
 };
-protoOf(Game).c2i = function (pool, cost, manaValue) {
+protoOf(Game).e2i = function (pool, cost, manaValue) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
-  var this_0 = this.a2i();
+  var this_0 = this.c2i();
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.spend.<anonymous>' call
     var tmp;
     var tmp0_safe_receiver = element.s27_1;
@@ -17052,7 +17061,7 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
     }
   }
   var drawers = destination;
-  if (drawers.n()) {
+  if (drawers.q()) {
     var tmp0_safe_receiver_0 = ManaOddsCalc_getInstance().h1q(pool, cost);
     if (tmp0_safe_receiver_0 == null)
       null;
@@ -17062,16 +17071,16 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
       return tmp0_safe_receiver_0;
     }
   }
-  if (!this.c29_1.d2f_1 && !this.c29_1.e2f_1)
+  if (!this.c29_1.f2f_1 && !this.c29_1.g2f_1)
     return null;
   // Inline function 'kotlin.collections.sortedBy' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
-  var this_1 = this.a2i();
+  var this_1 = this.c2i();
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.spend.<anonymous>' call
     if (!drawers.u(element_0)) {
       destination_0.h(element_0);
@@ -17088,7 +17097,7 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
     var this_2 = this.f29_1;
     var tmp_1;
     if (isInterface(this_2, Collection)) {
-      tmp_1 = this_2.n();
+      tmp_1 = this_2.q();
     } else {
       tmp_1 = false;
     }
@@ -17096,9 +17105,9 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
       tmp$ret$9 = false;
       break $l$block_0;
     }
-    var tmp0_iterator_1 = this_2.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = this_2.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.spend.<anonymous>' call
       var tmp0_safe_receiver_1 = element_1.s27_1;
       if ((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.o20_1) === true) {
@@ -17114,28 +17123,28 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_3 = this.f29_1;
   var destination_1 = ArrayList_init_$Create$();
-  var tmp0_iterator_2 = this_3.j();
-  while (tmp0_iterator_2.k()) {
-    var element_2 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = this_3.m();
+  while (tmp0_iterator_2.n()) {
+    var element_2 = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.Game.spend.<anonymous>' call
-    if (this.z2h(element_2)) {
+    if (this.b2i(element_2)) {
       destination_1.h(element_2);
     }
   }
   addAll(extras, destination_1);
   var p = pool;
   var used = ArrayList_init_$Create$();
-  var _iterator__ex2g4s = extras.j();
-  while (_iterator__ex2g4s.k()) {
-    var e = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = extras.m();
+  while (_iterator__ex2g4s.n()) {
+    var e = _iterator__ex2g4s.o();
     var tmp_2 = p;
     var tmp_3;
-    if (this.z2h(e)) {
+    if (this.b2i(e)) {
       // Inline function 'kotlin.collections.ifEmpty' call
       var this_4 = this.a29_1;
       // Inline function 'kotlin.contracts.contract' call
       var tmp_4;
-      if (this_4.n()) {
+      if (this_4.q()) {
         // Inline function 'com.mtgtrader.data.Game.spend.<anonymous>' call
         tmp_4 = setOf_0(new Char(_Char___init__impl__6a9atx(67)));
       } else {
@@ -17144,7 +17153,7 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
       var tmp$ret$15 = tmp_4;
       tmp_3 = to(tmp$ret$15, two && e.l28_1 ? 2 : 1);
     } else {
-      tmp_3 = to(ensureNotNull(e.i28_1).h2e_1, ensureNotNull(e.i28_1).i2e_1);
+      tmp_3 = to(ensureNotNull(e.i28_1).j2e_1, ensureNotNull(e.i28_1).k2e_1);
     }
     p = plus(tmp_2, tmp_3);
     // Inline function 'kotlin.collections.plusAssign' call
@@ -17155,19 +17164,19 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      var _iterator__ex2g4s_0 = used.j();
-      while (_iterator__ex2g4s_0.k()) {
-        var u = _iterator__ex2g4s_0.l();
-        if (this.z2h(u)) {
+      var _iterator__ex2g4s_0 = used.m();
+      while (_iterator__ex2g4s_0.n()) {
+        var u = _iterator__ex2g4s_0.o();
+        if (this.b2i(u)) {
           this.f29_1.g2(u);
-          this.d2i(u, true);
+          this.f2i(u, true);
         } else {
           u.j28_1 = this.m29_1;
           var tmp0_safe_receiver_2 = u.s27_1;
           var tmp1_elvis_lhs_0 = tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.n20_1;
           var containsArg = tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0;
           if (1 <= containsArg ? containsArg <= manaValue : false) {
-            this.l2g(1);
+            this.n2g(1);
           }
         }
       }
@@ -17176,28 +17185,28 @@ protoOf(Game).c2i = function (pool, cost, manaValue) {
   }
   return null;
 };
-protoOf(Game).e2i = function (pool, cost, manaValue, $super) {
+protoOf(Game).g2i = function (pool, cost, manaValue, $super) {
   manaValue = manaValue === VOID ? cost.j1i() : manaValue;
-  return $super === VOID ? this.c2i(pool, cost, manaValue) : $super.c2i.call(this, pool, cost, manaValue);
+  return $super === VOID ? this.e2i(pool, cost, manaValue) : $super.e2i.call(this, pool, cost, manaValue);
 };
-protoOf(Game).f2i = function (pool) {
+protoOf(Game).h2i = function (pool) {
   // Inline function 'kotlin.collections.map' call
-  var this_0 = this.a2i();
+  var this_0 = this.c2i();
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.potential.<anonymous>' call
-    var tmp$ret$0 = to(ensureNotNull(item.i28_1).h2e_1, ensureNotNull(item.i28_1).i2e_1);
+    var tmp$ret$0 = to(ensureNotNull(item.i28_1).j2e_1, ensureNotNull(item.i28_1).k2e_1);
     destination.h(tmp$ret$0);
   }
-  return plus_0(plus_0(pool, destination), this.t2h());
+  return plus_0(plus_0(pool, destination), this.v2h());
 };
 protoOf(Game).v2b = function (c) {
-  return (c.l1w_1 ? c.o1w_1 : 0) + this.g2i(c) | 0;
+  return (c.l1w_1 ? c.o1w_1 : 0) + this.i2i(c) | 0;
 };
-protoOf(Game).g2i = function (c) {
+protoOf(Game).i2i = function (c) {
   var tmp = imul(3, c.v1w_1) + c.x1w_1 | 0;
   var tmp_0;
   var tmp_1 = c.q20_1;
@@ -17215,7 +17224,7 @@ protoOf(Game).g2i = function (c) {
       var this_0 = this.f29_1;
       var tmp_4;
       if (isInterface(this_0, Collection)) {
-        tmp_4 = this_0.n();
+        tmp_4 = this_0.q();
       } else {
         tmp_4 = false;
       }
@@ -17224,9 +17233,9 @@ protoOf(Game).g2i = function (c) {
         break $l$block;
       }
       var count = 0;
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.enterWorth.<anonymous>' call
         if (element.v27_1) {
           count = count + 1 | 0;
@@ -17246,7 +17255,7 @@ protoOf(Game).g2i = function (c) {
     var this_1 = c.n1y_1;
     var tmp_6;
     if (isInterface(this_1, Collection)) {
-      tmp_6 = this_1.n();
+      tmp_6 = this_1.q();
     } else {
       tmp_6 = false;
     }
@@ -17255,9 +17264,9 @@ protoOf(Game).g2i = function (c) {
       break $l$block_0;
     }
     var count_0 = 0;
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.enterWorth.<anonymous>' call
       if (!element_0.u2c_1) {
         count_0 = count_0 + 1 | 0;
@@ -17266,9 +17275,9 @@ protoOf(Game).g2i = function (c) {
     }
     tmp$ret$2 = count_0;
   }
-  return ((tmp_5 + imul(tmp$ret$2, 3) | 0) + c.o1y_1.m() | 0) + c.f1z_1 | 0;
+  return ((tmp_5 + imul(tmp$ret$2, 3) | 0) + c.o1y_1.p() | 0) + c.f1z_1 | 0;
 };
-protoOf(Game).j2g = function (c) {
+protoOf(Game).l2g = function (c) {
   var tmp;
   var tmp_0;
   var tmp_1;
@@ -17296,12 +17305,12 @@ protoOf(Game).j2g = function (c) {
     tmp_0 = false;
   }
   if (tmp_0) {
-    tmp = c.q24_1.n();
+    tmp = c.q24_1.q();
   } else {
     tmp = false;
   }
   if (tmp)
-    return this.s29_1 || this.h2i(c.u1z_1) >= 5;
+    return this.s29_1 || this.j2i(c.u1z_1) >= 5;
   if (c.k1w_1)
     return true;
   var a = c.u1z_1;
@@ -17315,7 +17324,7 @@ protoOf(Game).j2g = function (c) {
     tmp_9 = true;
   } else {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    tmp_9 = !c.n1y_1.n();
+    tmp_9 = !c.n1y_1.q();
   }
   if (tmp_9) {
     tmp_8 = true;
@@ -17362,7 +17371,7 @@ protoOf(Game).j2g = function (c) {
       var this_0 = this.z29_1;
       var tmp_20;
       if (isInterface(this_0, Collection)) {
-        tmp_20 = this_0.n();
+        tmp_20 = this_0.q();
       } else {
         tmp_20 = false;
       }
@@ -17370,9 +17379,9 @@ protoOf(Game).j2g = function (c) {
         tmp$ret$1 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
         if (element.w2b()) {
           tmp$ret$1 = true;
@@ -17389,7 +17398,7 @@ protoOf(Game).j2g = function (c) {
     tmp_18 = true;
   } else {
     var tmp_21;
-    if (a.r1t_1 > 0 && this.h2i(a) >= (a.r1t_1 === 99 ? 12 : 5)) {
+    if (a.r1t_1 > 0 && this.j2i(a) >= (a.r1t_1 === 99 ? 12 : 5)) {
       var tmp_22;
       if (!a.t1t_1) {
         tmp_22 = true;
@@ -17400,7 +17409,7 @@ protoOf(Game).j2g = function (c) {
           var this_1 = this.f29_1;
           var tmp_23;
           if (isInterface(this_1, Collection)) {
-            tmp_23 = this_1.n();
+            tmp_23 = this_1.q();
           } else {
             tmp_23 = false;
           }
@@ -17408,9 +17417,9 @@ protoOf(Game).j2g = function (c) {
             tmp$ret$3 = false;
             break $l$block_2;
           }
-          var tmp0_iterator_0 = this_1.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_1.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
             if (element_0.v27_1 && !contains_1(this.z28_1, element_0.s27_1)) {
               tmp$ret$3 = true;
@@ -17438,7 +17447,7 @@ protoOf(Game).j2g = function (c) {
         var this_2 = this.f29_1;
         var tmp_25;
         if (isInterface(this_2, Collection)) {
-          tmp_25 = this_2.n();
+          tmp_25 = this_2.q();
         } else {
           tmp_25 = false;
         }
@@ -17446,9 +17455,9 @@ protoOf(Game).j2g = function (c) {
           tmp$ret$5 = false;
           break $l$block_4;
         }
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
           var tmp_26;
           if (element_1.v27_1 && !element_1.k28_1) {
@@ -17460,7 +17469,7 @@ protoOf(Game).j2g = function (c) {
               // Inline function 'kotlin.let' call
               // Inline function 'kotlin.contracts.contract' call
               // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>.<anonymous>' call
-              tmp_27 = this.g2i(tmp0_safe_receiver) >= 3;
+              tmp_27 = this.i2i(tmp0_safe_receiver) >= 3;
             }
             tmp_26 = tmp_27 === true;
           } else {
@@ -17490,7 +17499,7 @@ protoOf(Game).j2g = function (c) {
         var this_3 = this.f29_1;
         var tmp_29;
         if (isInterface(this_3, Collection)) {
-          tmp_29 = this_3.n();
+          tmp_29 = this_3.q();
         } else {
           tmp_29 = false;
         }
@@ -17498,9 +17507,9 @@ protoOf(Game).j2g = function (c) {
           tmp$ret$9 = false;
           break $l$block_6;
         }
-        var tmp0_iterator_2 = this_3.j();
-        while (tmp0_iterator_2.k()) {
-          var element_2 = tmp0_iterator_2.l();
+        var tmp0_iterator_2 = this_3.m();
+        while (tmp0_iterator_2.n()) {
+          var element_2 = tmp0_iterator_2.o();
           // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
           var tmp_30;
           if (element_2.v27_1) {
@@ -17542,7 +17551,7 @@ protoOf(Game).j2g = function (c) {
         var this_4 = this.f29_1;
         var tmp_33;
         if (isInterface(this_4, Collection)) {
-          tmp_33 = this_4.n();
+          tmp_33 = this_4.q();
         } else {
           tmp_33 = false;
         }
@@ -17551,9 +17560,9 @@ protoOf(Game).j2g = function (c) {
           break $l$block_7;
         }
         var count = 0;
-        var tmp0_iterator_3 = this_4.j();
-        while (tmp0_iterator_3.k()) {
-          var element_3 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = this_4.m();
+        while (tmp0_iterator_3.n()) {
+          var element_3 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
           if (element_3.v27_1 && element_3.k28_1) {
             count = count + 1 | 0;
@@ -17579,7 +17588,7 @@ protoOf(Game).j2g = function (c) {
         var this_5 = this.z29_1;
         var tmp_35;
         if (isInterface(this_5, Collection)) {
-          tmp_35 = this_5.n();
+          tmp_35 = this_5.q();
         } else {
           tmp_35 = false;
         }
@@ -17587,11 +17596,11 @@ protoOf(Game).j2g = function (c) {
           tmp$ret$15 = false;
           break $l$block_9;
         }
-        var tmp0_iterator_4 = this_5.j();
-        while (tmp0_iterator_4.k()) {
-          var element_4 = tmp0_iterator_4.l();
+        var tmp0_iterator_4 = this_5.m();
+        while (tmp0_iterator_4.n()) {
+          var element_4 = tmp0_iterator_4.o();
           // Inline function 'com.mtgtrader.data.Game.ready.<anonymous>' call
-          if (this.i2i(element_4, a.x1t_1)) {
+          if (this.k2i(element_4, a.x1t_1)) {
             tmp$ret$15 = true;
             break $l$block_9;
           }
@@ -17617,7 +17626,7 @@ protoOf(Game).j2g = function (c) {
   if (tmp_12) {
     tmp_11 = true;
   } else {
-    tmp_11 = (a.i1v_1 > 0 && this.j2i() > 0);
+    tmp_11 = (a.i1v_1 > 0 && this.l2i() > 0);
   }
   if (tmp_11) {
     tmp_10 = true;
@@ -17626,7 +17635,7 @@ protoOf(Game).j2g = function (c) {
   }
   return tmp_10;
 };
-protoOf(Game).i2i = function (c, kind) {
+protoOf(Game).k2i = function (c, kind) {
   var tmp;
   switch (kind) {
     case null:
@@ -17647,7 +17656,7 @@ protoOf(Game).i2i = function (c, kind) {
         var this_0 = c.v1x_1;
         var tmp_1;
         if (isInterface(this_0, Collection)) {
-          tmp_1 = this_0.n();
+          tmp_1 = this_0.q();
         } else {
           tmp_1 = false;
         }
@@ -17655,9 +17664,9 @@ protoOf(Game).i2i = function (c, kind) {
           tmp$ret$0 = false;
           break $l$block_0;
         }
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.Game.toHandOk.<anonymous>' call
           if (equals_0(element, kind, true)) {
             tmp$ret$0 = true;
@@ -17676,7 +17685,7 @@ protoOf(Game).i2i = function (c, kind) {
           var this_1 = c.l1y_1;
           var tmp_2;
           if (isInterface(this_1, Collection)) {
-            tmp_2 = this_1.n();
+            tmp_2 = this_1.q();
           } else {
             tmp_2 = false;
           }
@@ -17684,9 +17693,9 @@ protoOf(Game).i2i = function (c, kind) {
             tmp$ret$2 = false;
             break $l$block_2;
           }
-          var tmp0_iterator_0 = this_1.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_1.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.toHandOk.<anonymous>' call
             if (equals_0(element_0, kind, true)) {
               tmp$ret$2 = true;
@@ -17703,7 +17712,7 @@ protoOf(Game).i2i = function (c, kind) {
   }
   return tmp;
 };
-protoOf(Game).k2i = function (c, kind, chosen) {
+protoOf(Game).m2i = function (c, kind, chosen) {
   var tmp;
   if (c.l1w_1) {
     switch (kind) {
@@ -17728,7 +17737,7 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
     tmp = _this__u8e3s4.o1z_1;
   } else {
     if (k === 'multicolored') {
-      tmp = toSet(flatten(_this__u8e3s4.h1w_1.i1i_1)).m() >= 2;
+      tmp = toSet(flatten(_this__u8e3s4.h1w_1.i1i_1)).p() >= 2;
     } else {
       // Inline function 'kotlin.collections.contains' call
       // Inline function 'kotlin.collections.containsKey' call
@@ -17740,7 +17749,7 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
           var this_1 = _this__u8e3s4.h1w_1.i1i_1;
           var tmp_0;
           if (isInterface(this_1, Collection)) {
-            tmp_0 = this_1.n();
+            tmp_0 = this_1.q();
           } else {
             tmp_0 = false;
           }
@@ -17748,9 +17757,9 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
             tmp$ret$2 = false;
             break $l$block_0;
           }
-          var tmp0_iterator = this_1.j();
-          while (tmp0_iterator.k()) {
-            var element = tmp0_iterator.l();
+          var tmp0_iterator = this_1.m();
+          while (tmp0_iterator.n()) {
+            var element = tmp0_iterator.o();
             // Inline function 'com.mtgtrader.data.Game.isKind.<anonymous>' call
             if (element.u(getValue(Companion_getInstance_6().b27_1, k))) {
               tmp$ret$2 = true;
@@ -17768,7 +17777,7 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
           var this_2 = _this__u8e3s4.l1y_1;
           var tmp_2;
           if (isInterface(this_2, Collection)) {
-            tmp_2 = this_2.n();
+            tmp_2 = this_2.q();
           } else {
             tmp_2 = false;
           }
@@ -17776,9 +17785,9 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
             tmp$ret$4 = false;
             break $l$block_2;
           }
-          var tmp0_iterator_0 = this_2.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_2.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.isKind.<anonymous>' call
             if (equals_0(element_0, k, true)) {
               tmp$ret$4 = true;
@@ -17796,7 +17805,7 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
             var this_3 = _this__u8e3s4.v1x_1;
             var tmp_3;
             if (isInterface(this_3, Collection)) {
-              tmp_3 = this_3.n();
+              tmp_3 = this_3.q();
             } else {
               tmp_3 = false;
             }
@@ -17804,9 +17813,9 @@ protoOf(Game).b2b = function (_this__u8e3s4, k) {
               tmp$ret$6 = false;
               break $l$block_4;
             }
-            var tmp0_iterator_1 = this_3.j();
-            while (tmp0_iterator_1.k()) {
-              var element_1 = tmp0_iterator_1.l();
+            var tmp0_iterator_1 = this_3.m();
+            while (tmp0_iterator_1.n()) {
+              var element_1 = tmp0_iterator_1.o();
               // Inline function 'com.mtgtrader.data.Game.isKind.<anonymous>' call
               if (equals_0(element_1, k, true)) {
                 tmp$ret$6 = true;
@@ -17831,9 +17840,9 @@ protoOf(Game).chosenTypeInGraveyard = function () {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.z29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.chosenType.<anonymous>' call
     if (element.l1w_1) {
       destination.h(element);
@@ -17841,9 +17850,9 @@ protoOf(Game).chosenTypeInGraveyard = function () {
   }
   // Inline function 'kotlin.collections.flatMapTo' call
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.chosenType.<anonymous>' call
     var list = element_0.l1y_1;
     addAll(destination_0, list);
@@ -17853,20 +17862,20 @@ protoOf(Game).chosenTypeInGraveyard = function () {
   var tmp$ret$7;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
-    var iterator = this_1.f2().j();
-    if (!iterator.k()) {
+    var iterator = this_1.f2().m();
+    if (!iterator.n()) {
       tmp$ret$7 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$7 = maxElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.chosenType.<anonymous>' call
     var maxValue = maxElem.z1();
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.chosenType.<anonymous>' call
       var v = e.z1();
       if (compareTo(maxValue, v) < 0) {
@@ -17874,32 +17883,32 @@ protoOf(Game).chosenTypeInGraveyard = function () {
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$7 = maxElem;
   }
   var tmp0_safe_receiver = tmp$ret$7;
   return tmp0_safe_receiver == null ? null : tmp0_safe_receiver.y1();
 };
-protoOf(Game).h2i = function (a) {
+protoOf(Game).j2i = function (a) {
   var chosen = this.chosenTypeInGraveyard();
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.z29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.reanimationWorth.<anonymous>' call
-    if (this.k2i(element, a.s1t_1, chosen)) {
+    if (this.m2i(element, a.s1t_1, chosen)) {
       destination.h(element);
     }
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination, 10));
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var item = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var item = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.reanimationWorth.<anonymous>' call
     var tmp$ret$3 = this.v2b(item);
     destination_0.h(tmp$ret$3);
@@ -17915,18 +17924,18 @@ protoOf(Game).h2i = function (a) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = this_1.j();
-      while (tmp0_iterator_1.k()) {
-        var element_0 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_1.m();
+      while (tmp0_iterator_1.n()) {
+        var element_0 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.reanimationWorth.<anonymous>' call
         if (element_0.v27_1) {
           destination_1.h(element_0);
         }
       }
       var sum_0 = 0;
-      var tmp0_iterator_2 = destination_1.j();
-      while (tmp0_iterator_2.k()) {
-        var element_1 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = destination_1.m();
+      while (tmp0_iterator_2.n()) {
+        var element_1 = tmp0_iterator_2.o();
         var tmp_2 = sum_0;
         // Inline function 'com.mtgtrader.data.Game.reanimationWorth.<anonymous>' call
         sum_0 = tmp_2 + (element_1.u27_1 + element_1.a28_1 | 0) | 0;
@@ -17941,19 +17950,19 @@ protoOf(Game).h2i = function (a) {
   }
   return tmp;
 };
-protoOf(Game).l2i = function (cards) {
-  if (cards.n())
+protoOf(Game).n2i = function (cards) {
+  if (cards.q())
     return Unit_instance;
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = cards.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = cards.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.leftGraveyard.<anonymous>' call
     this.z29_1.g2(element);
   }
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     if (tmp0_safe_receiver == null)
       null;
@@ -17967,16 +17976,16 @@ protoOf(Game).l2i = function (cards) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.leftGraveyard.<anonymous>.<anonymous>' call
-        this.b2h(tmp0_safe_receiver_0.a2c_1, tmp0_safe_receiver_0);
+        this.d2h(tmp0_safe_receiver_0.a2c_1, tmp0_safe_receiver_0);
       }
       if (tmp0_safe_receiver.h21_1 && !this.e2a_1) {
         this.e2a_1 = true;
-        this.l2g(1);
+        this.n2g(1);
       }
     }
   }
 };
-protoOf(Game).m2i = function (n) {
+protoOf(Game).o2i = function (n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -17985,12 +17994,12 @@ protoOf(Game).m2i = function (n) {
       var index = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.mill.<anonymous>' call
-      if (this.l29_1 < this.y28_1.m()) {
+      if (this.l29_1 < this.y28_1.p()) {
         // Inline function 'kotlin.collections.plusAssign' call
         var this_0 = this.z29_1;
         var _unary__edvuaz = this.l29_1;
         this.l29_1 = _unary__edvuaz + 1 | 0;
-        var element = this.y28_1.o(_unary__edvuaz);
+        var element = this.y28_1.r(_unary__edvuaz);
         this_0.h(element);
       }
     }
@@ -17999,16 +18008,16 @@ protoOf(Game).m2i = function (n) {
   }
   return tmp;
 };
-protoOf(Game).n2i = function (n) {
+protoOf(Game).p2i = function (n) {
   var inductionVariable = 0;
   if (inductionVariable < n)
     $l$loop: do {
       var k = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       var i = this.l29_1 + k | 0;
-      if (i >= this.y28_1.m())
+      if (i >= this.y28_1.p())
         break $l$loop;
-      var c = this.y28_1.o(i);
+      var c = this.y28_1.r(i);
       var tmp;
       if (this.a2a_1 && c.l1w_1 && this.v2b(c) >= 5) {
         tmp = true;
@@ -18021,7 +18030,7 @@ protoOf(Game).n2i = function (n) {
             var this_0 = this.x28_1;
             var tmp_1;
             if (isInterface(this_0, Collection)) {
-              tmp_1 = this_0.n();
+              tmp_1 = this_0.q();
             } else {
               tmp_1 = false;
             }
@@ -18030,9 +18039,9 @@ protoOf(Game).n2i = function (n) {
               break $l$block;
             }
             var count = 0;
-            var tmp0_iterator = this_0.j();
-            while (tmp0_iterator.k()) {
-              var element = tmp0_iterator.l();
+            var tmp0_iterator = this_0.m();
+            while (tmp0_iterator.n()) {
+              var element = tmp0_iterator.o();
               // Inline function 'com.mtgtrader.data.Game.surveil.<anonymous>' call
               if (element.w2b()) {
                 count = count + 1 | 0;
@@ -18056,7 +18065,7 @@ protoOf(Game).n2i = function (n) {
     }
      while (inductionVariable < n);
 };
-protoOf(Game).o2i = function (n, spellsWanted) {
+protoOf(Game).q2i = function (n, spellsWanted) {
   var spellsOut = 0;
   var tmp$ret$0;
   $l$block: {
@@ -18064,7 +18073,7 @@ protoOf(Game).o2i = function (n, spellsWanted) {
     var this_0 = this.e29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -18073,11 +18082,11 @@ protoOf(Game).o2i = function (n, spellsWanted) {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>' call
-      if (!element.k2e_1) {
+      if (!element.m2e_1) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -18093,15 +18102,15 @@ protoOf(Game).o2i = function (n, spellsWanted) {
       var index = inductionVariable;
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>' call
-      if (this.x28_1.n())
+      if (this.x28_1.q())
         return spellsOut;
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.x28_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
         if (element_0.w2b()) {
           destination.h(element_0);
@@ -18117,21 +18126,21 @@ protoOf(Game).o2i = function (n, spellsWanted) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_2 = this.x28_1;
           var destination_0 = ArrayList_init_$Create$();
-          var tmp0_iterator_1 = this_2.j();
-          while (tmp0_iterator_1.k()) {
-            var element_1 = tmp0_iterator_1.l();
+          var tmp0_iterator_1 = this_2.m();
+          while (tmp0_iterator_1.n()) {
+            var element_1 = tmp0_iterator_1.o();
             // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
             if (element_1.l1w_1 && element_1.i1w_1 > manaSoon) {
               destination_0.h(element_1);
             }
           }
-          var iterator = destination_0.j();
-          if (!iterator.k()) {
+          var iterator = destination_0.m();
+          if (!iterator.n()) {
             tmp$ret$8 = null;
             break $l$block_1;
           }
-          var maxElem = iterator.l();
-          if (!iterator.k()) {
+          var maxElem = iterator.o();
+          if (!iterator.n()) {
             tmp$ret$8 = maxElem;
             break $l$block_1;
           }
@@ -18139,7 +18148,7 @@ protoOf(Game).o2i = function (n, spellsWanted) {
           var it = maxElem;
           var maxValue = this.v2b(it);
           do {
-            var e = iterator.l();
+            var e = iterator.o();
             // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
             var v = this.v2b(e);
             if (compareTo(maxValue, v) < 0) {
@@ -18147,7 +18156,7 @@ protoOf(Game).o2i = function (n, spellsWanted) {
               maxValue = v;
             }
           }
-           while (iterator.k());
+           while (iterator.n());
           tmp$ret$8 = maxElem;
         }
         tmp_0 = tmp$ret$8;
@@ -18162,9 +18171,9 @@ protoOf(Game).o2i = function (n, spellsWanted) {
           var tmp$ret$12;
           $l$block_2: {
             // Inline function 'kotlin.collections.firstOrNull' call
-            var tmp0_iterator_2 = this.x28_1.j();
-            while (tmp0_iterator_2.k()) {
-              var element_2 = tmp0_iterator_2.l();
+            var tmp0_iterator_2 = this.x28_1.m();
+            while (tmp0_iterator_2.n()) {
+              var element_2 = tmp0_iterator_2.o();
               // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
               if (!element_2.k1w_1 && !useful(WinOddsCalc_getInstance(), element_2, this.s29_1, this.t29_1, this.y29_1)) {
                 tmp$ret$12 = element_2;
@@ -18185,30 +18194,30 @@ protoOf(Game).o2i = function (n, spellsWanted) {
       var tmp_3;
       if (tmp1_elvis_lhs == null) {
         var tmp_4;
-        if (lands.m() > 2 || (lands.m() > 1 && this.e29_1.m() >= 6)) {
+        if (lands.p() > 2 || (lands.p() > 1 && this.e29_1.p() >= 6)) {
           var tmp$ret$13;
           $l$block_3: {
             // Inline function 'kotlin.collections.minBy' call
-            var iterator_0 = lands.j();
-            if (!iterator_0.k())
+            var iterator_0 = lands.m();
+            if (!iterator_0.n())
               throw NoSuchElementException_init_$Create$();
-            var minElem = iterator_0.l();
-            if (!iterator_0.k()) {
+            var minElem = iterator_0.o();
+            if (!iterator_0.n()) {
               tmp$ret$13 = minElem;
               break $l$block_3;
             }
             // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
-            var minValue = minElem.g1w_1.l1i_1.m();
+            var minValue = minElem.g1w_1.l1i_1.p();
             do {
-              var e_0 = iterator_0.l();
+              var e_0 = iterator_0.o();
               // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
-              var v_0 = e_0.g1w_1.l1i_1.m();
+              var v_0 = e_0.g1w_1.l1i_1.p();
               if (compareTo(minValue, v_0) > 0) {
                 minElem = e_0;
                 minValue = v_0;
               }
             }
-             while (iterator_0.k());
+             while (iterator_0.n());
             tmp$ret$13 = minElem;
           }
           tmp_4 = tmp$ret$13;
@@ -18225,9 +18234,9 @@ protoOf(Game).o2i = function (n, spellsWanted) {
         var tmp$ret$17;
         $l$block_4: {
           // Inline function 'kotlin.collections.firstOrNull' call
-          var tmp0_iterator_3 = this.x28_1.j();
-          while (tmp0_iterator_3.k()) {
-            var element_3 = tmp0_iterator_3.l();
+          var tmp0_iterator_3 = this.x28_1.m();
+          while (tmp0_iterator_3.n()) {
+            var element_3 = tmp0_iterator_3.o();
             // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
             if (!element_3.w2b() && !useful(WinOddsCalc_getInstance(), element_3, this.s29_1, this.t29_1, this.y29_1)) {
               tmp$ret$17 = element_3;
@@ -18250,28 +18259,28 @@ protoOf(Game).o2i = function (n, spellsWanted) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_3 = this.x28_1;
           var destination_1 = ArrayList_init_$Create$();
-          var tmp0_iterator_4 = this_3.j();
-          while (tmp0_iterator_4.k()) {
-            var element_4 = tmp0_iterator_4.l();
+          var tmp0_iterator_4 = this_3.m();
+          while (tmp0_iterator_4.n()) {
+            var element_4 = tmp0_iterator_4.o();
             // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
             if (!element_4.w2b()) {
               destination_1.h(element_4);
             }
           }
-          var iterator_1 = destination_1.j();
-          if (!iterator_1.k()) {
+          var iterator_1 = destination_1.m();
+          if (!iterator_1.n()) {
             tmp$ret$21 = null;
             break $l$block_6;
           }
-          var minElem_0 = iterator_1.l();
-          if (!iterator_1.k()) {
+          var minElem_0 = iterator_1.o();
+          if (!iterator_1.n()) {
             tmp$ret$21 = minElem_0;
             break $l$block_6;
           }
           // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
           var minValue_0 = minElem_0.i1w_1;
           do {
-            var e_1 = iterator_1.l();
+            var e_1 = iterator_1.o();
             // Inline function 'com.mtgtrader.data.Game.discard.<anonymous>.<anonymous>' call
             var v_1 = e_1.i1w_1;
             if (compareTo(minValue_0, v_1) > 0) {
@@ -18279,7 +18288,7 @@ protoOf(Game).o2i = function (n, spellsWanted) {
               minValue_0 = v_1;
             }
           }
-           while (iterator_1.k());
+           while (iterator_1.n());
           tmp$ret$21 = minElem_0;
         }
         tmp_6 = tmp$ret$21;
@@ -18294,24 +18303,24 @@ protoOf(Game).o2i = function (n, spellsWanted) {
       if (!c.k1w_1) {
         spellsOut = spellsOut + 1 | 0;
       }
-      this.p2i(c);
+      this.r2i(c);
     }
      while (inductionVariable < n);
   return spellsOut;
 };
-protoOf(Game).q2i = function (n, spellsWanted, $super) {
+protoOf(Game).s2i = function (n, spellsWanted, $super) {
   spellsWanted = spellsWanted === VOID ? false : spellsWanted;
-  return $super === VOID ? this.o2i(n, spellsWanted) : $super.o2i.call(this, n, spellsWanted);
+  return $super === VOID ? this.q2i(n, spellsWanted) : $super.q2i.call(this, n, spellsWanted);
 };
-protoOf(Game).r2i = function () {
+protoOf(Game).t2i = function () {
   // Inline function 'kotlin.takeIf' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.x28_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>' call
     if (element.w2b()) {
       destination.h(element);
@@ -18320,7 +18329,7 @@ protoOf(Game).r2i = function () {
   // Inline function 'kotlin.contracts.contract' call
   var tmp;
   // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>' call
-  if (destination.m() > 2) {
+  if (destination.p() > 2) {
     tmp = destination;
   } else {
     tmp = null;
@@ -18332,9 +18341,9 @@ protoOf(Game).r2i = function () {
     var tmp$ret$6;
     $l$block: {
       // Inline function 'kotlin.collections.firstOrNull' call
-      var tmp0_iterator_0 = this.x28_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this.x28_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>' call
         if (!element_0.w2b() && !useful(WinOddsCalc_getInstance(), element_0, this.s29_1, this.t29_1, this.y29_1)) {
           tmp$ret$6 = element_0;
@@ -18359,9 +18368,9 @@ protoOf(Game).r2i = function () {
         // Inline function 'kotlin.collections.filterTo' call
         var this_1 = this.x28_1;
         var destination_0 = ArrayList_init_$Create$();
-        var tmp0_iterator_1 = this_1.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_1.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>' call
           var tmp_3;
           if (element_1.l1w_1) {
@@ -18371,7 +18380,7 @@ protoOf(Game).r2i = function () {
               var this_2 = this.e29_1;
               var tmp_4;
               if (isInterface(this_2, Collection)) {
-                tmp_4 = this_2.n();
+                tmp_4 = this_2.q();
               } else {
                 tmp_4 = false;
               }
@@ -18380,11 +18389,11 @@ protoOf(Game).r2i = function () {
                 break $l$block_0;
               }
               var count = 0;
-              var tmp0_iterator_2 = this_2.j();
-              while (tmp0_iterator_2.k()) {
-                var element_2 = tmp0_iterator_2.l();
+              var tmp0_iterator_2 = this_2.m();
+              while (tmp0_iterator_2.n()) {
+                var element_2 = tmp0_iterator_2.o();
                 // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>.<anonymous>' call
-                if (!element_2.k2e_1) {
+                if (!element_2.m2e_1) {
                   count = count + 1 | 0;
                   checkCountOverflow(count);
                 }
@@ -18399,13 +18408,13 @@ protoOf(Game).r2i = function () {
             destination_0.h(element_1);
           }
         }
-        var iterator = destination_0.j();
-        if (!iterator.k()) {
+        var iterator = destination_0.m();
+        if (!iterator.n()) {
           tmp$ret$12 = null;
           break $l$block_2;
         }
-        var maxElem = iterator.l();
-        if (!iterator.k()) {
+        var maxElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$12 = maxElem;
           break $l$block_2;
         }
@@ -18413,7 +18422,7 @@ protoOf(Game).r2i = function () {
         var it = maxElem;
         var maxValue = this.v2b(it);
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.spareCard.<anonymous>' call
           var v = this.v2b(e);
           if (compareTo(maxValue, v) < 0) {
@@ -18421,7 +18430,7 @@ protoOf(Game).r2i = function () {
             maxValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$12 = maxElem;
       }
       tmp_2 = tmp$ret$12;
@@ -18434,14 +18443,14 @@ protoOf(Game).r2i = function () {
   }
   return tmp_1;
 };
-protoOf(Game).p2i = function (c) {
+protoOf(Game).r2i = function (c) {
   this.d2a_1 = this.d2a_1 + 1 | 0;
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var tmp0_iterator = this.f29_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.f29_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.discarded.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.o25_1) === true) {
@@ -18458,14 +18467,14 @@ protoOf(Game).p2i = function (c) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     if (this.z29_1.u(c)) {
-      this.l2i(listOf_0(c));
+      this.n2i(listOf_0(c));
       // Inline function 'kotlin.collections.plusAssign' call
       tmp0_safe_receiver_0.e28_1.h(c);
     }
   }
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp1_safe_receiver = b.s27_1;
     if (tmp1_safe_receiver == null)
       null;
@@ -18475,44 +18484,44 @@ protoOf(Game).p2i = function (c) {
       if (tmp1_safe_receiver.n21_1) {
         switch (this.d2a_1) {
           case 1:
-            this.z2g(3, 3);
+            this.b2h(3, 3);
             break;
           case 2:
-            this.l2g(1);
+            this.n2g(1);
             break;
           case 3:
-            this.h2h(1);
+            this.j2h(1);
             break;
         }
       }
       if (tmp1_safe_receiver.o21_1 > 0 && c.l1w_1) {
-        this.d2h(tmp1_safe_receiver.o21_1);
+        this.f2h(tmp1_safe_receiver.o21_1);
       }
     }
   }
 };
-protoOf(Game).s2i = function (a) {
+protoOf(Game).u2i = function (a) {
   if (a.s1t_1 === 'land') {
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.z29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
       if (element.w2b()) {
         destination.h(element);
       }
     }
     var lands = take(destination, a.r1t_1 === 99 ? 99 : a.r1t_1);
-    this.l2i(lands);
+    this.n2i(lands);
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_0 = lands.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = lands.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-      this.t2i(element_0, false);
+      this.v2i(element_0, false);
     }
     return Unit_instance;
   }
@@ -18522,11 +18531,11 @@ protoOf(Game).s2i = function (a) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = this.z29_1;
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_1 = this_1.j();
-  while (tmp0_iterator_1.k()) {
-    var element_1 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = this_1.m();
+  while (tmp0_iterator_1.n()) {
+    var element_1 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-    if (this.k2i(element_1, a.s1t_1, chosen)) {
+    if (this.m2i(element_1, a.s1t_1, chosen)) {
       destination_0.h(element_1);
     }
   }
@@ -18536,10 +18545,10 @@ protoOf(Game).s2i = function (a) {
   var ok = sortedWith(destination_0, tmp$ret$6);
   if (!(a.r1t_1 === 99))
     ok = take(ok, a.r1t_1);
-  if (ok.n())
+  if (ok.q())
     return Unit_instance;
   if (a.t1t_1) {
-    if (this.u2i() == null)
+    if (this.w2i() == null)
       return Unit_instance;
   }
   if (a.u1t_1) {
@@ -18548,40 +18557,40 @@ protoOf(Game).s2i = function (a) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_2 = this.f29_1;
     var destination_1 = ArrayList_init_$Create$();
-    var tmp0_iterator_2 = this_2.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_2.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
       if (element_2.v27_1 && !contains_1(this.z28_1, element_2.s27_1)) {
         destination_1.h(element_2);
       }
     }
-    var tmp0_iterator_3 = destination_1.j();
-    while (tmp0_iterator_3.k()) {
-      var element_3 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = destination_1.m();
+    while (tmp0_iterator_3.n()) {
+      var element_3 = tmp0_iterator_3.o();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
       this.f29_1.g2(element_3);
-      this.d2i(element_3, element_3.y27_1.u('Artifact'));
+      this.f2i(element_3, element_3.y27_1.u('Artifact'));
     }
   }
-  this.l2i(ok);
+  this.n2i(ok);
   // Inline function 'kotlin.collections.map' call
   var this_3 = ok;
   // Inline function 'kotlin.collections.mapTo' call
   var destination_2 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_3, 10));
-  var tmp0_iterator_4 = this_3.j();
-  while (tmp0_iterator_4.k()) {
-    var item = tmp0_iterator_4.l();
+  var tmp0_iterator_4 = this_3.m();
+  while (tmp0_iterator_4.n()) {
+    var item = tmp0_iterator_4.o();
     // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-    var tmp$ret$11 = this.v2i(item, true);
+    var tmp$ret$11 = this.x2i(item, true);
     destination_2.h(tmp$ret$11);
   }
   var back = destination_2;
   if (a.v1t_1) {
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_5 = back.j();
-    while (tmp0_iterator_5.k()) {
-      var element_4 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = back.m();
+    while (tmp0_iterator_5.n()) {
+      var element_4 = tmp0_iterator_5.o();
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
       element_4.u27_1 = 1;
       element_4.v28_1 = 1;
@@ -18589,14 +18598,14 @@ protoOf(Game).s2i = function (a) {
   }
   var tmp_0;
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!back.n()) {
+  if (!back.q()) {
     var tmp$ret$15;
     $l$block_0: {
       // Inline function 'kotlin.collections.any' call
       var this_4 = this.f29_1;
       var tmp_1;
       if (isInterface(this_4, Collection)) {
-        tmp_1 = this_4.n();
+        tmp_1 = this_4.q();
       } else {
         tmp_1 = false;
       }
@@ -18604,9 +18613,9 @@ protoOf(Game).s2i = function (a) {
         tmp$ret$15 = false;
         break $l$block_0;
       }
-      var tmp0_iterator_6 = this_4.j();
-      while (tmp0_iterator_6.k()) {
-        var element_5 = tmp0_iterator_6.l();
+      var tmp0_iterator_6 = this_4.m();
+      while (tmp0_iterator_6.n()) {
+        var element_5 = tmp0_iterator_6.o();
         // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
         var tmp0_safe_receiver = element_5.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.q21_1) === true) {
@@ -18624,13 +18633,13 @@ protoOf(Game).s2i = function (a) {
     var tmp$ret$17;
     $l$block_2: {
       // Inline function 'kotlin.collections.maxByOrNull' call
-      var iterator = back.j();
-      if (!iterator.k()) {
+      var iterator = back.m();
+      if (!iterator.n()) {
         tmp$ret$17 = null;
         break $l$block_2;
       }
-      var maxElem = iterator.l();
-      if (!iterator.k()) {
+      var maxElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$17 = maxElem;
         break $l$block_2;
       }
@@ -18648,7 +18657,7 @@ protoOf(Game).s2i = function (a) {
       var tmp1_elvis_lhs = tmp_2;
       var maxValue = tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs;
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
         var tmp0_safe_receiver_1 = e.s27_1;
         var tmp_3;
@@ -18667,7 +18676,7 @@ protoOf(Game).s2i = function (a) {
           maxValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$17 = maxElem;
     }
     var tmp1_safe_receiver = tmp$ret$17;
@@ -18678,31 +18687,31 @@ protoOf(Game).s2i = function (a) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.reanimate.<anonymous>' call
-      this.v2i(tmp2_safe_receiver, true, true);
+      this.x2i(tmp2_safe_receiver, true, true);
     }
   }
 };
-protoOf(Game).w2i = function (b) {
+protoOf(Game).y2i = function (b) {
   var tmp = b.d28_1;
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator = b.g28_1.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = b.g28_1.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp_0 = sum;
     // Inline function 'com.mtgtrader.data.Game.toxic.<anonymous>' call
     sum = tmp_0 + element.m25_1 | 0;
   }
   return tmp + sum | 0;
 };
-protoOf(Game).x2i = function (t) {
+protoOf(Game).z2i = function (t) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.crew.<anonymous>' call
     var tmp;
     var tmp_0;
@@ -18722,24 +18731,24 @@ protoOf(Game).x2i = function (t) {
     }
   }
   var vehicles = destination;
-  if (vehicles.n())
+  if (vehicles.q())
     return emptyList();
   var crewed = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.sortedByDescending' call
   // Inline function 'kotlin.comparisons.compareByDescending' call
   var tmp_1 = WinOddsCalc$Game$crew$lambda;
   var tmp$ret$3 = new sam$kotlin_Comparator$0_9(tmp_1);
-  var _iterator__ex2g4s = sortedWith(vehicles, tmp$ret$3).j();
-  $l$loop_0: while (_iterator__ex2g4s.k()) {
-    var v = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = sortedWith(vehicles, tmp$ret$3).m();
+  $l$loop_0: while (_iterator__ex2g4s.n()) {
+    var v = _iterator__ex2g4s.o();
     var need = ensureNotNull(ensureNotNull(v.s27_1).k25_1);
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = this.f29_1;
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.crew.<anonymous>' call
       if (element_0.v27_1 && !crewed.u(element_0) && !(element_0.j28_1 === t) && element_0.u27_1 > 0 && !contains_1(this.z28_1, element_0.s27_1)) {
         destination_0.h(element_0);
@@ -18756,23 +18765,23 @@ protoOf(Game).x2i = function (t) {
     var sum = 0;
     var lost = 0;
     var crew = ArrayList_init_$Create$();
-    var _iterator__ex2g4s_0 = free.j();
-    $l$loop: while (_iterator__ex2g4s_0.k()) {
-      var c = _iterator__ex2g4s_0.l();
+    var _iterator__ex2g4s_0 = free.m();
+    $l$loop: while (_iterator__ex2g4s_0.n()) {
+      var c = _iterator__ex2g4s_0.o();
       if (sum >= need)
         break $l$loop;
       // Inline function 'kotlin.collections.plusAssign' call
       crew.h(c);
       sum = sum + c.u27_1 | 0;
       if (crew$canAttack(t, this, c))
-        lost = lost + this.y2i(c).ae_1 | 0;
+        lost = lost + this.a2j(c).ae_1 | 0;
     }
     if (sum < need || lost >= v.u27_1)
       continue $l$loop_0;
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_1 = crew.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = crew.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.crew.<anonymous>' call
       element_1.j28_1 = t;
     }
@@ -18782,7 +18791,7 @@ protoOf(Game).x2i = function (t) {
   }
   return crewed;
 };
-protoOf(Game).z2i = function (e, k) {
+protoOf(Game).b2j = function (e, k) {
   var tmp0_safe_receiver = e.s27_1;
   var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.j25_1;
   var tmp;
@@ -18792,9 +18801,9 @@ protoOf(Game).z2i = function (e, k) {
     tmp = tmp1_elvis_lhs;
   }
   var chapters = tmp;
-  if (k >= chapters.m())
+  if (k >= chapters.p())
     return Unit_instance;
-  var a = chapters.o(k);
+  var a = chapters.r(k);
   if (a.z1v_1) {
     // Inline function 'kotlin.collections.plusAssign' call
     var this_0 = this.q29_1;
@@ -18802,26 +18811,26 @@ protoOf(Game).z2i = function (e, k) {
     this_0.h(element);
   } else {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!a.y1v_1.n()) {
+    if (!a.y1v_1.q()) {
       // Inline function 'kotlin.collections.plusAssign' call
       var this_1 = this.p29_1;
       var elements = a.y1v_1;
       addAll(this_1, elements);
     } else {
-      this.o2g(a, e);
+      this.q2g(a, e);
     }
   }
-  if (k === (chapters.m() - 1 | 0)) {
-    this.a2j(e);
+  if (k === (chapters.p() - 1 | 0)) {
+    this.c2j(e);
   }
 };
-protoOf(Game).b2j = function (start) {
+protoOf(Game).d2j = function (start) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var tmp0_iterator = this.x28_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.x28_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
       if (element.g25_1) {
         tmp$ret$1 = element;
@@ -18845,21 +18854,21 @@ protoOf(Game).b2j = function (start) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = this_0.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_0.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
       if (element_0.v27_1) {
         destination.h(element_0);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$5 = null;
       break $l$block_1;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$5 = maxElem;
       break $l$block_1;
     }
@@ -18867,7 +18876,7 @@ protoOf(Game).b2j = function (start) {
     var it = maxElem;
     var maxValue = it.v28_1 + it.a28_1 | 0;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
       var v = e.v28_1 + e.a28_1 | 0;
       if (compareTo(maxValue, v) < 0) {
@@ -18875,7 +18884,7 @@ protoOf(Game).b2j = function (start) {
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$5 = maxElem;
   }
   var tmp1_elvis_lhs = tmp$ret$5;
@@ -18906,7 +18915,7 @@ protoOf(Game).b2j = function (start) {
     }
     var tmp_1;
     if (isInterface(destination_0, Collection)) {
-      tmp_1 = destination_0.n();
+      tmp_1 = destination_0.q();
     } else {
       tmp_1 = false;
     }
@@ -18914,9 +18923,9 @@ protoOf(Game).b2j = function (start) {
       tmp$ret$11 = true;
       break $l$block_3;
     }
-    var tmp0_iterator_1 = destination_0.j();
-    while (tmp0_iterator_1.k()) {
-      var element_2 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = destination_0.m();
+    while (tmp0_iterator_1.n()) {
+      var element_2 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
       if (!(element_2 <= x)) {
         tmp$ret$11 = false;
@@ -18931,9 +18940,9 @@ protoOf(Game).b2j = function (start) {
   var this_2 = this.f29_1;
   var destination_1 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_2 = this_2.j();
-  while (tmp0_iterator_2.k()) {
-    var element_3 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = this_2.m();
+  while (tmp0_iterator_2.n()) {
+    var element_3 = tmp0_iterator_2.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
     var tmp0_safe_receiver = element_3.s27_1;
@@ -18951,9 +18960,9 @@ protoOf(Game).b2j = function (start) {
   var this_3 = this.x28_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination_2 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_3, 10));
-  var tmp0_iterator_3 = this_3.j();
-  while (tmp0_iterator_3.k()) {
-    var item = tmp0_iterator_3.l();
+  var tmp0_iterator_3 = this_3.m();
+  while (tmp0_iterator_3.n()) {
+    var item = tmp0_iterator_3.o();
     // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
     var tmp$ret$17 = item.j1w_1;
     destination_2.h(tmp$ret$17);
@@ -18963,9 +18972,9 @@ protoOf(Game).b2j = function (start) {
   var this_4 = this.d29_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination_3 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_4, 10));
-  var tmp0_iterator_4 = this_4.j();
-  while (tmp0_iterator_4.k()) {
-    var item_0 = tmp0_iterator_4.l();
+  var tmp0_iterator_4 = this_4.m();
+  while (tmp0_iterator_4.n()) {
+    var item_0 = tmp0_iterator_4.o();
     // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
     var tmp$ret$20 = item_0.j1w_1;
     destination_3.h(tmp$ret$20);
@@ -18979,7 +18988,7 @@ protoOf(Game).b2j = function (start) {
       var this_5 = this.b29_1;
       var tmp_5;
       if (isInterface(this_5, Collection)) {
-        tmp_5 = this_5.n();
+        tmp_5 = this_5.q();
       } else {
         tmp_5 = false;
       }
@@ -18987,9 +18996,9 @@ protoOf(Game).b2j = function (start) {
         tmp$ret$23 = false;
         break $l$block_7;
       }
-      var tmp0_iterator_5 = this_5.j();
-      while (tmp0_iterator_5.k()) {
-        var element_4 = tmp0_iterator_5.l();
+      var tmp0_iterator_5 = this_5.m();
+      while (tmp0_iterator_5.n()) {
+        var element_4 = tmp0_iterator_5.o();
         // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>' call
         var tmp_6;
         if (element_4.o2b_1.u(c.j1w_1)) {
@@ -18999,7 +19008,7 @@ protoOf(Game).b2j = function (start) {
             var this_6 = element_4.o2b_1;
             var tmp_7;
             if (isInterface(this_6, Collection)) {
-              tmp_7 = this_6.n();
+              tmp_7 = this_6.q();
             } else {
               tmp_7 = false;
             }
@@ -19007,9 +19016,9 @@ protoOf(Game).b2j = function (start) {
               tmp$ret$24 = true;
               break $l$block_6;
             }
-            var tmp0_iterator_6 = this_6.j();
-            while (tmp0_iterator_6.k()) {
-              var element_5 = tmp0_iterator_6.l();
+            var tmp0_iterator_6 = this_6.m();
+            while (tmp0_iterator_6.n()) {
+              var element_5 = tmp0_iterator_6.o();
               // Inline function 'com.mtgtrader.data.Game.blightX.<anonymous>.<anonymous>' call
               if (!there.u(element_5)) {
                 tmp$ret$24 = false;
@@ -19036,7 +19045,7 @@ protoOf(Game).b2j = function (start) {
   var waiting = tmp_4;
   if (!lethal && (x < 8 || waiting))
     return start;
-  var tmp2_elvis_lhs = this.e2i(start, this.u2h(c));
+  var tmp2_elvis_lhs = this.g2i(start, this.w2h(c));
   var tmp_8;
   if (tmp2_elvis_lhs == null) {
     return start;
@@ -19044,18 +19053,18 @@ protoOf(Game).b2j = function (start) {
     tmp_8 = tmp2_elvis_lhs;
   }
   var pool = tmp_8;
-  this.r2h(c);
-  this.c2j(target, x);
-  this.z2g(x, 3);
+  this.t2h(c);
+  this.e2j(target, x);
+  this.b2h(x, 3);
   return pool;
 };
-protoOf(Game).d2j = function (start) {
+protoOf(Game).f2j = function (start) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var tmp0_iterator = this.x28_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.x28_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
       if (element.h25_1) {
         tmp$ret$1 = element;
@@ -19077,9 +19086,9 @@ protoOf(Game).d2j = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.z29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_0.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_0.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
     if (!element_0.k1w_1 && !element_0.w2b() && !element_0.h25_1 && !element_0.m1z_1 && element_0.d21_1 === 0 && this.v2b(element_0) >= 2) {
       destination.h(element_0);
@@ -19089,7 +19098,7 @@ protoOf(Game).d2j = function (start) {
   var tmp_0 = WinOddsCalc$Game$mizzix$lambda(this);
   var tmp$ret$5 = new sam$kotlin_Comparator$0_10(tmp_0);
   var spells = sortedWith(destination, tmp$ret$5);
-  if (spells.n())
+  if (spells.q())
     return start;
   var tmp1_safe_receiver = m.i25_1;
   var tmp_1;
@@ -19100,7 +19109,7 @@ protoOf(Game).d2j = function (start) {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_2;
     // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
-    if (spells.m() >= 2) {
+    if (spells.p() >= 2) {
       tmp_2 = tmp1_safe_receiver;
     } else {
       tmp_2 = null;
@@ -19115,7 +19124,7 @@ protoOf(Game).d2j = function (start) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
-    tmp_3 = this.e2i(start, tmp2_safe_receiver);
+    tmp_3 = this.g2i(start, tmp2_safe_receiver);
   }
   var overload = tmp_3;
   var tmp_4;
@@ -19137,7 +19146,7 @@ protoOf(Game).d2j = function (start) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
-      tmp_6 = this.e2i(start, this.u2h(m));
+      tmp_6 = this.g2i(start, this.w2h(m));
     }
     tmp_4 = tmp_6;
   } else {
@@ -19151,23 +19160,23 @@ protoOf(Game).d2j = function (start) {
     tmp_7 = tmp5_elvis_lhs;
   }
   var pool = tmp_7;
-  this.r2h(m);
+  this.t2h(m);
   this.z29_1.g2(m);
   var copies = !(overload == null) ? spells : take(spells, 1);
-  this.l2i(copies);
+  this.n2i(copies);
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_1 = copies.j();
-  while (tmp0_iterator_1.k()) {
-    var element_1 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = copies.m();
+  while (tmp0_iterator_1.n()) {
+    var element_1 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.Game.mizzix.<anonymous>' call
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var o = this.r2h(element_1, VOID, VOID, VOID, true);
+    var o = this.t2h(element_1, VOID, VOID, VOID, true);
     this.b2a_1 = this.b2a_1 + o | 0;
   }
   return pool;
 };
-protoOf(Game).u2i = function () {
+protoOf(Game).w2i = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.minByOrNull' call
@@ -19175,21 +19184,21 @@ protoOf(Game).u2i = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeWorst.<anonymous>' call
       if (element.v27_1 && !contains_1(this.z28_1, element.s27_1)) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var minElem = iterator.l();
-    if (!iterator.k()) {
+    var minElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = minElem;
       break $l$block_0;
     }
@@ -19204,12 +19213,12 @@ protoOf(Game).u2i = function () {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.sacrificeWorst.<anonymous>.<anonymous>' call
-      tmp_0 = this.g2i(tmp0_safe_receiver);
+      tmp_0 = this.i2i(tmp0_safe_receiver);
     }
     var tmp1_elvis_lhs = tmp_0;
     var minValue = tmp + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeWorst.<anonymous>' call
       var tmp_1 = ((e.k28_1 ? 0 : 3) + e.u27_1 | 0) + e.a28_1 | 0;
       var tmp0_safe_receiver_0 = e.s27_1;
@@ -19220,7 +19229,7 @@ protoOf(Game).u2i = function () {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.sacrificeWorst.<anonymous>.<anonymous>' call
-        tmp_2 = this.g2i(tmp0_safe_receiver_0);
+        tmp_2 = this.i2i(tmp0_safe_receiver_0);
       }
       var tmp1_elvis_lhs_0 = tmp_2;
       var v = tmp_1 + (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) | 0;
@@ -19229,7 +19238,7 @@ protoOf(Game).u2i = function () {
         minValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = minElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -19241,10 +19250,10 @@ protoOf(Game).u2i = function () {
   }
   var e_0 = tmp_3;
   this.f29_1.g2(e_0);
-  this.d2i(e_0, e_0.y27_1.u('Artifact'));
+  this.f2i(e_0, e_0.y27_1.u('Artifact'));
   return e_0;
 };
-protoOf(Game).e2j = function (a, user, attackers) {
+protoOf(Game).g2j = function (a, user, attackers) {
   if (!a.p26())
     return Unit_instance;
   if (a.b1w_1) {
@@ -19260,15 +19269,15 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.collections.plusAssign' call
     this.z29_1.h(c);
     if (c.w2b()) {
-      this.h2h(1);
+      this.j2h(1);
     } else {
       var tmp3_safe_receiver = a.h1t_1;
       var tmp4_elvis_lhs = tmp3_safe_receiver == null ? null : tmp3_safe_receiver.a2c_1;
-      this.b2h(tmp4_elvis_lhs == null ? 2 : tmp4_elvis_lhs, a.h1t_1);
+      this.d2h(tmp4_elvis_lhs == null ? 2 : tmp4_elvis_lhs, a.h1t_1);
     }
     return Unit_instance;
   }
-  this.l2g(a.d1t_1);
+  this.n2g(a.d1t_1);
   var tmp5_safe_receiver = a.s1v_1;
   var tmp_0;
   if (tmp5_safe_receiver == null) {
@@ -19277,12 +19286,12 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-    tmp_0 = this.f2h(tmp5_safe_receiver);
+    tmp_0 = this.h2h(tmp5_safe_receiver);
   }
   var tmp6_elvis_lhs = tmp_0;
   var per = tmp6_elvis_lhs == null ? 1 : tmp6_elvis_lhs;
-  this.z2g(imul(a.e1t_1, per), 3);
-  this.t2g(imul(a.f1t_1, per), 3);
+  this.b2h(imul(a.e1t_1, per), 3);
+  this.v2g(imul(a.f1t_1, per), 3);
   var tmp7_safe_receiver = a.f1v_1;
   if (tmp7_safe_receiver == null)
     null;
@@ -19291,7 +19300,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.repeat' call
     // Inline function 'kotlin.comparisons.minOf' call
-    var a_0 = this.f2h(tmp7_safe_receiver);
+    var a_0 = this.h2h(tmp7_safe_receiver);
     var times = Math.min(a_0, 20);
     // Inline function 'kotlin.contracts.contract' call
     var inductionVariable = 0;
@@ -19302,7 +19311,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
         var tmp0_safe_receiver = a.h1t_1;
         var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a2c_1;
-        this.b2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, a.h1t_1);
+        this.d2h(tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs, a.h1t_1);
       }
        while (inductionVariable < times);
   }
@@ -19319,7 +19328,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
         // Inline function 'kotlin.also' call
         var tmp0_safe_receiver_0 = a.h1t_1;
         var tmp1_elvis_lhs_0 = tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.a2c_1;
-        var this_0 = this.b2h(tmp1_elvis_lhs_0 == null ? 1 : tmp1_elvis_lhs_0, a.h1t_1);
+        var this_0 = this.d2h(tmp1_elvis_lhs_0 == null ? 1 : tmp1_elvis_lhs_0, a.h1t_1);
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
         if (a.a1v_1) {
@@ -19329,7 +19338,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       }
        while (inductionVariable_0 < times_0);
   }
-  this.y2g(a.p1u_1);
+  this.a2h(a.p1u_1);
   var tmp_1;
   if (a.n1u_1 === 0) {
     tmp_1 = true;
@@ -19341,15 +19350,15 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      tmp_2 = this.y2i(user).ae_1 >= a.n1u_1;
+      tmp_2 = this.a2j(user).ae_1 >= a.n1u_1;
     }
     tmp_1 = tmp_2 === true;
   }
   if (tmp_1) {
-    this.q2g('treasure', a.j1t_1);
+    this.s2g('treasure', a.j1t_1);
   }
   if (a.q1u_1 > 0 && !(user == null)) {
-    this.n2g(user, a.q1u_1);
+    this.p2g(user, a.q1u_1);
   }
   if (a.r1u_1 > 0) {
     // Inline function 'kotlin.collections.forEach' call
@@ -19357,36 +19366,36 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       if (element.v27_1) {
         destination.h(element);
       }
     }
-    var tmp0_iterator_0 = destination.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = destination.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.n2g(element_0, a.r1u_1);
+      this.p2g(element_0, a.r1u_1);
     }
   }
   if (a.s1u_1 > 0) {
-    var tmp9_safe_receiver = this.u2g();
+    var tmp9_safe_receiver = this.w2g();
     if (tmp9_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.n2g(tmp9_safe_receiver, a.s1u_1);
+      this.p2g(tmp9_safe_receiver, a.s1u_1);
     }
   }
   if (a.v1u_1 && !(user == null)) {
-    this.n2g(user, user.a28_1);
+    this.p2g(user, user.a28_1);
   }
   if (a.w1u_1 && !(user == null)) {
-    this.l2g(user.a28_1);
+    this.n2g(user.a28_1);
   }
   var tmp_3;
   if (a.x1u_1) {
@@ -19395,15 +19404,15 @@ protoOf(Game).e2j = function (a, user, attackers) {
     tmp_3 = false;
   }
   if (tmp_3) {
-    this.v2i(user.s27_1, true, true);
+    this.x2i(user.s27_1, true, true);
   }
   if (a.y1u_1) {
     var tmp$ret$12;
     $l$block: {
       // Inline function 'kotlin.collections.firstOrNull' call
-      var tmp0_iterator_1 = this.x28_1.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this.x28_1.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         if (element_1.w2b()) {
           tmp$ret$12 = element_1;
@@ -19419,11 +19428,11 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       this.x28_1.g2(tmp11_safe_receiver);
-      this.t2i(tmp11_safe_receiver, true);
+      this.v2i(tmp11_safe_receiver, true);
     }
   }
   if (a.b1v_1 > 0) {
-    this.l2g(a.b1v_1);
+    this.n2g(a.b1v_1);
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
@@ -19442,11 +19451,11 @@ protoOf(Game).e2j = function (a, user, attackers) {
         }
       }
        while (!(element_2 === last));
-    var tmp0_iterator_2 = destination_0.j();
-    while (tmp0_iterator_2.k()) {
-      var element_3 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = destination_0.m();
+    while (tmp0_iterator_2.n()) {
+      var element_3 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.p2g(element_3, a.b1v_1);
+      this.r2g(element_3, a.b1v_1);
     }
   }
   if (a.c1v_1 > 0) {
@@ -19476,7 +19485,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.p2g(tmp12_safe_receiver, a.c1v_1);
+      this.r2g(tmp12_safe_receiver, a.c1v_1);
     }
   }
   if (a.e1v_1) {
@@ -19487,21 +19496,21 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_3 = this.z29_1;
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_3 = this_3.j();
-      while (tmp0_iterator_3.k()) {
-        var element_5 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = this_3.m();
+      while (tmp0_iterator_3.n()) {
+        var element_5 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         if (element_5.l1w_1) {
           destination_1.h(element_5);
         }
       }
-      var iterator = destination_1.j();
-      if (!iterator.k()) {
+      var iterator = destination_1.m();
+      if (!iterator.n()) {
         tmp$ret$23 = null;
         break $l$block_2;
       }
-      var maxElem = iterator.l();
-      if (!iterator.k()) {
+      var maxElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$23 = maxElem;
         break $l$block_2;
       }
@@ -19509,7 +19518,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var it_1 = maxElem;
       var maxValue = this.v2b(it_1);
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         var v = this.v2b(e);
         if (compareTo(maxValue, v) < 0) {
@@ -19517,7 +19526,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
           maxValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$23 = maxElem;
     }
     var tmp13_safe_receiver = tmp$ret$23;
@@ -19527,8 +19536,8 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.l2i(listOf_0(tmp13_safe_receiver));
-      this.v2i(tmp13_safe_receiver, true, true);
+      this.n2i(listOf_0(tmp13_safe_receiver));
+      this.x2i(tmp13_safe_receiver, true, true);
     }
   }
   if (a.d1v_1)
@@ -19539,7 +19548,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.count' call
       var tmp_4;
       if (isInterface(attackers, Collection)) {
-        tmp_4 = attackers.n();
+        tmp_4 = attackers.q();
       } else {
         tmp_4 = false;
       }
@@ -19548,9 +19557,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
         break $l$block_3;
       }
       var count = 0;
-      var tmp0_iterator_4 = attackers.j();
-      while (tmp0_iterator_4.k()) {
-        var element_6 = tmp0_iterator_4.l();
+      var tmp0_iterator_4 = attackers.m();
+      while (tmp0_iterator_4.n()) {
+        var element_6 = tmp0_iterator_4.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         var tmp$ret$29;
         $l$block_5: {
@@ -19558,7 +19567,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
           var this_4 = element_6.g28_1;
           var tmp_5;
           if (isInterface(this_4, Collection)) {
-            tmp_5 = this_4.n();
+            tmp_5 = this_4.q();
           } else {
             tmp_5 = false;
           }
@@ -19566,9 +19575,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
             tmp$ret$29 = false;
             break $l$block_5;
           }
-          var tmp0_iterator_5 = this_4.j();
-          while (tmp0_iterator_5.k()) {
-            var element_7 = tmp0_iterator_5.l();
+          var tmp0_iterator_5 = this_4.m();
+          while (tmp0_iterator_5.n()) {
+            var element_7 = tmp0_iterator_5.o();
             // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
             if (element_7.f1x_1) {
               tmp$ret$29 = true;
@@ -19584,7 +19593,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       }
       tmp$ret$28 = count;
     }
-    this.l2g(tmp$ret$28);
+    this.n2g(tmp$ret$28);
   }
   // Inline function 'kotlin.repeat' call
   var times_1 = a.h1u_1;
@@ -19595,11 +19604,11 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var index_1 = inductionVariable_3;
       inductionVariable_3 = inductionVariable_3 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.f2j(this.a29_1, true);
+      this.h2j(this.a29_1, true);
     }
      while (inductionVariable_3 < times_1);
-  this.m2i(a.k1t_1);
-  this.n2i(a.l1t_1);
+  this.o2i(a.k1t_1);
+  this.p2i(a.l1t_1);
   var tmp_6;
   if (a.o1t_1) {
     var tmp$ret$32;
@@ -19607,7 +19616,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.count' call
       var tmp_7;
       if (isInterface(attackers, Collection)) {
-        tmp_7 = attackers.n();
+        tmp_7 = attackers.q();
       } else {
         tmp_7 = false;
       }
@@ -19616,9 +19625,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
         break $l$block_6;
       }
       var count_0 = 0;
-      var tmp0_iterator_6 = attackers.j();
-      while (tmp0_iterator_6.k()) {
-        var element_8 = tmp0_iterator_6.l();
+      var tmp0_iterator_6 = attackers.m();
+      while (tmp0_iterator_6.n()) {
+        var element_8 = tmp0_iterator_6.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         var tmp0_safe_receiver_1 = a.i1u_1;
         var tmp_8;
@@ -19628,7 +19637,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
-          tmp_8 = element_8.m2e(tmp0_safe_receiver_1);
+          tmp_8 = element_8.o2e(tmp0_safe_receiver_1);
         }
         var tmp1_elvis_lhs_1 = tmp_8;
         if (tmp1_elvis_lhs_1 == null ? true : tmp1_elvis_lhs_1) {
@@ -19644,10 +19653,10 @@ protoOf(Game).e2j = function (a, user, attackers) {
   }
   var many = tmp_6;
   if ((a.m1t_1 + many | 0) > 0) {
-    this.l2g(a.m1t_1 + many | 0);
-    var spells = this.o2i(a.n1t_1 + many | 0, a.p1t_1 > 0);
+    this.n2g(a.m1t_1 + many | 0);
+    var spells = this.q2i(a.n1t_1 + many | 0, a.p1t_1 > 0);
     if (spells > 0) {
-      this.z2g(a.p1t_1, 3);
+      this.b2h(a.p1t_1, 3);
     }
   }
   // Inline function 'kotlin.repeat' call
@@ -19664,9 +19673,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_5 = this.x28_1;
       var destination_2 = ArrayList_init_$Create$();
-      var tmp0_iterator_7 = this_5.j();
-      while (tmp0_iterator_7.k()) {
-        var element_9 = tmp0_iterator_7.l();
+      var tmp0_iterator_7 = this_5.m();
+      while (tmp0_iterator_7.n()) {
+        var element_9 = tmp0_iterator_7.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
         if (element_9.w2b()) {
           destination_2.h(element_9);
@@ -19675,7 +19684,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.contracts.contract' call
       var tmp_9;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
-      if (destination_2.m() > 2) {
+      if (destination_2.p() > 2) {
         tmp_9 = destination_2;
       } else {
         tmp_9 = null;
@@ -19695,20 +19704,20 @@ protoOf(Game).e2j = function (a, user, attackers) {
         var tmp$ret$42;
         $l$block_8: {
           // Inline function 'kotlin.collections.minByOrNull' call
-          var iterator_0 = this.x28_1.j();
-          if (!iterator_0.k()) {
+          var iterator_0 = this.x28_1.m();
+          if (!iterator_0.n()) {
             tmp$ret$42 = null;
             break $l$block_8;
           }
-          var minElem = iterator_0.l();
-          if (!iterator_0.k()) {
+          var minElem = iterator_0.o();
+          if (!iterator_0.n()) {
             tmp$ret$42 = minElem;
             break $l$block_8;
           }
           // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
           var minValue = minElem.i1w_1;
           do {
-            var e_0 = iterator_0.l();
+            var e_0 = iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
             var v_0 = e_0.i1w_1;
             if (compareTo(minValue, v_0) > 0) {
@@ -19716,7 +19725,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
               minValue = v_0;
             }
           }
-           while (iterator_0.k());
+           while (iterator_0.n());
           tmp$ret$42 = minElem;
         }
         var tmp3_safe_receiver_0 = tmp$ret$42;
@@ -19731,7 +19740,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
     }
      while (inductionVariable_4 < times_2);
   if (a.r1t_1 > 0) {
-    this.s2i(a);
+    this.u2i(a);
   }
   if (a.w1t_1 > 0) {
     // Inline function 'kotlin.collections.sortedByDescending' call
@@ -19739,11 +19748,11 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_6 = this.z29_1;
     var destination_3 = ArrayList_init_$Create$();
-    var tmp0_iterator_8 = this_6.j();
-    while (tmp0_iterator_8.k()) {
-      var element_10 = tmp0_iterator_8.l();
+    var tmp0_iterator_8 = this_6.m();
+    while (tmp0_iterator_8.n()) {
+      var element_10 = tmp0_iterator_8.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      if (this.i2i(element_10, a.x1t_1)) {
+      if (this.k2i(element_10, a.x1t_1)) {
         destination_3.h(element_10);
       }
     }
@@ -19752,27 +19761,27 @@ protoOf(Game).e2j = function (a, user, attackers) {
     var tmp$ret$49 = new sam$kotlin_Comparator$0_11(tmp_11);
     var tmp$ret$50 = sortedWith(destination_3, tmp$ret$49);
     var back = take(tmp$ret$50, a.w1t_1);
-    this.l2i(back);
+    this.n2i(back);
     // Inline function 'kotlin.collections.plusAssign' call
     var this_7 = this.x28_1;
     addAll(this_7, back);
   }
-  if (a.c1u_1 > 0 && this.z29_1.m() >= a.c1u_1) {
+  if (a.c1u_1 > 0 && this.z29_1.p() >= a.c1u_1) {
     // Inline function 'kotlin.collections.sortedBy' call
     var this_8 = this.z29_1;
     // Inline function 'kotlin.comparisons.compareBy' call
     var tmp_12 = WinOddsCalc$Game$use$lambda_0(this);
     var tmp$ret$51 = new sam$kotlin_Comparator$0_11(tmp_12);
     var tmp$ret$52 = sortedWith(this_8, tmp$ret$51);
-    this.l2i(take(tmp$ret$52, a.c1u_1));
+    this.n2i(take(tmp$ret$52, a.c1u_1));
   }
   if (a.g1u_1) {
     var tmp$ret$54;
     $l$block_9: {
       // Inline function 'kotlin.collections.firstOrNull' call
-      var tmp0_iterator_9 = this.z29_1.j();
-      while (tmp0_iterator_9.k()) {
-        var element_11 = tmp0_iterator_9.l();
+      var tmp0_iterator_9 = this.z29_1.m();
+      while (tmp0_iterator_9.n()) {
+        var element_11 = tmp0_iterator_9.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         if (element_11.w2b()) {
           tmp$ret$54 = element_11;
@@ -19787,7 +19796,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.l2i(listOf_0(tmp14_safe_receiver));
+      this.n2i(listOf_0(tmp14_safe_receiver));
       var source = new Source(tmp14_safe_receiver.g1w_1.l1i_1, 1, this.m29_1 + 1 | 0);
       // Inline function 'kotlin.collections.plusAssign' call
       this.e29_1.h(source);
@@ -19799,7 +19808,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var e_1 = this_9;
       // Inline function 'kotlin.collections.plusAssign' call
       this.f29_1.h(e_1);
-      this.n2h(e_1);
+      this.p2h(e_1);
     }
   }
   // Inline function 'kotlin.repeat' call
@@ -19811,7 +19820,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var index_3 = inductionVariable_5;
       inductionVariable_5 = inductionVariable_5 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.g2j();
+      this.i2j();
     }
      while (inductionVariable_5 < times_3);
   // Inline function 'kotlin.repeat' call
@@ -19823,11 +19832,11 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var index_4 = inductionVariable_6;
       inductionVariable_6 = inductionVariable_6 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.h2j();
+      this.j2j();
     }
      while (inductionVariable_6 < times_4);
   if (a.g1v_1) {
-    this.i2j();
+    this.k2j();
   }
   // Inline function 'kotlin.repeat' call
   var times_5 = a.h1v_1;
@@ -19838,7 +19847,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var index_5 = inductionVariable_7;
       inductionVariable_7 = inductionVariable_7 + 1 | 0;
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.j2j();
+      this.l2j();
     }
      while (inductionVariable_7 < times_5);
   if (a.a1u_1) {
@@ -19849,21 +19858,21 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_10 = this.f29_1;
       var destination_4 = ArrayList_init_$Create$();
-      var tmp0_iterator_10 = this_10.j();
-      while (tmp0_iterator_10.k()) {
-        var element_12 = tmp0_iterator_10.l();
+      var tmp0_iterator_10 = this_10.m();
+      while (tmp0_iterator_10.n()) {
+        var element_12 = tmp0_iterator_10.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         if (element_12.k28_1 && element_12.y27_1.u('Artifact')) {
           destination_4.h(element_12);
         }
       }
-      var iterator_1 = destination_4.j();
-      if (!iterator_1.k()) {
+      var iterator_1 = destination_4.m();
+      if (!iterator_1.n()) {
         tmp$ret$60 = null;
         break $l$block_11;
       }
-      var maxElem_0 = iterator_1.l();
-      if (!iterator_1.k()) {
+      var maxElem_0 = iterator_1.o();
+      if (!iterator_1.n()) {
         tmp$ret$60 = maxElem_0;
         break $l$block_11;
       }
@@ -19871,7 +19880,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var it_2 = maxElem_0;
       var maxValue_0 = !(it_2.s27_1 == null) ? 10 + this.v2b(it_2.s27_1) | 0 : it_2.v27_1 ? 10 + it_2.u27_1 | 0 : it_2.l28_1 ? 1 : 0;
       do {
-        var e_2 = iterator_1.l();
+        var e_2 = iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         var v_1 = !(e_2.s27_1 == null) ? 10 + this.v2b(e_2.s27_1) | 0 : e_2.v27_1 ? 10 + e_2.u27_1 | 0 : e_2.l28_1 ? 1 : 0;
         if (compareTo(maxValue_0, v_1) < 0) {
@@ -19879,7 +19888,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
           maxValue_0 = v_1;
         }
       }
-       while (iterator_1.k());
+       while (iterator_1.n());
       tmp$ret$60 = maxElem_0;
     }
     var tmp15_safe_receiver = tmp$ret$60;
@@ -19891,12 +19900,12 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       var tmp_13;
       if (!(tmp15_safe_receiver.s27_1 == null)) {
-        tmp_13 = this.v2i(tmp15_safe_receiver.s27_1, true, true, VOID, minus(tmp15_safe_receiver.y27_1, tmp15_safe_receiver.s27_1.v1x_1));
+        tmp_13 = this.x2i(tmp15_safe_receiver.s27_1, true, true, VOID, minus(tmp15_safe_receiver.y27_1, tmp15_safe_receiver.s27_1.v1x_1));
       } else if (tmp15_safe_receiver.v27_1) {
-        tmp_13 = this.b2h(tmp15_safe_receiver.u27_1, new TokenKind(tmp15_safe_receiver.u27_1, tmp15_safe_receiver.y27_1, tmp15_safe_receiver.z27_1, tmp15_safe_receiver.o28_1, tmp15_safe_receiver.p28_1));
+        tmp_13 = this.d2h(tmp15_safe_receiver.u27_1, new TokenKind(tmp15_safe_receiver.u27_1, tmp15_safe_receiver.y27_1, tmp15_safe_receiver.z27_1, tmp15_safe_receiver.o28_1, tmp15_safe_receiver.p28_1));
       } else {
         var tmp0_elvis_lhs = tmp15_safe_receiver.m28_1;
-        this.q2g(tmp0_elvis_lhs == null ? 'other' : tmp0_elvis_lhs, 1);
+        this.s2g(tmp0_elvis_lhs == null ? 'other' : tmp0_elvis_lhs, 1);
         tmp_13 = Unit_instance;
       }
     }
@@ -19907,9 +19916,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_11 = this.f29_1;
     var destination_5 = ArrayList_init_$Create$();
-    var tmp0_iterator_11 = this_11.j();
-    while (tmp0_iterator_11.k()) {
-      var element_13 = tmp0_iterator_11.l();
+    var tmp0_iterator_11 = this_11.m();
+    while (tmp0_iterator_11.n()) {
+      var element_13 = tmp0_iterator_11.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       if (element_13.k28_1 && element_13.y27_1.u('Artifact') && !element_13.v27_1) {
         destination_5.h(element_13);
@@ -19918,7 +19927,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
     var this_12 = take(destination_5, 2);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_14;
-    if (this_12.n()) {
+    if (this_12.q()) {
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       tmp_14 = null;
     } else {
@@ -19932,9 +19941,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_13 = this.f29_1;
       var destination_6 = ArrayList_init_$Create$();
-      var tmp0_iterator_12 = this_13.j();
-      while (tmp0_iterator_12.k()) {
-        var element_14 = tmp0_iterator_12.l();
+      var tmp0_iterator_12 = this_13.m();
+      while (tmp0_iterator_12.n()) {
+        var element_14 = tmp0_iterator_12.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         if (element_14.k28_1 && element_14.y27_1.u('Artifact')) {
           destination_6.h(element_14);
@@ -19956,21 +19965,21 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_14 = this.z29_1;
       var destination_7 = ArrayList_init_$Create$();
-      var tmp0_iterator_13 = this_14.j();
-      while (tmp0_iterator_13.k()) {
-        var element_15 = tmp0_iterator_13.l();
+      var tmp0_iterator_13 = this_14.m();
+      while (tmp0_iterator_13.n()) {
+        var element_15 = tmp0_iterator_13.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         if (element_15.l1w_1 || element_15.v1x_1.u('Artifact')) {
           destination_7.h(element_15);
         }
       }
-      var iterator_2 = destination_7.j();
-      if (!iterator_2.k()) {
+      var iterator_2 = destination_7.m();
+      if (!iterator_2.n()) {
         tmp$ret$78 = null;
         break $l$block_13;
       }
-      var maxElem_1 = iterator_2.l();
-      if (!iterator_2.k()) {
+      var maxElem_1 = iterator_2.o();
+      if (!iterator_2.n()) {
         tmp$ret$78 = maxElem_1;
         break $l$block_13;
       }
@@ -19978,7 +19987,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var it_3 = maxElem_1;
       var maxValue_1 = this.v2b(it_3);
       do {
-        var e_3 = iterator_2.l();
+        var e_3 = iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         var v_2 = this.v2b(e_3);
         if (compareTo(maxValue_1, v_2) < 0) {
@@ -19986,21 +19995,21 @@ protoOf(Game).e2j = function (a, user, attackers) {
           maxValue_1 = v_2;
         }
       }
-       while (iterator_2.k());
+       while (iterator_2.n());
       tmp$ret$78 = maxElem_1;
     }
     var target = tmp$ret$78;
-    if (tokens.m() === 2 && !(target == null)) {
+    if (tokens.p() === 2 && !(target == null)) {
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_14 = tokens.j();
-      while (tmp0_iterator_14.k()) {
-        var element_16 = tmp0_iterator_14.l();
+      var tmp0_iterator_14 = tokens.m();
+      while (tmp0_iterator_14.n()) {
+        var element_16 = tmp0_iterator_14.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         this.f29_1.g2(element_16);
-        this.d2i(element_16, true);
+        this.f2i(element_16, true);
       }
-      this.l2i(listOf_0(target));
-      this.v2i(target, true, true, VOID, setOf_0('Artifact'));
+      this.n2i(listOf_0(target));
+      this.x2i(target, true, true, VOID, setOf_0('Artifact'));
     }
   }
   if (a.d1u_1 > 0) {
@@ -20010,9 +20019,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_15 = this.f29_1;
     var destination_8 = ArrayList_init_$Create$();
-    var tmp0_iterator_15 = this_15.j();
-    while (tmp0_iterator_15.k()) {
-      var element_17 = tmp0_iterator_15.l();
+    var tmp0_iterator_15 = this_15.m();
+    while (tmp0_iterator_15.n()) {
+      var element_17 = tmp0_iterator_15.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       if (element_17.v27_1 && element_17.k28_1) {
         destination_8.h(element_17);
@@ -20023,7 +20032,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
     var this_16 = a.d1u_1 === 99 ? destination_8 : take(destination_8, 1);
     // Inline function 'kotlin.contracts.contract' call
     var tmp_17;
-    if (this_16.n()) {
+    if (this_16.q()) {
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       var tmp_18;
       if (a.d1u_1 === 99) {
@@ -20037,28 +20046,28 @@ protoOf(Game).e2j = function (a, user, attackers) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_17 = this.f29_1;
           var destination_9 = ArrayList_init_$Create$();
-          var tmp0_iterator_16 = this_17.j();
-          while (tmp0_iterator_16.k()) {
-            var element_18 = tmp0_iterator_16.l();
+          var tmp0_iterator_16 = this_17.m();
+          while (tmp0_iterator_16.n()) {
+            var element_18 = tmp0_iterator_16.o();
             // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
             if (element_18.v27_1 && !contains_1(this.z28_1, element_18.s27_1) && !(element_18 === user)) {
               destination_9.h(element_18);
             }
           }
-          var iterator_3 = destination_9.j();
-          if (!iterator_3.k()) {
+          var iterator_3 = destination_9.m();
+          if (!iterator_3.n()) {
             tmp$ret$89 = null;
             break $l$block_15;
           }
-          var minElem_0 = iterator_3.l();
-          if (!iterator_3.k()) {
+          var minElem_0 = iterator_3.o();
+          if (!iterator_3.n()) {
             tmp$ret$89 = minElem_0;
             break $l$block_15;
           }
           // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
           var minValue_0 = minElem_0.u27_1;
           do {
-            var e_4 = iterator_3.l();
+            var e_4 = iterator_3.o();
             // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
             var v_3 = e_4.u27_1;
             if (compareTo(minValue_0, v_3) > 0) {
@@ -20066,7 +20075,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
               minValue_0 = v_3;
             }
           }
-           while (iterator_3.k());
+           while (iterator_3.n());
           tmp$ret$89 = minElem_0;
         }
         var tmp0_safe_receiver_3 = tmp$ret$89;
@@ -20087,9 +20096,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
       tmp_17 = this_16;
     }
     var targets = tmp_17;
-    var _iterator__ex2g4s = targets.j();
-    $l$loop: while (_iterator__ex2g4s.k()) {
-      var t = _iterator__ex2g4s.l();
+    var _iterator__ex2g4s = targets.m();
+    $l$loop: while (_iterator__ex2g4s.n()) {
+      var t = _iterator__ex2g4s.o();
       this.f29_1.g2(t);
       var tmp17_safe_receiver = t.i28_1;
       if (tmp17_safe_receiver == null)
@@ -20103,7 +20112,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var tmp$ret$102;
       $l$block_17: {
         // Inline function 'kotlin.collections.firstOrNull' call
-        var progression_0 = until(this.l29_1, this.y28_1.m());
+        var progression_0 = until(this.l29_1, this.y28_1.p());
         var inductionVariable_8 = progression_0.a1_1;
         var last_1 = progression_0.b1_1;
         if (inductionVariable_8 <= last_1)
@@ -20113,7 +20122,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
             // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
             var it_4 = element_19;
             var tmp_20;
-            if (this.y28_1.o(it_4).l1w_1) {
+            if (this.y28_1.r(it_4).l1w_1) {
               tmp_20 = true;
             } else {
               var tmp_21;
@@ -20126,9 +20135,9 @@ protoOf(Game).e2j = function (a, user, attackers) {
                 var tmp$ret$100;
                 $l$block_16: {
                   // Inline function 'kotlin.collections.firstOrNull' call
-                  var tmp0_iterator_17 = tmp2_safe_receiver.j();
-                  while (tmp0_iterator_17.k()) {
-                    var element_20 = tmp0_iterator_17.l();
+                  var tmp0_iterator_17 = tmp2_safe_receiver.m();
+                  while (tmp0_iterator_17.n()) {
+                    var element_20 = tmp0_iterator_17.o();
                     // Inline function 'com.mtgtrader.data.Game.use.<anonymous>.<anonymous>' call
                     if (element_20.be_1 === a) {
                       tmp$ret$100 = element_20;
@@ -20141,7 +20150,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
               }
               var tmp3_safe_receiver_1 = tmp_22;
               if (a === (tmp3_safe_receiver_1 == null ? null : tmp3_safe_receiver_1.be_1)) {
-                tmp_21 = this.y28_1.o(it_4).p1z_1;
+                tmp_21 = this.y28_1.r(it_4).p1z_1;
               } else {
                 tmp_21 = false;
               }
@@ -20163,7 +20172,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
         tmp_23 = tmp18_elvis_lhs;
       }
       var i = tmp_23;
-      this.v2i(this.y28_1.j2(i), true);
+      this.x2i(this.y28_1.j2(i), true);
     }
   }
   var tmp19_safe_receiver = a.e1u_1;
@@ -20195,13 +20204,13 @@ protoOf(Game).e2j = function (a, user, attackers) {
           }
         }
          while (!(element_21 === last_2));
-      var iterator_4 = destination_10.j();
-      if (!iterator_4.k()) {
+      var iterator_4 = destination_10.m();
+      if (!iterator_4.n()) {
         tmp$ret$107 = null;
         break $l$block_19;
       }
-      var maxElem_2 = iterator_4.l();
-      if (!iterator_4.k()) {
+      var maxElem_2 = iterator_4.o();
+      if (!iterator_4.n()) {
         tmp$ret$107 = maxElem_2;
         break $l$block_19;
       }
@@ -20209,7 +20218,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       var it_6 = maxElem_2;
       var maxValue_2 = this.g29_1[it_6];
       do {
-        var e_5 = iterator_4.l();
+        var e_5 = iterator_4.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
         var v_4 = this.g29_1[e_5];
         if (compareTo(maxValue_2, v_4) < 0) {
@@ -20217,7 +20226,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
           maxValue_2 = v_4;
         }
       }
-       while (iterator_4.k());
+       while (iterator_4.n());
       tmp$ret$107 = maxElem_2;
     }
     var tmp20_safe_receiver = tmp$ret$107;
@@ -20237,20 +20246,20 @@ protoOf(Game).e2j = function (a, user, attackers) {
     }
   }
   this.i29_1 = this.i29_1 + a.l1v_1 | 0;
-  this.s2g(a.j1v_1 + a.k1v_1 | 0);
-  this.o2h(a.i1v_1);
+  this.u2g(a.j1v_1 + a.k1v_1 | 0);
+  this.q2h(a.i1v_1);
   if (a.m1v_1 > 0) {
-    var tmp21_safe_receiver = this.k2j(a.m1v_1, a.n1v_1);
+    var tmp21_safe_receiver = this.m2j(a.m1v_1, a.n1v_1);
     if (tmp21_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.c2j(tmp21_safe_receiver, a.m1v_1);
+      this.e2j(tmp21_safe_receiver, a.m1v_1);
     }
   }
   if (a.o1v_1 > 0) {
-    this.l2j(a.o1v_1);
+    this.n2j(a.o1v_1);
   }
   if (a.p1v_1 > 0) {
     // Inline function 'kotlin.collections.forEach' call
@@ -20258,29 +20267,29 @@ protoOf(Game).e2j = function (a, user, attackers) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_19 = this.f29_1;
     var destination_11 = ArrayList_init_$Create$();
-    var tmp0_iterator_18 = this_19.j();
-    while (tmp0_iterator_18.k()) {
-      var element_22 = tmp0_iterator_18.l();
+    var tmp0_iterator_18 = this_19.m();
+    while (tmp0_iterator_18.n()) {
+      var element_22 = tmp0_iterator_18.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       if (element_22.v27_1) {
         destination_11.h(element_22);
       }
     }
-    var tmp0_iterator_19 = destination_11.j();
-    while (tmp0_iterator_19.k()) {
-      var element_23 = tmp0_iterator_19.l();
+    var tmp0_iterator_19 = destination_11.m();
+    while (tmp0_iterator_19.n()) {
+      var element_23 = tmp0_iterator_19.o();
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.c2j(element_23, a.p1v_1);
+      this.e2j(element_23, a.p1v_1);
     }
-    if (this.m2j()) {
-      this.c2j(null, a.p1v_1);
+    if (this.o2j()) {
+      this.e2j(null, a.p1v_1);
     }
   }
-  if (a.q1v_1 > 0 && this.m2j()) {
-    this.c2j(null, a.q1v_1);
+  if (a.q1v_1 > 0 && this.o2j()) {
+    this.e2j(null, a.q1v_1);
   }
   if (a.r1v_1 > 0) {
-    this.n2j(a.r1v_1);
+    this.p2j(a.r1v_1);
   }
   if (a.a1w_1) {
     var tmp$ret$119;
@@ -20288,7 +20297,7 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.collections.maxByOrNull' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
-      var this_20 = until(this.l29_1, this.y28_1.m());
+      var this_20 = until(this.l29_1, this.y28_1.p());
       var destination_12 = ArrayList_init_$Create$();
       var inductionVariable_10 = this_20.a1_1;
       var last_3 = this_20.b1_1;
@@ -20298,34 +20307,34 @@ protoOf(Game).e2j = function (a, user, attackers) {
           inductionVariable_10 = inductionVariable_10 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
           var it_7 = element_24;
-          if (this.b2b(this.y28_1.o(it_7), 'artifact') && !this.y28_1.o(it_7).w2b() && this.y28_1.o(it_7).i1w_1 <= 1) {
+          if (this.b2b(this.y28_1.r(it_7), 'artifact') && !this.y28_1.r(it_7).w2b() && this.y28_1.r(it_7).i1w_1 <= 1) {
             destination_12.h(element_24);
           }
         }
          while (!(element_24 === last_3));
-      var iterator_5 = destination_12.j();
-      if (!iterator_5.k()) {
+      var iterator_5 = destination_12.m();
+      if (!iterator_5.n()) {
         tmp$ret$119 = null;
         break $l$block_21;
       }
-      var maxElem_3 = iterator_5.l();
-      if (!iterator_5.k()) {
+      var maxElem_3 = iterator_5.o();
+      if (!iterator_5.n()) {
         tmp$ret$119 = maxElem_3;
         break $l$block_21;
       }
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
       var it_8 = maxElem_3;
-      var maxValue_3 = imul(this.y28_1.o(it_8).g1w_1.o1i_1, 10) + this.v2b(this.y28_1.o(it_8)) | 0;
+      var maxValue_3 = imul(this.y28_1.r(it_8).g1w_1.o1i_1, 10) + this.v2b(this.y28_1.r(it_8)) | 0;
       do {
-        var e_6 = iterator_5.l();
+        var e_6 = iterator_5.o();
         // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-        var v_5 = imul(this.y28_1.o(e_6).g1w_1.o1i_1, 10) + this.v2b(this.y28_1.o(e_6)) | 0;
+        var v_5 = imul(this.y28_1.r(e_6).g1w_1.o1i_1, 10) + this.v2b(this.y28_1.r(e_6)) | 0;
         if (compareTo(maxValue_3, v_5) < 0) {
           maxElem_3 = e_6;
           maxValue_3 = v_5;
         }
       }
-       while (iterator_5.k());
+       while (iterator_5.n());
       tmp$ret$119 = maxElem_3;
     }
     var tmp22_safe_receiver = tmp$ret$119;
@@ -20335,35 +20344,35 @@ protoOf(Game).e2j = function (a, user, attackers) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.v2i(this.y28_1.j2(tmp22_safe_receiver), true);
+      this.x2i(this.y28_1.j2(tmp22_safe_receiver), true);
     }
   }
   if (a.f1u_1 > 0) {
-    if (this.u2i() == null)
+    if (this.w2i() == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'com.mtgtrader.data.Game.use.<anonymous>' call
-      this.b2h(a.f1u_1, new TokenKind(a.f1u_1, Companion_getInstance_6().y26_1, setOf_0('Dragon'), true));
+      this.d2h(a.f1u_1, new TokenKind(a.f1u_1, Companion_getInstance_6().y26_1, setOf_0('Dragon'), true));
     }
   }
   if (a.l1u_1 > 0)
     this.b2a_1 = this.b2a_1 + a.l1u_1 | 0;
 };
-protoOf(Game).o2g = function (a, user, attackers, $super) {
+protoOf(Game).q2g = function (a, user, attackers, $super) {
   user = user === VOID ? null : user;
   attackers = attackers === VOID ? emptyList() : attackers;
   var tmp;
   if ($super === VOID) {
-    this.e2j(a, user, attackers);
+    this.g2j(a, user, attackers);
     tmp = Unit_instance;
   } else {
-    tmp = $super.e2j.call(this, a, user, attackers);
+    tmp = $super.g2j.call(this, a, user, attackers);
   }
   return tmp;
 };
-protoOf(Game).o2h = function (n) {
+protoOf(Game).q2h = function (n) {
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
   var tmp;
@@ -20377,40 +20386,40 @@ protoOf(Game).o2h = function (n) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.proliferate.<anonymous>.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p1z_1) === true) {
           destination.h(element);
         }
       }
-      var tmp0_iterator_0 = destination.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = destination.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.proliferate.<anonymous>.<anonymous>' call
         element_0.t28_1 = element_0.t28_1 + 1 | 0;
-        this.s2g(1);
+        this.u2g(1);
       }
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = this_1.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_1.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.proliferate.<anonymous>.<anonymous>' call
         if (element_1.v27_1 && element_1.a28_1 > 0) {
           destination_0.h(element_1);
         }
       }
-      var tmp0_iterator_2 = destination_0.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = destination_0.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.proliferate.<anonymous>.<anonymous>' call
-        this.n2g(element_2, 1);
+        this.p2g(element_2, 1);
       }
       var inductionVariable_0 = 0;
       var last = this.g29_1.length - 1 | 0;
@@ -20421,7 +20430,7 @@ protoOf(Game).o2h = function (n) {
           if (this.g29_1[i] > 0 && this.h29_1[i] > 0) {
             var _array__4zh2yp = this.h29_1;
             _array__4zh2yp[i] = _array__4zh2yp[i] + 1 | 0;
-            this.s2g(1);
+            this.u2g(1);
             if (this.h29_1[i] >= 10) {
               this.g29_1[i] = 0;
             }
@@ -20434,29 +20443,29 @@ protoOf(Game).o2h = function (n) {
   }
   return tmp;
 };
-protoOf(Game).m2j = function () {
+protoOf(Game).o2j = function () {
   return this.m29_1 >= 4;
 };
-protoOf(Game).s2g = function (n) {
-  if (n <= 0 || !this.c29_1.g2g_1)
+protoOf(Game).u2g = function (n) {
+  if (n <= 0 || !this.c29_1.i2g_1)
     return Unit_instance;
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_safe_receiver = b.s27_1;
     if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.b25_1) === true) {
-      this.t2g(n, 3);
+      this.v2g(n, 3);
     }
   }
 };
-protoOf(Game).c2j = function (target, n) {
+protoOf(Game).e2j = function (target, n) {
   if (n <= 0 || this.u2a_1 > 4)
     return Unit_instance;
   this.u2a_1 = this.u2a_1 + 1 | 0;
-  if (this.c29_1.f2g_1) {
-    var _iterator__ex2g4s = toList(this.f29_1).j();
-    while (_iterator__ex2g4s.k()) {
-      var b = _iterator__ex2g4s.l();
+  if (this.c29_1.h2g_1) {
+    var _iterator__ex2g4s = toList(this.f29_1).m();
+    while (_iterator__ex2g4s.n()) {
+      var b = _iterator__ex2g4s.o();
       var tmp0_safe_receiver = b.s27_1;
       if (tmp0_safe_receiver == null)
         null;
@@ -20479,7 +20488,7 @@ protoOf(Game).c2j = function (target, n) {
               var index = inductionVariable;
               inductionVariable = inductionVariable + 1 | 0;
               // Inline function 'com.mtgtrader.data.Game.minus.<anonymous>.<anonymous>.<anonymous>' call
-              this.b2h(tmp0_safe_receiver_0.a2c_1, tmp0_safe_receiver_0);
+              this.d2h(tmp0_safe_receiver_0.a2c_1, tmp0_safe_receiver_0);
             }
              while (inductionVariable < times);
         }
@@ -20490,7 +20499,7 @@ protoOf(Game).c2j = function (target, n) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.Game.minus.<anonymous>.<anonymous>' call
-          this.b2h(tmp1_safe_receiver.a2c_1, tmp1_safe_receiver);
+          this.d2h(tmp1_safe_receiver.a2c_1, tmp1_safe_receiver);
         }
         var tmp2_safe_receiver = tmp0_safe_receiver.w24_1;
         if (tmp2_safe_receiver == null)
@@ -20508,22 +20517,22 @@ protoOf(Game).c2j = function (target, n) {
               var index_0 = inductionVariable_0;
               inductionVariable_0 = inductionVariable_0 + 1 | 0;
               // Inline function 'com.mtgtrader.data.Game.minus.<anonymous>.<anonymous>.<anonymous>' call
-              this.b2h(tmp2_safe_receiver.a2c_1, tmp2_safe_receiver);
+              this.d2h(tmp2_safe_receiver.a2c_1, tmp2_safe_receiver);
             }
              while (inductionVariable_0 < times_0);
         }
-        this.z2g(tmp0_safe_receiver.v24_1, 3);
+        this.b2h(tmp0_safe_receiver.v24_1, 3);
         if (tmp0_safe_receiver.x24_1) {
           if (!(target == null)) {
-            this.l2g(1);
+            this.n2g(1);
           } else {
-            this.t2g(1, 3);
+            this.v2g(1, 3);
           }
         }
       }
     }
   }
-  this.s2g(n);
+  this.u2g(n);
   if (!(target == null) && this.f29_1.u(target)) {
     // Inline function 'kotlin.repeat' call
     // Inline function 'kotlin.contracts.contract' call
@@ -20543,12 +20552,12 @@ protoOf(Game).c2j = function (target, n) {
       }
        while (inductionVariable_1 < n);
     if (target.v27_1 && (target.v28_1 + target.a28_1 | 0) <= 0) {
-      this.a2j(target);
+      this.c2j(target);
     }
   }
   this.u2a_1 = this.u2a_1 - 1 | 0;
 };
-protoOf(Game).a2j = function (e) {
+protoOf(Game).c2j = function (e) {
   this.f29_1.g2(e);
   var tmp0_safe_receiver = e.i28_1;
   if (tmp0_safe_receiver == null)
@@ -20564,17 +20573,17 @@ protoOf(Game).a2j = function (e) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.died.<anonymous>' call
     if (element.h28_1 === e) {
       destination.h(element);
     }
   }
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.died.<anonymous>' call
     element_0.h28_1 = null;
     var tmp0_safe_receiver_0 = element_0.s27_1;
@@ -20582,16 +20591,16 @@ protoOf(Game).a2j = function (e) {
       this.f29_1.g2(element_0);
     }
   }
-  this.d2i(e, e.y27_1.u('Artifact'));
+  this.f2i(e, e.y27_1.u('Artifact'));
 };
-protoOf(Game).o2j = function () {
+protoOf(Game).q2j = function () {
   var tmp$ret$0;
   $l$block_0: {
     // Inline function 'kotlin.collections.any' call
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -20599,9 +20608,9 @@ protoOf(Game).o2j = function () {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.minusWorth.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       var tmp_0;
@@ -20616,7 +20625,7 @@ protoOf(Game).o2j = function () {
           tmp_1 = true;
         } else {
           // Inline function 'kotlin.collections.isNotEmpty' call
-          tmp_1 = !tmp0_safe_receiver.q24_1.n();
+          tmp_1 = !tmp0_safe_receiver.q24_1.q();
         }
         tmp_0 = tmp_1;
       }
@@ -20629,8 +20638,8 @@ protoOf(Game).o2j = function () {
   }
   return tmp$ret$0;
 };
-protoOf(Game).k2j = function (n, may) {
-  if (may && !this.o2j())
+protoOf(Game).m2j = function (n, may) {
+  if (may && !this.q2j())
     return null;
   var tmp$ret$3;
   $l$block_0: {
@@ -20639,21 +20648,21 @@ protoOf(Game).k2j = function (n, may) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.minusOwnTarget.<anonymous>' call
       if (element.v27_1 && (element.v28_1 + element.a28_1 | 0) > n) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var minElem = iterator.l();
-    if (!iterator.k()) {
+    var minElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = minElem;
       break $l$block_0;
     }
@@ -20661,7 +20670,7 @@ protoOf(Game).k2j = function (n, may) {
     var it = minElem;
     var minValue = imul(minusOwnTarget$lost(n, this, it), 10) - it.v28_1 | 0;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.minusOwnTarget.<anonymous>' call
       var v = imul(minusOwnTarget$lost(n, this, e), 10) - e.v28_1 | 0;
       if (compareTo(minValue, v) > 0) {
@@ -20669,7 +20678,7 @@ protoOf(Game).k2j = function (n, may) {
         minValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = minElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -20682,21 +20691,21 @@ protoOf(Game).k2j = function (n, may) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.minusOwnTarget.<anonymous>' call
         if (element_0.v27_1 && element_0.k28_1) {
           destination_0.h(element_0);
         }
       }
-      var iterator_0 = destination_0.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_0.m();
+      if (!iterator_0.n()) {
         tmp$ret$9 = null;
         break $l$block_2;
       }
-      var minElem_0 = iterator_0.l();
-      if (!iterator_0.k()) {
+      var minElem_0 = iterator_0.o();
+      if (!iterator_0.n()) {
         tmp$ret$9 = minElem_0;
         break $l$block_2;
       }
@@ -20704,7 +20713,7 @@ protoOf(Game).k2j = function (n, may) {
       var it_0 = minElem_0;
       var minValue_0 = it_0.u27_1 + it_0.a28_1 | 0;
       do {
-        var e_0 = iterator_0.l();
+        var e_0 = iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.minusOwnTarget.<anonymous>' call
         var v_0 = e_0.u27_1 + e_0.a28_1 | 0;
         if (compareTo(minValue_0, v_0) > 0) {
@@ -20712,7 +20721,7 @@ protoOf(Game).k2j = function (n, may) {
           minValue_0 = v_0;
         }
       }
-       while (iterator_0.k());
+       while (iterator_0.n());
       tmp$ret$9 = minElem_0;
     }
     tmp = tmp$ret$9;
@@ -20733,21 +20742,21 @@ protoOf(Game).k2j = function (n, may) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_2 = this.f29_1;
         var destination_1 = ArrayList_init_$Create$();
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.minusOwnTarget.<anonymous>' call
           if (element_1.v27_1 && !contains_1(this.z28_1, element_1.s27_1)) {
             destination_1.h(element_1);
           }
         }
-        var iterator_1 = destination_1.j();
-        if (!iterator_1.k()) {
+        var iterator_1 = destination_1.m();
+        if (!iterator_1.n()) {
           tmp$ret$15 = null;
           break $l$block_4;
         }
-        var minElem_1 = iterator_1.l();
-        if (!iterator_1.k()) {
+        var minElem_1 = iterator_1.o();
+        if (!iterator_1.n()) {
           tmp$ret$15 = minElem_1;
           break $l$block_4;
         }
@@ -20755,7 +20764,7 @@ protoOf(Game).k2j = function (n, may) {
         var it_1 = minElem_1;
         var minValue_1 = it_1.u27_1 + it_1.a28_1 | 0;
         do {
-          var e_1 = iterator_1.l();
+          var e_1 = iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.minusOwnTarget.<anonymous>' call
           var v_1 = e_1.u27_1 + e_1.a28_1 | 0;
           if (compareTo(minValue_1, v_1) > 0) {
@@ -20763,7 +20772,7 @@ protoOf(Game).k2j = function (n, may) {
             minValue_1 = v_1;
           }
         }
-         while (iterator_1.k());
+         while (iterator_1.n());
         tmp$ret$15 = minElem_1;
       }
       tmp_1 = tmp$ret$15;
@@ -20774,29 +20783,29 @@ protoOf(Game).k2j = function (n, may) {
   }
   return tmp_0;
 };
-protoOf(Game).l2j = function (n) {
-  if (this.m2j()) {
-    this.c2j(null, n);
+protoOf(Game).n2j = function (n) {
+  if (this.o2j()) {
+    this.e2j(null, n);
   } else {
-    var tmp0_safe_receiver = this.k2j(n, true);
+    var tmp0_safe_receiver = this.m2j(n, true);
     if (tmp0_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.c2j(tmp0_safe_receiver, n);
+      this.e2j(tmp0_safe_receiver, n);
     }
   }
 };
-protoOf(Game).n2j = function (n) {
+protoOf(Game).p2j = function (n) {
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var tmp0_iterator = this.f29_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.f29_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.amass.<anonymous>' call
-      if (element.v27_1 && element.m2e('army')) {
+      if (element.v27_1 && element.o2e('army')) {
         tmp$ret$1 = element;
         break $l$block;
       }
@@ -20804,11 +20813,11 @@ protoOf(Game).n2j = function (n) {
     tmp$ret$1 = null;
   }
   var tmp0_elvis_lhs = tmp$ret$1;
-  var army = tmp0_elvis_lhs == null ? this.b2h(0, new TokenKind(0, Companion_getInstance_6().y26_1, setOf(['Zombie', 'Army']), VOID, VOID, VOID, 0)) : tmp0_elvis_lhs;
-  this.n2g(army, n);
+  var army = tmp0_elvis_lhs == null ? this.d2h(0, new TokenKind(0, Companion_getInstance_6().y26_1, setOf(['Zombie', 'Army']), VOID, VOID, VOID, 0)) : tmp0_elvis_lhs;
+  this.p2g(army, n);
 };
-protoOf(Game).p2j = function (e) {
-  var tmp = coerceAtLeast_0(e.u27_1 + e.a28_1 | 0, 0) + imul(2, e.g28_1.m()) | 0;
+protoOf(Game).r2j = function (e) {
+  var tmp = coerceAtLeast_0(e.u27_1 + e.a28_1 | 0, 0) + imul(2, e.g28_1.p()) | 0;
   var tmp0_safe_receiver = e.s27_1;
   var tmp_0;
   if (tmp0_safe_receiver == null) {
@@ -20829,7 +20838,7 @@ protoOf(Game).p2j = function (e) {
     var tmp_10;
     var tmp_11;
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!tmp0_safe_receiver.q24_1.n()) {
+    if (!tmp0_safe_receiver.q24_1.q()) {
       tmp_11 = true;
     } else {
       tmp_11 = tmp0_safe_receiver.q26();
@@ -20843,19 +20852,19 @@ protoOf(Game).p2j = function (e) {
       tmp_9 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_9 = !tmp0_safe_receiver.d1x_1.n();
+      tmp_9 = !tmp0_safe_receiver.d1x_1.q();
     }
     if (tmp_9) {
       tmp_8 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_8 = !tmp0_safe_receiver.e1x_1.n();
+      tmp_8 = !tmp0_safe_receiver.e1x_1.q();
     }
     if (tmp_8) {
       tmp_7 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_7 = !tmp0_safe_receiver.e20_1.n();
+      tmp_7 = !tmp0_safe_receiver.e20_1.q();
     }
     if (tmp_7) {
       tmp_6 = true;
@@ -20866,7 +20875,7 @@ protoOf(Game).p2j = function (e) {
       tmp_5 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_5 = !tmp0_safe_receiver.c20_1.n();
+      tmp_5 = !tmp0_safe_receiver.c20_1.q();
     }
     if (tmp_5) {
       tmp_4 = true;
@@ -20882,7 +20891,7 @@ protoOf(Game).p2j = function (e) {
       tmp_2 = true;
     } else {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_2 = !tmp0_safe_receiver.o1y_1.n();
+      tmp_2 = !tmp0_safe_receiver.o1y_1.q();
     }
     if (tmp_2) {
       tmp_1 = 5;
@@ -20897,9 +20906,9 @@ protoOf(Game).p2j = function (e) {
 protoOf(Game).a2b = function (e, each) {
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator = this.f29_1.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this.f29_1.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp = sum;
     // Inline function 'com.mtgtrader.data.Game.deathDrains.<anonymous>' call
     var tmp0_safe_receiver = element.s27_1;
@@ -20910,12 +20919,12 @@ protoOf(Game).a2b = function (e, each) {
     } else {
       // Inline function 'kotlin.collections.sumOf' call
       var sum_0 = 0;
-      var tmp0_iterator_0 = tmp1_safe_receiver.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = tmp1_safe_receiver.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         var tmp_1 = sum_0;
         // Inline function 'com.mtgtrader.data.Game.deathDrains.<anonymous>.<anonymous>' call
-        var fires = !(element === e && element_0.k2d_1 && !element_0.j2d_1) && !(element_0.l2d_1 && e.k28_1) && (element_0.m2d_1 == null || e.m2e(element_0.m2d_1));
+        var fires = !(element === e && element_0.k2d_1 && !element_0.j2d_1) && !(element_0.l2d_1 && e.k28_1) && (element_0.m2d_1 == null || e.o2e(element_0.m2d_1));
         sum_0 = tmp_1 + (!fires ? 0 : each == null ? imul(2, element_0.i2d_1) : element_0.g2d_1 === each ? element_0.h2d_1 : 0) | 0;
       }
       tmp_0 = sum_0;
@@ -20925,7 +20934,7 @@ protoOf(Game).a2b = function (e, each) {
   }
   return sum;
 };
-protoOf(Game).q2j = function () {
+protoOf(Game).s2j = function () {
   // Inline function 'kotlin.repeat' call
   // Inline function 'kotlin.contracts.contract' call
   var inductionVariable = 0;
@@ -20937,9 +20946,9 @@ protoOf(Game).q2j = function () {
       var tmp$ret$1;
       $l$block: {
         // Inline function 'kotlin.collections.firstOrNull' call
-        var tmp0_iterator = this.f29_1.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this.f29_1.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
           var tmp0_safe_receiver = element.s27_1;
           if (!((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.r24_1) == null)) {
@@ -20978,23 +20987,23 @@ protoOf(Game).q2j = function () {
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_0.j();
-      while (tmp0_iterator_0.k()) {
-        var element_1 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_0.m();
+      while (tmp0_iterator_0.n()) {
+        var element_1 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
         if (element_1.v27_1 && !(element_1 === outlet) && !contains_1(this.z28_1, element_1.s27_1) && element_1.h28_1 == null) {
           destination.h(element_1);
         }
       }
       var candidates = destination;
-      if (candidates.n())
+      if (candidates.q())
         return Unit_instance;
-      var outletWorth = ((imul(2, a.d1t_1) + a.j1t_1 | 0) + a.q1u_1 | 0) + (a.o1v_1 > 0 && this.c29_1.f2g_1 ? 3 : 0) | 0;
+      var outletWorth = ((imul(2, a.d1t_1) + a.j1t_1 | 0) + a.q1u_1 | 0) + (a.o1v_1 > 0 && this.c29_1.h2g_1 ? 3 : 0) | 0;
       // Inline function 'kotlin.collections.sumOf' call
       var sum = 0;
-      var tmp0_iterator_1 = candidates.j();
-      while (tmp0_iterator_1.k()) {
-        var element_2 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = candidates.m();
+      while (tmp0_iterator_1.n()) {
+        var element_2 = tmp0_iterator_1.o();
         var tmp_0 = sum;
         // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
         sum = tmp_0 + this.a2b(element_2, true) | 0;
@@ -21022,27 +21031,27 @@ protoOf(Game).q2j = function () {
         // Inline function 'kotlin.collections.map' call
         // Inline function 'kotlin.collections.mapTo' call
         var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(candidates, 10));
-        var tmp0_iterator_2 = candidates.j();
-        while (tmp0_iterator_2.k()) {
-          var item = tmp0_iterator_2.l();
+        var tmp0_iterator_2 = candidates.m();
+        while (tmp0_iterator_2.n()) {
+          var item = tmp0_iterator_2.o();
           // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
-          var tmp$ret$12 = to(item, sacrificeForDeaths$_anonymous_$deathWorth_n263ku(alive, this, outletWorth, item) - this.p2j(item) | 0);
+          var tmp$ret$12 = to(item, sacrificeForDeaths$_anonymous_$deathWorth_n263ku(alive, this, outletWorth, item) - this.r2j(item) | 0);
           destination_1.h(tmp$ret$12);
         }
-        var iterator = destination_1.j();
-        if (!iterator.k()) {
+        var iterator = destination_1.m();
+        if (!iterator.n()) {
           tmp$ret$15 = null;
           break $l$block_1;
         }
-        var maxElem = iterator.l();
-        if (!iterator.k()) {
+        var maxElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$15 = maxElem;
           break $l$block_1;
         }
         // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
         var maxValue = maxElem.be_1;
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.sacrificeForDeaths.<anonymous>.<anonymous>' call
           var v = e.be_1;
           if (compareTo(maxValue, v) < 0) {
@@ -21050,7 +21059,7 @@ protoOf(Game).q2j = function () {
             maxValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$15 = maxElem;
       }
       var tmp2_elvis_lhs = tmp$ret$15;
@@ -21065,16 +21074,16 @@ protoOf(Game).q2j = function () {
       var gain = _destruct__k2r9zo.de();
       if (gain <= 0 && !finish)
         return Unit_instance;
-      this.a2j(pick);
-      this.o2g(a, outlet);
+      this.c2j(pick);
+      this.q2g(a, outlet);
     }
      while (inductionVariable < 30);
 };
-protoOf(Game).r2j = function (x) {
+protoOf(Game).t2j = function (x) {
   if (x <= 0 || this.i2a_1 > 6)
     return Unit_instance;
   // Inline function 'kotlin.comparisons.minOf' call
-  var a = this.y28_1.m();
+  var a = this.y28_1.p();
   var b = this.l29_1 + x | 0;
   var end = Math.min(a, b);
   var tmp$ret$4;
@@ -21092,34 +21101,34 @@ protoOf(Game).r2j = function (x) {
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.sunbird.<anonymous>' call
         var it = element;
-        if (!this.y28_1.o(it).w2b() && this.y28_1.o(it).i1w_1 <= x && useful(WinOddsCalc_getInstance(), this.y28_1.o(it), this.s29_1, this.t29_1, this.y29_1)) {
+        if (!this.y28_1.r(it).w2b() && this.y28_1.r(it).i1w_1 <= x && useful(WinOddsCalc_getInstance(), this.y28_1.r(it), this.s29_1, this.t29_1, this.y29_1)) {
           destination.h(element);
         }
       }
        while (!(element === last));
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$4 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$4 = maxElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.sunbird.<anonymous>' call
     var it_0 = maxElem;
-    var maxValue = this.y28_1.o(it_0).i1w_1;
+    var maxValue = this.y28_1.r(it_0).i1w_1;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sunbird.<anonymous>' call
-      var v = this.y28_1.o(e).i1w_1;
+      var v = this.y28_1.r(e).i1w_1;
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$4 = maxElem;
   }
   var i = tmp$ret$4;
@@ -21130,7 +21139,7 @@ protoOf(Game).r2j = function (x) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.sunbird.<anonymous>' call
-    tmp = this.y28_1.o(i);
+    tmp = this.y28_1.r(i);
   }
   var hit = tmp;
   // Inline function 'kotlin.collections.map' call
@@ -21152,11 +21161,11 @@ protoOf(Game).r2j = function (x) {
      while (!(element_0 === last_0));
   // Inline function 'kotlin.collections.mapTo' call
   var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_0, 10));
-  var tmp0_iterator = destination_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = destination_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.sunbird.<anonymous>' call
-    var tmp$ret$12 = this.y28_1.o(item);
+    var tmp$ret$12 = this.y28_1.r(item);
     destination_1.h(tmp$ret$12);
   }
   var revealed = destination_1;
@@ -21179,12 +21188,12 @@ protoOf(Game).r2j = function (x) {
     this.i2a_1 = this.i2a_1 + 1 | 0;
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    var it_1 = this.r2h(hit);
+    var it_1 = this.t2h(hit);
     this.b2a_1 = this.b2a_1 + it_1 | 0;
     this.i2a_1 = this.i2a_1 - 1 | 0;
   }
 };
-protoOf(Game).s2j = function (r) {
+protoOf(Game).u2j = function (r) {
   var tmp;
   if (r.e25_1) {
     var tmp_0 = first(r.g24_1).ae_1;
@@ -21208,14 +21217,14 @@ protoOf(Game).s2j = function (r) {
   }
   return tmp;
 };
-protoOf(Game).j2i = function () {
+protoOf(Game).l2i = function () {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -21224,9 +21233,9 @@ protoOf(Game).j2i = function () {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.proliferateWorth.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p1z_1) === true) {
@@ -21243,7 +21252,7 @@ protoOf(Game).j2i = function () {
     var this_1 = this.f29_1;
     var tmp_1;
     if (isInterface(this_1, Collection)) {
-      tmp_1 = this_1.n();
+      tmp_1 = this_1.q();
     } else {
       tmp_1 = false;
     }
@@ -21252,9 +21261,9 @@ protoOf(Game).j2i = function () {
       break $l$block_0;
     }
     var count_0 = 0;
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.proliferateWorth.<anonymous>' call
       if (element_0.v27_1 && element_0.a28_1 > 0) {
         count_0 = count_0 + 1 | 0;
@@ -21270,7 +21279,7 @@ protoOf(Game).j2i = function () {
     var this_2 = get_indices_0(this.g29_1);
     var tmp_3;
     if (isInterface(this_2, Collection)) {
-      tmp_3 = this_2.n();
+      tmp_3 = this_2.q();
     } else {
       tmp_3 = false;
     }
@@ -21297,7 +21306,7 @@ protoOf(Game).j2i = function () {
   }
   return tmp_2 + imul(6, tmp$ret$4) | 0;
 };
-protoOf(Game).t2j = function (c, x) {
+protoOf(Game).v2j = function (c, x) {
   var tmp0_elvis_lhs = c.n24_1;
   var tmp;
   if (tmp0_elvis_lhs == null) {
@@ -21311,7 +21320,7 @@ protoOf(Game).t2j = function (c, x) {
     // Inline function 'kotlin.collections.maxByOrNull' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.map' call
-    var this_0 = until(this.l29_1, this.y28_1.m());
+    var this_0 = until(this.l29_1, this.y28_1.p());
     // Inline function 'kotlin.collections.mapTo' call
     var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
     var inductionVariable = this_0.a1_1;
@@ -21322,27 +21331,27 @@ protoOf(Game).t2j = function (c, x) {
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.xCreatureTarget.<anonymous>' call
         var it = item;
-        var tmp$ret$0 = this.y28_1.o(it);
+        var tmp$ret$0 = this.y28_1.r(it);
         destination.h(tmp$ret$0);
       }
        while (!(item === last));
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = plus_0(destination, c.o24_1 ? this.z29_1 : emptyList());
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator = this_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       if (xCreatureTarget$ok(x, kind, this, element)) {
         destination_0.h(element);
       }
     }
-    var iterator = destination_0.j();
-    if (!iterator.k()) {
+    var iterator = destination_0.m();
+    if (!iterator.n()) {
       tmp$ret$6 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$6 = maxElem;
       break $l$block_0;
     }
@@ -21350,7 +21359,7 @@ protoOf(Game).t2j = function (c, x) {
     var it_0 = maxElem;
     var maxValue = this.v2b(it_0);
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.xCreatureTarget.<anonymous>' call
       var v = this.v2b(e);
       if (compareTo(maxValue, v) < 0) {
@@ -21358,12 +21367,12 @@ protoOf(Game).t2j = function (c, x) {
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$6 = maxElem;
   }
   return tmp$ret$6;
 };
-protoOf(Game).g2j = function () {
+protoOf(Game).i2j = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -21371,37 +21380,37 @@ protoOf(Game).g2j = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
       if (element.v27_1 && !element.k28_1 && !(element.s27_1 == null)) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = maxElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
     var it = maxElem;
-    var maxValue = this.g2i(ensureNotNull(it.s27_1));
+    var maxValue = this.i2i(ensureNotNull(it.s27_1));
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
-      var v = this.g2i(ensureNotNull(e.s27_1));
+      var v = this.i2i(ensureNotNull(e.s27_1));
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = maxElem;
   }
   var tmp0_safe_receiver = tmp$ret$3;
@@ -21413,7 +21422,7 @@ protoOf(Game).g2j = function () {
     // Inline function 'kotlin.contracts.contract' call
     var tmp_0;
     // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
-    if (this.g2i(ensureNotNull(tmp0_safe_receiver.s27_1)) > 0) {
+    if (this.i2i(ensureNotNull(tmp0_safe_receiver.s27_1)) > 0) {
       tmp_0 = tmp0_safe_receiver;
     } else {
       tmp_0 = null;
@@ -21443,17 +21452,17 @@ protoOf(Game).g2j = function () {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = this.f29_1;
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
     if (element_0.h28_1 === e_0) {
       destination_0.h(element_0);
     }
   }
-  var tmp0_iterator_1 = destination_0.j();
-  while (tmp0_iterator_1.k()) {
-    var element_1 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = destination_0.m();
+  while (tmp0_iterator_1.n()) {
+    var element_1 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.Game.flickerBest.<anonymous>' call
     element_1.h28_1 = null;
     var tmp0_safe_receiver_0 = element_1.s27_1;
@@ -21461,17 +21470,17 @@ protoOf(Game).g2j = function () {
       this.f29_1.g2(element_1);
     }
   }
-  this.v2i(ensureNotNull(e_0.s27_1), true);
+  this.x2i(ensureNotNull(e_0.s27_1), true);
 };
-protoOf(Game).u2j = function (c) {
-  var tmp = this.g2i(c) + (c.g1w_1.k1i_1.equals(Kind_ROCK_getInstance()) ? imul(2, c.g1w_1.o1i_1) : 0) | 0;
+protoOf(Game).w2j = function (c) {
+  var tmp = this.i2i(c) + (c.g1w_1.k1i_1.equals(Kind_ROCK_getInstance()) ? imul(2, c.g1w_1.o1i_1) : 0) | 0;
   var tmp_0;
   var tmp_1;
   if (c.p2d()) {
     tmp_1 = true;
   } else {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    tmp_1 = !c.e20_1.n();
+    tmp_1 = !c.e20_1.q();
   }
   if (tmp_1) {
     tmp_0 = 4;
@@ -21480,7 +21489,7 @@ protoOf(Game).u2j = function (c) {
   }
   return (tmp + tmp_0 | 0) + 1 | 0;
 };
-protoOf(Game).i2j = function () {
+protoOf(Game).k2j = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -21488,52 +21497,52 @@ protoOf(Game).i2j = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
-      if (!(element.s27_1 == null) && element.m2e('artifact') && !element.m2e('land') && !element.s27_1.f1x_1 && !element.s27_1.o1z_1) {
+      if (!(element.s27_1 == null) && element.o2e('artifact') && !element.o2e('land') && !element.s27_1.f1x_1 && !element.s27_1.o1z_1) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = maxElem;
       break $l$block_0;
     }
     // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
     var it = maxElem;
-    var maxValue = this.u2j(ensureNotNull(it.s27_1));
+    var maxValue = this.w2j(ensureNotNull(it.s27_1));
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
-      var v = this.u2j(ensureNotNull(e.s27_1));
+      var v = this.w2j(ensureNotNull(e.s27_1));
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = maxElem;
   }
   var e_0 = tmp$ret$3;
   if (e_0 == null) {
-    this.b2h(1, new TokenKind(1, setOf(['Artifact', 'Creature']), setOf_0('Soldier')));
+    this.d2h(1, new TokenKind(1, setOf(['Artifact', 'Creature']), setOf_0('Soldier')));
     return Unit_instance;
   }
   // Inline function 'kotlin.also' call
-  var this_1 = this.v2i(ensureNotNull(e_0.s27_1), true, true);
+  var this_1 = this.x2i(ensureNotNull(e_0.s27_1), true, true);
   // Inline function 'kotlin.contracts.contract' call
   // Inline function 'com.mtgtrader.data.Game.copyArtifact.<anonymous>' call
   this_1.v27_1 = true;
   this_1.u27_1 = 1;
 };
-protoOf(Game).j2j = function () {
+protoOf(Game).l2j = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -21541,21 +21550,21 @@ protoOf(Game).j2j = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.populate.<anonymous>' call
       if (element.k28_1 && element.v27_1) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = maxElem;
       break $l$block_0;
     }
@@ -21572,9 +21581,9 @@ protoOf(Game).j2j = function () {
       tmp = this.v2b(tmp0_safe_receiver);
     }
     var tmp1_elvis_lhs = tmp;
-    var maxValue = (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) + this.y2i(it).ae_1 | 0;
+    var maxValue = (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) + this.a2j(it).ae_1 | 0;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.populate.<anonymous>' call
       var tmp0_safe_receiver_0 = e.s27_1;
       var tmp_0;
@@ -21587,13 +21596,13 @@ protoOf(Game).j2j = function () {
         tmp_0 = this.v2b(tmp0_safe_receiver_0);
       }
       var tmp1_elvis_lhs_0 = tmp_0;
-      var v = (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) + this.y2i(e).ae_1 | 0;
+      var v = (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) + this.a2j(e).ae_1 | 0;
       if (compareTo(maxValue, v) < 0) {
         maxElem = e;
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = maxElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -21605,11 +21614,11 @@ protoOf(Game).j2j = function () {
   }
   var e_0 = tmp_1;
   if (!(e_0.s27_1 == null))
-    this.v2i(e_0.s27_1, true, true);
+    this.x2i(e_0.s27_1, true, true);
   else
-    this.b2h(e_0.u27_1, new TokenKind(e_0.u27_1, e_0.y27_1, e_0.z27_1, e_0.o28_1, e_0.p28_1));
+    this.d2h(e_0.u27_1, new TokenKind(e_0.u27_1, e_0.y27_1, e_0.z27_1, e_0.o28_1, e_0.p28_1));
 };
-protoOf(Game).h2j = function () {
+protoOf(Game).j2j = function () {
   var tmp$ret$3;
   $l$block_0: {
     // Inline function 'kotlin.collections.maxByOrNull' call
@@ -21617,21 +21626,21 @@ protoOf(Game).h2j = function () {
     // Inline function 'kotlin.collections.filterTo' call
     var this_0 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.copyBest.<anonymous>' call
       if (element.v27_1 && !(element.s27_1 == null)) {
         destination.h(element);
       }
     }
-    var iterator = destination.j();
-    if (!iterator.k()) {
+    var iterator = destination.m();
+    if (!iterator.n()) {
       tmp$ret$3 = null;
       break $l$block_0;
     }
-    var maxElem = iterator.l();
-    if (!iterator.k()) {
+    var maxElem = iterator.o();
+    if (!iterator.n()) {
       tmp$ret$3 = maxElem;
       break $l$block_0;
     }
@@ -21639,7 +21648,7 @@ protoOf(Game).h2j = function () {
     var it = maxElem;
     var maxValue = this.v2b(ensureNotNull(it.s27_1)) - (it.s27_1.o1z_1 ? 4 : 0) | 0;
     do {
-      var e = iterator.l();
+      var e = iterator.o();
       // Inline function 'com.mtgtrader.data.Game.copyBest.<anonymous>' call
       var v = this.v2b(ensureNotNull(e.s27_1)) - (e.s27_1.o1z_1 ? 4 : 0) | 0;
       if (compareTo(maxValue, v) < 0) {
@@ -21647,7 +21656,7 @@ protoOf(Game).h2j = function () {
         maxValue = v;
       }
     }
-     while (iterator.k());
+     while (iterator.n());
     tmp$ret$3 = maxElem;
   }
   var tmp0_elvis_lhs = tmp$ret$3;
@@ -21658,19 +21667,19 @@ protoOf(Game).h2j = function () {
     tmp = tmp0_elvis_lhs;
   }
   var e_0 = tmp;
-  this.v2i(ensureNotNull(e_0.s27_1), true, true);
+  this.x2i(ensureNotNull(e_0.s27_1), true, true);
 };
-protoOf(Game).f2j = function (colours, tapped) {
+protoOf(Game).h2j = function (colours, tapped) {
   var tmp = ManaOddsCalc_getInstance();
   // Inline function 'kotlin.collections.map' call
   var this_0 = this.e29_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_0, 10));
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.rampLand.<anonymous>' call
-    var tmp$ret$0 = item.h2e_1;
+    var tmp$ret$0 = item.j2e_1;
     destination.h(tmp$ret$0);
   }
   var tmp_0 = tmp.c1q(colours, destination);
@@ -21683,7 +21692,7 @@ protoOf(Game).f2j = function (colours, tapped) {
       var this_1 = this.f29_1;
       var tmp_3;
       if (isInterface(this_1, Collection)) {
-        tmp_3 = this_1.n();
+        tmp_3 = this_1.q();
       } else {
         tmp_3 = false;
       }
@@ -21691,9 +21700,9 @@ protoOf(Game).f2j = function (colours, tapped) {
         tmp$ret$3 = false;
         break $l$block_0;
       }
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.rampLand.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.z1y_1) === 1) {
@@ -21724,28 +21733,28 @@ protoOf(Game).f2j = function (colours, tapped) {
   var e = this_2;
   // Inline function 'kotlin.collections.plusAssign' call
   this.f29_1.h(e);
-  this.n2h(e);
+  this.p2h(e);
 };
-protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
+protoOf(Game).x2j = function (c, free, x, fromGraveyard, copy) {
   var fromHand = !copy && !fromGraveyard && !this.d29_1.u(c) && this.x28_1.u(c);
   if (!copy && !this.d29_1.g2(c))
     if (!this.x28_1.g2(c) && fromGraveyard) {
-      this.l2i(listOf_0(c));
+      this.n2i(listOf_0(c));
     }
   this.y2a_1 = this.y2a_1 + (c.h24_1 + c.i24_1 | 0) | 0;
   if (!free) {
-    var _iterator__ex2g4s = this.f29_1.j();
-    while (_iterator__ex2g4s.k()) {
-      var b = _iterator__ex2g4s.l();
+    var _iterator__ex2g4s = this.f29_1.m();
+    while (_iterator__ex2g4s.n()) {
+      var b = _iterator__ex2g4s.o();
       var tmp0_safe_receiver = b.s27_1;
       var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.d1x_1;
       if (tmp1_safe_receiver == null)
         null;
       else {
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator = tmp1_safe_receiver.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = tmp1_safe_receiver.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           $l$block_0: {
             // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
             if (element.k2c_1 && this.n29_1 > 0) {
@@ -21756,9 +21765,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
             }
             var n = element.n2c_1 === -1 ? c.i1w_1 + x | 0 : element.n2c_1;
             if (element.m2c_1) {
-              this.z2g(n, 2);
+              this.b2h(n, 2);
             } else {
-              this.t2g(n, 2);
+              this.v2g(n, 2);
             }
           }
         }
@@ -21767,10 +21776,10 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
   }
   if (!free) {
     this.n29_1 = this.n29_1 + 1 | 0;
-    if (this.c29_1.w2e_1) {
-      var _iterator__ex2g4s_0 = toList(this.f29_1).j();
-      while (_iterator__ex2g4s_0.k()) {
-        var b_0 = _iterator__ex2g4s_0.l();
+    if (this.c29_1.y2e_1) {
+      var _iterator__ex2g4s_0 = toList(this.f29_1).m();
+      while (_iterator__ex2g4s_0.n()) {
+        var b_0 = _iterator__ex2g4s_0.o();
         var tmp2_safe_receiver = b_0.s27_1;
         if (tmp2_safe_receiver == null)
           null;
@@ -21778,15 +21787,15 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           if (this.n29_1 === 2 && tmp2_safe_receiver.d22_1.p26()) {
-            this.o2g(tmp2_safe_receiver.d22_1, b_0);
+            this.q2g(tmp2_safe_receiver.d22_1, b_0);
           }
-          var _iterator__ex2g4s_1 = tmp2_safe_receiver.e22_1.j();
-          while (_iterator__ex2g4s_1.k()) {
-            var _destruct__k2r9zo = _iterator__ex2g4s_1.l();
+          var _iterator__ex2g4s_1 = tmp2_safe_receiver.e22_1.m();
+          while (_iterator__ex2g4s_1.n()) {
+            var _destruct__k2r9zo = _iterator__ex2g4s_1.o();
             var kind = _destruct__k2r9zo.ce();
             var a = _destruct__k2r9zo.de();
-            if (this.w2j(c, kind) && (!a.z1u_1 || this.p2a_1.h(to(b_0, a)))) {
-              this.o2g(a, b_0);
+            if (this.y2j(c, kind) && (!a.z1u_1 || this.p2a_1.h(to(b_0, a)))) {
+              this.q2g(a, b_0);
             }
           }
         }
@@ -21795,14 +21804,14 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
     var tmp = c.p23_1;
     var tmp_0;
     var tmp_1;
-    if (this.c29_1.y2f_1 && this.n29_1 === 1) {
+    if (this.c29_1.a2g_1 && this.n29_1 === 1) {
       var tmp$ret$2;
       $l$block_2: {
         // Inline function 'kotlin.collections.any' call
         var this_0 = this.f29_1;
         var tmp_2;
         if (isInterface(this_0, Collection)) {
-          tmp_2 = this_0.n();
+          tmp_2 = this_0.q();
         } else {
           tmp_2 = false;
         }
@@ -21810,9 +21819,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           tmp$ret$2 = false;
           break $l$block_2;
         }
-        var tmp0_iterator_0 = this_0.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = this_0.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
           var tmp0_safe_receiver_0 = element_0.s27_1;
           if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.q23_1) === true) {
@@ -21832,15 +21841,15 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
       tmp_0 = 0;
     }
     var cascades = tmp + tmp_0 | 0;
-    if (cascades > 0 && this.c29_1.y2f_1) {
+    if (cascades > 0 && this.c29_1.a2g_1) {
       // Inline function 'kotlin.takeIf' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.z29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = this_1.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_1.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
         if (element_1.u23_1) {
           destination.h(element_1);
@@ -21850,7 +21859,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
       var tmp_3;
       // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!destination.n()) {
+      if (!destination.q()) {
         tmp_3 = destination;
       } else {
         tmp_3 = null;
@@ -21861,15 +21870,15 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        this.l2i(tmp3_safe_receiver);
+        this.n2i(tmp3_safe_receiver);
         var this_2 = this.x28_1;
         addAll(this_2, tmp3_safe_receiver);
       }
     }
-    if (this.c29_1.y2f_1 && c.l1w_1) {
-      var _iterator__ex2g4s_2 = toList(this.f29_1).j();
-      while (_iterator__ex2g4s_2.k()) {
-        var b_1 = _iterator__ex2g4s_2.l();
+    if (this.c29_1.a2g_1 && c.l1w_1) {
+      var _iterator__ex2g4s_2 = toList(this.f29_1).m();
+      while (_iterator__ex2g4s_2.n()) {
+        var b_1 = _iterator__ex2g4s_2.o();
         var tmp_4;
         if (!(b_1.s27_1 == null)) {
           var containsUpper = c.o1w_1;
@@ -21879,7 +21888,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           tmp_4 = false;
         }
         if (tmp_4) {
-          this.x2j(c.i1w_1 + x | 0);
+          this.z2j(c.i1w_1 + x | 0);
         }
       }
     }
@@ -21891,10 +21900,10 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var index = inductionVariable;
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.x2j((c.i1w_1 + x | 0) - 1 | 0);
+        this.z2j((c.i1w_1 + x | 0) - 1 | 0);
       }
        while (inductionVariable < cascades);
-    if (this.c29_1.h2g_1 && fromHand) {
+    if (this.c29_1.j2g_1 && fromHand) {
       // Inline function 'kotlin.repeat' call
       var tmp$ret$11;
       $l$block_3: {
@@ -21902,7 +21911,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var this_3 = this.f29_1;
         var tmp_5;
         if (isInterface(this_3, Collection)) {
-          tmp_5 = this_3.n();
+          tmp_5 = this_3.q();
         } else {
           tmp_5 = false;
         }
@@ -21911,9 +21920,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           break $l$block_3;
         }
         var count = 0;
-        var tmp0_iterator_2 = this_3.j();
-        while (tmp0_iterator_2.k()) {
-          var element_2 = tmp0_iterator_2.l();
+        var tmp0_iterator_2 = this_3.m();
+        while (tmp0_iterator_2.n()) {
+          var element_2 = tmp0_iterator_2.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
           var tmp0_safe_receiver_1 = element_2.s27_1;
           if ((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.c25_1) === true) {
@@ -21931,7 +21940,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           var index_0 = inductionVariable_0;
           inductionVariable_0 = inductionVariable_0 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-          this.r2j(c.i1w_1 + x | 0);
+          this.t2j(c.i1w_1 + x | 0);
         }
          while (inductionVariable_0 < times);
     }
@@ -21943,7 +21952,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
       this.v2a_1 = true;
       // Inline function 'kotlin.comparisons.minOf' call
       var a_0 = this.l29_1 + 6 | 0;
-      var b_2 = this.y28_1.m();
+      var b_2 = this.y28_1.p();
       var tmp$ret$13 = Math.min(a_0, b_2);
       this.y28_1.i2(tmp$ret$13, c);
     }
@@ -21959,7 +21968,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var index_1 = inductionVariable_1;
         inductionVariable_1 = inductionVariable_1 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.m2h();
+        this.o2h();
       }
        while (inductionVariable_1 < times_0);
     // Inline function 'kotlin.repeat' call
@@ -21971,11 +21980,11 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var index_2 = inductionVariable_2;
         inductionVariable_2 = inductionVariable_2 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.p2h(WinOddsCalc$Game$wantedGate$ref(this));
+        this.r2h(WinOddsCalc$Game$wantedGate$ref(this));
       }
        while (inductionVariable_2 < times_1);
     if (c.v1y_1) {
-      this.p2h(WinOddsCalc$Game$cast$lambda(this));
+      this.r2h(WinOddsCalc$Game$cast$lambda(this));
     }
   }
   if (c.g1w_1.k1i_1.equals(Kind_RAMP_getInstance()) && !(this.w29_1 && c.t1y_1 > 0)) {
@@ -21988,11 +21997,11 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var index_3 = inductionVariable_3;
         inductionVariable_3 = inductionVariable_3 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.f2j(c.g1w_1.l1i_1, c.g1w_1.m1i_1);
+        this.h2j(c.g1w_1.l1i_1, c.g1w_1.m1i_1);
       }
        while (inductionVariable_3 < times_2);
     if (c.g1w_1.p1i_1) {
-      this.p2h(WinOddsCalc$Game$cast$lambda_0);
+      this.r2h(WinOddsCalc$Game$cast$lambda_0);
     }
   }
   if (!c.k1w_1) {
@@ -22007,7 +22016,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var this_4 = this.f29_1;
         var tmp_8;
         if (isInterface(this_4, Collection)) {
-          tmp_8 = this_4.n();
+          tmp_8 = this_4.q();
         } else {
           tmp_8 = false;
         }
@@ -22015,9 +22024,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           tmp$ret$14 = false;
           break $l$block_5;
         }
-        var tmp0_iterator_3 = this_4.j();
-        while (tmp0_iterator_3.k()) {
-          var element_3 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = this_4.m();
+        while (tmp0_iterator_3.n()) {
+          var element_3 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
           var tmp0_safe_receiver_2 = element_3.s27_1;
           if ((tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.n1z_1) === true) {
@@ -22045,14 +22054,14 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var index_4 = inductionVariable_4;
         inductionVariable_4 = inductionVariable_4 + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-        this.z2g(c.v1w_1, 3);
-        this.t2g(c.x1w_1, 3);
+        this.b2h(c.v1w_1, 3);
+        this.v2g(c.x1w_1, 3);
         if (c.m1z_1) {
-          this.z2g(x, 3);
+          this.b2h(x, 3);
         }
       }
        while (inductionVariable_4 < copies);
-    this.l2g(c.b1x_1);
+    this.n2g(c.b1x_1);
     var tmp4_safe_receiver = c.i1y_1;
     var tmp_9;
     if (tmp4_safe_receiver == null) {
@@ -22075,9 +22084,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.y2j(tmp5_safe_receiver, c.j1y_1);
+      this.a2k(tmp5_safe_receiver, c.j1y_1);
     }
-    this.e2h(c.t1w_1, c.r1w_1, c.m1y_1);
+    this.g2h(c.t1w_1, c.r1w_1, c.m1y_1);
     if (c.d21_1 > 0) {
       // Inline function 'kotlin.repeat' call
       // Inline function 'kotlin.comparisons.minOf' call
@@ -22089,29 +22098,29 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           var index_5 = inductionVariable_5;
           inductionVariable_5 = inductionVariable_5 + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-          this.b2h(c.d21_1, c.e21_1);
+          this.d2h(c.d21_1, c.e21_1);
         }
          while (inductionVariable_5 < times_3);
     }
-    this.y2g(c.s21_1);
+    this.a2h(c.s21_1);
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_5 = c.n1y_1;
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_4 = this_5.j();
-    while (tmp0_iterator_4.k()) {
-      var element_4 = tmp0_iterator_4.l();
+    var tmp0_iterator_4 = this_5.m();
+    while (tmp0_iterator_4.n()) {
+      var element_4 = tmp0_iterator_4.o();
       // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
       if (!element_4.u2c_1) {
         destination_0.h(element_4);
       }
     }
-    var tmp0_iterator_5 = destination_0.j();
-    while (tmp0_iterator_5.k()) {
-      var element_5 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = destination_0.m();
+    while (tmp0_iterator_5.n()) {
+      var element_5 = tmp0_iterator_5.o();
       // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-      this.i2h(element_5);
+      this.k2h(element_5);
     }
     if (c.h20_1) {
       var tmp_11 = this;
@@ -22122,7 +22131,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         var this_6 = this.f29_1;
         var tmp_13;
         if (isInterface(this_6, Collection)) {
-          tmp_13 = this_6.n();
+          tmp_13 = this_6.q();
         } else {
           tmp_13 = false;
         }
@@ -22131,9 +22140,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           break $l$block_6;
         }
         var count_0 = 0;
-        var tmp0_iterator_6 = this_6.j();
-        while (tmp0_iterator_6.k()) {
-          var element_6 = tmp0_iterator_6.l();
+        var tmp0_iterator_6 = this_6.m();
+        while (tmp0_iterator_6.n()) {
+          var element_6 = tmp0_iterator_6.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
           if (element_6.v27_1) {
             count_0 = count_0 + 1 | 0;
@@ -22147,7 +22156,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
     if (c.t23_1 > 0 && this.i2a_1 <= 6) {
       var total = 0;
       var exiled = ArrayList_init_$Create$();
-      while (total < c.t23_1 && this.l29_1 < this.y28_1.m()) {
+      while (total < c.t23_1 && this.l29_1 < this.y28_1.p()) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         var it = this.y28_1.j2(this.l29_1);
@@ -22160,21 +22169,21 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_7 = exiled.j();
-      while (tmp0_iterator_7.k()) {
-        var element_7 = tmp0_iterator_7.l();
+      var tmp0_iterator_7 = exiled.m();
+      while (tmp0_iterator_7.n()) {
+        var element_7 = tmp0_iterator_7.o();
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
         if (!element_7.w2b()) {
           destination_1.h(element_7);
         }
       }
-      var tmp0_iterator_8 = destination_1.j();
-      while (tmp0_iterator_8.k()) {
-        var element_8 = tmp0_iterator_8.l();
+      var tmp0_iterator_8 = destination_1.m();
+      while (tmp0_iterator_8.n()) {
+        var element_8 = tmp0_iterator_8.o();
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var o = this.r2h(element_8);
+        var o = this.t2h(element_8);
         this.b2a_1 = this.b2a_1 + o | 0;
       }
       this.i2a_1 = this.i2a_1 - 1 | 0;
@@ -22187,28 +22196,28 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_7 = this.f29_1;
         var destination_2 = ArrayList_init_$Create$();
-        var tmp0_iterator_9 = this_7.j();
-        while (tmp0_iterator_9.k()) {
-          var element_9 = tmp0_iterator_9.l();
+        var tmp0_iterator_9 = this_7.m();
+        while (tmp0_iterator_9.n()) {
+          var element_9 = tmp0_iterator_9.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
-          if (element_9.m2e('artifact') && !element_9.v27_1 && !element_9.m2e('land')) {
+          if (element_9.o2e('artifact') && !element_9.v27_1 && !element_9.o2e('land')) {
             destination_2.h(element_9);
           }
         }
-        var iterator = destination_2.j();
-        if (!iterator.k()) {
+        var iterator = destination_2.m();
+        if (!iterator.n()) {
           tmp$ret$33 = null;
           break $l$block_8;
         }
-        var maxElem = iterator.l();
-        if (!iterator.k()) {
+        var maxElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$33 = maxElem;
           break $l$block_8;
         }
         // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
         var maxValue = maxElem.k28_1 ? 1 : 0;
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
           var v = e.k28_1 ? 1 : 0;
           if (compareTo(maxValue, v) < 0) {
@@ -22216,7 +22225,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
             maxValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$33 = maxElem;
       }
       var tmp6_safe_receiver = tmp$ret$33;
@@ -22227,10 +22236,10 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
         // Inline function 'kotlin.contracts.contract' call
         tmp6_safe_receiver.v27_1 = true;
         tmp6_safe_receiver.u27_1 = 0;
-        this.n2g(tmp6_safe_receiver, c.o23_1);
+        this.p2g(tmp6_safe_receiver, c.o23_1);
       }
     }
-    this.o2g(c.u1z_1);
+    this.q2g(c.u1z_1);
     if (c.w23_1) {
       var tmp_14;
       if (!copy) {
@@ -22240,7 +22249,7 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
           var this_8 = this.j2a_1;
           var tmp_15;
           if (isInterface(this_8, Collection)) {
-            tmp_15 = this_8.n();
+            tmp_15 = this_8.q();
           } else {
             tmp_15 = false;
           }
@@ -22248,9 +22257,9 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
             tmp$ret$37 = true;
             break $l$block_10;
           }
-          var tmp0_iterator_10 = this_8.j();
-          while (tmp0_iterator_10.k()) {
-            var element_10 = tmp0_iterator_10.l();
+          var tmp0_iterator_10 = this_8.m();
+          while (tmp0_iterator_10.n()) {
+            var element_10 = tmp0_iterator_10.o();
             // Inline function 'com.mtgtrader.data.Game.cast.<anonymous>' call
             if (element_10.f1w_1 === c.f1w_1) {
               tmp$ret$37 = false;
@@ -22273,17 +22282,17 @@ protoOf(Game).v2j = function (c, free, x, fromGraveyard, copy) {
     }
     return c.a1x_1;
   }
-  this.v2i(c, free);
+  this.x2i(c, free);
   return 0;
 };
-protoOf(Game).r2h = function (c, free, x, fromGraveyard, copy, $super) {
+protoOf(Game).t2h = function (c, free, x, fromGraveyard, copy, $super) {
   free = free === VOID ? false : free;
   x = x === VOID ? 0 : x;
   fromGraveyard = fromGraveyard === VOID ? false : fromGraveyard;
   copy = copy === VOID ? false : copy;
-  return $super === VOID ? this.v2j(c, free, x, fromGraveyard, copy) : $super.v2j.call(this, c, free, x, fromGraveyard, copy);
+  return $super === VOID ? this.x2j(c, free, x, fromGraveyard, copy) : $super.x2j.call(this, c, free, x, fromGraveyard, copy);
 };
-protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
+protoOf(Game).b2k = function (c, cheated, token, haste, extraTypes) {
   var tmp;
   if (c.p21_1 && !token) {
     var tmp$ret$3;
@@ -22293,21 +22302,21 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
         if (element.v27_1 && !(element.s27_1 == null)) {
           destination.h(element);
         }
       }
-      var iterator = destination.j();
-      if (!iterator.k()) {
+      var iterator = destination.m();
+      if (!iterator.n()) {
         tmp$ret$3 = null;
         break $l$block_0;
       }
-      var maxElem = iterator.l();
-      if (!iterator.k()) {
+      var maxElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$3 = maxElem;
         break $l$block_0;
       }
@@ -22315,7 +22324,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       var it = maxElem;
       var maxValue = this.v2b(ensureNotNull(it.s27_1)) - (it.s27_1.o1z_1 ? 4 : 0) | 0;
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
         var v = this.v2b(ensureNotNull(e.s27_1)) - (e.s27_1.o1z_1 ? 4 : 0) | 0;
         if (compareTo(maxValue, v) < 0) {
@@ -22323,7 +22332,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
           maxValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$3 = maxElem;
     }
     var tmp0_safe_receiver = tmp$ret$3;
@@ -22361,21 +22370,21 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
   e_0.i28_1 = source;
   // Inline function 'kotlin.collections.plusAssign' call
   this.f29_1.h(e_0);
-  this.n2g(e_0, card.f1z_1 + card.i23_1 | 0);
+  this.p2g(e_0, card.f1z_1 + card.i23_1 | 0);
   if (card.g1x_1 && card.j23_1 > 0) {
-    var tmp4_safe_receiver = this.x2h();
+    var tmp4_safe_receiver = this.z2h();
     if (tmp4_safe_receiver == null)
       null;
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      this.n2g(tmp4_safe_receiver, card.j23_1);
+      this.p2g(tmp4_safe_receiver, card.j23_1);
     }
   }
   if (card.n23_1 > 0)
     this.s2a_1 = card.n23_1;
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!card.d1x_1.n())
+  if (!card.d1x_1.q())
     this.s29_1 = true;
   var tmp$ret$9;
   $l$block_2: {
@@ -22383,7 +22392,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
     var this_1 = card.d1x_1;
     var tmp_0;
     if (isInterface(this_1, Collection)) {
-      tmp_0 = this_1.n();
+      tmp_0 = this_1.q();
     } else {
       tmp_0 = false;
     }
@@ -22391,9 +22400,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       tmp$ret$9 = false;
       break $l$block_2;
     }
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
       if (element_0.k2c_1) {
         tmp$ret$9 = true;
@@ -22410,7 +22419,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
     var this_2 = card.e1x_1;
     var tmp_1;
     if (isInterface(this_2, Collection)) {
-      tmp_1 = this_2.n();
+      tmp_1 = this_2.q();
     } else {
       tmp_1 = false;
     }
@@ -22418,9 +22427,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       tmp$ret$11 = false;
       break $l$block_4;
     }
-    var tmp0_iterator_1 = this_2.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = this_2.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
       if (!element_1.o2c_1) {
         tmp$ret$11 = true;
@@ -22435,16 +22444,16 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
     return e_0;
   this.h2a_1 = this.h2a_1 + 1 | 0;
   if (token) {
-    this.w2g(1, card.v1x_1.u('Artifact'));
+    this.y2g(1, card.v1x_1.u('Artifact'));
   }
   if (token && card.l1w_1) {
-    this.x2g(e_0);
+    this.z2g(e_0);
   }
   if (card.l1w_1) {
-    this.a2h(e_0, false);
-    this.c2h(e_0);
+    this.c2h(e_0, false);
+    this.e2h(e_0);
   }
-  this.v2g(e_0);
+  this.x2g(e_0);
   var tmp5_safe_receiver = card.q1y_1;
   var tmp_2;
   if (tmp5_safe_receiver == null) {
@@ -22467,12 +22476,12 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    this.q2h(tmp6_safe_receiver);
+    this.s2h(tmp6_safe_receiver);
   }
   var germ = card.n1x_1;
   if (card.f1x_1 && !(germ == null)) {
     // Inline function 'kotlin.also' call
-    var this_3 = this.d2h(germ);
+    var this_3 = this.f2h(germ);
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
     // Inline function 'kotlin.collections.plusAssign' call
@@ -22480,7 +22489,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
     e_0.h28_1 = this_3;
   } else {
     if (card.g1x_1) {
-      var tmp7_safe_receiver = this.x2h();
+      var tmp7_safe_receiver = this.z2h();
       if (tmp7_safe_receiver == null)
         null;
       else {
@@ -22499,7 +22508,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
           var this_4 = this.f29_1;
           var tmp_5;
           if (isInterface(this_4, Collection)) {
-            tmp_5 = this_4.n();
+            tmp_5 = this_4.q();
           } else {
             tmp_5 = false;
           }
@@ -22507,9 +22516,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
             tmp$ret$18 = false;
             break $l$block_6;
           }
-          var tmp0_iterator_2 = this_4.j();
-          while (tmp0_iterator_2.k()) {
-            var element_2 = tmp0_iterator_2.l();
+          var tmp0_iterator_2 = this_4.m();
+          while (tmp0_iterator_2.n()) {
+            var element_2 = tmp0_iterator_2.o();
             // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
             var tmp0_safe_receiver_0 = element_2.s27_1;
             if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.y20_1) === true) {
@@ -22524,7 +22533,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
         tmp_4 = false;
       }
       if (tmp_4) {
-        var tmp8_safe_receiver = this.x2h();
+        var tmp8_safe_receiver = this.z2h();
         if (tmp8_safe_receiver == null)
           null;
         else {
@@ -22545,9 +22554,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_5 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_3 = this_5.j();
-      while (tmp0_iterator_3.k()) {
-        var element_3 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = this_5.m();
+      while (tmp0_iterator_3.n()) {
+        var element_3 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
         var tmp_6;
         var tmp0_safe_receiver_1 = element_3.s27_1;
@@ -22560,13 +22569,13 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
           destination_0.h(element_3);
         }
       }
-      var iterator_0 = destination_0.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_0.m();
+      if (!iterator_0.n()) {
         tmp$ret$24 = null;
         break $l$block_8;
       }
-      var maxElem_0 = iterator_0.l();
-      if (!iterator_0.k()) {
+      var maxElem_0 = iterator_0.o();
+      if (!iterator_0.n()) {
         tmp$ret$24 = maxElem_0;
         break $l$block_8;
       }
@@ -22576,7 +22585,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       var tmp0_elvis_lhs = g.s27_1.j1x_1;
       var maxValue_0 = (tmp_7 + (tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs) | 0) + (g.s27_1.k1x_1 ? 10 : 0) | 0;
       do {
-        var e_1 = iterator_0.l();
+        var e_1 = iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
         var tmp_8 = ensureNotNull(e_1.s27_1).h1x_1;
         var tmp0_elvis_lhs_0 = e_1.s27_1.j1x_1;
@@ -22586,7 +22595,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
           maxValue_0 = v_0;
         }
       }
-       while (iterator_0.k());
+       while (iterator_0.n());
       tmp$ret$24 = maxElem_0;
     }
     var tmp9_safe_receiver = tmp$ret$24;
@@ -22611,8 +22620,8 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       tmp9_safe_receiver.h28_1 = e_0;
     }
   }
-  this.z2g(card.v1w_1, 3);
-  this.t2g(card.x1w_1, 3);
+  this.b2h(card.v1w_1, 3);
+  this.v2g(card.x1w_1, 3);
   var tmp10_safe_receiver = card.q20_1;
   var tmp_9 = tmp10_safe_receiver;
   if ((tmp_9 == null ? null : new Char(tmp_9)) == null)
@@ -22624,9 +22633,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
     var colour = (tmp_10 == null ? null : new Char(tmp_10)).k1_1;
     // Inline function 'kotlin.collections.sumOf' call
     var sum = 0;
-    var tmp0_iterator_4 = this.f29_1.j();
-    while (tmp0_iterator_4.k()) {
-      var element_6 = tmp0_iterator_4.l();
+    var tmp0_iterator_4 = this.f29_1.m();
+    while (tmp0_iterator_4.n()) {
+      var element_6 = tmp0_iterator_4.o();
       var tmp_11 = sum;
       // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>.<anonymous>' call
       var tmp0_safe_receiver_3 = element_6.s27_1;
@@ -22641,7 +22650,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
           // Inline function 'kotlin.collections.count' call
           var tmp_13;
           if (isInterface(tmp2_safe_receiver, Collection)) {
-            tmp_13 = tmp2_safe_receiver.n();
+            tmp_13 = tmp2_safe_receiver.q();
           } else {
             tmp_13 = false;
           }
@@ -22650,9 +22659,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
             break $l$block_9;
           }
           var count = 0;
-          var tmp0_iterator_5 = tmp2_safe_receiver.j();
-          while (tmp0_iterator_5.k()) {
-            var element_7 = tmp0_iterator_5.l();
+          var tmp0_iterator_5 = tmp2_safe_receiver.m();
+          while (tmp0_iterator_5.n()) {
+            var element_7 = tmp0_iterator_5.o();
             // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>.<anonymous>.<anonymous>' call
             if (element_7.u(new Char(colour))) {
               count = count + 1 | 0;
@@ -22667,9 +22676,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       sum = tmp_11 + (tmp3_elvis_lhs == null ? 0 : tmp3_elvis_lhs) | 0;
     }
     var tmp$ret$32 = sum;
-    this.z2g(tmp$ret$32, 3);
+    this.b2h(tmp$ret$32, 3);
   }
-  this.l2g(card.b1x_1);
+  this.n2g(card.b1x_1);
   var tmp11_safe_receiver = card.i1y_1;
   var tmp_14;
   if (tmp11_safe_receiver == null) {
@@ -22692,28 +22701,28 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
   else {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
-    this.y2j(tmp12_safe_receiver, card.j1y_1);
+    this.a2k(tmp12_safe_receiver, card.j1y_1);
   }
-  this.e2h(card.t1w_1, card.r1w_1, card.m1y_1);
-  this.y2g(card.s21_1);
+  this.g2h(card.t1w_1, card.r1w_1, card.m1y_1);
+  this.a2h(card.s21_1);
   // Inline function 'kotlin.collections.forEach' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_7 = card.n1y_1;
   var destination_1 = ArrayList_init_$Create$();
-  var tmp0_iterator_6 = this_7.j();
-  while (tmp0_iterator_6.k()) {
-    var element_8 = tmp0_iterator_6.l();
+  var tmp0_iterator_6 = this_7.m();
+  while (tmp0_iterator_6.n()) {
+    var element_8 = tmp0_iterator_6.o();
     // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
     if (!element_8.u2c_1) {
       destination_1.h(element_8);
     }
   }
-  var tmp0_iterator_7 = destination_1.j();
-  while (tmp0_iterator_7.k()) {
-    var element_9 = tmp0_iterator_7.l();
+  var tmp0_iterator_7 = destination_1.m();
+  while (tmp0_iterator_7.n()) {
+    var element_9 = tmp0_iterator_7.o();
     // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
-    this.i2h(element_9);
+    this.k2h(element_9);
   }
   this.b2a_1 = this.b2a_1 + card.a1x_1 | 0;
   if (card.h20_1) {
@@ -22725,7 +22734,7 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
       var this_8 = this.f29_1;
       var tmp_18;
       if (isInterface(this_8, Collection)) {
-        tmp_18 = this_8.n();
+        tmp_18 = this_8.q();
       } else {
         tmp_18 = false;
       }
@@ -22734,9 +22743,9 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
         break $l$block_10;
       }
       var count_0 = 0;
-      var tmp0_iterator_8 = this_8.j();
-      while (tmp0_iterator_8.k()) {
-        var element_10 = tmp0_iterator_8.l();
+      var tmp0_iterator_8 = this_8.m();
+      while (tmp0_iterator_8.n()) {
+        var element_10 = tmp0_iterator_8.o();
         // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
         if (element_10.v27_1) {
           count_0 = count_0 + 1 | 0;
@@ -22747,54 +22756,54 @@ protoOf(Game).z2j = function (c, cheated, token, haste, extraTypes) {
     }
     tmp_16.b2a_1 = tmp_17 + tmp$ret$40 | 0;
   }
-  this.o2g(card.u1z_1, e_0);
+  this.q2g(card.u1z_1, e_0);
   if (card.v23_1 > 0) {
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_9 = this.f29_1;
     var destination_2 = ArrayList_init_$Create$();
-    var tmp0_iterator_9 = this_9.j();
-    while (tmp0_iterator_9.k()) {
-      var element_11 = tmp0_iterator_9.l();
+    var tmp0_iterator_9 = this_9.m();
+    while (tmp0_iterator_9.n()) {
+      var element_11 = tmp0_iterator_9.o();
       // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
       if (element_11.v27_1 && element_11.t27_1 === this.m29_1) {
         destination_2.h(element_11);
       }
     }
-    var tmp0_iterator_10 = destination_2.j();
-    while (tmp0_iterator_10.k()) {
-      var element_12 = tmp0_iterator_10.l();
+    var tmp0_iterator_10 = destination_2.m();
+    while (tmp0_iterator_10.n()) {
+      var element_12 = tmp0_iterator_10.o();
       // Inline function 'com.mtgtrader.data.Game.enter.<anonymous>' call
-      this.n2g(element_12, card.v23_1);
+      this.p2g(element_12, card.v23_1);
     }
   }
   if (card.a25_1 > 0) {
-    this.c2j(e_0, card.a25_1);
+    this.e2j(e_0, card.a25_1);
   }
   if (card.r23_1 > 0) {
-    this.x2j(card.r23_1);
+    this.z2j(card.r23_1);
   }
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!card.j25_1.n()) {
-    this.z2i(e_0, 0);
+  if (!card.j25_1.q()) {
+    this.b2j(e_0, 0);
   }
   this.h2a_1 = this.h2a_1 - 1 | 0;
   return e_0;
 };
-protoOf(Game).v2i = function (c, cheated, token, haste, extraTypes, $super) {
+protoOf(Game).x2i = function (c, cheated, token, haste, extraTypes, $super) {
   token = token === VOID ? false : token;
   haste = haste === VOID ? false : haste;
   extraTypes = extraTypes === VOID ? emptySet() : extraTypes;
-  return $super === VOID ? this.z2j(c, cheated, token, haste, extraTypes) : $super.z2j.call(this, c, cheated, token, haste, extraTypes);
+  return $super === VOID ? this.b2k(c, cheated, token, haste, extraTypes) : $super.b2k.call(this, c, cheated, token, haste, extraTypes);
 };
-protoOf(Game).x2j = function (most) {
+protoOf(Game).z2j = function (most) {
   if (this.i2a_1 > 6)
     return Unit_instance;
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstOrNull' call
-    var progression = until(this.l29_1, this.y28_1.m());
+    var progression = until(this.l29_1, this.y28_1.p());
     var inductionVariable = progression.a1_1;
     var last = progression.b1_1;
     if (inductionVariable <= last)
@@ -22803,7 +22812,7 @@ protoOf(Game).x2j = function (most) {
         inductionVariable = inductionVariable + 1 | 0;
         // Inline function 'com.mtgtrader.data.Game.reveal.<anonymous>' call
         var it = element;
-        if (!this.y28_1.o(it).w2b() && this.y28_1.o(it).i1w_1 <= most) {
+        if (!this.y28_1.r(it).w2b() && this.y28_1.r(it).i1w_1 <= most) {
           tmp$ret$1 = element;
           break $l$block;
         }
@@ -22829,39 +22838,39 @@ protoOf(Game).x2j = function (most) {
   this.i2a_1 = this.i2a_1 + 1 | 0;
   // Inline function 'kotlin.let' call
   // Inline function 'kotlin.contracts.contract' call
-  var it_0 = this.r2h(hit);
+  var it_0 = this.t2h(hit);
   this.b2a_1 = this.b2a_1 + it_0 | 0;
   this.i2a_1 = this.i2a_1 - 1 | 0;
 };
-protoOf(Game).a2k = function () {
+protoOf(Game).c2k = function () {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.e29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-    if (element.j2e_1 <= this.m29_1 && this.m29_1 <= element.l2e_1 && !element.k2e_1) {
+    if (element.l2e_1 <= this.m29_1 && this.m29_1 <= element.n2e_1 && !element.m2e_1) {
       destination.h(element);
     }
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination, 10));
-  var tmp0_iterator_0 = destination.j();
-  while (tmp0_iterator_0.k()) {
-    var item = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = destination.m();
+  while (tmp0_iterator_0.n()) {
+    var item = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-    var tmp$ret$3 = to(item.h2e_1, item.i2e_1);
+    var tmp$ret$3 = to(item.j2e_1, item.k2e_1);
     destination_0.h(tmp$ret$3);
   }
   var base = toMutableList(destination_0);
-  if (!this.c29_1.a2f_1)
+  if (!this.c29_1.c2f_1)
     return base;
-  var _iterator__ex2g4s = this.f29_1.j();
-  $l$loop_3: while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = this.f29_1.m();
+  $l$loop_3: while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_elvis_lhs = b.s27_1;
     var tmp;
     if (tmp0_elvis_lhs == null) {
@@ -22888,7 +22897,7 @@ protoOf(Game).a2k = function () {
     var tmp_1;
     if (c.w2b()) {
       var tmp2_safe_receiver = b.i28_1;
-      var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.j2e_1;
+      var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.l2e_1;
       tmp_1 = (tmp3_elvis_lhs == null ? 2147483647 : tmp3_elvis_lhs) > this.m29_1;
     } else {
       tmp_1 = false;
@@ -22903,7 +22912,7 @@ protoOf(Game).a2k = function () {
         var this_1 = this.z29_1;
         var tmp_3;
         if (isInterface(this_1, Collection)) {
-          tmp_3 = this_1.n();
+          tmp_3 = this_1.q();
         } else {
           tmp_3 = false;
         }
@@ -22912,9 +22921,9 @@ protoOf(Game).a2k = function () {
           break $l$block;
         }
         var count = 0;
-        var tmp0_iterator_1 = this_1.j();
-        while (tmp0_iterator_1.k()) {
-          var element_0 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_1.m();
+        while (tmp0_iterator_1.n()) {
+          var element_0 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
           var tmp_4;
           if (element_0.l1w_1) {
@@ -22924,7 +22933,7 @@ protoOf(Game).a2k = function () {
               var this_2 = element_0.h1w_1.i1i_1;
               var tmp_5;
               if (isInterface(this_2, Collection)) {
-                tmp_5 = this_2.n();
+                tmp_5 = this_2.q();
               } else {
                 tmp_5 = false;
               }
@@ -22932,9 +22941,9 @@ protoOf(Game).a2k = function () {
                 tmp$ret$7 = false;
                 break $l$block_1;
               }
-              var tmp0_iterator_2 = this_2.j();
-              while (tmp0_iterator_2.k()) {
-                var element_1 = tmp0_iterator_2.l();
+              var tmp0_iterator_2 = this_2.m();
+              while (tmp0_iterator_2.n()) {
+                var element_1 = tmp0_iterator_2.o();
                 // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>.<anonymous>' call
                 if (element_1.u(new Char(last_0(kind)))) {
                   tmp$ret$7 = true;
@@ -22962,7 +22971,7 @@ protoOf(Game).a2k = function () {
         var this_3 = this.f29_1;
         var tmp_6;
         if (isInterface(this_3, Collection)) {
-          tmp_6 = this_3.n();
+          tmp_6 = this_3.q();
         } else {
           tmp_6 = false;
         }
@@ -22971,11 +22980,11 @@ protoOf(Game).a2k = function () {
           break $l$block_2;
         }
         var count_0 = 0;
-        var tmp0_iterator_3 = this_3.j();
-        while (tmp0_iterator_3.k()) {
-          var element_2 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = this_3.m();
+        while (tmp0_iterator_3.n()) {
+          var element_2 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-          if (element_2.k28_1 && !element_2.v27_1 && !this.z2h(element_2)) {
+          if (element_2.k28_1 && !element_2.v27_1 && !this.b2i(element_2)) {
             count_0 = count_0 + 1 | 0;
             checkCountOverflow(count_0);
           }
@@ -22984,7 +22993,7 @@ protoOf(Game).a2k = function () {
       }
       tmp_2 = tmp$ret$10;
     } else if (kind === 'artifact') {
-      tmp_2 = this.b2k();
+      tmp_2 = this.d2k();
     } else {
       var tmp$ret$12;
       $l$block_3: {
@@ -22992,7 +23001,7 @@ protoOf(Game).a2k = function () {
         var this_4 = this.f29_1;
         var tmp_7;
         if (isInterface(this_4, Collection)) {
-          tmp_7 = this_4.n();
+          tmp_7 = this_4.q();
         } else {
           tmp_7 = false;
         }
@@ -23001,11 +23010,11 @@ protoOf(Game).a2k = function () {
           break $l$block_3;
         }
         var count_1 = 0;
-        var tmp0_iterator_4 = this_4.j();
-        while (tmp0_iterator_4.k()) {
-          var element_3 = tmp0_iterator_4.l();
+        var tmp0_iterator_4 = this_4.m();
+        while (tmp0_iterator_4.n()) {
+          var element_3 = tmp0_iterator_4.o();
           // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
-          if (element_3.m2e(kind)) {
+          if (element_3.o2e(kind)) {
             count_1 = count_1 + 1 | 0;
             checkCountOverflow(count_1);
           }
@@ -23027,7 +23036,7 @@ protoOf(Game).a2k = function () {
     var this_5 = this.f29_1;
     var tmp_8;
     if (isInterface(this_5, Collection)) {
-      tmp_8 = this_5.n();
+      tmp_8 = this_5.q();
     } else {
       tmp_8 = false;
     }
@@ -23035,9 +23044,9 @@ protoOf(Game).a2k = function () {
       tmp$ret$14 = false;
       break $l$block_5;
     }
-    var tmp0_iterator_5 = this_5.j();
-    while (tmp0_iterator_5.k()) {
-      var element_5 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = this_5.m();
+    while (tmp0_iterator_5.n()) {
+      var element_5 = tmp0_iterator_5.o();
       // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
       var tmp0_safe_receiver = element_5.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.u22_1) === true) {
@@ -23049,7 +23058,7 @@ protoOf(Game).a2k = function () {
   }
   if (tmp$ret$14) {
     // Inline function 'kotlin.takeIf' call
-    var this_6 = this.b2k();
+    var this_6 = this.d2k();
     // Inline function 'kotlin.contracts.contract' call
     var tmp_9;
     // Inline function 'com.mtgtrader.data.Game.pool.<anonymous>' call
@@ -23070,14 +23079,14 @@ protoOf(Game).a2k = function () {
   }
   return base;
 };
-protoOf(Game).b2k = function () {
+protoOf(Game).d2k = function () {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -23086,11 +23095,11 @@ protoOf(Game).b2k = function () {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.spareArtifacts.<anonymous>' call
-      if (element.m2e('artifact') && !element.v27_1 && element.i28_1 == null && !this.z2h(element)) {
+      if (element.o2e('artifact') && !element.v27_1 && element.i28_1 == null && !this.b2i(element)) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -23099,7 +23108,7 @@ protoOf(Game).b2k = function () {
   }
   return tmp$ret$0;
 };
-protoOf(Game).w2j = function (c, kind) {
+protoOf(Game).y2j = function (c, kind) {
   switch (kind) {
     case null:
       return true;
@@ -23111,7 +23120,7 @@ protoOf(Game).w2j = function (c, kind) {
       return this.b2b(c, kind);
   }
 };
-protoOf(Game).t2i = function (l, tapped) {
+protoOf(Game).v2i = function (l, tapped) {
   var tmp;
   var tmp_0;
   if (tapped) {
@@ -23121,7 +23130,7 @@ protoOf(Game).t2i = function (l, tapped) {
       var this_0 = this.f29_1;
       var tmp_1;
       if (isInterface(this_0, Collection)) {
-        tmp_1 = this_0.n();
+        tmp_1 = this_0.q();
       } else {
         tmp_1 = false;
       }
@@ -23129,9 +23138,9 @@ protoOf(Game).t2i = function (l, tapped) {
         tmp$ret$0 = true;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.landOnto.<anonymous>' call
         var tmp0_safe_receiver = element.s27_1;
         if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.z1y_1) === 1) {
@@ -23161,9 +23170,9 @@ protoOf(Game).t2i = function (l, tapped) {
   var e = this_1;
   // Inline function 'kotlin.collections.plusAssign' call
   this.f29_1.h(e);
-  this.n2h(e);
+  this.p2h(e);
 };
-protoOf(Game).y2i = function (b) {
+protoOf(Game).a2j = function (b) {
   var tmp = b.u27_1 + b.a28_1 | 0;
   var tmp0_safe_receiver = b.s27_1;
   var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p1y_1;
@@ -23174,7 +23183,7 @@ protoOf(Game).y2i = function (b) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.gearPower.<anonymous>' call
-    tmp_0 = this.f2h(tmp1_safe_receiver);
+    tmp_0 = this.h2h(tmp1_safe_receiver);
   }
   var tmp2_elvis_lhs = tmp_0;
   var tmp_1 = tmp + (tmp2_elvis_lhs == null ? 0 : tmp2_elvis_lhs) | 0;
@@ -23186,15 +23195,15 @@ protoOf(Game).y2i = function (b) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.gearPower.<anonymous>' call
-    tmp_2 = this.f2h(tmp3_safe_receiver);
+    tmp_2 = this.h2h(tmp3_safe_receiver);
   }
   var tmp4_elvis_lhs = tmp_2;
   var base = tmp_1 + (tmp4_elvis_lhs == null ? 0 : tmp4_elvis_lhs) | 0;
   var plus = 0;
   var double = b.x27_1;
-  var _iterator__ex2g4s = b.g28_1.j();
-  while (_iterator__ex2g4s.k()) {
-    var g = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = b.g28_1.m();
+  while (_iterator__ex2g4s.n()) {
+    var g = _iterator__ex2g4s.o();
     var tmp5_safe_receiver = g.j1x_1;
     if (tmp5_safe_receiver == null)
       null;
@@ -23211,10 +23220,10 @@ protoOf(Game).y2i = function (b) {
     var tmp_4;
     switch (tmp6_subject == null ? -1 : tmp6_subject.o2_1) {
       case 0:
-        tmp_4 = this.a29_1.m();
+        tmp_4 = this.a29_1.p();
         break;
       case 1:
-        tmp_4 = this.x28_1.m();
+        tmp_4 = this.x28_1.p();
         break;
       case 2:
         var tmp$ret$6;
@@ -23223,7 +23232,7 @@ protoOf(Game).y2i = function (b) {
           var this_0 = this.f29_1;
           var tmp_5;
           if (isInterface(this_0, Collection)) {
-            tmp_5 = this_0.n();
+            tmp_5 = this_0.q();
           } else {
             tmp_5 = false;
           }
@@ -23232,16 +23241,16 @@ protoOf(Game).y2i = function (b) {
             break $l$block;
           }
           var count = 0;
-          var tmp0_iterator = this_0.j();
-          while (tmp0_iterator.k()) {
-            var element = tmp0_iterator.l();
+          var tmp0_iterator = this_0.m();
+          while (tmp0_iterator.n()) {
+            var element = tmp0_iterator.o();
             // Inline function 'com.mtgtrader.data.Game.gearPower.<anonymous>' call
             var tmp_6;
             var tmp0_safe_receiver_0 = element.s27_1;
             if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.m1w_1) === true) {
               tmp_6 = true;
             } else {
-              tmp_6 = (element.m2e('artifact') && !element.v27_1);
+              tmp_6 = (element.o2e('artifact') && !element.v27_1);
             }
             if (tmp_6) {
               count = count + 1 | 0;
@@ -23260,7 +23269,7 @@ protoOf(Game).y2i = function (b) {
           var this_1 = this.f29_1;
           var tmp_7;
           if (isInterface(this_1, Collection)) {
-            tmp_7 = this_1.n();
+            tmp_7 = this_1.q();
           } else {
             tmp_7 = false;
           }
@@ -23269,9 +23278,9 @@ protoOf(Game).y2i = function (b) {
             break $l$block_0;
           }
           var count_0 = 0;
-          var tmp0_iterator_0 = this_1.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_1.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.gearPower.<anonymous>' call
             var tmp0_safe_receiver_1 = element_0.s27_1;
             if ((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.n1w_1) === true) {
@@ -23297,19 +23306,19 @@ protoOf(Game).y2i = function (b) {
     plus = tmp_3 + tmp_4 | 0;
     double = double || g.k1x_1;
   }
-  return to(((base + plus | 0) + this.c2k(b) | 0) + this.i29_1 | 0, double);
+  return to(((base + plus | 0) + this.e2k(b) | 0) + this.i29_1 | 0, double);
 };
-protoOf(Game).c2k = function (b) {
-  var tmp = this.d2k(b);
+protoOf(Game).e2k = function (b) {
+  var tmp = this.f2k(b);
   var tmp_0;
-  if (!this.c29_1.o2e_1) {
+  if (!this.c29_1.q2e_1) {
     tmp_0 = 0;
   } else {
     // Inline function 'kotlin.collections.sumOf' call
     var sum = 0;
-    var tmp0_iterator = this.f29_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.f29_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       var tmp_1 = sum;
       // Inline function 'com.mtgtrader.data.Game.lordBonus.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
@@ -23320,9 +23329,9 @@ protoOf(Game).c2k = function (b) {
       } else {
         // Inline function 'kotlin.collections.sumOf' call
         var sum_0 = 0;
-        var tmp0_iterator_0 = tmp1_safe_receiver.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = tmp1_safe_receiver.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           var tmp_3 = sum_0;
           // Inline function 'com.mtgtrader.data.Game.lordBonus.<anonymous>.<anonymous>' call
           var tmp_4;
@@ -23335,7 +23344,7 @@ protoOf(Game).c2k = function (b) {
               var this_0 = split_0(element_0.z2c_1, charArrayOf([_Char___init__impl__6a9atx(124)]));
               var tmp_5;
               if (isInterface(this_0, Collection)) {
-                tmp_5 = this_0.n();
+                tmp_5 = this_0.q();
               } else {
                 tmp_5 = false;
               }
@@ -23343,9 +23352,9 @@ protoOf(Game).c2k = function (b) {
                 tmp$ret$0 = false;
                 break $l$block_0;
               }
-              var tmp0_iterator_1 = this_0.j();
-              while (tmp0_iterator_1.k()) {
-                var element_1 = tmp0_iterator_1.l();
+              var tmp0_iterator_1 = this_0.m();
+              while (tmp0_iterator_1.n()) {
+                var element_1 = tmp0_iterator_1.o();
                 // Inline function 'com.mtgtrader.data.Game.lordBonus.<anonymous>.<anonymous>.<anonymous>' call
                 switch (element_1) {
                   case 'token':
@@ -23355,7 +23364,7 @@ protoOf(Game).c2k = function (b) {
                     tmp$ret$1 = (contains_1(this.z28_1, b.s27_1) && !b.k28_1);
                     break;
                   default:
-                    tmp$ret$1 = b.m2e(element_1);
+                    tmp$ret$1 = b.o2e(element_1);
                     break;
                 }
                 if (tmp$ret$1) {
@@ -23368,7 +23377,7 @@ protoOf(Game).c2k = function (b) {
             tmp_4 = tmp$ret$0;
           }
           var fits = tmp_4;
-          sum_0 = tmp_3 + (fits && !(element_0.b2d_1 && element === b) && (!element_0.c2d_1 || this.e2k()) ? element_0.a2d_1 : 0) | 0;
+          sum_0 = tmp_3 + (fits && !(element_0.b2d_1 && element === b) && (!element_0.c2d_1 || this.g2k()) ? element_0.a2d_1 : 0) | 0;
         }
         tmp_2 = sum_0;
       }
@@ -23379,14 +23388,14 @@ protoOf(Game).c2k = function (b) {
   }
   return tmp + tmp_0 | 0;
 };
-protoOf(Game).f2k = function () {
+protoOf(Game).h2k = function () {
   // Inline function 'kotlin.getValue' call
   var this_0 = this.w2a_1;
   chosenType$factory();
   return this_0.z1();
 };
-protoOf(Game).d2k = function (b) {
-  var tmp0_elvis_lhs = this.f2k();
+protoOf(Game).f2k = function (b) {
+  var tmp0_elvis_lhs = this.h2k();
   var tmp;
   if (tmp0_elvis_lhs == null) {
     return 0;
@@ -23395,12 +23404,12 @@ protoOf(Game).d2k = function (b) {
   }
   var kind = tmp;
   var tmp_0;
-  if (b.v27_1 && b.m2e(kind)) {
+  if (b.v27_1 && b.o2e(kind)) {
     // Inline function 'kotlin.collections.sumOf' call
     var sum = 0;
-    var tmp0_iterator = this.f29_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.f29_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       var tmp_1 = sum;
       // Inline function 'com.mtgtrader.data.Game.chosenBonus.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
@@ -23413,8 +23422,8 @@ protoOf(Game).d2k = function (b) {
   }
   return tmp_0;
 };
-protoOf(Game).g2k = function (t) {
-  var tmp0_elvis_lhs = this.f2k();
+protoOf(Game).i2k = function (t) {
+  var tmp0_elvis_lhs = this.h2k();
   var tmp;
   if (tmp0_elvis_lhs == null) {
     return Unit_instance;
@@ -23429,7 +23438,7 @@ protoOf(Game).g2k = function (t) {
     var this_0 = this.f29_1;
     var tmp_0;
     if (isInterface(this_0, Collection)) {
-      tmp_0 = this_0.n();
+      tmp_0 = this_0.q();
     } else {
       tmp_0 = false;
     }
@@ -23438,9 +23447,9 @@ protoOf(Game).g2k = function (t) {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.copyNewTokens.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p25_1) === true) {
@@ -23462,27 +23471,27 @@ protoOf(Game).g2k = function (t) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.copyNewTokens.<anonymous>.<anonymous>' call
-        if (element_0.k28_1 && element_0.v27_1 && element_0.t27_1 === t && element_0.m2e(kind)) {
+        if (element_0.k28_1 && element_0.v27_1 && element_0.t27_1 === t && element_0.o2e(kind)) {
           destination.h(element_0);
         }
       }
-      var _iterator__ex2g4s = toList(destination).j();
-      while (_iterator__ex2g4s.k()) {
-        var e = _iterator__ex2g4s.l();
+      var _iterator__ex2g4s = toList(destination).m();
+      while (_iterator__ex2g4s.n()) {
+        var e = _iterator__ex2g4s.o();
         // Inline function 'kotlin.also' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.copyNewTokens.<anonymous>.<anonymous>' call
-        this.b2h(e.u27_1, new TokenKind(e.u27_1, e.y27_1, e.z27_1, e.o28_1, e.p28_1, VOID, e.v28_1, e.d28_1)).f28_1 = e.f28_1;
+        this.d2h(e.u27_1, new TokenKind(e.u27_1, e.y27_1, e.z27_1, e.o28_1, e.p28_1, VOID, e.v28_1, e.d28_1)).f28_1 = e.f28_1;
       }
     }
      while (inductionVariable < times);
 };
-protoOf(Game).e2k = function () {
-  if (!this.x2a_1 && this.f29_1.m() >= 10)
+protoOf(Game).g2k = function () {
+  if (!this.x2a_1 && this.f29_1.p() >= 10)
     this.x2a_1 = true;
   return this.x2a_1;
 };
@@ -23498,7 +23507,7 @@ protoOf(Game).z2a = function (b) {
       var this_0 = b.g28_1;
       var tmp_1;
       if (isInterface(this_0, Collection)) {
-        tmp_1 = this_0.n();
+        tmp_1 = this_0.q();
       } else {
         tmp_1 = false;
       }
@@ -23506,9 +23515,9 @@ protoOf(Game).z2a = function (b) {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.hasHaste.<anonymous>' call
         if (element.l1x_1) {
           tmp$ret$0 = true;
@@ -23523,14 +23532,14 @@ protoOf(Game).z2a = function (b) {
     tmp = true;
   } else {
     var tmp_2;
-    if (this.c29_1.p2e_1) {
+    if (this.c29_1.r2e_1) {
       var tmp$ret$2;
       $l$block_2: {
         // Inline function 'kotlin.collections.any' call
         var this_1 = this.f29_1;
         var tmp_3;
         if (isInterface(this_1, Collection)) {
-          tmp_3 = this_1.n();
+          tmp_3 = this_1.q();
         } else {
           tmp_3 = false;
         }
@@ -23538,9 +23547,9 @@ protoOf(Game).z2a = function (b) {
           tmp$ret$2 = false;
           break $l$block_2;
         }
-        var tmp0_iterator_0 = this_1.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = this_1.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           // Inline function 'com.mtgtrader.data.Game.hasHaste.<anonymous>' call
           var tmp0_safe_receiver = element_0.s27_1;
           var k = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.i20_1;
@@ -23561,7 +23570,7 @@ protoOf(Game).z2a = function (b) {
               tmp$ret$3 = b.q28_1;
               break;
             default:
-              tmp$ret$3 = b.m2e(k);
+              tmp$ret$3 = b.o2e(k);
               break;
           }
           if (tmp$ret$3) {
@@ -23579,7 +23588,7 @@ protoOf(Game).z2a = function (b) {
   }
   return tmp;
 };
-protoOf(Game).a2e = function (turns) {
+protoOf(Game).b2e = function (turns) {
   var inductionVariable = 1;
   if (inductionVariable <= turns)
     do {
@@ -23595,15 +23604,15 @@ protoOf(Game).a2e = function (turns) {
       this.g2a_1 = false;
       this.r2a_1 = false;
       this.s2a_1 = 0;
-      this.k2g();
+      this.m2g();
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         var tmp0_safe_receiver = element.i28_1;
         var tmp;
@@ -23613,64 +23622,64 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-          tmp = tmp0_safe_receiver.l2e_1 < t;
+          tmp = tmp0_safe_receiver.n2e_1 < t;
         }
         if (tmp === true) {
           destination.h(element);
         }
       }
-      var tmp0_iterator_0 = destination.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = destination.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-        this.a2j(element_0);
+        this.c2j(element_0);
       }
       // Inline function 'kotlin.collections.forEach' call
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = this_1.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_1.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         if (element_1.b28_1 > 0 && element_1.t27_1 < t) {
           destination_0.h(element_1);
         }
       }
-      var tmp0_iterator_2 = destination_0.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = destination_0.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         element_2.b28_1 = element_2.b28_1 - 1 | 0;
         element_2.c28_1 = t;
       }
-      if (this.c29_1.i2f_1) {
+      if (this.c29_1.k2f_1) {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_2 = this.f29_1;
         var destination_1 = ArrayList_init_$Create$();
-        var tmp0_iterator_3 = this_2.j();
-        while (tmp0_iterator_3.k()) {
-          var element_3 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = this_2.m();
+        while (tmp0_iterator_3.n()) {
+          var element_3 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_0 = element_3.s27_1;
           if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.n22_1) === true) {
             destination_1.h(element_3);
           }
         }
-        var _iterator__ex2g4s = toList(destination_1).j();
-        $l$loop: while (_iterator__ex2g4s.k()) {
-          var m = _iterator__ex2g4s.l();
+        var _iterator__ex2g4s = toList(destination_1).m();
+        $l$loop: while (_iterator__ex2g4s.n()) {
+          var m = _iterator__ex2g4s.o();
           // Inline function 'kotlin.collections.maxByOrNull' call
           // Inline function 'kotlin.collections.groupingBy' call
           // Inline function 'kotlin.collections.filter' call
           // Inline function 'kotlin.collections.filterTo' call
           var this_3 = this.f29_1;
           var destination_2 = ArrayList_init_$Create$();
-          var tmp0_iterator_4 = this_3.j();
-          while (tmp0_iterator_4.k()) {
-            var element_4 = tmp0_iterator_4.l();
+          var tmp0_iterator_4 = this_3.m();
+          while (tmp0_iterator_4.n()) {
+            var element_4 = tmp0_iterator_4.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             if (!(element_4.m28_1 == null)) {
               destination_2.h(element_4);
@@ -23681,20 +23690,20 @@ protoOf(Game).a2e = function (turns) {
           var tmp$ret$15;
           $l$block_0: {
             // Inline function 'kotlin.collections.maxByOrNull' call
-            var iterator = this_4.f2().j();
-            if (!iterator.k()) {
+            var iterator = this_4.f2().m();
+            if (!iterator.n()) {
               tmp$ret$15 = null;
               break $l$block_0;
             }
-            var maxElem = iterator.l();
-            if (!iterator.k()) {
+            var maxElem = iterator.o();
+            if (!iterator.n()) {
               tmp$ret$15 = maxElem;
               break $l$block_0;
             }
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var maxValue = maxElem.z1();
             do {
-              var e = iterator.l();
+              var e = iterator.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var v = e.z1();
               if (compareTo(maxValue, v) < 0) {
@@ -23702,7 +23711,7 @@ protoOf(Game).a2e = function (turns) {
                 maxValue = v;
               }
             }
-             while (iterator.k());
+             while (iterator.n());
             tmp$ret$15 = maxElem;
           }
           var tmp0_safe_receiver_1 = tmp$ret$15;
@@ -23714,14 +23723,14 @@ protoOf(Game).a2e = function (turns) {
             tmp_0 = tmp1_elvis_lhs;
           }
           var kind = tmp_0;
-          this.q2g(kind, 1);
+          this.s2g(kind, 1);
           var tmp$ret$19;
           $l$block_1: {
             // Inline function 'kotlin.collections.count' call
             var this_5 = this.f29_1;
             var tmp_1;
             if (isInterface(this_5, Collection)) {
-              tmp_1 = this_5.n();
+              tmp_1 = this_5.q();
             } else {
               tmp_1 = false;
             }
@@ -23730,9 +23739,9 @@ protoOf(Game).a2e = function (turns) {
               break $l$block_1;
             }
             var count = 0;
-            var tmp0_iterator_5 = this_5.j();
-            while (tmp0_iterator_5.k()) {
-              var element_5 = tmp0_iterator_5.l();
+            var tmp0_iterator_5 = this_5.m();
+            while (tmp0_iterator_5.n()) {
+              var element_5 = tmp0_iterator_5.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               if (element_5.m28_1 === kind) {
                 count = count + 1 | 0;
@@ -23747,15 +23756,15 @@ protoOf(Game).a2e = function (turns) {
           }
         }
       }
-      if (this.c29_1.i2f_1) {
+      if (this.c29_1.k2f_1) {
         // Inline function 'kotlin.collections.mapNotNull' call
         // Inline function 'kotlin.collections.mapNotNullTo' call
         var this_6 = this.f29_1;
         var destination_3 = ArrayList_init_$Create$();
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_6 = this_6.j();
-        while (tmp0_iterator_6.k()) {
-          var element_6 = tmp0_iterator_6.l();
+        var tmp0_iterator_6 = this_6.m();
+        while (tmp0_iterator_6.n()) {
+          var element_6 = tmp0_iterator_6.o();
           // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_2 = element_6.s27_1;
@@ -23790,7 +23799,7 @@ protoOf(Game).a2e = function (turns) {
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          if (this.f2h('artifact') >= tmp2_safe_receiver) {
+          if (this.h2h('artifact') >= tmp2_safe_receiver) {
             this.o29_1 = true;
             return t;
           }
@@ -23801,9 +23810,9 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_7 = this.f29_1;
         var destination_4 = ArrayList_init_$Create$();
-        var tmp0_iterator_7 = this_7.j();
-        while (tmp0_iterator_7.k()) {
-          var element_7 = tmp0_iterator_7.l();
+        var tmp0_iterator_7 = this_7.m();
+        while (tmp0_iterator_7.n()) {
+          var element_7 = tmp0_iterator_7.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_4 = element_7.s27_1;
           if ((tmp0_safe_receiver_4 == null ? null : tmp0_safe_receiver_4.b22_1) === true) {
@@ -23811,9 +23820,9 @@ protoOf(Game).a2e = function (turns) {
           }
         }
         var sum = 0;
-        var tmp0_iterator_8 = destination_4.j();
-        while (tmp0_iterator_8.k()) {
-          var element_8 = tmp0_iterator_8.l();
+        var tmp0_iterator_8 = destination_4.m();
+        while (tmp0_iterator_8.n()) {
+          var element_8 = tmp0_iterator_8.o();
           var tmp_4 = sum;
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           sum = tmp_4 + element_8.a28_1 | 0;
@@ -23833,12 +23842,12 @@ protoOf(Game).a2e = function (turns) {
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          this.l2g(tmp3_safe_receiver);
+          this.n2g(tmp3_safe_receiver);
         }
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_9 = toList(this.f29_1).j();
-        while (tmp0_iterator_9.k()) {
-          var element_9 = tmp0_iterator_9.l();
+        var tmp0_iterator_9 = toList(this.f29_1).m();
+        while (tmp0_iterator_9.n()) {
+          var element_9 = tmp0_iterator_9.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_5 = element_9.s27_1;
           if (tmp0_safe_receiver_5 == null)
@@ -23847,7 +23856,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             if (tmp0_safe_receiver_5.c22_1.p26()) {
-              this.o2g(tmp0_safe_receiver_5.c22_1, element_9);
+              this.q2g(tmp0_safe_receiver_5.c22_1, element_9);
             }
           }
         }
@@ -23855,9 +23864,9 @@ protoOf(Game).a2e = function (turns) {
       this.l2a_1 = true;
       // Inline function 'kotlin.collections.sumOf' call
       var sum_0 = 0;
-      var tmp0_iterator_10 = this.f29_1.j();
-      while (tmp0_iterator_10.k()) {
-        var element_10 = tmp0_iterator_10.l();
+      var tmp0_iterator_10 = this.f29_1.m();
+      while (tmp0_iterator_10.n()) {
+        var element_10 = tmp0_iterator_10.o();
         var tmp_6 = sum_0;
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         var tmp0_safe_receiver_6 = element_10.s27_1;
@@ -23868,12 +23877,12 @@ protoOf(Game).a2e = function (turns) {
         sum_0 = tmp_6 + (tmp_7 + (tmp3_elvis_lhs == null ? 0 : tmp3_elvis_lhs) | 0) | 0;
       }
       var tmp$ret$38 = sum_0;
-      this.l2g(1 + tmp$ret$38 | 0);
+      this.n2g(1 + tmp$ret$38 | 0);
       this.l2a_1 = false;
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_11 = toList(this.f29_1).j();
-      while (tmp0_iterator_11.k()) {
-        var element_11 = tmp0_iterator_11.l();
+      var tmp0_iterator_11 = toList(this.f29_1).m();
+      while (tmp0_iterator_11.n()) {
+        var element_11 = tmp0_iterator_11.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         var tmp0_safe_receiver_7 = element_11.s27_1;
         if (tmp0_safe_receiver_7 == null)
@@ -23886,26 +23895,26 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_9 = tmp0_safe_receiver_7.n1y_1;
           var destination_5 = ArrayList_init_$Create$();
-          var tmp0_iterator_12 = this_9.j();
-          while (tmp0_iterator_12.k()) {
-            var element_12 = tmp0_iterator_12.l();
+          var tmp0_iterator_12 = this_9.m();
+          while (tmp0_iterator_12.n()) {
+            var element_12 = tmp0_iterator_12.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
             if (element_12.u2c_1 && element_12.t2c_1.equals(Effect_DRAW_getInstance())) {
               destination_5.h(element_12);
             }
           }
-          var tmp0_iterator_13 = destination_5.j();
-          while (tmp0_iterator_13.k()) {
-            var element_13 = tmp0_iterator_13.l();
+          var tmp0_iterator_13 = destination_5.m();
+          while (tmp0_iterator_13.n()) {
+            var element_13 = tmp0_iterator_13.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-            this.i2h(element_13);
+            this.k2h(element_13);
           }
         }
       }
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_14 = toList(this.f29_1).j();
-      while (tmp0_iterator_14.k()) {
-        var element_14 = tmp0_iterator_14.l();
+      var tmp0_iterator_14 = toList(this.f29_1).m();
+      while (tmp0_iterator_14.n()) {
+        var element_14 = tmp0_iterator_14.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         var tmp0_safe_receiver_8 = element_14.s27_1;
         var tmp_8;
@@ -23930,16 +23939,16 @@ protoOf(Game).a2e = function (turns) {
         else {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          this.q2h(tmp2_safe_receiver_1);
+          this.s2h(tmp2_safe_receiver_1);
         }
       }
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_10 = this.f29_1;
       var destination_6 = ArrayList_init_$Create$();
-      var tmp0_iterator_15 = this_10.j();
-      while (tmp0_iterator_15.k()) {
-        var element_15 = tmp0_iterator_15.l();
+      var tmp0_iterator_15 = this_10.m();
+      while (tmp0_iterator_15.n()) {
+        var element_15 = tmp0_iterator_15.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         var tmp_10;
         var tmp0_safe_receiver_9 = element_15.s27_1;
@@ -23949,7 +23958,7 @@ protoOf(Game).a2e = function (turns) {
           tmp_11 = null;
         } else {
           // Inline function 'kotlin.collections.isNotEmpty' call
-          tmp_11 = !tmp1_safe_receiver_1.n();
+          tmp_11 = !tmp1_safe_receiver_1.q();
         }
         if (tmp_11 === true) {
           tmp_10 = element_15.t27_1 < t;
@@ -23960,16 +23969,16 @@ protoOf(Game).a2e = function (turns) {
           destination_6.h(element_15);
         }
       }
-      var _iterator__ex2g4s_0 = toList(destination_6).j();
-      while (_iterator__ex2g4s_0.k()) {
-        var e_0 = _iterator__ex2g4s_0.l();
-        this.z2i(e_0, t - e_0.t27_1 | 0);
+      var _iterator__ex2g4s_0 = toList(destination_6).m();
+      while (_iterator__ex2g4s_0.n()) {
+        var e_0 = _iterator__ex2g4s_0.o();
+        this.b2j(e_0, t - e_0.t27_1 | 0);
       }
-      if (this.c29_1.j2f_1) {
+      if (this.c29_1.l2f_1) {
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_16 = toList(this.f29_1).j();
-        while (tmp0_iterator_16.k()) {
-          var element_16 = tmp0_iterator_16.l();
+        var tmp0_iterator_16 = toList(this.f29_1).m();
+        while (tmp0_iterator_16.n()) {
+          var element_16 = tmp0_iterator_16.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_10 = element_16.s27_1;
           if (tmp0_safe_receiver_10 == null)
@@ -23978,22 +23987,22 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             if (tmp0_safe_receiver_10.v1z_1.p26()) {
-              this.o2g(tmp0_safe_receiver_10.v1z_1, element_16);
+              this.q2g(tmp0_safe_receiver_10.v1z_1, element_16);
             }
           }
         }
       }
-      var _iterator__ex2g4s_1 = toList(this.j2a_1).j();
-      while (_iterator__ex2g4s_1.k()) {
-        var c = _iterator__ex2g4s_1.l();
+      var _iterator__ex2g4s_1 = toList(this.j2a_1).m();
+      while (_iterator__ex2g4s_1.n()) {
+        var c = _iterator__ex2g4s_1.o();
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var it = this.r2h(c, VOID, VOID, VOID, true);
+        var it = this.t2h(c, VOID, VOID, VOID, true);
         this.b2a_1 = this.b2a_1 + it | 0;
       }
       var mazeSpent = 0;
       if (this.w29_1) {
-        if (this.w2h(this.a2k()) == null)
+        if (this.y2h(this.c2k()) == null)
           null;
         else {
           // Inline function 'kotlin.let' call
@@ -24006,9 +24015,9 @@ protoOf(Game).a2e = function (turns) {
       var tmp_12 = this;
       // Inline function 'kotlin.collections.sumOf' call
       var sum_1 = 0;
-      var tmp0_iterator_17 = this.f29_1.j();
-      while (tmp0_iterator_17.k()) {
-        var element_17 = tmp0_iterator_17.l();
+      var tmp0_iterator_17 = this.f29_1.m();
+      while (tmp0_iterator_17.n()) {
+        var element_17 = tmp0_iterator_17.o();
         var tmp_13 = sum_1;
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         var tmp0_safe_receiver_11 = element_17.s27_1;
@@ -24016,13 +24025,13 @@ protoOf(Game).a2e = function (turns) {
         sum_1 = tmp_13 + (tmp1_elvis_lhs_1 == null ? 0 : tmp1_elvis_lhs_1) | 0;
       }
       tmp_12.y2a_1 = 1 + sum_1 | 0;
-      this.h2k();
-      this.i2k(emptyList());
-      var pool = plus_0(this.a2k(), this.p29_1);
+      this.j2k();
+      this.k2k(emptyList());
+      var pool = plus_0(this.c2k(), this.p29_1);
       this.p29_1.h2();
-      var _iterator__ex2g4s_2 = this.q29_1.j();
-      while (_iterator__ex2g4s_2.k()) {
-        var _destruct__k2r9zo = _iterator__ex2g4s_2.l();
+      var _iterator__ex2g4s_2 = this.q29_1.m();
+      while (_iterator__ex2g4s_2.n()) {
+        var _destruct__k2r9zo = _iterator__ex2g4s_2.o();
         var a = _destruct__k2r9zo.ce();
         var e_1 = _destruct__k2r9zo.de();
         if (this.f29_1.u(e_1)) {
@@ -24033,7 +24042,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             pool = tmp5_safe_receiver;
-            this.o2g(a, e_1);
+            this.q2g(a, e_1);
           }
         }
       }
@@ -24043,7 +24052,7 @@ protoOf(Game).a2e = function (turns) {
         pool = tmp6_elvis_lhs == null ? emptyList() : tmp6_elvis_lhs;
       }
       if (this.w29_1 && mazeSpent > 0) {
-        var tmp7_safe_receiver = this.w2h(pool);
+        var tmp7_safe_receiver = this.y2h(pool);
         if (tmp7_safe_receiver == null)
           null;
         else {
@@ -24055,7 +24064,7 @@ protoOf(Game).a2e = function (turns) {
       if (this.v29_1)
         return t;
       this.x29_1 = 0;
-      var bigX = this.u29_1 ? this.v2h(pool) : null;
+      var bigX = this.u29_1 ? this.x2h(pool) : null;
       var tmp_14;
       if (bigX == null) {
         tmp_14 = 0;
@@ -24067,24 +24076,24 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_11 = plus_0(this.x28_1, this.d29_1);
           var destination_7 = ArrayList_init_$Create$();
-          var tmp0_iterator_18 = this_11.j();
-          while (tmp0_iterator_18.k()) {
-            var element_18 = tmp0_iterator_18.l();
+          var tmp0_iterator_18 = this_11.m();
+          while (tmp0_iterator_18.n()) {
+            var element_18 = tmp0_iterator_18.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-            if (!element_18.w2b() && this.b2i(pool, this.u2h(element_18)) && !element_18.m1z_1) {
+            if (!element_18.w2b() && this.d2i(pool, this.w2h(element_18)) && !element_18.m1z_1) {
               destination_7.h(element_18);
             }
           }
-          var iterator_0 = destination_7.j();
-          if (!iterator_0.k()) {
+          var iterator_0 = destination_7.m();
+          if (!iterator_0.n()) {
             tmp$ret$60 = null;
             break $l$block_2;
           }
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          var maxValue_0 = iterator_0.l().i1w_1;
-          while (iterator_0.k()) {
+          var maxValue_0 = iterator_0.o().i1w_1;
+          while (iterator_0.n()) {
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-            var v_0 = iterator_0.l().i1w_1;
+            var v_0 = iterator_0.o().i1w_1;
             if (compareTo(maxValue_0, v_0) < 0) {
               maxValue_0 = v_0;
             }
@@ -24096,28 +24105,28 @@ protoOf(Game).a2e = function (turns) {
       }
       var biggest = tmp_14;
       if (!(bigX == null) && bigX.be_1 >= 2 && (bigX.ae_1.i1w_1 + bigX.be_1 | 0) > biggest) {
-        this.e2i(pool, this.u2h(bigX.ae_1));
+        this.g2i(pool, this.w2h(bigX.ae_1));
         // Inline function 'kotlin.collections.forEach' call
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_12 = this.f29_1;
         var destination_8 = ArrayList_init_$Create$();
-        var tmp0_iterator_19 = this_12.j();
-        while (tmp0_iterator_19.k()) {
-          var element_19 = tmp0_iterator_19.l();
+        var tmp0_iterator_19 = this_12.m();
+        while (tmp0_iterator_19.n()) {
+          var element_19 = tmp0_iterator_19.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          if (this.z2h(element_19)) {
+          if (this.b2i(element_19)) {
             destination_8.h(element_19);
           }
         }
-        var tmp0_iterator_20 = destination_8.j();
-        while (tmp0_iterator_20.k()) {
-          var element_20 = tmp0_iterator_20.l();
+        var tmp0_iterator_20 = destination_8.m();
+        while (tmp0_iterator_20.n()) {
+          var element_20 = tmp0_iterator_20.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           this.f29_1.g2(element_20);
-          this.d2i(element_20, true);
+          this.f2i(element_20, true);
         }
-        this.r2h(bigX.ae_1, VOID, bigX.be_1);
+        this.t2h(bigX.ae_1, VOID, bigX.be_1);
         pool = emptyList();
         var tmp$ret$67;
         $l$block_3: {
@@ -24144,9 +24153,9 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_13 = plus_0(this.x28_1, this.d29_1);
         var destination_9 = ArrayList_init_$Create$();
-        var tmp0_iterator_21 = this_13.j();
-        while (tmp0_iterator_21.k()) {
-          var element_22 = tmp0_iterator_21.l();
+        var tmp0_iterator_21 = this_13.m();
+        while (tmp0_iterator_21.n()) {
+          var element_22 = tmp0_iterator_21.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           if (!element_22.w2b() && !element_22.m1z_1) {
             destination_9.h(element_22);
@@ -24155,10 +24164,10 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.comparisons.compareByDescending' call
         var tmp_15 = WinOddsCalc$Game$play$lambda;
         var tmp$ret$71 = new sam$kotlin_Comparator$0_12(tmp_15);
-        var _iterator__ex2g4s_3 = sortedWith(destination_9, tmp$ret$71).j();
-        $l$loop_0: while (_iterator__ex2g4s_3.k()) {
-          var c_0 = _iterator__ex2g4s_3.l();
-          var tmp9_elvis_lhs = this.c2i(pool, this.u2h(c_0), c_0.i1w_1);
+        var _iterator__ex2g4s_3 = sortedWith(destination_9, tmp$ret$71).m();
+        $l$loop_0: while (_iterator__ex2g4s_3.n()) {
+          var c_0 = _iterator__ex2g4s_3.o();
+          var tmp9_elvis_lhs = this.e2i(pool, this.w2h(c_0), c_0.i1w_1);
           var tmp_16;
           if (tmp9_elvis_lhs == null) {
             continue $l$loop_0;
@@ -24169,7 +24178,7 @@ protoOf(Game).a2e = function (turns) {
           pool = left;
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
-          var it_0 = this.r2h(c_0);
+          var it_0 = this.t2h(c_0);
           this.b2a_1 = this.b2a_1 + it_0 | 0;
           break $l$loop_0;
         }
@@ -24179,9 +24188,9 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_14 = this.x28_1;
       var destination_10 = ArrayList_init_$Create$();
-      var tmp0_iterator_22 = this_14.j();
-      while (tmp0_iterator_22.k()) {
-        var element_23 = tmp0_iterator_22.l();
+      var tmp0_iterator_22 = this_14.m();
+      while (tmp0_iterator_22.n()) {
+        var element_23 = tmp0_iterator_22.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         if (Companion_getInstance_6().r26_1.u(element_23.g1w_1.k1i_1)) {
           destination_10.h(element_23);
@@ -24190,12 +24199,12 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.comparisons.compareBy' call
       var tmp_17 = WinOddsCalc$Game$play$lambda_0;
       var tmp$ret$77 = new sam$kotlin_Comparator$0_12(tmp_17);
-      var _iterator__ex2g4s_4 = sortedWith(destination_10, tmp$ret$77).j();
-      $l$loop_2: while (_iterator__ex2g4s_4.k()) {
-        var c_1 = _iterator__ex2g4s_4.l();
+      var _iterator__ex2g4s_4 = sortedWith(destination_10, tmp$ret$77).m();
+      $l$loop_2: while (_iterator__ex2g4s_4.n()) {
+        var c_1 = _iterator__ex2g4s_4.o();
         if (!this.x28_1.u(c_1))
           continue $l$loop_2;
-        var tmp10_elvis_lhs = this.c2i(pool, this.u2h(c_1), c_1.i1w_1);
+        var tmp10_elvis_lhs = this.e2i(pool, this.w2h(c_1), c_1.i1w_1);
         var tmp_18;
         if (tmp10_elvis_lhs == null) {
           continue $l$loop_2;
@@ -24204,9 +24213,9 @@ protoOf(Game).a2e = function (turns) {
         }
         var left_0 = tmp_18;
         pool = left_0;
-        this.r2h(c_1);
+        this.t2h(c_1);
       }
-      var tmp11_subject = this.j2k(this.f2i(pool));
+      var tmp11_subject = this.l2k(this.h2i(pool));
       switch (tmp11_subject == null ? -1 : tmp11_subject.o2_1) {
         case 0:
         case 1:
@@ -24221,7 +24230,7 @@ protoOf(Game).a2e = function (turns) {
           noWhenBranchMatchedException();
           break;
       }
-      var tmp12_safe_receiver = this.v2h(pool);
+      var tmp12_safe_receiver = this.x2h(pool);
       if (tmp12_safe_receiver == null)
         null;
       else {
@@ -24237,7 +24246,7 @@ protoOf(Game).a2e = function (turns) {
           var this_15 = this.f29_1;
           var tmp_21;
           if (isInterface(this_15, Collection)) {
-            tmp_21 = this_15.n();
+            tmp_21 = this_15.q();
           } else {
             tmp_21 = false;
           }
@@ -24245,9 +24254,9 @@ protoOf(Game).a2e = function (turns) {
             tmp$ret$79 = false;
             break $l$block_5;
           }
-          var tmp0_iterator_23 = this_15.j();
-          while (tmp0_iterator_23.k()) {
-            var element_24 = tmp0_iterator_23.l();
+          var tmp0_iterator_23 = this_15.m();
+          while (tmp0_iterator_23.n()) {
+            var element_24 = tmp0_iterator_23.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             var tmp0_safe_receiver_12 = element_24.s27_1;
             if ((tmp0_safe_receiver_12 == null ? null : tmp0_safe_receiver_12.n1z_1) === true) {
@@ -24290,22 +24299,22 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_17 = this.f29_1;
           var destination_12 = ArrayList_init_$Create$();
-          var tmp0_iterator_24 = this_17.j();
-          while (tmp0_iterator_24.k()) {
-            var element_26 = tmp0_iterator_24.l();
+          var tmp0_iterator_24 = this_17.m();
+          while (tmp0_iterator_24.n()) {
+            var element_26 = tmp0_iterator_24.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-            if (this.z2h(element_26)) {
+            if (this.b2i(element_26)) {
               destination_12.h(element_26);
             }
           }
-          var tmp0_iterator_25 = destination_12.j();
-          while (tmp0_iterator_25.k()) {
-            var element_27 = tmp0_iterator_25.l();
+          var tmp0_iterator_25 = destination_12.m();
+          while (tmp0_iterator_25.n()) {
+            var element_27 = tmp0_iterator_25.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             this.f29_1.g2(element_27);
-            this.d2i(element_27, true);
+            this.f2i(element_27, true);
           }
-          this.r2h(c_2, VOID, x);
+          this.t2h(c_2, VOID, x);
           pool = emptyList();
           var tmp$ret$88;
           $l$block_6: {
@@ -24328,23 +24337,23 @@ protoOf(Game).a2e = function (turns) {
             return t;
         }
       }
-      if (this.c29_1.a2g_1) {
-        this.k2k(pool);
+      if (this.c29_1.c2g_1) {
+        this.m2k(pool);
       }
-      var options = this.i2g();
+      var options = this.k2g();
       var i = 0;
-      $l$loop_3: while (i < options.m()) {
-        var c_3 = options.o(i);
-        var left_1 = this.x28_1.u(c_3) || this.d29_1.u(c_3) ? this.c2i(pool, this.u2h(c_3), c_3.i1w_1) : null;
-        if (left_1 == null && this.c29_1.z2f_1 && (this.x28_1.u(c_3) || this.d29_1.u(c_3))) {
-          var tmp13_safe_receiver = this.l2k(pool, c_3);
+      $l$loop_3: while (i < options.p()) {
+        var c_3 = options.r(i);
+        var left_1 = this.x28_1.u(c_3) || this.d29_1.u(c_3) ? this.e2i(pool, this.w2h(c_3), c_3.i1w_1) : null;
+        if (left_1 == null && this.c29_1.b2g_1 && (this.x28_1.u(c_3) || this.d29_1.u(c_3))) {
+          var tmp13_safe_receiver = this.n2k(pool, c_3);
           if (tmp13_safe_receiver == null)
             null;
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             pool = tmp13_safe_receiver;
-            left_1 = this.c2i(tmp13_safe_receiver, this.u2h(c_3), c_3.i1w_1);
+            left_1 = this.e2i(tmp13_safe_receiver, this.w2h(c_3), c_3.i1w_1);
           }
         }
         if (left_1 == null) {
@@ -24352,23 +24361,23 @@ protoOf(Game).a2e = function (turns) {
           continue $l$loop_3;
         }
         pool = left_1;
-        var before = this.x28_1.m();
+        var before = this.x28_1.p();
         var triggers = to(this.s29_1, this.t29_1);
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var it_1 = this.r2h(c_3);
+        var it_1 = this.t2h(c_3);
         this.b2a_1 = this.b2a_1 + it_1 | 0;
-        pool = this.i2k(pool);
-        if (this.x28_1.m() >= before || !triggers.equals(to(this.s29_1, this.t29_1))) {
-          options = this.i2g();
+        pool = this.k2k(pool);
+        if (this.x28_1.p() >= before || !triggers.equals(to(this.s29_1, this.t29_1))) {
+          options = this.k2g();
           i = 0;
         } else {
           i = i + 1 | 0;
         }
       }
-      if (this.c29_1.s2f_1)
-        pool = this.m2k(pool);
-      pool = this.b2j(pool);
+      if (this.c29_1.u2f_1)
+        pool = this.o2k(pool);
+      pool = this.d2j(pool);
       var tmp$ret$93;
       $l$block_7: {
         // Inline function 'kotlin.collections.all' call
@@ -24388,7 +24397,7 @@ protoOf(Game).a2e = function (turns) {
       }
       if (tmp$ret$93)
         return t;
-      pool = this.d2j(pool);
+      pool = this.f2j(pool);
       var tmp$ret$95;
       $l$block_8: {
         // Inline function 'kotlin.collections.all' call
@@ -24408,23 +24417,23 @@ protoOf(Game).a2e = function (turns) {
       }
       if (tmp$ret$95)
         return t;
-      if (this.c29_1.z2f_1 && this.s29_1) {
+      if (this.c29_1.b2g_1 && this.s29_1) {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_18 = this.x28_1;
         var destination_13 = ArrayList_init_$Create$();
-        var tmp0_iterator_26 = this_18.j();
-        while (tmp0_iterator_26.k()) {
-          var element_31 = tmp0_iterator_26.l();
+        var tmp0_iterator_26 = this_18.m();
+        while (tmp0_iterator_26.n()) {
+          var element_31 = tmp0_iterator_26.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp_23;
           // Inline function 'kotlin.collections.isNotEmpty' call
-          if (!element_31.g24_1.n()) {
+          if (!element_31.g24_1.q()) {
             // Inline function 'kotlin.collections.sumOf' call
             var sum_2 = 0;
-            var tmp0_iterator_27 = this.s2j(element_31).j();
-            while (tmp0_iterator_27.k()) {
-              var element_32 = tmp0_iterator_27.l();
+            var tmp0_iterator_27 = this.u2j(element_31).m();
+            while (tmp0_iterator_27.n()) {
+              var element_32 = tmp0_iterator_27.o();
               var tmp_24 = sum_2;
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
               sum_2 = tmp_24 + element_32.be_1 | 0;
@@ -24437,28 +24446,28 @@ protoOf(Game).a2e = function (turns) {
             destination_13.h(element_31);
           }
         }
-        var _iterator__ex2g4s_5 = toList(destination_13).j();
-        $l$loop_4: while (_iterator__ex2g4s_5.k()) {
-          var r = _iterator__ex2g4s_5.l();
-          var tmp14_elvis_lhs = this.c2i(pool, this.u2h(r), r.i1w_1);
+        var _iterator__ex2g4s_5 = toList(destination_13).m();
+        $l$loop_4: while (_iterator__ex2g4s_5.n()) {
+          var r = _iterator__ex2g4s_5.o();
+          var tmp14_elvis_lhs = this.e2i(pool, this.w2h(r), r.i1w_1);
           var tmp_25;
           if (tmp14_elvis_lhs == null) {
             continue $l$loop_4;
           } else {
             tmp_25 = tmp14_elvis_lhs;
           }
-          pool = plus_0(tmp_25, this.s2j(r));
-          this.r2h(r);
+          pool = plus_0(tmp_25, this.u2j(r));
+          this.t2h(r);
         }
       }
-      pool = this.i2k(pool);
-      if (this.c29_1.b2g_1) {
+      pool = this.k2k(pool);
+      if (this.c29_1.d2g_1) {
         var tmp$ret$103;
         $l$block_9: {
           // Inline function 'kotlin.collections.firstOrNull' call
-          var tmp0_iterator_28 = this.x28_1.j();
-          while (tmp0_iterator_28.k()) {
-            var element_33 = tmp0_iterator_28.l();
+          var tmp0_iterator_28 = this.x28_1.m();
+          while (tmp0_iterator_28.n()) {
+            var element_33 = tmp0_iterator_28.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             if (!(element_33.n24_1 == null)) {
               tmp$ret$103 = element_33;
@@ -24475,7 +24484,7 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.contracts.contract' call
           $l$block_11: {
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-            var tmp0_elvis_lhs_0 = ManaOddsCalc_getInstance().h1q(plus_0(pool, this.t2h()), this.u2h(tmp15_safe_receiver));
+            var tmp0_elvis_lhs_0 = ManaOddsCalc_getInstance().h1q(plus_0(pool, this.v2h()), this.w2h(tmp15_safe_receiver));
             var tmp_26;
             if (tmp0_elvis_lhs_0 == null) {
               break $l$block_11;
@@ -24485,15 +24494,15 @@ protoOf(Game).a2e = function (turns) {
             var left_2 = tmp_26;
             // Inline function 'kotlin.collections.sumOf' call
             var sum_3 = 0;
-            var tmp0_iterator_29 = left_2.j();
-            while (tmp0_iterator_29.k()) {
-              var element_34 = tmp0_iterator_29.l();
+            var tmp0_iterator_29 = left_2.m();
+            while (tmp0_iterator_29.n()) {
+              var element_34 = tmp0_iterator_29.o();
               var tmp_27 = sum_3;
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
               sum_3 = tmp_27 + element_34.be_1 | 0;
             }
             var x_0 = sum_3;
-            var tmp1_safe_receiver_2 = this.t2j(tmp15_safe_receiver, x_0);
+            var tmp1_safe_receiver_2 = this.v2j(tmp15_safe_receiver, x_0);
             var tmp_28;
             if (tmp1_safe_receiver_2 == null) {
               tmp_28 = null;
@@ -24522,30 +24531,30 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.collections.filterTo' call
             var this_19 = this.f29_1;
             var destination_14 = ArrayList_init_$Create$();
-            var tmp0_iterator_30 = this_19.j();
-            while (tmp0_iterator_30.k()) {
-              var element_35 = tmp0_iterator_30.l();
+            var tmp0_iterator_30 = this_19.m();
+            while (tmp0_iterator_30.n()) {
+              var element_35 = tmp0_iterator_30.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-              if (this.z2h(element_35)) {
+              if (this.b2i(element_35)) {
                 destination_14.h(element_35);
               }
             }
-            var tmp0_iterator_31 = destination_14.j();
-            while (tmp0_iterator_31.k()) {
-              var element_36 = tmp0_iterator_31.l();
+            var tmp0_iterator_31 = destination_14.m();
+            while (tmp0_iterator_31.n()) {
+              var element_36 = tmp0_iterator_31.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
               this.f29_1.g2(element_36);
-              this.d2i(element_36, true);
+              this.f2i(element_36, true);
             }
-            this.r2h(tmp15_safe_receiver, VOID, x_0);
+            this.t2h(tmp15_safe_receiver, VOID, x_0);
             pool = emptyList();
             if (this.z29_1.u(found)) {
-              this.l2i(listOf_0(found));
+              this.n2i(listOf_0(found));
             } else {
               var tmp$ret$113;
               $l$block_12: {
                 // Inline function 'kotlin.collections.first' call
-                var progression = until(this.l29_1, this.y28_1.m());
+                var progression = until(this.l29_1, this.y28_1.p());
                 var inductionVariable_5 = progression.a1_1;
                 var last_4 = progression.b1_1;
                 if (inductionVariable_5 <= last_4)
@@ -24554,7 +24563,7 @@ protoOf(Game).a2e = function (turns) {
                     inductionVariable_5 = inductionVariable_5 + 1 | 0;
                     // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
                     var it_2 = element_37;
-                    if (this.y28_1.o(it_2) === found) {
+                    if (this.y28_1.r(it_2) === found) {
                       tmp$ret$113 = element_37;
                       break $l$block_12;
                     }
@@ -24564,14 +24573,14 @@ protoOf(Game).a2e = function (turns) {
               }
               this.y28_1.j2(tmp$ret$113);
             }
-            this.v2i(found, true);
+            this.x2i(found, true);
           }
         }
       }
-      var _iterator__ex2g4s_6 = (this.c29_1.w2f_1 ? listOf([false, true]) : listOf_0(false)).j();
-      while (_iterator__ex2g4s_6.k()) {
-        var tokens = _iterator__ex2g4s_6.l();
-        var tmp16_safe_receiver = this.s2h(pool, tokens);
+      var _iterator__ex2g4s_6 = (this.c29_1.y2f_1 ? listOf([false, true]) : listOf_0(false)).m();
+      while (_iterator__ex2g4s_6.n()) {
+        var tokens = _iterator__ex2g4s_6.o();
+        var tmp16_safe_receiver = this.u2h(pool, tokens);
         var tmp_31;
         if (tmp16_safe_receiver == null) {
           tmp_31 = null;
@@ -24600,22 +24609,22 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_20 = this.f29_1;
           var destination_15 = ArrayList_init_$Create$();
-          var tmp0_iterator_32 = this_20.j();
-          while (tmp0_iterator_32.k()) {
-            var element_38 = tmp0_iterator_32.l();
+          var tmp0_iterator_32 = this_20.m();
+          while (tmp0_iterator_32.n()) {
+            var element_38 = tmp0_iterator_32.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-            if (this.z2h(element_38)) {
+            if (this.b2i(element_38)) {
               destination_15.h(element_38);
             }
           }
-          var tmp0_iterator_33 = destination_15.j();
-          while (tmp0_iterator_33.k()) {
-            var element_39 = tmp0_iterator_33.l();
+          var tmp0_iterator_33 = destination_15.m();
+          while (tmp0_iterator_33.n()) {
+            var element_39 = tmp0_iterator_33.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             this.f29_1.g2(element_39);
-            this.d2i(element_39, true);
+            this.f2i(element_39, true);
           }
-          this.r2h(c_4, VOID, x_1);
+          this.t2h(c_4, VOID, x_1);
           pool = emptyList();
           var tmp$ret$121;
           $l$block_13: {
@@ -24638,13 +24647,13 @@ protoOf(Game).a2e = function (turns) {
             return t;
         }
       }
-      if (this.c29_1.t2f_1)
-        pool = this.n2k(pool);
-      if (this.c29_1.u2f_1)
-        pool = this.o2k(pool);
       if (this.c29_1.v2f_1)
         pool = this.p2k(pool);
-      pool = this.q2k(pool);
+      if (this.c29_1.w2f_1)
+        pool = this.q2k(pool);
+      if (this.c29_1.x2f_1)
+        pool = this.r2k(pool);
+      pool = this.s2k(pool);
       var tmp$ret$124;
       $l$block_14: {
         // Inline function 'kotlin.collections.all' call
@@ -24668,18 +24677,18 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_21 = this.f29_1;
       var destination_16 = ArrayList_init_$Create$();
-      var tmp0_iterator_34 = this_21.j();
-      while (tmp0_iterator_34.k()) {
-        var element_42 = tmp0_iterator_34.l();
+      var tmp0_iterator_34 = this_21.m();
+      while (tmp0_iterator_34.n()) {
+        var element_42 = tmp0_iterator_34.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         if (!(element_42.s27_1 == null) && !element_42.s27_1.w2b()) {
           destination_16.h(element_42);
         }
       }
       var live = destination_16;
-      var _iterator__ex2g4s_7 = live.j();
-      $l$loop_6: while (_iterator__ex2g4s_7.k()) {
-        var b = _iterator__ex2g4s_7.l();
+      var _iterator__ex2g4s_7 = live.m();
+      $l$loop_6: while (_iterator__ex2g4s_7.n()) {
+        var b = _iterator__ex2g4s_7.o();
         var tmp18_elvis_lhs = b.s27_1;
         var tmp_33;
         if (tmp18_elvis_lhs == null) {
@@ -24692,12 +24701,12 @@ protoOf(Game).a2e = function (turns) {
           continue $l$loop_6;
         if (b.t27_1 === t && c_5.d24_1 && !c_5.c24_1) {
           if (c_5.v1z_1.p26()) {
-            this.o2g(c_5.v1z_1, b);
+            this.q2g(c_5.v1z_1, b);
           }
-          this.l2g(c_5.f24_1);
+          this.n2g(c_5.f24_1);
         }
-        this.z2g(c_5.w1w_1, 3);
-        this.t2g(c_5.y1w_1, 3);
+        this.b2h(c_5.w1w_1, 3);
+        this.v2g(c_5.y1w_1, 3);
         var need = c_5.i21_1;
         var tmp_34;
         if (c_5.s1w_1 > 0) {
@@ -24712,7 +24721,7 @@ protoOf(Game).a2e = function (turns) {
               var this_22 = this.z29_1;
               var tmp_36;
               if (isInterface(this_22, Collection)) {
-                tmp_36 = this_22.n();
+                tmp_36 = this_22.q();
               } else {
                 tmp_36 = false;
               }
@@ -24720,9 +24729,9 @@ protoOf(Game).a2e = function (turns) {
                 tmp$ret$128 = false;
                 break $l$block_16;
               }
-              var tmp0_iterator_35 = this_22.j();
-              while (tmp0_iterator_35.k()) {
-                var element_43 = tmp0_iterator_35.l();
+              var tmp0_iterator_35 = this_22.m();
+              while (tmp0_iterator_35.n()) {
+                var element_43 = tmp0_iterator_35.o();
                 // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
                 if (!element_43.k1w_1 || (!element_43.l1w_1 && !element_43.w2b())) {
                   tmp$ret$128 = true;
@@ -24738,9 +24747,9 @@ protoOf(Game).a2e = function (turns) {
               var tmp$ret$131;
               $l$block_17: {
                 // Inline function 'kotlin.collections.first' call
-                var tmp0_iterator_36 = this.z29_1.j();
-                while (tmp0_iterator_36.k()) {
-                  var element_44 = tmp0_iterator_36.l();
+                var tmp0_iterator_36 = this.z29_1.m();
+                while (tmp0_iterator_36.n()) {
+                  var element_44 = tmp0_iterator_36.o();
                   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
                   if (!element_44.l1w_1 && !element_44.w2b()) {
                     tmp$ret$131 = element_44;
@@ -24749,7 +24758,7 @@ protoOf(Game).a2e = function (turns) {
                 }
                 throw NoSuchElementException_init_$Create$_0('Collection contains no element matching the predicate.');
               }
-              this.l2i(listOf_0(tmp$ret$131));
+              this.n2i(listOf_0(tmp$ret$131));
             }
             tmp_35 = this_23;
           }
@@ -24758,27 +24767,27 @@ protoOf(Game).a2e = function (turns) {
           tmp_34 = false;
         }
         if (tmp_34) {
-          this.e2h(c_5.u1w_1, c_5.s1w_1, c_5.m1y_1);
+          this.g2h(c_5.u1w_1, c_5.s1w_1, c_5.m1y_1);
         }
-        this.y2g(c_5.t21_1);
+        this.a2h(c_5.t21_1);
         // Inline function 'kotlin.collections.forEach' call
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_24 = c_5.n1y_1;
         var destination_17 = ArrayList_init_$Create$();
-        var tmp0_iterator_37 = this_24.j();
-        while (tmp0_iterator_37.k()) {
-          var element_45 = tmp0_iterator_37.l();
+        var tmp0_iterator_37 = this_24.m();
+        while (tmp0_iterator_37.n()) {
+          var element_45 = tmp0_iterator_37.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           if (element_45.u2c_1 && !element_45.t2c_1.equals(Effect_DRAW_getInstance())) {
             destination_17.h(element_45);
           }
         }
-        var tmp0_iterator_38 = destination_17.j();
-        while (tmp0_iterator_38.k()) {
-          var element_46 = tmp0_iterator_38.l();
+        var tmp0_iterator_38 = destination_17.m();
+        while (tmp0_iterator_38.n()) {
+          var element_46 = tmp0_iterator_38.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          this.i2h(element_46);
+          this.k2h(element_46);
         }
       }
       var tmp_37;
@@ -24789,7 +24798,7 @@ protoOf(Game).a2e = function (turns) {
           var this_25 = this.f29_1;
           var tmp_38;
           if (isInterface(this_25, Collection)) {
-            tmp_38 = this_25.n();
+            tmp_38 = this_25.q();
           } else {
             tmp_38 = false;
           }
@@ -24797,9 +24806,9 @@ protoOf(Game).a2e = function (turns) {
             tmp$ret$136 = false;
             break $l$block_19;
           }
-          var tmp0_iterator_39 = this_25.j();
-          while (tmp0_iterator_39.k()) {
-            var element_47 = tmp0_iterator_39.l();
+          var tmp0_iterator_39 = this_25.m();
+          while (tmp0_iterator_39.n()) {
+            var element_47 = tmp0_iterator_39.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_13 = element_47.s27_1;
             if ((tmp0_safe_receiver_13 == null ? null : tmp0_safe_receiver_13.w1y_1) === true) {
@@ -24815,37 +24824,37 @@ protoOf(Game).a2e = function (turns) {
       }
       if (tmp_37) {
         // Inline function 'kotlin.comparisons.minOf' call
-        var a_0 = this.f2h('gate');
+        var a_0 = this.h2h('gate');
         // Inline function 'kotlin.collections.sumOf' call
         var sum_4 = 0;
-        var tmp0_iterator_40 = pool.j();
-        while (tmp0_iterator_40.k()) {
-          var element_48 = tmp0_iterator_40.l();
+        var tmp0_iterator_40 = pool.m();
+        while (tmp0_iterator_40.n()) {
+          var element_48 = tmp0_iterator_40.o();
           var tmp_39 = sum_4;
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           sum_4 = tmp_39 + element_48.be_1 | 0;
         }
         var b_0 = sum_4;
         var n = Math.min(a_0, b_0);
-        this.z2g(n, 2);
+        this.b2h(n, 2);
         var tmp19_elvis_lhs = ManaOddsCalc_getInstance().h1q(pool, new Cost(n, emptyList()));
         pool = tmp19_elvis_lhs == null ? pool : tmp19_elvis_lhs;
       }
-      if (this.c29_1.u2e_1)
-        pool = this.r2k(pool);
-      if (this.c29_1.p2f_1)
-        pool = this.s2k(pool);
-      if (this.c29_1.o2f_1)
+      if (this.c29_1.w2e_1)
         pool = this.t2k(pool);
+      if (this.c29_1.r2f_1)
+        pool = this.u2k(pool);
+      if (this.c29_1.q2f_1)
+        pool = this.v2k(pool);
       var tmp_40;
-      if (this.c29_1.q2f_1) {
+      if (this.c29_1.s2f_1) {
         var tmp$ret$141;
         $l$block_21: {
           // Inline function 'kotlin.collections.any' call
           var this_26 = this.f29_1;
           var tmp_41;
           if (isInterface(this_26, Collection)) {
-            tmp_41 = this_26.n();
+            tmp_41 = this_26.q();
           } else {
             tmp_41 = false;
           }
@@ -24853,9 +24862,9 @@ protoOf(Game).a2e = function (turns) {
             tmp$ret$141 = false;
             break $l$block_21;
           }
-          var tmp0_iterator_41 = this_26.j();
-          while (tmp0_iterator_41.k()) {
-            var element_49 = tmp0_iterator_41.l();
+          var tmp0_iterator_41 = this_26.m();
+          while (tmp0_iterator_41.n()) {
+            var element_49 = tmp0_iterator_41.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_14 = element_49.s27_1;
             if ((tmp0_safe_receiver_14 == null ? null : tmp0_safe_receiver_14.w22_1) === true) {
@@ -24871,13 +24880,13 @@ protoOf(Game).a2e = function (turns) {
       }
       if (tmp_40) {
         // Inline function 'kotlin.comparisons.minOf' call
-        var b_1 = this.b2k() / 2 | 0;
+        var b_1 = this.d2k() / 2 | 0;
         var tmp$ret$143 = Math.min(4, b_1);
-        this.l2g(tmp$ret$143);
+        this.n2g(tmp$ret$143);
       }
-      this.u2k(t);
+      this.w2k(t);
       var tmp_42;
-      if (!this.c29_1.k2f_1) {
+      if (!this.c29_1.m2f_1) {
         tmp_42 = 0;
       } else {
         // Inline function 'kotlin.collections.mapNotNull' call
@@ -24885,9 +24894,9 @@ protoOf(Game).a2e = function (turns) {
         var this_27 = this.f29_1;
         var destination_18 = ArrayList_init_$Create$();
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_42 = this_27.j();
-        while (tmp0_iterator_42.k()) {
-          var element_50 = tmp0_iterator_42.l();
+        var tmp0_iterator_42 = this_27.m();
+        while (tmp0_iterator_42.n()) {
+          var element_50 = tmp0_iterator_42.o();
           // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_15 = element_50.s27_1;
@@ -24921,18 +24930,18 @@ protoOf(Game).a2e = function (turns) {
       }
       var kelp = tmp_42;
       var tmp_45;
-      if (!this.c29_1.k2f_1) {
+      if (!this.c29_1.m2f_1) {
         tmp_45 = emptyList();
       } else {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var this_28 = this.f29_1;
         var destination_19 = ArrayList_init_$Create$();
-        var tmp0_iterator_43 = this_28.j();
-        while (tmp0_iterator_43.k()) {
-          var element_51 = tmp0_iterator_43.l();
+        var tmp0_iterator_43 = this_28.m();
+        while (tmp0_iterator_43.n()) {
+          var element_51 = tmp0_iterator_43.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          if (!element_51.v27_1 && element_51.m2e('artifact') && !element_51.m2e('land') && element_51.t27_1 < t && (kelp > 0 && element_51.m28_1 === 'clue' || (this.s2a_1 > 0 && element_51.i28_1 == null && !this.z2h(element_51)))) {
+          if (!element_51.v27_1 && element_51.o2e('artifact') && !element_51.o2e('land') && element_51.t27_1 < t && (kelp > 0 && element_51.m28_1 === 'clue' || (this.s2a_1 > 0 && element_51.i28_1 == null && !this.b2i(element_51)))) {
             destination_19.h(element_51);
           }
         }
@@ -24940,21 +24949,21 @@ protoOf(Game).a2e = function (turns) {
       }
       var animated = tmp_45;
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_44 = animated.j();
-      while (tmp0_iterator_44.k()) {
-        var element_52 = tmp0_iterator_44.l();
+      var tmp0_iterator_44 = animated.m();
+      while (tmp0_iterator_44.n()) {
+        var element_52 = tmp0_iterator_44.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         element_52.v27_1 = true;
         element_52.u27_1 = kelp > 0 && element_52.m28_1 === 'clue' ? kelp : this.s2a_1;
       }
-      var crewed = this.x2i(t);
+      var crewed = this.z2i(t);
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var this_29 = this.f29_1;
       var destination_20 = ArrayList_init_$Create$();
-      var tmp0_iterator_45 = this_29.j();
-      while (tmp0_iterator_45.k()) {
-        var element_53 = tmp0_iterator_45.l();
+      var tmp0_iterator_45 = this_29.m();
+      while (tmp0_iterator_45.n()) {
+        var element_53 = tmp0_iterator_45.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         if (element_53.v27_1 && !(element_53.j28_1 === t) && element_53.b28_1 === 0 && !(element_53.c28_1 === t) && (element_53.t27_1 < t || this.z2a(element_53))) {
           destination_20.h(element_53);
@@ -24967,7 +24976,7 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.any' call
         var tmp_47;
         if (isInterface(attackers, Collection)) {
-          tmp_47 = attackers.n();
+          tmp_47 = attackers.q();
         } else {
           tmp_47 = false;
         }
@@ -24975,9 +24984,9 @@ protoOf(Game).a2e = function (turns) {
           tmp$ret$156 = false;
           break $l$block_23;
         }
-        var tmp0_iterator_46 = attackers.j();
-        while (tmp0_iterator_46.k()) {
-          var element_54 = tmp0_iterator_46.l();
+        var tmp0_iterator_46 = attackers.m();
+        while (tmp0_iterator_46.n()) {
+          var element_54 = tmp0_iterator_46.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp_48;
           var tmp0_safe_receiver_17 = element_54.s27_1;
@@ -24997,13 +25006,13 @@ protoOf(Game).a2e = function (turns) {
         tmp_46 = true;
       } else {
         var tmp_49;
-        if (this.x28_1.m() >= 20) {
+        if (this.x28_1.p() >= 20) {
           var tmp$ret$158;
           $l$block_25: {
             // Inline function 'kotlin.collections.any' call
             var tmp_50;
             if (isInterface(attackers, Collection)) {
-              tmp_50 = attackers.n();
+              tmp_50 = attackers.q();
             } else {
               tmp_50 = false;
             }
@@ -25011,9 +25020,9 @@ protoOf(Game).a2e = function (turns) {
               tmp$ret$158 = false;
               break $l$block_25;
             }
-            var tmp0_iterator_47 = attackers.j();
-            while (tmp0_iterator_47.k()) {
-              var element_55 = tmp0_iterator_47.l();
+            var tmp0_iterator_47 = attackers.m();
+            while (tmp0_iterator_47.n()) {
+              var element_55 = tmp0_iterator_47.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var tmp0_safe_receiver_18 = element_55.s27_1;
               if ((tmp0_safe_receiver_18 == null ? null : tmp0_safe_receiver_18.n25_1) === true) {
@@ -25036,8 +25045,8 @@ protoOf(Game).a2e = function (turns) {
       var extra = HashMap_init_$Create$();
       var doubled = HashSet_init_$Create$();
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!attackers.n()) {
-        var carrier = this.x2h();
+      if (!attackers.q()) {
+        var carrier = this.z2h();
         var tmp_51;
         if (carrier == null) {
           tmp_51 = null;
@@ -25059,27 +25068,27 @@ protoOf(Game).a2e = function (turns) {
           var tmp$ret$163;
           $l$block_26: {
             // Inline function 'kotlin.collections.maxBy' call
-            var iterator_1 = attackers.j();
-            if (!iterator_1.k())
+            var iterator_1 = attackers.m();
+            if (!iterator_1.n())
               throw NoSuchElementException_init_$Create$();
-            var maxElem_0 = iterator_1.l();
-            if (!iterator_1.k()) {
+            var maxElem_0 = iterator_1.o();
+            if (!iterator_1.n()) {
               tmp$ret$163 = maxElem_0;
               break $l$block_26;
             }
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var it_3 = maxElem_0;
-            var maxValue_1 = it_3.u27_1 + it_3.g28_1.m() | 0;
+            var maxValue_1 = it_3.u27_1 + it_3.g28_1.p() | 0;
             do {
-              var e_2 = iterator_1.l();
+              var e_2 = iterator_1.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-              var v_1 = e_2.u27_1 + e_2.g28_1.m() | 0;
+              var v_1 = e_2.u27_1 + e_2.g28_1.p() | 0;
               if (compareTo(maxValue_1, v_1) < 0) {
                 maxElem_0 = e_2;
                 maxValue_1 = v_1;
               }
             }
-             while (iterator_1.k());
+             while (iterator_1.n());
             tmp$ret$163 = maxElem_0;
           }
           tmp_53 = tmp$ret$163;
@@ -25088,13 +25097,13 @@ protoOf(Game).a2e = function (turns) {
         }
         var hit = tmp_53;
         var tmp_54;
-        if (this.c29_1.r2f_1) {
+        if (this.c29_1.t2f_1) {
           var tmp$ret$166;
           $l$block_28: {
             // Inline function 'kotlin.collections.any' call
             var tmp_55;
             if (isInterface(live, Collection)) {
-              tmp_55 = live.n();
+              tmp_55 = live.q();
             } else {
               tmp_55 = false;
             }
@@ -25102,9 +25111,9 @@ protoOf(Game).a2e = function (turns) {
               tmp$ret$166 = false;
               break $l$block_28;
             }
-            var tmp0_iterator_48 = live.j();
-            while (tmp0_iterator_48.k()) {
-              var element_56 = tmp0_iterator_48.l();
+            var tmp0_iterator_48 = live.m();
+            while (tmp0_iterator_48.n()) {
+              var element_56 = tmp0_iterator_48.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var tmp0_safe_receiver_19 = element_56.s27_1;
               if ((tmp0_safe_receiver_19 == null ? null : tmp0_safe_receiver_19.r1x_1) === true) {
@@ -25123,12 +25132,12 @@ protoOf(Game).a2e = function (turns) {
           doubled.h(hit);
         }
         var tmp_56;
-        if (this.c29_1.r2f_1) {
+        if (this.c29_1.t2f_1) {
           // Inline function 'kotlin.collections.sumOf' call
           var sum_5 = 0;
-          var tmp0_iterator_49 = live.j();
-          while (tmp0_iterator_49.k()) {
-            var element_57 = tmp0_iterator_49.l();
+          var tmp0_iterator_49 = live.m();
+          while (tmp0_iterator_49.n()) {
+            var element_57 = tmp0_iterator_49.o();
             var tmp_57 = sum_5;
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_20 = element_57.s27_1;
@@ -25148,7 +25157,7 @@ protoOf(Game).a2e = function (turns) {
             var this_30 = this.f29_1;
             var tmp_59;
             if (isInterface(this_30, Collection)) {
-              tmp_59 = this_30.n();
+              tmp_59 = this_30.q();
             } else {
               tmp_59 = false;
             }
@@ -25156,9 +25165,9 @@ protoOf(Game).a2e = function (turns) {
               tmp$ret$170 = false;
               break $l$block_30;
             }
-            var tmp0_iterator_50 = this_30.j();
-            while (tmp0_iterator_50.k()) {
-              var element_58 = tmp0_iterator_50.l();
+            var tmp0_iterator_50 = this_30.m();
+            while (tmp0_iterator_50.n()) {
+              var element_58 = tmp0_iterator_50.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var tmp0_safe_receiver_21 = element_58.s27_1;
               if ((tmp0_safe_receiver_21 == null ? null : tmp0_safe_receiver_21.x1y_1) === true) {
@@ -25181,7 +25190,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.contracts.contract' call
             pool = tmp23_safe_receiver;
             var tmp0_elvis_lhs_1 = extra.c2(hit);
-            var value = (tmp0_elvis_lhs_1 == null ? 0 : tmp0_elvis_lhs_1) + this.f2h('gate') | 0;
+            var value = (tmp0_elvis_lhs_1 == null ? 0 : tmp0_elvis_lhs_1) + this.h2h('gate') | 0;
             extra.k2(hit, value);
           }
         }
@@ -25189,9 +25198,9 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_31 = this.x28_1;
         var destination_21 = ArrayList_init_$Create$();
-        var tmp0_iterator_51 = this_31.j();
-        while (tmp0_iterator_51.k()) {
-          var element_59 = tmp0_iterator_51.l();
+        var tmp0_iterator_51 = this_31.m();
+        while (tmp0_iterator_51.n()) {
+          var element_59 = tmp0_iterator_51.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           if (element_59.r2d()) {
             destination_21.h(element_59);
@@ -25204,9 +25213,9 @@ protoOf(Game).a2e = function (turns) {
         var this_32 = new sam$kotlin_Comparator$0_12(tmp_61);
         var tmp_62 = WinOddsCalc$Game$play$lambda_2(this_32);
         var tmp$ret$177 = new sam$kotlin_Comparator$0_12(tmp_62);
-        var _iterator__ex2g4s_8 = sortedWith(tmp_60, tmp$ret$177).j();
-        $l$loop_8: while (_iterator__ex2g4s_8.k()) {
-          var c_6 = _iterator__ex2g4s_8.l();
+        var _iterator__ex2g4s_8 = sortedWith(tmp_60, tmp$ret$177).m();
+        $l$loop_8: while (_iterator__ex2g4s_8.n()) {
+          var c_6 = _iterator__ex2g4s_8.o();
           var tmp_63;
           if (c_6.f25_1) {
             var tmp_64;
@@ -25215,12 +25224,12 @@ protoOf(Game).a2e = function (turns) {
             } else {
               // Inline function 'kotlin.collections.sumOf' call
               var sum_6 = 0;
-              var tmp0_iterator_52 = attackers.j();
-              while (tmp0_iterator_52.k()) {
-                var element_60 = tmp0_iterator_52.l();
+              var tmp0_iterator_52 = attackers.m();
+              while (tmp0_iterator_52.n()) {
+                var element_60 = tmp0_iterator_52.o();
                 var tmp_65 = sum_6;
                 // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-                sum_6 = tmp_65 + this.y2i(element_60).ae_1 | 0;
+                sum_6 = tmp_65 + this.a2j(element_60).ae_1 | 0;
               }
               tmp_64 = sum_6 < 6;
             }
@@ -25230,7 +25239,7 @@ protoOf(Game).a2e = function (turns) {
           }
           if (tmp_63)
             continue $l$loop_8;
-          var tmp24_elvis_lhs = this.e2i(pool, this.u2h(c_6));
+          var tmp24_elvis_lhs = this.g2i(pool, this.w2h(c_6));
           var tmp_66;
           if (tmp24_elvis_lhs == null) {
             continue $l$loop_8;
@@ -25243,9 +25252,9 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.also' call
             // Inline function 'kotlin.collections.sumOf' call
             var sum_7 = 0;
-            var tmp0_iterator_53 = left_3.j();
-            while (tmp0_iterator_53.k()) {
-              var element_61 = tmp0_iterator_53.l();
+            var tmp0_iterator_53 = left_3.m();
+            while (tmp0_iterator_53.n()) {
+              var element_61 = tmp0_iterator_53.o();
               var tmp_68 = sum_7;
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               sum_7 = tmp_68 + element_61.be_1 | 0;
@@ -25260,7 +25269,7 @@ protoOf(Game).a2e = function (turns) {
           }
           var x_2 = tmp_67;
           pool = left_3;
-          this.r2h(c_6);
+          this.t2h(c_6);
           // Inline function 'kotlin.collections.set' call
           var tmp25_elvis_lhs = extra.c2(hit);
           var value_0 = (((tmp25_elvis_lhs == null ? 0 : tmp25_elvis_lhs) + c_6.o1x_1 | 0) + x_2 | 0) + targeted | 0;
@@ -25276,12 +25285,12 @@ protoOf(Game).a2e = function (turns) {
             this_34.h(element_62);
           }
         }
-        if (this.c29_1.l2f_1)
-          pool = this.v2k(pool, attackers, extra);
-        if (this.c29_1.m2f_1) {
-          var _iterator__ex2g4s_9 = attackers.j();
-          while (_iterator__ex2g4s_9.k()) {
-            var b_2 = _iterator__ex2g4s_9.l();
+        if (this.c29_1.n2f_1)
+          pool = this.x2k(pool, attackers, extra);
+        if (this.c29_1.o2f_1) {
+          var _iterator__ex2g4s_9 = attackers.m();
+          while (_iterator__ex2g4s_9.n()) {
+            var b_2 = _iterator__ex2g4s_9.o();
             var tmp26_safe_receiver = b_2.s27_1;
             if (tmp26_safe_receiver == null)
               null;
@@ -25289,7 +25298,7 @@ protoOf(Game).a2e = function (turns) {
               // Inline function 'kotlin.let' call
               // Inline function 'kotlin.contracts.contract' call
               if (!tmp26_safe_receiver.x1z_1) {
-                this.e2j(tmp26_safe_receiver.w1z_1, b_2, attackers);
+                this.g2j(tmp26_safe_receiver.w1z_1, b_2, attackers);
               }
               this.b2a_1 = this.b2a_1 + tmp26_safe_receiver.g20_1 | 0;
               var tmp_69;
@@ -25304,7 +25313,7 @@ protoOf(Game).a2e = function (turns) {
                     var this_35 = this.f29_1;
                     var tmp_71;
                     if (isInterface(this_35, Collection)) {
-                      tmp_71 = this_35.n();
+                      tmp_71 = this_35.q();
                     } else {
                       tmp_71 = false;
                     }
@@ -25312,11 +25321,11 @@ protoOf(Game).a2e = function (turns) {
                       tmp$ret$183 = false;
                       break $l$block_32;
                     }
-                    var tmp0_iterator_54 = this_35.j();
-                    while (tmp0_iterator_54.k()) {
-                      var element_63 = tmp0_iterator_54.l();
+                    var tmp0_iterator_54 = this_35.m();
+                    while (tmp0_iterator_54.n()) {
+                      var element_63 = tmp0_iterator_54.o();
                       // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-                      if (element_63.v27_1 && this.y2i(element_63).ae_1 >= tmp26_safe_receiver.w1z_1.m1u_1) {
+                      if (element_63.v27_1 && this.a2j(element_63).ae_1 >= tmp26_safe_receiver.w1z_1.m1u_1) {
                         tmp$ret$183 = true;
                         break $l$block_32;
                       }
@@ -25341,26 +25350,26 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.collections.filterTo' call
             var this_36 = b_2.g28_1;
             var destination_22 = ArrayList_init_$Create$();
-            var tmp0_iterator_55 = this_36.j();
-            while (tmp0_iterator_55.k()) {
-              var element_64 = tmp0_iterator_55.l();
+            var tmp0_iterator_55 = this_36.m();
+            while (tmp0_iterator_55.n()) {
+              var element_64 = tmp0_iterator_55.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               if (element_64.x1z_1) {
                 destination_22.h(element_64);
               }
             }
-            var tmp0_iterator_56 = destination_22.j();
-            while (tmp0_iterator_56.k()) {
-              var element_65 = tmp0_iterator_56.l();
+            var tmp0_iterator_56 = destination_22.m();
+            while (tmp0_iterator_56.n()) {
+              var element_65 = tmp0_iterator_56.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-              this.e2j(element_65.w1z_1, b_2, attackers);
+              this.g2j(element_65.w1z_1, b_2, attackers);
             }
           }
         }
-        if (this.c29_1.m2f_1) {
-          var _iterator__ex2g4s_10 = live.j();
-          while (_iterator__ex2g4s_10.k()) {
-            var s = _iterator__ex2g4s_10.l();
+        if (this.c29_1.o2f_1) {
+          var _iterator__ex2g4s_10 = live.m();
+          while (_iterator__ex2g4s_10.n()) {
+            var s = _iterator__ex2g4s_10.o();
             var tmp27_safe_receiver = s.s27_1;
             if (tmp27_safe_receiver == null)
               null;
@@ -25379,7 +25388,7 @@ protoOf(Game).a2e = function (turns) {
                     // Inline function 'kotlin.collections.any' call
                     var tmp_74;
                     if (isInterface(attackers, Collection)) {
-                      tmp_74 = attackers.n();
+                      tmp_74 = attackers.q();
                     } else {
                       tmp_74 = false;
                     }
@@ -25387,11 +25396,11 @@ protoOf(Game).a2e = function (turns) {
                       tmp$ret$189 = false;
                       break $l$block_34;
                     }
-                    var tmp0_iterator_57 = attackers.j();
-                    while (tmp0_iterator_57.k()) {
-                      var element_66 = tmp0_iterator_57.l();
+                    var tmp0_iterator_57 = attackers.m();
+                    while (tmp0_iterator_57.n()) {
+                      var element_66 = tmp0_iterator_57.o();
                       // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-                      if (element_66.m2e(ensureNotNull(tmp27_safe_receiver.y1z_1.i1u_1))) {
+                      if (element_66.o2e(ensureNotNull(tmp27_safe_receiver.y1z_1.i1u_1))) {
                         tmp$ret$189 = true;
                         break $l$block_34;
                       }
@@ -25405,7 +25414,7 @@ protoOf(Game).a2e = function (turns) {
                 tmp_72 = false;
               }
               if (tmp_72) {
-                this.e2j(tmp27_safe_receiver.y1z_1, s, attackers);
+                this.g2j(tmp27_safe_receiver.y1z_1, s, attackers);
               }
               var tmp0_safe_receiver_22 = tmp27_safe_receiver.z1z_1;
               var tmp_75;
@@ -25418,19 +25427,19 @@ protoOf(Game).a2e = function (turns) {
                 // Inline function 'kotlin.collections.filter' call
                 // Inline function 'kotlin.collections.filterTo' call
                 var destination_23 = ArrayList_init_$Create$();
-                var tmp0_iterator_58 = attackers.j();
-                while (tmp0_iterator_58.k()) {
-                  var element_67 = tmp0_iterator_58.l();
+                var tmp0_iterator_58 = attackers.m();
+                while (tmp0_iterator_58.n()) {
+                  var element_67 = tmp0_iterator_58.o();
                   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-                  if (element_67.m2e(tmp0_safe_receiver_22)) {
+                  if (element_67.o2e(tmp0_safe_receiver_22)) {
                     destination_23.h(element_67);
                   }
                 }
-                var tmp0_iterator_59 = destination_23.j();
-                while (tmp0_iterator_59.k()) {
-                  var element_68 = tmp0_iterator_59.l();
+                var tmp0_iterator_59 = destination_23.m();
+                while (tmp0_iterator_59.n()) {
+                  var element_68 = tmp0_iterator_59.o();
                   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-                  this.e2j(tmp27_safe_receiver.a20_1, s, attackers);
+                  this.g2j(tmp27_safe_receiver.a20_1, s, attackers);
                 }
                 tmp_75 = Unit_instance;
               }
@@ -25442,9 +25451,9 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_37 = this.f29_1;
       var destination_24 = ArrayList_init_$Create$();
-      var tmp0_iterator_60 = this_37.j();
-      while (tmp0_iterator_60.k()) {
-        var element_69 = tmp0_iterator_60.l();
+      var tmp0_iterator_60 = this_37.m();
+      while (tmp0_iterator_60.n()) {
+        var element_69 = tmp0_iterator_60.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         if (element_69.n28_1 === t && !attackers.u(element_69)) {
           destination_24.h(element_69);
@@ -25453,9 +25462,9 @@ protoOf(Game).a2e = function (turns) {
       var fighters = plus_0(attackers, destination_24);
       var tmp_76;
       var tmp_77;
-      if (this.c29_1.q2f_1) {
+      if (this.c29_1.s2f_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_77 = !fighters.n();
+        tmp_77 = !fighters.q();
       } else {
         tmp_77 = false;
       }
@@ -25470,37 +25479,37 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_38 = this.f29_1;
         var destination_25 = ArrayList_init_$Create$();
-        var tmp0_iterator_61 = this_38.j();
-        while (tmp0_iterator_61.k()) {
-          var element_70 = tmp0_iterator_61.l();
+        var tmp0_iterator_61 = this_38.m();
+        while (tmp0_iterator_61.n()) {
+          var element_70 = tmp0_iterator_61.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_23 = element_70.s27_1;
           if ((tmp0_safe_receiver_23 == null ? null : tmp0_safe_receiver_23.y22_1) === true) {
             destination_25.h(element_70);
           }
         }
-        var tmp0_iterator_62 = destination_25.j();
-        while (tmp0_iterator_62.k()) {
-          var element_71 = tmp0_iterator_62.l();
+        var tmp0_iterator_62 = destination_25.m();
+        while (tmp0_iterator_62.n()) {
+          var element_71 = tmp0_iterator_62.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          var tmp0_safe_receiver_24 = this.u2g();
+          var tmp0_safe_receiver_24 = this.w2g();
           if (tmp0_safe_receiver_24 == null)
             null;
           else {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
-            this.n2g(tmp0_safe_receiver_24, this.k2a_1 - 1 | 0);
+            this.p2g(tmp0_safe_receiver_24, this.k2a_1 - 1 | 0);
           }
         }
       }
       var tmp_78;
-      if (this.c29_1.q2f_1) {
+      if (this.c29_1.s2f_1) {
         var tmp$ret$205;
         $l$block_35: {
           // Inline function 'kotlin.collections.count' call
           var tmp_79;
           if (isInterface(live, Collection)) {
-            tmp_79 = live.n();
+            tmp_79 = live.q();
           } else {
             tmp_79 = false;
           }
@@ -25509,9 +25518,9 @@ protoOf(Game).a2e = function (turns) {
             break $l$block_35;
           }
           var count_0 = 0;
-          var tmp0_iterator_63 = live.j();
-          while (tmp0_iterator_63.k()) {
-            var element_72 = tmp0_iterator_63.l();
+          var tmp0_iterator_63 = live.m();
+          while (tmp0_iterator_63.n()) {
+            var element_72 = tmp0_iterator_63.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_25 = element_72.s27_1;
             if ((tmp0_safe_receiver_25 == null ? null : tmp0_safe_receiver_25.x22_1) === true) {
@@ -25527,13 +25536,13 @@ protoOf(Game).a2e = function (turns) {
       }
       var drawnBonus = tmp_78;
       var tmp_80;
-      if (this.c29_1.r2f_1) {
+      if (this.c29_1.t2f_1) {
         var tmp$ret$207;
         $l$block_37: {
           // Inline function 'kotlin.collections.any' call
           var tmp_81;
           if (isInterface(live, Collection)) {
-            tmp_81 = live.n();
+            tmp_81 = live.q();
           } else {
             tmp_81 = false;
           }
@@ -25541,9 +25550,9 @@ protoOf(Game).a2e = function (turns) {
             tmp$ret$207 = false;
             break $l$block_37;
           }
-          var tmp0_iterator_64 = live.j();
-          while (tmp0_iterator_64.k()) {
-            var element_73 = tmp0_iterator_64.l();
+          var tmp0_iterator_64 = live.m();
+          while (tmp0_iterator_64.n()) {
+            var element_73 = tmp0_iterator_64.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_26 = element_73.s27_1;
             if ((tmp0_safe_receiver_26 == null ? null : tmp0_safe_receiver_26.h23_1) === true) {
@@ -25559,13 +25568,13 @@ protoOf(Game).a2e = function (turns) {
       }
       var allDouble = tmp_80;
       var tmp_82;
-      if (this.c29_1.r2f_1) {
+      if (this.c29_1.t2f_1) {
         var tmp$ret$209;
         $l$block_39: {
           // Inline function 'kotlin.collections.any' call
           var tmp_83;
           if (isInterface(live, Collection)) {
-            tmp_83 = live.n();
+            tmp_83 = live.q();
           } else {
             tmp_83 = false;
           }
@@ -25573,9 +25582,9 @@ protoOf(Game).a2e = function (turns) {
             tmp$ret$209 = false;
             break $l$block_39;
           }
-          var tmp0_iterator_65 = live.j();
-          while (tmp0_iterator_65.k()) {
-            var element_74 = tmp0_iterator_65.l();
+          var tmp0_iterator_65 = live.m();
+          while (tmp0_iterator_65.n()) {
+            var element_74 = tmp0_iterator_65.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_27 = element_74.s27_1;
             if ((tmp0_safe_receiver_27 == null ? null : tmp0_safe_receiver_27.g23_1) === true) {
@@ -25594,9 +25603,9 @@ protoOf(Game).a2e = function (turns) {
       var tmp$ret$214;
       $l$block_40: {
         // Inline function 'kotlin.collections.firstNotNullOfOrNull' call
-        var tmp0_iterator_66 = live.j();
-        while (tmp0_iterator_66.k()) {
-          var element_75 = tmp0_iterator_66.l();
+        var tmp0_iterator_66 = live.m();
+        while (tmp0_iterator_66.n()) {
+          var element_75 = tmp0_iterator_66.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_28 = element_75.s27_1;
           var tmp1_safe_receiver_4 = tmp0_safe_receiver_28 == null ? null : tmp0_safe_receiver_28.y1y_1;
@@ -25629,18 +25638,18 @@ protoOf(Game).a2e = function (turns) {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        var element_76 = to(imul(this.f2h(tmp28_safe_receiver.v2c_1), tmp28_safe_receiver.w2c_1), 0);
+        var element_76 = to(imul(this.h2h(tmp28_safe_receiver.v2c_1), tmp28_safe_receiver.w2c_1), 0);
         hits.h(element_76);
       }
       var draws = 0;
-      var fromCommanders = new Int32Array(this.z28_1.m());
+      var fromCommanders = new Int32Array(this.z28_1.p());
       var tmp_86;
-      if (this.c29_1.r2f_1) {
+      if (this.c29_1.t2f_1) {
         // Inline function 'kotlin.collections.sumOf' call
         var sum_8 = 0;
-        var tmp0_iterator_67 = live.j();
-        while (tmp0_iterator_67.k()) {
-          var element_77 = tmp0_iterator_67.l();
+        var tmp0_iterator_67 = live.m();
+        while (tmp0_iterator_67.n()) {
+          var element_77 = tmp0_iterator_67.o();
           var tmp_87 = sum_8;
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_29 = element_77.s27_1;
@@ -25658,9 +25667,9 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var destination_26 = ArrayList_init_$Create$();
-        var tmp0_iterator_68 = attackers.j();
-        while (tmp0_iterator_68.k()) {
-          var element_78 = tmp0_iterator_68.l();
+        var tmp0_iterator_68 = attackers.m();
+        while (tmp0_iterator_68.n()) {
+          var element_78 = tmp0_iterator_68.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           if (contains_1(this.z28_1, element_78.s27_1)) {
             destination_26.h(element_78);
@@ -25668,9 +25677,9 @@ protoOf(Game).a2e = function (turns) {
         }
         // Inline function 'kotlin.collections.flatMapTo' call
         var destination_27 = ArrayList_init_$Create$();
-        var tmp0_iterator_69 = destination_26.j();
-        while (tmp0_iterator_69.k()) {
-          var element_79 = tmp0_iterator_69.l();
+        var tmp0_iterator_69 = destination_26.m();
+        while (tmp0_iterator_69.n()) {
+          var element_79 = tmp0_iterator_69.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var list = element_79.z27_1;
           addAll(destination_27, list);
@@ -25681,14 +25690,14 @@ protoOf(Game).a2e = function (turns) {
       }
       var pumpedTypes = tmp_88;
       var tmp_89;
-      if (this.c29_1.n2e_1) {
+      if (this.c29_1.p2e_1) {
         // Inline function 'kotlin.collections.mapNotNull' call
         // Inline function 'kotlin.collections.mapNotNullTo' call
         var destination_28 = ArrayList_init_$Create$();
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_70 = live.j();
-        while (tmp0_iterator_70.k()) {
-          var element_80 = tmp0_iterator_70.l();
+        var tmp0_iterator_70 = live.m();
+        while (tmp0_iterator_70.n()) {
+          var element_80 = tmp0_iterator_70.o();
           // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_30 = element_80.s27_1;
@@ -25706,23 +25715,23 @@ protoOf(Game).a2e = function (turns) {
         tmp_89 = emptyList();
       }
       var myriadKinds = tmp_89;
-      var _iterator__ex2g4s_11 = fighters.j();
-      while (_iterator__ex2g4s_11.k()) {
-        var b_3 = _iterator__ex2g4s_11.l();
-        var _destruct__k2r9zo_0 = this.y2i(b_3);
+      var _iterator__ex2g4s_11 = fighters.m();
+      while (_iterator__ex2g4s_11.n()) {
+        var b_3 = _iterator__ex2g4s_11.o();
+        var _destruct__k2r9zo_0 = this.a2j(b_3);
         var power = _destruct__k2r9zo_0.ce();
         var double = _destruct__k2r9zo_0.de();
         var tmp_90;
         var tmp_91;
         // Inline function 'kotlin.collections.isNotEmpty' call
-        if (!pumpedTypes.n()) {
+        if (!pumpedTypes.q()) {
           var tmp$ret$229;
           $l$block_42: {
             // Inline function 'kotlin.collections.any' call
             var this_39 = b_3.z27_1;
             var tmp_92;
             if (isInterface(this_39, Collection)) {
-              tmp_92 = this_39.n();
+              tmp_92 = this_39.q();
             } else {
               tmp_92 = false;
             }
@@ -25730,9 +25739,9 @@ protoOf(Game).a2e = function (turns) {
               tmp$ret$229 = false;
               break $l$block_42;
             }
-            var tmp0_iterator_71 = this_39.j();
-            while (tmp0_iterator_71.k()) {
-              var element_81 = tmp0_iterator_71.l();
+            var tmp0_iterator_71 = this_39.m();
+            while (tmp0_iterator_71.n()) {
+              var element_81 = tmp0_iterator_71.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               if (pumpedTypes.u(element_81)) {
                 tmp$ret$229 = true;
@@ -25761,7 +25770,7 @@ protoOf(Game).a2e = function (turns) {
             var this_40 = this.c2a_1;
             var tmp_94;
             if (isInterface(this_40, Collection)) {
-              tmp_94 = this_40.n();
+              tmp_94 = this_40.q();
             } else {
               tmp_94 = false;
             }
@@ -25769,11 +25778,11 @@ protoOf(Game).a2e = function (turns) {
               tmp$ret$231 = false;
               break $l$block_44;
             }
-            var tmp0_iterator_72 = this_40.j();
-            while (tmp0_iterator_72.k()) {
-              var element_82 = tmp0_iterator_72.l();
+            var tmp0_iterator_72 = this_40.m();
+            while (tmp0_iterator_72.n()) {
+              var element_82 = tmp0_iterator_72.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-              if (element_82 === 'creature' || b_3.m2e(element_82)) {
+              if (element_82 === 'creature' || b_3.o2e(element_82)) {
                 tmp$ret$231 = true;
                 break $l$block_44;
               }
@@ -25797,7 +25806,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.collections.any' call
             var tmp_97;
             if (isInterface(myriadKinds, Collection)) {
-              tmp_97 = myriadKinds.n();
+              tmp_97 = myriadKinds.q();
             } else {
               tmp_97 = false;
             }
@@ -25805,12 +25814,12 @@ protoOf(Game).a2e = function (turns) {
               tmp$ret$233 = false;
               break $l$block_46;
             }
-            var tmp0_iterator_73 = myriadKinds.j();
-            while (tmp0_iterator_73.k()) {
-              var element_83 = tmp0_iterator_73.l();
+            var tmp0_iterator_73 = myriadKinds.m();
+            while (tmp0_iterator_73.n()) {
+              var element_83 = tmp0_iterator_73.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var tmp_98;
-              if (b_3.m2e(element_83)) {
+              if (b_3.o2e(element_83)) {
                 var tmp0_safe_receiver_32 = b_3.s27_1;
                 tmp_98 = !((tmp0_safe_receiver_32 == null ? null : tmp0_safe_receiver_32.o1z_1) === true);
               } else {
@@ -25875,9 +25884,9 @@ protoOf(Game).a2e = function (turns) {
               }
             }
              while (!(element_84 === last_7));
-          var tmp0_iterator_74 = destination_29.j();
-          while (tmp0_iterator_74.k()) {
-            var element_85 = tmp0_iterator_74.l();
+          var tmp0_iterator_74 = destination_29.m();
+          while (tmp0_iterator_74.n()) {
+            var element_85 = tmp0_iterator_74.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var _array__4zh2yp = this.g29_1;
             _array__4zh2yp[element_85] = _array__4zh2yp[element_85] - p | 0;
@@ -25886,14 +25895,14 @@ protoOf(Game).a2e = function (turns) {
           }
         } else if (this.r2a_1) {
           // Inline function 'kotlin.collections.plusAssign' call
-          var element_86 = to(once, this.w2i(b_3));
+          var element_86 = to(once, this.y2i(b_3));
           hits.h(element_86);
           // Inline function 'kotlin.collections.plusAssign' call
-          var element_87 = to(once, this.w2i(b_3));
+          var element_87 = to(once, this.y2i(b_3));
           hits.h(element_87);
         } else {
           // Inline function 'kotlin.collections.plusAssign' call
-          var element_88 = to(p, this.w2i(b_3));
+          var element_88 = to(p, this.y2i(b_3));
           hits.h(element_88);
         }
         var tmp34_safe_receiver = b_3.s27_1;
@@ -25956,13 +25965,13 @@ protoOf(Game).a2e = function (turns) {
                 }
               }
                while (!(element_89 === last_9));
-            var iterator_2 = destination_30.j();
-            if (!iterator_2.k()) {
+            var iterator_2 = destination_30.m();
+            if (!iterator_2.n()) {
               tmp$ret$249 = null;
               break $l$block_49;
             }
-            var maxElem_1 = iterator_2.l();
-            if (!iterator_2.k()) {
+            var maxElem_1 = iterator_2.o();
+            if (!iterator_2.n()) {
               tmp$ret$249 = maxElem_1;
               break $l$block_49;
             }
@@ -25970,7 +25979,7 @@ protoOf(Game).a2e = function (turns) {
             var it_6 = maxElem_1;
             var maxValue_2 = this.j29_1[tmp1][it_6];
             do {
-              var e_3 = iterator_2.l();
+              var e_3 = iterator_2.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
               var v_2 = this.j29_1[tmp1][e_3];
               if (compareTo(maxValue_2, v_2) < 0) {
@@ -25978,7 +25987,7 @@ protoOf(Game).a2e = function (turns) {
                 maxValue_2 = v_2;
               }
             }
-             while (iterator_2.k());
+             while (iterator_2.n());
             tmp$ret$249 = maxElem_1;
           }
           var tmp0_elvis_lhs_3 = tmp$ret$249;
@@ -26005,9 +26014,9 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.comparisons.compareByDescending' call
       var tmp_105 = WinOddsCalc$Game$play$lambda_3;
       var tmp$ret$252 = new sam$kotlin_Comparator$0_12(tmp_105);
-      var _iterator__ex2g4s_12 = sortedWith(hits, tmp$ret$252).j();
-      $l$loop_10: while (_iterator__ex2g4s_12.k()) {
-        var _destruct__k2r9zo_1 = _iterator__ex2g4s_12.l();
+      var _iterator__ex2g4s_12 = sortedWith(hits, tmp$ret$252).m();
+      $l$loop_10: while (_iterator__ex2g4s_12.n()) {
+        var _destruct__k2r9zo_1 = _iterator__ex2g4s_12.o();
         var p_0 = _destruct__k2r9zo_1.ce();
         var toxic = _destruct__k2r9zo_1.de();
         if (p_0 <= 0)
@@ -26030,7 +26039,7 @@ protoOf(Game).a2e = function (turns) {
           }
            while (!(element_90 === last_10));
         var open = destination_31;
-        if (open.n())
+        if (open.q())
           break $l$loop_10;
         var tmp$ret$260;
         $l$block_52: {
@@ -26038,21 +26047,21 @@ protoOf(Game).a2e = function (turns) {
           // Inline function 'kotlin.collections.filter' call
           // Inline function 'kotlin.collections.filterTo' call
           var destination_32 = ArrayList_init_$Create$();
-          var tmp0_iterator_75 = open.j();
-          while (tmp0_iterator_75.k()) {
-            var element_91 = tmp0_iterator_75.l();
+          var tmp0_iterator_75 = open.m();
+          while (tmp0_iterator_75.n()) {
+            var element_91 = tmp0_iterator_75.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             if (this.g29_1[element_91] <= p_0) {
               destination_32.h(element_91);
             }
           }
-          var iterator_3 = destination_32.j();
-          if (!iterator_3.k()) {
+          var iterator_3 = destination_32.m();
+          if (!iterator_3.n()) {
             tmp$ret$260 = null;
             break $l$block_52;
           }
-          var maxElem_2 = iterator_3.l();
-          if (!iterator_3.k()) {
+          var maxElem_2 = iterator_3.o();
+          if (!iterator_3.n()) {
             tmp$ret$260 = maxElem_2;
             break $l$block_52;
           }
@@ -26060,7 +26069,7 @@ protoOf(Game).a2e = function (turns) {
           var it_8 = maxElem_2;
           var maxValue_3 = this.g29_1[it_8];
           do {
-            var e_4 = iterator_3.l();
+            var e_4 = iterator_3.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var v_3 = this.g29_1[e_4];
             if (compareTo(maxValue_3, v_3) < 0) {
@@ -26068,7 +26077,7 @@ protoOf(Game).a2e = function (turns) {
               maxValue_3 = v_3;
             }
           }
-           while (iterator_3.k());
+           while (iterator_3.n());
           tmp$ret$260 = maxElem_2;
         }
         var tmp37_elvis_lhs = tmp$ret$260;
@@ -26077,11 +26086,11 @@ protoOf(Game).a2e = function (turns) {
           var tmp$ret$263;
           $l$block_53: {
             // Inline function 'kotlin.collections.minBy' call
-            var iterator_4 = open.j();
-            if (!iterator_4.k())
+            var iterator_4 = open.m();
+            if (!iterator_4.n())
               throw NoSuchElementException_init_$Create$();
-            var minElem = iterator_4.l();
-            if (!iterator_4.k()) {
+            var minElem = iterator_4.o();
+            if (!iterator_4.n()) {
               tmp$ret$263 = minElem;
               break $l$block_53;
             }
@@ -26089,7 +26098,7 @@ protoOf(Game).a2e = function (turns) {
             var it_9 = minElem;
             var minValue = this.g29_1[it_9];
             do {
-              var e_5 = iterator_4.l();
+              var e_5 = iterator_4.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var v_4 = this.g29_1[e_5];
               if (compareTo(minValue, v_4) > 0) {
@@ -26097,7 +26106,7 @@ protoOf(Game).a2e = function (turns) {
                 minValue = v_4;
               }
             }
-             while (iterator_4.k());
+             while (iterator_4.n());
             tmp$ret$263 = minElem;
           }
           tmp_106 = tmp$ret$263;
@@ -26118,17 +26127,17 @@ protoOf(Game).a2e = function (turns) {
         }
       }
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_76 = animated.j();
-      while (tmp0_iterator_76.k()) {
-        var element_92 = tmp0_iterator_76.l();
+      var tmp0_iterator_76 = animated.m();
+      while (tmp0_iterator_76.n()) {
+        var element_92 = tmp0_iterator_76.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         element_92.v27_1 = false;
         element_92.u27_1 = 0;
       }
       // Inline function 'kotlin.collections.forEach' call
-      var tmp0_iterator_77 = crewed.j();
-      while (tmp0_iterator_77.k()) {
-        var element_93 = tmp0_iterator_77.l();
+      var tmp0_iterator_77 = crewed.m();
+      while (tmp0_iterator_77.n()) {
+        var element_93 = tmp0_iterator_77.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         element_93.v27_1 = false;
       }
@@ -26136,19 +26145,19 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var destination_33 = ArrayList_init_$Create$();
-      var tmp0_iterator_78 = fighters.j();
-      while (tmp0_iterator_78.k()) {
-        var element_94 = tmp0_iterator_78.l();
+      var tmp0_iterator_78 = fighters.m();
+      while (tmp0_iterator_78.n()) {
+        var element_94 = tmp0_iterator_78.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
         if (element_94.f28_1 && this.f29_1.u(element_94)) {
           destination_33.h(element_94);
         }
       }
-      var tmp0_iterator_79 = destination_33.j();
-      while (tmp0_iterator_79.k()) {
-        var element_95 = tmp0_iterator_79.l();
+      var tmp0_iterator_79 = destination_33.m();
+      while (tmp0_iterator_79.n()) {
+        var element_95 = tmp0_iterator_79.o();
         // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-        this.a2j(element_95);
+        this.c2j(element_95);
       }
       var tmp$ret$270;
       $l$block_54: {
@@ -26170,16 +26179,16 @@ protoOf(Game).a2e = function (turns) {
       if (tmp$ret$270)
         return t;
       var tmp_107;
-      if (this.c29_1.n2f_1) {
+      if (this.c29_1.p2f_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_107 = !fighters.n();
+        tmp_107 = !fighters.q();
       } else {
         tmp_107 = false;
       }
       if (tmp_107) {
-        var _iterator__ex2g4s_13 = live.j();
-        while (_iterator__ex2g4s_13.k()) {
-          var s_0 = _iterator__ex2g4s_13.l();
+        var _iterator__ex2g4s_13 = live.m();
+        while (_iterator__ex2g4s_13.n()) {
+          var s_0 = _iterator__ex2g4s_13.o();
           var tmp38_safe_receiver = s_0.s27_1;
           if (tmp38_safe_receiver == null)
             null;
@@ -26190,9 +26199,9 @@ protoOf(Game).a2e = function (turns) {
               // Inline function 'kotlin.collections.filter' call
               // Inline function 'kotlin.collections.filterTo' call
               var destination_34 = ArrayList_init_$Create$();
-              var tmp0_iterator_80 = fighters.j();
-              while (tmp0_iterator_80.k()) {
-                var element_97 = tmp0_iterator_80.l();
+              var tmp0_iterator_80 = fighters.m();
+              while (tmp0_iterator_80.n()) {
+                var element_97 = tmp0_iterator_80.o();
                 // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
                 var tmp0_safe_receiver_33 = tmp38_safe_receiver.i22_1.u1u_1;
                 var tmp1_safe_receiver_5 = tmp0_safe_receiver_33 == null ? null : split_0(tmp0_safe_receiver_33, charArrayOf([_Char___init__impl__6a9atx(124)]));
@@ -26205,7 +26214,7 @@ protoOf(Game).a2e = function (turns) {
                     // Inline function 'kotlin.collections.any' call
                     var tmp_109;
                     if (isInterface(tmp1_safe_receiver_5, Collection)) {
-                      tmp_109 = tmp1_safe_receiver_5.n();
+                      tmp_109 = tmp1_safe_receiver_5.q();
                     } else {
                       tmp_109 = false;
                     }
@@ -26213,11 +26222,11 @@ protoOf(Game).a2e = function (turns) {
                       tmp$ret$272 = false;
                       break $l$block_56;
                     }
-                    var tmp0_iterator_81 = tmp1_safe_receiver_5.j();
-                    while (tmp0_iterator_81.k()) {
-                      var element_98 = tmp0_iterator_81.l();
+                    var tmp0_iterator_81 = tmp1_safe_receiver_5.m();
+                    while (tmp0_iterator_81.n()) {
+                      var element_98 = tmp0_iterator_81.o();
                       // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>.<anonymous>' call
-                      if (element_97.m2e(element_98)) {
+                      if (element_97.o2e(element_98)) {
                         tmp$ret$272 = true;
                         break $l$block_56;
                       }
@@ -26233,26 +26242,26 @@ protoOf(Game).a2e = function (turns) {
               }
               var hitters = destination_34;
               // Inline function 'kotlin.collections.isNotEmpty' call
-              if (!hitters.n()) {
-                this.e2j(tmp38_safe_receiver.i22_1, s_0, fighters);
+              if (!hitters.q()) {
+                this.g2j(tmp38_safe_receiver.i22_1, s_0, fighters);
                 if (tmp38_safe_receiver.i22_1.t1u_1 > 0) {
                   // Inline function 'kotlin.collections.forEach' call
                   // Inline function 'kotlin.collections.filter' call
                   // Inline function 'kotlin.collections.filterTo' call
                   var destination_35 = ArrayList_init_$Create$();
-                  var tmp0_iterator_82 = hitters.j();
-                  while (tmp0_iterator_82.k()) {
-                    var element_99 = tmp0_iterator_82.l();
+                  var tmp0_iterator_82 = hitters.m();
+                  while (tmp0_iterator_82.n()) {
+                    var element_99 = tmp0_iterator_82.o();
                     // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
                     if (this.f29_1.u(element_99)) {
                       destination_35.h(element_99);
                     }
                   }
-                  var tmp0_iterator_83 = destination_35.j();
-                  while (tmp0_iterator_83.k()) {
-                    var element_100 = tmp0_iterator_83.l();
+                  var tmp0_iterator_83 = destination_35.m();
+                  while (tmp0_iterator_83.n()) {
+                    var element_100 = tmp0_iterator_83.o();
                     // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-                    this.n2g(element_100, tmp38_safe_receiver.i22_1.t1u_1);
+                    this.p2g(element_100, tmp38_safe_receiver.i22_1.t1u_1);
                   }
                 }
               }
@@ -26264,7 +26273,7 @@ protoOf(Game).a2e = function (turns) {
                 // Inline function 'kotlin.collections.count' call
                 var tmp_111;
                 if (isInterface(fighters, Collection)) {
-                  tmp_111 = fighters.n();
+                  tmp_111 = fighters.q();
                 } else {
                   tmp_111 = false;
                 }
@@ -26273,9 +26282,9 @@ protoOf(Game).a2e = function (turns) {
                   break $l$block_57;
                 }
                 var count_1 = 0;
-                var tmp0_iterator_84 = fighters.j();
-                while (tmp0_iterator_84.k()) {
-                  var element_101 = tmp0_iterator_84.l();
+                var tmp0_iterator_84 = fighters.m();
+                while (tmp0_iterator_84.n()) {
+                  var element_101 = tmp0_iterator_84.o();
                   // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
                   if (element_101.a28_1 > 0) {
                     count_1 = count_1 + 1 | 0;
@@ -26292,11 +26301,11 @@ protoOf(Game).a2e = function (turns) {
       // Inline function 'kotlin.comparisons.minOf' call
       var a_1 = draws;
       var tmp$ret$284 = Math.min(a_1, 10);
-      this.l2g(tmp$ret$284);
-      if (this.c29_1.n2f_1) {
-        var _iterator__ex2g4s_14 = attackers.j();
-        while (_iterator__ex2g4s_14.k()) {
-          var b_4 = _iterator__ex2g4s_14.l();
+      this.n2g(tmp$ret$284);
+      if (this.c29_1.p2f_1) {
+        var _iterator__ex2g4s_14 = attackers.m();
+        while (_iterator__ex2g4s_14.n()) {
+          var b_4 = _iterator__ex2g4s_14.o();
           var tmp39_safe_receiver = b_4.s27_1;
           if (tmp39_safe_receiver == null)
             null;
@@ -26304,13 +26313,13 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             if (tmp39_safe_receiver.b20_1.p26()) {
-              this.e2j(tmp39_safe_receiver.b20_1, b_4, attackers);
+              this.g2j(tmp39_safe_receiver.b20_1, b_4, attackers);
             }
           }
         }
-        var _iterator__ex2g4s_15 = live.j();
-        while (_iterator__ex2g4s_15.k()) {
-          var b_5 = _iterator__ex2g4s_15.l();
+        var _iterator__ex2g4s_15 = live.m();
+        while (_iterator__ex2g4s_15.n()) {
+          var b_5 = _iterator__ex2g4s_15.o();
           var tmp40_safe_receiver = b_5.s27_1;
           if (tmp40_safe_receiver == null)
             null;
@@ -26324,14 +26333,14 @@ protoOf(Game).a2e = function (turns) {
                 tmp_113 = true;
               } else {
                 // Inline function 'kotlin.collections.isNotEmpty' call
-                tmp_113 = !fighters.n();
+                tmp_113 = !fighters.q();
               }
               tmp_112 = tmp_113;
             } else {
               tmp_112 = false;
             }
             if (tmp_112) {
-              this.o2g(tmp40_safe_receiver.k22_1, b_5);
+              this.q2g(tmp40_safe_receiver.k22_1, b_5);
             }
           }
         }
@@ -26340,17 +26349,17 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_44 = this.f29_1;
         var destination_36 = ArrayList_init_$Create$();
-        var tmp0_iterator_85 = this_44.j();
-        while (tmp0_iterator_85.k()) {
-          var element_102 = tmp0_iterator_85.l();
+        var tmp0_iterator_85 = this_44.m();
+        while (tmp0_iterator_85.n()) {
+          var element_102 = tmp0_iterator_85.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           if (element_102.s28_1) {
             destination_36.h(element_102);
           }
         }
-        var tmp0_iterator_86 = destination_36.j();
-        while (tmp0_iterator_86.k()) {
-          var element_103 = tmp0_iterator_86.l();
+        var tmp0_iterator_86 = destination_36.m();
+        while (tmp0_iterator_86.n()) {
+          var element_103 = tmp0_iterator_86.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           this.f29_1.g2(element_103);
           var tmp0_safe_receiver_34 = element_103.i28_1;
@@ -26362,7 +26371,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
             this.e29_1.g2(tmp0_safe_receiver_34);
           }
-          this.d2i(element_103, element_103.y27_1.u('Artifact'));
+          this.f2i(element_103, element_103.y27_1.u('Artifact'));
         }
         if (this.o2a_1) {
           var tmp$ret$293;
@@ -26370,7 +26379,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.collections.count' call
             var tmp_114;
             if (isInterface(live, Collection)) {
-              tmp_114 = live.n();
+              tmp_114 = live.q();
             } else {
               tmp_114 = false;
             }
@@ -26379,9 +26388,9 @@ protoOf(Game).a2e = function (turns) {
               break $l$block_58;
             }
             var count_2 = 0;
-            var tmp0_iterator_87 = live.j();
-            while (tmp0_iterator_87.k()) {
-              var element_104 = tmp0_iterator_87.l();
+            var tmp0_iterator_87 = live.m();
+            while (tmp0_iterator_87.n()) {
+              var element_104 = tmp0_iterator_87.o();
               // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
               var tmp0_safe_receiver_35 = element_104.s27_1;
               if ((tmp0_safe_receiver_35 == null ? null : tmp0_safe_receiver_35.a23_1) === true) {
@@ -26391,14 +26400,14 @@ protoOf(Game).a2e = function (turns) {
             }
             tmp$ret$293 = count_2;
           }
-          this.l2g(tmp$ret$293);
+          this.n2g(tmp$ret$293);
         }
         var tmp$ret$295;
         $l$block_60: {
           // Inline function 'kotlin.collections.any' call
           var tmp_115;
           if (isInterface(live, Collection)) {
-            tmp_115 = live.n();
+            tmp_115 = live.q();
           } else {
             tmp_115 = false;
           }
@@ -26406,9 +26415,9 @@ protoOf(Game).a2e = function (turns) {
             tmp$ret$295 = false;
             break $l$block_60;
           }
-          var tmp0_iterator_88 = live.j();
-          while (tmp0_iterator_88.k()) {
-            var element_105 = tmp0_iterator_88.l();
+          var tmp0_iterator_88 = live.m();
+          while (tmp0_iterator_88.n()) {
+            var element_105 = tmp0_iterator_88.o();
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
             var tmp0_safe_receiver_36 = element_105.s27_1;
             if ((tmp0_safe_receiver_36 == null ? null : tmp0_safe_receiver_36.m23_1) === true) {
@@ -26419,7 +26428,7 @@ protoOf(Game).a2e = function (turns) {
           tmp$ret$295 = false;
         }
         if (tmp$ret$295) {
-          this.l2g(1);
+          this.n2g(1);
         }
       }
       var tmp$ret$297;
@@ -26428,7 +26437,7 @@ protoOf(Game).a2e = function (turns) {
         var this_45 = this.f29_1;
         var tmp_116;
         if (isInterface(this_45, Collection)) {
-          tmp_116 = this_45.n();
+          tmp_116 = this_45.q();
         } else {
           tmp_116 = false;
         }
@@ -26436,9 +26445,9 @@ protoOf(Game).a2e = function (turns) {
           tmp$ret$297 = false;
           break $l$block_62;
         }
-        var tmp0_iterator_89 = this_45.j();
-        while (tmp0_iterator_89.k()) {
-          var element_106 = tmp0_iterator_89.l();
+        var tmp0_iterator_89 = this_45.m();
+        while (tmp0_iterator_89.n()) {
+          var element_106 = tmp0_iterator_89.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_37 = element_106.s27_1;
           if ((tmp0_safe_receiver_37 == null ? null : tmp0_safe_receiver_37.p25_1) === true) {
@@ -26449,7 +26458,7 @@ protoOf(Game).a2e = function (turns) {
         tmp$ret$297 = false;
       }
       if (tmp$ret$297) {
-        this.g2k(t);
+        this.i2k(t);
       }
       var tmp$ret$299;
       $l$block_64: {
@@ -26457,7 +26466,7 @@ protoOf(Game).a2e = function (turns) {
         var this_46 = this.f29_1;
         var tmp_117;
         if (isInterface(this_46, Collection)) {
-          tmp_117 = this_46.n();
+          tmp_117 = this_46.q();
         } else {
           tmp_117 = false;
         }
@@ -26465,9 +26474,9 @@ protoOf(Game).a2e = function (turns) {
           tmp$ret$299 = false;
           break $l$block_64;
         }
-        var tmp0_iterator_90 = this_46.j();
-        while (tmp0_iterator_90.k()) {
-          var element_107 = tmp0_iterator_90.l();
+        var tmp0_iterator_90 = this_46.m();
+        while (tmp0_iterator_90.n()) {
+          var element_107 = tmp0_iterator_90.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_38 = element_107.s27_1;
           if ((tmp0_safe_receiver_38 == null ? null : tmp0_safe_receiver_38.w25_1) === true) {
@@ -26484,20 +26493,20 @@ protoOf(Game).a2e = function (turns) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_47 = this.f29_1;
         var destination_37 = ArrayList_init_$Create$();
-        var tmp0_iterator_91 = this_47.j();
-        while (tmp0_iterator_91.k()) {
-          var element_108 = tmp0_iterator_91.l();
+        var tmp0_iterator_91 = this_47.m();
+        while (tmp0_iterator_91.n()) {
+          var element_108 = tmp0_iterator_91.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          if (element_108.m2e('land')) {
+          if (element_108.o2e('land')) {
             destination_37.h(element_108);
           }
         }
         // Inline function 'kotlin.collections.mapNotNullTo' call
         var destination_38 = ArrayList_init_$Create$();
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_92 = destination_37.j();
-        while (tmp0_iterator_92.k()) {
-          var element_109 = tmp0_iterator_92.l();
+        var tmp0_iterator_92 = destination_37.m();
+        while (tmp0_iterator_92.n()) {
+          var element_109 = tmp0_iterator_92.o();
           // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
           var tmp0_safe_receiver_39 = element_109.i28_1;
@@ -26509,7 +26518,7 @@ protoOf(Game).a2e = function (turns) {
             // Inline function 'kotlin.contracts.contract' call
             var tmp_119;
             // Inline function 'com.mtgtrader.data.Game.play.<anonymous>.<anonymous>' call
-            if (tmp0_safe_receiver_39.j2e_1 <= t && t <= tmp0_safe_receiver_39.l2e_1) {
+            if (tmp0_safe_receiver_39.l2e_1 <= t && t <= tmp0_safe_receiver_39.n2e_1) {
               tmp_119 = tmp0_safe_receiver_39;
             } else {
               tmp_119 = null;
@@ -26527,22 +26536,22 @@ protoOf(Game).a2e = function (turns) {
         }
         // Inline function 'kotlin.collections.mapTo' call
         var destination_39 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_38, 10));
-        var tmp0_iterator_93 = destination_38.j();
-        while (tmp0_iterator_93.k()) {
-          var item_0 = tmp0_iterator_93.l();
+        var tmp0_iterator_93 = destination_38.m();
+        while (tmp0_iterator_93.n()) {
+          var item_0 = tmp0_iterator_93.o();
           // Inline function 'com.mtgtrader.data.Game.play.<anonymous>' call
-          var tmp$ret$310 = to(item_0.h2e_1, item_0.i2e_1);
+          var tmp$ret$310 = to(item_0.j2e_1, item_0.k2e_1);
           destination_39.h(tmp$ret$310);
         }
         var lands = destination_39;
-        if (this.c29_1.o2f_1)
-          lands = this.t2k(lands);
-        if (this.c29_1.u2f_1) {
-          this.w2k(lands, false);
+        if (this.c29_1.q2f_1)
+          lands = this.v2k(lands);
+        if (this.c29_1.w2f_1) {
+          this.y2k(lands, false);
         }
       }
-      if (this.c29_1.e2g_1) {
-        this.q2j();
+      if (this.c29_1.g2g_1) {
+        this.s2j();
       }
       var tmp$ret$314;
       $l$block_65: {
@@ -26564,7 +26573,7 @@ protoOf(Game).a2e = function (turns) {
       if (tmp$ret$314)
         return t;
       if (t < turns) {
-        this.r2g();
+        this.t2g();
       }
       var tmp$ret$316;
       $l$block_66: {
@@ -26589,7 +26598,7 @@ protoOf(Game).a2e = function (turns) {
      while (!(t === turns));
   return 0;
 };
-protoOf(Game).r2k = function (start) {
+protoOf(Game).t2k = function (start) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -26597,7 +26606,7 @@ protoOf(Game).r2k = function (start) {
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -26605,9 +26614,9 @@ protoOf(Game).r2k = function (start) {
       tmp$ret$0 = true;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p2d()) === true) {
@@ -26625,7 +26634,7 @@ protoOf(Game).r2k = function (start) {
     var this_1 = this.f29_1;
     var tmp_0;
     if (isInterface(this_1, Collection)) {
-      tmp_0 = this_1.n();
+      tmp_0 = this_1.q();
     } else {
       tmp_0 = false;
     }
@@ -26633,9 +26642,9 @@ protoOf(Game).r2k = function (start) {
       tmp$ret$2 = false;
       break $l$block_2;
     }
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
       var tmp0_safe_receiver_0 = element_0.s27_1;
       if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.o20_1) === true) {
@@ -26650,25 +26659,25 @@ protoOf(Game).r2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_2 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_1 = this_2.j();
-  while (tmp0_iterator_1.k()) {
-    var element_1 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = this_2.m();
+  while (tmp0_iterator_1.n()) {
+    var element_1 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
     if (element_1.l28_1 && !(element_1.j28_1 === this.m29_1)) {
       destination.h(element_1);
     }
   }
-  var _iterator__ex2g4s = destination.j();
-  while (_iterator__ex2g4s.k()) {
-    var e = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = destination.m();
+  while (_iterator__ex2g4s.n()) {
+    var e = _iterator__ex2g4s.o();
     this.f29_1.g2(e);
-    this.d2i(e, true);
+    this.f2i(e, true);
     var tmp_1 = pool;
     // Inline function 'kotlin.collections.ifEmpty' call
     var this_3 = this.a29_1;
     // Inline function 'kotlin.contracts.contract' call
     var tmp_2;
-    if (this_3.n()) {
+    if (this_3.q()) {
       // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
       tmp_2 = setOf_0(new Char(_Char___init__impl__6a9atx(67)));
     } else {
@@ -26677,9 +26686,9 @@ protoOf(Game).r2k = function (start) {
     var tmp$ret$8 = tmp_2;
     pool = plus(tmp_1, to(tmp$ret$8, two ? 2 : 1));
   }
-  var _iterator__ex2g4s_0 = toList(this.f29_1).j();
-  $l$loop: while (_iterator__ex2g4s_0.k()) {
-    var b = _iterator__ex2g4s_0.l();
+  var _iterator__ex2g4s_0 = toList(this.f29_1).m();
+  $l$loop: while (_iterator__ex2g4s_0.n()) {
+    var b = _iterator__ex2g4s_0.o();
     var tmp0_safe_receiver_1 = b.s27_1;
     var tmp1_elvis_lhs = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.a24_1;
     var tmp_3;
@@ -26705,9 +26714,9 @@ protoOf(Game).r2k = function (start) {
           // Inline function 'kotlin.collections.filterTo' call
           var this_4 = this.f29_1;
           var destination_0 = ArrayList_init_$Create$();
-          var tmp0_iterator_2 = this_4.j();
-          while (tmp0_iterator_2.k()) {
-            var element_2 = tmp0_iterator_2.l();
+          var tmp0_iterator_2 = this_4.m();
+          while (tmp0_iterator_2.n()) {
+            var element_2 = tmp0_iterator_2.o();
             // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>.<anonymous>' call
             if (element_2.k28_1 && !element_2.v27_1 && !(element_2.m28_1 == null) && !element_2.l28_1) {
               destination_0.h(element_2);
@@ -26718,7 +26727,7 @@ protoOf(Game).r2k = function (start) {
           var tmp$ret$12 = new sam$kotlin_Comparator$0_13(tmp_4);
           var tmp$ret$13 = sortedWith(destination_0, tmp$ret$12);
           var spare = take(tmp$ret$13, n);
-          if (spare.m() < n) {
+          if (spare.p() < n) {
             break $l$block_4;
           }
           var tmp0_elvis_lhs = ManaOddsCalc_getInstance().h1q(pool, cost);
@@ -26730,14 +26739,14 @@ protoOf(Game).r2k = function (start) {
           }
           pool = tmp_5;
           // Inline function 'kotlin.collections.forEach' call
-          var tmp0_iterator_3 = spare.j();
-          while (tmp0_iterator_3.k()) {
-            var element_3 = tmp0_iterator_3.l();
+          var tmp0_iterator_3 = spare.m();
+          while (tmp0_iterator_3.n()) {
+            var element_3 = tmp0_iterator_3.o();
             // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>.<anonymous>' call
             this.f29_1.g2(element_3);
-            this.d2i(element_3, true);
+            this.f2i(element_3, true);
           }
-          this.l2g(1);
+          this.n2g(1);
         }
       }
        while (inductionVariable < 10);
@@ -26746,17 +26755,17 @@ protoOf(Game).r2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_5 = this.f29_1;
   var destination_1 = ArrayList_init_$Create$();
-  var tmp0_iterator_4 = this_5.j();
-  while (tmp0_iterator_4.k()) {
-    var element_4 = tmp0_iterator_4.l();
+  var tmp0_iterator_4 = this_5.m();
+  while (tmp0_iterator_4.n()) {
+    var element_4 = tmp0_iterator_4.o();
     // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
-    if (element_4.m28_1 === 'food' && !this.z2h(element_4)) {
+    if (element_4.m28_1 === 'food' && !this.b2i(element_4)) {
       destination_1.h(element_4);
     }
   }
-  var _iterator__ex2g4s_1 = destination_1.j();
-  $l$loop_0: while (_iterator__ex2g4s_1.k()) {
-    var e_0 = _iterator__ex2g4s_1.l();
+  var _iterator__ex2g4s_1 = destination_1.m();
+  $l$loop_0: while (_iterator__ex2g4s_1.n()) {
+    var e_0 = _iterator__ex2g4s_1.o();
     var tmp2_elvis_lhs = ManaOddsCalc_getInstance().h1q(pool, new Cost(2, emptyList()));
     var tmp_6;
     if (tmp2_elvis_lhs == null) {
@@ -26766,7 +26775,7 @@ protoOf(Game).r2k = function (start) {
     }
     pool = tmp_6;
     this.f29_1.g2(e_0);
-    this.d2i(e_0, true);
+    this.f2i(e_0, true);
     var before = toHashSet(this.f29_1);
     var tmp$ret$18;
     $l$block_5: {
@@ -26774,7 +26783,7 @@ protoOf(Game).r2k = function (start) {
       var this_6 = this.f29_1;
       var tmp_7;
       if (isInterface(this_6, Collection)) {
-        tmp_7 = this_6.n();
+        tmp_7 = this_6.q();
       } else {
         tmp_7 = false;
       }
@@ -26783,9 +26792,9 @@ protoOf(Game).r2k = function (start) {
         break $l$block_5;
       }
       var count = 0;
-      var tmp0_iterator_5 = this_6.j();
-      while (tmp0_iterator_5.k()) {
-        var element_5 = tmp0_iterator_5.l();
+      var tmp0_iterator_5 = this_6.m();
+      while (tmp0_iterator_5.n()) {
+        var element_5 = tmp0_iterator_5.o();
         // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
         var tmp0_safe_receiver_2 = element_5.s27_1;
         if ((tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.z23_1) === true) {
@@ -26795,23 +26804,23 @@ protoOf(Game).r2k = function (start) {
       }
       tmp$ret$18 = count;
     }
-    this.h2h(tmp$ret$18);
+    this.j2h(tmp$ret$18);
     // Inline function 'kotlin.collections.forEach' call
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_7 = this.f29_1;
     var destination_2 = ArrayList_init_$Create$();
-    var tmp0_iterator_6 = this_7.j();
-    while (tmp0_iterator_6.k()) {
-      var element_6 = tmp0_iterator_6.l();
+    var tmp0_iterator_6 = this_7.m();
+    while (tmp0_iterator_6.n()) {
+      var element_6 = tmp0_iterator_6.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
       if (element_6.l28_1 && !before.u(element_6)) {
         destination_2.h(element_6);
       }
     }
-    var tmp0_iterator_7 = destination_2.j();
-    while (tmp0_iterator_7.k()) {
-      var element_7 = tmp0_iterator_7.l();
+    var tmp0_iterator_7 = destination_2.m();
+    while (tmp0_iterator_7.n()) {
+      var element_7 = tmp0_iterator_7.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
       element_7.j28_1 = this.m29_1;
     }
@@ -26820,17 +26829,17 @@ protoOf(Game).r2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_8 = this.f29_1;
   var destination_3 = ArrayList_init_$Create$();
-  var tmp0_iterator_8 = this_8.j();
-  while (tmp0_iterator_8.k()) {
-    var element_8 = tmp0_iterator_8.l();
+  var tmp0_iterator_8 = this_8.m();
+  while (tmp0_iterator_8.n()) {
+    var element_8 = tmp0_iterator_8.o();
     // Inline function 'com.mtgtrader.data.Game.sacrificeForPayoffs.<anonymous>' call
     if (element_8.m28_1 === 'map') {
       destination_3.h(element_8);
     }
   }
-  var _iterator__ex2g4s_2 = destination_3.j();
-  $l$loop_1: while (_iterator__ex2g4s_2.k()) {
-    var e_1 = _iterator__ex2g4s_2.l();
+  var _iterator__ex2g4s_2 = destination_3.m();
+  $l$loop_1: while (_iterator__ex2g4s_2.n()) {
+    var e_1 = _iterator__ex2g4s_2.o();
     var tmp3_elvis_lhs = ManaOddsCalc_getInstance().h1q(pool, new Cost(1, emptyList()));
     var tmp_8;
     if (tmp3_elvis_lhs == null) {
@@ -26840,11 +26849,11 @@ protoOf(Game).r2k = function (start) {
     }
     pool = tmp_8;
     this.f29_1.g2(e_1);
-    this.d2i(e_1, true);
+    this.f2i(e_1, true);
   }
   return pool;
 };
-protoOf(Game).s2k = function (start) {
+protoOf(Game).u2k = function (start) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -26852,7 +26861,7 @@ protoOf(Game).s2k = function (start) {
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -26860,9 +26869,9 @@ protoOf(Game).s2k = function (start) {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.useMutagens.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.d1y_1;
@@ -26878,18 +26887,18 @@ protoOf(Game).s2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.useMutagens.<anonymous>' call
     if (element_0.m28_1 === 'mutagen') {
       destination.h(element_0);
     }
   }
-  var _iterator__ex2g4s = toList(destination).j();
-  $l$loop_0: while (_iterator__ex2g4s.k()) {
-    var e = _iterator__ex2g4s.l();
-    var tmp0_elvis_lhs = this.u2g();
+  var _iterator__ex2g4s = toList(destination).m();
+  $l$loop_0: while (_iterator__ex2g4s.n()) {
+    var e = _iterator__ex2g4s.o();
+    var tmp0_elvis_lhs = this.w2g();
     var tmp_0;
     if (tmp0_elvis_lhs == null) {
       break $l$loop_0;
@@ -26908,12 +26917,12 @@ protoOf(Game).s2k = function (start) {
       pool = tmp_1;
     }
     this.f29_1.g2(e);
-    this.d2i(e, true);
-    this.n2g(target, 1);
+    this.f2i(e, true);
+    this.p2g(target, 1);
   }
   return pool;
 };
-protoOf(Game).t2k = function (start) {
+protoOf(Game).v2k = function (start) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -26921,7 +26930,7 @@ protoOf(Game).t2k = function (start) {
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -26929,9 +26938,9 @@ protoOf(Game).t2k = function (start) {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.crackClues.<anonymous>' call
       var tmp_0;
       var tmp0_safe_receiver = element.s27_1;
@@ -26955,17 +26964,17 @@ protoOf(Game).t2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.crackClues.<anonymous>' call
     if (element_0.m28_1 === 'clue') {
       destination.h(element_0);
     }
   }
-  var _iterator__ex2g4s = toList(destination).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var e = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(destination).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var e = _iterator__ex2g4s.o();
     var tmp0_elvis_lhs = ManaOddsCalc_getInstance().h1q(pool, new Cost(2, emptyList()));
     var tmp_1;
     if (tmp0_elvis_lhs == null) {
@@ -26975,10 +26984,10 @@ protoOf(Game).t2k = function (start) {
     }
     pool = tmp_1;
     this.f29_1.g2(e);
-    this.d2i(e, true);
-    var _iterator__ex2g4s_0 = toList(this.f29_1).j();
-    while (_iterator__ex2g4s_0.k()) {
-      var b = _iterator__ex2g4s_0.l();
+    this.f2i(e, true);
+    var _iterator__ex2g4s_0 = toList(this.f29_1).m();
+    while (_iterator__ex2g4s_0.n()) {
+      var b = _iterator__ex2g4s_0.o();
       var tmp1_safe_receiver = b.s27_1;
       if (tmp1_safe_receiver == null)
         null;
@@ -26986,24 +26995,24 @@ protoOf(Game).t2k = function (start) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         if (tmp1_safe_receiver.j22_1.p26()) {
-          this.o2g(tmp1_safe_receiver.j22_1, b);
+          this.q2g(tmp1_safe_receiver.j22_1, b);
         }
       }
     }
-    this.l2g(1);
+    this.n2g(1);
   }
   return pool;
 };
-protoOf(Game).m2k = function (start) {
+protoOf(Game).o2k = function (start) {
   var pool = start;
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.Game.fromGraveyard.<anonymous>' call
     var tmp0_safe_receiver = element.s27_1;
@@ -27023,17 +27032,17 @@ protoOf(Game).m2k = function (start) {
   var tmp = WinOddsCalc$Game$fromGraveyard$lambda(this);
   var tmp$ret$4 = new sam$kotlin_Comparator$0_14(tmp);
   var tmp$ret$5 = sortedWith(this_1, tmp$ret$4);
-  var _iterator__ex2g4s = toList(tmp$ret$5).j();
-  $l$loop_1: while (_iterator__ex2g4s.k()) {
-    var c = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(tmp$ret$5).m();
+  $l$loop_1: while (_iterator__ex2g4s.n()) {
+    var c = _iterator__ex2g4s.o();
     var tmp_0;
-    if (c.l1w_1 && this.f2a_1 < allowed.m()) {
+    if (c.l1w_1 && this.f2a_1 < allowed.p()) {
       var tmp$ret$6;
       $l$block_0: {
         // Inline function 'kotlin.collections.any' call
         var tmp_1;
         if (isInterface(allowed, Collection)) {
-          tmp_1 = allowed.n();
+          tmp_1 = allowed.q();
         } else {
           tmp_1 = false;
         }
@@ -27041,9 +27050,9 @@ protoOf(Game).m2k = function (start) {
           tmp$ret$6 = false;
           break $l$block_0;
         }
-        var tmp0_iterator_0 = allowed.j();
-        while (tmp0_iterator_0.k()) {
-          var element_0 = tmp0_iterator_0.l();
+        var tmp0_iterator_0 = allowed.m();
+        while (tmp0_iterator_0.n()) {
+          var element_0 = tmp0_iterator_0.o();
           // Inline function 'com.mtgtrader.data.Game.fromGraveyard.<anonymous>' call
           if (element_0 === 'creature' || this.b2b(c, element_0)) {
             tmp$ret$6 = true;
@@ -27071,7 +27080,7 @@ protoOf(Game).m2k = function (start) {
         var this_2 = this.f29_1;
         var tmp_3;
         if (isInterface(this_2, Collection)) {
-          tmp_3 = this_2.n();
+          tmp_3 = this_2.q();
         } else {
           tmp_3 = false;
         }
@@ -27079,11 +27088,11 @@ protoOf(Game).m2k = function (start) {
           tmp$ret$8 = false;
           break $l$block_2;
         }
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.fromGraveyard.<anonymous>.<anonymous>' call
-          if (element_1.m2e(tmp0_safe_receiver_1)) {
+          if (element_1.o2e(tmp0_safe_receiver_1)) {
             tmp$ret$8 = true;
             break $l$block_2;
           }
@@ -27096,8 +27105,8 @@ protoOf(Game).m2k = function (start) {
     var flash = c.l21_1;
     var tmp_4;
     if (viaPermission || self_0) {
-      tmp_4 = this.y2h(c, true);
-    } else if (!(flash == null) && this.j2g(c) && useful(WinOddsCalc_getInstance(), c, this.s29_1, this.t29_1, this.y29_1)) {
+      tmp_4 = this.a2i(c, true);
+    } else if (!(flash == null) && this.l2g(c) && useful(WinOddsCalc_getInstance(), c, this.s29_1, this.t29_1, this.y29_1)) {
       tmp_4 = flash;
     } else {
       continue $l$loop_1;
@@ -27105,7 +27114,7 @@ protoOf(Game).m2k = function (start) {
     var cost = tmp_4;
     if (!useful(WinOddsCalc_getInstance(), c, this.s29_1, this.t29_1, this.y29_1) && !self_0)
       continue $l$loop_1;
-    var tmp1_elvis_lhs = this.c2i(pool, cost, c.i1w_1);
+    var tmp1_elvis_lhs = this.e2i(pool, cost, c.i1w_1);
     var tmp_5;
     if (tmp1_elvis_lhs == null) {
       continue $l$loop_1;
@@ -27118,27 +27127,27 @@ protoOf(Game).m2k = function (start) {
       this.f2a_1 = this.f2a_1 + 1 | 0;
     }
     if (!(flash == null) && !viaPermission && !self_0 && c.l21_1 === c.h1w_1) {
-      this.q2i(1);
+      this.s2i(1);
     }
-    this.r2h(c, VOID, VOID, true);
+    this.t2h(c, VOID, VOID, true);
     c.k1w_1;
   }
   return pool;
 };
-protoOf(Game).n2k = function (pool) {
+protoOf(Game).p2k = function (pool) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
     var tmp;
     var tmp0_safe_receiver = element.s27_1;
     if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.p1z_1) === true) {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp = !element.s27_1.t1z_1.n();
+      tmp = !element.s27_1.t1z_1.q();
     } else {
       tmp = false;
     }
@@ -27146,20 +27155,20 @@ protoOf(Game).n2k = function (pool) {
       destination.h(element);
     }
   }
-  var _iterator__ex2g4s = toList(destination).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var pw = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(destination).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var pw = _iterator__ex2g4s.o();
     // Inline function 'kotlin.collections.filter' call
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = ensureNotNull(pw.s27_1).t1z_1;
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
       var cost = element_0.ce();
       var a = element_0.de();
-      if ((pw.t28_1 + cost | 0) >= 0 && this.x2k(a, pw)) {
+      if ((pw.t28_1 + cost | 0) >= 0 && this.z2k(a, pw)) {
         destination_0.h(element_0);
       }
     }
@@ -27170,37 +27179,37 @@ protoOf(Game).n2k = function (pool) {
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_1 = options.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = options.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
         if (element_1.ae_1 >= 0) {
           destination_1.h(element_1);
         }
       }
-      var iterator = destination_1.j();
-      if (!iterator.k()) {
+      var iterator = destination_1.m();
+      if (!iterator.n()) {
         tmp$ret$10 = null;
         break $l$block_0;
       }
-      var maxElem = iterator.l();
-      if (!iterator.k()) {
+      var maxElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$10 = maxElem;
         break $l$block_0;
       }
       // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
       var it = maxElem;
-      var maxValue = this.y2k(it.be_1);
+      var maxValue = this.a2l(it.be_1);
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
-        var v = this.y2k(e.be_1);
+        var v = this.a2l(e.be_1);
         if (compareTo(maxValue, v) < 0) {
           maxElem = e;
           maxValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$10 = maxElem;
     }
     var plus = tmp$ret$10;
@@ -27210,42 +27219,42 @@ protoOf(Game).n2k = function (pool) {
       // Inline function 'kotlin.collections.filter' call
       // Inline function 'kotlin.collections.filterTo' call
       var destination_2 = ArrayList_init_$Create$();
-      var tmp0_iterator_2 = options.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = options.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
         if (element_2.ae_1 < 0 && ((pw.t28_1 + element_2.ae_1 | 0) > 0 || !(element_2.be_1.e1u_1 == null) || element_2.ae_1 <= -6)) {
           destination_2.h(element_2);
         }
       }
-      var iterator_0 = destination_2.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_2.m();
+      if (!iterator_0.n()) {
         tmp$ret$16 = null;
         break $l$block_2;
       }
-      var maxElem_0 = iterator_0.l();
-      if (!iterator_0.k()) {
+      var maxElem_0 = iterator_0.o();
+      if (!iterator_0.n()) {
         tmp$ret$16 = maxElem_0;
         break $l$block_2;
       }
       // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
       var it_0 = maxElem_0;
-      var maxValue_0 = this.y2k(it_0.be_1);
+      var maxValue_0 = this.a2l(it_0.be_1);
       do {
-        var e_0 = iterator_0.l();
+        var e_0 = iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.loyalty.<anonymous>' call
-        var v_0 = this.y2k(e_0.be_1);
+        var v_0 = this.a2l(e_0.be_1);
         if (compareTo(maxValue_0, v_0) < 0) {
           maxElem_0 = e_0;
           maxValue_0 = v_0;
         }
       }
-       while (iterator_0.k());
+       while (iterator_0.n());
       tmp$ret$16 = maxElem_0;
     }
     var minus = tmp$ret$16;
     var tmp_0;
-    if (!(minus == null) && (plus == null || this.y2k(minus.be_1) >= (this.y2k(plus.be_1) + 3 | 0))) {
+    if (!(minus == null) && (plus == null || this.a2l(minus.be_1) >= (this.a2l(plus.be_1) + 3 | 0))) {
       tmp_0 = minus;
     } else {
       var tmp_1;
@@ -27258,7 +27267,7 @@ protoOf(Game).n2k = function (pool) {
     }
     var pick = tmp_0;
     pw.t28_1 = pw.t28_1 + pick.ae_1 | 0;
-    this.o2g(pick.be_1, pw);
+    this.q2g(pick.be_1, pw);
     if (pw.t28_1 <= 0) {
       this.f29_1.g2(pw);
       // Inline function 'kotlin.collections.plusAssign' call
@@ -27269,7 +27278,7 @@ protoOf(Game).n2k = function (pool) {
   }
   return pool;
 };
-protoOf(Game).x2k = function (a, user) {
+protoOf(Game).z2k = function (a, user) {
   var tmp;
   if (a.d1u_1 > 0) {
     var tmp_0;
@@ -27279,7 +27288,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_0 = this.f29_1;
       var tmp_1;
       if (isInterface(this_0, Collection)) {
-        tmp_1 = this_0.n();
+        tmp_1 = this_0.q();
       } else {
         tmp_1 = false;
       }
@@ -27287,9 +27296,9 @@ protoOf(Game).x2k = function (a, user) {
         tmp$ret$0 = false;
         break $l$block_0;
       }
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
         if (element.v27_1 && element.k28_1) {
           tmp$ret$0 = true;
@@ -27309,7 +27318,7 @@ protoOf(Game).x2k = function (a, user) {
           var this_1 = this.f29_1;
           var tmp_3;
           if (isInterface(this_1, Collection)) {
-            tmp_3 = this_1.n();
+            tmp_3 = this_1.q();
           } else {
             tmp_3 = false;
           }
@@ -27317,9 +27326,9 @@ protoOf(Game).x2k = function (a, user) {
             tmp$ret$2 = false;
             break $l$block_2;
           }
-          var tmp0_iterator_0 = this_1.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_1.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
             if (element_0.v27_1 && !(element_0 === user) && !contains_1(this.z28_1, element_0.s27_1) && element_0.u27_1 <= 2) {
               tmp$ret$2 = true;
@@ -27344,7 +27353,7 @@ protoOf(Game).x2k = function (a, user) {
         var this_2 = this.z29_1;
         var tmp_5;
         if (isInterface(this_2, Collection)) {
-          tmp_5 = this_2.n();
+          tmp_5 = this_2.q();
         } else {
           tmp_5 = false;
         }
@@ -27352,9 +27361,9 @@ protoOf(Game).x2k = function (a, user) {
           tmp$ret$4 = false;
           break $l$block_4;
         }
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
           if (element_1.w2b()) {
             tmp$ret$4 = true;
@@ -27365,7 +27374,7 @@ protoOf(Game).x2k = function (a, user) {
       }
       tmp_4 = tmp$ret$4;
     } else {
-      tmp_4 = this.h2i(a) >= 4;
+      tmp_4 = this.j2i(a) >= 4;
     }
     tmp = tmp_4;
   } else if (a.b1u_1) {
@@ -27376,7 +27385,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_3 = this.f29_1;
       var tmp_7;
       if (isInterface(this_3, Collection)) {
-        tmp_7 = this_3.n();
+        tmp_7 = this_3.q();
       } else {
         tmp_7 = false;
       }
@@ -27385,9 +27394,9 @@ protoOf(Game).x2k = function (a, user) {
         break $l$block_5;
       }
       var count = 0;
-      var tmp0_iterator_2 = this_3.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = this_3.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
         if (element_2.k28_1 && element_2.y27_1.u('Artifact')) {
           count = count + 1 | 0;
@@ -27403,7 +27412,7 @@ protoOf(Game).x2k = function (a, user) {
         var this_4 = this.z29_1;
         var tmp_8;
         if (isInterface(this_4, Collection)) {
-          tmp_8 = this_4.n();
+          tmp_8 = this_4.q();
         } else {
           tmp_8 = false;
         }
@@ -27411,9 +27420,9 @@ protoOf(Game).x2k = function (a, user) {
           tmp$ret$8 = false;
           break $l$block_7;
         }
-        var tmp0_iterator_3 = this_4.j();
-        while (tmp0_iterator_3.k()) {
-          var element_3 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = this_4.m();
+        while (tmp0_iterator_3.n()) {
+          var element_3 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
           if (element_3.l1w_1 || element_3.v1x_1.u('Artifact')) {
             tmp$ret$8 = true;
@@ -27434,7 +27443,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_5 = this.f29_1;
       var tmp_9;
       if (isInterface(this_5, Collection)) {
-        tmp_9 = this_5.n();
+        tmp_9 = this_5.q();
       } else {
         tmp_9 = false;
       }
@@ -27442,9 +27451,9 @@ protoOf(Game).x2k = function (a, user) {
         tmp$ret$10 = false;
         break $l$block_9;
       }
-      var tmp0_iterator_4 = this_5.j();
-      while (tmp0_iterator_4.k()) {
-        var element_4 = tmp0_iterator_4.l();
+      var tmp0_iterator_4 = this_5.m();
+      while (tmp0_iterator_4.n()) {
+        var element_4 = tmp0_iterator_4.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
         if (element_4.k28_1 && element_4.y27_1.u('Artifact')) {
           tmp$ret$10 = true;
@@ -27460,29 +27469,29 @@ protoOf(Game).x2k = function (a, user) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_6 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator_5 = this_6.j();
-    while (tmp0_iterator_5.k()) {
-      var element_5 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = this_6.m();
+    while (tmp0_iterator_5.n()) {
+      var element_5 = tmp0_iterator_5.o();
       // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
-      if (element_5.v27_1 && element_5.m2e(ensureNotNull(a.e1u_1)) && (element_5.t27_1 < this.m29_1 || this.z2a(element_5))) {
+      if (element_5.v27_1 && element_5.o2e(ensureNotNull(a.e1u_1)) && (element_5.t27_1 < this.m29_1 || this.z2a(element_5))) {
         destination.h(element_5);
       }
     }
     var sum = 0;
-    var tmp0_iterator_6 = destination.j();
-    while (tmp0_iterator_6.k()) {
-      var element_6 = tmp0_iterator_6.l();
+    var tmp0_iterator_6 = destination.m();
+    while (tmp0_iterator_6.n()) {
+      var element_6 = tmp0_iterator_6.o();
       var tmp_10 = sum;
       // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
-      sum = tmp_10 + this.y2i(element_6).ae_1 | 0;
+      sum = tmp_10 + this.a2j(element_6).ae_1 | 0;
     }
     tmp = sum >= 6;
   } else if (a.b1w_1) {
     // Inline function 'kotlin.collections.isNotEmpty' call
-    tmp = !user.e28_1.n();
+    tmp = !user.e28_1.q();
   } else if (a.c1u_1 > 0 && !a.b1u_1) {
     var tmp_11;
-    if (this.z29_1.m() >= a.c1u_1) {
+    if (this.z29_1.p() >= a.c1u_1) {
       var tmp_12;
       var tmp$ret$18;
       $l$block_11: {
@@ -27490,7 +27499,7 @@ protoOf(Game).x2k = function (a, user) {
         var this_7 = this.f29_1;
         var tmp_13;
         if (isInterface(this_7, Collection)) {
-          tmp_13 = this_7.n();
+          tmp_13 = this_7.q();
         } else {
           tmp_13 = false;
         }
@@ -27498,9 +27507,9 @@ protoOf(Game).x2k = function (a, user) {
           tmp$ret$18 = false;
           break $l$block_11;
         }
-        var tmp0_iterator_7 = this_7.j();
-        while (tmp0_iterator_7.k()) {
-          var element_7 = tmp0_iterator_7.l();
+        var tmp0_iterator_7 = this_7.m();
+        while (tmp0_iterator_7.n()) {
+          var element_7 = tmp0_iterator_7.o();
           // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
           var tmp_14;
           var tmp0_safe_receiver = element_7.s27_1;
@@ -27534,7 +27543,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_8 = this.f29_1;
       var tmp_15;
       if (isInterface(this_8, Collection)) {
-        tmp_15 = this_8.n();
+        tmp_15 = this_8.q();
       } else {
         tmp_15 = false;
       }
@@ -27542,9 +27551,9 @@ protoOf(Game).x2k = function (a, user) {
         tmp$ret$20 = false;
         break $l$block_13;
       }
-      var tmp0_iterator_8 = this_8.j();
-      while (tmp0_iterator_8.k()) {
-        var element_8 = tmp0_iterator_8.l();
+      var tmp0_iterator_8 = this_8.m();
+      while (tmp0_iterator_8.n()) {
+        var element_8 = tmp0_iterator_8.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
         if (element_8.v27_1 && !contains_1(this.z28_1, element_8.s27_1) && element_8.u27_1 < a.f1u_1) {
           tmp$ret$20 = true;
@@ -27561,7 +27570,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_9 = this.f29_1;
       var tmp_16;
       if (isInterface(this_9, Collection)) {
-        tmp_16 = this_9.n();
+        tmp_16 = this_9.q();
       } else {
         tmp_16 = false;
       }
@@ -27569,9 +27578,9 @@ protoOf(Game).x2k = function (a, user) {
         tmp$ret$22 = false;
         break $l$block_15;
       }
-      var tmp0_iterator_9 = this_9.j();
-      while (tmp0_iterator_9.k()) {
-        var element_9 = tmp0_iterator_9.l();
+      var tmp0_iterator_9 = this_9.m();
+      while (tmp0_iterator_9.n()) {
+        var element_9 = tmp0_iterator_9.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
         var tmp_17;
         if (element_9.v27_1 && !element_9.k28_1) {
@@ -27583,7 +27592,7 @@ protoOf(Game).x2k = function (a, user) {
             // Inline function 'kotlin.let' call
             // Inline function 'kotlin.contracts.contract' call
             // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>.<anonymous>' call
-            tmp_18 = this.g2i(tmp0_safe_receiver_0) > 0;
+            tmp_18 = this.i2i(tmp0_safe_receiver_0) > 0;
           }
           tmp_17 = tmp_18 === true;
         } else {
@@ -27604,7 +27613,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_10 = this.f29_1;
       var tmp_19;
       if (isInterface(this_10, Collection)) {
-        tmp_19 = this_10.n();
+        tmp_19 = this_10.q();
       } else {
         tmp_19 = false;
       }
@@ -27612,9 +27621,9 @@ protoOf(Game).x2k = function (a, user) {
         tmp$ret$26 = false;
         break $l$block_17;
       }
-      var tmp0_iterator_10 = this_10.j();
-      while (tmp0_iterator_10.k()) {
-        var element_10 = tmp0_iterator_10.l();
+      var tmp0_iterator_10 = this_10.m();
+      while (tmp0_iterator_10.n()) {
+        var element_10 = tmp0_iterator_10.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
         if (element_10.v27_1) {
           tmp$ret$26 = true;
@@ -27631,7 +27640,7 @@ protoOf(Game).x2k = function (a, user) {
       var this_11 = this.f29_1;
       var tmp_20;
       if (isInterface(this_11, Collection)) {
-        tmp_20 = this_11.n();
+        tmp_20 = this_11.q();
       } else {
         tmp_20 = false;
       }
@@ -27639,11 +27648,11 @@ protoOf(Game).x2k = function (a, user) {
         tmp$ret$28 = false;
         break $l$block_19;
       }
-      var tmp0_iterator_11 = this_11.j();
-      while (tmp0_iterator_11.k()) {
-        var element_11 = tmp0_iterator_11.l();
+      var tmp0_iterator_11 = this_11.m();
+      while (tmp0_iterator_11.n()) {
+        var element_11 = tmp0_iterator_11.o();
         // Inline function 'com.mtgtrader.data.Game.abilityReady.<anonymous>' call
-        if (element_11.m2e('artifact') && !element_11.m2e('land')) {
+        if (element_11.o2e('artifact') && !element_11.o2e('land')) {
           tmp$ret$28 = true;
           break $l$block_19;
         }
@@ -27656,7 +27665,7 @@ protoOf(Game).x2k = function (a, user) {
   }
   return tmp;
 };
-protoOf(Game).y2k = function (a) {
+protoOf(Game).a2l = function (a) {
   var tmp = (imul(2, a.d1t_1) + imul(3, a.e1t_1) | 0) + a.f1t_1 | 0;
   var tmp_0 = a.g1t_1;
   // Inline function 'kotlin.comparisons.maxOf' call
@@ -27664,7 +27673,7 @@ protoOf(Game).y2k = function (a) {
   var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a2c_1;
   var b = tmp1_elvis_lhs == null ? 1 : tmp1_elvis_lhs;
   var tmp$ret$0 = Math.max(1, b);
-  var tmp_1 = ((((((tmp + imul(tmp_0, tmp$ret$0) | 0) + a.j1t_1 | 0) + a.i1t_1 | 0) + a.m1t_1 | 0) + (a.k1t_1 / 2 | 0) | 0) + (a.r1t_1 > 0 ? this.h2i(a) : 0) | 0) + imul(a.w1t_1, 2) | 0;
+  var tmp_1 = ((((((tmp + imul(tmp_0, tmp$ret$0) | 0) + a.j1t_1 | 0) + a.i1t_1 | 0) + a.m1t_1 | 0) + (a.k1t_1 / 2 | 0) | 0) + (a.r1t_1 > 0 ? this.j2i(a) : 0) | 0) + imul(a.w1t_1, 2) | 0;
   var tmp_2;
   if (a.b1u_1) {
     var tmp$ret$4;
@@ -27674,25 +27683,25 @@ protoOf(Game).y2k = function (a) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.z29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
         if (element.l1w_1 || element.v1x_1.u('Artifact')) {
           destination.h(element);
         }
       }
-      var iterator = destination.j();
-      if (!iterator.k()) {
+      var iterator = destination.m();
+      if (!iterator.n()) {
         tmp$ret$4 = null;
         break $l$block;
       }
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-      var it = iterator.l();
+      var it = iterator.o();
       var maxValue = this.v2b(it);
-      while (iterator.k()) {
+      while (iterator.n()) {
         // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-        var it_0 = iterator.l();
+        var it_0 = iterator.o();
         var v = this.v2b(it_0);
         if (compareTo(maxValue, v) < 0) {
           maxValue = v;
@@ -27713,21 +27722,21 @@ protoOf(Game).y2k = function (a) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = this.f29_1;
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-      if (element_0.v27_1 && element_0.m2e(ensureNotNull(a.e1u_1))) {
+      if (element_0.v27_1 && element_0.o2e(ensureNotNull(a.e1u_1))) {
         destination_0.h(element_0);
       }
     }
     var sum = 0;
-    var tmp0_iterator_1 = destination_0.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = destination_0.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       var tmp_5 = sum;
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-      sum = tmp_5 + this.y2i(element_1).ae_1 | 0;
+      sum = tmp_5 + this.a2j(element_1).ae_1 | 0;
     }
     tmp_4 = sum;
   } else {
@@ -27742,7 +27751,7 @@ protoOf(Game).y2k = function (a) {
     var this_2 = this.f29_1;
     var tmp_9;
     if (isInterface(this_2, Collection)) {
-      tmp_9 = this_2.n();
+      tmp_9 = this_2.q();
     } else {
       tmp_9 = false;
     }
@@ -27750,9 +27759,9 @@ protoOf(Game).y2k = function (a) {
       tmp$ret$12 = false;
       break $l$block_1;
     }
-    var tmp0_iterator_2 = this_2.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_2.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
       var tmp0_safe_receiver_0 = element_2.s27_1;
       if (!((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.g21_1) == null)) {
@@ -27777,26 +27786,26 @@ protoOf(Game).y2k = function (a) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_3 = this.f29_1;
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_3 = this_3.j();
-      while (tmp0_iterator_3.k()) {
-        var element_3 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = this_3.m();
+      while (tmp0_iterator_3.n()) {
+        var element_3 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-        if (!(element_3.s27_1 == null) && element_3.m2e('artifact')) {
+        if (!(element_3.s27_1 == null) && element_3.o2e('artifact')) {
           destination_1.h(element_3);
         }
       }
-      var iterator_0 = destination_1.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_1.m();
+      if (!iterator_0.n()) {
         tmp$ret$17 = null;
         break $l$block_2;
       }
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-      var it_1 = iterator_0.l();
-      var maxValue_0 = this.u2j(ensureNotNull(it_1.s27_1));
-      while (iterator_0.k()) {
+      var it_1 = iterator_0.o();
+      var maxValue_0 = this.w2j(ensureNotNull(it_1.s27_1));
+      while (iterator_0.n()) {
         // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
-        var it_2 = iterator_0.l();
-        var v_0 = this.u2j(ensureNotNull(it_2.s27_1));
+        var it_2 = iterator_0.o();
+        var v_0 = this.w2j(ensureNotNull(it_2.s27_1));
         if (compareTo(maxValue_0, v_0) < 0) {
           maxValue_0 = v_0;
         }
@@ -27808,7 +27817,7 @@ protoOf(Game).y2k = function (a) {
   } else {
     tmp_11 = 0;
   }
-  var tmp_12 = (((tmp_10 + tmp_11 | 0) + imul(a.h1v_1, 2) | 0) + imul(a.i1v_1, this.j2i()) | 0) + ((a.j1v_1 + a.k1v_1 | 0) > 0 ? this.c29_1.c2g_1 ? 15 : 3 : 0) | 0;
+  var tmp_12 = (((tmp_10 + tmp_11 | 0) + imul(a.h1v_1, 2) | 0) + imul(a.i1v_1, this.l2i()) | 0) + ((a.j1v_1 + a.k1v_1 | 0) > 0 ? this.c29_1.e2g_1 ? 15 : 3 : 0) | 0;
   var tmp_13 = imul(a.l1v_1, 2);
   var tmp$ret$20;
   $l$block_3: {
@@ -27816,7 +27825,7 @@ protoOf(Game).y2k = function (a) {
     var this_4 = this.f29_1;
     var tmp_14;
     if (isInterface(this_4, Collection)) {
-      tmp_14 = this_4.n();
+      tmp_14 = this_4.q();
     } else {
       tmp_14 = false;
     }
@@ -27825,9 +27834,9 @@ protoOf(Game).y2k = function (a) {
       break $l$block_3;
     }
     var count = 0;
-    var tmp0_iterator_4 = this_4.j();
-    while (tmp0_iterator_4.k()) {
-      var element_4 = tmp0_iterator_4.l();
+    var tmp0_iterator_4 = this_4.m();
+    while (tmp0_iterator_4.n()) {
+      var element_4 = tmp0_iterator_4.o();
       // Inline function 'com.mtgtrader.data.Game.value.<anonymous>' call
       if (element_4.v27_1) {
         count = count + 1 | 0;
@@ -27838,7 +27847,7 @@ protoOf(Game).y2k = function (a) {
   }
   return (tmp_12 + imul(tmp_13, tmp$ret$20) | 0) + (a.x1v_1 ? 6 : 0) | 0;
 };
-protoOf(Game).w2k = function (start, taps) {
+protoOf(Game).y2k = function (start, taps) {
   var pool = start;
   var tmp$ret$0;
   $l$block_0: {
@@ -27846,7 +27855,7 @@ protoOf(Game).w2k = function (start, taps) {
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -27854,9 +27863,9 @@ protoOf(Game).w2k = function (start, taps) {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a1z_1) === true) {
@@ -27872,9 +27881,9 @@ protoOf(Game).w2k = function (start, taps) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_1 = this.f29_1;
     var destination = ArrayList_init_$Create$();
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
       var tmp_0;
       var tmp_1;
@@ -27885,7 +27894,7 @@ protoOf(Game).w2k = function (start, taps) {
         tmp_2 = null;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_2 = !tmp1_safe_receiver.n();
+        tmp_2 = !tmp1_safe_receiver.q();
       }
       if (tmp_2 === true) {
         tmp_1 = !(element_0.j28_1 === this.m29_1);
@@ -27894,7 +27903,7 @@ protoOf(Game).w2k = function (start, taps) {
       }
       if (tmp_1) {
         var tmp2_safe_receiver = element_0.i28_1;
-        var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.j2e_1;
+        var tmp3_elvis_lhs = tmp2_safe_receiver == null ? null : tmp2_safe_receiver.l2e_1;
         tmp_0 = (tmp3_elvis_lhs == null ? 2147483647 : tmp3_elvis_lhs) <= this.m29_1;
       } else {
         tmp_0 = false;
@@ -27903,33 +27912,33 @@ protoOf(Game).w2k = function (start, taps) {
         destination.h(element_0);
       }
     }
-    var _iterator__ex2g4s = destination.j();
-    $l$loop: while (_iterator__ex2g4s.k()) {
-      var b = _iterator__ex2g4s.l();
+    var _iterator__ex2g4s = destination.m();
+    $l$loop: while (_iterator__ex2g4s.n()) {
+      var b = _iterator__ex2g4s.o();
       var tmp$ret$6;
       $l$block_1: {
         // Inline function 'kotlin.collections.maxBy' call
-        var iterator = ensureNotNull(b.s27_1).v25_1.j();
-        if (!iterator.k())
+        var iterator = ensureNotNull(b.s27_1).v25_1.m();
+        if (!iterator.n())
           throw NoSuchElementException_init_$Create$();
-        var maxElem = iterator.l();
-        if (!iterator.k()) {
+        var maxElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$6 = maxElem;
           break $l$block_1;
         }
         // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
         var it = maxElem;
-        var maxValue = this.y2k(it);
+        var maxValue = this.a2l(it);
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
-          var v = this.y2k(e);
+          var v = this.a2l(e);
           if (compareTo(maxValue, v) < 0) {
             maxElem = e;
             maxValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$6 = maxElem;
       }
       var a = tmp$ret$6;
@@ -27942,13 +27951,13 @@ protoOf(Game).w2k = function (start, taps) {
       }
       pool = tmp_3;
       b.j28_1 = this.m29_1;
-      this.o2g(a, b);
+      this.q2g(a, b);
     }
   }
   if (taps) {
-    var _iterator__ex2g4s_0 = toList(this.f29_1).j();
-    $l$loop_5: while (_iterator__ex2g4s_0.k()) {
-      var b_0 = _iterator__ex2g4s_0.l();
+    var _iterator__ex2g4s_0 = toList(this.f29_1).m();
+    $l$loop_5: while (_iterator__ex2g4s_0.n()) {
+      var b_0 = _iterator__ex2g4s_0.o();
       var tmp1_elvis_lhs = b_0.s27_1;
       var tmp_4;
       if (tmp1_elvis_lhs == null) {
@@ -27957,11 +27966,11 @@ protoOf(Game).w2k = function (start, taps) {
         tmp_4 = tmp1_elvis_lhs;
       }
       var c = tmp_4;
-      if (!this.f29_1.u(b_0) || c.c20_1.n() || b_0.j28_1 === this.m29_1)
+      if (!this.f29_1.u(b_0) || c.c20_1.q() || b_0.j28_1 === this.m29_1)
         continue $l$loop_5;
       if (b_0.v27_1 && b_0.t27_1 >= this.m29_1 && !this.z2a(b_0) && !hasteAbilities)
         continue $l$loop_5;
-      var attack = b_0.v27_1 ? this.y2i(b_0).ae_1 : 0;
+      var attack = b_0.v27_1 ? this.a2j(b_0).ae_1 : 0;
       var tmp$ret$14;
       $l$block_3: {
         // Inline function 'kotlin.collections.maxByOrNull' call
@@ -27969,21 +27978,21 @@ protoOf(Game).w2k = function (start, taps) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_2 = c.c20_1;
         var destination_0 = ArrayList_init_$Create$();
-        var tmp0_iterator_1 = this_2.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_2.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
           var tmp_5;
-          if (this.x2k(element_1, b_0) && (element_1.o1u_1 === 0 || !(this.r2i() == null)) && this.b2i(pool, element_1.c1t_1) && this.z2k(element_1, b_0, false)) {
+          if (this.z2k(element_1, b_0) && (element_1.o1u_1 === 0 || !(this.t2i() == null)) && this.d2i(pool, element_1.c1t_1) && this.b2l(element_1, b_0, false)) {
             var tmp_6;
             if (!element_1.x1v_1) {
               tmp_6 = true;
             } else {
               // Inline function 'kotlin.collections.sumOf' call
               var sum = 0;
-              var tmp0_iterator_2 = pool.j();
-              while (tmp0_iterator_2.k()) {
-                var element_2 = tmp0_iterator_2.l();
+              var tmp0_iterator_2 = pool.m();
+              while (tmp0_iterator_2.n()) {
+                var element_2 = tmp0_iterator_2.o();
                 var tmp_7 = sum;
                 // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>.<anonymous>' call
                 sum = tmp_7 + element_2.be_1 | 0;
@@ -27998,29 +28007,29 @@ protoOf(Game).w2k = function (start, taps) {
             destination_0.h(element_1);
           }
         }
-        var iterator_0 = destination_0.j();
-        if (!iterator_0.k()) {
+        var iterator_0 = destination_0.m();
+        if (!iterator_0.n()) {
           tmp$ret$14 = null;
           break $l$block_3;
         }
-        var maxElem_0 = iterator_0.l();
-        if (!iterator_0.k()) {
+        var maxElem_0 = iterator_0.o();
+        if (!iterator_0.n()) {
           tmp$ret$14 = maxElem_0;
           break $l$block_3;
         }
         // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
         var it_0 = maxElem_0;
-        var maxValue_0 = this.y2k(it_0);
+        var maxValue_0 = this.a2l(it_0);
         do {
-          var e_0 = iterator_0.l();
+          var e_0 = iterator_0.o();
           // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
-          var v_0 = this.y2k(e_0);
+          var v_0 = this.a2l(e_0);
           if (compareTo(maxValue_0, v_0) < 0) {
             maxElem_0 = e_0;
             maxValue_0 = v_0;
           }
         }
-         while (iterator_0.k());
+         while (iterator_0.n());
         tmp$ret$14 = maxElem_0;
       }
       var tmp2_elvis_lhs = tmp$ret$14;
@@ -28031,9 +28040,9 @@ protoOf(Game).w2k = function (start, taps) {
         tmp_8 = tmp2_elvis_lhs;
       }
       var pick = tmp_8;
-      if (b_0.v27_1 && attack > 2 && this.y2k(pick) < attack)
+      if (b_0.v27_1 && attack > 2 && this.a2l(pick) < attack)
         continue $l$loop_5;
-      var tmp3_elvis_lhs_0 = this.e2i(pool, pick.c1t_1);
+      var tmp3_elvis_lhs_0 = this.g2i(pool, pick.c1t_1);
       var tmp_9;
       if (tmp3_elvis_lhs_0 == null) {
         continue $l$loop_5;
@@ -28042,17 +28051,17 @@ protoOf(Game).w2k = function (start, taps) {
       }
       pool = tmp_9;
       if (pick.o1u_1 > 0) {
-        this.q2i(pick.o1u_1);
+        this.s2i(pick.o1u_1);
       }
-      this.z2k(pick, b_0, true);
+      this.b2l(pick, b_0, true);
       b_0.j28_1 = this.m29_1;
-      pool = this.a2l(pick, pool);
-      this.o2g(pick, b_0);
+      pool = this.c2l(pick, pool);
+      this.q2g(pick, b_0);
     }
   }
-  var _iterator__ex2g4s_1 = toList(this.f29_1).j();
-  $l$loop_6: while (_iterator__ex2g4s_1.k()) {
-    var b_1 = _iterator__ex2g4s_1.l();
+  var _iterator__ex2g4s_1 = toList(this.f29_1).m();
+  $l$loop_6: while (_iterator__ex2g4s_1.n()) {
+    var b_1 = _iterator__ex2g4s_1.o();
     var tmp4_elvis_lhs = b_1.s27_1;
     var tmp_10;
     if (tmp4_elvis_lhs == null) {
@@ -28061,9 +28070,9 @@ protoOf(Game).w2k = function (start, taps) {
       tmp_10 = tmp4_elvis_lhs;
     }
     var c_0 = tmp_10;
-    var _iterator__ex2g4s_2 = c_0.d20_1.j();
-    while (_iterator__ex2g4s_2.k()) {
-      var a_0 = _iterator__ex2g4s_2.l();
+    var _iterator__ex2g4s_2 = c_0.d20_1.m();
+    while (_iterator__ex2g4s_2.n()) {
+      var a_0 = _iterator__ex2g4s_2.o();
       // Inline function 'kotlin.repeat' call
       // Inline function 'kotlin.contracts.contract' call
       var inductionVariable = 0;
@@ -28073,16 +28082,16 @@ protoOf(Game).w2k = function (start, taps) {
           inductionVariable = inductionVariable + 1 | 0;
           $l$block_7: {
             // Inline function 'com.mtgtrader.data.Game.abilities.<anonymous>' call
-            if (!this.f29_1.u(b_1) || !this.x2k(a_0, b_1) || (a_0.o1u_1 > 0 && this.r2i() == null)) {
+            if (!this.f29_1.u(b_1) || !this.z2k(a_0, b_1) || (a_0.o1u_1 > 0 && this.t2i() == null)) {
               break $l$block_7;
             }
-            if (a_0.c1u_1 > 0 && this.z29_1.m() < a_0.c1u_1) {
+            if (a_0.c1u_1 > 0 && this.z29_1.p() < a_0.c1u_1) {
               break $l$block_7;
             }
-            if (!this.b2i(pool, a_0.c1t_1) || !this.z2k(a_0, b_1, false)) {
+            if (!this.d2i(pool, a_0.c1t_1) || !this.b2l(a_0, b_1, false)) {
               break $l$block_7;
             }
-            var tmp0_elvis_lhs_0 = this.e2i(pool, a_0.c1t_1);
+            var tmp0_elvis_lhs_0 = this.g2i(pool, a_0.c1t_1);
             var tmp_11;
             if (tmp0_elvis_lhs_0 == null) {
               break $l$block_7;
@@ -28091,9 +28100,9 @@ protoOf(Game).w2k = function (start, taps) {
             }
             pool = tmp_11;
             if (a_0.o1u_1 > 0) {
-              this.q2i(a_0.o1u_1);
+              this.s2i(a_0.o1u_1);
             }
-            this.z2k(a_0, b_1, true);
+            this.b2l(a_0, b_1, true);
             if (a_0.c1u_1 > 0) {
               // Inline function 'kotlin.collections.sortedBy' call
               var this_3 = this.z29_1;
@@ -28101,7 +28110,7 @@ protoOf(Game).w2k = function (start, taps) {
               var tmp_12 = WinOddsCalc$Game$abilities$lambda(this);
               var tmp$ret$18 = new sam$kotlin_Comparator$0_15(tmp_12);
               var tmp$ret$19 = sortedWith(this_3, tmp$ret$18);
-              this.l2i(take(tmp$ret$19, a_0.c1u_1));
+              this.n2i(take(tmp$ret$19, a_0.c1u_1));
             }
             // Inline function 'kotlin.also' call
             var this_4 = new Ability();
@@ -28115,7 +28124,7 @@ protoOf(Game).w2k = function (start, taps) {
             this_4.j1t_1 = a_0.j1t_1;
             this_4.i1t_1 = a_0.i1t_1;
             var copy = this_4;
-            this.o2g(a_0.c1u_1 > 0 ? copy : a_0, b_1);
+            this.q2g(a_0.c1u_1 > 0 ? copy : a_0, b_1);
           }
         }
          while (inductionVariable < 3);
@@ -28123,12 +28132,12 @@ protoOf(Game).w2k = function (start, taps) {
   }
   return pool;
 };
-protoOf(Game).o2k = function (start, taps, $super) {
+protoOf(Game).q2k = function (start, taps, $super) {
   taps = taps === VOID ? true : taps;
-  return $super === VOID ? this.w2k(start, taps) : $super.w2k.call(this, start, taps);
+  return $super === VOID ? this.y2k(start, taps) : $super.y2k.call(this, start, taps);
 };
-protoOf(Game).z2k = function (a, user, pay) {
-  var gain = this.y2k(a);
+protoOf(Game).b2l = function (a, user, pay) {
+  var gain = this.a2l(a);
   var tmp0_safe_receiver = a.t1v_1;
   if (tmp0_safe_receiver == null)
     null;
@@ -28142,37 +28151,37 @@ protoOf(Game).z2k = function (a, user, pay) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>.<anonymous>' call
-        if (!(element === user) && !contains_1(this.z28_1, element.s27_1) && this.b2l(element, tmp0_safe_receiver)) {
+        if (!(element === user) && !contains_1(this.z28_1, element.s27_1) && this.d2l(element, tmp0_safe_receiver)) {
           destination.h(element);
         }
       }
-      var iterator = destination.j();
-      if (!iterator.k()) {
+      var iterator = destination.m();
+      if (!iterator.n()) {
         tmp$ret$3 = null;
         break $l$block_0;
       }
-      var minElem = iterator.l();
-      if (!iterator.k()) {
+      var minElem = iterator.o();
+      if (!iterator.n()) {
         tmp$ret$3 = minElem;
         break $l$block_0;
       }
       // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>.<anonymous>' call
       var it = minElem;
-      var minValue = this.c2l(it);
+      var minValue = this.e2l(it);
       do {
-        var e = iterator.l();
+        var e = iterator.o();
         // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>.<anonymous>' call
-        var v = this.c2l(e);
+        var v = this.e2l(e);
         if (compareTo(minValue, v) > 0) {
           minElem = e;
           minValue = v;
         }
       }
-       while (iterator.k());
+       while (iterator.n());
       tmp$ret$3 = minElem;
     }
     var tmp0_elvis_lhs = tmp$ret$3;
@@ -28183,14 +28192,14 @@ protoOf(Game).z2k = function (a, user, pay) {
       tmp = tmp0_elvis_lhs;
     }
     var victim = tmp;
-    if (this.c2l(victim) >= gain)
+    if (this.e2l(victim) >= gain)
       return false;
     if (pay) {
-      this.a2j(victim);
+      this.c2j(victim);
     }
   }
   if (a.v1v_1 > 0) {
-    var tmp1_elvis_lhs = this.k2j(a.v1v_1, false);
+    var tmp1_elvis_lhs = this.m2j(a.v1v_1, false);
     var tmp_0;
     if (tmp1_elvis_lhs == null) {
       return false;
@@ -28201,11 +28210,11 @@ protoOf(Game).z2k = function (a, user, pay) {
     // Inline function 'kotlin.comparisons.minOf' call
     var a_0 = a.v1v_1;
     var b = coerceAtLeast_0(target.u27_1 + target.a28_1 | 0, 0);
-    var loss = Math.min(a_0, b) - (this.o2j() ? imul(2, a.v1v_1) : 0) | 0;
+    var loss = Math.min(a_0, b) - (this.q2j() ? imul(2, a.v1v_1) : 0) | 0;
     if (loss >= gain)
       return false;
     if (pay) {
-      this.c2j(target, a.v1v_1);
+      this.e2j(target, a.v1v_1);
     }
   }
   if (a.w1v_1 > 0) {
@@ -28216,21 +28225,21 @@ protoOf(Game).z2k = function (a, user, pay) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_1 = this.f29_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_0 = this_1.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this_1.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>' call
         if (element_0.v27_1 && element_0.a28_1 > 0) {
           destination_0.h(element_0);
         }
       }
-      var iterator_0 = destination_0.j();
-      if (!iterator_0.k()) {
+      var iterator_0 = destination_0.m();
+      if (!iterator_0.n()) {
         tmp$ret$11 = null;
         break $l$block_2;
       }
-      var minElem_0 = iterator_0.l();
-      if (!iterator_0.k()) {
+      var minElem_0 = iterator_0.o();
+      if (!iterator_0.n()) {
         tmp$ret$11 = minElem_0;
         break $l$block_2;
       }
@@ -28238,7 +28247,7 @@ protoOf(Game).z2k = function (a, user, pay) {
       var it_0 = minElem_0;
       var minValue_0 = contains_1(this.z28_1, it_0.s27_1) ? 1 : 0;
       do {
-        var e_0 = iterator_0.l();
+        var e_0 = iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.costPaid.<anonymous>' call
         var v_0 = contains_1(this.z28_1, e_0.s27_1) ? 1 : 0;
         if (compareTo(minValue_0, v_0) > 0) {
@@ -28246,7 +28255,7 @@ protoOf(Game).z2k = function (a, user, pay) {
           minValue_0 = v_0;
         }
       }
-       while (iterator_0.k());
+       while (iterator_0.n());
       tmp$ret$11 = minElem_0;
     }
     var tmp2_elvis_lhs = tmp$ret$11;
@@ -28263,56 +28272,56 @@ protoOf(Game).z2k = function (a, user, pay) {
   }
   return true;
 };
-protoOf(Game).b2l = function (e, kind) {
+protoOf(Game).d2l = function (e, kind) {
   switch (kind) {
     case 'creature':
       return e.v27_1;
     case 'artifact':
-      return e.m2e('artifact') && !e.m2e('land') && !e.v27_1 && e.h28_1 == null;
+      return e.o2e('artifact') && !e.o2e('land') && !e.v27_1 && e.h28_1 == null;
     default:
       return e.m28_1 === kind;
   }
 };
-protoOf(Game).c2l = function (e) {
+protoOf(Game).e2l = function (e) {
   var tmp;
   if (e.v27_1) {
-    tmp = this.p2j(e) - (this.a2b(e, true) > 0 ? 2 : 0) | 0;
+    tmp = this.r2j(e) - (this.a2b(e, true) > 0 ? 2 : 0) | 0;
   } else if (e.k28_1) {
-    tmp = this.z2h(e) || e.m28_1 === 'clue' ? 1 : 0;
+    tmp = this.b2i(e) || e.m28_1 === 'clue' ? 1 : 0;
   } else {
     var tmp0_safe_receiver = e.i28_1;
-    var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.i2e_1;
+    var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.k2e_1;
     tmp = 3 + imul(2, tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
   }
   return tmp;
 };
-protoOf(Game).a2l = function (a, pool) {
+protoOf(Game).c2l = function (a, pool) {
   if (!a.x1v_1)
     return pool;
   // Inline function 'kotlin.comparisons.minOf' call
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator = pool.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = pool.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     var tmp = sum;
     // Inline function 'com.mtgtrader.data.Game.drawX.<anonymous>' call
     sum = tmp + element.be_1 | 0;
   }
   var b = sum;
   var x = Math.min(5, b);
-  this.l2g(x);
+  this.n2g(x);
   var tmp0_elvis_lhs = ManaOddsCalc_getInstance().h1q(pool, new Cost(x, emptyList()));
   return tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
 };
-protoOf(Game).p2k = function (start) {
+protoOf(Game).r2k = function (start) {
   var pool = start;
   var tmp$ret$1;
   $l$block: {
     // Inline function 'kotlin.collections.firstNotNullOfOrNull' call
-    var tmp0_iterator = this.f29_1.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this.f29_1.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sneakAttack.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       var result = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.c21_1;
@@ -28336,21 +28345,21 @@ protoOf(Game).p2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.x28_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_0.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_0.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.sneakAttack.<anonymous>' call
-    if (element_0.l1w_1 && (element_0.o1w_1 >= 3 || this.g2i(element_0) >= 3)) {
+    if (element_0.l1w_1 && (element_0.o1w_1 >= 3 || this.i2i(element_0) >= 3)) {
       destination.h(element_0);
     }
   }
   // Inline function 'kotlin.comparisons.compareByDescending' call
   var tmp_0 = WinOddsCalc$Game$sneakAttack$lambda(this);
   var tmp$ret$5 = new sam$kotlin_Comparator$0_16(tmp_0);
-  var _iterator__ex2g4s = sortedWith(destination, tmp$ret$5).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var c = _iterator__ex2g4s.l();
-    var tmp1_elvis_lhs = this.e2i(pool, cost);
+  var _iterator__ex2g4s = sortedWith(destination, tmp$ret$5).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var c = _iterator__ex2g4s.o();
+    var tmp1_elvis_lhs = this.g2i(pool, cost);
     var tmp_1;
     if (tmp1_elvis_lhs == null) {
       break $l$loop;
@@ -28359,19 +28368,19 @@ protoOf(Game).p2k = function (start) {
     }
     pool = tmp_1;
     this.x28_1.g2(c);
-    this.v2i(c, true, VOID, true).s28_1 = true;
+    this.x2i(c, true, VOID, true).s28_1 = true;
   }
   return pool;
 };
-protoOf(Game).v2k = function (start, attackers, extra) {
+protoOf(Game).x2k = function (start, attackers, extra) {
   var pool = start;
   // Inline function 'kotlin.collections.flatMap' call
   // Inline function 'kotlin.collections.flatMapTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>' call
     // Inline function 'kotlin.collections.map' call
     // Inline function 'kotlin.collections.orEmpty' call
@@ -28380,9 +28389,9 @@ protoOf(Game).v2k = function (start, attackers, extra) {
     var this_1 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
     // Inline function 'kotlin.collections.mapTo' call
     var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_1, 10));
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var item = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var item = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
       var tmp$ret$1 = to(element, item);
       destination_0.h(tmp$ret$1);
@@ -28391,7 +28400,7 @@ protoOf(Game).v2k = function (start, attackers, extra) {
     addAll(destination, list);
   }
   var pumps = destination;
-  if (pumps.n())
+  if (pumps.q())
     return pool;
   // Inline function 'kotlin.repeat' call
   // Inline function 'kotlin.contracts.contract' call
@@ -28408,9 +28417,9 @@ protoOf(Game).v2k = function (start, attackers, extra) {
         // Inline function 'kotlin.collections.map' call
         // Inline function 'kotlin.collections.mapTo' call
         var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(pumps, 10));
-        var tmp0_iterator_1 = pumps.j();
-        while (tmp0_iterator_1.k()) {
-          var item_0 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = pumps.m();
+        while (tmp0_iterator_1.n()) {
+          var item_0 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
           var b = item_0.ce();
           var p = item_0.de();
@@ -28423,7 +28432,7 @@ protoOf(Game).v2k = function (start, attackers, extra) {
               // Inline function 'kotlin.collections.count' call
               var tmp_0;
               if (isInterface(attackers, Collection)) {
-                tmp_0 = attackers.n();
+                tmp_0 = attackers.q();
               } else {
                 tmp_0 = false;
               }
@@ -28432,11 +28441,11 @@ protoOf(Game).v2k = function (start, attackers, extra) {
                 break $l$block;
               }
               var count = 0;
-              var tmp0_iterator_2 = attackers.j();
-              while (tmp0_iterator_2.k()) {
-                var element_0 = tmp0_iterator_2.l();
+              var tmp0_iterator_2 = attackers.m();
+              while (tmp0_iterator_2.n()) {
+                var element_0 = tmp0_iterator_2.o();
                 // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>.<anonymous>' call
-                if (element_0.m2e(p.e2d_1)) {
+                if (element_0.o2e(p.e2d_1)) {
                   count = count + 1 | 0;
                   checkCountOverflow(count);
                 }
@@ -28451,21 +28460,21 @@ protoOf(Game).v2k = function (start, attackers, extra) {
         }
         // Inline function 'kotlin.collections.filterTo' call
         var destination_2 = ArrayList_init_$Create$();
-        var tmp0_iterator_3 = destination_1.j();
-        while (tmp0_iterator_3.k()) {
-          var element_1 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = destination_1.m();
+        while (tmp0_iterator_3.n()) {
+          var element_1 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
-          if (element_1.ai_1 > 0 && this.b2i(pool, element_1.zh_1.d2d_1)) {
+          if (element_1.ai_1 > 0 && this.d2i(pool, element_1.zh_1.d2d_1)) {
             destination_2.h(element_1);
           }
         }
-        var iterator = destination_2.j();
-        if (!iterator.k()) {
+        var iterator = destination_2.m();
+        if (!iterator.n()) {
           tmp$ret$15 = null;
           break $l$block_1;
         }
-        var maxElem = iterator.l();
-        if (!iterator.k()) {
+        var maxElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$15 = maxElem;
           break $l$block_1;
         }
@@ -28476,7 +28485,7 @@ protoOf(Game).v2k = function (start, attackers, extra) {
         var b_0 = it.zh_1.d2d_1.j1i();
         var maxValue = tmp_1 / Math.max(1, b_0) | 0;
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
           var tmp_2 = imul(e.ai_1, 10);
           // Inline function 'kotlin.comparisons.maxOf' call
@@ -28487,7 +28496,7 @@ protoOf(Game).v2k = function (start, attackers, extra) {
             maxValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$15 = maxElem;
       }
       var tmp0_elvis_lhs_0 = tmp$ret$15;
@@ -28498,7 +28507,7 @@ protoOf(Game).v2k = function (start, attackers, extra) {
         tmp_3 = tmp0_elvis_lhs_0;
       }
       var best = tmp_3;
-      var tmp1_elvis_lhs = this.e2i(pool, best.zh_1.d2d_1);
+      var tmp1_elvis_lhs = this.g2i(pool, best.zh_1.d2d_1);
       var tmp_4;
       if (tmp1_elvis_lhs == null) {
         return pool;
@@ -28518,17 +28527,17 @@ protoOf(Game).v2k = function (start, attackers, extra) {
         // Inline function 'kotlin.collections.filter' call
         // Inline function 'kotlin.collections.filterTo' call
         var destination_3 = ArrayList_init_$Create$();
-        var tmp0_iterator_4 = attackers.j();
-        while (tmp0_iterator_4.k()) {
-          var element_2 = tmp0_iterator_4.l();
+        var tmp0_iterator_4 = attackers.m();
+        while (tmp0_iterator_4.n()) {
+          var element_2 = tmp0_iterator_4.o();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
-          if (element_2.m2e(p_0.e2d_1)) {
+          if (element_2.o2e(p_0.e2d_1)) {
             destination_3.h(element_2);
           }
         }
-        var tmp0_iterator_5 = destination_3.j();
-        while (tmp0_iterator_5.k()) {
-          var element_3 = tmp0_iterator_5.l();
+        var tmp0_iterator_5 = destination_3.m();
+        while (tmp0_iterator_5.n()) {
+          var element_3 = tmp0_iterator_5.o();
           // Inline function 'com.mtgtrader.data.Game.activatedPumps.<anonymous>.<anonymous>' call
           // Inline function 'kotlin.collections.set' call
           var tmp0_elvis_lhs_1 = extra.c2(element_3);
@@ -28540,14 +28549,14 @@ protoOf(Game).v2k = function (start, attackers, extra) {
      while (inductionVariable < 20);
   return pool;
 };
-protoOf(Game).u2k = function (t) {
+protoOf(Game).w2k = function (t) {
   var tmp$ret$0;
   $l$block_0: {
     // Inline function 'kotlin.collections.any' call
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -28555,9 +28564,9 @@ protoOf(Game).u2k = function (t) {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForValue.<anonymous>' call
       var tmp0_safe_receiver = element.s27_1;
       if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.a1z_1) === true) {
@@ -28571,9 +28580,9 @@ protoOf(Game).u2k = function (t) {
   var tmp$ret$3;
   $l$block_1: {
     // Inline function 'kotlin.collections.firstNotNullOfOrNull' call
-    var tmp0_iterator_0 = this.f29_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this.f29_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForValue.<anonymous>' call
       var tmp0_safe_receiver_0 = element_0.s27_1;
       var result = tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.w1x_1;
@@ -28591,7 +28600,7 @@ protoOf(Game).u2k = function (t) {
     var this_1 = this.f29_1;
     var tmp_0;
     if (isInterface(this_1, Collection)) {
-      tmp_0 = this_1.n();
+      tmp_0 = this_1.q();
     } else {
       tmp_0 = false;
     }
@@ -28600,9 +28609,9 @@ protoOf(Game).u2k = function (t) {
       break $l$block_2;
     }
     var count = 0;
-    var tmp0_iterator_1 = this_1.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = this_1.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForValue.<anonymous>' call
       var tmp0_safe_receiver_1 = element_1.s27_1;
       if ((tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.c1z_1) === true) {
@@ -28619,7 +28628,7 @@ protoOf(Game).u2k = function (t) {
     var this_2 = this.f29_1;
     var tmp_1;
     if (isInterface(this_2, Collection)) {
-      tmp_1 = this_2.n();
+      tmp_1 = this_2.q();
     } else {
       tmp_1 = false;
     }
@@ -28628,9 +28637,9 @@ protoOf(Game).u2k = function (t) {
       break $l$block_3;
     }
     var count_0 = 0;
-    var tmp0_iterator_2 = this_2.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_2.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeForValue.<anonymous>' call
       var tmp0_safe_receiver_2 = element_2.s27_1;
       if ((tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.k1z_1) === true) {
@@ -28641,9 +28650,9 @@ protoOf(Game).u2k = function (t) {
     tmp$ret$6 = count_0;
   }
   var liquimetal = tmp$ret$6;
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  $l$loop_0: while (_iterator__ex2g4s.k()) {
-    var user = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  $l$loop_0: while (_iterator__ex2g4s.n()) {
+    var user = _iterator__ex2g4s.o();
     var tmp0_safe_receiver_3 = user.s27_1;
     var tmp1_elvis_lhs = tmp0_safe_receiver_3 == null ? null : tmp0_safe_receiver_3.w1x_1;
     var tmp_2;
@@ -28690,7 +28699,7 @@ protoOf(Game).u2k = function (t) {
           var this_3 = user.g28_1;
           var tmp_8;
           if (isInterface(this_3, Collection)) {
-            tmp_8 = this_3.n();
+            tmp_8 = this_3.q();
           } else {
             tmp_8 = false;
           }
@@ -28698,9 +28707,9 @@ protoOf(Game).u2k = function (t) {
             tmp$ret$10 = false;
             break $l$block_5;
           }
-          var tmp0_iterator_3 = this_3.j();
-          while (tmp0_iterator_3.k()) {
-            var element_3 = tmp0_iterator_3.l();
+          var tmp0_iterator_3 = this_3.m();
+          while (tmp0_iterator_3.n()) {
+            var element_3 = tmp0_iterator_3.o();
             // Inline function 'com.mtgtrader.data.Game.sacrificeForValue.<anonymous>' call
             if (element_3.l1x_1) {
               tmp$ret$10 = true;
@@ -28722,7 +28731,7 @@ protoOf(Game).u2k = function (t) {
       var this_4 = user.g28_1;
       var tmp_10;
       if (isInterface(this_4, Collection)) {
-        tmp_10 = this_4.n();
+        tmp_10 = this_4.q();
       } else {
         tmp_10 = false;
       }
@@ -28730,9 +28739,9 @@ protoOf(Game).u2k = function (t) {
         tmp$ret$12 = false;
         break $l$block_7;
       }
-      var tmp0_iterator_4 = this_4.j();
-      while (tmp0_iterator_4.k()) {
-        var element_4 = tmp0_iterator_4.l();
+      var tmp0_iterator_4 = this_4.m();
+      while (tmp0_iterator_4.n()) {
+        var element_4 = tmp0_iterator_4.o();
         // Inline function 'com.mtgtrader.data.Game.sacrificeForValue.<anonymous>' call
         if (element_4.b1z_1) {
           tmp$ret$12 = true;
@@ -28748,7 +28757,7 @@ protoOf(Game).u2k = function (t) {
     }
     var uses = 1 + tmp_9 | 0;
     $l$loop_1: while (uses > 0) {
-      var tmp4_elvis_lhs = this.d2l(user, ability, liquimetal > 0);
+      var tmp4_elvis_lhs = this.f2l(user, ability, liquimetal > 0);
       var tmp_11;
       if (tmp4_elvis_lhs == null) {
         break $l$loop_1;
@@ -28767,7 +28776,7 @@ protoOf(Game).u2k = function (t) {
     }
   }
 };
-protoOf(Game).d2l = function (user, ability, liquimetal) {
+protoOf(Game).f2l = function (user, ability, liquimetal) {
   var t = this.m29_1;
   var tmp$ret$0;
   $l$block: {
@@ -28775,7 +28784,7 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -28784,9 +28793,9 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeOnce.<anonymous>' call
       if (element.y27_1.u('Land')) {
         count = count + 1 | 0;
@@ -28801,16 +28810,16 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.sacrificeOnce.<anonymous>' call
     var tmp_0;
     var tmp_1;
     var tmp_2;
     if (!(element_0 === user)) {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_2 = !element_0.y27_1.n();
+      tmp_2 = !element_0.y27_1.q();
     } else {
       tmp_2 = false;
     }
@@ -28836,15 +28845,15 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
   var artifactBit = 1 << WinOddsCalc_getInstance().p1l_1.x('Artifact');
   var free = liquimetal ? artifactBit : 0;
   var tmp_4 = 0;
-  var tmp_5 = candidates.m();
+  var tmp_5 = candidates.p();
   var tmp_6 = new Int32Array(tmp_5);
   while (tmp_4 < tmp_5) {
     var tmp_7 = tmp_4;
     // Inline function 'kotlin.collections.fold' call
     var accumulator = 0;
-    var tmp0_iterator_1 = candidates.o(tmp_7).y27_1.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = candidates.r(tmp_7).y27_1.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeOnce.<anonymous>' call
       accumulator = accumulator | 1 << WinOddsCalc_getInstance().p1l_1.x(element_1);
     }
@@ -28867,11 +28876,11 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
   if (tmp_8.c2b(tmp$ret$12) < ability.e2b_1)
     return null;
   var tmp_9 = 0;
-  var tmp_10 = candidates.m();
+  var tmp_10 = candidates.p();
   var tmp_11 = new Int32Array(tmp_10);
   while (tmp_9 < tmp_10) {
     var tmp_12 = tmp_9;
-    tmp_11[tmp_12] = sacrificeOnce$cost(lands, candidates.o(tmp_12));
+    tmp_11[tmp_12] = sacrificeOnce$cost(lands, candidates.r(tmp_12));
     tmp_9 = tmp_9 + 1 | 0;
   }
   var costs = tmp_11;
@@ -28887,9 +28896,9 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
   var destination_0 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEachIndexed' call
   var index = 0;
-  var tmp0_iterator_2 = candidates.j();
-  while (tmp0_iterator_2.k()) {
-    var item = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = candidates.m();
+  while (tmp0_iterator_2.n()) {
+    var item = tmp0_iterator_2.o();
     // Inline function 'kotlin.collections.filterIndexedTo.<anonymous>' call
     var tmp1 = index;
     index = tmp1 + 1 | 0;
@@ -28900,9 +28909,9 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
     }
   }
   var chosen = destination_0;
-  var _iterator__ex2g4s = chosen.j();
-  while (_iterator__ex2g4s.k()) {
-    var e = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = chosen.m();
+  while (_iterator__ex2g4s.n()) {
+    var e = _iterator__ex2g4s.o();
     this.f29_1.g2(e);
     var tmp0_safe_receiver = e.i28_1;
     if (tmp0_safe_receiver == null)
@@ -28918,17 +28927,17 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_2 = this.f29_1;
     var destination_1 = ArrayList_init_$Create$();
-    var tmp0_iterator_3 = this_2.j();
-    while (tmp0_iterator_3.k()) {
-      var element_3 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = this_2.m();
+    while (tmp0_iterator_3.n()) {
+      var element_3 = tmp0_iterator_3.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeOnce.<anonymous>' call
       if (element_3.h28_1 === e) {
         destination_1.h(element_3);
       }
     }
-    var tmp0_iterator_4 = destination_1.j();
-    while (tmp0_iterator_4.k()) {
-      var element_4 = tmp0_iterator_4.l();
+    var tmp0_iterator_4 = destination_1.m();
+    while (tmp0_iterator_4.n()) {
+      var element_4 = tmp0_iterator_4.o();
       // Inline function 'com.mtgtrader.data.Game.sacrificeOnce.<anonymous>' call
       element_4.h28_1 = null;
       var tmp0_safe_receiver_0 = element_4.s27_1;
@@ -28936,18 +28945,18 @@ protoOf(Game).d2l = function (user, ability, liquimetal) {
         this.f29_1.g2(element_4);
       }
     }
-    this.d2i(e, e.y27_1.u('Artifact') || (usedLiquimetal && e === first(chosen)));
+    this.f2i(e, e.y27_1.u('Artifact') || (usedLiquimetal && e === first(chosen)));
   }
   user.j28_1 = t;
-  this.z2g(ability.f2b_1, 3);
-  this.l2g(ability.g2b_1);
+  this.b2h(ability.f2b_1, 3);
+  this.n2g(ability.g2b_1);
   return usedLiquimetal;
 };
-protoOf(Game).d2i = function (e, artifact) {
+protoOf(Game).f2i = function (e, artifact) {
   var land = e.y27_1.u('Land');
-  var _iterator__ex2g4s = toList(this.f29_1).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var b = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(this.f29_1).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var b = _iterator__ex2g4s.o();
     var tmp0_elvis_lhs = b.s27_1;
     var tmp;
     if (tmp0_elvis_lhs == null) {
@@ -28957,13 +28966,13 @@ protoOf(Game).d2i = function (e, artifact) {
     }
     var c = tmp;
     if (artifact && c.e1z_1) {
-      this.t2g(b.u27_1 + b.a28_1 | 0, 3);
+      this.v2g(b.u27_1 + b.a28_1 | 0, 3);
     }
     if (land && c.g1z_1 > 0) {
-      this.d2h(c.g1z_1);
+      this.f2h(c.g1z_1);
     }
     if (land && c.h1z_1 > 0) {
-      this.d2h(c.h1z_1);
+      this.f2h(c.h1z_1);
       if (b.b28_1 > 0) {
         b.b28_1 = b.b28_1 - 1 | 0;
         b.c28_1 = this.m29_1;
@@ -28975,26 +28984,26 @@ protoOf(Game).d2i = function (e, artifact) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_0 = this.f29_1;
       var destination = ArrayList_init_$Create$();
-      var tmp0_iterator = this_0.j();
-      while (tmp0_iterator.k()) {
-        var element = tmp0_iterator.l();
+      var tmp0_iterator = this_0.m();
+      while (tmp0_iterator.n()) {
+        var element = tmp0_iterator.o();
         // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
         if (element.v27_1) {
           destination.h(element);
         }
       }
-      var tmp0_iterator_0 = destination.j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = destination.m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
-        this.n2g(element_0, 1);
+        this.p2g(element_0, 1);
       }
     }
     if (e.k28_1) {
-      this.z2g(c.u20_1, 3);
+      this.b2h(c.u20_1, 3);
     }
     if ((e.v27_1 || artifact) && !(b === e)) {
-      this.z2g(c.w20_1, 3);
+      this.b2h(c.w20_1, 3);
     }
   }
   var tmp1_safe_receiver = e.s27_1;
@@ -29021,9 +29030,9 @@ protoOf(Game).d2i = function (e, artifact) {
     // Inline function 'kotlin.let' call
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
-    this.d2h(tmp3_safe_receiver);
+    this.f2h(tmp3_safe_receiver);
   }
-  if (this.c29_1.d2g_1 && e.v27_1) {
+  if (this.c29_1.f2g_1 && e.v27_1) {
     var tmp4_safe_receiver = e.s27_1;
     if (tmp4_safe_receiver == null)
       null;
@@ -29031,16 +29040,16 @@ protoOf(Game).d2i = function (e, artifact) {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
       if (tmp4_safe_receiver.r25_1.p26()) {
-        this.o2g(tmp4_safe_receiver.r25_1, e);
+        this.q2g(tmp4_safe_receiver.r25_1, e);
       }
       if (tmp4_safe_receiver.s25_1 && !e.k28_1) {
-        this.v2i(tmp4_safe_receiver, true, true);
+        this.x2i(tmp4_safe_receiver, true, true);
       }
     }
     if (!e.f28_1) {
-      var _iterator__ex2g4s_0 = toList(this.f29_1).j();
-      while (_iterator__ex2g4s_0.k()) {
-        var b_0 = _iterator__ex2g4s_0.l();
+      var _iterator__ex2g4s_0 = toList(this.f29_1).m();
+      while (_iterator__ex2g4s_0.n()) {
+        var b_0 = _iterator__ex2g4s_0.o();
         var tmp5_safe_receiver = b_0.s27_1;
         var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.t25_1;
         if (tmp6_safe_receiver == null)
@@ -29050,11 +29059,11 @@ protoOf(Game).d2i = function (e, artifact) {
           // Inline function 'kotlin.contracts.contract' call
           var kind = tmp6_safe_receiver.ce();
           var k = tmp6_safe_receiver.de();
-          if (!(b_0 === e) && (kind == null || e.m2e(kind))) {
+          if (!(b_0 === e) && (kind == null || e.o2e(kind))) {
             // Inline function 'kotlin.also' call
             // Inline function 'kotlin.contracts.contract' call
             // Inline function 'com.mtgtrader.data.Game.left.<anonymous>.<anonymous>' call
-            this.b2h(k.a2c_1, k).f28_1 = b_0.s27_1.u25_1;
+            this.d2h(k.a2c_1, k).f28_1 = b_0.s27_1.u25_1;
           }
         }
       }
@@ -29077,34 +29086,34 @@ protoOf(Game).d2i = function (e, artifact) {
       tmp$ret$11 = false;
     }
     if (tmp$ret$11) {
-      this.z2g(this.a2b(e, true), 3);
-      this.t2g(this.a2b(e, false), 3);
-      this.l2g(this.a2b(e, null) / 2 | 0);
+      this.b2h(this.a2b(e, true), 3);
+      this.v2g(this.a2b(e, false), 3);
+      this.n2g(this.a2b(e, null) / 2 | 0);
       var tmp7_safe_receiver = e.s27_1;
       var tmp8_safe_receiver = tmp7_safe_receiver == null ? null : tmp7_safe_receiver.q24_1;
       if (tmp8_safe_receiver == null)
         null;
       else {
         // Inline function 'kotlin.collections.forEach' call
-        var tmp0_iterator_1 = tmp8_safe_receiver.j();
-        while (tmp0_iterator_1.k()) {
-          var element_2 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = tmp8_safe_receiver.m();
+        while (tmp0_iterator_1.n()) {
+          var element_2 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.left.<anonymous>' call
           if (element_2.j2d_1 || !element_2.k2d_1) {
             if (element_2.g2d_1) {
-              this.z2g(element_2.h2d_1, 3);
+              this.b2h(element_2.h2d_1, 3);
             } else {
-              this.t2g(element_2.h2d_1, 3);
+              this.v2g(element_2.h2d_1, 3);
             }
-            this.l2g(element_2.i2d_1);
+            this.n2g(element_2.i2d_1);
           }
         }
       }
     }
     if (e.w28_1 > 0) {
-      var _iterator__ex2g4s_1 = toList(this.f29_1).j();
-      while (_iterator__ex2g4s_1.k()) {
-        var b_1 = _iterator__ex2g4s_1.l();
+      var _iterator__ex2g4s_1 = toList(this.f29_1).m();
+      while (_iterator__ex2g4s_1.n()) {
+        var b_1 = _iterator__ex2g4s_1.o();
         var tmp9_safe_receiver = b_1.s27_1;
         if (tmp9_safe_receiver == null)
           null;
@@ -29112,10 +29121,10 @@ protoOf(Game).d2i = function (e, artifact) {
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           if (tmp9_safe_receiver.z24_1) {
-            this.l2g(1);
+            this.n2g(1);
           }
           if (tmp9_safe_receiver.y24_1) {
-            this.l2j(1);
+            this.n2j(1);
           }
         }
       }
@@ -29138,7 +29147,7 @@ protoOf(Game).d2i = function (e, artifact) {
     }
   }
 };
-protoOf(Game).i2k = function (start) {
+protoOf(Game).k2k = function (start) {
   var pool = start;
   $l$loop_0: while (true) {
     var tmp;
@@ -29150,7 +29159,7 @@ protoOf(Game).i2k = function (start) {
         var this_0 = this.x28_1;
         var tmp_1;
         if (isInterface(this_0, Collection)) {
-          tmp_1 = this_0.n();
+          tmp_1 = this_0.q();
         } else {
           tmp_1 = false;
         }
@@ -29158,9 +29167,9 @@ protoOf(Game).i2k = function (start) {
           tmp$ret$0 = false;
           break $l$block_0;
         }
-        var tmp0_iterator = this_0.j();
-        while (tmp0_iterator.k()) {
-          var element = tmp0_iterator.l();
+        var tmp0_iterator = this_0.m();
+        while (tmp0_iterator.n()) {
+          var element = tmp0_iterator.o();
           // Inline function 'com.mtgtrader.data.Game.extraLands.<anonymous>' call
           if (element.w2b()) {
             tmp$ret$0 = true;
@@ -29179,7 +29188,7 @@ protoOf(Game).i2k = function (start) {
           var this_1 = this.f29_1;
           var tmp_3;
           if (isInterface(this_1, Collection)) {
-            tmp_3 = this_1.n();
+            tmp_3 = this_1.q();
           } else {
             tmp_3 = false;
           }
@@ -29187,9 +29196,9 @@ protoOf(Game).i2k = function (start) {
             tmp$ret$2 = false;
             break $l$block_2;
           }
-          var tmp0_iterator_0 = this_1.j();
-          while (tmp0_iterator_0.k()) {
-            var element_0 = tmp0_iterator_0.l();
+          var tmp0_iterator_0 = this_1.m();
+          while (tmp0_iterator_0.n()) {
+            var element_0 = tmp0_iterator_0.o();
             // Inline function 'com.mtgtrader.data.Game.extraLands.<anonymous>' call
             var tmp0_safe_receiver = element_0.s27_1;
             if ((tmp0_safe_receiver == null ? null : tmp0_safe_receiver.m21_1) === true) {
@@ -29206,7 +29215,7 @@ protoOf(Game).i2k = function (start) {
             var this_2 = this.z29_1;
             var tmp_4;
             if (isInterface(this_2, Collection)) {
-              tmp_4 = this_2.n();
+              tmp_4 = this_2.q();
             } else {
               tmp_4 = false;
             }
@@ -29214,9 +29223,9 @@ protoOf(Game).i2k = function (start) {
               tmp$ret$4 = false;
               break $l$block_4;
             }
-            var tmp0_iterator_1 = this_2.j();
-            while (tmp0_iterator_1.k()) {
-              var element_1 = tmp0_iterator_1.l();
+            var tmp0_iterator_1 = this_2.m();
+            while (tmp0_iterator_1.n()) {
+              var element_1 = tmp0_iterator_1.o();
               // Inline function 'com.mtgtrader.data.Game.extraLands.<anonymous>' call
               if (element_1.w2b()) {
                 tmp$ret$4 = true;
@@ -29238,7 +29247,7 @@ protoOf(Game).i2k = function (start) {
     if (!tmp) {
       break $l$loop_0;
     }
-    var tmp0_elvis_lhs = this.h2k();
+    var tmp0_elvis_lhs = this.j2k();
     var tmp_5;
     if (tmp0_elvis_lhs == null) {
       break $l$loop_0;
@@ -29246,25 +29255,25 @@ protoOf(Game).i2k = function (start) {
       tmp_5 = tmp0_elvis_lhs;
     }
     var s = tmp_5;
-    if (s.j2e_1 <= this.m29_1)
-      pool = plus(pool, to(s.h2e_1, s.i2e_1));
+    if (s.l2e_1 <= this.m29_1)
+      pool = plus(pool, to(s.j2e_1, s.k2e_1));
   }
   return pool;
 };
-protoOf(Game).l2k = function (pool, c) {
+protoOf(Game).n2k = function (pool, c) {
   // Inline function 'kotlin.collections.sortedBy' call
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.x28_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.ritualFor.<anonymous>' call
     var tmp;
     var tmp_0;
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!element.g24_1.n()) {
+    if (!element.g24_1.q()) {
       tmp_0 = !(element === c);
     } else {
       tmp_0 = false;
@@ -29272,9 +29281,9 @@ protoOf(Game).l2k = function (pool, c) {
     if (tmp_0) {
       // Inline function 'kotlin.collections.sumOf' call
       var sum = 0;
-      var tmp0_iterator_0 = this.s2j(element).j();
-      while (tmp0_iterator_0.k()) {
-        var element_0 = tmp0_iterator_0.l();
+      var tmp0_iterator_0 = this.u2j(element).m();
+      while (tmp0_iterator_0.n()) {
+        var element_0 = tmp0_iterator_0.o();
         var tmp_1 = sum;
         // Inline function 'com.mtgtrader.data.Game.ritualFor.<anonymous>.<anonymous>' call
         sum = tmp_1 + element_0.be_1 | 0;
@@ -29290,11 +29299,11 @@ protoOf(Game).l2k = function (pool, c) {
   // Inline function 'kotlin.comparisons.compareBy' call
   var tmp_2 = WinOddsCalc$Game$ritualFor$lambda;
   var tmp$ret$6 = new sam$kotlin_Comparator$0_18(tmp_2);
-  var _iterator__ex2g4s = sortedWith(destination, tmp$ret$6).j();
-  $l$loop_1: while (_iterator__ex2g4s.k()) {
-    var r = _iterator__ex2g4s.l();
-    var mana = this.s2j(r);
-    var tmp0_elvis_lhs = ManaOddsCalc_getInstance().h1q(this.f2i(pool), this.u2h(r));
+  var _iterator__ex2g4s = sortedWith(destination, tmp$ret$6).m();
+  $l$loop_1: while (_iterator__ex2g4s.n()) {
+    var r = _iterator__ex2g4s.o();
+    var mana = this.u2j(r);
+    var tmp0_elvis_lhs = ManaOddsCalc_getInstance().h1q(this.h2i(pool), this.w2h(r));
     var tmp_3;
     if (tmp0_elvis_lhs == null) {
       continue $l$loop_1;
@@ -29302,9 +29311,9 @@ protoOf(Game).l2k = function (pool, c) {
       tmp_3 = tmp0_elvis_lhs;
     }
     var test = tmp_3;
-    if (ManaOddsCalc_getInstance().h1q(plus_0(test, mana), this.u2h(c)) == null)
+    if (ManaOddsCalc_getInstance().h1q(plus_0(test, mana), this.w2h(c)) == null)
       continue $l$loop_1;
-    var tmp1_elvis_lhs = this.c2i(pool, this.u2h(r), r.i1w_1);
+    var tmp1_elvis_lhs = this.e2i(pool, this.w2h(r), r.i1w_1);
     var tmp_4;
     if (tmp1_elvis_lhs == null) {
       continue $l$loop_1;
@@ -29312,19 +29321,19 @@ protoOf(Game).l2k = function (pool, c) {
       tmp_4 = tmp1_elvis_lhs;
     }
     var left = tmp_4;
-    this.r2h(r);
+    this.t2h(r);
     return plus_0(left, mana);
   }
   return null;
 };
-protoOf(Game).k2k = function (pool) {
+protoOf(Game).m2k = function (pool) {
   var tmp$ret$0;
   $l$block: {
     // Inline function 'kotlin.collections.count' call
     var this_0 = this.f29_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -29333,11 +29342,11 @@ protoOf(Game).k2k = function (pool) {
       break $l$block;
     }
     var count = 0;
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.Game.spellSides.<anonymous>' call
-      if (element.m2e('land')) {
+      if (element.o2e('land')) {
         count = count + 1 | 0;
         checkCountOverflow(count);
       }
@@ -29351,17 +29360,17 @@ protoOf(Game).k2k = function (pool) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = this.x28_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.spellSides.<anonymous>' call
     if (!(element_0.l24_1 == null)) {
       destination.h(element_0);
     }
   }
-  var _iterator__ex2g4s = toList(destination).j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var l = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = toList(destination).m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var l = _iterator__ex2g4s.o();
     var side = ensureNotNull(l.l24_1);
     var tmp$ret$5;
     $l$block_0: {
@@ -29369,7 +29378,7 @@ protoOf(Game).k2k = function (pool) {
       var this_2 = this.x28_1;
       var tmp_0;
       if (isInterface(this_2, Collection)) {
-        tmp_0 = this_2.n();
+        tmp_0 = this_2.q();
       } else {
         tmp_0 = false;
       }
@@ -29378,9 +29387,9 @@ protoOf(Game).k2k = function (pool) {
         break $l$block_0;
       }
       var count_0 = 0;
-      var tmp0_iterator_1 = this_2.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_2.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.spellSides.<anonymous>' call
         if (element_1.w2b() && element_1.l24_1 == null) {
           count_0 = count_0 + 1 | 0;
@@ -29391,31 +29400,31 @@ protoOf(Game).k2k = function (pool) {
     }
     if ((onBoard + tmp$ret$5 | 0) < 5)
       return Unit_instance;
-    if (!useful(WinOddsCalc_getInstance(), side, this.s29_1, this.t29_1, this.y29_1) || !this.j2g(side) || !this.b2i(pool, this.u2h(side)))
+    if (!useful(WinOddsCalc_getInstance(), side, this.s29_1, this.t29_1, this.y29_1) || !this.l2g(side) || !this.d2i(pool, this.w2h(side)))
       continue $l$loop;
     this.x28_1.g2(l);
     // Inline function 'kotlin.collections.plusAssign' call
     this.x28_1.h(side);
   }
 };
-protoOf(Game).h2k = function () {
+protoOf(Game).j2k = function () {
   var have = HashSet_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this.e29_1.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this.e29_1.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
     // Inline function 'kotlin.collections.plusAssign' call
-    var elements = element.h2e_1;
+    var elements = element.j2e_1;
     addAll(have, elements);
   }
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.x28_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_0.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_0.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
     var tmp;
     if (element_0.w2b()) {
@@ -29425,7 +29434,7 @@ protoOf(Game).h2k = function () {
         var this_1 = this.f29_1;
         var tmp_0;
         if (isInterface(this_1, Collection)) {
-          tmp_0 = this_1.n();
+          tmp_0 = this_1.q();
         } else {
           tmp_0 = false;
         }
@@ -29434,14 +29443,14 @@ protoOf(Game).h2k = function () {
           break $l$block;
         }
         var count = 0;
-        var tmp0_iterator_1 = this_1.j();
-        while (tmp0_iterator_1.k()) {
-          var element_1 = tmp0_iterator_1.l();
+        var tmp0_iterator_1 = this_1.m();
+        while (tmp0_iterator_1.n()) {
+          var element_1 = tmp0_iterator_1.o();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
           var tmp_1;
-          if (element_1.m2e('land')) {
+          if (element_1.o2e('land')) {
             var tmp0_safe_receiver = element_1.i28_1;
-            var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.l2e_1;
+            var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : tmp0_safe_receiver.n2e_1;
             tmp_1 = (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) > this.m29_1;
           } else {
             tmp_1 = false;
@@ -29462,17 +29471,17 @@ protoOf(Game).h2k = function () {
     }
   }
   var lands = destination;
-  var names = this.w29_1 ? this.g2h() : emptySet();
+  var names = this.w29_1 ? this.i2h() : emptySet();
   var tmp_2;
   var tmp_3;
-  if (lands.n()) {
+  if (lands.q()) {
     var tmp$ret$5;
     $l$block_1: {
       // Inline function 'kotlin.collections.any' call
       var this_2 = this.f29_1;
       var tmp_4;
       if (isInterface(this_2, Collection)) {
-        tmp_4 = this_2.n();
+        tmp_4 = this_2.q();
       } else {
         tmp_4 = false;
       }
@@ -29480,9 +29489,9 @@ protoOf(Game).h2k = function () {
         tmp$ret$5 = false;
         break $l$block_1;
       }
-      var tmp0_iterator_2 = this_2.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = this_2.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
         var tmp0_safe_receiver_0 = element_2.s27_1;
         if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.m21_1) === true) {
@@ -29500,9 +29509,9 @@ protoOf(Game).h2k = function () {
     var tmp$ret$8;
     $l$block_2: {
       // Inline function 'kotlin.collections.firstOrNull' call
-      var tmp0_iterator_3 = this.z29_1.j();
-      while (tmp0_iterator_3.k()) {
-        var element_3 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = this.z29_1.m();
+      while (tmp0_iterator_3.n()) {
+        var element_3 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
         if (element_3.w2b()) {
           tmp$ret$8 = element_3;
@@ -29521,9 +29530,9 @@ protoOf(Game).h2k = function () {
     var tmp$ret$10;
     $l$block_3: {
       // Inline function 'kotlin.collections.firstOrNull' call
-      var tmp0_iterator_4 = lands.j();
-      while (tmp0_iterator_4.k()) {
-        var element_4 = tmp0_iterator_4.l();
+      var tmp0_iterator_4 = lands.m();
+      while (tmp0_iterator_4.n()) {
+        var element_4 = tmp0_iterator_4.o();
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
         if (element_4.s1y_1) {
           tmp$ret$10 = element_4;
@@ -29538,9 +29547,9 @@ protoOf(Game).h2k = function () {
       var tmp$ret$12;
       $l$block_4: {
         // Inline function 'kotlin.collections.firstOrNull' call
-        var tmp0_iterator_5 = lands.j();
-        while (tmp0_iterator_5.k()) {
-          var element_5 = tmp0_iterator_5.l();
+        var tmp0_iterator_5 = lands.m();
+        while (tmp0_iterator_5.n()) {
+          var element_5 = tmp0_iterator_5.o();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
           if (element_5.l1y_1.u('Gate') && !names.u(element_5.f1w_1)) {
             tmp$ret$12 = element_5;
@@ -29565,7 +29574,7 @@ protoOf(Game).h2k = function () {
     var tmp_8;
     // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>' call
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!lands.n()) {
+    if (!lands.q()) {
       tmp_8 = lands;
     } else {
       tmp_8 = null;
@@ -29583,9 +29592,9 @@ protoOf(Game).h2k = function () {
       // Inline function 'kotlin.collections.filterTo' call
       var this_3 = this.x28_1;
       var destination_0 = ArrayList_init_$Create$();
-      var tmp0_iterator_6 = this_3.j();
-      while (tmp0_iterator_6.k()) {
-        var element_6 = tmp0_iterator_6.l();
+      var tmp0_iterator_6 = this_3.m();
+      while (tmp0_iterator_6.n()) {
+        var element_6 = tmp0_iterator_6.o();
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
         if (!element_6.w2b()) {
           destination_0.h(element_6);
@@ -29594,9 +29603,9 @@ protoOf(Game).h2k = function () {
       var this_4 = plus_0(destination_0, this.d29_1);
       // Inline function 'kotlin.collections.mapTo' call
       var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_4, 10));
-      var tmp0_iterator_7 = this_4.j();
-      while (tmp0_iterator_7.k()) {
-        var item = tmp0_iterator_7.l();
+      var tmp0_iterator_7 = this_4.m();
+      while (tmp0_iterator_7.n()) {
+        var item = tmp0_iterator_7.o();
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
         var tmp$ret$19 = item.h1w_1;
         destination_1.h(tmp$ret$19);
@@ -29605,8 +29614,8 @@ protoOf(Game).h2k = function () {
       var tmp_10 = ManaOddsCalc_getInstance();
       var tmp_11 = WinOddsCalc$Game$playLand$lambda;
       var tmp_12 = WinOddsCalc$Game$playLand$lambda_0(this);
-      var tmp_13 = this.a2k();
-      tmp_9 = tmp_10.i1q(tmp2_safe_receiver, tmp_11, tmp_12, have, tmp_13, costs, WinOddsCalc$Game$playLand$lambda_1, this.l2h());
+      var tmp_13 = this.c2k();
+      tmp_9 = tmp_10.i1q(tmp2_safe_receiver, tmp_11, tmp_12, have, tmp_13, costs, WinOddsCalc$Game$playLand$lambda_1, this.n2h());
     }
     tmp_7 = tmp_9;
   } else {
@@ -29628,7 +29637,7 @@ protoOf(Game).h2k = function () {
   this_5.g2(land);
   var up = this.j2c(land, this_5);
   if (land === fromYard) {
-    this.l2i(listOf_0(land));
+    this.n2i(listOf_0(land));
   } else
     this.x28_1.g2(land);
   this.y2a_1 = this.y2a_1 - 1 | 0;
@@ -29648,14 +29657,14 @@ protoOf(Game).h2k = function () {
         // Inline function 'kotlin.collections.filterTo' call
         var this_6 = this.f29_1;
         var destination_2 = ArrayList_init_$Create$();
-        var tmp0_iterator_8 = this_6.j();
-        while (tmp0_iterator_8.k()) {
-          var element_7 = tmp0_iterator_8.l();
+        var tmp0_iterator_8 = this_6.m();
+        while (tmp0_iterator_8.n()) {
+          var element_7 = tmp0_iterator_8.o();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
           var tmp_15;
-          if (element_7.m2e('land')) {
+          if (element_7.o2e('land')) {
             var tmp0_safe_receiver_1 = element_7.i28_1;
-            var tmp1_elvis_lhs_1 = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.l2e_1;
+            var tmp1_elvis_lhs_1 = tmp0_safe_receiver_1 == null ? null : tmp0_safe_receiver_1.n2e_1;
             tmp_15 = (tmp1_elvis_lhs_1 == null ? 0 : tmp1_elvis_lhs_1) > this.m29_1;
           } else {
             tmp_15 = false;
@@ -29664,29 +29673,29 @@ protoOf(Game).h2k = function () {
             destination_2.h(element_7);
           }
         }
-        var iterator = destination_2.j();
-        if (!iterator.k()) {
+        var iterator = destination_2.m();
+        if (!iterator.n()) {
           tmp$ret$28 = null;
           break $l$block_6;
         }
-        var minElem = iterator.l();
-        if (!iterator.k()) {
+        var minElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$28 = minElem;
           break $l$block_6;
         }
         // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
         var it = minElem;
-        var minValue = imul(ensureNotNull(it.i28_1).h2e_1.m(), 10) + ensureNotNull(it.i28_1).i2e_1 | 0;
+        var minValue = imul(ensureNotNull(it.i28_1).j2e_1.p(), 10) + ensureNotNull(it.i28_1).k2e_1 | 0;
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.playLand.<anonymous>.<anonymous>' call
-          var v = imul(ensureNotNull(e.i28_1).h2e_1.m(), 10) + ensureNotNull(e.i28_1).i2e_1 | 0;
+          var v = imul(ensureNotNull(e.i28_1).j2e_1.p(), 10) + ensureNotNull(e.i28_1).k2e_1 | 0;
           if (compareTo(minValue, v) > 0) {
             minElem = e;
             minValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$28 = minElem;
       }
       var tmp0_safe_receiver_2 = tmp$ret$28;
@@ -29695,7 +29704,7 @@ protoOf(Game).h2k = function () {
       else {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
-        ensureNotNull(tmp0_safe_receiver_2.i28_1).l2e_1 = this.m29_1;
+        ensureNotNull(tmp0_safe_receiver_2.i28_1).n2e_1 = this.m29_1;
       }
     }
      while (inductionVariable < times);
@@ -29711,28 +29720,28 @@ protoOf(Game).h2k = function () {
   var e_0 = this_7;
   // Inline function 'kotlin.collections.plusAssign' call
   this.f29_1.h(e_0);
-  this.y2g(land.s21_1);
-  this.n2h(e_0);
+  this.a2h(land.s21_1);
+  this.p2h(e_0);
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!land.j25_1.n()) {
-    this.z2i(e_0, 0);
+  if (!land.j25_1.q()) {
+    this.b2j(e_0, 0);
   }
   if (land.j24_1) {
-    this.n2h(e_0);
+    this.p2h(e_0);
   }
   return source;
 };
-protoOf(Game).j2k = function (pool) {
-  if (this.b29_1.n())
+protoOf(Game).l2k = function (pool) {
+  if (this.b29_1.q())
     return null;
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
     var tmp0_safe_receiver = element.s27_1;
@@ -29751,24 +29760,24 @@ protoOf(Game).j2k = function (pool) {
   var capacity = coerceAtLeast_0(mapCapacity(collectionSizeOrDefault(this_1, 10)), 16);
   // Inline function 'kotlin.collections.associateByTo' call
   var destination_0 = LinkedHashMap_init_$Create$(capacity);
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
     var tmp$ret$4 = element_0.j1w_1;
     destination_0.k2(tmp$ret$4, element_0);
   }
   var at = destination_0;
-  var _iterator__ex2g4s = this.b29_1.j();
-  $l$loop_5: while (_iterator__ex2g4s.k()) {
-    var combo = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = this.b29_1.m();
+  $l$loop_5: while (_iterator__ex2g4s.n()) {
+    var combo = _iterator__ex2g4s.o();
     var need = minus(combo.o2b_1, there);
     var tmp$ret$7;
     $l$block_0: {
       // Inline function 'kotlin.collections.all' call
       var tmp;
       if (isInterface(need, Collection)) {
-        tmp = need.n();
+        tmp = need.q();
       } else {
         tmp = false;
       }
@@ -29776,9 +29785,9 @@ protoOf(Game).j2k = function (pool) {
         tmp$ret$7 = true;
         break $l$block_0;
       }
-      var tmp0_iterator_1 = need.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = need.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
         // Inline function 'kotlin.collections.contains' call
         // Inline function 'kotlin.collections.containsKey' call
@@ -29799,7 +29808,7 @@ protoOf(Game).j2k = function (pool) {
       var this_2 = combo.o2b_1;
       var tmp_0;
       if (isInterface(this_2, Collection)) {
-        tmp_0 = this_2.n();
+        tmp_0 = this_2.q();
       } else {
         tmp_0 = false;
       }
@@ -29807,9 +29816,9 @@ protoOf(Game).j2k = function (pool) {
         tmp$ret$11 = false;
         break $l$block_2;
       }
-      var tmp0_iterator_2 = this_2.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = this_2.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
         var tmp_1;
         var tmp0_safe_receiver_1 = at.c2(element_2);
@@ -29833,7 +29842,7 @@ protoOf(Game).j2k = function (pool) {
       var this_3 = this.f29_1;
       var tmp_2;
       if (isInterface(this_3, Collection)) {
-        tmp_2 = this_3.n();
+        tmp_2 = this_3.q();
       } else {
         tmp_2 = false;
       }
@@ -29841,9 +29850,9 @@ protoOf(Game).j2k = function (pool) {
         tmp$ret$13 = false;
         break $l$block_4;
       }
-      var tmp0_iterator_3 = this_3.j();
-      while (tmp0_iterator_3.k()) {
-        var element_3 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = this_3.m();
+      while (tmp0_iterator_3.n()) {
+        var element_3 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
         var tmp_3;
         var tmp_4;
@@ -29882,7 +29891,7 @@ protoOf(Game).j2k = function (pool) {
       var this_4 = this.f29_1;
       var tmp_6;
       if (isInterface(this_4, Collection)) {
-        tmp_6 = this_4.n();
+        tmp_6 = this_4.q();
       } else {
         tmp_6 = false;
       }
@@ -29891,9 +29900,9 @@ protoOf(Game).j2k = function (pool) {
         break $l$block_5;
       }
       var count = 0;
-      var tmp0_iterator_4 = this_4.j();
-      while (tmp0_iterator_4.k()) {
-        var element_4 = tmp0_iterator_4.l();
+      var tmp0_iterator_4 = this_4.m();
+      while (tmp0_iterator_4.n()) {
+        var element_4 = tmp0_iterator_4.o();
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
         var tmp_7;
         if (element_4.v27_1) {
@@ -29917,7 +29926,7 @@ protoOf(Game).j2k = function (pool) {
       var this_5 = combo.n2b_1;
       var tmp_8;
       if (isInterface(this_5, Collection)) {
-        tmp_8 = this_5.n();
+        tmp_8 = this_5.q();
       } else {
         tmp_8 = false;
       }
@@ -29925,9 +29934,9 @@ protoOf(Game).j2k = function (pool) {
         tmp$ret$19 = false;
         break $l$block_11;
       }
-      var tmp0_iterator_5 = this_5.j();
-      while (tmp0_iterator_5.k()) {
-        var element_5 = tmp0_iterator_5.l();
+      var tmp0_iterator_5 = this_5.m();
+      while (tmp0_iterator_5.n()) {
+        var element_5 = tmp0_iterator_5.o();
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
         var tmp$ret$20;
         $l$block_10: {
@@ -29935,7 +29944,7 @@ protoOf(Game).j2k = function (pool) {
           var this_6 = this.f29_1;
           var tmp_9;
           if (isInterface(this_6, Collection)) {
-            tmp_9 = this_6.n();
+            tmp_9 = this_6.q();
           } else {
             tmp_9 = false;
           }
@@ -29943,9 +29952,9 @@ protoOf(Game).j2k = function (pool) {
             tmp$ret$20 = true;
             break $l$block_10;
           }
-          var tmp0_iterator_6 = this_6.j();
-          while (tmp0_iterator_6.k()) {
-            var element_6 = tmp0_iterator_6.l();
+          var tmp0_iterator_6 = this_6.m();
+          while (tmp0_iterator_6.n()) {
+            var element_6 = tmp0_iterator_6.o();
             // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>.<anonymous>' call
             var tmp0_safe_receiver_4 = element_6.s27_1;
             var tmp_10;
@@ -29962,7 +29971,7 @@ protoOf(Game).j2k = function (pool) {
                   // Inline function 'kotlin.collections.any' call
                   var tmp_12;
                   if (isInterface(element_5, Collection)) {
-                    tmp_12 = element_5.n();
+                    tmp_12 = element_5.q();
                   } else {
                     tmp_12 = false;
                   }
@@ -29970,9 +29979,9 @@ protoOf(Game).j2k = function (pool) {
                     tmp$ret$21 = false;
                     break $l$block_9;
                   }
-                  var tmp0_iterator_7 = element_5.j();
-                  while (tmp0_iterator_7.k()) {
-                    var element_7 = tmp0_iterator_7.l();
+                  var tmp0_iterator_7 = element_5.m();
+                  while (tmp0_iterator_7.n()) {
+                    var element_7 = tmp0_iterator_7.o();
                     // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>.<anonymous>.<anonymous>.<anonymous>' call
                     if (contains_0(tmp0_safe_receiver_4.d1y_1, element_7)) {
                       tmp$ret$21 = true;
@@ -30006,9 +30015,9 @@ protoOf(Game).j2k = function (pool) {
     // Inline function 'kotlin.collections.map' call
     // Inline function 'kotlin.collections.mapTo' call
     var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(need, 10));
-    var tmp0_iterator_8 = need.j();
-    while (tmp0_iterator_8.k()) {
-      var item = tmp0_iterator_8.l();
+    var tmp0_iterator_8 = need.m();
+    while (tmp0_iterator_8.n()) {
+      var item = tmp0_iterator_8.o();
       // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
       var tmp$ret$27 = getValue(at, item);
       destination_1.h(tmp$ret$27);
@@ -30023,7 +30032,7 @@ protoOf(Game).j2k = function (pool) {
         var this_7 = combo.o2b_1;
         var tmp_15;
         if (isInterface(this_7, Collection)) {
-          tmp_15 = this_7.n();
+          tmp_15 = this_7.q();
         } else {
           tmp_15 = false;
         }
@@ -30031,9 +30040,9 @@ protoOf(Game).j2k = function (pool) {
           tmp$ret$30 = true;
           break $l$block_13;
         }
-        var tmp0_iterator_9 = this_7.j();
-        while (tmp0_iterator_9.k()) {
-          var element_8 = tmp0_iterator_9.l();
+        var tmp0_iterator_9 = this_7.m();
+        while (tmp0_iterator_9.n()) {
+          var element_8 = tmp0_iterator_9.o();
           // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
           if (combo.q2b_1.u(element_8)) {
             tmp$ret$30 = false;
@@ -30053,7 +30062,7 @@ protoOf(Game).j2k = function (pool) {
         var this_8 = combo.q2b_1;
         var tmp_16;
         if (isInterface(this_8, Collection)) {
-          tmp_16 = this_8.n();
+          tmp_16 = this_8.q();
         } else {
           tmp_16 = false;
         }
@@ -30061,9 +30070,9 @@ protoOf(Game).j2k = function (pool) {
           tmp$ret$32 = true;
           break $l$block_15;
         }
-        var tmp0_iterator_10 = this_8.j();
-        while (tmp0_iterator_10.k()) {
-          var element_9 = tmp0_iterator_10.l();
+        var tmp0_iterator_10 = this_8.m();
+        while (tmp0_iterator_10.n()) {
+          var element_9 = tmp0_iterator_10.o();
           // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
           if (there.u(element_9)) {
             tmp$ret$32 = false;
@@ -30085,28 +30094,28 @@ protoOf(Game).j2k = function (pool) {
         // Inline function 'kotlin.collections.filterTo' call
         var this_9 = this.x28_1;
         var destination_2 = ArrayList_init_$Create$();
-        var tmp0_iterator_11 = this_9.j();
-        while (tmp0_iterator_11.k()) {
-          var element_10 = tmp0_iterator_11.l();
+        var tmp0_iterator_11 = this_9.m();
+        while (tmp0_iterator_11.n()) {
+          var element_10 = tmp0_iterator_11.o();
           // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
           if (combo.q2b_1.u(element_10.j1w_1)) {
             destination_2.h(element_10);
           }
         }
-        var iterator = destination_2.j();
-        if (!iterator.k()) {
+        var iterator = destination_2.m();
+        if (!iterator.n()) {
           tmp$ret$37 = null;
           break $l$block_17;
         }
-        var minElem = iterator.l();
-        if (!iterator.k()) {
+        var minElem = iterator.o();
+        if (!iterator.n()) {
           tmp$ret$37 = minElem;
           break $l$block_17;
         }
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
         var minValue = minElem.i1w_1;
         do {
-          var e = iterator.l();
+          var e = iterator.o();
           // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
           var v = e.i1w_1;
           if (compareTo(minValue, v) > 0) {
@@ -30114,7 +30123,7 @@ protoOf(Game).j2k = function (pool) {
             minValue = v;
           }
         }
-         while (iterator.k());
+         while (iterator.n());
         tmp$ret$37 = minElem;
       }
       var tmp0_elvis_lhs = tmp$ret$37;
@@ -30132,9 +30141,9 @@ protoOf(Game).j2k = function (pool) {
     // Inline function 'kotlin.comparisons.compareByDescending' call
     var tmp_18 = WinOddsCalc$Game$comboReady$lambda;
     var tmp$ret$40 = new sam$kotlin_Comparator$0_19(tmp_18);
-    var _iterator__ex2g4s_0 = sortedWith(cast, tmp$ret$40).j();
-    while (_iterator__ex2g4s_0.k()) {
-      var c = _iterator__ex2g4s_0.l();
+    var _iterator__ex2g4s_0 = sortedWith(cast, tmp$ret$40).m();
+    while (_iterator__ex2g4s_0.n()) {
+      var c = _iterator__ex2g4s_0.o();
       var tmp1_safe_receiver = p;
       var tmp_19;
       if (tmp1_safe_receiver == null) {
@@ -30143,7 +30152,7 @@ protoOf(Game).j2k = function (pool) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.Game.comboReady.<anonymous>' call
-        tmp_19 = ManaOddsCalc_getInstance().h1q(tmp1_safe_receiver, this.u2h(c));
+        tmp_19 = ManaOddsCalc_getInstance().h1q(tmp1_safe_receiver, this.w2h(c));
       }
       p = tmp_19;
     }
@@ -30152,15 +30161,15 @@ protoOf(Game).j2k = function (pool) {
   }
   return null;
 };
-protoOf(Game).y2j = function (types, toTop) {
+protoOf(Game).a2k = function (types, toTop) {
   // Inline function 'kotlin.collections.mapNotNull' call
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
     var tmp0_safe_receiver = element.s27_1;
@@ -30176,9 +30185,9 @@ protoOf(Game).y2j = function (types, toTop) {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(have, 10));
-  var tmp0_iterator_0 = have.j();
-  while (tmp0_iterator_0.k()) {
-    var item = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = have.m();
+  while (tmp0_iterator_0.n()) {
+    var item = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
     var tmp$ret$4 = item.j1w_1;
     destination_0.h(tmp$ret$4);
@@ -30190,9 +30199,9 @@ protoOf(Game).y2j = function (types, toTop) {
   var this_1 = this.b29_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_1, 10));
-  var tmp0_iterator_1 = this_1.j();
-  while (tmp0_iterator_1.k()) {
-    var item_0 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = this_1.m();
+  while (tmp0_iterator_1.n()) {
+    var item_0 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
     var missing = toMutableSet(minus(item_0.o2b_1, haveKeys));
     var tmp;
@@ -30204,7 +30213,7 @@ protoOf(Game).y2j = function (types, toTop) {
         var this_2 = item_0.o2b_1;
         var tmp_1;
         if (isInterface(this_2, Collection)) {
-          tmp_1 = this_2.n();
+          tmp_1 = this_2.q();
         } else {
           tmp_1 = false;
         }
@@ -30212,9 +30221,9 @@ protoOf(Game).y2j = function (types, toTop) {
           tmp$ret$7 = true;
           break $l$block_0;
         }
-        var tmp0_iterator_2 = this_2.j();
-        while (tmp0_iterator_2.k()) {
-          var element_0 = tmp0_iterator_2.l();
+        var tmp0_iterator_2 = this_2.m();
+        while (tmp0_iterator_2.n()) {
+          var element_0 = tmp0_iterator_2.o();
           // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>.<anonymous>' call
           if (item_0.q2b_1.u(element_0)) {
             tmp$ret$7 = false;
@@ -30233,7 +30242,7 @@ protoOf(Game).y2j = function (types, toTop) {
         // Inline function 'kotlin.collections.none' call
         var tmp_2;
         if (isInterface(haveKeys, Collection)) {
-          tmp_2 = haveKeys.n();
+          tmp_2 = haveKeys.q();
         } else {
           tmp_2 = false;
         }
@@ -30241,9 +30250,9 @@ protoOf(Game).y2j = function (types, toTop) {
           tmp$ret$9 = true;
           break $l$block_2;
         }
-        var tmp0_iterator_3 = haveKeys.j();
-        while (tmp0_iterator_3.k()) {
-          var element_1 = tmp0_iterator_3.l();
+        var tmp0_iterator_3 = haveKeys.m();
+        while (tmp0_iterator_3.n()) {
+          var element_1 = tmp0_iterator_3.o();
           // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>.<anonymous>' call
           if (item_0.q2b_1.u(element_1)) {
             tmp$ret$9 = false;
@@ -30266,12 +30275,12 @@ protoOf(Game).y2j = function (types, toTop) {
   }
   // Inline function 'kotlin.collections.filterTo' call
   var destination_2 = ArrayList_init_$Create$();
-  var tmp0_iterator_4 = destination_1.j();
-  while (tmp0_iterator_4.k()) {
-    var element_3 = tmp0_iterator_4.l();
+  var tmp0_iterator_4 = destination_1.m();
+  while (tmp0_iterator_4.n()) {
+    var element_3 = tmp0_iterator_4.o();
     // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!element_3.be_1.n()) {
+    if (!element_3.be_1.q()) {
       destination_2.h(element_3);
     }
   }
@@ -30279,15 +30288,15 @@ protoOf(Game).y2j = function (types, toTop) {
   var tmp_3 = WinOddsCalc$Game$tutor$lambda;
   var tmp$ret$18 = new sam$kotlin_Comparator$0_20(tmp_3);
   var wanted = sortedWith(destination_2, tmp$ret$18);
-  var _iterator__ex2g4s = wanted.j();
-  $l$loop: while (_iterator__ex2g4s.k()) {
-    var _destruct__k2r9zo = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = wanted.m();
+  $l$loop: while (_iterator__ex2g4s.n()) {
+    var _destruct__k2r9zo = _iterator__ex2g4s.o();
     var plan = _destruct__k2r9zo.ce();
     var missing_0 = _destruct__k2r9zo.de();
     var tmp$ret$23;
     $l$block_5: {
       // Inline function 'kotlin.collections.firstOrNull' call
-      var progression = until(this.l29_1, this.y28_1.m());
+      var progression = until(this.l29_1, this.y28_1.p());
       var inductionVariable = progression.a1_1;
       var last = progression.b1_1;
       if (inductionVariable <= last)
@@ -30296,11 +30305,11 @@ protoOf(Game).y2j = function (types, toTop) {
           inductionVariable = inductionVariable + 1 | 0;
           // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>' call
           var i = element_4;
-          var c = this.y28_1.o(i);
+          var c = this.y28_1.r(i);
           var tmp_4;
           if (missing_0.u(c.j1w_1) || (missing_0.u('\x00payoff') && tutor$wantedPayoffs(plan, c))) {
             var tmp_5;
-            if (types.n()) {
+            if (types.q()) {
               tmp_5 = true;
             } else {
               var tmp$ret$20;
@@ -30309,7 +30318,7 @@ protoOf(Game).y2j = function (types, toTop) {
                 var this_3 = c.v1x_1;
                 var tmp_6;
                 if (isInterface(this_3, Collection)) {
-                  tmp_6 = this_3.n();
+                  tmp_6 = this_3.q();
                 } else {
                   tmp_6 = false;
                 }
@@ -30317,9 +30326,9 @@ protoOf(Game).y2j = function (types, toTop) {
                   tmp$ret$20 = false;
                   break $l$block_4;
                 }
-                var tmp0_iterator_5 = this_3.j();
-                while (tmp0_iterator_5.k()) {
-                  var element_5 = tmp0_iterator_5.l();
+                var tmp0_iterator_5 = this_3.m();
+                while (tmp0_iterator_5.n()) {
+                  var element_5 = tmp0_iterator_5.o();
                   // Inline function 'com.mtgtrader.data.Game.tutor.<anonymous>.<anonymous>' call
                   if (types.u(element_5)) {
                     tmp$ret$20 = true;
@@ -30360,9 +30369,9 @@ protoOf(Game).y2j = function (types, toTop) {
     return Unit_instance;
   }
 };
-protoOf(Game).q2k = function (start) {
+protoOf(Game).s2k = function (start) {
   var pool = start;
-  var tmp0_elvis_lhs = this.x2h();
+  var tmp0_elvis_lhs = this.z2h();
   var tmp;
   if (tmp0_elvis_lhs == null) {
     return pool;
@@ -30375,9 +30384,9 @@ protoOf(Game).q2k = function (start) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.f29_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
     var tmp_0;
     var tmp0_safe_receiver = element.s27_1;
@@ -30410,7 +30419,7 @@ protoOf(Game).q2k = function (start) {
     var this_1 = this.f29_1;
     var tmp_4;
     if (isInterface(this_1, Collection)) {
-      tmp_4 = this_1.n();
+      tmp_4 = this_1.q();
     } else {
       tmp_4 = false;
     }
@@ -30418,9 +30427,9 @@ protoOf(Game).q2k = function (start) {
       tmp$ret$7 = false;
       break $l$block_0;
     }
-    var tmp0_iterator_0 = this_1.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = this_1.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
       var tmp0_safe_receiver_0 = element_0.s27_1;
       if ((tmp0_safe_receiver_0 == null ? null : tmp0_safe_receiver_0.z20_1) === true) {
@@ -30437,7 +30446,7 @@ protoOf(Game).q2k = function (start) {
       var this_2 = this.f29_1;
       var tmp_5;
       if (isInterface(this_2, Collection)) {
-        tmp_5 = this_2.n();
+        tmp_5 = this_2.q();
       } else {
         tmp_5 = false;
       }
@@ -30446,11 +30455,11 @@ protoOf(Game).q2k = function (start) {
         break $l$block_1;
       }
       var count = 0;
-      var tmp0_iterator_1 = this_2.j();
-      while (tmp0_iterator_1.k()) {
-        var element_1 = tmp0_iterator_1.l();
+      var tmp0_iterator_1 = this_2.m();
+      while (tmp0_iterator_1.n()) {
+        var element_1 = tmp0_iterator_1.o();
         // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
-        if (element_1.m2e('artifact')) {
+        if (element_1.o2e('artifact')) {
           count = count + 1 | 0;
           checkCountOverflow(count);
         }
@@ -30462,9 +30471,9 @@ protoOf(Game).q2k = function (start) {
     tmp_3 = false;
   }
   var zero = tmp_3;
-  var _iterator__ex2g4s = loose.j();
-  $l$loop_1: while (_iterator__ex2g4s.k()) {
-    var e = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = loose.m();
+  $l$loop_1: while (_iterator__ex2g4s.n()) {
+    var e = _iterator__ex2g4s.o();
     var tmp1_elvis_lhs = e.s27_1;
     var tmp_6;
     if (tmp1_elvis_lhs == null) {
@@ -30487,18 +30496,18 @@ protoOf(Game).q2k = function (start) {
     // Inline function 'kotlin.collections.filterTo' call
     var this_3 = this.f29_1;
     var destination_0 = ArrayList_init_$Create$();
-    var tmp0_iterator_2 = this_3.j();
-    while (tmp0_iterator_2.k()) {
-      var element_2 = tmp0_iterator_2.l();
+    var tmp0_iterator_2 = this_3.m();
+    while (tmp0_iterator_2.n()) {
+      var element_2 = tmp0_iterator_2.o();
       // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
       if (!(element_2 === e)) {
         destination_0.h(element_2);
       }
     }
     var sum = 0;
-    var tmp0_iterator_3 = destination_0.j();
-    while (tmp0_iterator_3.k()) {
-      var element_3 = tmp0_iterator_3.l();
+    var tmp0_iterator_3 = destination_0.m();
+    while (tmp0_iterator_3.n()) {
+      var element_3 = tmp0_iterator_3.o();
       var tmp_9 = sum;
       // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
       var tmp0_safe_receiver_1 = element_3.s27_1;
@@ -30516,7 +30525,7 @@ protoOf(Game).q2k = function (start) {
         var this_4 = this.f29_1;
         var tmp_11;
         if (isInterface(this_4, Collection)) {
-          tmp_11 = this_4.n();
+          tmp_11 = this_4.q();
         } else {
           tmp_11 = false;
         }
@@ -30524,9 +30533,9 @@ protoOf(Game).q2k = function (start) {
           tmp$ret$16 = false;
           break $l$block_3;
         }
-        var tmp0_iterator_4 = this_4.j();
-        while (tmp0_iterator_4.k()) {
-          var element_4 = tmp0_iterator_4.l();
+        var tmp0_iterator_4 = this_4.m();
+        while (tmp0_iterator_4.n()) {
+          var element_4 = tmp0_iterator_4.o();
           // Inline function 'com.mtgtrader.data.Game.equip.<anonymous>' call
           var tmp0_safe_receiver_2 = element_4.s27_1;
           if ((tmp0_safe_receiver_2 == null ? null : tmp0_safe_receiver_2.b21_1) === true) {
@@ -30545,7 +30554,7 @@ protoOf(Game).q2k = function (start) {
       this.g2a_1 = true;
     }
     if (cost > 0) {
-      var tmp3_elvis_lhs = this.e2i(pool, new Cost(cost, emptyList()));
+      var tmp3_elvis_lhs = this.g2i(pool, new Cost(cost, emptyList()));
       var tmp_12;
       if (tmp3_elvis_lhs == null) {
         continue $l$loop_1;
@@ -30567,16 +30576,16 @@ protoOf(Game).q2k = function (start) {
   return pool;
 };
 function sam$kotlin_Comparator$0_22(function_0) {
-  this.e2l_1 = function_0;
+  this.g2l_1 = function_0;
 }
 protoOf(sam$kotlin_Comparator$0_22).sc = function (a, b) {
-  return this.e2l_1(a, b);
+  return this.g2l_1(a, b);
 };
 protoOf(sam$kotlin_Comparator$0_22).compare = function (a, b) {
   return this.sc(a, b);
 };
 protoOf(sam$kotlin_Comparator$0_22).j3 = function () {
-  return this.e2l_1;
+  return this.g2l_1;
 };
 protoOf(sam$kotlin_Comparator$0_22).equals = function (other) {
   var tmp;
@@ -30600,11 +30609,11 @@ function spree$with(base, $c, kept) {
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(kept, 10));
-  var tmp0_iterator = kept.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = kept.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.with.<anonymous>' call
-    var tmp$ret$0 = item.qc().o(2);
+    var tmp$ret$0 = item.qc().r(2);
     destination.h(tmp$ret$0);
   }
   var tmp0_oracleText = joinToString(plus_0(base, destination), '\n');
@@ -30614,19 +30623,19 @@ function spree$with(base, $c, kept) {
   var tmp1_manaCost = tmp + joinToString(kept, '', VOID, VOID, VOID, VOID, WinOddsCalc$spree$with$lambda);
   // Inline function 'kotlin.collections.sumOf' call
   var sum = 0;
-  var tmp0_iterator_0 = kept.j();
-  while (tmp0_iterator_0.k()) {
-    var element = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = kept.m();
+  while (tmp0_iterator_0.n()) {
+    var element = tmp0_iterator_0.o();
     var tmp_0 = sum;
     // Inline function 'com.mtgtrader.data.WinOddsCalc.spree.with.<anonymous>' call
-    sum = tmp_0 + ManaOddsCalc_getInstance().a1q(element.qc().o(1)).j1i() | 0;
+    sum = tmp_0 + ManaOddsCalc_getInstance().a1q(element.qc().r(1)).j1i() | 0;
   }
   var tmp$ret$5 = sum;
   var tmp2_cmc = $c.k1g_1 + tmp$ret$5;
   return $c.z1g(VOID, VOID, VOID, tmp2_cmc, VOID, VOID, VOID, tmp1_manaCost, VOID, tmp0_oracleText);
 }
 function chooseModes$with(lines, i, end, kept) {
-  return joinToString(plus_0(plus_0(lines.x1(0, i + 1 | 0), kept), lines.x1(end._v, lines.m())), '\n');
+  return joinToString(plus_0(plus_0(lines.x1(0, i + 1 | 0), kept), lines.x1(end._v, lines.p())), '\n');
 }
 function readArtifacts$add(kind, n, map) {
   // Inline function 'kotlin.collections.set' call
@@ -30636,7 +30645,7 @@ function readArtifacts$add(kind, n, map) {
 }
 function readSpecial$after($line, m, group) {
   // Inline function 'kotlin.text.substring' call
-  var startIndex = (m.tb().b1_1 + 1 | 0) - m.qc().o(group).length | 0;
+  var startIndex = (m.tb().b1_1 + 1 | 0) - m.qc().r(group).length | 0;
   // Inline function 'kotlin.js.asDynamic' call
   return $line.substring(startIndex);
 }
@@ -30654,7 +30663,7 @@ function calculate$cumulative($turns, $games, counts) {
       inductionVariable = inductionVariable + 1 | 0;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.cumulative.<anonymous>' call
       sum = sum + counts[item] | 0;
-      var p = Math_instance.f2l(100.0 * sum / $games).g1();
+      var p = Math_instance.h2l(100.0 * sum / $games).g1();
       var tmp$ret$0 = p === 100 && sum < $games ? 99 : p;
       destination.h(tmp$ret$0);
     }
@@ -30664,14 +30673,14 @@ function calculate$cumulative($turns, $games, counts) {
 function WinOddsCalc$read62$lambda(it) {
   // Inline function 'kotlin.text.uppercase' call
   // Inline function 'kotlin.js.asDynamic' call
-  var tmp$ret$1 = it.qc().o(1).toUpperCase();
+  var tmp$ret$1 = it.qc().r(1).toUpperCase();
   return new Char(charSequenceGet(tmp$ret$1, 0));
 }
 function _no_name_provided__qut3iv_4($this) {
-  this.g2l_1 = $this;
+  this.i2l_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_4).z3 = function () {
-  return this.g2l_1.j();
+  return this.i2l_1.m();
 };
 protoOf(_no_name_provided__qut3iv_4).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.WinOddsCalc.read62.<anonymous>.<anonymous>' call
@@ -30684,14 +30693,14 @@ protoOf(_no_name_provided__qut3iv_4).a4 = function (element) {
 function WinOddsCalc$readChapters$lambda(it) {
   // Inline function 'kotlin.text.uppercase' call
   // Inline function 'kotlin.js.asDynamic' call
-  var tmp$ret$1 = it.qc().o(1).toUpperCase();
+  var tmp$ret$1 = it.qc().r(1).toUpperCase();
   return new Char(charSequenceGet(tmp$ret$1, 0));
 }
 function _no_name_provided__qut3iv_5($this) {
-  this.h2l_1 = $this;
+  this.j2l_1 = $this;
 }
 protoOf(_no_name_provided__qut3iv_5).z3 = function () {
-  return this.h2l_1.j();
+  return this.j2l_1.m();
 };
 protoOf(_no_name_provided__qut3iv_5).s2b = function (element) {
   // Inline function 'com.mtgtrader.data.WinOddsCalc.readChapters.<anonymous>' call
@@ -30712,16 +30721,16 @@ function WinOddsCalc$chooseModes$lambda($c, $own, $lands, $comboKeys, $lines, $i
   };
 }
 function WinOddsCalc$readKindTrigger$lambda(it) {
-  return !equals_0(it.qc().o(2), 'treasure', true);
+  return !equals_0(it.qc().r(2), 'treasure', true);
 }
 function WinOddsCalc$readGear$lambda(it) {
-  return toIntOrNull(it.qc().o(1));
+  return toIntOrNull(it.qc().r(1));
 }
 function WinOddsCalc$playBatch$lambda(it) {
   return it.g1w_1;
 }
 function WinOddsCalc$spree$with$lambda(it) {
-  return it.qc().o(1);
+  return it.qc().r(1);
 }
 function ComboKind_WINS_getInstance() {
   ComboKind_initEntries();
@@ -30980,14 +30989,14 @@ protoOf(WinOddsCalc).x1r = function (key) {
       return key;
   }
 };
-protoOf(WinOddsCalc).i2l = function (combo) {
+protoOf(WinOddsCalc).k2l = function (combo) {
   var tmp$ret$0;
   $l$block_0: {
     // Inline function 'kotlin.collections.any' call
     var this_0 = combo.v1q_1;
     var tmp;
     if (isInterface(this_0, Collection)) {
-      tmp = this_0.n();
+      tmp = this_0.q();
     } else {
       tmp = false;
     }
@@ -30995,9 +31004,9 @@ protoOf(WinOddsCalc).i2l = function (combo) {
       tmp$ret$0 = false;
       break $l$block_0;
     }
-    var tmp0_iterator = this_0.j();
-    while (tmp0_iterator.k()) {
-      var element = tmp0_iterator.l();
+    var tmp0_iterator = this_0.m();
+    while (tmp0_iterator.n()) {
+      var element = tmp0_iterator.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.plan.<anonymous>' call
       if (element === 'win-game' || element === 'infinite-damage') {
         tmp$ret$0 = true;
@@ -31012,9 +31021,9 @@ protoOf(WinOddsCalc).i2l = function (combo) {
   var this_1 = combo.v1q_1;
   var destination = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.plan.<anonymous>' call
     var tmp0_safe_receiver = WinOddsCalc_getInstance().j1k_1.c2(element_0);
@@ -31028,7 +31037,7 @@ protoOf(WinOddsCalc).i2l = function (combo) {
   }
   var loops = toSet(destination);
   var tokens = combo.v1q_1.u('infinite-tokens');
-  if (!wins && loops.n() && !tokens)
+  if (!wins && loops.q() && !tokens)
     return null;
   var creatures = 0;
   var opponent = false;
@@ -31037,18 +31046,18 @@ protoOf(WinOddsCalc).i2l = function (combo) {
   var this_2 = combo.y1q_1;
   // Inline function 'kotlin.collections.mapTo' call
   var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_2, 10));
-  var tmp0_iterator_1 = this_2.j();
-  while (tmp0_iterator_1.k()) {
-    var item = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = this_2.m();
+  while (tmp0_iterator_1.n()) {
+    var item = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.plan.<anonymous>' call
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
     var tmp$ret$8 = item.toLowerCase();
     destination_0.h(tmp$ret$8);
   }
-  var _iterator__ex2g4s = destination_0.j();
-  while (_iterator__ex2g4s.k()) {
-    var line = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = destination_0.m();
+  while (_iterator__ex2g4s.n()) {
+    var line = _iterator__ex2g4s.o();
     var tmp0_safe_receiver_0 = this.l1k_1.ob(line);
     if (tmp0_safe_receiver_0 == null)
       null;
@@ -31057,7 +31066,7 @@ protoOf(WinOddsCalc).i2l = function (combo) {
       // Inline function 'kotlin.contracts.contract' call
       // Inline function 'kotlin.comparisons.maxOf' call
       var a = creatures;
-      var b = WinOddsCalc_getInstance().z1p(tmp0_safe_receiver_0.qc().o(1));
+      var b = WinOddsCalc_getInstance().z1p(tmp0_safe_receiver_0.qc().r(1));
       creatures = Math.max(a, b);
     }
     if (contains_0(line, 'opponent controls') || contains_0(line, 'opponents control'))
@@ -31068,22 +31077,22 @@ protoOf(WinOddsCalc).i2l = function (combo) {
     else {
       // Inline function 'kotlin.let' call
       // Inline function 'kotlin.contracts.contract' call
-      var what = tmp1_safe_receiver.qc().o(1);
+      var what = tmp1_safe_receiver.qc().r(1);
       var element_1 = contains_0(what, '-1/-1 counter') ? listOf(['-1/-1 counter', 'blight', 'wither']) : contains_0(what, '+1/+1 counter') ? listOf_0('+1/+1 counter') : contains_0(what, 'damage') ? listOf_0('damage') : contains_0(what, 'sacrifice') ? listOf_0('sacrifice') : contains_0(what, 'untap') ? listOf_0('untap') : listOf_0('');
       enablers.h(element_1);
     }
   }
   return new ComboPlan(combo.t1q_1, wins, loops, tokens, creatures, opponent, enablers);
 };
-protoOf(WinOddsCalc).j2l = function (p, cards) {
+protoOf(WinOddsCalc).l2l = function (p, cards) {
   if (p.i2b_1)
     return true;
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = cards.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = cards.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.settle.<anonymous>' call
     if (p.o2b_1.u(element.j1w_1)) {
       destination.h(element);
@@ -31095,7 +31104,7 @@ protoOf(WinOddsCalc).j2l = function (p, cards) {
     // Inline function 'kotlin.collections.any' call
     var tmp;
     if (isInterface(pieces, Collection)) {
-      tmp = pieces.n();
+      tmp = pieces.q();
     } else {
       tmp = false;
     }
@@ -31103,9 +31112,9 @@ protoOf(WinOddsCalc).j2l = function (p, cards) {
       tmp$ret$3 = false;
       break $l$block_0;
     }
-    var tmp0_iterator_0 = pieces.j();
-    while (tmp0_iterator_0.k()) {
-      var element_0 = tmp0_iterator_0.l();
+    var tmp0_iterator_0 = pieces.m();
+    while (tmp0_iterator_0.n()) {
+      var element_0 = tmp0_iterator_0.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.settle.<anonymous>' call
       var tmp_0 = WinOddsCalc_getInstance().k1k_1;
       // Inline function 'kotlin.text.replace' call
@@ -31122,7 +31131,7 @@ protoOf(WinOddsCalc).j2l = function (p, cards) {
   var tmp_1;
   var tmp_2;
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!p.j2b_1.n()) {
+  if (!p.j2b_1.q()) {
     tmp_2 = own;
   } else {
     tmp_2 = false;
@@ -31138,9 +31147,9 @@ protoOf(WinOddsCalc).j2l = function (p, cards) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_1 = cards.j();
-  while (tmp0_iterator_1.k()) {
-    var element_1 = tmp0_iterator_1.l();
+  var tmp0_iterator_1 = cards.m();
+  while (tmp0_iterator_1.n()) {
+    var element_1 = tmp0_iterator_1.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.settle.<anonymous>' call
     if (loops.u(LoopEvent_DEATH_getInstance()) && element_1.e1y_1 || (loops.u(LoopEvent_ENTER_getInstance()) && element_1.f1y_1) || (loops.u(LoopEvent_COUNTER_getInstance()) && element_1.g1y_1)) {
       destination_0.h(element_1);
@@ -31148,9 +31157,9 @@ protoOf(WinOddsCalc).j2l = function (p, cards) {
   }
   // Inline function 'kotlin.collections.mapTo' call
   var destination_1 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_0, 10));
-  var tmp0_iterator_2 = destination_0.j();
-  while (tmp0_iterator_2.k()) {
-    var item = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = destination_0.m();
+  while (tmp0_iterator_2.n()) {
+    var item = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.settle.<anonymous>' call
     var tmp$ret$10 = item.j1w_1;
     destination_1.h(tmp$ret$10);
@@ -31159,7 +31168,7 @@ protoOf(WinOddsCalc).j2l = function (p, cards) {
   var tmp_4 = p;
   var tmp_5;
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!p.q2b_1.n()) {
+  if (!p.q2b_1.q()) {
     tmp_5 = ComboKind_LOOP_getInstance();
   } else {
     if (p.k2b_1) {
@@ -31230,9 +31239,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_0 = this.p1l_1;
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = this_0.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = this_0.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
     if (split_0(substringBefore(type, ' \u2014 '), charArrayOf([_Char___init__impl__6a9atx(32)])).u(element)) {
       destination.h(element);
@@ -31244,9 +31253,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
   // Inline function 'kotlin.collections.filterTo' call
   var this_1 = split_0(substringAfter(type, ' \u2014 ', ''), charArrayOf([_Char___init__impl__6a9atx(32)]));
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = this_1.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = this_1.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
     // Inline function 'kotlin.text.isNotBlank' call
     if (!isBlank(element_0)) {
@@ -31278,9 +31287,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
     // Inline function 'kotlin.js.asDynamic' call
     var landLower = landText.toLowerCase();
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_1 = split_0(landText, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = split_0(landText, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
       var tmp_4 = WinOddsCalc_getInstance();
       // Inline function 'kotlin.text.trim' call
@@ -31291,14 +31300,14 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
     var tmp_5 = w;
     var tmp4_safe_receiver = this.w1p_1.ob(landLower);
     var tmp5_safe_receiver = tmp4_safe_receiver == null ? null : tmp4_safe_receiver.qc();
-    var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.o(1);
+    var tmp6_safe_receiver = tmp5_safe_receiver == null ? null : tmp5_safe_receiver.r(1);
     var tmp7_elvis_lhs = tmp6_safe_receiver == null ? null : toInt(tmp6_safe_receiver);
     tmp_5.i1z_1 = tmp7_elvis_lhs == null ? 0 : tmp7_elvis_lhs;
     w.x1y_1 = Regex_init_$Create$('target creature gets \\+x/\\+x[^.]*where x is the number of gates you control').nb(landLower);
     w.j24_1 = Regex_init_$Create$('sacrifice[^:]*: search your library for [^.]*?card[^.]*?put (?:it|them) onto the battlefield').nb(landLower);
-    var _iterator__ex2g4s = split_0(landLower, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-    while (_iterator__ex2g4s.k()) {
-      var line = _iterator__ex2g4s.l();
+    var _iterator__ex2g4s = split_0(landLower, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+    while (_iterator__ex2g4s.n()) {
+      var line = _iterator__ex2g4s.o();
       // Inline function 'kotlin.text.trim' call
       var tmp$ret$18 = toString(trim(isCharSequence(line) ? line : THROW_CCE()));
       var tmp8_safe_receiver = this.a1p_1.ob(tmp$ret$18);
@@ -31308,17 +31317,17 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         var tmp_6 = w;
-        var tmp_7 = tmp8_safe_receiver.qc().o(3);
+        var tmp_7 = tmp8_safe_receiver.qc().r(3);
         // Inline function 'kotlin.text.uppercase' call
         // Inline function 'kotlin.js.asDynamic' call
-        var tmp$ret$20 = tmp8_safe_receiver.qc().o(2).toUpperCase();
+        var tmp$ret$20 = tmp8_safe_receiver.qc().r(2).toUpperCase();
         tmp_6.t22_1 = to(tmp_7, new Char(charSequenceGet(tmp$ret$20, 0)));
-        w.k24_1 = ManaOddsCalc_getInstance().a1q(tmp8_safe_receiver.qc().o(1)).j1i();
+        w.k24_1 = ManaOddsCalc_getInstance().a1q(tmp8_safe_receiver.qc().r(1)).j1i();
       }
     }
-    var _iterator__ex2g4s_0 = split_0(landLower, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-    while (_iterator__ex2g4s_0.k()) {
-      var line_0 = _iterator__ex2g4s_0.l();
+    var _iterator__ex2g4s_0 = split_0(landLower, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+    while (_iterator__ex2g4s_0.n()) {
+      var line_0 = _iterator__ex2g4s_0.o();
       // Inline function 'kotlin.text.trim' call
       var tmp$ret$22 = toString(trim(isCharSequence(line_0) ? line_0 : THROW_CCE()));
       var tmp9_safe_receiver = this.b1p_1.ob(tmp$ret$22);
@@ -31331,20 +31340,20 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
         var tmp_9 = WinOddsCalc_getInstance().d1k_1;
         // Inline function 'kotlin.text.lowercase' call
         // Inline function 'kotlin.js.asDynamic' call
-        var tmp$ret$24 = tmp9_safe_receiver.qc().o(3).toLowerCase();
+        var tmp$ret$24 = tmp9_safe_receiver.qc().r(3).toLowerCase();
         var tmp_10 = '\x00graveyard ' + toString_0(getValue(tmp_9, tmp$ret$24).k1_1);
         // Inline function 'kotlin.text.uppercase' call
         // Inline function 'kotlin.js.asDynamic' call
-        var tmp$ret$26 = tmp9_safe_receiver.qc().o(2).toUpperCase();
+        var tmp$ret$26 = tmp9_safe_receiver.qc().r(2).toUpperCase();
         tmp_8.t22_1 = to(tmp_10, new Char(charSequenceGet(tmp$ret$26, 0)));
-        w.k24_1 = ManaOddsCalc_getInstance().a1q(tmp9_safe_receiver.qc().o(1)).j1i();
+        w.k24_1 = ManaOddsCalc_getInstance().a1q(tmp9_safe_receiver.qc().r(1)).j1i();
       }
     }
     if (w.l1y_1.u('Saga'))
       w.j25_1 = readChapters(this, w, landText);
-    var _iterator__ex2g4s_1 = split_0(landText, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-    while (_iterator__ex2g4s_1.k()) {
-      var line_1 = _iterator__ex2g4s_1.l();
+    var _iterator__ex2g4s_1 = split_0(landText, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+    while (_iterator__ex2g4s_1.n()) {
+      var line_1 = _iterator__ex2g4s_1.o();
       // Inline function 'kotlin.text.trim' call
       var tmp$ret$28 = toString(trim(isCharSequence(line_1) ? line_1 : THROW_CCE()));
       var tmp10_safe_receiver = this.v1p_1.ob(tmp$ret$28);
@@ -31354,12 +31363,12 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         var a = new Ability();
-        readAbility(WinOddsCalc_getInstance(), a, 'Create ' + tmp10_safe_receiver.qc().o(2), w, true);
+        readAbility(WinOddsCalc_getInstance(), a, 'Create ' + tmp10_safe_receiver.qc().r(2), w, true);
         if (a.g1t_1 === 0)
           a.g1t_1 = 1;
         if (a.h1t_1 == null)
           a.h1t_1 = tokenKind(WinOddsCalc_getInstance(), line_1);
-        a.c1t_1 = ManaOddsCalc_getInstance().a1q(tmp10_safe_receiver.qc().o(1));
+        a.c1t_1 = ManaOddsCalc_getInstance().a1q(tmp10_safe_receiver.qc().r(1));
         w.v25_1.h(a);
       }
     }
@@ -31394,9 +31403,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_2 = this.p1l_1;
       var destination_1 = ArrayList_init_$Create$();
-      var tmp0_iterator_2 = this_2.j();
-      while (tmp0_iterator_2.k()) {
-        var element_2 = tmp0_iterator_2.l();
+      var tmp0_iterator_2 = this_2.m();
+      while (tmp0_iterator_2.n()) {
+        var element_2 = tmp0_iterator_2.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
         if (split_0(substringBefore(landType, ' \u2014 '), charArrayOf([_Char___init__impl__6a9atx(32)])).u(element_2)) {
           destination_1.h(element_2);
@@ -31408,9 +31417,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_3 = split_0(substringAfter(landType, ' \u2014 ', ''), charArrayOf([_Char___init__impl__6a9atx(32)]));
       var destination_2 = ArrayList_init_$Create$();
-      var tmp0_iterator_3 = this_3.j();
-      while (tmp0_iterator_3.k()) {
-        var element_3 = tmp0_iterator_3.l();
+      var tmp0_iterator_3 = this_3.m();
+      while (tmp0_iterator_3.n()) {
+        var element_3 = tmp0_iterator_3.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
         // Inline function 'kotlin.text.isNotBlank' call
         if (!isBlank(element_3)) {
@@ -31494,9 +31503,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
   tmp_24.d1y_1 = text.toLowerCase();
   var prefix = '';
   var saga = w.l1y_1.u('Saga');
-  var _iterator__ex2g4s_2 = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)])).j();
-  $l$loop_1: while (_iterator__ex2g4s_2.k()) {
-    var raw = _iterator__ex2g4s_2.l();
+  var _iterator__ex2g4s_2 = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)])).m();
+  $l$loop_1: while (_iterator__ex2g4s_2.n()) {
+    var raw = _iterator__ex2g4s_2.o();
     // Inline function 'kotlin.text.trim' call
     var line_2 = toString(trim(isCharSequence(raw) ? raw : THROW_CCE()));
     if (w.l1y_1.u('Class') && Regex_init_$Create$_0('^(?:\\{[^}]+\\})+: level \\d', this.p1k_1).nb(line_2))
@@ -31523,7 +31532,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       continue $l$loop_1;
     var tmp26_safe_receiver = Regex_init_$Create$_0('^((?:when|whenever|at the beginning of)[^,]*, )choose (?:one|two|one or more) \u2014$', this.p1k_1).ob(line_2);
     var tmp27_safe_receiver = tmp26_safe_receiver == null ? null : tmp26_safe_receiver.qc();
-    var tmp28_elvis_lhs = tmp27_safe_receiver == null ? null : tmp27_safe_receiver.o(1);
+    var tmp28_elvis_lhs = tmp27_safe_receiver == null ? null : tmp27_safe_receiver.r(1);
     prefix = tmp28_elvis_lhs == null ? '' : tmp28_elvis_lhs;
     var tmp_27;
     if (w.k1w_1) {
@@ -31551,7 +31560,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       var this_8 = w.e1x_1;
       var tmp_30;
       if (isInterface(this_8, Collection)) {
-        tmp_30 = this_8.n();
+        tmp_30 = this_8.q();
       } else {
         tmp_30 = false;
       }
@@ -31559,9 +31568,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
         tmp$ret$54 = false;
         break $l$block_0;
       }
-      var tmp0_iterator_4 = this_8.j();
-      while (tmp0_iterator_4.k()) {
-        var element_4 = tmp0_iterator_4.l();
+      var tmp0_iterator_4 = this_8.m();
+      while (tmp0_iterator_4.n()) {
+        var element_4 = tmp0_iterator_4.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
         if (!element_4.o2c_1) {
           tmp$ret$54 = true;
@@ -31581,7 +31590,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
     var this_9 = split_0(text, charArrayOf([_Char___init__impl__6a9atx(10)]));
     var tmp_32;
     if (isInterface(this_9, Collection)) {
-      tmp_32 = this_9.n();
+      tmp_32 = this_9.q();
     } else {
       tmp_32 = false;
     }
@@ -31589,9 +31598,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       tmp$ret$56 = false;
       break $l$block_2;
     }
-    var tmp0_iterator_5 = this_9.j();
-    while (tmp0_iterator_5.k()) {
-      var element_5 = tmp0_iterator_5.l();
+    var tmp0_iterator_5 = this_9.m();
+    while (tmp0_iterator_5.n()) {
+      var element_5 = tmp0_iterator_5.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
       var tmp_33;
       // Inline function 'kotlin.text.trim' call
@@ -31617,7 +31626,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var what = tmp29_safe_receiver.qc().o(1).toLowerCase();
+    var what = tmp29_safe_receiver.qc().r(1).toLowerCase();
     var once = !w.k1w_1 || Regex_init_$Create$_0('when [^.]*enters[^.]*search your library', RegexOption_IGNORE_CASE_getInstance()).nb(text);
     var tmp$ret$61;
     $l$block_4: {
@@ -31625,7 +31634,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       var this_10 = listOf(['land', 'basic', 'plains', 'island', 'swamp', 'mountain', 'forest']);
       var tmp_34;
       if (isInterface(this_10, Collection)) {
-        tmp_34 = this_10.n();
+        tmp_34 = this_10.q();
       } else {
         tmp_34 = false;
       }
@@ -31633,9 +31642,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
         tmp$ret$61 = false;
         break $l$block_4;
       }
-      var tmp0_iterator_6 = this_10.j();
-      while (tmp0_iterator_6.k()) {
-        var element_6 = tmp0_iterator_6.l();
+      var tmp0_iterator_6 = this_10.m();
+      while (tmp0_iterator_6.n()) {
+        var element_6 = tmp0_iterator_6.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>.<anonymous>' call
         if (contains_0(what, element_6)) {
           tmp$ret$61 = true;
@@ -31652,9 +31661,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       // Inline function 'kotlin.collections.filterTo' call
       var this_11 = WinOddsCalc_getInstance().u1l_1;
       var destination_3 = ArrayList_init_$Create$();
-      var tmp0_iterator_7 = this_11.j();
-      while (tmp0_iterator_7.k()) {
-        var element_7 = tmp0_iterator_7.l();
+      var tmp0_iterator_7 = this_11.m();
+      while (tmp0_iterator_7.n()) {
+        var element_7 = tmp0_iterator_7.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>.<anonymous>' call
         if (contains_0(what, element_7)) {
           destination_3.h(element_7);
@@ -31662,9 +31671,9 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
       }
       // Inline function 'kotlin.collections.mapTo' call
       var destination_4 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_3, 10));
-      var tmp0_iterator_8 = destination_3.j();
-      while (tmp0_iterator_8.k()) {
-        var item = tmp0_iterator_8.l();
+      var tmp0_iterator_8 = destination_3.m();
+      while (tmp0_iterator_8.n()) {
+        var item = tmp0_iterator_8.o();
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>.<anonymous>' call
         // Inline function 'kotlin.text.replaceFirstChar' call
         var tmp_36;
@@ -31710,7 +31719,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
   var tmp_40 = w;
   var tmp30_safe_receiver = this.w1p_1.ob(w.d1y_1);
   var tmp31_safe_receiver = tmp30_safe_receiver == null ? null : tmp30_safe_receiver.qc();
-  var tmp32_safe_receiver = tmp31_safe_receiver == null ? null : tmp31_safe_receiver.o(1);
+  var tmp32_safe_receiver = tmp31_safe_receiver == null ? null : tmp31_safe_receiver.r(1);
   var tmp33_elvis_lhs = tmp32_safe_receiver == null ? null : toInt(tmp32_safe_receiver);
   tmp_40.i1z_1 = tmp33_elvis_lhs == null ? 0 : tmp33_elvis_lhs;
   if (contains_0(w.d1y_1, 'gate card') && contains_0(w.d1y_1, 'search your library')) {
@@ -31727,7 +31736,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
         // Inline function 'kotlin.let' call
         // Inline function 'kotlin.contracts.contract' call
         // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
-        tmp_42 = WinOddsCalc_getInstance().z1p(tmp34_safe_receiver.qc().o(1));
+        tmp_42 = WinOddsCalc_getInstance().z1p(tmp34_safe_receiver.qc().r(1));
       }
       var tmp35_elvis_lhs = tmp_42;
       tmp_41.t1y_1 = tmp35_elvis_lhs == null ? 1 : tmp35_elvis_lhs;
@@ -31746,7 +31755,7 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
     // Inline function 'kotlin.contracts.contract' call
     // Inline function 'kotlin.text.lowercase' call
     // Inline function 'kotlin.js.asDynamic' call
-    var kind = tmp36_safe_receiver.qc().o(1).toLowerCase();
+    var kind = tmp36_safe_receiver.qc().r(1).toLowerCase();
     if (!setOf(['land', 'basic', 'creature', 'artifact', 'enchantment', 'gate']).u(kind) && !w.g1w_1.k1i_1.equals(Kind_RAMP_getInstance())) {
       w.q1y_1 = kind;
       var tmp_43 = w;
@@ -31767,21 +31776,21 @@ protoOf(WinOddsCalc).x2d = function (c, own, lands, comboKeys) {
   if (w.g25_1)
     w.u1z_1.m1v_1 = 0;
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_9 = w.z2b().j();
-  while (tmp0_iterator_9.k()) {
-    var element_8 = tmp0_iterator_9.l();
+  var tmp0_iterator_9 = w.z2b().m();
+  while (tmp0_iterator_9.n()) {
+    var element_8 = tmp0_iterator_9.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.classify.<anonymous>' call
     element_8.n2d();
   }
   return w;
 };
-protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, random) {
+protoOf(WinOddsCalc).m2l = function (cards, identity, combos, games, turns, random) {
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination = ArrayList_init_$Create$();
-  var tmp0_iterator = cards.j();
-  while (tmp0_iterator.k()) {
-    var element = tmp0_iterator.l();
+  var tmp0_iterator = cards.m();
+  while (tmp0_iterator.n()) {
+    var element = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     if (element.m1g_1) {
       destination.h(element);
@@ -31791,9 +31800,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.filterNot' call
   // Inline function 'kotlin.collections.filterNotTo' call
   var destination_0 = ArrayList_init_$Create$();
-  var tmp0_iterator_0 = cards.j();
-  while (tmp0_iterator_0.k()) {
-    var element_0 = tmp0_iterator_0.l();
+  var tmp0_iterator_0 = cards.m();
+  while (tmp0_iterator_0.n()) {
+    var element_0 = tmp0_iterator_0.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     if (!element_0.m1g_1) {
       destination_0.h(element_0);
@@ -31801,14 +31810,14 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   }
   var library = destination_0;
   var tmp;
-  if (commanders.n()) {
+  if (commanders.q()) {
     tmp = true;
   } else {
     // Inline function 'kotlin.collections.sumOf' call
     var sum = 0;
-    var tmp0_iterator_1 = library.j();
-    while (tmp0_iterator_1.k()) {
-      var element_1 = tmp0_iterator_1.l();
+    var tmp0_iterator_1 = library.m();
+    while (tmp0_iterator_1.n()) {
+      var element_1 = tmp0_iterator_1.o();
       var tmp_0 = sum;
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       sum = tmp_0 + element_1.j1g_1 | 0;
@@ -31838,9 +31847,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_2 = ArrayList_init_$Create$();
-  var tmp0_iterator_2 = library.j();
-  while (tmp0_iterator_2.k()) {
-    var element_3 = tmp0_iterator_2.l();
+  var tmp0_iterator_2 = library.m();
+  while (tmp0_iterator_2.n()) {
+    var element_3 = tmp0_iterator_2.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     if (element_3.u1g()) {
       destination_2.h(element_3);
@@ -31851,11 +31860,11 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var destination_3 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_3 = combos.j();
-  while (tmp0_iterator_3.k()) {
-    var element_4 = tmp0_iterator_3.l();
+  var tmp0_iterator_3 = combos.m();
+  while (tmp0_iterator_3.n()) {
+    var element_4 = tmp0_iterator_3.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
-    var tmp0_safe_receiver = this.i2l(element_4);
+    var tmp0_safe_receiver = this.k2l(element_4);
     if (tmp0_safe_receiver == null)
       null;
     else {
@@ -31868,9 +31877,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.flatMap' call
   // Inline function 'kotlin.collections.flatMapTo' call
   var destination_4 = ArrayList_init_$Create$();
-  var tmp0_iterator_4 = candidates.j();
-  while (tmp0_iterator_4.k()) {
-    var element_5 = tmp0_iterator_4.l();
+  var tmp0_iterator_4 = candidates.m();
+  while (tmp0_iterator_4.n()) {
+    var element_5 = tmp0_iterator_4.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     var list = element_5.o2b_1;
     addAll(destination_4, list);
@@ -31878,9 +31887,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   var comboKeys = toSet(destination_4);
   var deck = ArrayList_init_$Create$();
   var kinds = ArrayList_init_$Create$();
-  var _iterator__ex2g4s = library.j();
-  while (_iterator__ex2g4s.k()) {
-    var c = _iterator__ex2g4s.l();
+  var _iterator__ex2g4s = library.m();
+  while (_iterator__ex2g4s.n()) {
+    var c = _iterator__ex2g4s.o();
     var w = this.x2d(c, own, lands, comboKeys);
     // Inline function 'kotlin.collections.plusAssign' call
     kinds.h(w);
@@ -31901,9 +31910,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination_5 = ArrayList_init_$Create$_0(collectionSizeOrDefault(commanders, 10));
-  var tmp0_iterator_5 = commanders.j();
-  while (tmp0_iterator_5.k()) {
-    var item = tmp0_iterator_5.l();
+  var tmp0_iterator_5 = commanders.m();
+  while (tmp0_iterator_5.n()) {
+    var item = tmp0_iterator_5.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     var tmp$ret$21 = WinOddsCalc_getInstance().x2d(item, own, lands, comboKeys);
     destination_5.h(tmp$ret$21);
@@ -31913,17 +31922,17 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.flatMapTo' call
   var this_0 = plus_0(kinds, leaders);
   var destination_6 = ArrayList_init_$Create$();
-  var tmp0_iterator_6 = this_0.j();
-  while (tmp0_iterator_6.k()) {
-    var element_6 = tmp0_iterator_6.l();
+  var tmp0_iterator_6 = this_0.m();
+  while (tmp0_iterator_6.n()) {
+    var element_6 = tmp0_iterator_6.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     // Inline function 'kotlin.collections.map' call
     var this_1 = element_6.e20_1;
     // Inline function 'kotlin.collections.mapTo' call
     var destination_7 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_1, 10));
-    var tmp0_iterator_7 = this_1.j();
-    while (tmp0_iterator_7.k()) {
-      var item_0 = tmp0_iterator_7.l();
+    var tmp0_iterator_7 = this_1.m();
+    while (tmp0_iterator_7.n()) {
+      var item_0 = tmp0_iterator_7.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>' call
       var tmp$ret$24 = to(element_6, item_0);
       destination_7.h(tmp$ret$24);
@@ -31932,9 +31941,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     addAll(destination_6, list_0);
   }
   var lords = destination_6;
-  var _iterator__ex2g4s_0 = plus_0(kinds, leaders).j();
-  while (_iterator__ex2g4s_0.k()) {
-    var c_0 = _iterator__ex2g4s_0.l();
+  var _iterator__ex2g4s_0 = plus_0(kinds, leaders).m();
+  while (_iterator__ex2g4s_0.n()) {
+    var c_0 = _iterator__ex2g4s_0.o();
     if (c_0.l1w_1 && c_0.o1w_1 <= 0) {
       var tmp_1 = c_0;
       var tmp$ret$30;
@@ -31942,7 +31951,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
         // Inline function 'kotlin.collections.any' call
         var tmp_2;
         if (isInterface(lords, Collection)) {
-          tmp_2 = lords.n();
+          tmp_2 = lords.q();
         } else {
           tmp_2 = false;
         }
@@ -31950,9 +31959,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
           tmp$ret$30 = false;
           break $l$block_6;
         }
-        var tmp0_iterator_8 = lords.j();
-        while (tmp0_iterator_8.k()) {
-          var element_7 = tmp0_iterator_8.l();
+        var tmp0_iterator_8 = lords.m();
+        while (tmp0_iterator_8.n()) {
+          var element_7 = tmp0_iterator_8.o();
           // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
           var l = element_7.ce();
           var lord = element_7.de();
@@ -31968,7 +31977,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
                 var this_2 = split_0(lord.z2c_1, charArrayOf([_Char___init__impl__6a9atx(124)]));
                 var tmp_5;
                 if (isInterface(this_2, Collection)) {
-                  tmp_5 = this_2.n();
+                  tmp_5 = this_2.q();
                 } else {
                   tmp_5 = false;
                 }
@@ -31976,9 +31985,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
                   tmp$ret$31 = false;
                   break $l$block_5;
                 }
-                var tmp0_iterator_9 = this_2.j();
-                while (tmp0_iterator_9.k()) {
-                  var element_8 = tmp0_iterator_9.l();
+                var tmp0_iterator_9 = this_2.m();
+                while (tmp0_iterator_9.n()) {
+                  var element_8 = tmp0_iterator_9.o();
                   // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>' call
                   var tmp_6;
                   var tmp$ret$32;
@@ -31987,7 +31996,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
                     var this_3 = c_0.v1x_1;
                     var tmp_7;
                     if (isInterface(this_3, Collection)) {
-                      tmp_7 = this_3.n();
+                      tmp_7 = this_3.q();
                     } else {
                       tmp_7 = false;
                     }
@@ -31995,9 +32004,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
                       tmp$ret$32 = false;
                       break $l$block_2;
                     }
-                    var tmp0_iterator_10 = this_3.j();
-                    while (tmp0_iterator_10.k()) {
-                      var element_9 = tmp0_iterator_10.l();
+                    var tmp0_iterator_10 = this_3.m();
+                    while (tmp0_iterator_10.n()) {
+                      var element_9 = tmp0_iterator_10.o();
                       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>.<anonymous>' call
                       if (equals_0(element_9, element_8, true)) {
                         tmp$ret$32 = true;
@@ -32015,7 +32024,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
                       var this_4 = c_0.l1y_1;
                       var tmp_8;
                       if (isInterface(this_4, Collection)) {
-                        tmp_8 = this_4.n();
+                        tmp_8 = this_4.q();
                       } else {
                         tmp_8 = false;
                       }
@@ -32023,9 +32032,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
                         tmp$ret$34 = false;
                         break $l$block_4;
                       }
-                      var tmp0_iterator_11 = this_4.j();
-                      while (tmp0_iterator_11.k()) {
-                        var element_10 = tmp0_iterator_11.l();
+                      var tmp0_iterator_11 = this_4.m();
+                      while (tmp0_iterator_11.n()) {
+                        var element_10 = tmp0_iterator_11.o();
                         // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>.<anonymous>' call
                         if (equals_0(element_10, element_8, true)) {
                           tmp$ret$34 = true;
@@ -32062,11 +32071,11 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_8 = ArrayList_init_$Create$();
-  var tmp0_iterator_12 = candidates.j();
-  while (tmp0_iterator_12.k()) {
-    var element_11 = tmp0_iterator_12.l();
+  var tmp0_iterator_12 = candidates.m();
+  while (tmp0_iterator_12.n()) {
+    var element_11 = tmp0_iterator_12.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
-    if (WinOddsCalc_getInstance().j2l(element_11, plus_0(kinds, leaders))) {
+    if (WinOddsCalc_getInstance().l2l(element_11, plus_0(kinds, leaders))) {
       destination_8.h(element_11);
     }
   }
@@ -32075,9 +32084,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.filter' call
   // Inline function 'kotlin.collections.filterTo' call
   var destination_9 = ArrayList_init_$Create$();
-  var tmp0_iterator_13 = plans.j();
-  while (tmp0_iterator_13.k()) {
-    var element_12 = tmp0_iterator_13.l();
+  var tmp0_iterator_13 = plans.m();
+  while (tmp0_iterator_13.n()) {
+    var element_12 = tmp0_iterator_13.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     if (element_12.p2b_1.equals(ComboKind_LOOP_getInstance())) {
       destination_9.h(element_12);
@@ -32085,28 +32094,28 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   }
   // Inline function 'kotlin.collections.flatMapTo' call
   var destination_10 = ArrayList_init_$Create$();
-  var tmp0_iterator_14 = destination_9.j();
-  while (tmp0_iterator_14.k()) {
-    var element_13 = tmp0_iterator_14.l();
+  var tmp0_iterator_14 = destination_9.m();
+  while (tmp0_iterator_14.n()) {
+    var element_13 = tmp0_iterator_14.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     var list_1 = element_13.q2b_1;
     addAll(destination_10, list_1);
   }
   var payoffKeys = toSet(destination_10);
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_15 = plus_0(kinds, leaders).j();
-  while (tmp0_iterator_15.k()) {
-    var element_14 = tmp0_iterator_15.l();
+  var tmp0_iterator_15 = plus_0(kinds, leaders).m();
+  while (tmp0_iterator_15.n()) {
+    var element_14 = tmp0_iterator_15.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     if (payoffKeys.u(element_14.j1w_1))
       element_14.u1x_1 = true;
   }
   // Inline function 'kotlin.collections.isNotEmpty' call
-  if (!plans.n()) {
+  if (!plans.q()) {
     // Inline function 'kotlin.collections.forEach' call
-    var tmp0_iterator_16 = plus_0(kinds, leaders).j();
-    while (tmp0_iterator_16.k()) {
-      var element_15 = tmp0_iterator_16.l();
+    var tmp0_iterator_16 = plus_0(kinds, leaders).m();
+    while (tmp0_iterator_16.n()) {
+      var element_15 = tmp0_iterator_16.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (!(element_15.i1y_1 == null))
         element_15.k1y_1 = true;
@@ -32115,7 +32124,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   var won = new Int32Array(turns + 1 | 0);
   var byCombo = new Int32Array(turns + 1 | 0);
   var byMaze = new Int32Array(turns + 1 | 0);
-  var dealt = longArray(this.i1k_1.m());
+  var dealt = longArray(this.i1k_1.p());
   var knockouts = 0;
   var wins = 0;
   var tmp_9 = plus_0(kinds, leaders);
@@ -32123,9 +32132,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.mapNotNullTo' call
   var destination_11 = ArrayList_init_$Create$();
   // Inline function 'kotlin.collections.forEach' call
-  var tmp0_iterator_17 = kinds.j();
-  while (tmp0_iterator_17.k()) {
-    var element_16 = tmp0_iterator_17.l();
+  var tmp0_iterator_17 = kinds.m();
+  while (tmp0_iterator_17.n()) {
+    var element_16 = tmp0_iterator_17.o();
     // Inline function 'kotlin.collections.mapNotNullTo.<anonymous>' call
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     var tmp0_safe_receiver_0 = element_16.l24_1;
@@ -32176,7 +32185,8 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       // Inline function 'kotlin.contracts.contract' call
       var $this$run = WinOddsCalc_getInstance();
       try {
-        results[b] = playBatch($this$run, (games / batches | 0) + (b < (games % batches | 0) ? 1 : 0) | 0, Random(seeds.o(b)), deck, leaders, own, plans, features, turns);
+        var tmp0_elvis_lhs = WebBatches_instance.p2l(b, turns);
+        results[b] = tmp0_elvis_lhs == null ? playBatch($this$run, (games / batches | 0) + (b < (games % batches | 0) ? 1 : 0) | 0, Random(seeds.r(b)), deck, leaders, own, plans, features, turns) : tmp0_elvis_lhs;
       } catch ($p) {
         if ($p instanceof Error) {
           var e = $p;
@@ -32213,25 +32223,25 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.contracts.contract' call
     throw tmp0_safe_receiver_1;
   }
-  var _iterator__ex2g4s_1 = filterNotNull(results).j();
-  while (_iterator__ex2g4s_1.k()) {
-    var r = _iterator__ex2g4s_1.l();
+  var _iterator__ex2g4s_1 = filterNotNull(results).m();
+  while (_iterator__ex2g4s_1.n()) {
+    var r = _iterator__ex2g4s_1.o();
     var inductionVariable_4 = 0;
     if (inductionVariable_4 <= turns)
       do {
         var t = inductionVariable_4;
         inductionVariable_4 = inductionVariable_4 + 1 | 0;
         var _index_0__fvwizt = t;
-        won[_index_0__fvwizt] = won[_index_0__fvwizt] + r.b2e_1[t] | 0;
+        won[_index_0__fvwizt] = won[_index_0__fvwizt] + r.c2e_1[t] | 0;
         var _index_0__fvwizt_0 = t;
-        byCombo[_index_0__fvwizt_0] = byCombo[_index_0__fvwizt_0] + r.c2e_1[t] | 0;
+        byCombo[_index_0__fvwizt_0] = byCombo[_index_0__fvwizt_0] + r.d2e_1[t] | 0;
         var _index_0__fvwizt_1 = t;
-        byMaze[_index_0__fvwizt_1] = byMaze[_index_0__fvwizt_1] + r.d2e_1[t] | 0;
+        byMaze[_index_0__fvwizt_1] = byMaze[_index_0__fvwizt_1] + r.e2e_1[t] | 0;
       }
        while (!(t === turns));
     // Inline function 'kotlin.collections.forEachIndexed' call
     var index_2 = 0;
-    var indexedObject = r.e2e_1;
+    var indexedObject = r.f2e_1;
     var inductionVariable_5 = 0;
     var last_2 = indexedObject.length;
     while (inductionVariable_5 < last_2) {
@@ -32242,8 +32252,8 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       index_2 = tmp1 + 1 | 0;
       dealt[tmp1] = dealt[tmp1].g(item_2);
     }
-    wins = wins + r.f2e_1 | 0;
-    knockouts = knockouts + r.g2e_1 | 0;
+    wins = wins + r.g2e_1 | 0;
+    knockouts = knockouts + r.h2e_1 | 0;
   }
   var total = coerceAtLeast_1(sum_0(dealt), new Long(1, 0));
   var all = plus_0(kinds, leaders);
@@ -32255,34 +32265,34 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.mapIndexedTo' call
   var destination_13 = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_6, 10));
   var index_3 = 0;
-  var tmp0_iterator_18 = this_6.j();
-  while (tmp0_iterator_18.k()) {
-    var item_3 = tmp0_iterator_18.l();
+  var tmp0_iterator_18 = this_6.m();
+  while (tmp0_iterator_18.n()) {
+    var item_3 = tmp0_iterator_18.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     var tmp1_0 = index_3;
     index_3 = tmp1_0 + 1 | 0;
     var i = checkIndexOverflow(tmp1_0);
-    var tmp$ret$64 = to(item_3, Math_instance.f2l(100.0 * dealt[i].i3() / total.i3()).g1());
+    var tmp$ret$64 = to(item_3, Math_instance.h2l(100.0 * dealt[i].i3() / total.i3()).g1());
     destination_13.h(tmp$ret$64);
   }
   // Inline function 'kotlin.collections.filterTo' call
   var destination_14 = ArrayList_init_$Create$();
-  var tmp0_iterator_19 = destination_13.j();
-  while (tmp0_iterator_19.k()) {
-    var element_18 = tmp0_iterator_19.l();
+  var tmp0_iterator_19 = destination_13.m();
+  while (tmp0_iterator_19.n()) {
+    var element_18 = tmp0_iterator_19.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     if (element_18.be_1 > 0) {
       destination_14.h(element_18);
     }
   }
   var tmp_12 = toMap(destination_14);
-  var tmp_13 = wins === 0 ? 0 : Math_instance.f2l(100.0 * knockouts / wins).g1();
+  var tmp_13 = wins === 0 ? 0 : Math_instance.h2l(100.0 * knockouts / wins).g1();
   var tmp$ret$70;
   $l$block_8: {
     // Inline function 'kotlin.collections.count' call
     var tmp_14;
     if (isInterface(deck, Collection)) {
-      tmp_14 = deck.n();
+      tmp_14 = deck.q();
     } else {
       tmp_14 = false;
     }
@@ -32291,9 +32301,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_8;
     }
     var count = 0;
-    var tmp0_iterator_20 = deck.j();
-    while (tmp0_iterator_20.k()) {
-      var element_19 = tmp0_iterator_20.l();
+    var tmp0_iterator_20 = deck.m();
+    while (tmp0_iterator_20.n()) {
+      var element_19 = tmp0_iterator_20.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_19.l1w_1 && element_19.o1w_1 > 0) {
         count = count + 1 | 0;
@@ -32308,7 +32318,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_16;
     if (isInterface(leaders, Collection)) {
-      tmp_16 = leaders.n();
+      tmp_16 = leaders.q();
     } else {
       tmp_16 = false;
     }
@@ -32317,9 +32327,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_9;
     }
     var count_0 = 0;
-    var tmp0_iterator_21 = leaders.j();
-    while (tmp0_iterator_21.k()) {
-      var element_20 = tmp0_iterator_21.l();
+    var tmp0_iterator_21 = leaders.m();
+    while (tmp0_iterator_21.n()) {
+      var element_20 = tmp0_iterator_21.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_20.l1w_1 && element_20.o1w_1 > 0) {
         count_0 = count_0 + 1 | 0;
@@ -32334,7 +32344,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_18;
     if (isInterface(all, Collection)) {
-      tmp_18 = all.n();
+      tmp_18 = all.q();
     } else {
       tmp_18 = false;
     }
@@ -32343,9 +32353,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_10;
     }
     var count_1 = 0;
-    var tmp0_iterator_22 = all.j();
-    while (tmp0_iterator_22.k()) {
-      var element_21 = tmp0_iterator_22.l();
+    var tmp0_iterator_22 = all.m();
+    while (tmp0_iterator_22.n()) {
+      var element_21 = tmp0_iterator_22.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if ((((((element_21.r1w_1 + element_21.s1w_1 | 0) + element_21.r20_1 | 0) + element_21.d21_1 | 0) + element_21.c22_1.g1t_1 | 0) + element_21.v1z_1.g1t_1 | 0) > 0 || !(element_21.g21_1 == null)) {
         count_1 = count_1 + 1 | 0;
@@ -32360,7 +32370,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_20;
     if (isInterface(all, Collection)) {
-      tmp_20 = all.n();
+      tmp_20 = all.q();
     } else {
       tmp_20 = false;
     }
@@ -32369,17 +32379,17 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_11;
     }
     var count_2 = 0;
-    var tmp0_iterator_23 = all.j();
-    while (tmp0_iterator_23.k()) {
-      var element_22 = tmp0_iterator_23.l();
+    var tmp0_iterator_23 = all.m();
+    while (tmp0_iterator_23.n()) {
+      var element_22 = tmp0_iterator_23.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       var tmp_21;
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_22.d1x_1.n()) {
+      if (!element_22.d1x_1.q()) {
         tmp_21 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_21 = !element_22.e1x_1.n();
+        tmp_21 = !element_22.e1x_1.q();
       }
       if (tmp_21) {
         count_2 = count_2 + 1 | 0;
@@ -32394,7 +32404,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_23;
     if (isInterface(all, Collection)) {
-      tmp_23 = all.n();
+      tmp_23 = all.q();
     } else {
       tmp_23 = false;
     }
@@ -32403,9 +32413,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_12;
     }
     var count_3 = 0;
-    var tmp0_iterator_24 = all.j();
-    while (tmp0_iterator_24.k()) {
-      var element_23 = tmp0_iterator_24.l();
+    var tmp0_iterator_24 = all.m();
+    while (tmp0_iterator_24.n()) {
+      var element_23 = tmp0_iterator_24.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_23.s2d()) {
         count_3 = count_3 + 1 | 0;
@@ -32420,7 +32430,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_25;
     if (isInterface(all, Collection)) {
-      tmp_25 = all.n();
+      tmp_25 = all.q();
     } else {
       tmp_25 = false;
     }
@@ -32429,9 +32439,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_13;
     }
     var count_4 = 0;
-    var tmp0_iterator_25 = all.j();
-    while (tmp0_iterator_25.k()) {
-      var element_24 = tmp0_iterator_25.l();
+    var tmp0_iterator_25 = all.m();
+    while (tmp0_iterator_25.n()) {
+      var element_24 = tmp0_iterator_25.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if ((element_24.f1x_1 || element_24.g1x_1) && element_24.q2d()) {
         count_4 = count_4 + 1 | 0;
@@ -32446,7 +32456,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_27;
     if (isInterface(all, Collection)) {
-      tmp_27 = all.n();
+      tmp_27 = all.q();
     } else {
       tmp_27 = false;
     }
@@ -32455,9 +32465,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_14;
     }
     var count_5 = 0;
-    var tmp0_iterator_26 = all.j();
-    while (tmp0_iterator_26.k()) {
-      var element_25 = tmp0_iterator_26.l();
+    var tmp0_iterator_26 = all.m();
+    while (tmp0_iterator_26.n()) {
+      var element_25 = tmp0_iterator_26.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       var tmp_28;
       var tmp_29;
@@ -32465,7 +32475,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
         tmp_29 = true;
       } else {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_29 = !element_25.f20_1.n();
+        tmp_29 = !element_25.f20_1.q();
       }
       if (tmp_29) {
         tmp_28 = true;
@@ -32483,9 +32493,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   // Inline function 'kotlin.collections.map' call
   // Inline function 'kotlin.collections.mapTo' call
   var destination_15 = ArrayList_init_$Create$_0(collectionSizeOrDefault(plans, 10));
-  var tmp0_iterator_27 = plans.j();
-  while (tmp0_iterator_27.k()) {
-    var item_4 = tmp0_iterator_27.l();
+  var tmp0_iterator_27 = plans.m();
+  while (tmp0_iterator_27.n()) {
+    var item_4 = tmp0_iterator_27.o();
     // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
     var tmp_31 = joinToString(item_4.h2b_1, ' + ');
     var tmp_32;
@@ -32507,9 +32517,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
 
         var this_7 = plus_0(kinds, leaders);
         var destination_16 = ArrayList_init_$Create$();
-        var tmp0_iterator_28 = this_7.j();
-        while (tmp0_iterator_28.k()) {
-          var element_26 = tmp0_iterator_28.l();
+        var tmp0_iterator_28 = this_7.m();
+        while (tmp0_iterator_28.n()) {
+          var element_26 = tmp0_iterator_28.o();
           // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>' call
           if (item_4.q2b_1.u(element_26.j1w_1) && !item_4.o2b_1.u(element_26.j1w_1)) {
             destination_16.h(element_26);
@@ -32519,9 +32529,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
         // Inline function 'kotlin.collections.mapTo' call
 
         var destination_17 = ArrayList_init_$Create$_0(collectionSizeOrDefault(destination_16, 10));
-        var tmp0_iterator_29 = destination_16.j();
-        while (tmp0_iterator_29.k()) {
-          var item_5 = tmp0_iterator_29.l();
+        var tmp0_iterator_29 = destination_16.m();
+        while (tmp0_iterator_29.n()) {
+          var item_5 = tmp0_iterator_29.o();
           // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>' call
           var tmp$ret$90 = item_5.f1w_1;
           destination_17.h(tmp$ret$90);
@@ -32536,14 +32546,14 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
         var tmp_34;
         // Inline function 'kotlin.collections.isNotEmpty' call
 
-        if (!this_8.n()) {
+        if (!this_8.q()) {
           var tmp$ret$94;
           $l$block_16: {
             // Inline function 'kotlin.collections.none' call
             var this_9 = item_4.o2b_1;
             var tmp_35;
             if (isInterface(this_9, Collection)) {
-              tmp_35 = this_9.n();
+              tmp_35 = this_9.q();
             } else {
               tmp_35 = false;
             }
@@ -32551,9 +32561,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
               tmp$ret$94 = true;
               break $l$block_16;
             }
-            var tmp0_iterator_30 = this_9.j();
-            while (tmp0_iterator_30.k()) {
-              var element_27 = tmp0_iterator_30.l();
+            var tmp0_iterator_30 = this_9.m();
+            while (tmp0_iterator_30.n()) {
+              var element_27 = tmp0_iterator_30.o();
               // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>.<anonymous>' call
               if (item_4.q2b_1.u(element_27)) {
                 tmp$ret$94 = false;
@@ -32581,7 +32591,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
           // Inline function 'kotlin.let' call
           // Inline function 'kotlin.contracts.contract' call
           // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>' call
-          tmp_36 = ' (with ' + joinToString(take(tmp1_safe_receiver, 3), ' or ') + (tmp1_safe_receiver.m() > 3 ? '\u2026)' : ')');
+          tmp_36 = ' (with ' + joinToString(take(tmp1_safe_receiver, 3), ' or ') + (tmp1_safe_receiver.p() > 3 ? '\u2026)' : ')');
         }
 
         var tmp2_elvis_lhs = tmp_36;
@@ -32600,7 +32610,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_38;
     if (isInterface(all, Collection)) {
-      tmp_38 = all.n();
+      tmp_38 = all.q();
     } else {
       tmp_38 = false;
     }
@@ -32609,9 +32619,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_17;
     }
     var count_6 = 0;
-    var tmp0_iterator_31 = all.j();
-    while (tmp0_iterator_31.k()) {
-      var element_28 = tmp0_iterator_31.l();
+    var tmp0_iterator_31 = all.m();
+    while (tmp0_iterator_31.n()) {
+      var element_28 = tmp0_iterator_31.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_28.k1y_1) {
         count_6 = count_6 + 1 | 0;
@@ -32626,7 +32636,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_40;
     if (isInterface(all, Collection)) {
-      tmp_40 = all.n();
+      tmp_40 = all.q();
     } else {
       tmp_40 = false;
     }
@@ -32635,14 +32645,14 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_18;
     }
     var count_7 = 0;
-    var tmp0_iterator_32 = all.j();
-    while (tmp0_iterator_32.k()) {
-      var element_29 = tmp0_iterator_32.l();
+    var tmp0_iterator_32 = all.m();
+    while (tmp0_iterator_32.n()) {
+      var element_29 = tmp0_iterator_32.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       var tmp_41;
       var tmp_42;
       // Inline function 'kotlin.collections.isNotEmpty' call
-      if (!element_29.n1y_1.n()) {
+      if (!element_29.n1y_1.q()) {
         tmp_42 = true;
       } else {
         var tmp$ret$107;
@@ -32651,7 +32661,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
           var this_10 = element_29.o1y_1;
           var tmp_43;
           if (isInterface(this_10, Collection)) {
-            tmp_43 = this_10.n();
+            tmp_43 = this_10.q();
           } else {
             tmp_43 = false;
           }
@@ -32659,9 +32669,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
             tmp$ret$107 = false;
             break $l$block_20;
           }
-          var tmp0_iterator_33 = this_10.j();
-          while (tmp0_iterator_33.k()) {
-            var element_30 = tmp0_iterator_33.l();
+          var tmp0_iterator_33 = this_10.m();
+          while (tmp0_iterator_33.n()) {
+            var element_30 = tmp0_iterator_33.o();
             // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>.<anonymous>' call
             if (((((element_30.c26_1 + element_30.d26_1 | 0) + element_30.f26_1 | 0) + element_30.g26_1 | 0) + element_30.h26_1 | 0) > 0) {
               tmp$ret$107 = true;
@@ -32690,7 +32700,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_45;
     if (isInterface(all, Collection)) {
-      tmp_45 = all.n();
+      tmp_45 = all.q();
     } else {
       tmp_45 = false;
     }
@@ -32699,9 +32709,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_21;
     }
     var count_8 = 0;
-    var tmp0_iterator_34 = all.j();
-    while (tmp0_iterator_34.k()) {
-      var element_31 = tmp0_iterator_34.l();
+    var tmp0_iterator_34 = all.m();
+    while (tmp0_iterator_34.n()) {
+      var element_31 = tmp0_iterator_34.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_31.b1z_1 || element_31.c1z_1 || element_31.a1z_1 || element_31.d1z_1 || element_31.e1z_1 || element_31.k1z_1 || ((element_31.g1z_1 + element_31.h1z_1 | 0) + element_31.i1z_1 | 0) > 0 || element_31.j1z_1) {
         count_8 = count_8 + 1 | 0;
@@ -32716,7 +32726,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_47;
     if (isInterface(all, Collection)) {
-      tmp_47 = all.n();
+      tmp_47 = all.q();
     } else {
       tmp_47 = false;
     }
@@ -32725,9 +32735,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_22;
     }
     var count_9 = 0;
-    var tmp0_iterator_35 = all.j();
-    while (tmp0_iterator_35.k()) {
-      var element_32 = tmp0_iterator_35.l();
+    var tmp0_iterator_35 = all.m();
+    while (tmp0_iterator_35.n()) {
+      var element_32 = tmp0_iterator_35.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_32.m1z_1 || element_32.d21_1 > 0) {
         count_9 = count_9 + 1 | 0;
@@ -32742,7 +32752,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.any' call
     var tmp_49;
     if (isInterface(all, Collection)) {
-      tmp_49 = all.n();
+      tmp_49 = all.q();
     } else {
       tmp_49 = false;
     }
@@ -32750,9 +32760,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       tmp$ret$114 = false;
       break $l$block_24;
     }
-    var tmp0_iterator_36 = all.j();
-    while (tmp0_iterator_36.k()) {
-      var element_33 = tmp0_iterator_36.l();
+    var tmp0_iterator_36 = all.m();
+    while (tmp0_iterator_36.n()) {
+      var element_33 = tmp0_iterator_36.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_33.s1y_1) {
         tmp$ret$114 = true;
@@ -32767,7 +32777,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_51;
     if (isInterface(all, Collection)) {
-      tmp_51 = all.n();
+      tmp_51 = all.q();
     } else {
       tmp_51 = false;
     }
@@ -32776,9 +32786,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_25;
     }
     var count_10 = 0;
-    var tmp0_iterator_37 = all.j();
-    while (tmp0_iterator_37.k()) {
-      var element_34 = tmp0_iterator_37.l();
+    var tmp0_iterator_37 = all.m();
+    while (tmp0_iterator_37.n()) {
+      var element_34 = tmp0_iterator_37.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_34.v2d()) {
         count_10 = count_10 + 1 | 0;
@@ -32793,7 +32803,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_53;
     if (isInterface(all, Collection)) {
-      tmp_53 = all.n();
+      tmp_53 = all.q();
     } else {
       tmp_53 = false;
     }
@@ -32802,9 +32812,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_26;
     }
     var count_11 = 0;
-    var tmp0_iterator_38 = all.j();
-    while (tmp0_iterator_38.k()) {
-      var element_35 = tmp0_iterator_38.l();
+    var tmp0_iterator_38 = all.m();
+    while (tmp0_iterator_38.n()) {
+      var element_35 = tmp0_iterator_38.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_35.w2d()) {
         count_11 = count_11 + 1 | 0;
@@ -32819,7 +32829,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_55;
     if (isInterface(all, Collection)) {
-      tmp_55 = all.n();
+      tmp_55 = all.q();
     } else {
       tmp_55 = false;
     }
@@ -32828,14 +32838,14 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_27;
     }
     var count_12 = 0;
-    var tmp0_iterator_39 = all.j();
-    while (tmp0_iterator_39.k()) {
-      var element_36 = tmp0_iterator_39.l();
+    var tmp0_iterator_39 = all.m();
+    while (tmp0_iterator_39.n()) {
+      var element_36 = tmp0_iterator_39.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       var tmp_56;
       if (element_36.p1z_1) {
         // Inline function 'kotlin.collections.isNotEmpty' call
-        tmp_56 = !element_36.t1z_1.n();
+        tmp_56 = !element_36.t1z_1.q();
       } else {
         tmp_56 = false;
       }
@@ -32852,7 +32862,7 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
     // Inline function 'kotlin.collections.count' call
     var tmp_58;
     if (isInterface(all, Collection)) {
-      tmp_58 = all.n();
+      tmp_58 = all.q();
     } else {
       tmp_58 = false;
     }
@@ -32861,9 +32871,9 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
       break $l$block_28;
     }
     var count_13 = 0;
-    var tmp0_iterator_40 = all.j();
-    while (tmp0_iterator_40.k()) {
-      var element_37 = tmp0_iterator_40.l();
+    var tmp0_iterator_40 = all.m();
+    while (tmp0_iterator_40.n()) {
+      var element_37 = tmp0_iterator_40.o();
       // Inline function 'com.mtgtrader.data.WinOddsCalc.calculate.<anonymous>' call
       if (element_37.p23_1 > 0 || element_37.q23_1 || ((element_37.r23_1 + element_37.s23_1 | 0) + element_37.t23_1 | 0) > 0 || element_37.w23_1) {
         count_13 = count_13 + 1 | 0;
@@ -32897,11 +32907,11 @@ protoOf(WinOddsCalc).k2l = function (cards, identity, combos, games, turns, rand
   }
   return new WinOdds(games, tmp_10, tmp_11, tmp_12, tmp_13, tmp_59, tmp_60);
 };
-protoOf(WinOddsCalc).l2l = function (cards, identity, combos, games, turns, random, $super) {
+protoOf(WinOddsCalc).q2l = function (cards, identity, combos, games, turns, random, $super) {
   games = games === VOID ? 10000 : games;
   turns = turns === VOID ? 15 : turns;
   random = random === VOID ? Random_0(52) : random;
-  return $super === VOID ? this.k2l(cards, identity, combos, games, turns, random) : $super.k2l.call(this, cards, identity, combos, games, turns, random);
+  return $super === VOID ? this.m2l(cards, identity, combos, games, turns, random) : $super.m2l.call(this, cards, identity, combos, games, turns, random);
 };
 var WinOddsCalc_instance;
 function WinOddsCalc_getInstance() {
@@ -32921,7 +32931,7 @@ function use55$factory() {
 }
 function chosenType$factory() {
   return getPropertyCallableRef('chosenType', 1, KProperty1, function (receiver) {
-    return receiver.f2k();
+    return receiver.h2k();
   }, null);
 }
 function get_json() {
@@ -32944,11 +32954,11 @@ function winOddsJson(cardsJson, identity, saltCard, games, onProgress) {
   var this_3 = this_0.l13(tmp$ret$1, cardsJson);
   // Inline function 'kotlin.collections.mapTo' call
   var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_3, 10));
-  var tmp0_iterator = this_3.j();
-  while (tmp0_iterator.k()) {
-    var item = tmp0_iterator.l();
+  var tmp0_iterator = this_3.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
     // Inline function 'com.mtgtrader.data.winOddsJson.<anonymous>' call
-    var tmp$ret$3 = item.z2l();
+    var tmp$ret$3 = item.e2m();
     destination.h(tmp$ret$3);
   }
   var cards = destination;
@@ -32971,7 +32981,7 @@ function winOddsJson(cardsJson, identity, saltCard, games, onProgress) {
     // Inline function 'kotlin.collections.orEmpty' call
     var tmp0_elvis_lhs = salt == null ? null : salt.z1q();
     var tmp_3 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
-    tmp_1 = tmp_2.l2l(cards, identity, tmp_3, games == null ? 10000 : games);
+    tmp_1 = tmp_2.q2l(cards, identity, tmp_3, games == null ? 10000 : games);
   }finally {
     WebProgress_instance.y2d_1 = null;
   }
@@ -32982,23 +32992,137 @@ function winOddsJson(cardsJson, identity, saltCard, games, onProgress) {
     tmp_4 = tmp_1;
   }
   var odds = tmp_4;
-  var window_0 = odds.f1s();
-  var tmp_5 = get_json();
-  var tmp_6 = Companion_instance_8.x15();
-  var tmp_7 = odds.e1s();
-  var tmp_8 = odds.a1s();
-  var tmp_9 = odds.b1s();
-  var tmp_10 = odds.c1s();
-  var tmp_11 = odds.d1s();
-  var tmp_12 = odds.g1s();
-  var tmp_13 = odds.h1s();
-  var tmp_14 = odds.i1s();
-  // Inline function 'kotlin.let' call
-  // Inline function 'kotlin.contracts.contract' call
-  // Inline function 'com.mtgtrader.data.winOddsJson.<anonymous>' call
-  var it = AppPowerLevel_getInstance().e1f(odds, salt);
-  var tmp$ret$10 = new WebPower(it.q1e_1, it.r1e_1, it.s1e_1, it.t1e_1, it.u1e_1, it.v1e_1);
-  return tmp_5.k13(tmp_6, new WebWinOdds(odds, tmp_7, tmp_8, tmp_9, tmp_10, tmp_11, window_0.a1_1, window_0.b1_1, tmp_12, tmp_13, tmp_14, tmp$ret$10));
+  return webWinOddsJson(odds, salt);
+}
+function winBatchJson(cardsJson, identity, saltCard, batch, games, snapshotAt, onProgress, onSnapshot) {
+  games = games === VOID ? null : games;
+  snapshotAt = snapshotAt === VOID ? null : snapshotAt;
+  onProgress = onProgress === VOID ? null : onProgress;
+  onSnapshot = onSnapshot === VOID ? null : onSnapshot;
+  _init_properties_Website_kt__35unmf();
+  // Inline function 'kotlin.collections.map' call
+  // Inline function 'kotlinx.serialization.json.Json.decodeFromString' call
+  var this_0 = get_json();
+  // Inline function 'kotlinx.serialization.serializer' call
+  var this_1 = this_0.sn();
+  // Inline function 'kotlinx.serialization.internal.cast' call
+  var this_2 = serializer(this_1, createKType(getKClass(KtList), arrayOf([createInvariantKTypeProjection(createKType(getKClass(WebCard), arrayOf([]), false))]), false));
+  var tmp$ret$1 = isInterface(this_2, KSerializer) ? this_2 : THROW_CCE();
+  var this_3 = this_0.l13(tmp$ret$1, cardsJson);
+  // Inline function 'kotlin.collections.mapTo' call
+  var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_3, 10));
+  var tmp0_iterator = this_3.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
+    // Inline function 'com.mtgtrader.data.winBatchJson.<anonymous>' call
+    var tmp$ret$3 = item.e2m();
+    destination.h(tmp$ret$3);
+  }
+  var cards = destination;
+  var salt = Companion_getInstance_0().o1q(saltCard);
+  var started = {_v: 0};
+  var played = {_v: 0};
+  var finished = {_v: null};
+  WebBatches_instance.n2l_1 = batch;
+  var tmp = WebProgress_instance;
+  tmp.y2d_1 = winBatchJson$lambda(played, snapshotAt, onSnapshot, started, onProgress);
+  var tmp_0 = WebProgress_instance;
+  tmp_0.z2d_1 = winBatchJson$lambda_0(finished, played);
+  try {
+    var tmp_1 = WinOddsCalc_getInstance();
+    // Inline function 'kotlin.collections.orEmpty' call
+    var tmp0_elvis_lhs = salt == null ? null : salt.z1q();
+    var tmp_2 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
+    if (tmp_1.q2l(cards, identity, tmp_2, games == null ? 10000 : games) == null)
+      return 'null';
+  }finally {
+    WebBatches_instance.n2l_1 = null;
+    WebProgress_instance.y2d_1 = null;
+    WebProgress_instance.z2d_1 = null;
+  }
+  var tmp3_safe_receiver = finished._v;
+  var tmp_3;
+  if (tmp3_safe_receiver == null) {
+    tmp_3 = null;
+  } else {
+    // Inline function 'kotlin.let' call
+    // Inline function 'kotlin.contracts.contract' call
+    // Inline function 'com.mtgtrader.data.winBatchJson.<anonymous>' call
+    tmp_3 = get_json().k13(Companion_getInstance_10().x15(), tmp3_safe_receiver);
+  }
+  var tmp4_elvis_lhs = tmp_3;
+  return tmp4_elvis_lhs == null ? 'null' : tmp4_elvis_lhs;
+}
+function winMergeJson(cardsJson, identity, saltCard, talliesJson) {
+  _init_properties_Website_kt__35unmf();
+  // Inline function 'kotlin.collections.map' call
+  // Inline function 'kotlinx.serialization.json.Json.decodeFromString' call
+  var this_0 = get_json();
+  // Inline function 'kotlinx.serialization.serializer' call
+  var this_1 = this_0.sn();
+  // Inline function 'kotlinx.serialization.internal.cast' call
+  var this_2 = serializer(this_1, createKType(getKClass(KtList), arrayOf([createInvariantKTypeProjection(createKType(getKClass(WebCard), arrayOf([]), false))]), false));
+  var tmp$ret$1 = isInterface(this_2, KSerializer) ? this_2 : THROW_CCE();
+  var this_3 = this_0.l13(tmp$ret$1, cardsJson);
+  // Inline function 'kotlin.collections.mapTo' call
+  var destination = ArrayList_init_$Create$_0(collectionSizeOrDefault(this_3, 10));
+  var tmp0_iterator = this_3.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
+    // Inline function 'com.mtgtrader.data.winMergeJson.<anonymous>' call
+    var tmp$ret$3 = item.e2m();
+    destination.h(tmp$ret$3);
+  }
+  var cards = destination;
+  var salt = Companion_getInstance_0().o1q(saltCard);
+  // Inline function 'kotlinx.serialization.json.Json.decodeFromString' call
+  var this_4 = get_json();
+  // Inline function 'kotlinx.serialization.serializer' call
+  var this_5 = this_4.sn();
+  // Inline function 'kotlinx.serialization.internal.cast' call
+  var this_6 = serializer(this_5, createKType(getKClass(KtList), arrayOf([createInvariantKTypeProjection(createKType(getKClass(WebTally), arrayOf([]), false))]), false));
+  var tmp$ret$7 = isInterface(this_6, KSerializer) ? this_6 : THROW_CCE();
+  var tallies = this_4.l13(tmp$ret$7, talliesJson);
+  var tmp = WebBatches_instance;
+  // Inline function 'kotlin.collections.map' call
+  // Inline function 'kotlin.collections.mapTo' call
+  var destination_0 = ArrayList_init_$Create$_0(collectionSizeOrDefault(tallies, 10));
+  var tmp0_iterator_0 = tallies.m();
+  while (tmp0_iterator_0.n()) {
+    var item_0 = tmp0_iterator_0.o();
+    // Inline function 'com.mtgtrader.data.winMergeJson.<anonymous>' call
+    var tmp$ret$9 = item_0.n2m();
+    destination_0.h(tmp$ret$9);
+  }
+  tmp.o2l_1 = destination_0;
+  var tmp_0;
+  try {
+    var tmp_1 = WinOddsCalc_getInstance();
+    // Inline function 'kotlin.collections.orEmpty' call
+    var tmp0_elvis_lhs = salt == null ? null : salt.z1q();
+    var tmp_2 = tmp0_elvis_lhs == null ? emptyList() : tmp0_elvis_lhs;
+    // Inline function 'kotlin.collections.sumOf' call
+    var sum = 0;
+    var tmp0_iterator_1 = tallies.m();
+    while (tmp0_iterator_1.n()) {
+      var element = tmp0_iterator_1.o();
+      var tmp_3 = sum;
+      // Inline function 'com.mtgtrader.data.winMergeJson.<anonymous>' call
+      sum = tmp_3 + element.g2m_1 | 0;
+    }
+    var tmp$ret$14 = sum;
+    tmp_0 = tmp_1.q2l(cards, identity, tmp_2, tmp$ret$14);
+  }finally {
+    WebBatches_instance.o2l_1 = null;
+  }
+  var tmp_4;
+  if (tmp_0 == null) {
+    return 'null';
+  } else {
+    tmp_4 = tmp_0;
+  }
+  var odds = tmp_4;
+  return webWinOddsJson(odds, salt);
 }
 function saltCardJson(body) {
   _init_properties_Website_kt__35unmf();
@@ -33033,7 +33157,7 @@ function saltCardJson(body) {
 }
 function Math_0() {
 }
-protoOf(Math_0).f2l = function (x) {
+protoOf(Math_0).h2l = function (x) {
   // Inline function 'kotlin.math.floor' call
   var x_0 = x + 0.5;
   var tmp$ret$0 = Math.floor(x_0);
@@ -33058,23 +33182,23 @@ function sortedSetOf() {
 }
 function SortedSet() {
   AbstractMutableSet.call(this);
-  this.a2m_1 = ArrayList_init_$Create$();
+  this.o2m_1 = ArrayList_init_$Create$();
 }
+protoOf(SortedSet).p = function () {
+  return this.o2m_1.p();
+};
 protoOf(SortedSet).m = function () {
-  return this.a2m_1.m();
+  return this.o2m_1.m();
 };
-protoOf(SortedSet).j = function () {
-  return this.a2m_1.j();
-};
-protoOf(SortedSet).b2m = function (element) {
-  var i = binarySearch(this.a2m_1, element);
+protoOf(SortedSet).p2m = function (element) {
+  var i = binarySearch(this.o2m_1, element);
   if (i >= 0)
     return false;
-  this.a2m_1.i2((-i | 0) - 1 | 0, element);
+  this.o2m_1.i2((-i | 0) - 1 | 0, element);
   return true;
 };
 protoOf(SortedSet).h = function (element) {
-  return this.b2m((!(element == null) ? isComparable(element) : false) ? element : THROW_CCE());
+  return this.p2m((!(element == null) ? isComparable(element) : false) ? element : THROW_CCE());
 };
 function Companion_6() {
 }
@@ -33098,45 +33222,45 @@ function $serializer_4() {
   tmp0_serialDesc.ku('tokens', true);
   tmp0_serialDesc.ku('powerToughness', true);
   tmp0_serialDesc.ku('loyalty', true);
-  this.c2m_1 = tmp0_serialDesc;
+  this.q2m_1 = tmp0_serialDesc;
 }
-protoOf($serializer_4).d2m = function (encoder, value) {
-  var tmp0_desc = this.c2m_1;
+protoOf($serializer_4).r2m = function (encoder, value) {
+  var tmp0_desc = this.q2m_1;
   var tmp1_output = encoder.dn(tmp0_desc);
-  tmp1_output.ro(tmp0_desc, 0, value.m2l_1);
-  tmp1_output.ro(tmp0_desc, 1, value.n2l_1);
-  tmp1_output.mo(tmp0_desc, 2, value.o2l_1);
-  tmp1_output.po(tmp0_desc, 3, value.p2l_1);
-  tmp1_output.ro(tmp0_desc, 4, value.q2l_1);
-  tmp1_output.jo(tmp0_desc, 5, value.r2l_1);
-  if (tmp1_output.zo(tmp0_desc, 6) ? true : !(value.s2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 6, StringSerializer_getInstance(), value.s2l_1);
+  tmp1_output.ro(tmp0_desc, 0, value.r2l_1);
+  tmp1_output.ro(tmp0_desc, 1, value.s2l_1);
+  tmp1_output.mo(tmp0_desc, 2, value.t2l_1);
+  tmp1_output.po(tmp0_desc, 3, value.u2l_1);
+  tmp1_output.ro(tmp0_desc, 4, value.v2l_1);
+  tmp1_output.jo(tmp0_desc, 5, value.w2l_1);
+  if (tmp1_output.zo(tmp0_desc, 6) ? true : !(value.x2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 6, StringSerializer_getInstance(), value.x2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 7) ? true : !(value.t2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 7, StringSerializer_getInstance(), value.t2l_1);
+  if (tmp1_output.zo(tmp0_desc, 7) ? true : !(value.y2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 7, StringSerializer_getInstance(), value.y2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 8) ? true : !(value.u2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 8, StringSerializer_getInstance(), value.u2l_1);
+  if (tmp1_output.zo(tmp0_desc, 8) ? true : !(value.z2l_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 8, StringSerializer_getInstance(), value.z2l_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 9) ? true : !(value.v2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 9, StringSerializer_getInstance(), value.v2l_1);
+  if (tmp1_output.zo(tmp0_desc, 9) ? true : !(value.a2m_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 9, StringSerializer_getInstance(), value.a2m_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 10) ? true : !(value.w2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 10, StringSerializer_getInstance(), value.w2l_1);
+  if (tmp1_output.zo(tmp0_desc, 10) ? true : !(value.b2m_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 10, StringSerializer_getInstance(), value.b2m_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 11) ? true : !(value.x2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 11, StringSerializer_getInstance(), value.x2l_1);
+  if (tmp1_output.zo(tmp0_desc, 11) ? true : !(value.c2m_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 11, StringSerializer_getInstance(), value.c2m_1);
   }
-  if (tmp1_output.zo(tmp0_desc, 12) ? true : !(value.y2l_1 == null)) {
-    tmp1_output.vo(tmp0_desc, 12, StringSerializer_getInstance(), value.y2l_1);
+  if (tmp1_output.zo(tmp0_desc, 12) ? true : !(value.d2m_1 == null)) {
+    tmp1_output.vo(tmp0_desc, 12, StringSerializer_getInstance(), value.d2m_1);
   }
   tmp1_output.en(tmp0_desc);
 };
 protoOf($serializer_4).hk = function (encoder, value) {
-  return this.d2m(encoder, value instanceof WebCard ? value : THROW_CCE());
+  return this.r2m(encoder, value instanceof WebCard ? value : THROW_CCE());
 };
 protoOf($serializer_4).ik = function (decoder) {
-  var tmp0_desc = this.c2m_1;
+  var tmp0_desc = this.q2m_1;
   var tmp1_flag = true;
   var tmp2_index = 0;
   var tmp3_bitMask0 = 0;
@@ -33248,7 +33372,7 @@ protoOf($serializer_4).ik = function (decoder) {
   return WebCard_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, tmp10_local6, tmp11_local7, tmp12_local8, tmp13_local9, tmp14_local10, tmp15_local11, tmp16_local12, null);
 };
 protoOf($serializer_4).gk = function () {
-  return this.c2m_1;
+  return this.q2m_1;
 };
 protoOf($serializer_4).mu = function () {
   // Inline function 'kotlin.arrayOf' call
@@ -33264,42 +33388,42 @@ function $serializer_getInstance_4() {
 }
 function WebCard_init_$Init$(seen0, name, scryfallId, quantity, cmc, types, commander, typeLine, manaCost, producedMana, oracleText, tokens, powerToughness, loyalty, serializationConstructorMarker, $this) {
   if (!(63 === (63 & seen0))) {
-    throwMissingFieldException(seen0, 63, $serializer_getInstance_4().c2m_1);
+    throwMissingFieldException(seen0, 63, $serializer_getInstance_4().q2m_1);
   }
-  $this.m2l_1 = name;
-  $this.n2l_1 = scryfallId;
-  $this.o2l_1 = quantity;
-  $this.p2l_1 = cmc;
-  $this.q2l_1 = types;
-  $this.r2l_1 = commander;
+  $this.r2l_1 = name;
+  $this.s2l_1 = scryfallId;
+  $this.t2l_1 = quantity;
+  $this.u2l_1 = cmc;
+  $this.v2l_1 = types;
+  $this.w2l_1 = commander;
   if (0 === (seen0 & 64))
-    $this.s2l_1 = null;
-  else
-    $this.s2l_1 = typeLine;
-  if (0 === (seen0 & 128))
-    $this.t2l_1 = null;
-  else
-    $this.t2l_1 = manaCost;
-  if (0 === (seen0 & 256))
-    $this.u2l_1 = null;
-  else
-    $this.u2l_1 = producedMana;
-  if (0 === (seen0 & 512))
-    $this.v2l_1 = null;
-  else
-    $this.v2l_1 = oracleText;
-  if (0 === (seen0 & 1024))
-    $this.w2l_1 = null;
-  else
-    $this.w2l_1 = tokens;
-  if (0 === (seen0 & 2048))
     $this.x2l_1 = null;
   else
-    $this.x2l_1 = powerToughness;
-  if (0 === (seen0 & 4096))
+    $this.x2l_1 = typeLine;
+  if (0 === (seen0 & 128))
     $this.y2l_1 = null;
   else
-    $this.y2l_1 = loyalty;
+    $this.y2l_1 = manaCost;
+  if (0 === (seen0 & 256))
+    $this.z2l_1 = null;
+  else
+    $this.z2l_1 = producedMana;
+  if (0 === (seen0 & 512))
+    $this.a2m_1 = null;
+  else
+    $this.a2m_1 = oracleText;
+  if (0 === (seen0 & 1024))
+    $this.b2m_1 = null;
+  else
+    $this.b2m_1 = tokens;
+  if (0 === (seen0 & 2048))
+    $this.c2m_1 = null;
+  else
+    $this.c2m_1 = powerToughness;
+  if (0 === (seen0 & 4096))
+    $this.d2m_1 = null;
+  else
+    $this.d2m_1 = loyalty;
   return $this;
 }
 function WebCard_init_$Create$(seen0, name, scryfallId, quantity, cmc, types, commander, typeLine, manaCost, producedMana, oracleText, tokens, powerToughness, loyalty, serializationConstructorMarker) {
@@ -33313,22 +33437,22 @@ function WebCard(name, scryfallId, quantity, cmc, types, commander, typeLine, ma
   tokens = tokens === VOID ? null : tokens;
   powerToughness = powerToughness === VOID ? null : powerToughness;
   loyalty = loyalty === VOID ? null : loyalty;
-  this.m2l_1 = name;
-  this.n2l_1 = scryfallId;
-  this.o2l_1 = quantity;
-  this.p2l_1 = cmc;
-  this.q2l_1 = types;
-  this.r2l_1 = commander;
-  this.s2l_1 = typeLine;
-  this.t2l_1 = manaCost;
-  this.u2l_1 = producedMana;
-  this.v2l_1 = oracleText;
-  this.w2l_1 = tokens;
-  this.x2l_1 = powerToughness;
-  this.y2l_1 = loyalty;
+  this.r2l_1 = name;
+  this.s2l_1 = scryfallId;
+  this.t2l_1 = quantity;
+  this.u2l_1 = cmc;
+  this.v2l_1 = types;
+  this.w2l_1 = commander;
+  this.x2l_1 = typeLine;
+  this.y2l_1 = manaCost;
+  this.z2l_1 = producedMana;
+  this.a2m_1 = oracleText;
+  this.b2m_1 = tokens;
+  this.c2m_1 = powerToughness;
+  this.d2m_1 = loyalty;
 }
-protoOf(WebCard).z2l = function () {
-  return new StatsCard(this.m2l_1, this.n2l_1, this.o2l_1, this.p2l_1, this.q2l_1, this.r2l_1, this.s2l_1, this.t2l_1, this.u2l_1, this.v2l_1, this.w2l_1, this.x2l_1, this.y2l_1);
+protoOf(WebCard).e2m = function () {
+  return new StatsCard(this.r2l_1, this.s2l_1, this.t2l_1, this.u2l_1, this.v2l_1, this.w2l_1, this.x2l_1, this.y2l_1, this.z2l_1, this.a2m_1, this.b2m_1, this.c2m_1, this.d2m_1);
 };
 function Companion_7() {
 }
@@ -33354,30 +33478,30 @@ function $serializer_5() {
   tmp0_serialDesc.ku('comboShare', false);
   tmp0_serialDesc.ku('mazeShare', false);
   tmp0_serialDesc.ku('power', false);
-  this.e2m_1 = tmp0_serialDesc;
+  this.s2m_1 = tmp0_serialDesc;
 }
-protoOf($serializer_5).f2m = function (encoder, value) {
-  var tmp0_desc = this.e2m_1;
+protoOf($serializer_5).t2m = function (encoder, value) {
+  var tmp0_desc = this.s2m_1;
   var tmp1_output = encoder.dn(tmp0_desc);
-  tmp1_output.to(tmp0_desc, 0, $serializer_getInstance_2(), value.g2m_1);
-  tmp1_output.ro(tmp0_desc, 1, value.h2m_1);
-  tmp1_output.vo(tmp0_desc, 2, IntSerializer_getInstance(), value.i2m_1);
-  tmp1_output.vo(tmp0_desc, 3, IntSerializer_getInstance(), value.j2m_1);
-  tmp1_output.vo(tmp0_desc, 4, IntSerializer_getInstance(), value.k2m_1);
-  tmp1_output.vo(tmp0_desc, 5, IntSerializer_getInstance(), value.l2m_1);
-  tmp1_output.mo(tmp0_desc, 6, value.m2m_1);
-  tmp1_output.mo(tmp0_desc, 7, value.n2m_1);
-  tmp1_output.ro(tmp0_desc, 8, value.o2m_1);
-  tmp1_output.mo(tmp0_desc, 9, value.p2m_1);
-  tmp1_output.mo(tmp0_desc, 10, value.q2m_1);
-  tmp1_output.to(tmp0_desc, 11, $serializer_getInstance_6(), value.r2m_1);
+  tmp1_output.to(tmp0_desc, 0, $serializer_getInstance_2(), value.u2m_1);
+  tmp1_output.ro(tmp0_desc, 1, value.v2m_1);
+  tmp1_output.vo(tmp0_desc, 2, IntSerializer_getInstance(), value.w2m_1);
+  tmp1_output.vo(tmp0_desc, 3, IntSerializer_getInstance(), value.x2m_1);
+  tmp1_output.vo(tmp0_desc, 4, IntSerializer_getInstance(), value.y2m_1);
+  tmp1_output.vo(tmp0_desc, 5, IntSerializer_getInstance(), value.z2m_1);
+  tmp1_output.mo(tmp0_desc, 6, value.a2n_1);
+  tmp1_output.mo(tmp0_desc, 7, value.b2n_1);
+  tmp1_output.ro(tmp0_desc, 8, value.c2n_1);
+  tmp1_output.mo(tmp0_desc, 9, value.d2n_1);
+  tmp1_output.mo(tmp0_desc, 10, value.e2n_1);
+  tmp1_output.to(tmp0_desc, 11, $serializer_getInstance_6(), value.f2n_1);
   tmp1_output.en(tmp0_desc);
 };
 protoOf($serializer_5).hk = function (encoder, value) {
-  return this.f2m(encoder, value instanceof WebWinOdds ? value : THROW_CCE());
+  return this.t2m(encoder, value instanceof WebWinOdds ? value : THROW_CCE());
 };
 protoOf($serializer_5).ik = function (decoder) {
-  var tmp0_desc = this.e2m_1;
+  var tmp0_desc = this.s2m_1;
   var tmp1_flag = true;
   var tmp2_index = 0;
   var tmp3_bitMask0 = 0;
@@ -33482,7 +33606,7 @@ protoOf($serializer_5).ik = function (decoder) {
   return WebWinOdds_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, tmp10_local6, tmp11_local7, tmp12_local8, tmp13_local9, tmp14_local10, tmp15_local11, null);
 };
 protoOf($serializer_5).gk = function () {
-  return this.e2m_1;
+  return this.s2m_1;
 };
 protoOf($serializer_5).mu = function () {
   // Inline function 'kotlin.arrayOf' call
@@ -33498,38 +33622,38 @@ function $serializer_getInstance_5() {
 }
 function WebWinOdds_init_$Init$(seen0, odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power, serializationConstructorMarker, $this) {
   if (!(4095 === (4095 & seen0))) {
-    throwMissingFieldException(seen0, 4095, $serializer_getInstance_5().e2m_1);
+    throwMissingFieldException(seen0, 4095, $serializer_getInstance_5().s2m_1);
   }
-  $this.g2m_1 = odds;
-  $this.h2m_1 = label;
-  $this.i2m_1 = fourInTen;
-  $this.j2m_1 = usual;
-  $this.k2m_1 = nineInTen;
-  $this.l2m_1 = firstWin;
-  $this.m2m_1 = windowStart;
-  $this.n2m_1 = windowEnd;
-  $this.o2m_1 = damageText;
-  $this.p2m_1 = comboShare;
-  $this.q2m_1 = mazeShare;
-  $this.r2m_1 = power;
+  $this.u2m_1 = odds;
+  $this.v2m_1 = label;
+  $this.w2m_1 = fourInTen;
+  $this.x2m_1 = usual;
+  $this.y2m_1 = nineInTen;
+  $this.z2m_1 = firstWin;
+  $this.a2n_1 = windowStart;
+  $this.b2n_1 = windowEnd;
+  $this.c2n_1 = damageText;
+  $this.d2n_1 = comboShare;
+  $this.e2n_1 = mazeShare;
+  $this.f2n_1 = power;
   return $this;
 }
 function WebWinOdds_init_$Create$(seen0, odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power, serializationConstructorMarker) {
   return WebWinOdds_init_$Init$(seen0, odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power, serializationConstructorMarker, objectCreate(protoOf(WebWinOdds)));
 }
 function WebWinOdds(odds, label, fourInTen, usual, nineInTen, firstWin, windowStart, windowEnd, damageText, comboShare, mazeShare, power) {
-  this.g2m_1 = odds;
-  this.h2m_1 = label;
-  this.i2m_1 = fourInTen;
-  this.j2m_1 = usual;
-  this.k2m_1 = nineInTen;
-  this.l2m_1 = firstWin;
-  this.m2m_1 = windowStart;
-  this.n2m_1 = windowEnd;
-  this.o2m_1 = damageText;
-  this.p2m_1 = comboShare;
-  this.q2m_1 = mazeShare;
-  this.r2m_1 = power;
+  this.u2m_1 = odds;
+  this.v2m_1 = label;
+  this.w2m_1 = fourInTen;
+  this.x2m_1 = usual;
+  this.y2m_1 = nineInTen;
+  this.z2m_1 = firstWin;
+  this.a2n_1 = windowStart;
+  this.b2n_1 = windowEnd;
+  this.c2n_1 = damageText;
+  this.d2n_1 = comboShare;
+  this.e2n_1 = mazeShare;
+  this.f2n_1 = power;
 }
 function Companion_8() {
 }
@@ -33546,24 +33670,24 @@ function $serializer_6() {
   tmp0_serialDesc.ku('wonByEnd', false);
   tmp0_serialDesc.ku('speed', false);
   tmp0_serialDesc.ku('adjust', false);
-  this.s2m_1 = tmp0_serialDesc;
+  this.g2n_1 = tmp0_serialDesc;
 }
-protoOf($serializer_6).t2m = function (encoder, value) {
-  var tmp0_desc = this.s2m_1;
+protoOf($serializer_6).h2n = function (encoder, value) {
+  var tmp0_desc = this.g2n_1;
   var tmp1_output = encoder.dn(tmp0_desc);
-  tmp1_output.mo(tmp0_desc, 0, value.u2m_1);
-  tmp1_output.po(tmp0_desc, 1, value.v2m_1);
-  tmp1_output.vo(tmp0_desc, 2, DoubleSerializer_getInstance(), value.w2m_1);
-  tmp1_output.mo(tmp0_desc, 3, value.x2m_1);
-  tmp1_output.po(tmp0_desc, 4, value.y2m_1);
-  tmp1_output.vo(tmp0_desc, 5, DoubleSerializer_getInstance(), value.z2m_1);
+  tmp1_output.mo(tmp0_desc, 0, value.i2n_1);
+  tmp1_output.po(tmp0_desc, 1, value.j2n_1);
+  tmp1_output.vo(tmp0_desc, 2, DoubleSerializer_getInstance(), value.k2n_1);
+  tmp1_output.mo(tmp0_desc, 3, value.l2n_1);
+  tmp1_output.po(tmp0_desc, 4, value.m2n_1);
+  tmp1_output.vo(tmp0_desc, 5, DoubleSerializer_getInstance(), value.n2n_1);
   tmp1_output.en(tmp0_desc);
 };
 protoOf($serializer_6).hk = function (encoder, value) {
-  return this.t2m(encoder, value instanceof WebPower ? value : THROW_CCE());
+  return this.h2n(encoder, value instanceof WebPower ? value : THROW_CCE());
 };
 protoOf($serializer_6).ik = function (decoder) {
-  var tmp0_desc = this.s2m_1;
+  var tmp0_desc = this.g2n_1;
   var tmp1_flag = true;
   var tmp2_index = 0;
   var tmp3_bitMask0 = 0;
@@ -33626,7 +33750,7 @@ protoOf($serializer_6).ik = function (decoder) {
   return WebPower_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, null);
 };
 protoOf($serializer_6).gk = function () {
-  return this.s2m_1;
+  return this.g2n_1;
 };
 protoOf($serializer_6).mu = function () {
   // Inline function 'kotlin.arrayOf' call
@@ -33642,40 +33766,308 @@ function $serializer_getInstance_6() {
 }
 function WebPower_init_$Init$(seen0, power, exact, turn, wonByEnd, speed, adjust, serializationConstructorMarker, $this) {
   if (!(63 === (63 & seen0))) {
-    throwMissingFieldException(seen0, 63, $serializer_getInstance_6().s2m_1);
+    throwMissingFieldException(seen0, 63, $serializer_getInstance_6().g2n_1);
   }
-  $this.u2m_1 = power;
-  $this.v2m_1 = exact;
-  $this.w2m_1 = turn;
-  $this.x2m_1 = wonByEnd;
-  $this.y2m_1 = speed;
-  $this.z2m_1 = adjust;
+  $this.i2n_1 = power;
+  $this.j2n_1 = exact;
+  $this.k2n_1 = turn;
+  $this.l2n_1 = wonByEnd;
+  $this.m2n_1 = speed;
+  $this.n2n_1 = adjust;
   return $this;
 }
 function WebPower_init_$Create$(seen0, power, exact, turn, wonByEnd, speed, adjust, serializationConstructorMarker) {
   return WebPower_init_$Init$(seen0, power, exact, turn, wonByEnd, speed, adjust, serializationConstructorMarker, objectCreate(protoOf(WebPower)));
 }
 function WebPower(power, exact, turn, wonByEnd, speed, adjust) {
-  this.u2m_1 = power;
-  this.v2m_1 = exact;
-  this.w2m_1 = turn;
-  this.x2m_1 = wonByEnd;
-  this.y2m_1 = speed;
-  this.z2m_1 = adjust;
+  this.i2n_1 = power;
+  this.j2n_1 = exact;
+  this.k2n_1 = turn;
+  this.l2n_1 = wonByEnd;
+  this.m2n_1 = speed;
+  this.n2n_1 = adjust;
 }
 function WebProgress() {
   this.y2d_1 = null;
+  this.z2d_1 = null;
 }
-protoOf(WebProgress).z2d = function () {
+protoOf(WebProgress).a2e = function (r) {
   var tmp0_safe_receiver = this.y2d_1;
   if (tmp0_safe_receiver == null)
     null;
   else
-    tmp0_safe_receiver();
+    tmp0_safe_receiver(r);
+};
+protoOf(WebProgress).i2e = function (r) {
+  var tmp0_safe_receiver = this.z2d_1;
+  if (tmp0_safe_receiver == null)
+    null;
+  else
+    tmp0_safe_receiver(r);
 };
 var WebProgress_instance;
 function WebProgress_getInstance() {
   return WebProgress_instance;
+}
+function Companion_9() {
+  Companion_instance_10 = this;
+  var tmp = this;
+  // Inline function 'kotlin.arrayOf' call
+  // Inline function 'kotlin.js.unsafeCast' call
+  // Inline function 'kotlin.js.asDynamic' call
+  tmp.f2m_1 = [null, new ArrayListSerializer(IntSerializer_getInstance()), new ArrayListSerializer(IntSerializer_getInstance()), new ArrayListSerializer(IntSerializer_getInstance()), new ArrayListSerializer(LongSerializer_getInstance()), null, null];
+}
+protoOf(Companion_9).o2n = function (batch, games) {
+  return new WebTally(games, toList_0(batch.c2e_1), toList_0(batch.d2e_1), toList_0(batch.e2e_1), toList_1(batch.f2e_1), batch.g2e_1, batch.h2e_1);
+};
+protoOf(Companion_9).x15 = function () {
+  return $serializer_getInstance_7();
+};
+var Companion_instance_10;
+function Companion_getInstance_10() {
+  if (Companion_instance_10 == null)
+    new Companion_9();
+  return Companion_instance_10;
+}
+function $serializer_7() {
+  $serializer_instance_7 = this;
+  var tmp0_serialDesc = new PluginGeneratedSerialDescriptor('com.mtgtrader.data.WebTally', this, 7);
+  tmp0_serialDesc.ku('games', false);
+  tmp0_serialDesc.ku('won', false);
+  tmp0_serialDesc.ku('byCombo', false);
+  tmp0_serialDesc.ku('byMaze', false);
+  tmp0_serialDesc.ku('dealt', false);
+  tmp0_serialDesc.ku('wins', false);
+  tmp0_serialDesc.ku('knockouts', false);
+  this.p2n_1 = tmp0_serialDesc;
+}
+protoOf($serializer_7).q2n = function (encoder, value) {
+  var tmp0_desc = this.p2n_1;
+  var tmp1_output = encoder.dn(tmp0_desc);
+  var tmp2_cached = Companion_getInstance_10().f2m_1;
+  tmp1_output.mo(tmp0_desc, 0, value.g2m_1);
+  tmp1_output.to(tmp0_desc, 1, tmp2_cached[1], value.h2m_1);
+  tmp1_output.to(tmp0_desc, 2, tmp2_cached[2], value.i2m_1);
+  tmp1_output.to(tmp0_desc, 3, tmp2_cached[3], value.j2m_1);
+  tmp1_output.to(tmp0_desc, 4, tmp2_cached[4], value.k2m_1);
+  tmp1_output.mo(tmp0_desc, 5, value.l2m_1);
+  tmp1_output.mo(tmp0_desc, 6, value.m2m_1);
+  tmp1_output.en(tmp0_desc);
+};
+protoOf($serializer_7).hk = function (encoder, value) {
+  return this.q2n(encoder, value instanceof WebTally ? value : THROW_CCE());
+};
+protoOf($serializer_7).ik = function (decoder) {
+  var tmp0_desc = this.p2n_1;
+  var tmp1_flag = true;
+  var tmp2_index = 0;
+  var tmp3_bitMask0 = 0;
+  var tmp4_local0 = 0;
+  var tmp5_local1 = null;
+  var tmp6_local2 = null;
+  var tmp7_local3 = null;
+  var tmp8_local4 = null;
+  var tmp9_local5 = 0;
+  var tmp10_local6 = 0;
+  var tmp11_input = decoder.dn(tmp0_desc);
+  var tmp12_cached = Companion_getInstance_10().f2m_1;
+  if (tmp11_input.tn()) {
+    tmp4_local0 = tmp11_input.in(tmp0_desc, 0);
+    tmp3_bitMask0 = tmp3_bitMask0 | 1;
+    tmp5_local1 = tmp11_input.pn(tmp0_desc, 1, tmp12_cached[1], tmp5_local1);
+    tmp3_bitMask0 = tmp3_bitMask0 | 2;
+    tmp6_local2 = tmp11_input.pn(tmp0_desc, 2, tmp12_cached[2], tmp6_local2);
+    tmp3_bitMask0 = tmp3_bitMask0 | 4;
+    tmp7_local3 = tmp11_input.pn(tmp0_desc, 3, tmp12_cached[3], tmp7_local3);
+    tmp3_bitMask0 = tmp3_bitMask0 | 8;
+    tmp8_local4 = tmp11_input.pn(tmp0_desc, 4, tmp12_cached[4], tmp8_local4);
+    tmp3_bitMask0 = tmp3_bitMask0 | 16;
+    tmp9_local5 = tmp11_input.in(tmp0_desc, 5);
+    tmp3_bitMask0 = tmp3_bitMask0 | 32;
+    tmp10_local6 = tmp11_input.in(tmp0_desc, 6);
+    tmp3_bitMask0 = tmp3_bitMask0 | 64;
+  } else
+    while (tmp1_flag) {
+      tmp2_index = tmp11_input.un(tmp0_desc);
+      switch (tmp2_index) {
+        case -1:
+          tmp1_flag = false;
+          break;
+        case 0:
+          tmp4_local0 = tmp11_input.in(tmp0_desc, 0);
+          tmp3_bitMask0 = tmp3_bitMask0 | 1;
+          break;
+        case 1:
+          tmp5_local1 = tmp11_input.pn(tmp0_desc, 1, tmp12_cached[1], tmp5_local1);
+          tmp3_bitMask0 = tmp3_bitMask0 | 2;
+          break;
+        case 2:
+          tmp6_local2 = tmp11_input.pn(tmp0_desc, 2, tmp12_cached[2], tmp6_local2);
+          tmp3_bitMask0 = tmp3_bitMask0 | 4;
+          break;
+        case 3:
+          tmp7_local3 = tmp11_input.pn(tmp0_desc, 3, tmp12_cached[3], tmp7_local3);
+          tmp3_bitMask0 = tmp3_bitMask0 | 8;
+          break;
+        case 4:
+          tmp8_local4 = tmp11_input.pn(tmp0_desc, 4, tmp12_cached[4], tmp8_local4);
+          tmp3_bitMask0 = tmp3_bitMask0 | 16;
+          break;
+        case 5:
+          tmp9_local5 = tmp11_input.in(tmp0_desc, 5);
+          tmp3_bitMask0 = tmp3_bitMask0 | 32;
+          break;
+        case 6:
+          tmp10_local6 = tmp11_input.in(tmp0_desc, 6);
+          tmp3_bitMask0 = tmp3_bitMask0 | 64;
+          break;
+        default:
+          throw UnknownFieldException_init_$Create$(tmp2_index);
+      }
+    }
+  tmp11_input.en(tmp0_desc);
+  return WebTally_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, tmp7_local3, tmp8_local4, tmp9_local5, tmp10_local6, null);
+};
+protoOf($serializer_7).gk = function () {
+  return this.p2n_1;
+};
+protoOf($serializer_7).mu = function () {
+  var tmp0_cached = Companion_getInstance_10().f2m_1;
+  // Inline function 'kotlin.arrayOf' call
+  // Inline function 'kotlin.js.unsafeCast' call
+  // Inline function 'kotlin.js.asDynamic' call
+  return [IntSerializer_getInstance(), tmp0_cached[1], tmp0_cached[2], tmp0_cached[3], tmp0_cached[4], IntSerializer_getInstance(), IntSerializer_getInstance()];
+};
+var $serializer_instance_7;
+function $serializer_getInstance_7() {
+  if ($serializer_instance_7 == null)
+    new $serializer_7();
+  return $serializer_instance_7;
+}
+function WebTally_init_$Init$(seen0, games, won, byCombo, byMaze, dealt, wins, knockouts, serializationConstructorMarker, $this) {
+  if (!(127 === (127 & seen0))) {
+    throwMissingFieldException(seen0, 127, $serializer_getInstance_7().p2n_1);
+  }
+  $this.g2m_1 = games;
+  $this.h2m_1 = won;
+  $this.i2m_1 = byCombo;
+  $this.j2m_1 = byMaze;
+  $this.k2m_1 = dealt;
+  $this.l2m_1 = wins;
+  $this.m2m_1 = knockouts;
+  return $this;
+}
+function WebTally_init_$Create$(seen0, games, won, byCombo, byMaze, dealt, wins, knockouts, serializationConstructorMarker) {
+  return WebTally_init_$Init$(seen0, games, won, byCombo, byMaze, dealt, wins, knockouts, serializationConstructorMarker, objectCreate(protoOf(WebTally)));
+}
+function WebTally(games, won, byCombo, byMaze, dealt, wins, knockouts) {
+  Companion_getInstance_10();
+  this.g2m_1 = games;
+  this.h2m_1 = won;
+  this.i2m_1 = byCombo;
+  this.j2m_1 = byMaze;
+  this.k2m_1 = dealt;
+  this.l2m_1 = wins;
+  this.m2m_1 = knockouts;
+}
+protoOf(WebTally).n2m = function () {
+  var r = new Batch(this.h2m_1.p() - 1 | 0);
+  // Inline function 'kotlin.collections.forEachIndexed' call
+  var index = 0;
+  var tmp0_iterator = this.h2m_1.m();
+  while (tmp0_iterator.n()) {
+    var item = tmp0_iterator.o();
+    // Inline function 'com.mtgtrader.data.WebTally.batch.<anonymous>' call
+    var tmp1 = index;
+    index = tmp1 + 1 | 0;
+    var t = checkIndexOverflow(tmp1);
+    if (t < r.c2e_1.length) {
+      r.c2e_1[t] = item;
+    }
+  }
+  // Inline function 'kotlin.collections.forEachIndexed' call
+  var index_0 = 0;
+  var tmp0_iterator_0 = this.i2m_1.m();
+  while (tmp0_iterator_0.n()) {
+    var item_0 = tmp0_iterator_0.o();
+    // Inline function 'com.mtgtrader.data.WebTally.batch.<anonymous>' call
+    var tmp1_0 = index_0;
+    index_0 = tmp1_0 + 1 | 0;
+    var t_0 = checkIndexOverflow(tmp1_0);
+    if (t_0 < r.d2e_1.length) {
+      r.d2e_1[t_0] = item_0;
+    }
+  }
+  // Inline function 'kotlin.collections.forEachIndexed' call
+  var index_1 = 0;
+  var tmp0_iterator_1 = this.j2m_1.m();
+  while (tmp0_iterator_1.n()) {
+    var item_1 = tmp0_iterator_1.o();
+    // Inline function 'com.mtgtrader.data.WebTally.batch.<anonymous>' call
+    var tmp1_1 = index_1;
+    index_1 = tmp1_1 + 1 | 0;
+    var t_1 = checkIndexOverflow(tmp1_1);
+    if (t_1 < r.e2e_1.length) {
+      r.e2e_1[t_1] = item_1;
+    }
+  }
+  // Inline function 'kotlin.collections.forEachIndexed' call
+  var index_2 = 0;
+  var tmp0_iterator_2 = this.k2m_1.m();
+  while (tmp0_iterator_2.n()) {
+    var item_2 = tmp0_iterator_2.o();
+    // Inline function 'com.mtgtrader.data.WebTally.batch.<anonymous>' call
+    var tmp1_2 = index_2;
+    index_2 = tmp1_2 + 1 | 0;
+    var i = checkIndexOverflow(tmp1_2);
+    if (i < r.f2e_1.length) {
+      r.f2e_1[i] = item_2;
+    }
+  }
+  r.g2e_1 = this.l2m_1;
+  r.h2e_1 = this.m2m_1;
+  return r;
+};
+function WebBatches() {
+  this.n2l_1 = null;
+  this.o2l_1 = null;
+}
+protoOf(WebBatches).p2l = function (b, turns) {
+  var tmp0_safe_receiver = this.o2l_1;
+  if (tmp0_safe_receiver == null)
+    null;
+  else {
+    // Inline function 'kotlin.let' call
+    // Inline function 'kotlin.contracts.contract' call
+    return getOrNull(tmp0_safe_receiver, b);
+  }
+  if (!(this.n2l_1 == null) && !(b === this.n2l_1))
+    return new Batch(turns);
+  return null;
+};
+var WebBatches_instance;
+function WebBatches_getInstance() {
+  return WebBatches_instance;
+}
+function webWinOddsJson(odds, salt) {
+  _init_properties_Website_kt__35unmf();
+  var window_0 = odds.f1s();
+  var tmp = get_json();
+  var tmp_0 = Companion_instance_8.x15();
+  var tmp_1 = odds.e1s();
+  var tmp_2 = odds.a1s();
+  var tmp_3 = odds.b1s();
+  var tmp_4 = odds.c1s();
+  var tmp_5 = odds.d1s();
+  var tmp_6 = odds.g1s();
+  var tmp_7 = odds.h1s();
+  var tmp_8 = odds.i1s();
+  // Inline function 'kotlin.let' call
+  // Inline function 'kotlin.contracts.contract' call
+  // Inline function 'com.mtgtrader.data.webWinOddsJson.<anonymous>' call
+  var it = AppPowerLevel_getInstance().e1f(odds, salt);
+  var tmp$ret$1 = new WebPower(it.q1e_1, it.r1e_1, it.s1e_1, it.t1e_1, it.u1e_1, it.v1e_1);
+  return tmp.k13(tmp_0, new WebWinOdds(odds, tmp_1, tmp_2, tmp_3, tmp_4, tmp_5, window_0.a1_1, window_0.b1_1, tmp_6, tmp_7, tmp_8, tmp$ret$1));
 }
 function json$lambda($this$Json) {
   _init_properties_Website_kt__35unmf();
@@ -33684,11 +34076,44 @@ function json$lambda($this$Json) {
   return Unit_instance;
 }
 function winOddsJson$lambda($started, $this) {
-  return function () {
+  return function (it) {
     var _unary__edvuaz = $started._v;
     $started._v = _unary__edvuaz + 1 | 0;
     if (($started._v % 100 | 0) === 0)
       $this($started._v);
+    return Unit_instance;
+  };
+}
+function winBatchJson$lambda($played, $snapshotAt, $onSnapshot, $started, $onProgress) {
+  return function (r) {
+    var tmp;
+    if ($played._v === $snapshotAt) {
+      var tmp0_safe_receiver = $onSnapshot;
+      if (tmp0_safe_receiver == null)
+        null;
+      else
+        tmp0_safe_receiver(get_json().k13(Companion_getInstance_10().x15(), Companion_getInstance_10().o2n(r, $played._v)));
+      tmp = Unit_instance;
+    }
+    var _unary__edvuaz = $played._v;
+    $played._v = _unary__edvuaz + 1 | 0;
+    var _unary__edvuaz_0 = $started._v;
+    $started._v = _unary__edvuaz_0 + 1 | 0;
+    var tmp_0;
+    if (($started._v % 100 | 0) === 0) {
+      var tmp1_safe_receiver = $onProgress;
+      if (tmp1_safe_receiver == null)
+        null;
+      else
+        tmp1_safe_receiver($started._v);
+      tmp_0 = Unit_instance;
+    }
+    return Unit_instance;
+  };
+}
+function winBatchJson$lambda_0($finished, $played) {
+  return function (r) {
+    $finished._v = Companion_getInstance_10().o2n(r, $played._v);
     return Unit_instance;
   };
 }
@@ -33708,6 +34133,7 @@ protoOf($serializer_3).nu = typeParametersSerializers;
 protoOf($serializer_4).nu = typeParametersSerializers;
 protoOf($serializer_5).nu = typeParametersSerializers;
 protoOf($serializer_6).nu = typeParametersSerializers;
+protoOf($serializer_7).nu = typeParametersSerializers;
 //endregion
 //region block: init
 Companion_instance_2 = new Companion_1();
@@ -33719,10 +34145,13 @@ Companion_instance_7 = new Companion_6();
 Companion_instance_8 = new Companion_7();
 Companion_instance_9 = new Companion_8();
 WebProgress_instance = new WebProgress();
+WebBatches_instance = new WebBatches();
 //endregion
 //region block: exports
 export {
   winOddsJson as winOddsJson,
+  winBatchJson as winBatchJson,
+  winMergeJson as winMergeJson,
   saltCardJson as saltCardJson,
 };
 //endregion
