@@ -24,7 +24,7 @@ function deckId(raw: string): number | null {
   return Number.isSafeInteger(n) ? n : null;
 }
 
-type Body = { model?: unknown; focus?: unknown; length?: unknown; sections?: unknown; startFrom?: unknown };
+type Body = { model?: unknown; focus?: unknown; length?: unknown; sections?: unknown; startFrom?: unknown; provider?: unknown };
 
 /** A model id the service could know; anything else falls back to the service's default. The service decides what it serves. */
 function modelOf(value: unknown, fallback: string): string {
@@ -60,7 +60,8 @@ const utcDay = (at: number) => new Date(at).toISOString().slice(0, 10);
 /**
  * Writes one primer: the body's model, focus, length, sections and start-from text, checked and defaulted; the deck
  * looked up like the deck GET route does; one AI request, then the count of the day goes up by one. Nothing is saved
- * to the deck: the page reviews the text and saves it itself.
+ * to the deck: the page reviews the text and saves it itself. The body's provider only names which of the website's
+ * keys the owner's account writes with; another account's saved key is the one it writes with, whatever it says.
  */
 export async function POST(req: Request, { params }: Params) {
   if (!fromOurPages(req)) return json({ error: "Not allowed." }, 403);
@@ -69,11 +70,15 @@ export async function POST(req: Request, { params }: Params) {
   try {
     const id = deckId((await params).id);
     if (id === null) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
-    // Whose key the request runs on, decided before anything of the deck is read.
+    // Whose key the request runs on, decided before anything of the deck is read; the owner's account picks its service.
     const store = accountStore();
-    const access = await accessFor(a, store);
-    if (!access) throw new EditError(a.admin ? "The AI isn't set up on this website." : "Add your own AI key under Settings → AI key first.");
     const body = ((await req.json()) ?? {}) as Body;
+    const access = await accessFor(a, store, Date.now(), body.provider);
+    if (!access) throw new EditError(a.admin ? "The AI isn't set up on this website." : "Add your own AI key under Settings → AI key first.");
+    // A service the website doesn't have would send one service's model id to the other: it is refused instead. (The
+    // question is never asked of another account: accessFor ignores the service it names.)
+    const asked = body.provider !== undefined && body.provider !== null;
+    if (a.admin && asked && body.provider !== access.provider) throw new EditError("That AI service isn't set up on this website.");
     const options: AiOptions = {
       focus: focusOf(body.focus),
       length: lengthOf(body.length),

@@ -1,6 +1,6 @@
 // Settings → AI key: an account's own key for the AI deck primers (OpenCode Go, Mistral or OpenRouter). The owner's
 // account uses the website's key instead, so it never saves one. A key is only ever answered as its last four characters.
-import { aiConfigured, checkAiKey, cleanAiKey, openAiKey, sealAiKey, websiteAccess } from "@/lib/aiprimer";
+import { aiConfigured, checkAiKey, cleanAiKey, openAiKey, sealAiKey, websiteAccess, websiteServices } from "@/lib/aiprimer";
 import { AI_PROVIDERS, isAiProvider, type AiProvider } from "@/lib/aiprimershared";
 import { needStore } from "@/lib/accountweb";
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
@@ -29,6 +29,8 @@ export async function GET() {
       websiteKeySet: aiConfigured(),
       // What the panel calls the website's key: Mistral when that is set up, otherwise OpenCode Go.
       websiteProvider: website === null ? null : AI_PROVIDERS[website.provider].label,
+      // Every service the website has a key for, in the order the owner can pick between them.
+      websiteProviders: websiteServices().map((s) => s.label),
       providers: (Object.keys(AI_PROVIDERS) as AiProvider[]).map((id) => ({ id, label: AI_PROVIDERS[id].label })),
       saved,
       unreadable: row !== null && saved === null,

@@ -435,10 +435,15 @@ interface AiModels {
   models: string[];
   defaultModel: string;
   needsKey?: boolean;
+  /** The service this list belongs to ("mistral", "opencode-go"), for the owner's account. */
+  service?: string;
+  /** Every service the owner's account can switch between; empty for any other account. */
+  services?: { id: string; label: string }[];
 }
 
-/** The last model, focus, length and sections the owner picked, kept in this browser. */
+/** The last model and service, the focus, length and sections the owner picked, kept in this browser. */
 const AI_MODEL_KEY = "mtgtrader.aiModel";
+const AI_SERVICE_KEY = "mtgtrader.aiService";
 const AI_OPTIONS_KEY = "mtgtrader.aiOptions";
 
 /** Every section, in the order the prompt writes them. */
@@ -485,6 +490,34 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
   const [sections, setSections] = useState<AiSection[]>([...DEFAULT_SECTIONS]);
   const [startMode, setStartMode] = useState<"IMPROVE" | "REPLACE">("IMPROVE");
   const [busy, setBusy] = useState(false);
+  /** A new service's list is on its way: the model and the Write button wait for it. */
+  const [switching, setSwitching] = useState(false);
+  // Which list load is the current one: an answer that comes late (after another service was picked, or after the
+  // section was closed) is dropped instead of replacing the list on screen.
+  const loadId = useRef(0);
+
+  /** Loads the models of [service] (the service's default when null); the newest request wins. Null when it failed. */
+  async function loadModels(service: string | null): Promise<AiModels | null> {
+    const id = ++loadId.current;
+    const r = await api<AiModels>(`/api/ai/models${service ? `?provider=${encodeURIComponent(service)}` : ""}`);
+    if (id !== loadId.current) return null;
+    if (!r.ok) {
+      onError(r.data.error ?? "Could not load the AI models.");
+      return null;
+    }
+    const next: AiModels = {
+      configured: r.data.configured,
+      models: r.data.models ?? [],
+      defaultModel: r.data.defaultModel ?? DEFAULT_MODEL,
+      needsKey: r.data.needsKey === true,
+      service: r.data.service,
+      services: r.data.services ?? [],
+    };
+    setModels(next);
+    // An ok answer can still say the list couldn't be read (the default model is all it has): the dialog says why.
+    if (r.data.error) onError(r.data.error);
+    return next;
+  }
 
   useEffect(() => {
     try {
@@ -500,18 +533,22 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
       setSections(kept.sections);
     }
     let live = true;
-    api<AiModels>("/api/ai/models").then((r) => {
-      if (!live) return;
-      if (r.ok) {
-        setModels({ configured: r.data.configured, models: r.data.models ?? [], defaultModel: r.data.defaultModel ?? DEFAULT_MODEL, needsKey: r.data.needsKey === true });
-      } else {
-        // The default model still works if only the list is missing; an AI that isn't set up says so on Write.
-        setModels({ configured: true, models: [DEFAULT_MODEL], defaultModel: DEFAULT_MODEL, needsKey: false });
-        onError(r.data.error ?? "Could not load the AI models.");
-      }
+    // The service the owner picked last time; the website's own first key when nothing is kept.
+    let service: string | null = null;
+    try {
+      service = localStorage.getItem(AI_SERVICE_KEY);
+    } catch {
+      // Not remembered.
+    }
+    void loadModels(service).then((next) => {
+      if (next || !live) return;
+      // The default model still works if only the list is missing; an AI that isn't set up says so on Write.
+      setModels({ configured: true, models: [DEFAULT_MODEL], defaultModel: DEFAULT_MODEL, needsKey: false });
     });
     return () => {
       live = false;
+      // A late answer from this section is dropped: it must not fill in the next time it opens.
+      loadId.current += 1;
     };
     // Once, when the section opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -539,6 +576,21 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
     keepOptions(value);
   }
 
+  /** Another service: its models, its default model picked, and the choice kept in this browser. */
+  async function pickService(service: string) {
+    setSwitching(true);
+    onError(null);
+    const next = await loadModels(service);
+    setSwitching(false);
+    if (!next) return;
+    pickModel(next.defaultModel);
+    try {
+      localStorage.setItem(AI_SERVICE_KEY, service);
+    } catch {
+      // Not remembered.
+    }
+  }
+
   async function write() {
     setBusy(true);
     onError(null);
@@ -548,6 +600,8 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
       length,
       sections: ordered,
       startFrom: startMode === "IMPROVE" && text.trim() !== "" ? text : null,
+      // Only the owner's account has a service to name; any other account's key is the one saved, so it says nothing.
+      ...((models?.services?.length ?? 0) > 1 && models?.service ? { provider: models.service } : {}),
     });
     setBusy(false);
     if (!r.ok || !r.data.text) {
@@ -582,9 +636,21 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
       ) : (
         <div className="primer-ai-body">
           <div className="primer-ai-row">
+            {(models.services?.length ?? 0) > 1 && (
+              <label className="primer-ai-field small">
+                <span className="muted">Service</span>
+                <select value={models.service} onChange={(e) => void pickService(e.target.value)} disabled={busy || switching} aria-label="AI service">
+                  {(models.services ?? []).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="primer-ai-field small">
               <span className="muted">Model</span>
-              <select value={chosen} onChange={(e) => pickModel(e.target.value)} disabled={busy} aria-label="AI model">
+              <select value={chosen} onChange={(e) => pickModel(e.target.value)} disabled={busy || switching} aria-label="AI model">
                 {list.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -634,7 +700,7 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
             </div>
           )}
           <div className="primer-ai-row">
-            <button type="button" className="btn small-btn" disabled={busy} onClick={write}>
+            <button type="button" className="btn small-btn" disabled={busy || switching} onClick={write}>
               {busy ? "Writing… (up to a minute)" : "Write"}
             </button>
           </div>

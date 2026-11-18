@@ -16,7 +16,7 @@ vi.mock("@/lib/auth", async (importOriginal) => {
 });
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
-import { aiConfigured, deckPrimerInput, listModels, websiteAccess, writePrimer, type AiAccess } from "@/lib/aiprimer";
+import { aiConfigured, deckPrimerInput, forgetModelLists, listModels, websiteAccess, writePrimer, type AiAccess } from "@/lib/aiprimer";
 import { buildPrompt, cleanPrimer, DEFAULT_MODEL, DEFAULT_SECTIONS, AI_PROVIDERS, MAX_PER_DAY, type AiOptions, type PrimerInput } from "@/lib/aiprimershared";
 import { USER_AGENT } from "@/lib/config";
 import { syncDecks } from "@/lib/decks";
@@ -79,15 +79,29 @@ afterAll(() => {
 
 // ---- The health check's AI part -----------------------------------------------------------------------------------
 
+/** What /api/health says about the AI: the first service's fields, and every service's own. */
+type AiHealthBody = { ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; services: unknown[]; checkedAgeHours: number | null } };
+
+const MISTRAL_KEY = "mistral-key-not-real-0000001";
+const bothKeys = () => {
+  process.env.MISTRAL_API_KEY = MISTRAL_KEY;
+  process.env.OPENCODE_API_KEY = KEY;
+};
+
 describe("the health check's AI part", () => {
+  beforeEach(() => {
+    // A list another test kept would answer these instead of the fake fetch.
+    forgetModelLists();
+  });
+
   it("says not set up when there is no key", async () => {
     delete process.env.OPENCODE_API_KEY;
     const body = (await (await healthGet()).json()) as { ai: unknown };
-    expect(body.ai).toEqual({ configured: false, provider: null, reachable: false, hasDefault: false, checkedAgeHours: null });
+    expect(body.ai).toEqual({ configured: false, provider: null, reachable: false, hasDefault: false, services: [], checkedAgeHours: null });
   });
 
   it("keeps the last check for an hour and asks Go only when it is older", async () => {
-    await store.setJob("ai-check", Date.now(), { provider: "opencode-go", reachable: true, hasDefault: true });
+    await store.setJob("ai-check", Date.now(), { services: [{ provider: "opencode-go", reachable: true, hasDefault: true }] });
     const seen: string[] = [];
     const spy = vi.fn(async (url: RequestInfo | URL) => {
       seen.push(String(url));
@@ -95,37 +109,76 @@ describe("the health check's AI part", () => {
     });
     vi.stubGlobal("fetch", spy);
 
-    const fresh = (await (await healthGet()).json()) as {
-      ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null };
-    };
-    expect(fresh.ai).toEqual({ configured: true, provider: "opencode-go", reachable: true, hasDefault: true, checkedAgeHours: 0 });
+    const fresh = (await (await healthGet()).json()) as AiHealthBody;
+    expect(fresh.ai).toEqual({
+      configured: true,
+      provider: "opencode-go",
+      reachable: true,
+      hasDefault: true,
+      services: [{ provider: "opencode-go", reachable: true, hasDefault: true }],
+      checkedAgeHours: 0,
+    });
 
     // Older than an hour: the model list is asked again, and a failure becomes the new (kept) answer.
-    await store.setJob("ai-check", Date.now() - 2 * 3_600_000, { provider: "opencode-go", reachable: true, hasDefault: true });
-    const stale = (await (await healthGet()).json()) as {
-      ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null };
-    };
+    await store.setJob("ai-check", Date.now() - 2 * 3_600_000, { services: [{ provider: "opencode-go", reachable: true, hasDefault: true }] });
+    const stale = (await (await healthGet()).json()) as AiHealthBody;
     expect(seen.filter((u) => u.includes("opencode.ai"))).toEqual(["https://opencode.ai/inference/go/v1/models"]);
-    expect(stale.ai).toEqual({ configured: true, provider: "opencode-go", reachable: false, hasDefault: false, checkedAgeHours: 0 });
-    expect((await store.job("ai-check"))!.info).toEqual({ provider: "opencode-go", reachable: false, hasDefault: false });
+    expect(stale.ai).toEqual({
+      configured: true,
+      provider: "opencode-go",
+      reachable: false,
+      hasDefault: false,
+      services: [{ provider: "opencode-go", reachable: false, hasDefault: false }],
+      checkedAgeHours: 0,
+    });
+    expect((await store.job("ai-check"))!.info).toEqual({ services: [{ provider: "opencode-go", reachable: false, hasDefault: false }] });
   });
 
-  it("checks again when the kept answer was for another service", async () => {
-    process.env.MISTRAL_API_KEY = "mistral-key-not-real-0000001";
-    // A kept answer of a moment ago, but about OpenCode Go: the website's key is Mistral's now.
-    await store.setJob("ai-check", Date.now(), { provider: "opencode-go", reachable: true, hasDefault: true });
-    const { fn, calls } = fakeFetch(() => jsonBody({ data: [{ id: AI_PROVIDERS.mistral.defaultModel }] }));
+  it("checks again when the kept answer was about other services", async () => {
+    bothKeys();
+    // A kept answer of a moment ago, but about OpenCode Go alone: the website's keys are Mistral's and Go's now.
+    await store.setJob("ai-check", Date.now(), { services: [{ provider: "opencode-go", reachable: true, hasDefault: true }] });
+    const { fn, calls } = fakeFetch((url) => jsonBody({ data: [{ id: url.includes("opencode.ai") ? DEFAULT_MODEL : AI_PROVIDERS.mistral.defaultModel }] }));
     vi.stubGlobal("fetch", fn);
 
-    // The route reads its libraries afresh, so the model list the file keeps in memory for the website's key can't
-    // answer this: a fresh copy starts with nothing kept.
-    vi.resetModules();
-    const fresh = await import("@/app/api/health/route");
-    const body = (await (await fresh.GET()).json()) as {
-      ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null };
-    };
-    expect(calls.map((c) => c.url)).toEqual(["https://api.mistral.ai/v1/models"]);
-    expect(body.ai).toEqual({ configured: true, provider: "mistral", reachable: true, hasDefault: true, checkedAgeHours: 0 });
+    const body = (await (await healthGet()).json()) as AiHealthBody;
+    // Both lists are asked, in the order of the website's keys.
+    expect(calls.map((c) => c.url)).toEqual(["https://api.mistral.ai/v1/models", "https://opencode.ai/inference/go/v1/models"]);
+    expect(body.ai).toEqual({
+      configured: true,
+      provider: "mistral",
+      reachable: true,
+      hasDefault: true,
+      services: [
+        { provider: "mistral", reachable: true, hasDefault: true },
+        { provider: "opencode-go", reachable: true, hasDefault: true },
+      ],
+      checkedAgeHours: 0,
+    });
+  });
+
+  it("asks every website key, and an unreachable one only takes its own entry down", async () => {
+    bothKeys();
+    const { fn, calls } = fakeFetch((url) => {
+      if (url.includes("opencode.ai")) throw new Error("Go is down");
+      return jsonBody({ data: [{ id: AI_PROVIDERS.mistral.defaultModel }] });
+    });
+    vi.stubGlobal("fetch", fn);
+
+    const body = (await (await healthGet()).json()) as AiHealthBody;
+    expect(calls.map((c) => c.url)).toEqual(["https://api.mistral.ai/v1/models", "https://opencode.ai/inference/go/v1/models"]);
+    expect(body.ai.services).toEqual([
+      { provider: "mistral", reachable: true, hasDefault: true },
+      { provider: "opencode-go", reachable: false, hasDefault: false },
+    ]);
+    // The top-level fields stay Mistral's, the service the owner's account starts on.
+    expect(body.ai).toMatchObject({ provider: "mistral", reachable: true, hasDefault: true, checkedAgeHours: 0 });
+    expect((await store.job("ai-check"))!.info).toEqual({
+      services: [
+        { provider: "mistral", reachable: true, hasDefault: true },
+        { provider: "opencode-go", reachable: false, hasDefault: false },
+      ],
+    });
   });
 });
 

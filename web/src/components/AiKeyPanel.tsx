@@ -9,6 +9,8 @@ interface AiKeyInfo {
   websiteKeySet: boolean;
   /** The service the website's own key belongs to ("Mistral", "OpenCode Go"), or null when it has none. */
   websiteProvider: string | null;
+  /** Every service the website has a key for ("Mistral", "OpenCode Go"), in the order the owner can pick between them. */
+  websiteProviders: string[];
   providers: { id: string; label: string }[];
   saved: { provider: string; label: string; last4: string; savedAt: number } | null;
   unreadable: boolean;
@@ -64,7 +66,11 @@ export function AiKeyPanel() {
         <p className="muted small">Loading…</p>
       ) : info.usesWebsiteKey ? (
         <p className="muted small">
-          {info.websiteKeySet ? `Your account uses the website's own ${info.websiteProvider} key.` : "The website's own key isn't set up."}
+          {info.websiteKeySet
+            ? info.websiteProviders.length > 1
+              ? `Your account uses the website's own keys (${info.websiteProviders.join(" and ")}). Choose one when you write a primer.`
+              : `Your account uses the website's own ${info.websiteProvider} key.`
+            : "The website's own key isn't set up."}
         </p>
       ) : (
         <>

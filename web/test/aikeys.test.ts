@@ -16,7 +16,7 @@ vi.mock("@/lib/auth", async (importOriginal) => {
 });
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
-import { accessFor, cleanAiKey, listModels, openAiKey, sealAiKey, websiteAccess, writePrimer, type AiAccess } from "@/lib/aiprimer";
+import { accessFor, cleanAiKey, forgetModelLists, listModels, openAiKey, sealAiKey, websiteAccess, writePrimer, type AiAccess } from "@/lib/aiprimer";
 import { AI_PROVIDERS, DEFAULT_MODEL, type AiOptions, type PrimerInput } from "@/lib/aiprimershared";
 import { seal } from "@/lib/session";
 import { encode, type SyncFile } from "@/lib/syncfile";
@@ -93,17 +93,30 @@ const primerWith = (body: unknown) =>
 const keyRequest = (body: unknown, headers: Record<string, string> = { "content-type": "application/json", "x-requested-with": "mtgtrader" }) =>
   keyPost(new Request("https://mtgtrader.vercel.app/api/account/aikey", { method: "POST", headers, body: JSON.stringify(body) }));
 
-type ModelsAnswer = { configured: boolean; needsKey: boolean; provider?: string; models: string[]; defaultModel: string; error?: string };
+type ModelsAnswer = {
+  configured: boolean;
+  needsKey: boolean;
+  provider?: string;
+  models: string[];
+  defaultModel: string;
+  service?: string;
+  services?: { id: string; label: string }[];
+  error?: string;
+};
 type KeyAnswer = {
   usesWebsiteKey: boolean;
   websiteKeySet: boolean;
   websiteProvider: string | null;
+  websiteProviders: string[];
   providers: { id: string; label: string }[];
   saved: { provider: string; label: string; last4: string; savedAt: number } | null;
   unreadable: boolean;
 };
 
-const models = async () => (await (await modelsGet()).json()) as ModelsAnswer;
+const models = async () => (await (await modelsGet(new Request("https://mtgtrader.vercel.app/api/ai/models"))).json()) as ModelsAnswer;
+/** The list for one service (?provider=), as the owner's dialog asks when it switches. */
+const modelsFor = async (provider: string) =>
+  (await (await modelsGet(new Request(`https://mtgtrader.vercel.app/api/ai/models?provider=${encodeURIComponent(provider)}`))).json()) as ModelsAnswer;
 const keyInfo = async () => (await (await keyGet()).json()) as KeyAnswer;
 
 beforeEach(async () => {
@@ -608,5 +621,182 @@ describe("GET /api/account/aikey with the website's own key", () => {
 
     delete process.env.MISTRAL_API_KEY;
     expect((await keyInfo()).websiteProvider).toBe("OpenCode Go");
+  });
+});
+
+// ---- 11. The owner's two keys: the service is chosen per primer, and only the owner can choose it ---------------------
+
+/** Both of the website's keys, as the owner's account has them from now on. */
+const bothKeys = () => {
+  process.env.MISTRAL_API_KEY = MISTRAL_KEY;
+  process.env.OPENCODE_API_KEY = WEBSITE_KEY;
+};
+
+const bothServices = [
+  { id: "mistral", label: "Mistral" },
+  { id: "opencode-go", label: "OpenCode Go" },
+];
+
+describe("the owner's two services", () => {
+  beforeEach(() => {
+    // A list kept by another test would answer these instead of the fake fetch.
+    forgetModelLists();
+  });
+
+  it("starts on Mistral, with every service the owner can pick between", async () => {
+    bothKeys();
+    asOwner();
+    const { fn, calls } = fakeFetch(() => jsonBody({ data: [{ id: "mistral-model" }] }));
+    vi.stubGlobal("fetch", fn);
+
+    const list = await models();
+    expect(list.service).toBe("mistral");
+    expect(list.services).toEqual(bothServices);
+    expect(list.models).toEqual(["mistral-model"]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://api.mistral.ai/v1/models");
+    expect(headerOf(calls[0], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+  });
+
+  it("asks OpenCode Go's list for ?provider=opencode-go, and falls back to Mistral for a service it doesn't have", async () => {
+    bothKeys();
+    asOwner();
+    const { fn, calls } = fakeFetch((url) =>
+      url.includes("opencode.ai") ? jsonBody({ data: [{ id: "go-model" }] }) : jsonBody({ data: [{ id: "mistral-model" }] }),
+    );
+    vi.stubGlobal("fetch", fn);
+
+    const go = await modelsFor("opencode-go");
+    expect(go.service).toBe("opencode-go");
+    expect(go.defaultModel).toBe(AI_PROVIDERS["opencode-go"].defaultModel);
+    expect(go.models).toContain("go-model");
+    expect(go.services).toEqual(bothServices);
+    expect(calls[0].url).toBe("https://opencode.ai/inference/go/v1/models");
+    expect(headerOf(calls[0], "Authorization")).toBe(`Bearer ${WEBSITE_KEY}`);
+
+    // An unknown service is the website's first key's, never a key it doesn't have.
+    const unknown = await modelsFor("together");
+    expect(unknown.service).toBe("mistral");
+    expect(calls[1].url).toBe("https://api.mistral.ai/v1/models");
+    expect(headerOf(calls[1], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+  });
+
+  it("keeps each service's list apart, so a second look asks nobody again", async () => {
+    bothKeys();
+    asOwner();
+    const { fn, calls } = fakeFetch((url) =>
+      url.includes("opencode.ai") ? jsonBody({ data: [{ id: "go-model" }] }) : jsonBody({ data: [{ id: "mistral-model" }] }),
+    );
+    vi.stubGlobal("fetch", fn);
+
+    await modelsFor("mistral");
+    await modelsFor("opencode-go");
+    expect(calls).toHaveLength(2);
+
+    const again = fakeFetch(() => {
+      throw new Error("both lists are kept");
+    });
+    vi.stubGlobal("fetch", again.fn);
+    const mistral = await modelsFor("mistral");
+    const go = await modelsFor("opencode-go");
+    expect(mistral.models).toEqual(["mistral-model"]);
+    expect(mistral.service).toBe("mistral");
+    expect(go.models).toContain("go-model");
+    expect(go.models).not.toContain("mistral-model");
+    expect(go.service).toBe("opencode-go");
+    expect(again.spy).not.toHaveBeenCalled();
+  });
+
+  it("writes a primer at the service the dialog names, with that service's key", async () => {
+    bothKeys();
+    asOwner();
+    await store.putSync(OWNER_ID, encode(appFile()), null, NOW);
+    const { fn, calls } = fakeFetch(() => chatAnswer("ok"));
+    vi.stubGlobal("fetch", fn);
+
+    const go = await primerWith({ provider: "opencode-go", model: AI_PROVIDERS["opencode-go"].defaultModel });
+    expect(go.status).toBe(200);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://opencode.ai/inference/go/openai/v1/chat/completions");
+    expect(headerOf(calls[0], "Authorization")).toBe(`Bearer ${WEBSITE_KEY}`);
+    expect(headerOf(calls[0], "x-opencode-session")).toMatch(/^primer-/);
+    expect(sentModel(calls[0])).toBe(AI_PROVIDERS["opencode-go"].defaultModel);
+    // Mistral's key never leaves for Go.
+    for (const c of calls) expect(JSON.stringify(c.init)).not.toContain(MISTRAL_KEY);
+
+    const mistral = await primerWith({ provider: "mistral" });
+    expect(mistral.status).toBe(200);
+    expect(calls).toHaveLength(2);
+    expect(calls[1].url).toBe("https://api.mistral.ai/v1/chat/completions");
+    expect(headerOf(calls[1], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+    expect(headerOf(calls[1], "x-opencode-session")).toBeUndefined();
+    expect(sentModel(calls[1])).toBe(AI_PROVIDERS.mistral.defaultModel);
+    // Go's own request never carried Mistral's key, and Mistral's never carries Go's.
+    expect(JSON.stringify(calls[0].init)).not.toContain(MISTRAL_KEY);
+    expect(JSON.stringify(calls[1].init)).not.toContain(WEBSITE_KEY);
+  });
+
+  it("refuses a service the website has no key for, and asks nobody", async () => {
+    delete process.env.MISTRAL_API_KEY;
+    process.env.OPENCODE_API_KEY = WEBSITE_KEY;
+    asOwner();
+    await store.putSync(OWNER_ID, encode(appFile()), null, NOW);
+    const never = fakeFetch(() => {
+      throw new Error("must not be asked");
+    });
+    vi.stubGlobal("fetch", never.fn);
+
+    const answer = await primerWith({ provider: "mistral" });
+    expect(answer.status).toBe(400);
+    expect(((await answer.json()) as { error: string }).error).toBe("That AI service isn't set up on this website.");
+    expect(never.spy).not.toHaveBeenCalled();
+  });
+
+  it("gives another account no website key, whatever service it names", async () => {
+    bothKeys();
+    asUser();
+    await store.putSync(USER_ID, encode(appFile()), null, NOW);
+    const never = fakeFetch(() => {
+      throw new Error("must not be asked");
+    });
+    vi.stubGlobal("fetch", never.fn);
+
+    for (const service of ["mistral", "opencode-go"]) {
+      const answer = await primerWith({ provider: service });
+      expect(answer.status).toBe(400);
+      expect(((await answer.json()) as { error: string }).error).toBe("Add your own AI key under Settings → AI key first.");
+    }
+    expect((await modelsFor("mistral")).configured).toBe(false);
+    expect(never.spy).not.toHaveBeenCalled();
+  });
+
+  it("keeps another account on its own key when it names a service", async () => {
+    bothKeys();
+    asUser();
+    await store.setAiKey(USER_ID, { provider: "openrouter", sealedKey: sealAiKey(OR_KEY, NOW), savedAt: NOW });
+    await store.putSync(USER_ID, encode(appFile()), null, NOW);
+    const { fn, calls } = fakeFetch((url) => (url.endsWith("/models") ? jsonBody({ data: [{ id: "other/model" }] }) : chatAnswer("ok")));
+    vi.stubGlobal("fetch", fn);
+
+    const list = await modelsFor("mistral");
+    expect(list.service).toBe("openrouter");
+    expect(list.services).toEqual([]);
+    expect(calls[0].url).toBe("https://openrouter.ai/api/v1/models");
+    expect(headerOf(calls[0], "Authorization")).toBe(`Bearer ${OR_KEY}`);
+
+    const answer = await primerWith({ provider: "mistral", model: "other/model" });
+    expect(answer.status).toBe(200);
+    const chat = calls.find((c) => c.url.includes("/chat/completions"))!;
+    expect(chat.url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(headerOf(chat, "Authorization")).toBe(`Bearer ${OR_KEY}`);
+    for (const c of calls) {
+      expect(JSON.stringify(c.init)).not.toContain(MISTRAL_KEY);
+      expect(JSON.stringify(c.init)).not.toContain(WEBSITE_KEY);
+    }
+  });
+
+  it("names both of the website's services on the AI key page", async () => {
+    bothKeys();
+    expect((await keyInfo()).websiteProviders).toEqual(["Mistral", "OpenCode Go"]);
   });
 });

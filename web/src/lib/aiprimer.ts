@@ -46,7 +46,8 @@ const MODELS_TIMEOUT_MS = 30_000;
  */
 const MAX_TOKENS = { SHORT: 8000, FULL: 16000 } as const;
 
-let modelsCache: { at: number; models: string[] } | null = null;
+/** The model list of each service the website has a key for, kept for an hour (the website's own lists only). */
+const modelsCache = new Map<AiProvider, { at: number; models: string[] }>();
 
 /** Whose key a request runs on. [shared] is the website's own key, which only the owner's account may use. */
 export interface AiAccess {
@@ -55,20 +56,35 @@ export interface AiAccess {
   shared: boolean;
 }
 
-/**
- * The website's own key: Mistral's when MISTRAL_API_KEY is set, otherwise OpenCode Go's (OPENCODE_API_KEY); null when it
- * has neither.
- */
-export function websiteAccess(): AiAccess | null {
+/** Every key the website has, the one it starts on first: Mistral's, then OpenCode Go's. */
+export function websiteAccesses(): AiAccess[] {
   const mistral = (process.env.MISTRAL_API_KEY ?? "").trim();
-  if (mistral !== "") return { provider: "mistral", key: mistral, shared: true };
   const go = (process.env.OPENCODE_API_KEY ?? "").trim();
-  return go === "" ? null : { provider: "opencode-go", key: go, shared: true };
+  return [
+    ...(mistral === "" ? [] : [{ provider: "mistral" as const, key: mistral, shared: true }]),
+    ...(go === "" ? [] : [{ provider: "opencode-go" as const, key: go, shared: true }]),
+  ];
+}
+
+/** The website's key for the [wanted] service; its first key when that one isn't there or none is asked for. */
+export function websiteAccess(wanted?: unknown): AiAccess | null {
+  const all = websiteAccesses();
+  return all.find((a) => a.provider === wanted) ?? all[0] ?? null;
+}
+
+/** The services the owner's account can choose between, in the order of websiteAccesses. */
+export function websiteServices(): { id: AiProvider; label: string }[] {
+  return websiteAccesses().map((a) => ({ id: a.provider, label: AI_PROVIDERS[a.provider].label }));
+}
+
+/** Forgets the kept model lists; only the tests use it, so one test's list can't answer the next. */
+export function forgetModelLists(): void {
+  modelsCache.clear();
 }
 
 /** Whether the website has a key at all (the dialog then still offers the default model). */
 export function aiConfigured(): boolean {
-  return websiteAccess() !== null;
+  return websiteAccesses().length > 0;
 }
 
 /** A key as typed, or null when it can't be one: 20 to 300 visible characters without spaces. */
@@ -92,11 +108,17 @@ export function openAiKey(sealed: string, now = Date.now()): string | null {
 }
 
 /**
- * The owner's account gets the website's key; any other account only its own saved key; null when there is none. Only
+ * The owner's account gets the website's key (the one [wanted] names when the website has it, its first one otherwise);
+ * any other account only its own saved key, and [wanted] is ignored completely for it; null when there is none. Only
  * this function decides whose key a request uses, so an account can't end up on the website's key by accident.
  */
-export async function accessFor(account: { accountId: number; admin: boolean }, store: AccountStore | null, now = Date.now()): Promise<AiAccess | null> {
-  if (account.admin) return websiteAccess();
+export async function accessFor(
+  account: { accountId: number; admin: boolean },
+  store: AccountStore | null,
+  now = Date.now(),
+  wanted: unknown = null,
+): Promise<AiAccess | null> {
+  if (account.admin) return websiteAccess(wanted);
   if (!store) return null;
   const row = await store.aiKey(account.accountId);
   // A row whose service this website doesn't know, or whose key SESSION_SECRET can no longer open, counts as none.
@@ -130,10 +152,11 @@ function sortModels(ids: string[], defaultModel: string): string[] {
   return [...new Set(ids)].sort((a, b) => (a === defaultModel ? -1 : b === defaultModel ? 1 : a < b ? -1 : a > b ? 1 : 0));
 }
 
-/** The service's text models, the default first (only the website's own list is kept in memory, for an hour). */
+/** The service's text models, the default first (only the website's own list is kept in memory, per service, for an hour). */
 export async function listModels(access: AiAccess, fetchFn: typeof fetch = fetch): Promise<string[]> {
   // Another account's list is never kept: one account's models must never be handed to someone else.
-  if (access.shared && modelsCache && Date.now() - modelsCache.at < MODELS_TTL_MS) return [...modelsCache.models];
+  const kept = access.shared ? modelsCache.get(access.provider) : undefined;
+  if (kept && Date.now() - kept.at < MODELS_TTL_MS) return [...kept.models];
   let res: Response;
   try {
     res = await fetchFn(SERVICES[access.provider].modelsUrl, { headers: headers(access.key), cache: "no-store", signal: AbortSignal.timeout(MODELS_TIMEOUT_MS) });
@@ -161,7 +184,7 @@ export async function listModels(access: AiAccess, fetchFn: typeof fetch = fetch
     ids = [];
   }
   const models = sortModels(ids, AI_PROVIDERS[access.provider].defaultModel);
-  if (access.shared) modelsCache = { at: Date.now(), models };
+  if (access.shared) modelsCache.set(access.provider, { at: Date.now(), models });
   return [...models];
 }
 
