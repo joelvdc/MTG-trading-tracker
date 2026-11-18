@@ -78,6 +78,8 @@ website and nightly backups; accounts need an invite code for now.
   deck, its maybeboard or the wishlist (a deck from a link keeps a maybeboard of its own in the app and on the
   website); on the website also for the decks you pick at once, to find cards that fit several of them (decks whose
   list hasn't changed aren't asked about again while their recommendations are up to date; 1 day by default).
+- On the website, **Compare** a deck with a public Archidekt deck, another of your decks or a pasted list: it lists the
+  cards to add and to remove, matched by name so printings don't matter.
 - Printable **bracket and power level cards** for rule zero, cards you're missing (to the wishlist),
   and retiring decks you no longer play.
 

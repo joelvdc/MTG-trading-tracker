@@ -4866,3 +4866,61 @@ div.primer-ai-body {
   text-decoration: none;
 }
 
+/* The compare window (ComparePanel.tsx): the summary, then the cards to add and to remove side by side, one group
+   of cards per type (a card's copies in number, its name, and what you own of it). */
+.compare-summary {
+  margin: 0;
+}
+.compare-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.compare-columns section {
+  background: var(--raised);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.compare-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.compare-type {
+  margin: 12px 0 4px;
+  font-size: 0.875rem;
+}
+.compare-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.compare-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+}
+.compare-qty {
+  min-width: 1.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.compare-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.compare-owned {
+  color: var(--green);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+

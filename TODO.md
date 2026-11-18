@@ -14,28 +14,20 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-18, after the AI service choice on the website; app still 1.101)
-- **Newest, website only (2026-11-18):** the deck page's Write with AI dialog has a **Service** dropdown for the owner's
-  account when the website has both `MISTRAL_API_KEY` and `OPENCODE_API_KEY`: Mistral (default model
-  `deepseek-v4-1-flash-1017`) or OpenCode Go. It starts on Mistral and the browser remembers the last choice
-  (`mtgtrader.aiService`). Other accounts see no dropdown and stay on their one saved key (OpenCode Go, Mistral or OpenRouter).
-- **Live check (2026-11-18):** `/api/health` lists both services in `ai.services`, each with `reachable` and `hasDefault`
-  true. **Waiting on the owner:** press Ctrl+F5, write one real primer with each service (only a logged-in account can;
-  the dialog itself hasn't been seen on the live site yet) and watch what the Mistral primer
-  costs on the Mistral account (the Pro
-  subscription may not cover API use).
-- **Earlier the same day, website only:** the website's OpenCode key (`OPENCODE_API_KEY`) works only for the owner's
-  account (`admin`). Every other account saves its own key (OpenCode Go, OpenRouter, now also Mistral) under Settings → AI key (checked
-  with the service first, sealed with `SESSION_SECRET` in table `ai_keys`, never in the sync file). No key: the deck
-  page's Write with AI points to Settings. `accessFor` in `web/src/lib/aiprimer.ts` alone decides whose key is used.
-  Privacy page updated. Why: OpenCode's terms allow use for your own benefit only.
-- **Not tested with a real key:** OpenRouter's chat and a successful save ran against fake servers only; both services
-  really did refuse a fake key. The owner tries it once from a second account with a real key.
-- **Expected to look odd:** changing `SESSION_SECRET` makes saved keys unreadable; users then see "add it again".
-  The owner's account has no key field in Settings, on purpose. The daily limit stays 20 primers per account.
-- **Waiting on the owner:** the real-key test above; playtester feedback (2026-11-16 to 11-18 changes not tried by
-  hand yet; ask for Ctrl+F5 first if the big card picture is missing); a first real AI primer; an email to
-  support@moxfield.com asking whether a deck import is allowed (see Collecting).
+## Right now (2026-11-18, after Compare decks on the website; app still 1.101)
+- **Newest, website only (2026-11-18):** the deck page has a **Compare** button (not on precon previews). It compares the
+  deck with a public Archidekt link, another of your decks or a pasted list, by front-face card name, and lists the cards
+  to add, to remove and in both. It never changes a deck. Code: `web/src/lib/deckcompare.ts`, `/api/decks/[id]/compare`,
+  `web/src/components/ComparePanel.tsx`. The app doesn't have it.
+- **Waiting on the owner:** press Ctrl+F5 and try Compare with a real Archidekt link (only a logged-in account can; tests
+  and a preview with made-up decks passed, and the narrowest width looked at was about 500 pixels). Write one real primer
+  with each AI service and watch what Mistral's costs on the Mistral account. A second account tries a real saved AI key.
+  Playtester feedback (changes of 2026-11-16 to 11-18 not tried by hand yet). An email to support@moxfield.com asking
+  whether a deck import is allowed (see Collecting).
+- **AI primers:** the owner's account picks Mistral or OpenCode Go in Write with AI; other accounts use their one saved
+  key (sealed with `SESSION_SECRET`, table `ai_keys`). `accessFor` in `web/src/lib/aiprimer.ts` alone decides whose key is used.
+- **Expected to look odd:** changing `SESSION_SECRET` makes saved AI keys unreadable; users then see "add it again". The
+  owner's account has no key field in Settings, on purpose. The daily limit stays 20 primers per account.
 - **Earlier, still true:** app 1.101 has the faster win turn (`WinOddsCalc.VERSION` 13). A precon tile has no picture
   until the index has read that deck. Right after an edit a website page can show the previous numbers for a moment.
   Website Card Kingdom prices can be a few hours behind. `npm test` prints harmless "Failed to load source map" lines

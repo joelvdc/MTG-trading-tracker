@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, formatDate, peek, remember } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
+import { ComparePanel } from "@/components/ComparePanel";
 import { DeckStatsPanel } from "@/components/DeckStatsPanel";
 import { DeckBulkBar } from "@/components/DeckBulkBar";
 import { UndoBar } from "@/components/DeckUndo";
@@ -104,6 +105,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const [flipped, setFlipped] = useState<Set<string>>(new Set());
   const [showStats, setShowStats] = useState(true);
   const [showRecs, setShowRecs] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const [missingOpen, setMissingOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -788,6 +790,11 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               <button className={showRecs ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowRecs((x) => !x)}>
                 Recommendations
               </button>
+              {!precon && (
+                <button className={showCompare ? "btn small-btn on" : "btn small-btn"} onClick={() => setShowCompare(true)} title="See which cards to add and remove to match another deck">
+                  Compare
+                </button>
+              )}
               <details className="menu">
                 <summary className="btn small-btn">Share ▾</summary>
                 <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
@@ -1072,6 +1079,11 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
       {showRecs && (
         <Dialog full title="Recommendations" onClose={() => setShowRecs(false)}>
           <RecommendationsPanel view={view} hover={hover} hoverOn={hoverOn} onHoverOn={setHoverOn} onAdded={(t) => reload(t)} onClose={() => setShowRecs(false)} />
+        </Dialog>
+      )}
+      {showCompare && (
+        <Dialog full title="Compare decks" onClose={() => setShowCompare(false)}>
+          <ComparePanel view={view} onClose={() => setShowCompare(false)} />
         </Dialog>
       )}
       {hover.picture}
