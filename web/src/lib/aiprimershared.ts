@@ -1,5 +1,6 @@
-// The AI deck primer's options, the text it is written from and the prompt sent to OpenCode Go. Shared with the
-// browser (the "Write with AI" dialog on a deck page), so nothing server-only goes here.
+// The AI deck primer's options, the text it is written from and the prompt sent to an AI service (OpenCode Go or, with
+// the owner's own key, OpenRouter). Shared with the browser (the "Write with AI" dialog on a deck page), so nothing
+// server-only goes here.
 
 export type AiFocus = "CASUAL" | "UPGRADED" | "HIGH" | "CEDH";
 export type AiLength = "SHORT" | "FULL";
@@ -35,8 +36,21 @@ const FOCUS_MEANING: Record<AiFocus, string> = {
 /** Every section but the upgrade ideas, which only make sense when the owner asks for them. */
 export const DEFAULT_SECTIONS: AiSection[] = ["plan", "mulligan", "keycards", "howto", "weak", "rulezero"];
 
-/** The model OpenCode Go lists first, and the one used when the dialog doesn't pick another. */
+/** The model OpenCode Go lists first, and the one its dialog starts on when nothing else is picked. */
 export const DEFAULT_MODEL = "deepseek-v4.1-flash";
+
+/** The AI services an account can save its own key for. */
+export type AiProvider = "opencode-go" | "openrouter";
+
+/** The services an account can bring its own key for; the default model is the one the dialog starts on. */
+export const AI_PROVIDERS: Record<AiProvider, { label: string; defaultModel: string }> = {
+  "opencode-go": { label: "OpenCode Go", defaultModel: DEFAULT_MODEL },
+  openrouter: { label: "OpenRouter", defaultModel: "deepseek/deepseek-v4.1-flash" },
+};
+
+export function isAiProvider(value: unknown): value is AiProvider {
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(AI_PROVIDERS, value);
+}
 
 /** How many primers one account may write with AI in a UTC day. */
 export const MAX_PER_DAY = 20;

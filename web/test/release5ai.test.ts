@@ -16,7 +16,7 @@ vi.mock("@/lib/auth", async (importOriginal) => {
 });
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
-import { aiConfigured, deckPrimerInput, listModels, writePrimer } from "@/lib/aiprimer";
+import { aiConfigured, deckPrimerInput, listModels, websiteAccess, writePrimer, type AiAccess } from "@/lib/aiprimer";
 import { buildPrompt, cleanPrimer, DEFAULT_MODEL, DEFAULT_SECTIONS, MAX_PER_DAY, type AiOptions, type PrimerInput } from "@/lib/aiprimershared";
 import { USER_AGENT } from "@/lib/config";
 import { syncDecks } from "@/lib/decks";
@@ -28,6 +28,8 @@ import { POST as aiPrimerPost } from "@/app/api/decks/[id]/aiprimer/route";
 const NOW = 1_794_300_000_000;
 const ID = 10710772;
 const KEY = "test-key-not-real";
+/** The website's own key, which only the owner's account may use. */
+const OWNER = (): AiAccess => ({ provider: "opencode-go", key: KEY, shared: true });
 const fixture = path.join(__dirname, "fixtures");
 const appFile = (): SyncFile => JSON.parse(readFileSync(path.join(fixture, "app-sync.json"), "utf8")) as SyncFile;
 const deckOf = (f: SyncFile, id = ID) => syncDecks(f).find((d) => d.deck.archidektId === id)!;
@@ -208,7 +210,7 @@ describe("cleanPrimer", () => {
 describe("listModels", () => {
   it("lists Go's models, the default first, and keeps them for an hour", async () => {
     const first = fakeFetch(() => jsonBody({ data: [{ id: "zeta" }, { id: DEFAULT_MODEL }, { id: "alpha" }, { id: DEFAULT_MODEL }] }));
-    expect(await listModels(first.fn)).toEqual([DEFAULT_MODEL, "alpha", "zeta"]);
+    expect(await listModels(OWNER(), first.fn)).toEqual([DEFAULT_MODEL, "alpha", "zeta"]);
     expect(first.calls).toHaveLength(1);
     expect(first.calls[0].url).toBe("https://opencode.ai/inference/go/v1/models");
     const headers = first.calls[0].init.headers as Record<string, string>;
@@ -219,7 +221,7 @@ describe("listModels", () => {
     const second = fakeFetch(() => {
       throw new Error("must not be asked");
     });
-    expect(await listModels(second.fn)).toEqual([DEFAULT_MODEL, "alpha", "zeta"]);
+    expect(await listModels(OWNER(), second.fn)).toEqual([DEFAULT_MODEL, "alpha", "zeta"]);
     expect(second.spy).not.toHaveBeenCalled();
   });
 });
@@ -227,7 +229,7 @@ describe("listModels", () => {
 describe("writePrimer", () => {
   it("sends one chat request to the right address with the key, the model and the token budget", async () => {
     const full = fakeFetch(() => chatAnswer("```\n# Plan\n- Sol Ring\n```"));
-    expect((await writePrimer(input, options({ length: "FULL" }), "some-other-model", full.fn)).text).toBe("# Plan\n- Sol Ring");
+    expect((await writePrimer(OWNER(), input, options({ length: "FULL" }), "some-other-model", full.fn)).text).toBe("# Plan\n- Sol Ring");
     expect(full.calls).toHaveLength(1);
     expect(full.calls[0].url).toBe("https://opencode.ai/inference/go/openai/v1/chat/completions");
     const headers = full.calls[0].init.headers as Record<string, string>;
@@ -243,7 +245,7 @@ describe("writePrimer", () => {
     expect(body.messages[1].content).toContain("## Game plan");
 
     const short = fakeFetch(() => chatAnswer("ok"));
-    await writePrimer(input, options({ length: "SHORT" }), "m", short.fn);
+    await writePrimer(OWNER(), input, options({ length: "SHORT" }), "m", short.fn);
     expect((JSON.parse(String(short.calls[0].init.body)) as { max_tokens: number }).max_tokens).toBe(8000);
   });
 
@@ -251,13 +253,13 @@ describe("writePrimer", () => {
     const parts = fakeFetch(() =>
       jsonBody({ choices: [{ message: { content: [{ type: "text", text: "## Plan\n" }, { text: "- Sol Ring" }] } }] }),
     );
-    expect((await writePrimer(input, options(), "m", parts.fn)).text).toBe("## Plan\n- Sol Ring");
+    expect((await writePrimer(OWNER(), input, options(), "m", parts.fn)).text).toBe("## Plan\n- Sol Ring");
 
     // Nothing but the other parts left: still an empty answer, never a crash.
     const images = fakeFetch(() => jsonBody({ choices: [{ message: { content: [{ type: "image_url", image_url: { url: "x" } }] } }] }));
     const quiet = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
-      await expect(writePrimer(input, options(), "m", images.fn)).rejects.toThrow("The AI's answer was empty.");
+      await expect(writePrimer(OWNER(), input, options(), "m", images.fn)).rejects.toThrow("The AI's answer was empty.");
     } finally {
       quiet.mockRestore();
     }
@@ -273,7 +275,7 @@ describe("writePrimer", () => {
     const streamed = fakeFetch(
       () => new Response(`${lines.join("\n\n")}\n\n`, { status: 200, headers: { "content-type": "text/event-stream" } }),
     );
-    expect((await writePrimer(input, options(), "m", streamed.fn)).text).toBe("## Plan\n- Sol Ring");
+    expect((await writePrimer(OWNER(), input, options(), "m", streamed.fn)).text).toBe("## Plan\n- Sol Ring");
   });
 
   it("reports the seconds it took and the tokens the answer used", async () => {
@@ -287,11 +289,11 @@ describe("writePrimer", () => {
         usage: { prompt_tokens: 10, completion_tokens: 42, total_tokens: 52, reasoning_tokens: 7 },
       });
     });
-    expect(await writePrimer(input, options(), "m", usage.fn)).toEqual({ text: "ok", seconds: 2.3, outputTokens: 42, reasoningTokens: 7 });
+    expect(await writePrimer(OWNER(), input, options(), "m", usage.fn)).toEqual({ text: "ok", seconds: 2.3, outputTokens: 42, reasoningTokens: 7 });
   });
 
   it("says nothing about tokens without usage, and reads reasoning under either name", async () => {
-    const none = await writePrimer(input, options(), "m", fakeFetch(() => chatAnswer("ok")).fn);
+    const none = await writePrimer(OWNER(), input, options(), "m", fakeFetch(() => chatAnswer("ok")).fn);
     expect(none.outputTokens).toBeNull();
     expect(none.reasoningTokens).toBeNull();
 
@@ -299,7 +301,7 @@ describe("writePrimer", () => {
     const nested = fakeFetch(() =>
       jsonBody({ choices: [{ message: { content: "ok" } }], usage: { completion_tokens: 900, completion_tokens_details: { reasoning_tokens: 800 } } }),
     );
-    expect(await writePrimer(input, options(), "m", nested.fn)).toMatchObject({ outputTokens: 900, reasoningTokens: 800 });
+    expect(await writePrimer(OWNER(), input, options(), "m", nested.fn)).toMatchObject({ outputTokens: 900, reasoningTokens: 800 });
 
     // A streamed answer carries its usage in the last chunk, which is the one that counts.
     const lines = [
@@ -308,7 +310,7 @@ describe("writePrimer", () => {
       "data: [DONE]",
     ];
     const streamed = fakeFetch(() => new Response(`${lines.join("\n\n")}\n\n`, { status: 200, headers: { "content-type": "text/event-stream" } }));
-    expect(await writePrimer(input, options(), "m", streamed.fn)).toMatchObject({ text: "## Plan ok", outputTokens: 120, reasoningTokens: 100 });
+    expect(await writePrimer(OWNER(), input, options(), "m", streamed.fn)).toMatchObject({ text: "## Plan ok", outputTokens: 120, reasoningTokens: 100 });
   });
 
   it("says when thinking used up the answer's room, and warns with the numbers only", async () => {
@@ -321,7 +323,7 @@ describe("writePrimer", () => {
           usage: { prompt_tokens: 1200, completion_tokens: 8000, total_tokens: 9200 },
         }),
       );
-      await expect(writePrimer(input, options(), "deepseek-v4.1-flash", thinking.fn)).rejects.toThrow(
+      await expect(writePrimer(OWNER(), input, options(), "deepseek-v4.1-flash", thinking.fn)).rejects.toThrow(
         "The AI used all its room for thinking and wrote nothing; try again, or pick Short or fewer sections.",
       );
 
@@ -344,7 +346,7 @@ describe("writePrimer", () => {
 
       // A short answer that simply said nothing keeps the old wording.
       const empty = fakeFetch(() => chatAnswer("   "));
-      await expect(writePrimer(input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
+      await expect(writePrimer(OWNER(), input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
       expect(warn).toHaveBeenCalledTimes(2);
       expect(String(warn.mock.calls[1][0])).toContain('"finishReason":null');
     } finally {
@@ -361,13 +363,13 @@ describe("writePrimer", () => {
     ];
     for (const [status, message] of cases) {
       const { fn } = fakeFetch(() => new Response("", { status }));
-      await expect(writePrimer(input, options(), "m", fn)).rejects.toThrow(message);
+      await expect(writePrimer(OWNER(), input, options(), "m", fn)).rejects.toThrow(message);
     }
 
     const quiet = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
       const empty = fakeFetch(() => chatAnswer("   "));
-      await expect(writePrimer(input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
+      await expect(writePrimer(OWNER(), input, options(), "m", empty.fn)).rejects.toThrow("The AI's answer was empty.");
     } finally {
       quiet.mockRestore();
     }
@@ -375,7 +377,7 @@ describe("writePrimer", () => {
     const offline = fakeFetch(() => {
       throw new Error("offline");
     });
-    const error = await writePrimer(input, options(), "m", offline.fn).then(
+    const error = await writePrimer(OWNER(), input, options(), "m", offline.fn).then(
       () => null,
       (e: unknown) => e as Error,
     );
@@ -385,8 +387,8 @@ describe("writePrimer", () => {
 
   it("gives each primer its own conversation id, which Go insists on", async () => {
     const { fn, calls } = fakeFetch(() => chatAnswer("ok"));
-    await writePrimer(input, options(), "m", fn);
-    await writePrimer(input, options(), "m", fn);
+    await writePrimer(OWNER(), input, options(), "m", fn);
+    await writePrimer(OWNER(), input, options(), "m", fn);
 
     const ids = calls.map((c) => (c.init.headers as Record<string, string>)["x-opencode-session"]);
     expect(ids).toHaveLength(2);
@@ -397,12 +399,10 @@ describe("writePrimer", () => {
     for (const id of ids) expect(id).toMatch(/^primer-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  it("is not set up without a key", async () => {
+  it("has no website key and no owner access without a key", () => {
     delete process.env.OPENCODE_API_KEY;
     expect(aiConfigured()).toBe(false);
-    const notAsked = fakeFetch(() => chatAnswer("x"));
-    await expect(writePrimer(input, options(), "m", notAsked.fn)).rejects.toThrow("The AI isn't set up on this website.");
-    expect(notAsked.spy).not.toHaveBeenCalled();
+    expect(websiteAccess()).toBeNull();
   });
 
   it("gives up after 100 seconds", async () => {
@@ -413,7 +413,7 @@ describe("writePrimer", () => {
           init.signal?.addEventListener("abort", () => reject(new Error("aborted")));
         }),
     );
-    const answer = writePrimer(input, options(), "m", fn);
+    const answer = writePrimer(OWNER(), input, options(), "m", fn);
     const failed = expect(answer).rejects.toThrow("The AI took too long; try again.");
     await vi.advanceTimersByTimeAsync(100_000);
     await failed;

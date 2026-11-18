@@ -7,6 +7,7 @@ import { TopBar } from "@/components/Nav";
 import { RecSettingsPanel } from "@/components/RecTiles";
 import { SharedLinksPanel } from "@/components/SharePanel";
 import { EmailPanel } from "@/components/EmailPanel";
+import { AiKeyPanel } from "@/components/AiKeyPanel";
 import { ThemePanel } from "@/components/ThemePanel";
 import { api, peek } from "@/components/api";
 
@@ -46,6 +47,7 @@ export default function SettingsPage() {
           <AppSettingsPanel />
           <RecSettingsPanel />
           <EmailPanel />
+          <AiKeyPanel />
           <SharedLinksPanel />
           <BackupsPanel />
           <AccountPanel onLogout={logout} />

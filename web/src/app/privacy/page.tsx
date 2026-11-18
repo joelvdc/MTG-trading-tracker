@@ -12,7 +12,7 @@ export default function PrivacyPage() {
         <Link href="/">← MTG Trader</Link>
       </p>
       <h1>Privacy</h1>
-      <p className="muted small">Last changed 13 November 2026.</p>
+      <p className="muted small">Last changed 18 November 2026.</p>
       <p>
         MTG Trader is a free, private hobby project: an Android app and this website for keeping a Magic: The Gathering collection, wishlist, decks, trades and games.
         There are no adverts, no tracking and no selling of data.
@@ -35,6 +35,10 @@ export default function PrivacyPage() {
           day.
         </li>
         <li>
+          <strong>Your AI key:</strong> if you add one under Settings → AI key, it is stored encrypted, used only for your own requests and never shown
+          again. Remove it there at any time.
+        </li>
+        <li>
           <strong>In your browser:</strong> a login cookie, and small settings such as the columns and sort you chose. Nothing is used to follow you around the web.
         </li>
       </ul>
@@ -55,6 +59,11 @@ export default function PrivacyPage() {
         <li>
           <strong>Card and price sites:</strong> to show card details and prices the website asks Scryfall, EDHREC, Commander Salt, Archidekt and the others for card
           names and lists. They get the card or deck asked about, not your account.
+        </li>
+        <li>
+          <strong>AI services:</strong> when you press Write with AI, the deck&apos;s name, cards, card notes, scores, combos and your current primer text go to the AI
+          service used for your account (OpenCode Go or OpenRouter). Prices and your collection are not sent. That service&apos;s own privacy terms
+          apply.
         </li>
       </ul>
 

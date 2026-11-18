@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { DEFAULT_MODEL, DEFAULT_SECTIONS, FOCUS_LABELS, SECTION_LABELS, type AiFocus, type AiLength, type AiSection } from "@/lib/aiprimershared";
 import { linkSegments, MAX_NOTE, MAX_PRIMER, nameKey } from "@/lib/decknotes";
 import { api } from "./api";
@@ -433,6 +434,7 @@ interface AiModels {
   configured: boolean;
   models: string[];
   defaultModel: string;
+  needsKey?: boolean;
 }
 
 /** The last model, focus, length and sections the owner picked, kept in this browser. */
@@ -501,10 +503,10 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
     api<AiModels>("/api/ai/models").then((r) => {
       if (!live) return;
       if (r.ok) {
-        setModels({ configured: r.data.configured, models: r.data.models ?? [], defaultModel: r.data.defaultModel ?? DEFAULT_MODEL });
+        setModels({ configured: r.data.configured, models: r.data.models ?? [], defaultModel: r.data.defaultModel ?? DEFAULT_MODEL, needsKey: r.data.needsKey === true });
       } else {
         // The default model still works if only the list is missing; an AI that isn't set up says so on Write.
-        setModels({ configured: true, models: [DEFAULT_MODEL], defaultModel: DEFAULT_MODEL });
+        setModels({ configured: true, models: [DEFAULT_MODEL], defaultModel: DEFAULT_MODEL, needsKey: false });
         onError(r.data.error ?? "Could not load the AI models.");
       }
     });
@@ -571,6 +573,10 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
       <summary>Write with AI</summary>
       {models === null ? (
         <p className="muted small primer-ai-body">Loading the models…</p>
+      ) : models.needsKey ? (
+        <p className="small primer-ai-body">
+          To write primers with AI, add your own OpenCode Go or OpenRouter key under <Link href="/settings">Settings → AI key</Link>.
+        </p>
       ) : !models.configured ? (
         <p className="small primer-ai-body">AI writing isn&apos;t set up on this website.</p>
       ) : (

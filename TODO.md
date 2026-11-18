@@ -14,95 +14,24 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-17, after app 1.101)
-- **Latest: app 1.101 (2026-11-17, no sync change, WinOddsCalc.VERSION still 13):** a faster win turn with exactly the
-  same games. Kept: the land choice (`ManaOddsCalc.chooseLand`/`entersUntapped` take the pool, sink, battlefield and hand
-  lazily; `Game.playLand` builds `landsOut()` once) and `Features.chosenPump` (no Renewed Solidarity walk in decks
-  without it). Node, fixture, 10,000 games on one core: 22.8 s → ~10 s; JVM (Ruby, 4 threads): 3.0 → 2.4 s. Tried and
-  dropped (no gain, measured): set lookups in `Entry.isA` (slower in JS) and a rewritten `ManaOddsCalc.pay`. Checked:
-  the 21 Ready to Play decks + fixture at 10,000 games, raw tallies identical before/after; new
-  `web/test/winodds-tallies.test.ts` pins the fixture's exact counts (re-record only with a VERSION bump). Next easy
-  wins, if ever wanted, need a fresh profile (remaining time is spread over list copies in the turn loop).
-- **Same day, website only:** playtester: the big card picture shows when the mouse rests on a card (no more restart
-  on every move), inside the battlefield's top-right corner; selection box on the empty battlefield + Ctrl-click,
-  group drag/tap/move/counters as one undo step (`{type:"group"}` in playtest.ts), T taps the selection; snap grid
-  (battlefield menu, remembered per browser); a tapped card stays turned while dragged. Not tried by hand in a
-  browser yet: the owner tests it. On phones a finger drag on the empty board scrolls the page, so the box is
-  mouse-only there.
-- **Later that day, website only:** the owner still saw no big card picture. Cause: it followed the deck page's
-  "card on hover" setting and the browser's "(hover: hover)" answer, so it stayed off without a sign. Now
-  `useCornerPreview()` is always on for a mouse or pen and skips only touch (pointer type noted on window
-  pointerdown/pointermove). Checked in a scripted Edge (Playwright, faked deck API): it shows with the setting off, a tap
-  shows nothing, and the old code showed nothing with the setting off. If the owner still sees nothing: ask for a
-  hard refresh (Ctrl+F5) first.
-- **Website, 2026-11-18:** playtester: "Hand N" heading above the hand; the top card of library/graveyard/exile can
-  be dragged anywhere (library card shown as a back while dragged unless the top is revealed; a click after a drag
-  is swallowed via `justDragged`); right-click (or long press) on library = library menu, on graveyard/exile = new
-  pile menu (top card moves, graveyard "Token copy", all to hand/exile/graveyard, shuffle all into library, each one
-  undo step); `copy` also takes a graveyard card (token on the battlefield, card stays); battlefield "Copy" renamed
-  "Create token copy"; "Token copy" button in the graveyard list. Checked by a scripted Edge run (drags from each
-  pile, menus, copy, shuffle, undo); not yet by the owner.
-- **Also website, 2026-11-17:** win turn in 4 Web Workers with a first estimate after 1,000 games; the Bracket score
-  shows the higher of realistic/baseline first (`shownBracket`); MDFC count and flip button use the deck's own
-  printing (`detailsId`).
-- **Latest: app 1.100 (2026-11-17, no sync change):** the deck page's Land heading counts MDFC lands outside it,
-  "Land (37, 40 with MDFCs)" (`MdfcLands` in data/DeckStats.kt, tests in Release1100Test). Same day, website (no app
-  needed): precon pages work out the win turn and show Power (from the
-  win turn) and Missing, no Bracket; one result per precon kept for every account (`precon_win_turns`,
-  `POST /api/precons/winturn`). Lands always go in Land (categories table leaves front-face lands out, rebuilt once by
-  the 04:00 UTC job on 2026-11-18; `autoFor` places lands by type at once). The Land heading counts MDFC lands:
-  "Land · 37 (40 with MDFCs)" (`lib/mdfclands.ts`; not on shared links).
-- **Expected to look odd:** until the 2026-11-18 rebuild, the phones and the role line may still count Evolving
-  Wilds and other lands as Tutor/Ramp; existing decks keep old placements until "Put every card in its auto category".
-- **Before that (website, 2026-11-17):** precons pages and the Explore top bar:
-  new top bar (Collection, Decks, Games, Trades
-  (Wishlist link removed again on request; it stays inside Collection), Explore ▾ panel, account menu with Orders/Settings/Log out) and Commander precons: `/precons` grid
-  from a daily index (`lib/preconindex.ts`, Blob `precons/index.json.gz`, filled by `/api/cron/sources`) and
-  `/precons/<fileName>`, the deck page in read-only precon mode (`DeckScreen.tsx`, `/api/precons/view`, `deckanswer.ts`)
-  with Make it my deck, Add its cards to my collection (`/orders?precon=`), Copy decklist. Details: `web/README.md`.
-- **Expected to look odd:** a precon tile has no picture, commander or colours until the index has read that deck;
-  opening /precons starts reading the missing ones (the page refreshes itself), the daily 06:00 UTC job too.
-- **Before that (website only, 2026-11-17):** playtester feedback round (corner preview, zoom, battlefield menu,
-  View card, custom tokens, real card back; Primer folds). At a high zoom, cards placed close together overlap.
-- **Before that:** app 1.99 + website (2026-11-16, no sync change): primer card links `[[Card name]]` (shared rules
-  `DeckNotes.linkSegments/linkMatches` and `web/src/lib/decknotes.ts`, cases in
-  `web/test/fixtures/primerlinks-cases.json`). Website: `/` card list in the primer editor, links open the card window
-  and show the hover picture; the AI writes links and reports seconds, tokens, thinking tokens and tokens/s. App: a
-  link on the Primer page opens the deck page's card window (hand-over through the deck entry's saved state
-  "primerCard") and returns to the Primer page on close.
-- **Earlier:** app 1.98 (Primer page, website Write with AI on OpenCode Go) and Next.js 16.4.6 (2026-11-16).
-- Harmless noise: `npm test` prints "Failed to load source map" for `web/src/lib/winodds-js/*.mjs` (the `.map` files aren't committed).
-- **Expected to look odd:** AI primers use the owner's OpenCode Go plan (DeepSeek's $100 a month is shared with the
-  coding sessions; Go's 5-hour and weekly limits apply). Go is meant for coding agents; if OpenCode objects, switch
-  provider. The app's primer editor has no `/` list (type `[[…]]` by hand).
-- **Earlier:** app 1.97 (2026-11-16, sync format 15): primer, card notes, own tags with role line, packages, change
-  history. 1.96 the same day: deck search, copy/paste deck text.
-- **Before that:** app 1.95 (2026-11-15): a calmer deck page (most help text gone, shorter scores/legality/stats lines, no
-  big Maybeboard title) and a "Modified <date>" line under the deck's cards and value, the same date as the website
-  (the Decks tab list deliberately unchanged). 1.94 the day before: tracker menus in the app's colours, shorter
-  settings texts.
-- **Website speed-up (2026-11-15, website only):** internal links no longer reload the site (`next/link`); every page
-  and panel (collection, decks, deck pages, wishlist, scans, stats, games, orders, trades, trade binder, settings
-  panels) shows its last answer at once and refreshes in the background (`web/src/components/api.ts`: `peek`,
-  `remember`; an edit only marks answers stale; a kept answer is only used when the page is still empty); after the
-  first page loads, `warmUp()` fetches every section once in the background; hovering a deck tile or a top-bar link
-  preloads it; the login check is one query (`deviceAccount`). **Expected to look odd:** right after switching or an
-  edit, a page can show the previous numbers for a moment. Opening the site from scratch still takes the 1-2 s first
-  load. Later options: keep answers across reloads, pre-built answers in the database, ETag/304, slimmer JSON.
-- **Collection toolbar tidy-up (2026-11-15, website only):** Display ▾ / Collection ▾ / Binders ▾ menus, Add card on
-  the right, Views button there from the start, Moxfield-style Filter and Sort windows, one button text size site-wide.
-  Decks list the same way: search, Sort, one Decks ▾ menu (the three deck pages, Archidekt update/import, retired
-  toggle) and New deck on the right; form controls never take the 13px `.small` text.
-  Possible next step the owner may ask for: more filters like Moxfield's (rules text, mana value, power/toughness).
-- **GitHub checks:** the Tests check runs the app and the website on pull requests and on every push to `main`; a red
-  mark after a push means fix that first. The Release workflow compares the certificate with the previous release.
-- **Expected to look odd:** Settings → Prices says Card Kingdom came "from the MTG Trader website". The website's Card
-  Kingdom list comes from the GitHub copy, so it can be a few hours behind Card Kingdom's own. The price chart has
-  only the nights since 2026-11-12 ("not enough history" for a few days). Trades completed on the website reach the
-  phones at their next sync.
-- **Weekly email:** working (confirmed 2026-11-13).
-- **Waiting on the owner:** playtester feedback (now due) and a working AI primer on the website. Review follow-ups for later under "From the code reviews". Ideas still
-  collecting: Commander Salt scores for local decks, more backup places, Group printings in the app.
+## Right now (2026-11-18, after the website's own AI keys; app still 1.101)
+- **Latest, website only (2026-11-18):** the website's OpenCode key (`OPENCODE_API_KEY`) works only for the owner's
+  account (`admin`). Every other account saves its own OpenCode Go or OpenRouter key under Settings → AI key (checked
+  with the service first, sealed with `SESSION_SECRET` in table `ai_keys`, never in the sync file). No key: the deck
+  page's Write with AI points to Settings. `accessFor` in `web/src/lib/aiprimer.ts` alone decides whose key is used.
+  Privacy page updated. Why: OpenCode's terms allow use for your own benefit only.
+- **Not tested with a real key:** OpenRouter's chat and a successful save ran against fake servers only; both services
+  really did refuse a fake key. The owner tries it once from a second account with a real key.
+- **Expected to look odd:** changing `SESSION_SECRET` makes saved keys unreadable; users then see "add it again".
+  The owner's account has no key field in Settings, on purpose. The daily limit stays 20 primers per account.
+- **Waiting on the owner:** the real-key test above; playtester feedback (2026-11-16 to 11-18 changes not tried by
+  hand yet; ask for Ctrl+F5 first if the big card picture is missing); a first real AI primer; an email to
+  support@moxfield.com asking whether a deck import is allowed (see Collecting).
+- **Earlier, still true:** app 1.101 has the faster win turn (`WinOddsCalc.VERSION` 13). A precon tile has no picture
+  until the index has read that deck. Right after an edit a website page can show the previous numbers for a moment.
+  Website Card Kingdom prices can be a few hours behind. `npm test` prints harmless "Failed to load source map" lines
+  for `web/src/lib/winodds-js/*.mjs`. The app's primer editor has no `/` list (type `[[…]]` by hand).
+- **GitHub checks:** a red Tests mark after a push to `main` means fix that first.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -123,7 +52,82 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
 - **Release 5, app 1.98 + website:** DONE 2026-11-16. Primer page in the app; website primer at the bottom of
   the deck page with in-page editor and Write with AI (OpenCode Go, 20 a day); health check `ai`.
 
+## Collecting
+
+(Put back on 2026-11-18: the 1.98 update had dropped this section by accident. The older items were not re-checked
+against the code since 2026-11-16.)
+
+### Moxfield deck import (2026-11-18)
+Owner: "would it be possible for the app/website to import decks from moxfield? The same way it does with archidekt."
+- Moxfield has no public API; other projects use its private one, and their documentation says Moxfield prohibits
+  scraping and hands out access through support@moxfield.com. Its terms could not be read directly (the site blocks
+  automated readers).
+- Decision: ask Moxfield first, and build the link import only if they agree. Pasting Moxfield's export already works
+  in the app and on the website.
+
+### Commander Salt scores for local decks (2026-11-05)
+Owner's idea: a copy of the decklist on a site Commander Salt accepts. Every site it accepts (Moxfield, Archidekt,
+TappedOut, ManaBox, MTGGoldfish, Scryfall, …) needs an account to create a deck, with no open way for an app to do it.
+- Proposed: a half-manual "Score on Commander Salt": copy the list and open Archidekt's new-deck page, the owner pastes
+  and saves, then pastes the link back; it is kept as that local deck's scoring link ("Copy list again" after edits).
+  First look for a site that takes a deck link without an account; maybe ask Commander Salt whether it could take a
+  pasted list.
+- Open question: on the website too, or only in the app?
+
+### More places to back up (2026-11-05)
+Owner: "could we in the future expand the sync, so that the user can choose between nextcloud, google drive, dropbox or
+onedrive?" Since 1.82 Nextcloud is only a nightly backup (syncing goes through the MTG Trader account), so this is now
+about where to back up.
+- Open questions: each service needs its own sign-in and an app registration there; which ones the owner wants first.
+
+### Group printings in the app (2026-11-13)
+Owner: "not needed for now, add it to the todo as a potential future task". The website's Group printings (one line
+per card name, opens to its piles) for the app's collection list.
+
+### Smaller loose ends
+- The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
+- Scanned page on the website: "To trade" for scans, and sending scans to an Archidekt deck (the website only adds to
+  local decks). Small; left from the 2026-11-05 list.
+- The phone's "Unable to resolve host" for every price site (2026-11-07, VPN on) was a DNS/VPN problem on the phone,
+  not the app. Look again only if it comes back with the VPN off.
+
+### From the code reviews (2026-11-13)
+GLM and DeepSeek reviewed the code; Claude checked their findings. The urgent ones shipped in 1.92 (sync fixes, tests
+in GitHub for the website, the release certificate check, the website's deploy rule). The owner asked to keep these
+for later:
+- **Speed with big collections (app):** the hourly sync reads every table before asking the website "changed?" (check
+  the change count and ask first, read only when needed); some lookups load the whole collection to count one card,
+  once per wishlist card too (`MtgRepository.kt`, `PriceSources.kt` `ownedIds`: targeted DAO queries); the Collection
+  screen redoes filtering, sorting and counts on every letter typed (wait ~150 ms, do it off the main thread).
+- **Website card-details file** (`web/src/lib/carddetails.ts`): read whole, changed and written back with no version
+  check, so two saves at once can drop one's additions (they're looked up again later). Rows in the database like
+  `legal_rules`, or retry on the ETag.
+- **Website login lock** (`web/src/lib/users.ts`): two wrong passwords at the same moment can count once (atomic SQL
+  counter), and a locked account is reported before the password is checked.
+- **Website route tests:** `test/syncroute.test.ts` (1.92) covers `/api/sync`; the login, lockout and other routes
+  have none yet.
+- **Content-Security-Policy** for the website, starting in report-only mode.
+- Smaller: the 7 cron routes each copy the secret check (one shared helper); failed price/detail loads on the website
+  are silent (a `console.warn`); `currentAccount()` makes two database calls where one would do; the unused
+  Nextcloud read path in `web/src/lib/store.ts`; ESLint with the React hooks rules; `CollectionScreen.kt`,
+  `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
+  `targetSdk` 36 as its own release with new screenshots.
+
+### Decided, keep in mind
+- Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
+- Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
+- Prices from the website come as one file, not per-card database lookups (offline, instant). Since 1.93 phones with an
+  account get all three sources from the website first (Cardmarket's file, Card Kingdom's file, TCGplayer for the
+  phone's cards in one request), falling back to Scryfall, Card Kingdom and the GitHub copy. CardTrader stays on the
+  phone (the owner's key never leaves it).
+- Android's own Google backup is off (1.93): the app's own backups cover it.
+- Dropped by the owner: the ideas offered on 2026-11-11 (trade matching between friends, "what should we play
+  tonight?", a game-night planner website, a website for Poké Trader; dropped 2026-11-12), Archidekt's own categories for new decks (2026-11-08), the "view on hover" switch for decks,
+  full-screen pictures. The life tracker stays on the phone.
+
 ## Done
+- Website (2026-11-18): each account brings its own AI key (OpenCode Go or OpenRouter); the website's key is the
+  owner's only.
 - 1.101 (2026-11-17): faster win turn (land choice, Renewed Solidarity check), same games; website playtester:
   hover picture, multi-select with group actions, snap grid, tapped cards stay turned while dragged.
 - Website (2026-11-17): playtester corner preview, zoom, battlefield menu (tap all, proliferate), View card,

@@ -1,17 +1,34 @@
-// The AI side of a deck's primer: the models OpenCode Go offers and one chat request per primer. Server only: the key
-// (OPENCODE_API_KEY) never leaves this file, and a failure becomes an EditError the route shows as its message.
-import { DEFAULT_MODEL, buildPrompt, cleanPrimer, type AiOptions, type PrimerInput } from "./aiprimershared";
+// The AI side of a deck's primer: the models a service offers and one chat request per primer. Server only: keys never
+// leave this file (the website's own, or an account's sealed one), and a failure becomes an EditError the route shows
+// as its message.
+import type { AccountStore } from "./accounts";
+import { AI_PROVIDERS, buildPrompt, cleanPrimer, isAiProvider, type AiOptions, type AiProvider, type PrimerInput } from "./aiprimershared";
 import { USER_AGENT } from "./config";
 import { deckView, type DeckViewExtras } from "./decks";
 import { allCombos, bracketName, comboResultText, POWER_SOURCES, sections } from "./deckshared";
+import { seal, unseal } from "./session";
 import type { SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
 
-const BASE = "https://opencode.ai/inference/go";
-const MODELS_URL = `${BASE}/v1/models`;
-const CHAT_URL = `${BASE}/openai/v1/chat/completions`;
+/** Each service's model list and chat addresses, and how its key is checked. */
+const SERVICES: Record<AiProvider, { modelsUrl: string; chatUrl: string; keyCheckUrl: string; sessionHeader: boolean }> = {
+  "opencode-go": {
+    modelsUrl: "https://opencode.ai/inference/go/v1/models",
+    chatUrl: "https://opencode.ai/inference/go/openai/v1/chat/completions",
+    // Go's model list answers 401 to a wrong key.
+    keyCheckUrl: "https://opencode.ai/inference/go/v1/models",
+    sessionHeader: true,
+  },
+  openrouter: {
+    modelsUrl: "https://openrouter.ai/api/v1/models",
+    chatUrl: "https://openrouter.ai/api/v1/chat/completions",
+    // OpenRouter's model list is public, so it says nothing about a key; this address does.
+    keyCheckUrl: "https://openrouter.ai/api/v1/key",
+    sessionHeader: false,
+  },
+};
 
-/** The model list rarely changes and Go asks for slow callers to be kind: one look an hour per instance. */
+/** The model list rarely changes and the services ask for slow callers to be kind: one look an hour per instance. */
 const MODELS_TTL_MS = 3_600_000;
 /** Vercel's function may run for 120 s (the route's maxDuration); the request itself gives up before that. */
 const ANSWER_TIMEOUT_MS = 100_000;
@@ -24,53 +41,127 @@ const MAX_TOKENS = { SHORT: 8000, FULL: 16000 } as const;
 
 let modelsCache: { at: number; models: string[] } | null = null;
 
-function apiKey(): string {
-  return (process.env.OPENCODE_API_KEY ?? "").trim();
+/** Whose key a request runs on. [shared] is the website's own key, which only the owner's account may use. */
+export interface AiAccess {
+  provider: AiProvider;
+  key: string;
+  shared: boolean;
+}
+
+/** The website's own key (OPENCODE_API_KEY); null when it has none. */
+export function websiteAccess(): AiAccess | null {
+  const key = (process.env.OPENCODE_API_KEY ?? "").trim();
+  return key === "" ? null : { provider: "opencode-go", key, shared: true };
 }
 
 /** Whether the website has a key at all (the dialog then still offers the default model). */
 export function aiConfigured(): boolean {
-  return apiKey() !== "";
+  return websiteAccess() !== null;
+}
+
+/** A key as typed, or null when it can't be one: 20 to 300 visible characters without spaces. */
+export function cleanAiKey(raw: unknown): string | null {
+  const key = typeof raw === "string" ? raw.trim() : "";
+  return /^[\x21-\x7E]{20,300}$/.test(key) ? key : null;
+}
+
+/** The key stays readable until it is replaced, like the backup password. */
+const AI_KEY_SEAL_MS = 100 * 365 * 86_400_000;
+
+/** The key sealed for the database, readable until it is replaced (100 years, like the backup password). */
+export function sealAiKey(key: string, now = Date.now()): string {
+  return seal(key, AI_KEY_SEAL_MS, now);
+}
+
+/** The sealed key, or null when it can't be read (SESSION_SECRET changed). */
+export function openAiKey(sealed: string, now = Date.now()): string | null {
+  const key = unseal<string>(sealed, now);
+  return typeof key === "string" ? key : null;
+}
+
+/**
+ * The owner's account gets the website's key; any other account only its own saved key; null when there is none. Only
+ * this function decides whose key a request uses, so an account can't end up on the website's key by accident.
+ */
+export async function accessFor(account: { accountId: number; admin: boolean }, store: AccountStore | null, now = Date.now()): Promise<AiAccess | null> {
+  if (account.admin) return websiteAccess();
+  if (!store) return null;
+  const row = await store.aiKey(account.accountId);
+  // A row whose service this website doesn't know, or whose key SESSION_SECRET can no longer open, counts as none.
+  if (!row || !isAiProvider(row.provider)) return null;
+  const key = openAiKey(row.sealedKey, now);
+  return key === null ? null : { provider: row.provider, key, shared: false };
 }
 
 function headers(key: string): Record<string, string> {
   return { Authorization: `Bearer ${key}`, "User-Agent": USER_AGENT, Accept: "application/json" };
 }
 
-function statusError(status: number): EditError {
-  if (status === 401 || status === 403) return new EditError("The AI key isn't accepted.");
-  if (status === 429) return new EditError("OpenCode Go's usage limit is reached; try again later.");
+function statusError(status: number, access: AiAccess): EditError {
+  const label = AI_PROVIDERS[access.provider].label;
+  if (status === 401) {
+    return new EditError(access.shared ? "The AI key isn't accepted." : `${label} didn't accept your key; check it under Settings → AI key.`);
+  }
+  if (status === 403) {
+    if (access.shared) return new EditError("The AI key isn't accepted.");
+    // OpenRouter says 403 when the key's budget or its limits don't allow the model.
+    if (access.provider === "openrouter") return new EditError("OpenRouter refused this request; check your key's budget and permissions.");
+    return new EditError(`${label} didn't accept your key; check it under Settings → AI key.`);
+  }
+  if (status === 402) return new EditError(`${label} says there is no credit left on this key.`);
+  if (status === 429) return new EditError(`${label}'s usage limit is reached; try again later.`);
   return new EditError(`The AI didn't answer (${status}).`);
 }
 
-/** [DEFAULT_MODEL] first, then the rest alphabetically, without duplicates. */
-function sortModels(ids: string[]): string[] {
-  return [...new Set(ids)].sort((a, b) => (a === DEFAULT_MODEL ? -1 : b === DEFAULT_MODEL ? 1 : a < b ? -1 : a > b ? 1 : 0));
+/** [defaultModel] first, then the rest alphabetically, without duplicates. */
+function sortModels(ids: string[], defaultModel: string): string[] {
+  return [...new Set(ids)].sort((a, b) => (a === defaultModel ? -1 : b === defaultModel ? 1 : a < b ? -1 : a > b ? 1 : 0));
 }
 
-/** OpenCode Go's text models, the default first; kept in memory for an hour. */
-export async function listModels(fetchFn: typeof fetch = fetch): Promise<string[]> {
-  if (modelsCache && Date.now() - modelsCache.at < MODELS_TTL_MS) return [...modelsCache.models];
-  const key = apiKey();
-  if (!key) throw new EditError("The AI isn't set up on this website.");
+/** The service's text models, the default first (only the website's own list is kept in memory, for an hour). */
+export async function listModels(access: AiAccess, fetchFn: typeof fetch = fetch): Promise<string[]> {
+  // Another account's list is never kept: one account's models must never be handed to someone else.
+  if (access.shared && modelsCache && Date.now() - modelsCache.at < MODELS_TTL_MS) return [...modelsCache.models];
   let res: Response;
   try {
-    res = await fetchFn(MODELS_URL, { headers: headers(key), cache: "no-store", signal: AbortSignal.timeout(MODELS_TIMEOUT_MS) });
+    res = await fetchFn(SERVICES[access.provider].modelsUrl, { headers: headers(access.key), cache: "no-store", signal: AbortSignal.timeout(MODELS_TIMEOUT_MS) });
   } catch {
     throw new EditError("The AI didn't answer.");
   }
-  if (!res.ok) throw statusError(res.status);
+  if (!res.ok) throw statusError(res.status, access);
   let ids: string[] = [];
   try {
-    const body = (await res.json()) as { data?: { id?: unknown }[] };
-    ids = (body.data ?? []).flatMap((m) => (typeof m?.id === "string" && m.id.trim() !== "" ? [m.id.trim()] : []));
+    const body = (await res.json()) as { data?: { id?: unknown; architecture?: { output_modalities?: unknown } }[] };
+    ids = (body.data ?? []).flatMap((m) => {
+      const id = typeof m?.id === "string" ? m.id.trim() : "";
+      // Batch models can't answer a chat, and an image or audio model writes no primer.
+      if (id === "" || id.endsWith(":batch")) return [];
+      const outputs = m?.architecture?.output_modalities;
+      if (Array.isArray(outputs) && !outputs.includes("text")) return [];
+      return [id];
+    });
   } catch {
-    // An empty answer is still a reachable Go; the health check then says it has no default model.
+    // An empty answer is still a reachable service; the health check then says it has no default model.
     ids = [];
   }
-  const models = sortModels(ids);
-  modelsCache = { at: Date.now(), models };
+  const models = sortModels(ids, AI_PROVIDERS[access.provider].defaultModel);
+  if (access.shared) modelsCache = { at: Date.now(), models };
   return [...models];
+}
+
+/** Asks the service whether it takes this key; an EditError saying what's wrong when it doesn't. */
+export async function checkAiKey(access: AiAccess, fetchFn: typeof fetch = fetch): Promise<void> {
+  const label = AI_PROVIDERS[access.provider].label;
+  let res: Response;
+  try {
+    res = await fetchFn(SERVICES[access.provider].keyCheckUrl, { headers: headers(access.key), cache: "no-store", signal: AbortSignal.timeout(MODELS_TIMEOUT_MS) });
+  } catch {
+    throw new EditError(`${label} didn't answer; try again later.`);
+  }
+  if (res.ok) return;
+  if (res.status === 401 || res.status === 403) throw new EditError(`${label} didn't accept this key.`);
+  if (res.status === 429) throw new EditError(`${label} is busy; try again in a moment.`);
+  throw new EditError(`${label} couldn't check this key (${res.status}); try again later.`);
 }
 
 /** A message or a stream chunk's delta, as the answer's `choices[0]` carries it. */
@@ -84,11 +175,18 @@ type ChatAnswer = {
   finishReason: string | null;
   messageKeys: string[];
   hasReasoning: boolean;
+  /** The service sent an `error` field: a problem with the model, said with no text. */
+  serviceError: boolean;
   usage: unknown;
   model: string | null;
 };
 
-const NO_ANSWER: ChatAnswer = { text: "", finishReason: null, messageKeys: [], hasReasoning: false, usage: undefined, model: null };
+const NO_ANSWER: ChatAnswer = { text: "", finishReason: null, messageKeys: [], hasReasoning: false, serviceError: false, usage: undefined, model: null };
+
+/** Whether a body or chunk carries an `error` field; a service can answer 200 with a problem and no text. */
+function hadError(value: unknown): boolean {
+  return value !== null && typeof value === "object" && Boolean((value as ChatFields).error);
+}
 
 /** The keys a message or delta had, for the diagnostic line; never its text. */
 function keysOf(fields: unknown): string[] {
@@ -121,7 +219,7 @@ function reasoningTokensOf(usage: unknown): number | null {
   return numberIn(fields.reasoning_tokens);
 }
 
-/** The reasoning a thinking model may put beside the answer, under either name Go uses. */
+/** The reasoning a thinking model may put beside the answer, under either name a service uses. */
 function reasoningOf(fields: ChatFields | undefined): string {
   if (!fields) return "";
   for (const name of ["reasoning_content", "reasoning"]) {
@@ -161,6 +259,7 @@ function readAnswer(raw: string): ChatAnswer {
         finishReason: typeof choice?.finish_reason === "string" ? choice.finish_reason : null,
         messageKeys: keysOf(message),
         hasReasoning: reasoningOf(message) !== "",
+        serviceError: hadError(body),
         usage: body.usage,
         model: typeof body.model === "string" ? body.model : null,
       };
@@ -173,6 +272,7 @@ function readAnswer(raw: string): ChatAnswer {
   let finishReason: string | null = null;
   let messageKeys: string[] = [];
   let hasReasoning = false;
+  let serviceError = false;
   let usage: unknown;
   let model: string | null = null;
   for (const line of raw.split(/\r?\n/)) {
@@ -188,6 +288,7 @@ function readAnswer(raw: string): ChatAnswer {
       continue;
     }
     if (chunk === null || typeof chunk !== "object") continue;
+    if (hadError(chunk)) serviceError = true;
     const choice = Array.isArray(chunk.choices) ? chunk.choices[0] : undefined;
     // The first chunk's delta names the fields the answer came in, which is what the diagnostic line reports.
     if (messageKeys.length === 0) messageKeys = keysOf(choice?.delta);
@@ -197,7 +298,7 @@ function readAnswer(raw: string): ChatAnswer {
     if (chunk.usage !== undefined) usage = chunk.usage;
     if (typeof chunk.model === "string") model = chunk.model;
   }
-  return streamed ? { text, finishReason, messageKeys, hasReasoning, usage, model } : NO_ANSWER;
+  return streamed ? { text, finishReason, messageKeys, hasReasoning, serviceError, usage, model } : NO_ANSWER;
 }
 
 /** A usage object with only its numbers kept, its shape as it came: no text ever leaves in a diagnostic line. */
@@ -241,16 +342,15 @@ export interface PrimerAnswer {
   text: string;
   /** Seconds from just before the request to the whole answer being read, to one decimal. */
   seconds: number;
-  /** The answer's completion tokens; null when Go sent no usage. */
+  /** The answer's completion tokens; null when the service sent no usage. */
   outputTokens: number | null;
   /** The tokens spent thinking, when the model reports them; null otherwise. */
   reasoningTokens: number | null;
 }
 
 /** One chat request for a primer, cleaned for the editor; its answer, or an EditError saying what went wrong. */
-export async function writePrimer(input: PrimerInput, options: AiOptions, model: string, fetchFn: typeof fetch = fetch): Promise<PrimerAnswer> {
-  const key = apiKey();
-  if (!key) throw new EditError("The AI isn't set up on this website.");
+export async function writePrimer(access: AiAccess, input: PrimerInput, options: AiOptions, model: string, fetchFn: typeof fetch = fetch): Promise<PrimerAnswer> {
+  const service = SERVICES[access.provider];
   const prompt = buildPrompt(input, options);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ANSWER_TIMEOUT_MS);
@@ -260,20 +360,24 @@ export async function writePrimer(input: PrimerInput, options: AiOptions, model:
   try {
     let res: Response;
     try {
-      res = await fetchFn(CHAT_URL, {
+      res = await fetchFn(service.chatUrl, {
         method: "POST",
         // Go refuses a chat without a session header (400): each primer is its own one-question conversation, so a new
         // random id per call, carrying nothing about the account, the deck or the owner.
-        headers: { ...headers(key), "Content-Type": "application/json", "x-opencode-session": `primer-${crypto.randomUUID()}` },
+        headers: {
+          ...headers(access.key),
+          "Content-Type": "application/json",
+          ...(service.sessionHeader ? { "x-opencode-session": `primer-${crypto.randomUUID()}` } : {}),
+        },
         body: JSON.stringify({
-          model: model || DEFAULT_MODEL,
+          model: model || AI_PROVIDERS[access.provider].defaultModel,
           messages: [
             { role: "system", content: prompt.system },
             { role: "user", content: prompt.user },
           ],
           temperature: 0.7,
           max_tokens: MAX_TOKENS[options.length],
-          // Read the answer whole: a streamed one is still handled below, in case Go streams anyway.
+          // Read the answer whole: a streamed one is still handled below, in case the service streams anyway.
           stream: false,
         }),
         signal: controller.signal,
@@ -282,7 +386,7 @@ export async function writePrimer(input: PrimerInput, options: AiOptions, model:
       if (controller.signal.aborted) throw new EditError("The AI took too long; try again.");
       throw new EditError("The AI didn't answer.");
     }
-    if (!res.ok) throw statusError(res.status);
+    if (!res.ok) throw statusError(res.status, access);
     const contentType = res.headers.get("content-type") ?? "";
     let raw: string;
     try {
@@ -296,6 +400,8 @@ export async function writePrimer(input: PrimerInput, options: AiOptions, model:
     const text = cleanPrimer(answer.text);
     if (!text) {
       warnEmpty(res.status, contentType, raw.length, answer);
+      // A service can say the model itself is the problem with a 200; its own words never reach the page.
+      if (answer.serviceError) throw new EditError(`${AI_PROVIDERS[access.provider].label} reported a problem with this model; try again or pick another.`);
       if (answer.finishReason === "length") {
         throw new EditError("The AI used all its room for thinking and wrote nothing; try again, or pick Short or fewer sections.");
       }

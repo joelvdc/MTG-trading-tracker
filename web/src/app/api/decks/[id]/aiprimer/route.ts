@@ -1,8 +1,9 @@
-// A deck's primer, written by AI through OpenCode Go: the server side of the deck page's "Write with AI" dialog. It
-// answers with the text only; the page puts it in its editor and saves it with the deck's set-primer action.
+// A deck's primer, written by AI: the server side of the deck page's "Write with AI" dialog. The owner's account uses
+// the website's key, any other account its own saved one. It answers with the text only; the page puts it in its editor
+// and saves it with the deck's set-primer action.
 import { accountStore } from "@/lib/accounts";
-import { deckPrimerInput, writePrimer } from "@/lib/aiprimer";
-import { DEFAULT_MODEL, DEFAULT_SECTIONS, FOCUS_LABELS, MAX_PER_DAY, SECTION_LABELS, type AiFocus, type AiLength, type AiOptions, type AiSection } from "@/lib/aiprimershared";
+import { accessFor, deckPrimerInput, writePrimer } from "@/lib/aiprimer";
+import { AI_PROVIDERS, DEFAULT_SECTIONS, FOCUS_LABELS, MAX_PER_DAY, SECTION_LABELS, type AiFocus, type AiLength, type AiOptions, type AiSection } from "@/lib/aiprimershared";
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
 import { categoriesByName } from "@/lib/autocategories";
 import { syncDecks } from "@/lib/decks";
@@ -25,10 +26,10 @@ function deckId(raw: string): number | null {
 
 type Body = { model?: unknown; focus?: unknown; length?: unknown; sections?: unknown; startFrom?: unknown };
 
-/** A model id Go could know; anything else falls back to the default. Go itself decides what it serves. */
-function modelOf(value: unknown): string {
+/** A model id the service could know; anything else falls back to the service's default. The service decides what it serves. */
+function modelOf(value: unknown, fallback: string): string {
   const s = typeof value === "string" ? value.trim() : "";
-  return s !== "" && s.length <= 100 && /^[A-Za-z0-9][A-Za-z0-9._:/+-]*$/.test(s) ? s : DEFAULT_MODEL;
+  return s !== "" && s.length <= 100 && /^~?[A-Za-z0-9][A-Za-z0-9._:/+-]*$/.test(s) ? s : fallback;
 }
 
 function focusOf(value: unknown): AiFocus {
@@ -68,6 +69,10 @@ export async function POST(req: Request, { params }: Params) {
   try {
     const id = deckId((await params).id);
     if (id === null) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
+    // Whose key the request runs on, decided before anything of the deck is read.
+    const store = accountStore();
+    const access = await accessFor(a, store);
+    if (!access) throw new EditError(a.admin ? "The AI isn't set up on this website." : "Add your own AI key under Settings → AI key first.");
     const body = ((await req.json()) ?? {}) as Body;
     const options: AiOptions = {
       focus: focusOf(body.focus),
@@ -75,10 +80,9 @@ export async function POST(req: Request, { params }: Params) {
       sections: sectionsOf(body.sections),
       startFrom: startFromOf(body.startFrom),
     };
-    const model = modelOf(body.model);
+    const model = modelOf(body.model, AI_PROVIDERS[access.provider].defaultModel);
 
     // One account's count for the UTC day; only answers that came back are counted.
-    const store = accountStore();
     const jobKey = `aiprimer:${a.accountId}:${utcDay(Date.now())}`;
     const last = store ? await store.job(jobKey).catch(() => null) : null;
     const counted = last?.info.count;
@@ -99,7 +103,7 @@ export async function POST(req: Request, { params }: Params) {
     const input = deckPrimerInput(file, id, { cardTags, auto: autoByName });
     if (!input) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
 
-    const answer = await writePrimer(input, options, model);
+    const answer = await writePrimer(access, input, options, model);
     const count = used + 1;
     // A count that can't be saved shouldn't throw away an answer the owner paid for.
     if (store) await store.setJob(jobKey, Date.now(), { count }).catch(() => undefined);

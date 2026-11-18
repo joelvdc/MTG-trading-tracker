@@ -80,6 +80,13 @@ export interface BackupTarget {
   folder: string;
 }
 
+/** An account's own AI key: which service, the key sealed with SESSION_SECRET, and when it was saved. */
+export interface AiKey {
+  provider: string;
+  sealedKey: string;
+  savedAt: number;
+}
+
 export interface AccountStore {
   count(): Promise<number>;
   create(username: string, passwordHash: string, admin: boolean, now: number): Promise<UserAccount | null>;
@@ -110,6 +117,10 @@ export interface AccountStore {
   backup(accountId: number, day: string): Promise<Uint8Array | null>;
   backupTarget(accountId: number): Promise<BackupTarget | null>;
   setBackupTarget(accountId: number, target: BackupTarget | null): Promise<void>;
+  /** The account's own AI key for the AI primers; null when it has none. */
+  aiKey(accountId: number): Promise<AiKey | null>;
+  /** Saves or replaces the account's key; null removes it. */
+  setAiKey(accountId: number, key: AiKey | null): Promise<void>;
   /** Accounts with a backup target, for the nightly copy. */
   withBackupTargets(): Promise<{ accountId: number; target: BackupTarget }[]>;
   /** The automatic categories (lib/autocategories.ts) for these name keys, in order; shared by every account. */
@@ -298,6 +309,7 @@ export function memoryStore(): AccountStore {
   const syncs = new Map<number, StoredSync>();
   const backups = new Map<number, Map<string, Uint8Array>>();
   const targets = new Map<number, BackupTarget>();
+  const aiKeys = new Map<number, AiKey>();
   let tags = new Map<string, string[]>();
   let tagsAt: number | null = null;
   const valueDays = new Map<number, Map<string, ValueDay>>();
@@ -401,6 +413,11 @@ export function memoryStore(): AccountStore {
     setBackupTarget: async (id, t) => {
       if (t) targets.set(id, t);
       else targets.delete(id);
+    },
+    aiKey: async (id) => aiKeys.get(id) ?? null,
+    setAiKey: async (id, k) => {
+      if (k) aiKeys.set(id, k);
+      else aiKeys.delete(id);
     },
     withBackupTargets: async () => [...targets.entries()].map(([accountId, target]) => ({ accountId, target })),
     tagCategories: async (keys) => new Map(keys.flatMap((k) => (tags.has(k) ? [[k, [...tags.get(k)!]] as [string, string[]]] : []))),
@@ -617,6 +634,12 @@ const SCHEMA = [
      day TEXT NOT NULL,
      prices JSONB NOT NULL,
      PRIMARY KEY (account_id, day))`,
+  // 2026-11-18: each account's own AI key (sealed with SESSION_SECRET), for the AI deck primers.
+  `CREATE TABLE IF NOT EXISTS ai_keys (
+     account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+     provider TEXT NOT NULL,
+     sealed_key TEXT NOT NULL,
+     saved_at BIGINT NOT NULL)`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -733,6 +756,18 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
         ? await q("INSERT INTO backup_targets (account_id, target) VALUES ($1, $2) ON CONFLICT (account_id) DO UPDATE SET target = EXCLUDED.target", [id, JSON.stringify(t)])
         : await q("DELETE FROM backup_targets WHERE account_id = $1", [id])),
     withBackupTargets: async () => (await q("SELECT account_id, target FROM backup_targets")).map((r) => ({ accountId: num(r.account_id), target: r.target as BackupTarget })),
+    aiKey: async (id) => {
+      const r = (await q("SELECT * FROM ai_keys WHERE account_id = $1", [id]))[0];
+      return r ? { provider: String(r.provider), sealedKey: String(r.sealed_key), savedAt: num(r.saved_at) } : null;
+    },
+    setAiKey: async (id, k) =>
+      void (k
+        ? await q(
+            `INSERT INTO ai_keys (account_id, provider, sealed_key, saved_at) VALUES ($1, $2, $3, $4)
+             ON CONFLICT (account_id) DO UPDATE SET provider = EXCLUDED.provider, sealed_key = EXCLUDED.sealed_key, saved_at = EXCLUDED.saved_at`,
+            [id, k.provider, k.sealedKey, k.savedAt],
+          )
+        : await q("DELETE FROM ai_keys WHERE account_id = $1", [id])),
     tagCategories: async (keys) =>
       new Map(
         keys.length === 0

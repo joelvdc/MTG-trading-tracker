@@ -91,6 +91,23 @@ describe.each([
     expect(await s.backupTarget(a.id)).toBeNull();
   });
 
+  it("an account's own AI key", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    const other = (await s.create("kid", "h", false, NOW))!;
+    expect(await s.aiKey(a.id)).toBeNull();
+    await s.setAiKey(a.id, { provider: "opencode-go", sealedKey: "sealed-1", savedAt: NOW });
+    expect(await s.aiKey(a.id)).toEqual({ provider: "opencode-go", sealedKey: "sealed-1", savedAt: NOW });
+    // Saving again replaces the key and the service it belongs to.
+    await s.setAiKey(a.id, { provider: "openrouter", sealedKey: "sealed-2", savedAt: NOW + 1 });
+    expect(await s.aiKey(a.id)).toEqual({ provider: "openrouter", sealedKey: "sealed-2", savedAt: NOW + 1 });
+    await s.setAiKey(other.id, { provider: "openrouter", sealedKey: "sealed-3", savedAt: NOW });
+    expect((await s.aiKey(other.id))!.sealedKey).toBe("sealed-3");
+    await s.setAiKey(a.id, null);
+    expect(await s.aiKey(a.id)).toBeNull();
+    expect((await s.aiKey(other.id))!.sealedKey).toBe("sealed-3");
+  });
+
   it("the auto categories table", async () => {
     const s = await make();
     expect(await s.tagCategoryStats()).toEqual({ cards: 0, updatedAt: null });

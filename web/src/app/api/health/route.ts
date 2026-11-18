@@ -1,4 +1,4 @@
-import { aiConfigured, listModels } from "@/lib/aiprimer";
+import { listModels, websiteAccess } from "@/lib/aiprimer";
 import { DEFAULT_MODEL } from "@/lib/aiprimershared";
 import { json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
@@ -22,7 +22,9 @@ const AI_CHECK_MS = 3_600_000;
  * answer is in the database). Only the model list is asked; the chat address is never called from here.
  */
 async function aiHealth(store: ReturnType<typeof accountStore>) {
-  if (!aiConfigured()) return { configured: false, reachable: false, hasDefault: false, checkedAgeHours: null };
+  // The website's own key, which only the owner's account may use: the health check has no account.
+  const access = websiteAccess();
+  if (!access) return { configured: false, reachable: false, hasDefault: false, checkedAgeHours: null };
   const last = store ? await store.job(AI_CHECK_JOB).catch(() => null) : null;
   if (last && Date.now() - last.at <= AI_CHECK_MS) {
     return { configured: true, reachable: last.info.reachable === true, hasDefault: last.info.hasDefault === true, checkedAgeHours: hours(last.at) };
@@ -30,7 +32,7 @@ async function aiHealth(store: ReturnType<typeof accountStore>) {
   let reachable = false;
   let hasDefault = false;
   try {
-    const models = await listModels();
+    const models = await listModels(access);
     reachable = true;
     hasDefault = models.includes(DEFAULT_MODEL);
   } catch {
