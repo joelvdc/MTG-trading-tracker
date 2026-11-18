@@ -83,6 +83,8 @@ only in your own copy of the code; don't commit, merge, release, change versions
 delegated does that after reviewing your work.
 - After a green light, Opus may hand jobs to helpers on its own judgment (`/delegate`: DeepSeek on the owner's
   OpenCode Go through opencode first, free opencode models as backup, Haiku or Sonnet, picked per job); the plan lists each job with its helper, so the green light covers that choice.
+- When the owner uses `/deepseek`, DeepSeek does all the execution work. Opus sends failed work back for at most three
+  revision rounds; if it still fails, or OpenCode Go is down or over its limit, Opus fixes or does the work itself.
 
 ## After a release
 The owner clears the conversation after every release. Before the final report, make sure everything worth keeping is
