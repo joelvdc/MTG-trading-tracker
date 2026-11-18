@@ -18,10 +18,9 @@ history, the release notes and `web/README.md`.)
 - **Newest, website only (2026-11-18):** Mistral is a third AI service for primers. When `MISTRAL_API_KEY` is set in
   Vercel, the owner's account writes with Mistral (default model `deepseek-v4-1-flash-1017`); without it, it stays on
   `OPENCODE_API_KEY`. Other accounts can save a Mistral key under Settings → AI key.
-- **Waiting on the owner for Mistral:** create a key at console.mistral.ai, add it to Vercel as `MISTRAL_API_KEY`,
-  redeploy, then write one primer. Until then the website keeps using OpenCode Go and `/api/health` says
-  `ai.provider: "opencode-go"`. Not yet tried with a real Mistral key: check that `ai.hasDefault` is true and watch
-  what the primer costs on the Mistral account (the Pro subscription may not cover API use).
+- **Live check (2026-11-18):** `MISTRAL_API_KEY` is set in Vercel: `/api/health` says `ai.provider: "mistral"`, with
+  `reachable` and `hasDefault` true. **Waiting on the owner:** write one real primer (only a logged-in account can) and
+  watch what it costs on the Mistral account (the Pro subscription may not cover API use).
 - **Earlier the same day, website only:** the website's OpenCode key (`OPENCODE_API_KEY`) works only for the owner's
   account (`admin`). Every other account saves its own key (OpenCode Go, OpenRouter, now also Mistral) under Settings → AI key (checked
   with the service first, sealed with `SESSION_SECRET` in table `ai_keys`, never in the sync file). No key: the deck
