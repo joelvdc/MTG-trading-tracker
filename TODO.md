@@ -14,13 +14,16 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-18, after Mistral for the website's AI primers; app still 1.101)
-- **Newest, website only (2026-11-18):** Mistral is a third AI service for primers. When `MISTRAL_API_KEY` is set in
-  Vercel, the owner's account writes with Mistral (default model `deepseek-v4-1-flash-1017`); without it, it stays on
-  `OPENCODE_API_KEY`. Other accounts can save a Mistral key under Settings → AI key.
-- **Live check (2026-11-18):** `MISTRAL_API_KEY` is set in Vercel: `/api/health` says `ai.provider: "mistral"`, with
-  `reachable` and `hasDefault` true. **Waiting on the owner:** write one real primer (only a logged-in account can) and
-  watch what it costs on the Mistral account (the Pro subscription may not cover API use).
+## Right now (2026-11-18, after the AI service choice on the website; app still 1.101)
+- **Newest, website only (2026-11-18):** the deck page's Write with AI dialog has a **Service** dropdown for the owner's
+  account when the website has both `MISTRAL_API_KEY` and `OPENCODE_API_KEY`: Mistral (default model
+  `deepseek-v4-1-flash-1017`) or OpenCode Go. It starts on Mistral and the browser remembers the last choice
+  (`mtgtrader.aiService`). Other accounts see no dropdown and stay on their one saved key (OpenCode Go, Mistral or OpenRouter).
+- **Live check (2026-11-18):** `/api/health` lists both services in `ai.services`, each with `reachable` and `hasDefault`
+  true. **Waiting on the owner:** press Ctrl+F5, write one real primer with each service (only a logged-in account can;
+  the dialog itself hasn't been seen on the live site yet) and watch what the Mistral primer
+  costs on the Mistral account (the Pro
+  subscription may not cover API use).
 - **Earlier the same day, website only:** the website's OpenCode key (`OPENCODE_API_KEY`) works only for the owner's
   account (`admin`). Every other account saves its own key (OpenCode Go, OpenRouter, now also Mistral) under Settings → AI key (checked
   with the service first, sealed with `SESSION_SECRET` in table `ai_keys`, never in the sync file). No key: the deck
