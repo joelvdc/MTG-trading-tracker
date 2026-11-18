@@ -575,7 +575,7 @@ function WriteWithAi({ deckId, text, onWritten, onError }: { deckId: number; tex
         <p className="muted small primer-ai-body">Loading the models…</p>
       ) : models.needsKey ? (
         <p className="small primer-ai-body">
-          To write primers with AI, add your own OpenCode Go or OpenRouter key under <Link href="/settings">Settings → AI key</Link>.
+          To write primers with AI, add your own OpenCode Go, Mistral or OpenRouter key under <Link href="/settings">Settings → AI key</Link>.
         </p>
       ) : !models.configured ? (
         <p className="small primer-ai-body">AI writing isn&apos;t set up on this website.</p>

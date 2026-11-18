@@ -3,8 +3,8 @@ import path from "node:path";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Each account's own AI key (2026-11-18): the owner's account writes with the website's key, every other account only
-// with its own saved one (OpenCode Go or OpenRouter), and an account with no key can't write primers at all. No test
-// talks to the network (every fetch is a fake), and a key must never appear in an answer, a message or a log line.
+// with its own saved one (OpenCode Go, Mistral or OpenRouter), and an account with no key can't write primers at all. No
+// test talks to the network (every fetch is a fake), and a key must never appear in an answer, a message or a log line.
 
 type Session = { kind: "user"; accountId: number; username: string; admin: boolean; device: string };
 /** Who the routes think is logged in; a test sets it to the owner or to another account. */
@@ -32,10 +32,17 @@ const USER_ID = 2;
 const WEBSITE_KEY = "website-key-not-real-000";
 const GO_KEY = "go-key-00000000000000001";
 const OR_KEY = "sk-or-v1-0000000000000000000002";
+/** A Mistral key, as MISTRAL_API_KEY holds the website's own. */
+const MISTRAL_KEY = "mistral-key-not-real-0000001";
 const FIXTURE = path.join(__dirname, "fixtures");
 const appFile = (): SyncFile => JSON.parse(readFileSync(path.join(FIXTURE, "app-sync.json"), "utf8")) as SyncFile;
 
-const env = { SESSION_SECRET: process.env.SESSION_SECRET, OPENCODE_API_KEY: process.env.OPENCODE_API_KEY, DATABASE_URL: process.env.DATABASE_URL };
+const env = {
+  SESSION_SECRET: process.env.SESSION_SECRET,
+  OPENCODE_API_KEY: process.env.OPENCODE_API_KEY,
+  MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
+  DATABASE_URL: process.env.DATABASE_URL,
+};
 
 let store: NonNullable<ReturnType<typeof accountStore>>;
 
@@ -90,6 +97,7 @@ type ModelsAnswer = { configured: boolean; needsKey: boolean; provider?: string;
 type KeyAnswer = {
   usesWebsiteKey: boolean;
   websiteKeySet: boolean;
+  websiteProvider: string | null;
   providers: { id: string; label: string }[];
   saved: { provider: string; label: string; last4: string; savedAt: number } | null;
   unreadable: boolean;
@@ -101,6 +109,8 @@ const keyInfo = async () => (await (await keyGet()).json()) as KeyAnswer;
 beforeEach(async () => {
   process.env.SESSION_SECRET = Buffer.alloc(32, 7).toString("base64");
   process.env.OPENCODE_API_KEY = WEBSITE_KEY;
+  // The website's own key is Mistral's only when this is set: no test starts with one.
+  delete process.env.MISTRAL_API_KEY;
   process.env.DATABASE_URL = "memory";
   resetMemoryStore();
   store = accountStore()!;
@@ -297,6 +307,7 @@ describe("saving a key", () => {
       websiteKeySet: true,
       providers: [
         { id: "opencode-go", label: "OpenCode Go" },
+        { id: "mistral", label: "Mistral" },
         { id: "openrouter", label: "OpenRouter" },
       ],
       saved: { provider: "openrouter", label: "OpenRouter", last4: OR_KEY.slice(-4) },
@@ -331,7 +342,7 @@ describe("saving a key", () => {
 
     asUser();
     const unknown = await keyRequest({ action: "save", provider: "together", key: OR_KEY });
-    expect(((await unknown.json()) as { error: string }).error).toBe("Pick OpenCode Go or OpenRouter.");
+    expect(((await unknown.json()) as { error: string }).error).toBe("Pick OpenCode Go, Mistral or OpenRouter.");
 
     const space = await keyRequest({ action: "save", provider: "opencode-go", key: "abcdefghij klmnopqrstuvwxyz" });
     expect(((await space.json()) as { error: string }).error).toBe("That doesn't look like an API key.");
@@ -484,5 +495,118 @@ describe("the key helpers", () => {
     expect(openAiKey("garbage", NOW)).toBeNull();
 
     expect(websiteAccess()).toEqual({ provider: "opencode-go", key: WEBSITE_KEY, shared: true });
+  });
+});
+
+// ---- 10. Mistral: the website's own key, an account's own key, and the service's list --------------------------------
+
+describe("the website's own key, when MISTRAL_API_KEY is set", () => {
+  it("is Mistral's, and OpenCode Go's only when it is blank", () => {
+    process.env.MISTRAL_API_KEY = MISTRAL_KEY;
+    expect(websiteAccess()).toEqual({ provider: "mistral", key: MISTRAL_KEY, shared: true });
+
+    // Spaces only: no Mistral key, so the website falls back to its OpenCode Go one.
+    process.env.MISTRAL_API_KEY = "   ";
+    expect(websiteAccess()).toEqual({ provider: "opencode-go", key: WEBSITE_KEY, shared: true });
+  });
+
+  it("writes the owner's primer at Mistral's address, with Mistral's key and no Go session header", async () => {
+    process.env.MISTRAL_API_KEY = MISTRAL_KEY;
+    asOwner();
+    await store.putSync(OWNER_ID, encode(appFile()), null, NOW);
+    const { fn, calls } = fakeFetch(() => chatAnswer("ok"));
+    vi.stubGlobal("fetch", fn);
+
+    expect(await primerRequest()).toHaveProperty("status", 200);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://api.mistral.ai/v1/chat/completions");
+    expect(headerOf(calls[0], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+    // Only Go insists on a session header.
+    expect(headerOf(calls[0], "x-opencode-session")).toBeUndefined();
+    // The model is the one Mistral starts on; the website's other key never leaves for it.
+    expect(sentModel(calls[0])).toBe(AI_PROVIDERS.mistral.defaultModel);
+    for (const c of calls) expect(JSON.stringify(c.init)).not.toContain(WEBSITE_KEY);
+  });
+
+  it("is still only the owner's: another account with no key can't write a primer", async () => {
+    process.env.MISTRAL_API_KEY = MISTRAL_KEY;
+    asUser();
+    await store.putSync(USER_ID, encode(appFile()), null, NOW);
+    const never = fakeFetch(() => {
+      throw new Error("must not be asked");
+    });
+    vi.stubGlobal("fetch", never.fn);
+
+    const answer = await primerRequest();
+    expect(answer.status).toBe(400);
+    expect(((await answer.json()) as { error: string }).error).toBe("Add your own AI key under Settings → AI key first.");
+    expect(never.spy).not.toHaveBeenCalled();
+  });
+});
+
+describe("an account with a Mistral key", () => {
+  it("writes with its own key at Mistral's chat address", async () => {
+    await store.setAiKey(USER_ID, { provider: "mistral", sealedKey: sealAiKey(MISTRAL_KEY, NOW), savedAt: NOW });
+    await store.putSync(USER_ID, encode(appFile()), null, NOW);
+    const { fn, calls } = fakeFetch(() => chatAnswer("ok"));
+    vi.stubGlobal("fetch", fn);
+
+    expect(await primerRequest()).toHaveProperty("status", 200);
+    expect(calls[0].url).toBe("https://api.mistral.ai/v1/chat/completions");
+    expect(headerOf(calls[0], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+    expect(headerOf(calls[0], "x-opencode-session")).toBeUndefined();
+    expect(sentModel(calls[0])).toBe(AI_PROVIDERS.mistral.defaultModel);
+    for (const c of calls) expect(JSON.stringify(c.init)).not.toContain(WEBSITE_KEY);
+  });
+});
+
+describe("saving a Mistral key", () => {
+  it("checks it with Mistral's model list, and keeps only a key Mistral accepts", async () => {
+    // Mistral's model list answers 401 to a wrong key, so nothing is stored.
+    const refused = fakeFetch(() => jsonBody({ error: { message: "nope" } }, 401));
+    vi.stubGlobal("fetch", refused.fn);
+    const bad = await keyRequest({ action: "save", provider: "mistral", key: MISTRAL_KEY });
+    expect(bad.status).toBe(400);
+    expect(((await bad.json()) as { error: string }).error).toBe("Mistral didn't accept this key.");
+    expect(refused.calls[0].url).toBe("https://api.mistral.ai/v1/models");
+    expect(headerOf(refused.calls[0], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+    expect(await store.aiKey(USER_ID)).toBeNull();
+
+    const accepted = fakeFetch(() => jsonBody({ data: [{ id: AI_PROVIDERS.mistral.defaultModel }] }));
+    vi.stubGlobal("fetch", accepted.fn);
+    const saved = await keyRequest({ action: "save", provider: "mistral", key: MISTRAL_KEY });
+    expect(saved.status).toBe(200);
+    expect(((await saved.json()) as { note: string }).note).toBe("Saved. Mistral accepted the key.");
+    expect(accepted.calls[0].url).toBe("https://api.mistral.ai/v1/models");
+    expect(headerOf(accepted.calls[0], "Authorization")).toBe(`Bearer ${MISTRAL_KEY}`);
+    expect(openAiKey((await store.aiKey(USER_ID))!.sealedKey)).toBe(MISTRAL_KEY);
+  });
+});
+
+describe("Mistral's model list", () => {
+  it("drops the models that can't chat, keeps the rest and puts the default first", async () => {
+    const access: AiAccess = { provider: "mistral", key: MISTRAL_KEY, shared: false };
+    const { fn, calls } = fakeFetch(() =>
+      jsonBody({
+        data: [
+          { id: "mistral-embed", capabilities: { completion_chat: false } },
+          { id: "zeta-chat", capabilities: { completion_chat: true } },
+          { id: "no-capabilities" },
+          { id: AI_PROVIDERS.mistral.defaultModel, capabilities: { completion_chat: true } },
+        ],
+      }),
+    );
+    expect(await listModels(access, fn)).toEqual([AI_PROVIDERS.mistral.defaultModel, "no-capabilities", "zeta-chat"]);
+    expect(calls[0].url).toBe("https://api.mistral.ai/v1/models");
+  });
+});
+
+describe("GET /api/account/aikey with the website's own key", () => {
+  it("names the service of that key", async () => {
+    process.env.MISTRAL_API_KEY = MISTRAL_KEY;
+    expect((await keyInfo()).websiteProvider).toBe("Mistral");
+
+    delete process.env.MISTRAL_API_KEY;
+    expect((await keyInfo()).websiteProvider).toBe("OpenCode Go");
   });
 });

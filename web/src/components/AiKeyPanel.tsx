@@ -7,12 +7,14 @@ import { api, formatDate } from "./api";
 interface AiKeyInfo {
   usesWebsiteKey: boolean;
   websiteKeySet: boolean;
+  /** The service the website's own key belongs to ("Mistral", "OpenCode Go"), or null when it has none. */
+  websiteProvider: string | null;
   providers: { id: string; label: string }[];
   saved: { provider: string; label: string; last4: string; savedAt: number } | null;
   unreadable: boolean;
 }
 
-/** Settings → AI key: the account's own key for Write with AI (OpenCode Go or OpenRouter). */
+/** Settings → AI key: the account's own key for Write with AI (OpenCode Go, Mistral or OpenRouter). */
 export function AiKeyPanel() {
   const [info, setInfo] = useState<AiKeyInfo | null>(null);
   const [provider, setProvider] = useState("");
@@ -61,11 +63,13 @@ export function AiKeyPanel() {
       {info === null ? (
         <p className="muted small">Loading…</p>
       ) : info.usesWebsiteKey ? (
-        <p className="muted small">{info.websiteKeySet ? "Your account uses the website's own OpenCode Go key." : "The website's own key isn't set up."}</p>
+        <p className="muted small">
+          {info.websiteKeySet ? `Your account uses the website's own ${info.websiteProvider} key.` : "The website's own key isn't set up."}
+        </p>
       ) : (
         <>
           <p className="muted small">
-            Write with AI uses your own key from OpenCode Go or OpenRouter, and that service bills you for what you use. When you write a primer, the
+            Write with AI uses your own key from OpenCode Go, Mistral or OpenRouter, and that service bills you for what you use. When you write a primer, the
             deck&apos;s name, cards, card notes, scores, combos and your current primer text go to the service you pick. Your key is stored encrypted and is never shown
             again.
           </p>

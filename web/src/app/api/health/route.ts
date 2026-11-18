@@ -1,5 +1,5 @@
 import { listModels, websiteAccess } from "@/lib/aiprimer";
-import { DEFAULT_MODEL } from "@/lib/aiprimershared";
+import { AI_PROVIDERS } from "@/lib/aiprimershared";
 import { json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
@@ -18,29 +18,36 @@ const AI_CHECK_JOB = "ai-check";
 const AI_CHECK_MS = 3_600_000;
 
 /**
- * Whether the AI answers and lists the default model, looked at most once an hour across the instances (the last
- * answer is in the database). Only the model list is asked; the chat address is never called from here.
+ * Whether the AI answers and lists its service's default model, looked at most once an hour across the instances (the
+ * last answer is in the database). Only the model list is asked; the chat address is never called from here.
  */
 async function aiHealth(store: ReturnType<typeof accountStore>) {
   // The website's own key, which only the owner's account may use: the health check has no account.
   const access = websiteAccess();
-  if (!access) return { configured: false, reachable: false, hasDefault: false, checkedAgeHours: null };
+  if (!access) return { configured: false, provider: null, reachable: false, hasDefault: false, checkedAgeHours: null };
   const last = store ? await store.job(AI_CHECK_JOB).catch(() => null) : null;
-  if (last && Date.now() - last.at <= AI_CHECK_MS) {
-    return { configured: true, reachable: last.info.reachable === true, hasDefault: last.info.hasDefault === true, checkedAgeHours: hours(last.at) };
+  // A kept answer is only reused when it was about the same service: a switch of key checks again.
+  if (last && last.info.provider === access.provider && Date.now() - last.at <= AI_CHECK_MS) {
+    return {
+      configured: true,
+      provider: access.provider,
+      reachable: last.info.reachable === true,
+      hasDefault: last.info.hasDefault === true,
+      checkedAgeHours: hours(last.at),
+    };
   }
   let reachable = false;
   let hasDefault = false;
   try {
     const models = await listModels(access);
     reachable = true;
-    hasDefault = models.includes(DEFAULT_MODEL);
+    hasDefault = models.includes(AI_PROVIDERS[access.provider].defaultModel);
   } catch {
-    // Go didn't answer: that is kept for the hour too, so the health check doesn't wait on it every time.
+    // The service didn't answer: that is kept for the hour too, so the health check doesn't wait on it every time.
   }
   const at = Date.now();
-  if (store) await store.setJob(AI_CHECK_JOB, at, { reachable, hasDefault }).catch(() => undefined);
-  return { configured: true, reachable, hasDefault, checkedAgeHours: 0 };
+  if (store) await store.setJob(AI_CHECK_JOB, at, { provider: access.provider, reachable, hasDefault }).catch(() => undefined);
+  return { configured: true, provider: access.provider, reachable, hasDefault, checkedAgeHours: 0 };
 }
 
 /** For the weekly health check: no secrets, no owner data. */
@@ -108,7 +115,8 @@ export async function GET() {
     priceHistoryNewest: priceDays?.newest ?? null,
     // The Collection page's saved views (2026-11-13): the table answers (null: it doesn't), and how many accounts use it.
     savedViewAccounts: viewAccounts,
-    // The AI deck primers (OpenCode Go): set up, answering, and whether its model list names the default model.
+    // The AI deck primers (OpenCode Go or Mistral): set up, which service, answering, and whether its model list names
+    // the service's default model.
     ai,
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });

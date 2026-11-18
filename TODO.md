@@ -14,9 +14,16 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-18, after the website's own AI keys; app still 1.101)
-- **Latest, website only (2026-11-18):** the website's OpenCode key (`OPENCODE_API_KEY`) works only for the owner's
-  account (`admin`). Every other account saves its own OpenCode Go or OpenRouter key under Settings → AI key (checked
+## Right now (2026-11-18, after Mistral for the website's AI primers; app still 1.101)
+- **Newest, website only (2026-11-18):** Mistral is a third AI service for primers. When `MISTRAL_API_KEY` is set in
+  Vercel, the owner's account writes with Mistral (default model `deepseek-v4-1-flash-1017`); without it, it stays on
+  `OPENCODE_API_KEY`. Other accounts can save a Mistral key under Settings → AI key.
+- **Waiting on the owner for Mistral:** create a key at console.mistral.ai, add it to Vercel as `MISTRAL_API_KEY`,
+  redeploy, then write one primer. Until then the website keeps using OpenCode Go and `/api/health` says
+  `ai.provider: "opencode-go"`. Not yet tried with a real Mistral key: check that `ai.hasDefault` is true and watch
+  what the primer costs on the Mistral account (the Pro subscription may not cover API use).
+- **Earlier the same day, website only:** the website's OpenCode key (`OPENCODE_API_KEY`) works only for the owner's
+  account (`admin`). Every other account saves its own key (OpenCode Go, OpenRouter, now also Mistral) under Settings → AI key (checked
   with the service first, sealed with `SESSION_SECRET` in table `ai_keys`, never in the sync file). No key: the deck
   page's Write with AI points to Settings. `accessFor` in `web/src/lib/aiprimer.ts` alone decides whose key is used.
   Privacy page updated. Why: OpenCode's terms allow use for your own benefit only.

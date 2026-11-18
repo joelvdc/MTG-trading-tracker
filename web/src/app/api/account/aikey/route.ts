@@ -1,6 +1,6 @@
-// Settings → AI key: an account's own key for the AI deck primers (OpenCode Go or OpenRouter). The owner's account
-// uses the website's key instead, so it never saves one. A key is only ever answered as its last four characters.
-import { aiConfigured, checkAiKey, cleanAiKey, openAiKey, sealAiKey } from "@/lib/aiprimer";
+// Settings → AI key: an account's own key for the AI deck primers (OpenCode Go, Mistral or OpenRouter). The owner's
+// account uses the website's key instead, so it never saves one. A key is only ever answered as its last four characters.
+import { aiConfigured, checkAiKey, cleanAiKey, openAiKey, sealAiKey, websiteAccess } from "@/lib/aiprimer";
 import { AI_PROVIDERS, isAiProvider, type AiProvider } from "@/lib/aiprimershared";
 import { needStore } from "@/lib/accountweb";
 import { currentAccount, errorResponse, fromOurPages, json } from "@/lib/auth";
@@ -22,9 +22,13 @@ export async function GET() {
       row !== null && isAiProvider(row.provider) && key !== null
         ? { provider: row.provider, label: AI_PROVIDERS[row.provider].label, last4: key.slice(-4), savedAt: row.savedAt }
         : null;
+    // The service the website's own key belongs to (the owner's account writes with it), or null when there is none.
+    const website = websiteAccess();
     return json({
       usesWebsiteKey: a.admin,
       websiteKeySet: aiConfigured(),
+      // What the panel calls the website's key: Mistral when that is set up, otherwise OpenCode Go.
+      websiteProvider: website === null ? null : AI_PROVIDERS[website.provider].label,
       providers: (Object.keys(AI_PROVIDERS) as AiProvider[]).map((id) => ({ id, label: AI_PROVIDERS[id].label })),
       saved,
       unreadable: row !== null && saved === null,
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
     const now = Date.now();
     if (body.action === "save") {
       if (a.admin) throw new EditError("Your account uses the website's own key.");
-      if (!isAiProvider(body.provider)) throw new EditError("Pick OpenCode Go or OpenRouter.");
+      if (!isAiProvider(body.provider)) throw new EditError("Pick OpenCode Go, Mistral or OpenRouter.");
       const provider = body.provider;
       const key = cleanAiKey(body.key);
       if (!key) throw new EditError("That doesn't look like an API key.");

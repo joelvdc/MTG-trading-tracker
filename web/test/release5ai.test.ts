@@ -17,7 +17,7 @@ vi.mock("@/lib/auth", async (importOriginal) => {
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
 import { aiConfigured, deckPrimerInput, listModels, websiteAccess, writePrimer, type AiAccess } from "@/lib/aiprimer";
-import { buildPrompt, cleanPrimer, DEFAULT_MODEL, DEFAULT_SECTIONS, MAX_PER_DAY, type AiOptions, type PrimerInput } from "@/lib/aiprimershared";
+import { buildPrompt, cleanPrimer, DEFAULT_MODEL, DEFAULT_SECTIONS, AI_PROVIDERS, MAX_PER_DAY, type AiOptions, type PrimerInput } from "@/lib/aiprimershared";
 import { USER_AGENT } from "@/lib/config";
 import { syncDecks } from "@/lib/decks";
 import type { DeckCard } from "@/lib/deckshared";
@@ -35,6 +35,7 @@ const appFile = (): SyncFile => JSON.parse(readFileSync(path.join(fixture, "app-
 const deckOf = (f: SyncFile, id = ID) => syncDecks(f).find((d) => d.deck.archidektId === id)!;
 
 const originalKey = process.env.OPENCODE_API_KEY;
+const originalMistralKey = process.env.MISTRAL_API_KEY;
 
 type Account = { kind: "user"; accountId: number; username: string; admin: boolean; device: string };
 const ACCOUNT: Account = { kind: "user", accountId: 1, username: "joel", admin: true, device: "test" };
@@ -56,6 +57,8 @@ function fakeFetch(handler: (url: string, init: RequestInit) => Response | Promi
 
 beforeEach(async () => {
   process.env.OPENCODE_API_KEY = KEY;
+  // The website's own key is Mistral's only when this is set: no test here starts with one.
+  delete process.env.MISTRAL_API_KEY;
   process.env.DATABASE_URL = "memory";
   resetMemoryStore();
   store = accountStore()!;
@@ -70,6 +73,8 @@ afterEach(() => {
 afterAll(() => {
   if (originalKey === undefined) delete process.env.OPENCODE_API_KEY;
   else process.env.OPENCODE_API_KEY = originalKey;
+  if (originalMistralKey === undefined) delete process.env.MISTRAL_API_KEY;
+  else process.env.MISTRAL_API_KEY = originalMistralKey;
 });
 
 // ---- The health check's AI part -----------------------------------------------------------------------------------
@@ -78,11 +83,11 @@ describe("the health check's AI part", () => {
   it("says not set up when there is no key", async () => {
     delete process.env.OPENCODE_API_KEY;
     const body = (await (await healthGet()).json()) as { ai: unknown };
-    expect(body.ai).toEqual({ configured: false, reachable: false, hasDefault: false, checkedAgeHours: null });
+    expect(body.ai).toEqual({ configured: false, provider: null, reachable: false, hasDefault: false, checkedAgeHours: null });
   });
 
   it("keeps the last check for an hour and asks Go only when it is older", async () => {
-    await store.setJob("ai-check", Date.now(), { reachable: true, hasDefault: true });
+    await store.setJob("ai-check", Date.now(), { provider: "opencode-go", reachable: true, hasDefault: true });
     const seen: string[] = [];
     const spy = vi.fn(async (url: RequestInfo | URL) => {
       seen.push(String(url));
@@ -90,15 +95,37 @@ describe("the health check's AI part", () => {
     });
     vi.stubGlobal("fetch", spy);
 
-    const fresh = (await (await healthGet()).json()) as { ai: { configured: boolean; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null } };
-    expect(fresh.ai).toEqual({ configured: true, reachable: true, hasDefault: true, checkedAgeHours: 0 });
+    const fresh = (await (await healthGet()).json()) as {
+      ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null };
+    };
+    expect(fresh.ai).toEqual({ configured: true, provider: "opencode-go", reachable: true, hasDefault: true, checkedAgeHours: 0 });
 
     // Older than an hour: the model list is asked again, and a failure becomes the new (kept) answer.
-    await store.setJob("ai-check", Date.now() - 2 * 3_600_000, { reachable: true, hasDefault: true });
-    const stale = (await (await healthGet()).json()) as { ai: { configured: boolean; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null } };
+    await store.setJob("ai-check", Date.now() - 2 * 3_600_000, { provider: "opencode-go", reachable: true, hasDefault: true });
+    const stale = (await (await healthGet()).json()) as {
+      ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null };
+    };
     expect(seen.filter((u) => u.includes("opencode.ai"))).toEqual(["https://opencode.ai/inference/go/v1/models"]);
-    expect(stale.ai).toEqual({ configured: true, reachable: false, hasDefault: false, checkedAgeHours: 0 });
-    expect((await store.job("ai-check"))!.info).toEqual({ reachable: false, hasDefault: false });
+    expect(stale.ai).toEqual({ configured: true, provider: "opencode-go", reachable: false, hasDefault: false, checkedAgeHours: 0 });
+    expect((await store.job("ai-check"))!.info).toEqual({ provider: "opencode-go", reachable: false, hasDefault: false });
+  });
+
+  it("checks again when the kept answer was for another service", async () => {
+    process.env.MISTRAL_API_KEY = "mistral-key-not-real-0000001";
+    // A kept answer of a moment ago, but about OpenCode Go: the website's key is Mistral's now.
+    await store.setJob("ai-check", Date.now(), { provider: "opencode-go", reachable: true, hasDefault: true });
+    const { fn, calls } = fakeFetch(() => jsonBody({ data: [{ id: AI_PROVIDERS.mistral.defaultModel }] }));
+    vi.stubGlobal("fetch", fn);
+
+    // The route reads its libraries afresh, so the model list the file keeps in memory for the website's key can't
+    // answer this: a fresh copy starts with nothing kept.
+    vi.resetModules();
+    const fresh = await import("@/app/api/health/route");
+    const body = (await (await fresh.GET()).json()) as {
+      ai: { configured: boolean; provider: string | null; reachable: boolean; hasDefault: boolean; checkedAgeHours: number | null };
+    };
+    expect(calls.map((c) => c.url)).toEqual(["https://api.mistral.ai/v1/models"]);
+    expect(body.ai).toEqual({ configured: true, provider: "mistral", reachable: true, hasDefault: true, checkedAgeHours: 0 });
   });
 });
 

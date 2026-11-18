@@ -19,6 +19,13 @@ const SERVICES: Record<AiProvider, { modelsUrl: string; chatUrl: string; keyChec
     keyCheckUrl: "https://opencode.ai/inference/go/v1/models",
     sessionHeader: true,
   },
+  mistral: {
+    modelsUrl: "https://api.mistral.ai/v1/models",
+    chatUrl: "https://api.mistral.ai/v1/chat/completions",
+    // Mistral's model list answers 401 to a wrong key.
+    keyCheckUrl: "https://api.mistral.ai/v1/models",
+    sessionHeader: false,
+  },
   openrouter: {
     modelsUrl: "https://openrouter.ai/api/v1/models",
     chatUrl: "https://openrouter.ai/api/v1/chat/completions",
@@ -48,10 +55,15 @@ export interface AiAccess {
   shared: boolean;
 }
 
-/** The website's own key (OPENCODE_API_KEY); null when it has none. */
+/**
+ * The website's own key: Mistral's when MISTRAL_API_KEY is set, otherwise OpenCode Go's (OPENCODE_API_KEY); null when it
+ * has neither.
+ */
 export function websiteAccess(): AiAccess | null {
-  const key = (process.env.OPENCODE_API_KEY ?? "").trim();
-  return key === "" ? null : { provider: "opencode-go", key, shared: true };
+  const mistral = (process.env.MISTRAL_API_KEY ?? "").trim();
+  if (mistral !== "") return { provider: "mistral", key: mistral, shared: true };
+  const go = (process.env.OPENCODE_API_KEY ?? "").trim();
+  return go === "" ? null : { provider: "opencode-go", key: go, shared: true };
 }
 
 /** Whether the website has a key at all (the dialog then still offers the default model). */
@@ -131,13 +143,17 @@ export async function listModels(access: AiAccess, fetchFn: typeof fetch = fetch
   if (!res.ok) throw statusError(res.status, access);
   let ids: string[] = [];
   try {
-    const body = (await res.json()) as { data?: { id?: unknown; architecture?: { output_modalities?: unknown } }[] };
+    const body = (await res.json()) as {
+      data?: { id?: unknown; architecture?: { output_modalities?: unknown }; capabilities?: { completion_chat?: unknown } }[];
+    };
     ids = (body.data ?? []).flatMap((m) => {
       const id = typeof m?.id === "string" ? m.id.trim() : "";
       // Batch models can't answer a chat, and an image or audio model writes no primer.
       if (id === "" || id.endsWith(":batch")) return [];
       const outputs = m?.architecture?.output_modalities;
       if (Array.isArray(outputs) && !outputs.includes("text")) return [];
+      // Mistral says which of its models chat; the others (embeddings, OCR) can't write a primer.
+      if (m?.capabilities?.completion_chat === false) return [];
       return [id];
     });
   } catch {

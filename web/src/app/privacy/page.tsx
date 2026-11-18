@@ -62,7 +62,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>AI services:</strong> when you press Write with AI, the deck&apos;s name, cards, card notes, scores, combos and your current primer text go to the AI
-          service used for your account (OpenCode Go or OpenRouter). Prices and your collection are not sent. That service&apos;s own privacy terms
+          service used for your account (OpenCode Go, Mistral or OpenRouter). Prices and your collection are not sent. That service&apos;s own privacy terms
           apply.
         </li>
       </ul>
