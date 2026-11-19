@@ -268,7 +268,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                                 color = if (diff >= 0) TrendColors.up else TrendColors.down,
                             )
                         }
-                        DeckUsageLine(card.name)
+                        DeckUsageLine(card.name, showNone = true)
 
                         // Every other copy of this card you own: other printings, finishes, conditions and binders.
                         if (others.isNotEmpty()) {

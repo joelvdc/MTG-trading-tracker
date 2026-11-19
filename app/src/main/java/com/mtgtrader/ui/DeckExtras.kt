@@ -252,18 +252,30 @@ fun SharedCardsScreen(nav: NavController) {
     }
 }
 
-/** "Also in: …" — the other decks a card is in, for card dialogs; nothing when there are none. */
+/**
+ * "Also in: …" — the other decks a card is in, for card dialogs; nothing when there are none.
+ *
+ * @param showNone when true, a non-basic card that is in no (other) deck shows "In no deck." instead of nothing.
+ *   Basic lands still show nothing.
+ */
 @Composable
-fun DeckUsageLine(cardName: String, exceptDeck: Long? = null, prefix: String = "In your decks") {
+fun DeckUsageLine(cardName: String, exceptDeck: Long? = null, prefix: String = "In your decks", showNone: Boolean = false) {
     val c = LocalContext.current.container
-    val uses by remember { c.db.deckDao().observeUsage() }.collectAsStateWithLifecycle(emptyList())
-    val here = remember(uses, cardName, exceptDeck) {
-        if (DeckToCollection.isBasic(cardName)) emptyList()
-        else uses.filter { it.name.equals(cardName, true) && it.deckId != exceptDeck }
+    val uses by remember { c.db.deckDao().observeUsage() }.collectAsStateWithLifecycle<List<DeckUse>?>(null)
+    val basic = remember(cardName) { DeckToCollection.isBasic(cardName) }
+    val here = remember(uses, cardName, exceptDeck, basic) {
+        val u = uses ?: return@remember null
+        if (basic) emptyList()
+        else u.filter { it.name.equals(cardName, true) && it.deckId != exceptDeck }
     }
-    if (here.isEmpty()) return
+    val text = when {
+        here == null -> return
+        here.isNotEmpty() -> "$prefix: " + here.joinToString { if (it.quantity > 1) "${it.deckName} (${it.quantity})" else it.deckName }
+        showNone && !basic -> "In no deck."
+        else -> return
+    }
     Text(
-        "$prefix: " + here.joinToString { if (it.quantity > 1) "${it.deckName} (${it.quantity})" else it.deckName },
+        text,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
