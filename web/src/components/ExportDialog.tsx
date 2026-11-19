@@ -59,8 +59,8 @@ export function ExportDialog({
         <label className="check">
           <input type="radio" name="kind" checked={kind === "archidekt"} onChange={() => setKind("archidekt")} />
           <span>
-            <strong>Archidekt</strong>
-            <span className="muted small"> · for Archidekt's collection import, binders merged</span>
+            <strong>Archidekt (ManaBox – Single folder)</strong>
+            <span className="muted small"> · on archidekt.com: Collection → Import → choose the “ManaBox – Single folder” preset. Binders are merged.</span>
           </span>
         </label>
       </div>

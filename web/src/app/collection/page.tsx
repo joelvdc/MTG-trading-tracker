@@ -128,7 +128,7 @@ export default function CollectionPage() {
   const [sharing, setSharing] = useState(false);
   const [precon, setPrecon] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [naming, setNaming] = useState<{ uid: string | null; name: string } | null>(null);
+  const [naming, setNaming] = useState<{ uid: string | null; name: string; move?: boolean } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [sorting, setSorting] = useState(false);
   const [merging, setMerging] = useState(false);
@@ -454,8 +454,8 @@ export default function CollectionPage() {
           {[
             { key: "", name: "All", n: [...counts.values()].reduce((a, b) => a + b, 0), star: false },
             { key: BAR_WISHLIST, name: "Wishlist", n: view.wishCount, star: true },
-            // The app's Scan tab list; shown while scans wait (or while it's open).
-            ...(view.scanCount > 0 || pick === BAR_SCANS ? [{ key: BAR_SCANS, name: "Scanned", n: view.scanCount, star: false }] : []),
+            // The app's Scan tab list; always shown (also with 0 scans).
+            { key: BAR_SCANS, name: "Scanned", n: view.scanCount, star: false },
           ].map((b) => (
             <button
               key={b.key || "all"}
@@ -623,7 +623,7 @@ export default function CollectionPage() {
             </div>
           </details>
           <details className="menu">
-            <summary className="btn">Collection ▾</summary>
+            <summary className="btn">More ▾</summary>
             <div className="menu-items">
               <Link className="menu-link" href={pick ? `/collection/stats?binder=${encodeURIComponent(pick)}` : "/collection/stats"} onClick={closeMenu}>
                 Stats
@@ -699,7 +699,17 @@ export default function CollectionPage() {
         {picked.length > 0 && (
           <div className="bulk-bar" role="region" aria-label="Selected cards">
             <strong>{picked.length} selected</strong>
-            <select aria-label="Move the selected cards" disabled={locked} value="" onChange={(e) => e.target.value && bulk({ binder: e.target.value === "~" ? null : e.target.value })}>
+            <select
+              aria-label="Move the selected cards"
+              disabled={locked}
+              value=""
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v) return;
+                if (v === "+new") setNaming({ uid: null, name: "", move: true });
+                else bulk({ binder: v === "~" ? null : v });
+              }}
+            >
               <option value="">Move to…</option>
               <option value="~">Unsorted</option>
               {view.binders.map((b) => (
@@ -707,6 +717,7 @@ export default function CollectionPage() {
                   {b.name}
                 </option>
               ))}
+              <option value="+new">New binder…</option>
             </select>
             <select aria-label="Set the condition" disabled={locked} value="" onChange={(e) => e.target.value && bulk({ condition: e.target.value })}>
               <option value="">Condition…</option>
@@ -1021,6 +1032,14 @@ export default function CollectionPage() {
           busy={busy}
           onClose={() => setNaming(null)}
           onSave={async (name) => {
+            if (naming.move) {
+              const uid = await edit({ type: "addBinder", name });
+              if (uid) {
+                setNaming(null);
+                await bulk({ binder: uid });
+              }
+              return;
+            }
             const uid = await edit(naming.uid ? { type: "renameBinder", uid: naming.uid, name } : { type: "addBinder", name });
             if (uid != null) {
               setNaming(null);
