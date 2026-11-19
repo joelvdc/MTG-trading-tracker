@@ -152,9 +152,11 @@ textarea {
   cursor: pointer;
 }
 
+/* Never squeeze the tick box or radio button when the label text wraps onto two lines */
 .check input {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
   accent-color: var(--accent);
 }
 
