@@ -14,8 +14,14 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-18, after Compare decks on the website; app still 1.101)
-- **Newest, website only (2026-11-18):** the deck page has a **Compare** button (not on precon previews). It compares the
+## Right now (2026-11-19, after app 1.102)
+- **Newest (2026-11-19):** app 1.102: the collection card page says "In no deck." when no deck uses the card
+  (`DeckUsageLine(showNone = true)`, basics excepted). Website, live: Move to… → New binder… in the selection bar; the
+  toolbar menu "Collection ▾" is now "More ▾"; Export → Archidekt names the "ManaBox – Single folder" preset; the
+  Scanned chip always shows, also with 0.
+- **Waiting on the owner:** green light for a ✕ delete column in the website's wishlist table (planned 2026-11-19,
+  list view only, with a confirm question; not built yet).
+- **Website (2026-11-18):** the deck page has a **Compare** button (not on precon previews). It compares the
   deck with a public Archidekt link, another of your decks or a pasted list, by front-face card name, and lists the cards
   to add, to remove and in both. It never changes a deck. Code: `web/src/lib/deckcompare.ts`, `/api/decks/[id]/compare`,
   `web/src/components/ComparePanel.tsx`. The app doesn't have it.
@@ -28,7 +34,7 @@ history, the release notes and `web/README.md`.)
   key (sealed with `SESSION_SECRET`, table `ai_keys`). `accessFor` in `web/src/lib/aiprimer.ts` alone decides whose key is used.
 - **Expected to look odd:** changing `SESSION_SECRET` makes saved AI keys unreadable; users then see "add it again". The
   owner's account has no key field in Settings, on purpose. The daily limit stays 20 primers per account.
-- **Earlier, still true:** app 1.101 has the faster win turn (`WinOddsCalc.VERSION` 13). A precon tile has no picture
+- **Earlier, still true:** app 1.101 brought the faster win turn (`WinOddsCalc.VERSION` 13). A precon tile has no picture
   until the index has read that deck. Right after an edit a website page can show the previous numbers for a moment.
   Website Card Kingdom prices can be a few hours behind. `npm test` prints harmless "Failed to load source map" lines
   for `web/src/lib/winodds-js/*.mjs`. The app's primer editor has no `/` list (type `[[…]]` by hand).
@@ -127,6 +133,8 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.102 (2026-11-19): "In no deck." on the card page; website: New binder… in Move to, More ▾ menu, Archidekt preset
+  hint, Scanned always shown.
 - Website (2026-11-18): each account brings its own AI key (OpenCode Go or OpenRouter); the website's key is the
   owner's only.
 - 1.101 (2026-11-17): faster win turn (land choice, Renewed Solidarity check), same games; website playtester:
