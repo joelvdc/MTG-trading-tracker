@@ -19,6 +19,8 @@ history, the release notes and `web/README.md`.)
   (`DeckUsageLine(showNone = true)`, basics excepted). Website, live: Move to… → New binder… in the selection bar; the
   toolbar menu "Collection ▾" is now "More ▾"; Export → Archidekt names the "ManaBox – Single folder" preset; the
   Scanned chip always shows, also with 0.
+- **Website (2026-11-19, after 1.102):** tick boxes and radio buttons (`.check input`) no longer shrink when their
+  label wraps onto two lines (seen in Export → Archidekt).
 - **Waiting on the owner:** green light for a ✕ delete column in the website's wishlist table (planned 2026-11-19,
   list view only, with a confirm question; not built yet).
 - **Website (2026-11-18):** the deck page has a **Compare** button (not on precon previews). It compares the
