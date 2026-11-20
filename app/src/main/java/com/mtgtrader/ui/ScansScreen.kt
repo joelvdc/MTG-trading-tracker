@@ -197,7 +197,7 @@ fun ScansScreen(nav: NavController) {
         val item = row.item
         EditCardDialog(
             card = item.card,
-            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null),
+            initial = EditValues(item.quantity, item.finish, item.condition, item.language, null, purchasePrice = item.purchasePrice, purchaseTyped = item.typedPaid),
             prices = { f -> row.price?.toSet(f) ?: PriceSet(trend = item.card.fallback(f)) },
             priceType = priceType,
             allowCustomPrice = false,
@@ -206,7 +206,10 @@ fun ScansScreen(nav: NavController) {
             onSave = { v ->
                 editing = null
                 scope.launch {
-                    c.repo.updateScan(item.copy(quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language))
+                    c.repo.updateScan(
+                        item.copy(quantity = v.quantity, foil = v.finish.foil, etched = v.finish.etched, condition = v.condition, language = v.language)
+                            .withPaid(v.purchasePrice, v.purchaseTyped),
+                    )
                 }
             },
             onDelete = {
@@ -220,6 +223,7 @@ fun ScansScreen(nav: NavController) {
                 editing = null
                 nav.openSearch(CardTarget.ReplaceScan(item.id), item.card.name)
             },
+            showPaid = true,
         )
     }
 
@@ -298,6 +302,10 @@ private fun ScanRowView(row: ScanRow, priceType: PriceType, checked: Boolean, on
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
+                // What this copy cost, when known (since 1.103).
+                item.purchasePrice?.let {
+                    Text("paid ${Fmt.paid(it, item.typedPaid)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Text(Fmt.money(unit?.let { it * item.quantity }), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 TrendBadge(row.trend)
             }

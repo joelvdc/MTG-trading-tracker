@@ -8,12 +8,7 @@ import { OrderImportDialog } from "@/components/OrderImportDialog";
 import { PreconDialog } from "@/components/PreconDialog";
 import { PurchasePricesDialog } from "@/components/PurchasePricesDialog";
 import { format, type Currency } from "@/lib/money";
-import type { OrderEdit, OrderRow, OrdersView } from "@/lib/orders";
-
-function niceDate(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
+import { niceDate, type OrderEdit, type OrderRow, type OrdersView } from "@/lib/orders";
 
 /** The order history (the app's Orders screen): what was bought, what it cost and what it's worth now. */
 export default function OrdersPage() {
@@ -26,6 +21,8 @@ export default function OrdersPage() {
   const [precon, setPrecon] = useState(false);
   // A deck asked for in the address (/orders?precon=<fileName>), until the dialog opens with it.
   const [preconDeck, setPreconDeck] = useState<string | null>(null);
+  // An order asked for in the address (/orders?open=<uid>), shown with its cards once the orders are in.
+  const [openUid, setOpenUid] = useState<string | null>(null);
   const [pricing, setPricing] = useState(false);
   const [dating, setDating] = useState<OrderRow | null>(null);
   const [deleting, setDeleting] = useState<OrderRow | null>(null);
@@ -56,15 +53,29 @@ export default function OrdersPage() {
   }, [view]);
 
   useEffect(() => {
-    // "Add its cards to my collection…" on a precon's page: /orders?precon=<fileName>. Taken out of the address
-    // once read, so reloading the page doesn't open the dialog again.
-    const wanted = new URLSearchParams(window.location.search).get("precon");
+    // "Ordered" in a card's window: /orders?open=<uid>. Taken out of the address once read, like the precon above.
+    const orders = new URLSearchParams(window.location.search);
+    const wantedOrder = orders.get("open");
+    const wanted = orders.get("precon");
     if (wanted) {
       setPreconDeck(wanted);
+      window.history.replaceState(null, "", window.location.pathname);
+    } else if (wantedOrder) {
+      setOpenUid(wantedOrder);
       window.history.replaceState(null, "", window.location.pathname);
     }
     load();
   }, [load]);
+
+  // The order asked for opens (with its cards) once the orders are in, and comes into view.
+  useEffect(() => {
+    if (!openUid || !view) return;
+    const uid = openUid;
+    setOpen((s) => new Set(s).add(uid));
+    setOpenUid(null);
+    // After this render, so the order's cards are there and the page can scroll to it.
+    requestAnimationFrame(() => document.getElementById(`order-${uid}`)?.scrollIntoView({ block: "center" }));
+  }, [openUid, view]);
 
   // The deck asked for opens the dialog once the orders are in (not on a read-only page: nothing could be added).
   useEffect(() => {
@@ -164,7 +175,7 @@ export default function OrdersPage() {
         {view.orders.map((o) => {
           const shown = open.has(o.uid);
           return (
-            <article key={o.uid} className="trade">
+            <article key={o.uid} id={`order-${o.uid}`} className="trade">
               <header className="trade-title">
                 <div>
                   <strong>{o.title}</strong>

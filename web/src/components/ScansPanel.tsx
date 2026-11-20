@@ -9,7 +9,8 @@ import { useHoverCard } from "@/components/HoverCard";
 import { OrderCheckDialog } from "@/components/OrderCheckDialog";
 import { ViewSwitch, type Layout } from "@/components/ViewSwitch";
 import { CONDITIONS, finishesOf, LANGUAGES } from "@/lib/cards";
-import { format } from "@/lib/money";
+import type { Paid } from "@/lib/collection";
+import { CURRENCIES, currency, format, type Currency } from "@/lib/money";
 import type { Finish } from "@/lib/pricing";
 import type { ScanEdit, ScanEditResult, ScanRow, ScannedCard, ScanView } from "@/lib/scans";
 
@@ -117,6 +118,9 @@ export function ScansPanel({
   }
 
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
+  // What one copy was paid: as typed in kroner or dollars, else in the page's currency; null when not known.
+  const paidOf = (r: ScanRow) =>
+    r.purchasePrice == null ? null : r.paidTyped != null && r.paidCurrency ? format(r.paidTyped, currency(r.paidCurrency)) : money(r.purchasePrice);
   const locked = view.readOnly || busy;
   const copies = view.rows.reduce((n, r) => n + r.quantity, 0);
   const value = view.rows.reduce((n, r) => n + (r.unitEur ?? 0) * r.quantity, 0);
@@ -248,6 +252,7 @@ export function ScansPanel({
                         <td className="num nowrap">
                           {r.unitEur != null ? money(r.unitEur * r.quantity) : <span className="muted">–</span>}
                           {r.approx && <span className="muted" title="Cardmarket's price standing in"> *</span>}
+                          {paidOf(r) && <div className="muted small">paid {paidOf(r)}</div>}
                         </td>
                         <td className="wide-only muted nowrap small">{r.scannedAt > 0 ? formatDate(r.scannedAt) : "–"}</td>
                       </tr>
@@ -356,6 +361,7 @@ export function ScansPanel({
       {editing && (
         <ScanEditDialog
           row={editing}
+          currency={view.currency}
           busy={busy}
           onClose={() => setEditing(null)}
           onSave={async (e) => {
@@ -473,15 +479,18 @@ function ToDeckDialog({
   );
 }
 
-/** Fixes one scan: its printing (another set of the same card), finish, condition, language and copies. */
+/** Fixes one scan: its printing (another set of the same card), finish, condition, language, copies and what it cost. */
 function ScanEditDialog({
   row,
+  currency,
   busy,
   onClose,
   onSave,
   onDiscard,
 }: {
   row: ScanRow;
+  /** The page's currency: what an empty price starts in (the app's own currency here). */
+  currency: Currency;
   busy: boolean;
   onClose: () => void;
   onSave: (e: ScanEdit) => void;
@@ -493,6 +502,10 @@ function ScanEditDialog({
   const [condition, setCondition] = useState(row.condition);
   const [language, setLanguage] = useState(row.language);
   const [quantity, setQuantity] = useState(String(row.quantity));
+  // Paid per copy, as the collection's card window takes it (CollCardDialog).
+  const typedPaid = row.purchasePrice != null && row.paidTyped != null && row.paidCurrency && row.paidCurrency !== "EUR";
+  const [paid, setPaid] = useState(row.purchasePrice == null ? "" : String(typedPaid ? row.paidTyped : row.purchasePrice));
+  const [paidCur, setPaidCur] = useState<string>(typedPaid ? row.paidCurrency! : row.purchasePrice != null ? "EUR" : currency);
 
   useEffect(() => {
     let live = true;
@@ -509,6 +522,12 @@ function ScanEditDialog({
   const shownFinish = finishes.includes(finish) ? finish : finishes[0];
   const q = Number(quantity);
   const qOk = Number.isInteger(q) && q >= 1 && q <= 9999;
+  const paidText = paid.trim().replace(",", ".");
+  const paidNum = paidText === "" ? null : Number(paidText);
+  const paidOk = paidNum === null || (Number.isFinite(paidNum) && paidNum >= 0);
+  const before: Paid =
+    row.purchasePrice == null ? null : { amount: typedPaid ? row.paidTyped! : row.purchasePrice, currency: typedPaid ? row.paidCurrency! : "EUR" };
+  const now: Paid = paidNum === null ? null : { amount: paidNum, currency: paidCur };
 
   return (
     <Dialog title={row.card.name} onClose={onClose}>
@@ -568,10 +587,23 @@ function ScanEditDialog({
             <input aria-label="Copies" type="number" min={1} max={9999} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </label>
         </div>
+        <div className="field">
+          <span>Paid per copy (empty = not known)</span>
+          <div className="inline">
+            <input type="text" inputMode="decimal" aria-label="Paid per copy" placeholder="Not known" value={paid} onChange={(e) => setPaid(e.target.value)} />
+            <select aria-label="Purchase currency" value={paidCur} onChange={(e) => setPaidCur(e.target.value)}>
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="inline">
           <button
             className="btn primary"
-            disabled={busy || !qOk}
+            disabled={busy || !qOk || !paidOk}
             onClick={() =>
               onSave({
                 type: "update",
@@ -581,6 +613,7 @@ function ScanEditDialog({
                 condition,
                 language,
                 quantity: q,
+                ...(JSON.stringify(before) !== JSON.stringify(now) ? { paid: now } : {}),
               })
             }
           >

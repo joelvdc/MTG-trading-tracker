@@ -3,10 +3,11 @@
 // following the app's rules (MtgRepository.scansToCollection, DeckEditor.addScans / fromScans). The camera stays on
 // the phone; "To trade" waits for trades on the website.
 import { CONDITIONS, finishesOf, LANGUAGES, resolveFinish } from "./cards";
-import { applyCollectionEdit } from "./collection";
+import { applyCollectionEdit, setPaid, type Paid } from "./collection";
 import { addCard, createDeck, fallbackCategory, type CardFacts, type Lookups, type NewLine } from "./deckedit";
 import type { SyncDeck } from "./deckshared";
 import type { Currency } from "./money";
+import { addBought } from "./orders";
 import type { PriceFile } from "./prices";
 import { cardmarketPrice, conditionNote, finishOf, isApprox, unitPrice, type Finish, type PricingSetup } from "./pricing";
 import { addDeletion, bump, compareUid, newUid, type CardRef, type Json, type SyncFile } from "./syncfile";
@@ -26,6 +27,12 @@ export interface ScannedCard {
   scannedAt: number;
   uid: string | null;
   updatedAt: number;
+  /** What one copy cost, in euros (not in older files). */
+  purchasePrice?: number | null;
+  /** The purchase price as typed, when typed in another currency than euros. */
+  paidTyped?: number | null;
+  /** The currency it was typed in ("DKK"/"USD"), else null. */
+  paidCurrency?: string | null;
 }
 
 /** One line of the website's scan list. */
@@ -40,6 +47,11 @@ export interface ScanRow {
   scannedAt: number;
   /** One copy, in euros, from the app's price source (null: no price). */
   unitEur: number | null;
+  /** What one copy cost, in euros (null: not known). */
+  purchasePrice: number | null;
+  /** The purchase price as typed, in [paidCurrency] ("DKK"/"USD"), for showing it as it was paid. */
+  paidTyped: number | null;
+  paidCurrency: string | null;
   approx: boolean;
   condNote: string | null;
 }
@@ -93,6 +105,9 @@ export function scanRows(file: SyncFile, setup: PricingSetup, prices: PriceFile 
         exactPrinting: s.exactPrinting !== false,
         scannedAt: s.scannedAt ?? 0,
         unitEur: unitPrice(setup, s.card.scryfallId, finish, s.condition ?? "NM", cm),
+        purchasePrice: s.purchasePrice ?? null,
+        paidTyped: s.paidTyped ?? null,
+        paidCurrency: s.paidCurrency ?? null,
         approx: isApprox(setup, s.card.scryfallId, finish, s.condition ?? "NM"),
         condNote: conditionNote(setup, s.card.scryfallId, finish, s.condition ?? "NM"),
       };
@@ -104,8 +119,8 @@ export function scanRows(file: SyncFile, setup: PricingSetup, prices: PriceFile 
 export type DeckTarget = { deckId: number } | { newName: string };
 
 export type ScanEdit =
-  /** Fixes a scan: another printing of the same card, finish, condition, language, copies. */
-  | { type: "update"; uid: string; card?: CardRef; finish?: Finish; condition?: string; language?: string; quantity?: number }
+  /** Fixes a scan: another printing of the same card, finish, condition, language, copies, and what one copy cost. */
+  | { type: "update"; uid: string; card?: CardRef; finish?: Finish; condition?: string; language?: string; quantity?: number; paid?: Paid }
   /** Takes scans off the list; answers with what was taken, for Undo. */
   | { type: "discard"; uids: string[] }
   /** Undo of a discard: the scans come back (with new uids, so no phone's deletion takes them again). */
@@ -169,6 +184,10 @@ function checkQuantity(q: unknown): number {
   return q;
 }
 
+/** A purchase price or typed amount as the app may keep it: a finite number of 0 or more (or nothing). */
+const checkAmount = (v: number): boolean => Number.isFinite(v) && v >= 0;
+
+
 /** The lines of a new deck made from scans (DeckEditor.fromScans): one per printing and finish. */
 export function deckLinesFromScans(scans: ScannedCard[], d: DeckLookups): NewLine[] {
   const groups = new Map<string, ScannedCard[]>();
@@ -202,8 +221,16 @@ export function deckLinesFromScans(scans: ScannedCard[], d: DeckLookups): NewLin
   });
 }
 
-/** Applies [edit] to [file] at [now]. [deck] is needed for "toDeck". ([makeUid] is for tests.) */
-export function applyScanEdit(file: SyncFile, edit: ScanEdit, now: number, deck: DeckLookups | null = null, makeUid: () => string = newUid): ScanEditResult {
+/** Applies [edit] to [file] at [now]. [deck] is needed for "toDeck" and [rates] for a price typed in kroner or dollars
+ * ("toBinder" averages the price into the pile, so it needs them too). ([makeUid] is for tests.) */
+export function applyScanEdit(
+  file: SyncFile,
+  edit: ScanEdit,
+  now: number,
+  deck: DeckLookups | null = null,
+  makeUid: () => string = newUid,
+  rates: PriceFile["rates"] | null = null,
+): ScanEditResult {
   const list = scansOf(file);
   switch (edit.type) {
     case "update": {
@@ -234,6 +261,8 @@ export function applyScanEdit(file: SyncFile, edit: ScanEdit, now: number, deck:
         s.language = edit.language;
       }
       if (edit.quantity !== undefined) s.quantity = checkQuantity(edit.quantity);
+      // The same three fields a collection item has, set the app's way.
+      if (edit.paid !== undefined) setPaid(s, edit.paid, rates);
       s.updatedAt = bump(s.updatedAt ?? 0, now);
       setScans(file, list);
       return {};
@@ -260,6 +289,10 @@ export function applyScanEdit(file: SyncFile, edit: ScanEdit, now: number, deck:
           scannedAt: typeof it.scannedAt === "number" ? it.scannedAt : now,
           uid: makeUid(),
           updatedAt: now,
+          // What it cost comes back with it (a wrong value is dropped, not a reason not to bring the card back).
+          purchasePrice: typeof it.purchasePrice === "number" && checkAmount(it.purchasePrice) ? it.purchasePrice : null,
+          paidTyped: typeof it.paidTyped === "number" && checkAmount(it.paidTyped) ? it.paidTyped : null,
+          paidCurrency: it.paidCurrency === "DKK" || it.paidCurrency === "USD" ? it.paidCurrency : null,
         });
       }
       setScans(file, list);
@@ -268,21 +301,24 @@ export function applyScanEdit(file: SyncFile, edit: ScanEdit, now: number, deck:
     case "toBinder": {
       const chosen = pickUids(list, edit.uids);
       const binder = edit.newBinder?.trim() ? applyCollectionEdit(file, { type: "addBinder", name: edit.newBinder }, now, null, makeUid).uid : edit.binder;
-      // The app's scansToCollection: each scan joins the same pile if there is one (addToCollection).
+      // The app's scansToCollection: each scan joins the same pile if there is one, its price averaged in
+      // (MtgRepository.addBought, as an imported order's cards are).
       for (const s of chosen) {
-        applyCollectionEdit(
+        addBought(
           file,
           {
-            type: "add",
             card: s.card,
-            quantity: Math.min(MAX_QUANTITY, s.quantity ?? 1),
+            foil: s.foil,
             finish: resolveFinish(s.card, finishOf(s.foil, s.etched)),
             condition: s.condition ?? "NM",
             language: LANGUAGES.some((l) => l[0] === s.language) ? s.language : "EN",
+            quantity: Math.min(MAX_QUANTITY, s.quantity ?? 1),
             binder,
+            price: s.purchasePrice ?? null,
+            typed: s.paidTyped != null && s.paidCurrency ? { amount: s.paidTyped, currency: s.paidCurrency } : null,
           },
           now,
-          null,
+          rates,
           makeUid,
         );
       }

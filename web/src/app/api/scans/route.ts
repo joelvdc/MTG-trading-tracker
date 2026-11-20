@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     const [prices, details, ck] = await Promise.all([loadPrices(), loadDetails(), loadCardKingdom()]);
     let deck: DeckLookups | null = null;
     if (edit.type === "toDeck") deck = await deckLookups((await loadSync(a)).file, Array.isArray(edit.uids) ? edit.uids : []);
-    const { file, result } = await editSync(a, (f, now) => ({ file: f, result: applyScanEdit(f, edit, now, deck) }));
+    const { file, result } = await editSync(a, (f, now) => ({ file: f, result: applyScanEdit(f, edit, now, deck, undefined, prices?.rates ?? null) }));
     return json({ ...scanView(file, prices, details, ck), result });
   } catch (e) {
     return errorResponse(e);

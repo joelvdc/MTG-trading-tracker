@@ -38,8 +38,10 @@ website and nightly backups; accounts need an invite code for now.
 - CSV import and export.
 
 **Scanning and orders**
-- Scan a pile of cards with the camera, then send them to a binder, a trade or a deck.
-- Import a CardTrader or Cardmarket order with its prices, or a Commander precon.
+- Scan a pile of cards with the camera, then send them to a binder, a trade or a deck. Type what you paid for a scanned
+  card and it goes along into the binder.
+- Import a CardTrader or Cardmarket order with its prices, or a Commander precon. A card's page lists the orders it
+  came in (date, order, copies, price each); tap one to open the order.
 - **Check an order:** compare the scanned cards with the order file to find missing cards, wrong languages or
   printings, with a problem report for the shop.
 

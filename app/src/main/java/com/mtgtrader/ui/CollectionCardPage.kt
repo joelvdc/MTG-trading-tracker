@@ -269,6 +269,7 @@ fun CollectionCardDialog(row: CollectionRow, nav: NavController, snackbar: Snack
                             )
                         }
                         DeckUsageLine(card.name, showNone = true)
+                        OrderedLines(card.scryfallId, v.finish.foil) { id -> onDismiss(); nav.navigate("orders?open=$id") }
 
                         // Every other copy of this card you own: other printings, finishes, conditions and binders.
                         if (others.isNotEmpty()) {

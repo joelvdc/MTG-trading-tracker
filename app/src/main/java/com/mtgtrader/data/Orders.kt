@@ -96,6 +96,24 @@ object Orders {
 
     fun lines(order: PurchaseOrder): List<OrderedCard> = runCatching { json.decodeFromString(lineList, order.lines) }.getOrDefault(emptyList())
 
+    /** One order line holding a printing (see [hits]). [finishKnown] is false for Cardmarket's monthly file, which doesn't say foil or not. Since 1.103. */
+    data class OrderHit(val order: PurchaseOrder, val quantity: Int, val price: Double?, val finishKnown: Boolean)
+
+    /**
+     * The orders that hold [scryfallId] in [foil] (lines whose finish isn't known count too), newest first
+     * (by date, then id). Several lines of one order for the same printing are added together: quantity summed,
+     * price the weighted average of the priced lines (null if none priced). Since 1.103.
+     */
+    fun hits(orders: List<PurchaseOrder>, scryfallId: String, foil: Boolean): List<OrderHit> =
+        orders.sortedWith(compareByDescending<PurchaseOrder> { it.date }.thenByDescending { it.id }).mapNotNull { order ->
+            val matching = lines(order).filter { it.scryfallId == scryfallId && (it.condition == null || it.foil == foil) }
+            if (matching.isEmpty()) return@mapNotNull null
+            val priced = matching.filter { it.price != null }
+            val pricedCopies = priced.sumOf { it.quantity }
+            val price = if (pricedCopies == 0) null else priced.sumOf { it.price!! * it.quantity } / pricedCopies
+            OrderHit(order, matching.sumOf { it.quantity }, price, matching.all { it.condition != null })
+        }
+
     private fun cents(v: Double) = (v * 100).roundToLong() / 100.0
 
     fun of(shop: String, number: String?, title: String, date: String, cards: List<OrderedCard>) = PurchaseOrder(

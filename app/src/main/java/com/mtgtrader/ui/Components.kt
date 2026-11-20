@@ -618,6 +618,8 @@ fun EditCardDialog(
     onChangePrinting: () -> Unit,
     binders: List<Binder>? = null,
     showNotes: Boolean = false,
+    /** Also shows the purchase price (and what it's worth now) without the notes field, for scanned cards. Since 1.103. */
+    showPaid: Boolean = false,
     extra: @Composable () -> Unit = {},
 ) {
     var v by remember { mutableStateOf(initial) }
@@ -699,7 +701,7 @@ fun EditCardDialog(
                         placeholder = "Uses Cardmarket price if empty", enabled = enabled,
                     ) { v = v.copy(customPrice = agreed.eur, customTyped = agreed.typedPrice) }
                 }
-                if (showNotes) {
+                if (showNotes || showPaid) {
                     MoneyField(paid, "Purchase price per copy (optional)", Modifier.fillMaxWidth(), enabled = enabled) {
                         v = v.copy(purchasePrice = paid.eur, purchaseTyped = paid.typedPrice)
                     }
@@ -714,7 +716,7 @@ fun EditCardDialog(
                             color = if (diff >= 0) TrendColors.up else TrendColors.down,
                         )
                     }
-                    OutlinedTextField(
+                    if (showNotes) OutlinedTextField(
                         value = v.notes ?: "",
                         onValueChange = { v = v.copy(notes = it.ifBlank { null }) },
                         label = { Text("Notes (condition details, where it came from…)") },

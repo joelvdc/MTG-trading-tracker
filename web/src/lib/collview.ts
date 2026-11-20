@@ -3,6 +3,7 @@
 import { needsLookup, type CardInfo, type DetailsFile } from "./carddetails";
 import type { CkFile } from "./cardkingdom";
 import { currency, rate, type Currency } from "./money";
+import type { OrderHit } from "./orders";
 import { priceType, PRICE_TYPE_LABELS, type PriceFile, type PriceType } from "./prices";
 import {
   cardKingdomPays,
@@ -99,6 +100,8 @@ export interface CardPrices {
   cardmarket: (number | null)[] | null;
   sources: { source: Source; eur: number | null; url: string | null }[];
   cardKingdomPays: number | null;
+  /** The orders holding this printing and finish, newest first (the app's Orders.hits). */
+  ordered?: OrderHit[];
   /** One copy of this pile (printing, finish, condition) as the nightly job saved it, oldest first (the chart). */
   history?: { day: string; eur: number }[];
 }

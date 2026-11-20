@@ -445,6 +445,35 @@ export function orderLines(o: PurchaseOrder): OrderedCard[] {
   }
 }
 
+/** One order holding a printing (the app's Orders.OrderHit). finishKnown is false for Cardmarket's monthly file. */
+export interface OrderHit { id: number; uid: string; shop: string; number: string | null; title: string; date: string; quantity: number; price: number | null; finishKnown: boolean }
+
+/** The app's Orders.hits: the orders holding scryfallId in this finish, newest first (date, then id). */
+export function orderHits(orders: PurchaseOrder[], scryfallId: string, foil: boolean): OrderHit[] {
+  const out: OrderHit[] = [];
+  for (const o of orders) {
+    if (!o.uid) continue;
+    // A line whose condition is null has no known finish (Cardmarket's monthly file): it counts for both.
+    const same = orderLines(o).filter((l) => l.scryfallId === scryfallId && (l.condition == null || (l.foil === true) === foil));
+    if (same.length === 0) continue;
+    const quantity = same.reduce((n, l) => n + (l.quantity ?? 1), 0);
+    const priced = same.filter((l) => l.price != null);
+    const weight = priced.reduce((n, l) => n + (l.quantity ?? 1), 0);
+    out.push({
+      id: o.id,
+      uid: o.uid,
+      shop: o.shop,
+      number: o.number,
+      title: o.title,
+      date: o.date,
+      quantity,
+      price: weight > 0 ? cents(priced.reduce((n, l) => n + l.price! * (l.quantity ?? 1), 0) / weight) : null,
+      finishKnown: same.every((l) => l.condition != null),
+    });
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+}
+
 function compact(c: OrderedCard): OrderedCard {
   const out: OrderedCard = { name: c.name };
   if (c.setCode) out.setCode = c.setCode;
@@ -675,6 +704,12 @@ export function worthOf(cards: OrderedCard[], p: PricingSetup): OrderWorth {
 
 
 // ---- The orders page ----
+
+/** "2026-03-12" → "12 Mar 2026" (the orders page's dates). */
+export function niceDate(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export interface OrderRowLine {
   name: string;

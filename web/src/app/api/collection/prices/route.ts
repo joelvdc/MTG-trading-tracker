@@ -9,6 +9,7 @@ import { loadPrices } from "@/lib/pricestore";
 import { loadSync } from "@/lib/store";
 import { collection } from "@/lib/syncfile";
 import { finishOf } from "@/lib/pricing";
+import { orderHits, ordersOf } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
     const finish = finishOf(s.item.foil, s.item.etched);
     const store = accountStore();
     const history = store && isUser(a) ? await store.priceHistory(a.accountId, pileKey(s.item.card.scryfallId, finish, s.item.condition)).catch(() => []) : [];
-    return json({ ...cardPrices(setup, s.item.card, finish, s.item.condition), history });
+    return json({ ...cardPrices(setup, s.item.card, finish, s.item.condition), ordered: orderHits(ordersOf(file), s.item.card.scryfallId, s.item.foil), history });
   } catch (e) {
     return errorResponse(e);
   }

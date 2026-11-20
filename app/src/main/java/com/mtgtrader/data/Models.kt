@@ -320,8 +320,20 @@ data class ScannedCard(
     val scannedAt: Long = System.currentTimeMillis(),
     val uid: String? = null,
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = 0,
+    /** What one copy cost, in EUR, when typed in the Scan tab. Since 1.103. */
+    val purchasePrice: Double? = null,
+    /** [purchasePrice] as typed, when typed in another currency than euros (see [TypedPrice]). Since 1.103. */
+    val paidTyped: Double? = null,
+    val paidCurrency: String? = null,
 ) {
     val finish get() = Finish.of(foil, etched)
+
+    /** The purchase price as typed, when it was typed in kroner or dollars. Since 1.103. */
+    val typedPaid: TypedPrice? get() = if (purchasePrice == null) null else TypedPrice.of(paidTyped, paidCurrency)
+
+    /** With [eur] as the purchase price, typed as [typed] (null: in euros, or not typed). Since 1.103. */
+    fun withPaid(eur: Double?, typed: TypedPrice? = null) =
+        copy(purchasePrice = eur, paidTyped = typed?.takeIf { eur != null }?.amount, paidCurrency = typed?.takeIf { eur != null }?.key)
 }
 
 /** Scanned card joined with today's price guide entry. */

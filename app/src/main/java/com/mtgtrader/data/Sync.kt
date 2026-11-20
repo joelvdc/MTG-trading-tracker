@@ -114,8 +114,9 @@ data class SyncFile(
          * 14 since 1.86: decks' own category order, which an older version would write back without; and the local
          * maybeboard of decks from Archidekt (cards added in the app), which an older version drops on a reload.
          * 15 since 1.97: deck primer, card notes, notesAt and history; prefs cardTags and deckPackages.
+         * 16 since 1.103: scans' purchasePrice, paidTyped and paidCurrency.
          */
-        const val FORMAT = 15
+        const val FORMAT = 16
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**

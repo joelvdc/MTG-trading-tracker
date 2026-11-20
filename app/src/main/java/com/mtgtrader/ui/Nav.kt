@@ -252,7 +252,9 @@ fun AppNav() {
                 PackageCheckScreen(nav, Uri.parse(it.arguments?.getString("uri").orEmpty()))
             }
             composable("purchaseprices") { PurchasePricesScreen(nav) }
-            composable("orders") { OrdersScreen(nav) }
+            composable("orders?open={open}", arguments = listOf(navArgument("open") { type = NavType.LongType; defaultValue = -1L })) {
+                OrdersScreen(nav, it.arguments?.getLong("open")?.takeIf { id -> id > 0 })
+            }
             composable(
                 "precon?local={local}",
                 arguments = listOf(navArgument("local") { type = NavType.BoolType; defaultValue = false }),

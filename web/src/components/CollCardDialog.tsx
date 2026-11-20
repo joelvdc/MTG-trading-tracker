@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CONDITIONS, FINISH_LABELS, finishesOf, LANGUAGES } from "@/lib/cards";
 import type { CollectionEdit, Paid } from "@/lib/collection";
 import type { CardPrices, CollectionView, CollRow } from "@/lib/collview";
 import { displayName, finishName, front } from "@/lib/colquery";
 import { CURRENCIES, format } from "@/lib/money";
+import { niceDate, PRECON } from "@/lib/orders";
 import { PRICE_TYPE_LABELS, PRICE_TYPES } from "@/lib/prices";
 import { SOURCE_LABELS, type Finish } from "@/lib/pricing";
 import { api } from "./api";
@@ -355,6 +357,29 @@ export function CollCardDialog({
             <div className="muted small">In no deck.</div>
           )}
         </section>
+
+        {prices?.ordered && prices.ordered.length > 0 && (
+          <section>
+            <h3 className="mini-head">Ordered</h3>
+            <ul className="plain-list">
+              {prices.ordered.map((o) => (
+                <li key={o.uid}>
+                  <Link href={`/orders?open=${encodeURIComponent(o.uid)}`}>
+                    {[
+                      niceDate(o.date),
+                      o.shop === PRECON ? `Precon: ${o.title}` : o.title,
+                      `${o.quantity}×`,
+                      o.price != null ? `${money(o.price)} each` : null,
+                      o.finishKnown ? null : "finish unknown",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {others.length > 0 && (
           <section>

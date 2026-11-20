@@ -94,10 +94,10 @@ internal fun OrderDateField(value: String, onChange: (String) -> Unit, modifier:
 /**
  * The order history: every order the app has read (imports, package checks, added precons, past
  * order files), with what was paid and what its cards are worth now. Opened from the collection's
- * menu. Since 1.33.
+ * menu. Since 1.33. With [openId], that order's dialog is shown straight away (since 1.103).
  */
 @Composable
-fun OrdersScreen(nav: NavController) {
+fun OrdersScreen(nav: NavController, openId: Long? = null) {
     val context = LocalContext.current
     val c = context.container
     val scope = rememberCoroutineScope()
@@ -112,7 +112,7 @@ fun OrdersScreen(nav: NavController) {
     // Read here so the list redraws when the price source or the condition percentages change.
     val pricing = Triple(Pricing.source, Pricing.conditionPct, Pricing.others)
     val worth = remember(lines, prices, priceType, pricing) { lines.mapValues { (_, cards) -> Orders.worth(cards, prices, priceType) } }
-    var opened by remember { mutableStateOf<Long?>(null) }
+    var opened by remember { mutableStateOf(openId) }
     var busy by remember { mutableStateOf<String?>(null) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->

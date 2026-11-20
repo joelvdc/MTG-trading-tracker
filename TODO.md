@@ -14,13 +14,16 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-19, after app 1.102)
-- **Newest (2026-11-19):** app 1.102: the collection card page says "In no deck." when no deck uses the card
-  (`DeckUsageLine(showNone = true)`, basics excepted). Website, live: Move to… → New binder… in the selection bar; the
-  toolbar menu "Collection ▾" is now "More ▾"; Export → Archidekt names the "ManaBox – Single folder" preset; the
-  Scanned chip always shows, also with 0.
-- **Website (2026-11-19, after 1.102):** tick boxes and radio buttons (`.check input`) no longer shrink when their
-  label wraps onto two lines (seen in Export → Archidekt).
+## Right now (2026-11-20, after app 1.103)
+- **Newest (2026-11-20):** app 1.103 (DB 31, **sync format 16**): scanned cards keep a purchase price (Scan tab editor,
+  shown in the list; "To binder" averages it into the stack via `addBought`, undo restores the stacks), and the
+  collection card page lists the orders holding that printing ("Ordered", `Orders.hits`, tap opens `orders?open=<id>`).
+  Website, same release: price field in the scan window, "Ordered" in the card window (`orderHits`, from
+  `/api/collection/prices`), `/orders?open=<uid>` expands and scrolls to the order. Built by DeepSeek through Mistral.
+- **Expected to look odd:** a phone still on 1.102 or older pauses syncing until updated. "Ordered" only shows imported
+  orders, per printing (not per copy); Cardmarket monthly-file lines say "finish unknown".
+- **Waiting on the owner:** try both on the phone and the website (not tried by hand; unit tests only, no new
+  screenshot test for the card page).
 - **Waiting on the owner:** green light for a ✕ delete column in the website's wishlist table (planned 2026-11-19,
   list view only, with a confirm question; not built yet).
 - **Website (2026-11-18):** the deck page has a **Compare** button (not on precon previews). It compares the
@@ -135,6 +138,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.103 (2026-11-20): purchase price for scanned cards (app and website), "Ordered" lines on the card page (sync format 16)
 - 1.102 (2026-11-19): "In no deck." on the card page; website: New binder… in Move to, More ▾ menu, Archidekt preset
   hint, Scanned always shown.
 - Website (2026-11-18): each account brings its own AI key (OpenCode Go or OpenRouter); the website's key is the

@@ -105,13 +105,20 @@ function cents(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
-/** Sets the purchase price as the app does (euros, plus the amount as typed in kroner or dollars). */
-function setPaid(item: CollectionItem, paid: Paid, rates: PriceFile["rates"] | null): void {
+/** The purchase price fields, as the app keeps them (CollectionItem's, and a scanned card's). */
+export interface Priced {
+  purchasePrice?: number | null;
+  paidTyped?: number | null;
+  paidCurrency?: string | null;
+}
+
+/** Sets the purchase price as the app does (euros, plus the amount as typed in kroner or dollars). Answers [item]. */
+export function setPaid<T extends Priced>(item: T, paid: Paid, rates: PriceFile["rates"] | null): T {
   if (paid === null) {
     item.purchasePrice = null;
     item.paidTyped = null;
     item.paidCurrency = null;
-    return;
+    return item;
   }
   const { amount, currency } = paid;
   if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0 || amount > 1e7) throw new EditError("The purchase price must be 0 or more.");
@@ -120,13 +127,14 @@ function setPaid(item: CollectionItem, paid: Paid, rates: PriceFile["rates"] | n
     item.purchasePrice = cents(amount);
     item.paidTyped = null;
     item.paidCurrency = null;
-    return;
+    return item;
   }
   const rate = rates?.perEuro[currency] ?? (currency === "DKK" ? 7.46038 : null);
   if (!rate) throw new EditError(`No exchange rate for ${currency} yet; enter the price in euros.`);
   item.purchasePrice = cents(amount / rate);
   item.paidTyped = amount;
   item.paidCurrency = currency;
+  return item;
 }
 
 function finishOf(item: CollectionItem): Finish {

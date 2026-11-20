@@ -856,11 +856,12 @@ class MtgRepository(
         return AddResult(id, AddedTo.SCANS)
     }
 
-    /** Saves an edited scan, merging it into an identical one if there is one. */
+    /** Saves an edited scan, merging it into an identical one if there is one (their prices averaged, weighted by copies). Since 1.103. */
     suspend fun updateScan(updated: ScannedCard) = db.withTransaction {
         val clash = scans.find(updated.card.scryfallId, updated.foil, updated.etched, updated.condition, updated.language)
         if (clash != null && clash.id != updated.id) {
-            scans.update(clash.copy(quantity = clash.quantity + updated.quantity))
+            val (eur, asTyped) = PurchasePrices.joinedTyped(clash.quantity, clash.purchasePrice, clash.typedPaid, updated.quantity, updated.purchasePrice, updated.typedPaid, null)
+            scans.update(clash.copy(quantity = clash.quantity + updated.quantity).withPaid(eur, asTyped))
             scans.delete(updated.id)
         } else {
             scans.update(updated)
@@ -878,18 +879,20 @@ class MtgRepository(
         return { scans.restore(items) }
     }
 
-    /** Adds the scans to the collection in [binderId]; unless [keep], they leave the scan list. */
+    /**
+     * Adds the scans to the collection in [binderId]; unless [keep], they leave the scan list. A scan's
+     * purchase price goes along, averaged into a stack that already holds copies. Returns an undo that
+     * puts both the collection and the scan list back as they were.
+     */
     suspend fun scansToCollection(ids: List<Long>, binderId: Long, keep: Boolean): UndoAction {
         val items = scans.byIds(ids)
-        db.withTransaction {
-            items.forEach { addToCollection(it.card, it.finish, it.condition, it.language, it.quantity, binderId) }
+        val undoCollection = collectionChange(items.map { it.card.scryfallId }.toSet()) {
+            items.forEach { addBought(it.card, it.finish, it.condition, it.language, it.quantity, binderId, Marks.NONE, it.purchasePrice, it.typedPaid) }
             if (!keep) scans.deleteMany(ids)
         }
         return {
-            db.withTransaction {
-                items.forEach { removeFromCollection(it.card.scryfallId, it.finish, it.condition, it.language, it.quantity, prefer = binderId) }
-                if (!keep) scans.restore(items)
-            }
+            undoCollection()
+            if (!keep) scans.restore(items)
         }
     }
 
