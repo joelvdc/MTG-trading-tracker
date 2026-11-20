@@ -96,6 +96,36 @@ about where to back up.
 Owner: "not needed for now, add it to the todo as a potential future task". The website's Group printings (one line
 per card name, opens to its piles) for the app's collection list.
 
+### Sort the collection, find cards, EDHREC card stats (2026-11-20)
+Owner: "What if the app would help me organize the collection dividing into bulk, not bulk and a good cards (collection
+tin foil) binder? I would define the maximum quantities for each and the app would decide based on value and commander
+game relevance." Later: "Option to provide a list of cards to be found, that helps when I am building a deck or adding
+multiple cards to the deck and I need to find where cards are stored." and "I would also like to see some edhrec stats
+for cards ... Stats on card window across the app and website." App **and** website for all three.
+Suggested order: three releases, smallest first.
+1. **EDHREC stats in the card window** (app and website, everywhere the card window opens). Ideas offered: popularity
+   rank ("#38 most played", already have it from Scryfall), in how many decks and what share of the decks that could play
+   it, salt score, top 5 commanders playing it, often played with (mark the ones owned), Game Changer label, link to the
+   card's EDHREC page. Loaded when the window opens and kept for a while (fast, offline afterwards).
+   - Open: which of these the owner wants. While planning, check what EDHREC's per-card data really holds (unofficial,
+     like the commander pages `Recommendations.kt` / `web/src/lib/recommend.ts` already read). The weekly health check
+     gains the new address and fields.
+2. **Find these cards**: paste a list or pick a deck's missing cards; shows where each copy is stored, grouped by binder
+   or box so the owner walks one place at a time, tick off when found; "only in another deck" and "not owned" in their
+   own sections at the bottom.
+3. **Sort the collection** into Collection binder ("tin foil"), Not bulk and Bulk; anything that doesn't fit goes to
+   **Unsorted**. Settled with the owner:
+   - Each of the three has a maximum the owner sets; Bulk's limit is optional (unlimited allowed).
+   - Every copy counts (not one per card), in Collection binder and Not bulk alike.
+   - Cards in decks are left out. The trade binder stays separate with its own rules.
+   - Score: value and Commander popularity (EDHREC) in a fixed mix, like the trade binder's, with an option to set the mix
+     yourself; plus a floor ("under €X is always bulk").
+   - Like the trade binder: the app only suggests moves (grouped by where the card is now), the owner ticks what was
+     physically moved, declined suggestions stay declined; running it again later gives only the cards that should move.
+   - Open: does the owner pick existing binders as the four places or does the app create them? Should foils get a
+     bonus? Does the floor beat the score when Bulk is full (then over the floor goes to Unsorted)? Synced settings mean
+     a `Sync.FORMAT` change, so the website ships in the same release.
+
 ### Smaller loose ends
 - The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
 - Scanned page on the website: "To trade" for scans, and sending scans to an Archidekt deck (the website only adds to
