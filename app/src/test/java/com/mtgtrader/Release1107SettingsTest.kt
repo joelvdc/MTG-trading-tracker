@@ -224,4 +224,46 @@ class Release1107SettingsTest {
             db.close()
         }
     }
+
+    /** 1.107: the collection's Deck column and filter: which active deck uses each card, followed and retired decks left out. */
+    @Test
+    fun whichActiveDecksUseEachCard() = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries()
+            .addCallback(object : androidx.room.RoomDatabase.Callback() {
+                override fun onOpen(db: SupportSQLiteDatabase) = SyncSchema.install(db)
+            })
+            .build()
+        try {
+            val dao = db.deckDao()
+            dao.upsert(Deck(1, "Mine", "joelvdc", "A", null, null, "U", 100))
+            dao.upsert(Deck(2, "Followed", "someoneelse", "B", null, null, "R", 100))
+            dao.upsert(Deck(3, "Retired", "joelvdc", "C", null, null, "G", 100))
+            dao.upsert(Deck(4, "Local", "", "D", null, null, "W", 100).copy(archidektId = -4))
+            dao.insertCards(
+                listOf(
+                    line(1, "sol", "Sol Ring"),
+                    line(2, "goblin", "Goblin Bombardment"),
+                    line(3, "krenko", "Krenko, Mob Boss"),
+                    line(-4, "signet", "Arcane Signet"),
+                    line(-4, "sol", "Sol Ring"),
+                ),
+            )
+            // A maybeboard card isn't one the deck uses.
+            dao.insertCard(line(1, "maybe", "Maybeboard Card").copy(maybeboard = true))
+            dao.setRetired(3, true)
+
+            val use = dao.observeActiveDeckCards("joelvdc").first()
+            assertEquals(
+                listOf("Arcane Signet" to "Local", "Sol Ring" to "Local", "Sol Ring" to "Mine"),
+                use.map { it.name to it.deck }.sortedBy { it.first + it.second },
+            )
+            // Nothing of the followed or the retired deck.
+            assertTrue(use.none { it.deck == "Followed" || it.deck == "Retired" })
+            assertTrue(use.none { it.name == "Maybeboard Card" })
+            // Without a username only the local deck counts (and it still shows its cards).
+            assertEquals(listOf("Arcane Signet" to "Local", "Sol Ring" to "Local"), dao.observeActiveDeckCards("").first().map { it.name to it.deck }.sortedBy { it.first })
+        } finally {
+            db.close()
+        }
+    }
 }

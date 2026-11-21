@@ -373,7 +373,7 @@ fun DecksScreen(nav: NavController) {
 
 /** Asks for the user's Archidekt username (since 1.107): decks of other users are followed decks and hold no cards. */
 @Composable
-private fun UsernameDialog(onDismiss: () -> Unit) {
+internal fun UsernameDialog(onDismiss: () -> Unit) {
     val c = LocalContext.current.container
     var name by remember { mutableStateOf("") }
     fun save() {

@@ -1495,7 +1495,7 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/rulings_tab.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.104: the collection's sort once set up: this week's moves used, each place's count, the suggested moves by where the cards are now. */
+    /** 1.104, as 1.107 lays it out: this week's moves used, each place's count, the moves grouped by where the cards are now. */
     @Test fun sortSuggestions() {
         val levels = listOf(
             com.mtgtrader.data.SortLevelSetting("l1", 200, 0.5),
@@ -1537,6 +1537,79 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/sort_suggestions.png", roborazziOptions = screenshotOptions)
+    }
+
+    /**
+     * 1.107: the sort as the website's Sort page shows it: three levels and a Decks binder, the decks' moves (an
+     * upgrade too) first, then a level's and Unsorted's, and the note on the cards with no room.
+     */
+    @Test fun sortSuggestionsDecks() {
+        val levels = listOf(
+            com.mtgtrader.data.SortLevelSetting("l1", 200, 0.5),
+            com.mtgtrader.data.SortLevelSetting("l2", 1_000, 0.5),
+            com.mtgtrader.data.SortLevelSetting("l3", 0, null),
+        )
+        fun move(name: String, set: String, number: String, from: String, to: String, copies: Int, price: Double?, reason: String, foil: Boolean = false) =
+            com.mtgtrader.data.SortMove(
+                key = "${set}${number}|$foil|false|NM|EN",
+                name = name, from = from, to = to, copies = copies, price = price, score = price ?: 0.0, reason = reason,
+            )
+        val best = com.mtgtrader.data.levelKey(0)
+        val good = com.mtgtrader.data.levelKey(1)
+        val bulk = com.mtgtrader.data.levelKey(2)
+        val decks = com.mtgtrader.data.DECKS_KEY
+        val unsorted = com.mtgtrader.data.UNSORTED_KEY
+        val plan = com.mtgtrader.data.SortPlan(
+            moves = listOf(
+                // For your decks: an upgrade for the decks, a card they need, and one they no longer use.
+                move("Rhystic Study", "pcy", "45", good, decks, 1, 38.4, "upgrade for your decks", foil = true),
+                move("Smothering Tithe", "rna", "22", unsorted, decks, 1, 17.5, "for your decks"),
+                move("Counterspell", "mh2", "267", decks, unsorted, 2, 1.5, "no longer in an active deck · no room"),
+                // From the levels, and from Unsorted.
+                move("Scavenger Grounds", "hou", "9100", bulk, unsorted, 1, 0.15, "no room"),
+                move("Lightning Greaves", "2xm", "88", best, good, 1, 4.2, "made room for more valuable cards"),
+                move("Arcane Signet", "cmm", "367", unsorted, best, 1, 2.1, "€2.10 · top 1,000 on EDHREC"),
+            ),
+            after = mapOf(best to 199, good to 812, bulk to 1_204, decks to 96, unsorted to 27),
+            heldBack = 3,
+            weekUsed = 7,
+            budget = 3,
+            deckShort = 2,
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    com.mtgtrader.ui.SortSuggestions(
+                        pad = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        settled = true, levels = levels, weekly = 10, plan = plan,
+                        placeNames = mapOf(best to "Best cards", good to "Good cards", bulk to "Bulk", decks to "Decks"),
+                        unticked = emptySet(), onToggle = { _, _ -> },
+                    )
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/sort_suggestions_decks.png", roborazziOptions = screenshotOptions)
+    }
+
+    /**
+     * 1.107: the sort's settings for a new setup: the three usual levels and their binders, the Decks binder, the
+     * decks' copies, keeping copies together and how cards are weighed.
+     */
+    @Test fun sortSettings() {
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    com.mtgtrader.ui.SortSetUpList(
+                        pad = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        mixNow = 50, weeklyNow = 10,
+                        togetherNow = com.mtgtrader.data.Together.NAME,
+                        ratioNow = 3.0, gapNow = 5.0,
+                        deckCopiesNow = com.mtgtrader.data.DeckCopies.BEST,
+                    ) {}
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/sort_settings.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.104: "Find these cards": the copies binder by binder (one ticked), what's only in other decks, what isn't owned. */

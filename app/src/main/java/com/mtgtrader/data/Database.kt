@@ -374,6 +374,16 @@ interface DeckDao {
     @Query("SELECT DISTINCT name FROM deck_cards WHERE maybeboard = 0 AND deckId IN (SELECT archidektId FROM decks WHERE retired = 0 AND (archidektId < 0 OR (:owner <> '' AND owner = :owner COLLATE NOCASE)))")
     fun observeCardNames(owner: String): Flow<List<String>>
 
+    /**
+     * Which of the active decks (as [observeCardNames]: not retired, local or yours) use each card, card name and
+     * deck name (see [ActiveDeckCard]), for the collection's deck filter, its Deck column and its Deck sort. Since 1.107.
+     */
+    @Query(
+        """SELECT d.name AS deck, c.name AS name FROM deck_cards c JOIN decks d ON d.archidektId = c.deckId
+           WHERE c.maybeboard = 0 AND d.retired = 0 AND (d.archidektId < 0 OR (:owner <> '' AND d.owner = :owner COLLATE NOCASE))"""
+    )
+    fun observeActiveDeckCards(owner: String): Flow<List<ActiveDeckCard>>
+
     /** Every card name with the decks it's in (and how many copies each), for "used in several decks". */
     @Query(
         """SELECT c.name AS name, c.deckId AS deckId, d.name AS deckName, SUM(c.quantity) AS quantity, MAX(c.imageUrl) AS imageUrl

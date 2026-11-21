@@ -304,6 +304,9 @@ data class BinderChoice(val binderId: Long = Binder.UNSORTED, val newName: Strin
 
 data class NameCount(val name: String, val qty: Int)
 
+/** A card an active deck uses, and the deck's name (see [DeckDao.observeActiveDeckCards]). Since 1.107. */
+data class ActiveDeckCard(val deck: String, val name: String)
+
 /** A scanned card waiting in the Scan tab until the user decides where it goes. Since version 1.7. */
 @Serializable
 @Entity(tableName = "scans")

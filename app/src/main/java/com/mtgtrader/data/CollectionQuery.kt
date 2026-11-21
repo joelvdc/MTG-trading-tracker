@@ -18,10 +18,35 @@ enum class SortField(val label: String, val forward: String, val backward: Strin
 
     /** One copy's change lately ([CollectionRow.change]), in percent and in money. Since 1.32. */
     CHANGE_PCT("Change in %", "Biggest rise first", "Biggest fall first"),
-    CHANGE_MONEY("Change in money", "Biggest rise first", "Biggest fall first");
+    CHANGE_MONEY("Change in money", "Biggest rise first", "Biggest fall first"),
+
+    /** The first active deck that uses the card, by name; cards in no deck last both ways. Since 1.107. */
+    DECK("Deck", "A to Z, cards in no deck last", "Z to A, cards in no deck last");
 
     /** Sorts by the price change, which not every card has. */
     val isChange get() = this == CHANGE_PCT || this == CHANGE_MONEY
+}
+
+/** A card's front face in lowercase, as the decks' cards are matched (see [SortSpec.deckComparator] and [CollectionFilter.matches]). */
+fun frontName(name: String) = name.substringBefore(" // ").lowercase()
+
+/**
+ * Which active decks use each card: a card's front-face lowercase name → its decks' names, A to Z (as the collection's
+ * deck filter, its Deck column and its Deck sort use them). Since 1.107.
+ */
+object DeckUses {
+    /** The decks [card] ([frontName]) is in, A to Z; empty when none. */
+    fun decksOf(card: String, use: Map<String, List<String>>): List<String> = use[card].orEmpty()
+
+    /** The first deck that uses [card], or null for a card in no deck. */
+    fun deckOf(card: String, use: Map<String, List<String>>): String? = decksOf(card, use).firstOrNull()
+
+    /** Whether [deckName]'s deck uses [card]. */
+    fun deckUses(card: String, deckName: String, use: Map<String, List<String>>): Boolean = decksOf(card, use).any { it.equals(deckName, true) }
+
+    /** [rows] (a deck per card) as [decksOf] wants it: each card's decks, A to Z. */
+    fun of(rows: List<ActiveDeckCard>): Map<String, List<String>> = rows.groupBy({ frontName(it.name) }, { it.deck })
+        .mapValues { (_, decks) -> decks.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER) }
 }
 
 @Serializable
@@ -34,9 +59,12 @@ data class SortSpec(val levels: List<SortLevel> = listOf(SortLevel(SortField.NAM
 
     val label: String get() = levels.joinToString(" → ") { it.field.label }
 
-    fun comparator(priceType: PriceType): Comparator<CollectionRow> {
+    /** [deckUse] says which decks use each card (a front-face lowercase name, see [frontName]): for [SortField.DECK]. Since 1.107. */
+    fun comparator(priceType: PriceType, deckUse: Map<String, List<String>> = emptyMap()): Comparator<CollectionRow> {
         val parts = levels.map { level ->
             if (level.field.isChange) return@map changeComparator(level.field, level.reversed)
+            // Cards in no deck go last both ways: the direction only comes before the names.
+            if (level.field == SortField.DECK) return@map deckComparator(deckUse, level.reversed)
             val c = fieldComparator(level.field, priceType)
             if (level.reversed) c.reversed() else c
         }
@@ -60,6 +88,21 @@ data class SortSpec(val levels: List<SortLevel> = listOf(SortLevel(SortField.NAM
 
         private fun number(n: String) = n.filter(Char::isDigit).toIntOrNull() ?: Int.MAX_VALUE
 
+        /**
+         * By the first deck that uses the card (its name, A to Z or Z to A); cards in no deck go last either way.
+         * Since 1.107.
+         */
+        fun deckComparator(deckUse: Map<String, List<String>>, reversed: Boolean): Comparator<CollectionRow> {
+            val order = String.CASE_INSENSITIVE_ORDER
+            fun deckOf(row: CollectionRow): String? = DeckUses.deckOf(frontName(row.item.card.name), deckUse)
+            val byDeck = Comparator<CollectionRow> { a, b ->
+                val x = deckOf(a) ?: return@Comparator 0
+                val y = deckOf(b) ?: return@Comparator 0
+                order.compare(x, y)
+            }
+            return compareBy<CollectionRow> { deckOf(it) == null }.then(if (reversed) byDeck.reversed() else byDeck)
+        }
+
         fun fieldComparator(f: SortField, priceType: PriceType): Comparator<CollectionRow> = when (f) {
             SortField.NAME -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.item.card.name }
             SortField.COLOR -> compareBy { MtgColors.sortKey(it.info?.colors, it.info?.isLand == true) }
@@ -72,7 +115,9 @@ data class SortSpec(val levels: List<SortLevel> = listOf(SortLevel(SortField.NAM
             SortField.VALUE -> compareByDescending { it.unitPrice(priceType) ?: -1.0 }
             SortField.RECENT -> compareByDescending { it.item.addedAt }
             SortField.QUANTITY -> compareByDescending { it.item.quantity }
+            // Needs the decks (see [comparator]); on its own, by name.
             SortField.CHANGE_PCT, SortField.CHANGE_MONEY -> changeComparator(f, fallersFirst = false)
+            SortField.DECK -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.item.card.name }
         }
 
         /** Biggest rise (or fall) first; cards without a change go last either way. Since 1.32. */
@@ -120,16 +165,20 @@ data class CollectionFilter(
     val marks: Set<MarkFilter> = emptySet(),
     /** MDFC, transforming, split (Scryfall's layout). Since 1.90. */
     val faces: Set<FaceKind> = emptySet(),
+    /** Only the cards a deck uses, by the deck's name (any letter case). Since 1.107. */
+    val deck: String? = null,
 ) {
     val isEmpty get() = this == CollectionFilter()
 
     val count: Int
         get() = listOf(colors.isNotEmpty(), types.isNotEmpty(), rarities.isNotEmpty(), sets.isNotEmpty(), finishes.isNotEmpty(),
-            conditions.isNotEmpty(), languages.isNotEmpty(), minPrice != null || maxPrice != null, decks != DeckFilter.ANY, marks.isNotEmpty(), faces.isNotEmpty()).count { it }
+            conditions.isNotEmpty(), languages.isNotEmpty(), minPrice != null || maxPrice != null, decks != DeckFilter.ANY, marks.isNotEmpty(),
+            faces.isNotEmpty(), !deck.isNullOrBlank()).count { it }
 
     fun encode(): String = json.encodeToString(serializer(), this)
 
-    fun matches(row: CollectionRow, priceType: PriceType, deckNames: Set<String>): Boolean {
+    /** [deckUse] says which decks use each card (see [DeckUses]): the "used by deck" filter needs it. Since 1.107. */
+    fun matches(row: CollectionRow, priceType: PriceType, deckNames: Set<String>, deckUse: Map<String, List<String>> = emptyMap()): Boolean {
         val i = row.item
         if (colors.isNotEmpty() && !colorsMatch(row.info)) return false
         if (types.isNotEmpty()) {
@@ -152,7 +201,9 @@ data class CollectionFilter(
             if (minPrice != null && p < minPrice) return false
             if (maxPrice != null && p > maxPrice) return false
         }
-        val inDeck = i.card.name.substringBefore(" // ").lowercase() in deckNames
+        val card = frontName(i.card.name)
+        if (deck != null && !DeckUses.deckUses(card, deck, deckUse)) return false
+        val inDeck = card in deckNames
         return when (decks) {
             DeckFilter.ANY -> true
             DeckFilter.IN_DECKS -> inDeck

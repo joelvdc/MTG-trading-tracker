@@ -204,7 +204,8 @@ export default function SortPage() {
   const fromUnsorted = moves.filter((m) => m.from === UNSORTED_KEY);
   if (fromUnsorted.length > 0) groups.push({ key: UNSORTED_KEY, title: "From Unsorted", list: fromUnsorted });
   // Cards the levels had no room for.
-  const noRoom = moves.filter((m) => m.to === UNSORTED_KEY).reduce((n, m) => n + m.copies, 0);
+  // Cards under a level's minimum price go to Unsorted too, but they had a place: only the planner's own "no room" moves count.
+  const noRoom = moves.filter((m) => m.to === UNSORTED_KEY && m.reason.includes("no room")).reduce((n, m) => n + m.copies, 0);
 
   const setGroup = (list: SortMove[], on: boolean) =>
     setUnticked((old) => (on ? new Set([...old].filter((k) => !list.some((m) => rowKey(m) === k))) : new Set([...old, ...list.map(rowKey)])));
