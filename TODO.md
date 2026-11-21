@@ -14,15 +14,15 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-21, after app 1.104)
-- **Newest (2026-11-21):** app 1.104 + website: **Sort the collection** (Collection binder / Not bulk / Bulk with limits,
-  floor, value↔popularity mix; after the first sort a 25% margin, an 8-week rest per card and at most N moves a week;
-  `data/CollectionSort.kt`, `web/src/lib/collsort.ts`, `/sort`, weekly email section) and **Find cards** (pasted list or
-  deck, grouped by binder, ticks kept on the device; `data/FindCards.kt`, `web/src/lib/findcards.ts`, `/find`, deck
-  Edit ▾ and Select mode "Find"). Shared test cases in `web/test/fixtures/collsort-cases.json` and `findcards-cases.json`.
-  No DB or sync format change (synced prefs `sort*`). Built by DeepSeek through Mistral, reviewed by Opus.
-- **Next, agreed with the owner:** revisit what goes against the terms of EDHREC, Archidekt and ScrollVault (see
-  Collecting, "Outside services' terms").
+## Right now (2026-11-21, after app 1.105)
+- **Newest (2026-11-21):** app 1.105 + website: **ScrollVault removed** everywhere (power source, deck page line,
+  rule-zero "At the table"; a stored `SCROLLVAULT` setting shows as Commander Salt; the Deck `sv*` fields stay in the
+  DB and sync file, no longer filled or shown). The weekly health check no longer requests EDHREC or Archidekt: the
+  website notes how its own requests went (`web/src/lib/servicewatch.ts`, jobs `svc-edhrec`/`svc-archidekt`) and
+  `/api/health` reports them as `services`. The app's errors now say "EDHREC's/Archidekt's answer has changed".
+  Before that, 1.104: Sort the collection and Find cards. Built by DeepSeek through Mistral, reviewed by Opus.
+- **Still open from the terms check:** EDHREC Recommendations and Archidekt imports (user-triggered) stay; asking both
+  for permission is the owner's call (see Collecting, "Outside services' terms").
 - **Waiting on the owner:** try Sort and Find on the phone and the website with the real collection (tests, two
   screenshot tests and a local website preview with made-up cards only). Still from before: try 1.103's scan price and
   "Ordered"; green light for the ✕ delete column in the website's wishlist table; Compare with a real Archidekt link;
@@ -95,8 +95,10 @@ Salt step that reads the Archidekt deck, and ScrollVault's bracket tool run in t
 found): Commander Salt's API, edhpowerlevel.com (hidden browser; robots allow all), recommander.cards (public-release
 API). Cardmarket's terms couldn't be read (bot check); we use its public price files and links. Fine: Scryfall (incl.
 the EDHREC rank it passes on), MTGJSON (MIT), Card Kingdom's API (its robots allow all), CardTrader (own key), ECB.
-- Proposed: emails to EDHREC, Archidekt and ScrollVault asking permission (Claude drafts, the owner sends); keep the
-  features meanwhile; remove a service's features if it says no or doesn't answer in about two weeks.
+- Done in 1.105 (owner, 2026-11-21): ScrollVault removed everywhere; the health check no longer requests EDHREC or
+  Archidekt (it reads the website's notes on its own requests instead). The owner sees Archidekt as fine since every
+  request comes from a person's tap.
+- Still possible: emails to EDHREC and Archidekt asking permission (Claude drafts, the owner sends).
 - Dropped by the owner (2026-11-21): EDHREC statistics in the card windows.
 
 ### Smaller loose ends
@@ -141,6 +143,8 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.105 (2026-11-21): ScrollVault removed (app and website); health check reads the website's EDHREC/Archidekt notes
+  instead of requesting them; clearer "answer has changed" errors
 - 1.104 (2026-11-21): Sort the collection (with gentle weekly moves and a weekly email section) and Find cards, app
   and website
 - 1.103 (2026-11-20): purchase price for scanned cards (app and website), "Ordered" lines on the card page (sync format 16)
