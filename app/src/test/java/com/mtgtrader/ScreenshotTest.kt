@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
@@ -1492,5 +1493,82 @@ class ScreenshotTest {
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/rulings_tab.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.104: the collection's sort once set up: this week's moves used, each place's count, the suggested moves by where the cards are now. */
+    @Test fun sortSuggestions() {
+        val rules = com.mtgtrader.data.SortRules(maxTop = 200, maxMid = 1_000, maxBulk = 0, floor = 0.5, mix = 50, weekly = 10)
+        fun move(name: String, set: String, rank: Int, from: String, to: String, copies: Int, price: Double?, reason: String) =
+            com.mtgtrader.data.SortMove(
+                key = "$name-${set}01|false|false|NM|EN",
+                name = name, from = from, to = to, copies = copies, price = price, score = price ?: 0.0, reason = reason,
+            )
+        val top = com.mtgtrader.data.SortPlace.TOP.key
+        val mid = com.mtgtrader.data.SortPlace.MID.key
+        val bulk = com.mtgtrader.data.SortPlace.BULK.key
+        val unsorted = com.mtgtrader.data.UNSORTED_KEY
+        val plan = com.mtgtrader.data.SortPlan(
+            moves = listOf(
+                move("Rhystic Study", "pcy", 45, bulk, top, 2, 38.4, "€38.40 · top 100 on EDHREC"),
+                move("Smothering Tithe", "rna", 22, unsorted, top, 1, 17.5, "€17.50 · top 100 on EDHREC"),
+                move("Counterspell", "mh2", 310, bulk, mid, 3, 1.5, "€1.50 · top 500 on EDHREC"),
+                move("Lightning Greaves", "2xm", 88, unsorted, mid, 1, 4.2, "€4.20 · top 100 on EDHREC"),
+                move("Scavenger Grounds", "hou", 9_100, top, unsorted, 1, 0.15, "Bulk is full"),
+            ),
+            after = mapOf(top to 187, mid to 640, bulk to 1_204, unsorted to 31),
+            heldBack = 4,
+            weekUsed = 7,
+            budget = 3,
+        )
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    com.mtgtrader.ui.SortSuggestions(
+                        pad = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        settled = true, rules = rules, plan = plan,
+                        placeNames = mapOf(top to "Collection binder", mid to "Not bulk", bulk to "Bulk"),
+                        unticked = emptySet(), onToggle = { _, _ -> },
+                    )
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/sort_suggestions.png", roborazziOptions = screenshotOptions)
+    }
+
+    /** 1.104: "Find these cards": the copies binder by binder (one ticked), what's only in other decks, what isn't owned. */
+    @Test fun findCards() {
+        fun line(binder: String, name: String, set: String, number: String, copies: Int = 1, foil: Boolean = false, wanted: Boolean = false) =
+            com.mtgtrader.data.FindLine(
+                lineKey = com.mtgtrader.data.FindCards.lineKey(name, "$set$number", foil, false, binder),
+                name = name, copies = copies, set = set, number = number, foil = foil, etched = false, wantedPrinting = wanted,
+            )
+        val result = com.mtgtrader.data.FindResult(
+            groups = listOf(
+                com.mtgtrader.data.FindGroup("unsorted", "Unsorted", listOf(
+                    line("unsorted", "Arcane Signet", "cmm", "367", wanted = true),
+                    line("unsorted", "Sol Ring", "cmr", "400"),
+                )),
+                com.mtgtrader.data.FindGroup("b:1", "The Box", listOf(
+                    line("b:1", "Counterspell", "mh2", "267", copies = 2),
+                    line("b:1", "Rhystic Study", "pcy", "45", foil = true),
+                )),
+            ),
+            onlyInDecks = listOf(com.mtgtrader.data.FindInDeck("Lightning Greaves", 1, listOf("Auntie Plague", "Baba"))),
+            notOwned = listOf(com.mtgtrader.data.FindMissing("Smothering Tithe", 2)),
+            total = com.mtgtrader.data.FindTotal(wanted = 8, found = 5, inDecks = 1, notOwned = 2),
+        )
+        val ticked = com.mtgtrader.data.FindCards.lineKey("Sol Ring", "cmr400", false, false, "unsorted")
+        compose.setContent {
+            MtgColors(dark = false) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    com.mtgtrader.ui.FindCardsList(
+                        pad = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        result = result, fromDeck = null, ticks = setOf(ticked), skipBasics = true,
+                        onToggle = { _, _ -> }, onSkipBasics = {}, onAddMissing = {},
+                    )
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/find_cards.png", roborazziOptions = screenshotOptions)
     }
 }

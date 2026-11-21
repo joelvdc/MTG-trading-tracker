@@ -243,6 +243,11 @@ fun AppNav() {
                 RecommendationsScreen(nav, it.arguments?.getLong("id") ?: 0L)
             }
             composable("tradebinder") { TradeBinderScreen(nav) }
+            // The collection's sort and "Find these cards" (since 1.104).
+            composable("sort") { SortScreen(nav) }
+            composable("findcards?deck={deck}", arguments = listOf(navArgument("deck") { type = NavType.LongType; defaultValue = 0L })) {
+                FindCardsScreen(nav, it.arguments?.getLong("deck") ?: 0L)
+            }
             composable("value") { ValueScreen(nav) }
             composable("stats") { StatsScreen(nav) }
             composable("orderimport?uri={uri}", arguments = listOf(navArgument("uri") { type = NavType.StringType })) {

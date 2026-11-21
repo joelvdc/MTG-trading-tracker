@@ -595,6 +595,17 @@ fun CollectionScreen(nav: NavController) {
                             leadingIcon = { Icon(Icons.Default.SwapHoriz, null) },
                             onClick = { menu = false; nav.navigate("tradebinder") },
                         )
+                        // Since 1.104: the sort into Collection binder, Not bulk and Bulk, and finding a list's cards.
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Sort the collection…") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Sort, null) },
+                            onClick = { menu = false; nav.navigate("sort") },
+                        )
+                        if (!wish) DropdownMenuItem(
+                            text = { Text("Find cards…") },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            onClick = { menu = false; nav.navigate("findcards?deck=0") },
+                        )
                         if (!wish) DropdownMenuItem(
                             text = { Text("Collection value over time") },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.ShowChart, null) },
