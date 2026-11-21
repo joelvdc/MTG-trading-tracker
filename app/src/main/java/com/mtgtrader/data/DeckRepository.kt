@@ -46,7 +46,6 @@ class DeckRepository(
     private val repo: MtgRepository,
     private val settings: Settings,
     private val edh: EdhPowerLevelApi,
-    private val scrollVault: ScrollVaultApi,
     private val scope: CoroutineScope,
     private val winOdds: WinOddsStore,
 ) {
@@ -307,7 +306,7 @@ class DeckRepository(
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }
 
-    /** Has the chosen power level site (EDH Power Level or ScrollVault) rate every deck again. Can be stopped between decks. */
+    /** Has the chosen power level site (EDH Power Level) rate every deck again. Can be stopped between decks. */
     fun rescorePowerAll(): Boolean {
         val source = settings.powerSource.value
         if (!source.external) return false
@@ -436,12 +435,10 @@ class DeckRepository(
             visibility = a.visibility,
             categoryInfo = DeckEdits.encode(a.categories),
         ).let {
-            // The list may have changed: the chosen site's power level is redone right after; the other site's is dropped.
+            // The list may have changed: the chosen site's power level is redone right after; ScrollVault's (until 1.104) is dropped.
             val source = settings.powerSource.value
-            var d = it
-            if (source != PowerSource.EDH_POWER_LEVEL) d = d.copy(edhPowerLevel = null, edhPowerAt = null, edhPowerError = null)
-            if (source != PowerSource.SCROLLVAULT) d = d.copy(svPowerLevel = null, scrollVault = null, svAt = null, svError = null)
-            d
+            if (source == PowerSource.EDH_POWER_LEVEL) it
+            else it.copy(edhPowerLevel = null, edhPowerAt = null, edhPowerError = null, svPowerLevel = null, scrollVault = null, svAt = null, svError = null)
         }
         // Archidekt's description becomes the primer of a deck that never had one ("" means the user cleared it).
         if (deck.primer == null) DeckNotes.primerFromArchidekt(a.description)?.let { deck = deck.copy(primer = it, notesAt = now) }
@@ -492,7 +489,6 @@ class DeckRepository(
     private suspend fun ratePower(deck: Deck, step: (String) -> Unit): Deck = when (settings.powerSource.value) {
         PowerSource.COMMANDER_SALT -> deck
         PowerSource.EDH_POWER_LEVEL -> rateEdh(deck, step)
-        PowerSource.SCROLLVAULT -> rateScrollVault(deck, step)
         PowerSource.APP -> deck.also { rateApp(it, step) }
     }
 
@@ -507,20 +503,6 @@ class DeckRepository(
         } catch (e: Exception) {
             // Left without one; the deck page works the win turn out again when it's opened.
         }
-    }
-
-    private suspend fun rateScrollVault(deck: Deck, step: (String) -> Unit): Deck {
-        val rated = try {
-            step("Getting the power level from ScrollVault…")
-            val r = scrollVault.rate(deck.archidektUrl)
-            deck.copy(svPowerLevel = r.power, scrollVault = r.encode(), svAt = System.currentTimeMillis(), svError = null)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            deck.copy(svError = e.message ?: "unknown error")
-        }
-        dao.update(rated)
-        return rated
     }
 
     private suspend fun rateEdh(deck: Deck, step: (String) -> Unit): Deck {

@@ -152,7 +152,7 @@ class SyncException(message: String) : Exception(message)
  * Two phones' copies of a deck. The decklist (and the rest read from Archidekt with it) comes from
  * the copy loaded from the newer Archidekt version, so an old list can't come back just because the
  * other phone changed something on its copy later, like a score or a power level rating. Each score
- * (Commander Salt, edhpowerlevel.com, ScrollVault) comes from whichever copy got it last, as long
+ * (Commander Salt, edhpowerlevel.com) comes from whichever copy got it last, as long
  * as it was made after that list was loaded; older ones belong to an older list.
  *
  * Since 1.97 the deck's primer, its cards' notes and when they changed come from whichever copy changed

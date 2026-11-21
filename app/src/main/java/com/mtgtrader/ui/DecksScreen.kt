@@ -465,7 +465,7 @@ fun ColorPips(identity: String, size: Int = 12) {
 }
 
 object Scores {
-    /** Power level as its source shows it: "4.4" (Commander Salt, ScrollVault), "6.70" (edhpowerlevel.com) or "6" (the app's). */
+    /** Power level as its source shows it: "4.4" (Commander Salt), "6.70" (edhpowerlevel.com) or "6" (the app's). */
     fun power(v: Double, source: PowerSource = PowerSource.COMMANDER_SALT): String = String.format(
         Locale.getDefault(),
         when (source) {

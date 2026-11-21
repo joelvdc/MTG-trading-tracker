@@ -167,7 +167,18 @@ class EdhrecApi(private val http: OkHttpClient) {
         }
     }
 
-    fun parse(body: String): Page {
+    fun parse(body: String): Page = try {
+        read(body)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        throw e
+    } catch (e: Exception) {
+        val why = e.message ?: e::class.simpleName ?: "unknown"
+        throw IOException("EDHREC's answer has changed: " + why.take(120))
+    }
+
+    private fun read(body: String): Page {
         val root = json.parseToJsonElement(body) as? JsonObject ?: throw IOException("EDHREC sent something unexpected")
         val lists = ((root["container"] as? JsonObject)?.get("json_dict") as? JsonObject)?.get("cardlists") as? JsonArray
             ?: throw IOException("EDHREC has no card lists for this commander")

@@ -410,7 +410,6 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                                     when (src) {
                                         PowerSource.COMMANDER_SALT -> "Scored by commandersalt.com on import."
                                         PowerSource.EDH_POWER_LEVEL -> "From edhpowerlevel.com, a few seconds per deck."
-                                        PowerSource.SCROLLVAULT -> "From ScrollVault, about 10 seconds per deck, with a win turn."
                                         PowerSource.APP -> "On this phone, from the win turn and Commander Salt's ratings (1–10)."
                                     },
                                     style = MaterialTheme.typography.bodySmall,
@@ -468,7 +467,7 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                 SettingsCategory.ABOUT -> {
                     Text(
                         "Cards: Scryfall. Prices: Cardmarket, TCGplayer, Card Kingdom, CardTrader. Decks: Archidekt, EDHREC, " +
-                            "recommander.cards, Commander Salt, Commander Spellbook, EDH Power Level, ScrollVault, MTGJSON. " +
+                            "recommander.cards, Commander Salt, Commander Spellbook, EDH Power Level, MTGJSON. " +
                             "Exchange rates: European Central Bank.\n\n" +
                             "Not affiliated with any of these; prices are for guidance only.\n\n" +
                             "MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved or endorsed by Wizards. " +
