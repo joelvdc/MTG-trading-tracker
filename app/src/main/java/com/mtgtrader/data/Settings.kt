@@ -383,6 +383,18 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("printInkSaver", false)
         set(v) = prefs.edit().putBoolean("printInkSaver", v).apply()
 
+    /**
+     * "Find these cards" on this phone only (since 1.104): the list last used, as pasted or "deck:<id>", and the
+     * lineKeys of the copies already ticked off (one per line, see [FindCards.lineKey]).
+     */
+    var findList: String
+        get() = prefs.getString("findList", "") ?: ""
+        set(v) = prefs.edit().putString("findList", v).apply()
+
+    var findTicks: String
+        get() = prefs.getString("findTicks", "") ?: ""
+        set(v) = prefs.edit().putString("findTicks", v).apply()
+
     /** Update prices by themselves (on opening the app and in the background). Since 1.11. */
     private val _autoUpdate = MutableStateFlow(prefs.getBoolean("autoUpdate", true))
     val autoUpdate: StateFlow<Boolean> = _autoUpdate
