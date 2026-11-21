@@ -14,13 +14,13 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-21, after app 1.105)
-- **Newest (2026-11-21):** app 1.105 + website: **ScrollVault removed** everywhere (power source, deck page line,
-  rule-zero "At the table"; a stored `SCROLLVAULT` setting shows as Commander Salt; the Deck `sv*` fields stay in the
-  DB and sync file, no longer filled or shown). The weekly health check no longer requests EDHREC or Archidekt: the
-  website notes how its own requests went (`web/src/lib/servicewatch.ts`, jobs `svc-edhrec`/`svc-archidekt`) and
-  `/api/health` reports them as `services`. The app's errors now say "EDHREC's/Archidekt's answer has changed".
-  Before that, 1.104: Sort the collection and Find cards. Built by DeepSeek through Mistral, reviewed by Opus.
+## Right now (2026-11-21, after app 1.106)
+- **Newest (2026-11-21):** app 1.106 + website: **privacy policy and terms**. /privacy now covers the app too, with
+  the GDPR points (controller joelvdc, legal bases, how long, processors, rights); new /terms page; footer and the
+  app's Settings → About link Privacy, Terms, Legal and the contact address mtgtrader@astermail.org (the owner's mail
+  alias; `CONTACT_EMAIL` in `web/src/components/SiteFooter.tsx` and `ui/SettingsScreen.kt`). Before that, 1.105:
+  ScrollVault removed; the health check reads `/api/health` `services` instead of fetching EDHREC/Archidekt.
+  Built by DeepSeek through Mistral, reviewed by Opus. The owner decided not to rename the app (2026-11-21).
 - **Still open from the terms check:** EDHREC Recommendations and Archidekt imports (user-triggered) stay; asking both
   for permission is the owner's call (see Collecting, "Outside services' terms").
 - **Waiting on the owner:** try Sort and Find on the phone and the website with the real collection (tests, two
@@ -143,6 +143,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
 - 1.105 (2026-11-21): ScrollVault removed (app and website); health check reads the website's EDHREC/Archidekt notes
   instead of requesting them; clearer "answer has changed" errors
 - 1.104 (2026-11-21): Sort the collection (with gentle weekly moves and a weekly email section) and Find cards, app
