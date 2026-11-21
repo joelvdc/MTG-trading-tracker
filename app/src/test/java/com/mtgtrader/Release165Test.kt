@@ -50,6 +50,6 @@ class Release165Test {
         assertEquals(0, PrintPlan.of(decks, PrintChoice.BRACKET, PowerSource.COMMANDER_SALT).power.size)
         assertEquals(0, PrintPlan.of(decks, PrintChoice.POWER, PowerSource.COMMANDER_SALT).bracket.size)
         // Another power level source that hasn't rated the decks: no power cards.
-        assertEquals(0, PrintPlan.of(decks, PrintChoice.POWER, PowerSource.SCROLLVAULT).cards)
+        assertEquals(0, PrintPlan.of(decks, PrintChoice.POWER, PowerSource.EDH_POWER_LEVEL).cards)
     }
 }

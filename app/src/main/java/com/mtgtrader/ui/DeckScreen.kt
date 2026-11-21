@@ -1502,24 +1502,16 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
             } else if (source.external) {
                 val power = deck.power(source)
                 val error = deck.powerError(source)
-                val sv = deck.scrollVaultReading.takeIf { source == PowerSource.SCROLLVAULT && power != null }
                 val other = deck.powerLevel?.let { " · Commander Salt ${Scores.power(it)}" } ?: ""
                 Text(
                     when {
-                        power != null -> "Power level from ${source.site}" + (sv?.margin?.let { " (±${Scores.power(it)})" } ?: "") + other
+                        power != null -> "Power level from ${source.site}" + other
                         error != null -> "${source.site} couldn't rate this deck ($error)." + other
                         else -> "Waiting for ${source.site}'s power level…$other"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = if (power == null && error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                sv?.let { r ->
-                    val facts = listOfNotNull(
-                        r.typicalWin?.let { "typical win turn $it" + (r.earliestWin?.let { e -> " (earliest $e)" } ?: "") },
-                        r.bracket?.let { "its bracket $it" + (r.borderline?.let { b -> ", borderline $b" } ?: "") },
-                    )
-                    if (facts.isNotEmpty()) Text("ScrollVault: " + facts.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
             }
             deck.scoreError?.let {
                 Text(

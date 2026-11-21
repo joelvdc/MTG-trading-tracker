@@ -1,5 +1,6 @@
 package com.mtgtrader.data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -192,7 +193,18 @@ class ArchidektApi(private val http: OkHttpClient) {
             return decks to list.next
         }
 
-        fun parse(body: String): ArchidektDeck {
+        fun parse(body: String): ArchidektDeck = try {
+            read(body)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            val why = e.message ?: e::class.simpleName ?: "unknown"
+            throw IOException("Archidekt's answer has changed: " + why.take(120))
+        }
+
+        private fun read(body: String): ArchidektDeck {
             val d = json.decodeFromString<ArchDeck>(body)
             val excluded = d.categories.filterNot { it.includedInDeck }.map { it.name }.toSet()
             val premier = d.categories.filter { it.isPremier }.map { it.name }.toSet() + "Commander"

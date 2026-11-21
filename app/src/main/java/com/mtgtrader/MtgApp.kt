@@ -16,7 +16,6 @@ import com.mtgtrader.data.ValueHistory
 import com.mtgtrader.data.DeckRepository
 import com.mtgtrader.data.EdhPowerLevelApi
 import com.mtgtrader.data.HiddenBrowser
-import com.mtgtrader.data.ScrollVaultApi
 import com.mtgtrader.data.MtgRepository
 import com.mtgtrader.data.NetworkMonitor
 import com.mtgtrader.data.PriceGuideRepository
@@ -137,7 +136,7 @@ class AppContainer(context: Context) {
     val alertHistory = com.mtgtrader.data.AlertHistory(context)
     val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader, alertHistory) { exchangeRates.rates.value }
     private val browser = HiddenBrowser(context)
-    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope, winOdds)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), appScope, winOdds)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
     val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
     /** Sorts the collection into the Collection binder, Not bulk and Bulk, keeping the rest in Unsorted. Since 1.104. */

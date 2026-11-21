@@ -21,7 +21,7 @@ import java.io.IOException
 import kotlin.coroutines.resume
 
 /**
- * Runs a web tool that has no API (edhpowerlevel.com, ScrollVault) in an invisible web view and
+ * Runs a web tool that has no API (edhpowerlevel.com) in an invisible web view and
  * reads its result off the page. One page at a time; each gets a fresh web view.
  */
 class HiddenBrowser(context: Context) {

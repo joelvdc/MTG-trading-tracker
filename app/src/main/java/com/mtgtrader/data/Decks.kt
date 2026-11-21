@@ -52,7 +52,10 @@ data class Deck(
     val edhPowerError: String? = null,
     /** What the rule-zero cards show from Commander Salt, as [SaltCard] JSON. Since 1.12. */
     val saltCard: String? = null,
-    /** Power level from ScrollVault, with its other findings as [ScrollVaultReading] JSON. Since 1.12. */
+    /**
+     * ScrollVault's rating, with its other findings as JSON: filled by app versions up to 1.104. No longer filled or
+     * shown since 1.105, kept so older phones' copies sync. Since 1.12.
+     */
     val svPowerLevel: Double? = null,
     val scrollVault: String? = null,
     val svAt: Long? = null,
@@ -119,7 +122,6 @@ data class Deck(
     fun power(source: PowerSource): Double? = when (source) {
         PowerSource.COMMANDER_SALT -> powerLevel
         PowerSource.EDH_POWER_LEVEL -> edhPowerLevel
-        PowerSource.SCROLLVAULT -> svPowerLevel
         PowerSource.APP -> AppPower.of(archidektId)?.power?.toDouble()
     }
 
@@ -127,19 +129,14 @@ data class Deck(
     fun powerAt(source: PowerSource): Long? = when (source) {
         PowerSource.COMMANDER_SALT -> scoredAt
         PowerSource.EDH_POWER_LEVEL -> edhPowerAt
-        PowerSource.SCROLLVAULT -> svAt
         PowerSource.APP -> null
     }
 
     fun powerError(source: PowerSource): String? = when (source) {
         PowerSource.COMMANDER_SALT -> scoreError
         PowerSource.EDH_POWER_LEVEL -> edhPowerError
-        PowerSource.SCROLLVAULT -> svError
         PowerSource.APP -> if (AppPower.known(archidektId) && AppPower.of(archidektId) == null) "no win turn without a commander" else null
     }
-
-    /** ScrollVault's extra findings (win turns, its bracket verdict, the line for your pod). */
-    val scrollVaultReading get() = ScrollVaultReading.decode(scrollVault)
 }
 
 /**
@@ -168,17 +165,17 @@ enum class DeckGroup(val title: String) {
 enum class PowerSource(val label: String, val site: String) {
     COMMANDER_SALT("Commander Salt", "commandersalt.com"),
     EDH_POWER_LEVEL("EDH Power Level", "edhpowerlevel.com"),
-    SCROLLVAULT("ScrollVault", "scrollvault.net"),
     /** Worked out on the phone from the win turn and Commander Salt's ratings ([AppPowerLevel]). Since 1.66. */
     APP("This app", "the app's win turn");
 
     /** Rated by another site after Commander Salt has scored the deck. */
-    val external get() = this == EDH_POWER_LEVEL || this == SCROLLVAULT
+    val external get() = this == EDH_POWER_LEVEL
 
     /** Not Commander Salt's own power level: the deck's pages say where it comes from. */
     val separate get() = this != COMMANDER_SALT
 
     companion object {
+        // SCROLLVAULT until 1.104: falls back to Commander Salt.
         fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT
     }
 }

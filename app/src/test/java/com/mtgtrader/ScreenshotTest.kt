@@ -1364,13 +1364,13 @@ class ScreenshotTest {
         Triple(printDeck(6, "Kenrith brew", "Kenrith, the Returned King", "WUBRG", 2, 2, 5.0, 9.0), null, slowTurns),
     )
 
-    /** With [source] ScrollVault the power cards' footer takes two lines (since 1.67). */
+    /** With [source] a site other than Commander Salt, the power cards show its power level (edhpowerlevel.com's "6.40" since 1.105). */
     private fun printSheet(
         kind: com.mtgtrader.data.RuleZeroCard, inkSaver: Boolean, perMm: Float = 6f,
         source: com.mtgtrader.data.PowerSource = com.mtgtrader.data.PowerSource.COMMANDER_SALT,
     ): android.graphics.Bitmap {
         val cards = printCards.map { (deck, data, turns) ->
-            com.mtgtrader.ui.PrintCard(kind, deck.copy(svPowerLevel = deck.powerLevel), data, win(turns), source)
+            com.mtgtrader.ui.PrintCard(kind, deck.copy(edhPowerLevel = deck.powerLevel, edhPowerAt = deck.scoredAt), data, win(turns), source)
         }
         val bitmap = android.graphics.Bitmap.createBitmap((210 * perMm).toInt(), (297 * perMm).toInt(), android.graphics.Bitmap.Config.ARGB_8888)
         com.mtgtrader.ui.CardSheets.drawPage(android.graphics.Canvas(bitmap), perMm, cards, com.mtgtrader.ui.CardSheets.footer(cards, 0, 2), inkSaver)
@@ -1381,7 +1381,7 @@ class ScreenshotTest {
         printSheet(com.mtgtrader.data.RuleZeroCard.BRACKET, inkSaver = false).captureRoboImage("src/test/screenshots/print_bracket_sheet.png", roborazziOptions = screenshotOptions)
 
     @Test fun printSheetPowerInkSaver() =
-        printSheet(com.mtgtrader.data.RuleZeroCard.POWER, inkSaver = true, source = com.mtgtrader.data.PowerSource.SCROLLVAULT).captureRoboImage("src/test/screenshots/print_power_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
+        printSheet(com.mtgtrader.data.RuleZeroCard.POWER, inkSaver = true, source = com.mtgtrader.data.PowerSource.EDH_POWER_LEVEL).captureRoboImage("src/test/screenshots/print_power_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
 
     @Test fun printChoices() {
         val decks = printCards.map { it.first }

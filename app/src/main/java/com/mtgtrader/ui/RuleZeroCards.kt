@@ -84,7 +84,6 @@ import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltEffect
-import com.mtgtrader.data.ScrollVaultReading
 import com.mtgtrader.data.WinOdds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -317,7 +316,6 @@ private fun SpeedSection(win: WinOdds) {
 fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Modifier = Modifier) {
     CardFrame(deck, "Power level", modifier) {
         val power = deck.power(source)
-        val sv = deck.scrollVaultReading.takeIf { source == PowerSource.SCROLLVAULT && power != null }
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(power?.let { Scores.power(it, source) } ?: "—", fontSize = 44.sp, fontWeight = FontWeight.SemiBold, lineHeight = 46.sp)
@@ -328,7 +326,6 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
             Text(
                 when {
                     source == PowerSource.COMMANDER_SALT -> listOfNotNull(data.playStyle?.lowercase(), source.site).joinToString(" · ")
-                    sv?.margin != null -> "by ${source.site} · ±${Scores.power(sv.margin, source)}"
                     else -> "by ${source.site}"
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -345,7 +342,6 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
                 )
             }
         }
-        sv?.let { r -> AtTheTable(r) }
         Section(null) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
@@ -395,34 +391,6 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
             }
         }
         Footer(powerCredit(source).joinToString("\n"), deck)
-    }
-}
-
-/** ScrollVault's goldfish clock, its own bracket call and its line for the pod. */
-@Composable
-private fun AtTheTable(r: ScrollVaultReading) {
-    Section("At the table (ScrollVault)") {
-        r.typicalWin?.let { t ->
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text("Typical win turn $t", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                r.earliestWin?.let { Text("  ·  earliest turn $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
-        }
-        r.bracket?.let { b ->
-            Text(
-                "Its bracket: $b (${Brackets.name(b)?.lowercase()})" + (r.borderline?.let { ", borderline $it" } ?: ""),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        r.podLine?.let { line ->
-            Text(
-                "“$line”",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF3C3489),
-                modifier = Modifier.padding(top = 6.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFFEEEDFE)).padding(horizontal = 10.dp, vertical = 6.dp),
-            )
-        }
     }
 }
 

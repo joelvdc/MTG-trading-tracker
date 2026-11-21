@@ -64,7 +64,7 @@ class SyncMergeTest {
     fun newerArchidektListWinsOverLaterScoresOnTheOldList() {
         // Phone A reloaded the deck after River of Tears went to the maybeboard and Polluted Delta came in.
         val phoneA = vohar(archidektAt = 2_000, importedAt = 10_000, updatedAt = 10_005, land = "Polluted Delta", scoredAt = 10_004, power = 4.4)
-        // Phone B still had the old list, but rated it on ScrollVault later.
+        // Phone B still had the old list, but had it rated by another site later.
         val phoneB = vohar(archidektAt = 1_000, importedAt = 5_000, updatedAt = 20_000, land = "River of Tears", scoredAt = 5_001, power = 4.3, svAt = 20_000, sv = 6.2)
         for ((a, b) in listOf(phoneA to phoneB, phoneB to phoneA)) {
             val m = DeckMerge.merge(a, b)
@@ -72,7 +72,7 @@ class SyncMergeTest {
             assertEquals(2_000L, m.deck.archidektUpdatedAt)
             // Commander Salt's score from before phone A's reload belongs to the old list: phone A's stays.
             assertEquals(4.4, m.deck.powerLevel!!, 1e-9)
-            // ScrollVault rated it after phone A's reload (it reads Archidekt itself): kept.
+            // Rated after phone A's reload (it reads Archidekt itself): kept.
             assertEquals(6.2, m.deck.svPowerLevel!!, 1e-9)
             assertEquals(20_000L, m.deck.updatedAt)
         }
