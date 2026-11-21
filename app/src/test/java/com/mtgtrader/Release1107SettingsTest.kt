@@ -10,7 +10,6 @@ import com.mtgtrader.data.DeckCopies
 import com.mtgtrader.data.Settings
 import com.mtgtrader.data.SortLevelSetting
 import com.mtgtrader.data.SortLevelsCodec
-import com.mtgtrader.data.SortRules
 import com.mtgtrader.data.SyncSchema
 import com.mtgtrader.data.Together
 import kotlinx.coroutines.flow.first
@@ -98,7 +97,10 @@ class Release1107SettingsTest {
         assertTrue(s.sortLevels.isEmpty())
         s.sortTopId = 7
         s.sortMidId = 8
-        s.sortRules = SortRules(maxTop = 50, maxMid = 300, maxBulk = 5, floor = 1.25, mix = 50, weekly = 10)
+        // The limits and floor older versions saved (they have no levels).
+        val prefs = context.getSharedPreferences("settings", 0)
+        prefs.edit().putInt("sortMaxTop", 50).putInt("sortMaxMid", 300).putInt("sortMaxBulk", 5)
+            .putFloat("sortFloor", 1.25f).apply()
         assertEquals(listOf(SortLevelSetting("7", 50, 1.25), SortLevelSetting("8", 300, 1.25)), s.sortLevels)
         s.sortBulkId = 9
         assertEquals(listOf(SortLevelSetting("7", 50, 1.25), SortLevelSetting("8", 300, 1.25), SortLevelSetting("9", 5, null)), s.sortLevels)
@@ -110,10 +112,12 @@ class Release1107SettingsTest {
         val s = Settings(context)
         s.sortLevels = listOf(SortLevelSetting("11", 40, 2.0), SortLevelSetting("12", 500, 2.0), SortLevelSetting("13", 0, null))
         assertEquals(listOf(11L, 12L, 13L), listOf(s.sortTopId, s.sortMidId, s.sortBulkId))
-        assertEquals(40, s.sortRules.maxTop)
-        assertEquals(500, s.sortRules.maxMid)
-        assertEquals(0, s.sortRules.maxBulk)
-        assertEquals(2.0, s.sortRules.floor, 1e-9)
+        // The old keys, which versions before 1.107 read.
+        val prefs = context.getSharedPreferences("settings", 0)
+        assertEquals(40, prefs.getInt("sortMaxTop", -1))
+        assertEquals(500, prefs.getInt("sortMaxMid", -1))
+        assertEquals(0, prefs.getInt("sortMaxBulk", -1))
+        assertEquals(2.0f, prefs.getFloat("sortFloor", -1f), 1e-6f)
         assertEquals(3, s.sortLevels.size)
     }
 

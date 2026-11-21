@@ -318,13 +318,25 @@ class Settings(context: Context) {
         id,
     ).apply()
 
-    var sortRules: SortRules
-        get() = SortRules(
-            prefs.getInt("sortMaxTop", 200), prefs.getInt("sortMaxMid", 1_000), prefs.getInt("sortMaxBulk", 0),
-            prefs.getFloat("sortFloor", 0.5f).toDouble(), prefs.getInt("sortMix", 50), prefs.getInt("sortWeekly", 10),
-        )
-        set(v) = prefs.edit().putInt("sortMaxTop", v.maxTop).putInt("sortMaxMid", v.maxMid).putInt("sortMaxBulk", v.maxBulk)
-            .putFloat("sortFloor", v.floor.toFloat()).putInt("sortMix", v.mix).putInt("sortWeekly", v.weekly).stamp().apply()
+    /** How the sort weighs value against Commander popularity (0 = value only, 50 = like the trade binder, 100 = popularity most). Synced. Since 1.104. */
+    var sortMix: Int
+        get() = prefs.getInt("sortMix", 50)
+        set(v) { if (v in 0..100) prefs.edit().putInt("sortMix", v).stamp().apply() }
+
+    /** Most copies that may move in seven days once the first sort is done (at least 1). Synced. Since 1.104. */
+    var sortWeekly: Int
+        get() = prefs.getInt("sortWeekly", 10)
+        set(v) { if (v >= 1) prefs.edit().putInt("sortWeekly", v).stamp().apply() }
+
+    /**
+     * Writes the three limits and the floor of 1.104–1.106, which older versions still read (they have no levels):
+     * with exactly three levels they stay in step with the sort. Since 1.104.
+     */
+    private fun putLegacySortLimits(levels: List<SortLevelSetting>) {
+        if (levels.size != 3) return
+        prefs.edit().putInt("sortMaxTop", levels[0].max).putInt("sortMaxMid", levels[1].max).putInt("sortMaxBulk", levels[2].max)
+            .putFloat("sortFloor", (levels[0].minPrice ?: 0.0).toFloat()).apply()
+    }
 
     /** True once a sort was applied: from then on it keeps its result steady and caps the moves per week. Since 1.104. */
     var sortSettled: Boolean
@@ -367,8 +379,7 @@ class Settings(context: Context) {
             e.putLong("sortTopId", levels[0].binder.toLongOrNull() ?: 0)
                 .putLong("sortMidId", levels[1].binder.toLongOrNull() ?: 0)
                 .putLong("sortBulkId", levels[2].binder.toLongOrNull() ?: 0)
-                .putInt("sortMaxTop", levels[0].max).putInt("sortMaxMid", levels[1].max).putInt("sortMaxBulk", levels[2].max)
-                .putFloat("sortFloor", (levels[0].minPrice ?: 0.0).toFloat())
+            putLegacySortLimits(levels)
         }
         if (stamp) e.stamp()
         e.apply()
@@ -378,6 +389,15 @@ class Settings(context: Context) {
     var sortDecksId: Long
         get() = prefs.getLong("sortDecksId", 0)
         set(v) { if (v != sortDecksId) prefs.edit().putLong("sortDecksId", v).stamp().apply() }
+
+    /** The Decks binder where [CollectionSorter.setUp] saves it: every kind of value, without stamping. Since 1.107. */
+    fun setSortDecks(id: Long) = putSortDecks(id, stamp = false)
+
+    private fun putSortDecks(id: Long, stamp: Boolean) {
+        val e = prefs.edit().putLong("sortDecksId", id)
+        if (stamp) e.stamp()
+        e.apply()
+    }
 
     /** The Decks binder named in synced settings (without stamping the settings as changed here). Since 1.107. */
     fun setSortDecksFromSync(id: Long) = prefs.edit().putLong("sortDecksId", id).apply()
@@ -822,15 +842,14 @@ class Settings(context: Context) {
                 put("tradeKeepBestDecks", r.keepBestForDecks.toString())
                 put("tradeKeepBestAll", r.keepBestAlways.toString())
             }
-            // The collection sort's rules and what it remembers (since 1.104). Its binders go by their uid (SyncStore).
-            sortRules.let { r ->
-                put("sortMaxTop", r.maxTop.toString())
-                put("sortMaxMid", r.maxMid.toString())
-                put("sortMaxBulk", r.maxBulk.toString())
-                put("sortFloor", r.floor.toString())
-                put("sortMix", r.mix.toString())
-                put("sortWeekly", r.weekly.toString())
-            }
+            // The collection sort's rules and what it remembers (since 1.104). Its binders go by their uid (SyncStore);
+            // its three old limits and the floor stay for versions before 1.107, which read them.
+            put("sortMaxTop", prefs.getInt("sortMaxTop", 200).toString())
+            put("sortMaxMid", prefs.getInt("sortMaxMid", 1_000).toString())
+            put("sortMaxBulk", prefs.getInt("sortMaxBulk", 0).toString())
+            put("sortFloor", prefs.getFloat("sortFloor", 0.5f).toString())
+            put("sortMix", sortMix.toString())
+            put("sortWeekly", sortWeekly.toString())
             put("sortSettled", sortSettled.toString())
             put("sortSkips", sortSkips.sorted().joinToString("\n"))
             put("sortLog", sortLog.joinToString("\n"))
@@ -885,11 +904,14 @@ class Settings(context: Context) {
         v["tradeMinValue"]?.toFloatOrNull()?.takeIf { it >= 0 }?.let { e.putFloat("tradeMinValue", it) }
         v["tradeKeepBestDecks"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepBestDecks", it) }
         v["tradeKeepBestAll"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepBestAll", it) }
-        // The collection sort's rules (numbers checked like the trade binder's) and what it remembers. Since 1.104.
+        // The collection sort's rules (numbers checked like the trade binder's) and what it remembers. Since 1.104; the
+        // old sort limits and floor are read by versions before 1.107, and so are kept the way they always were.
         v["sortMaxTop"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("sortMaxTop", it) }
         v["sortMaxMid"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("sortMaxMid", it) }
         v["sortMaxBulk"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("sortMaxBulk", it) }
         v["sortFloor"]?.toFloatOrNull()?.takeIf { it >= 0 }?.let { e.putFloat("sortFloor", it) }
+        v["sortMix"]?.toIntOrNull()?.takeIf { it in 0..100 }?.let { e.putInt("sortMix", it) }
+        v["sortWeekly"]?.toIntOrNull()?.takeIf { it >= 1 }?.let { e.putInt("sortWeekly", it) }
         v["sortMix"]?.toIntOrNull()?.takeIf { it in 0..100 }?.let { e.putInt("sortMix", it) }
         v["sortWeekly"]?.toIntOrNull()?.takeIf { it >= 1 }?.let { e.putInt("sortWeekly", it) }
         v["sortSettled"]?.toBooleanStrictOrNull()?.let { e.putBoolean("sortSettled", it) }
@@ -909,6 +931,9 @@ class Settings(context: Context) {
     }
 
     private fun android.content.SharedPreferences.Editor.stamp() = putLong(PREFS_UPDATED_AT, System.currentTimeMillis())
+
+    /** The settings changed here (for sync): [CollectionSorter.setUp] writes them all at once. Since 1.107. */
+    fun stamp() = prefs.edit().stamp().apply()
 
     /** Marks the synced settings as changed here (the declined trade binder suggestions changed). Since 1.80. */
     fun stampSyncedPrefs() = prefs.edit().stamp().apply()

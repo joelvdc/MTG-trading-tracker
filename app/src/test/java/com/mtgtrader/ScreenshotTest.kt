@@ -1497,15 +1497,19 @@ class ScreenshotTest {
 
     /** 1.104: the collection's sort once set up: this week's moves used, each place's count, the suggested moves by where the cards are now. */
     @Test fun sortSuggestions() {
-        val rules = com.mtgtrader.data.SortRules(maxTop = 200, maxMid = 1_000, maxBulk = 0, floor = 0.5, mix = 50, weekly = 10)
+        val levels = listOf(
+            com.mtgtrader.data.SortLevelSetting("l1", 200, 0.5),
+            com.mtgtrader.data.SortLevelSetting("l2", 1_000, 0.5),
+            com.mtgtrader.data.SortLevelSetting("l3", 0, null),
+        )
         fun move(name: String, set: String, rank: Int, from: String, to: String, copies: Int, price: Double?, reason: String) =
             com.mtgtrader.data.SortMove(
                 key = "$name-${set}01|false|false|NM|EN",
                 name = name, from = from, to = to, copies = copies, price = price, score = price ?: 0.0, reason = reason,
             )
-        val top = com.mtgtrader.data.SortPlace.TOP.key
-        val mid = com.mtgtrader.data.SortPlace.MID.key
-        val bulk = com.mtgtrader.data.SortPlace.BULK.key
+        val top = "l1"
+        val mid = "l2"
+        val bulk = "l3"
         val unsorted = com.mtgtrader.data.UNSORTED_KEY
         val plan = com.mtgtrader.data.SortPlan(
             moves = listOf(
@@ -1525,7 +1529,7 @@ class ScreenshotTest {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     com.mtgtrader.ui.SortSuggestions(
                         pad = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                        settled = true, rules = rules, plan = plan,
+                        settled = true, levels = levels, weekly = 10, plan = plan,
                         placeNames = mapOf(top to "Collection binder", mid to "Not bulk", bulk to "Bulk"),
                         unticked = emptySet(), onToggle = { _, _ -> },
                     )

@@ -1,7 +1,6 @@
 package com.mtgtrader.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,7 +37,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,18 +55,25 @@ import androidx.navigation.NavController
 import com.mtgtrader.container
 import com.mtgtrader.data.Binder
 import com.mtgtrader.data.BinderChoice
+import com.mtgtrader.data.DECKS_KEY
+import com.mtgtrader.data.DeckCopies
 import com.mtgtrader.data.Money
+import com.mtgtrader.data.SortLevelRule
+import com.mtgtrader.data.SortLevelSetting
 import com.mtgtrader.data.SortMove
-import com.mtgtrader.data.SortPlace
 import com.mtgtrader.data.SortPlan
-import com.mtgtrader.data.SortRules
+import com.mtgtrader.data.Together
 import com.mtgtrader.data.UNSORTED_KEY
+import com.mtgtrader.data.isLevelKey
+import com.mtgtrader.data.levelKey
+import com.mtgtrader.data.orderOf
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * Sorts the collection: splits it into a Collection binder, Not bulk and Bulk (by value and Commander popularity),
- * keeping Unsorted for what doesn't fit. Every other binder is left alone. Since 1.104.
+ * Sorts the collection: splits it into the owner's levels (one binder each, best first), the Decks binder and
+ * Unsorted (by value and Commander popularity), keeping Unsorted for what doesn't fit. Every other binder is left
+ * alone. Since 1.104; its levels since 1.107.
  */
 @Composable
 fun SortScreen(nav: NavController) {
@@ -77,9 +82,12 @@ fun SortScreen(nav: NavController) {
     val snackbar = remember { SnackbarHostState() }
     var reload by remember { mutableIntStateOf(0) }
     var plan by remember { mutableStateOf<SortPlan?>(null) }
-    var placed by remember { mutableStateOf<List<Pair<SortPlace, Binder>>>(emptyList()) }
+    var levels by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var decks by remember { mutableStateOf<String?>(null) }
     var settled by remember { mutableStateOf(c.settings.sortSettled) }
-    var rules by remember { mutableStateOf(c.settings.sortRules) }
+    var rules by remember { mutableStateOf(c.settings.sortLevels) }
+    var mix by remember { mutableStateOf(c.settings.sortMix) }
+    var weekly by remember { mutableStateOf(c.settings.sortWeekly) }
     var setUp by remember { mutableStateOf(false) }
     var applying by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
@@ -92,13 +100,18 @@ fun SortScreen(nav: NavController) {
         plan = null
         unticked = emptySet()
         settled = c.settings.sortSettled
-        rules = c.settings.sortRules
-        // Popularity comes with the card details; fetch any still missing first.
-        runCatching { c.cardDetails.fillMissing() }
-        val now = c.sorter.places()
-        setUp = SortPlace.ORDER.any { now[it] == null }
-        placed = SortPlace.ORDER.mapNotNull { p -> now[p]?.let { p to it } }
-        plan = c.sorter.suggest()
+        rules = c.settings.sortLevels
+        mix = c.settings.sortMix
+        weekly = c.settings.sortWeekly
+        val live = c.sorter.levels()
+        setUp = live.isEmpty()
+        levels = live.mapIndexed { i, (_, b) -> levelKey(i) to b.name }
+        decks = c.sorter.decksBinder()?.name
+        if (!setUp) {
+            // Popularity comes with the card details; fetch any still missing first.
+            runCatching { c.cardDetails.fillMissing() }
+            plan = c.sorter.suggest()
+        }
     }
 
     val moves = plan?.moves.orEmpty()
@@ -108,7 +121,7 @@ fun SortScreen(nav: NavController) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(if (setUp) "Sort the collection" else "Set up the sort") },
+                title = { Text(if (setUp) "Set up the sort" else "Sort the collection") },
                 navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
@@ -168,7 +181,7 @@ fun SortScreen(nav: NavController) {
         },
     ) { pad ->
         val p = plan
-        if (p == null || placed.isEmpty() && !setUp) {
+        if (p == null || levels.isEmpty() && !setUp) {
             Column(Modifier.fillMaxSize().padding(pad), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 CircularProgressIndicator()
                 Spacer(Modifier.padding(6.dp))
@@ -180,8 +193,8 @@ fun SortScreen(nav: NavController) {
             return@Scaffold
         }
         if (setUp) {
-            SortSetUpList(pad, rules, placed.toMap()) { saved ->
-                c.settings.sortRules = saved
+            // Saving (or a problem with it) shows in the setup itself; a save that worked says so and sorts.
+            SortSetUpList(pad, rules, mix, weekly, levels) {
                 scope.launch {
                     snackbar.showSnackbar("Settings saved")
                     reload++
@@ -189,12 +202,14 @@ fun SortScreen(nav: NavController) {
             }
             return@Scaffold
         }
+        val names = levels.toMap() + listOfNotNull(decks?.let { DECKS_KEY to it })
         SortSuggestions(
             pad = pad,
             settled = settled,
-            rules = rules,
+            levels = rules,
+            weekly = weekly,
             plan = p,
-            placeNames = placed.associate { (place, b) -> place.key to b.name },
+            placeNames = names,
             unticked = unticked,
             onToggle = { key, on -> unticked = if (on) unticked - key else unticked + key },
         )
@@ -225,20 +240,24 @@ fun SortScreen(nav: NavController) {
 /** The suggestions' own key: a card's kind and the two places ("<kind>><from>><to>"). */
 internal val SortMove.rowKey get() = "$key>$from>$to"
 
-/** "Collection binder 187/200 · Not bulk 640/1,000 · Bulk 1,204" (a place without a limit has no "/"). */
-internal fun sortCountsLine(plan: SortPlan, placeNames: Map<String, String>, rules: SortRules): String {
-    val parts = SortPlace.ORDER.map { place ->
-        val n = plan.after[place.key] ?: 0
-        val max = when (place) {
-            SortPlace.TOP -> rules.maxTop
-            SortPlace.MID -> rules.maxMid
-            SortPlace.BULK -> rules.maxBulk
-        }
-        val name = placeNames[place.key] ?: place.label
+/** "Collection binder 187/200 · Not bulk 640/1,000 · Decks 54 · Unsorted 31" (a level without a limit has no "/"). */
+internal fun sortCountsLine(plan: SortPlan, placeNames: Map<String, String>, levels: List<SortLevelSetting>): String {
+    val parts = orderOf(levels.size).mapNotNull { place ->
+        val n = plan.after[place] ?: 0
+        if (place == UNSORTED_KEY && n == 0) return@mapNotNull null
+        val name = placeName(place, placeNames)
+        val level = levels.getOrNull(place.drop(1).toIntOrNull()?.minus(1) ?: -1)
+        val max = if (isLevelKey(place)) level?.max ?: 0 else 0
         if (max > 0) "$name ${"%,d".format(n)}/${"%,d".format(max)}" else "$name ${"%,d".format(n)}"
     }
-    val unsorted = plan.after[UNSORTED_KEY] ?: 0
-    return (parts + if (unsorted > 0) listOf("${Binder.UNSORTED_NAME} ${"%,d".format(unsorted)}") else emptyList()).joinToString(" · ")
+    return parts.joinToString(" · ")
+}
+
+/** The name of [place] as the screen shows it: its binder's, "Decks", or Unsorted. */
+internal fun placeName(place: String, placeNames: Map<String, String>) = placeNames[place] ?: when {
+    place == UNSORTED_KEY -> Binder.UNSORTED_NAME
+    place == DECKS_KEY -> "Decks"
+    else -> "Level ${place.drop(1)}"
 }
 
 /**
@@ -249,14 +268,15 @@ internal fun sortCountsLine(plan: SortPlan, placeNames: Map<String, String>, rul
 fun SortSuggestions(
     pad: PaddingValues,
     settled: Boolean,
-    rules: SortRules,
+    levels: List<SortLevelSetting>,
+    weekly: Int,
     plan: SortPlan,
     placeNames: Map<String, String>,
     unticked: Set<String>,
     onToggle: (key: String, on: Boolean) -> Unit,
 ) {
-    // The same order as the planner's moves: from the Collection binder first, then Not bulk, Bulk, Unsorted.
-    val fromOrder = SortPlace.ORDER.map { it.key } + UNSORTED_KEY
+    // The same order as the planner's moves: from the Decks binder first, then the levels, then Unsorted.
+    val fromOrder = orderOf(levels.size)
     val groups = fromOrder.mapNotNull { from ->
         val list = plan.moves.filter { it.from == from }
         if (list.isEmpty()) null else from to list
@@ -265,20 +285,27 @@ fun SortSuggestions(
         item(key = "head") {
             Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                 Text(
-                    sortCountsLine(plan, placeNames, rules),
+                    sortCountsLine(plan, placeNames, levels),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(vertical = 6.dp),
                 )
+                if (plan.deckShort > 0) {
+                    Text(
+                        "Your decks miss ${plan.deckShort} card(s) you don't own",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (settled) {
                     Text(
-                        "This week: ${plan.weekUsed} of ${rules.weekly} moves used" + if (plan.heldBack > 0) " · ${plan.heldBack} more wait for next week" else "",
+                        "This week: ${plan.weekUsed} of $weekly moves used" + if (plan.heldBack > 0) " · ${plan.heldBack} more wait for next week" else "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
                     Text(
                         "First sort: everything is placed at once. After this, cards only move when they clearly belong " +
-                            "elsewhere, at most ${rules.weekly} a week.",
+                            "elsewhere, at most $weekly a week.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -295,12 +322,12 @@ fun SortSuggestions(
             }
         }
         for ((from, list) in groups) {
-            val title = "From " + (placeNames[from] ?: SortPlace.fromKey(from)?.label ?: Binder.UNSORTED_NAME)
+            val title = "From " + placeName(from, placeNames)
             item(key = "h_$from") { SortSectionHeader("$title (${list.sumOf { it.copies }})") }
             items(list, key = { it.rowKey }) { move ->
                 SortMoveRow(
                     move = move,
-                    to = placeNames[move.to] ?: SortPlace.fromKey(move.to)?.label ?: Binder.UNSORTED_NAME,
+                    to = placeName(move.to, placeNames),
                     checked = move.rowKey !in unticked,
                 ) { on -> onToggle(move.rowKey, on) }
             }
@@ -349,30 +376,41 @@ private fun SortMoveRow(move: SortMove, to: String, checked: Boolean, onCheck: (
     }
 }
 
-/** Each place's binder as the setup starts: the one it has now, or a new one with the place's usual name. */
-internal fun initialChoices(places: Map<SortPlace, Binder>): Map<SortPlace, BinderChoice> =
-    SortPlace.ORDER.associateWith { place -> places[place]?.let { BinderChoice(binderId = it.id) } ?: BinderChoice(newName = place.label) }
-
-/** "Collection binder", "Not bulk", "Bulk": what each place's binder is called in the setup. */
-internal fun placeLabel(place: SortPlace): String = when (place) {
-    SortPlace.TOP -> "Collection binder"
-    SortPlace.MID -> "Not bulk"
-    SortPlace.BULK -> "Bulk"
+/** "Collection binder", "Not bulk", "Bulk": what each level's binder is called in the setup. */
+private fun placeLabel(i: Int): String = when (i) {
+    0 -> "Collection binder"
+    1 -> "Not bulk"
+    2 -> "Bulk"
+    else -> "Level ${i + 1}"
 }
 
-/** The sort's setup (or its saved settings): the three binders, the limits and how cards are weighed. */
+/**
+ * The sort's setup: three levels (the first two with the old floor as their minimum price), how cards are weighed
+ * and the weekly limit. [levelNames] are the levels' binders now, best first, or empty for none. Since 1.104;
+ * the levels' own screens come with the setup of 1.107.
+ */
 @Composable
-private fun SortSetUpList(pad: PaddingValues, rules: SortRules, places: Map<SortPlace, Binder>, onSave: (SortRules) -> Unit) {
+private fun SortSetUpList(
+    pad: PaddingValues,
+    levels: List<SortLevelSetting>,
+    mixNow: Int,
+    weeklyNow: Int,
+    levelNames: List<Pair<String, String>>,
+    onSave: () -> Unit,
+) {
     val c = LocalContext.current.container
     val scope = rememberCoroutineScope()
-    var choices by remember { mutableStateOf(initialChoices(places)) }
-    var maxTop by remember { mutableStateOf(rules.maxTop.toString()) }
-    var maxMid by remember { mutableStateOf(rules.maxMid.toString()) }
-    var maxBulk by remember { mutableStateOf(rules.maxBulk.toString()) }
-    var floor by remember(rules.floor) { mutableStateOf(Money.input(rules.floor)) }
+    // The form's three levels: the saved ones (the last one may have no limit), or the usual three.
+    var maxTop by remember { mutableStateOf((levels.getOrNull(0)?.max ?: 200).toString()) }
+    var maxMid by remember { mutableStateOf((levels.getOrNull(1)?.max ?: 1_000).toString()) }
+    var maxBulk by remember {
+        mutableStateOf(if (levels.isEmpty()) "0" else (levels.getOrNull(2)?.max ?: 0).toString())
+    }
+    var floor by remember(levels.getOrNull(0)?.minPrice) { mutableStateOf(Money.input(levels.getOrNull(0)?.minPrice ?: 0.5)) }
     val bulkSymbol = Money.symbol
-    var mix by remember { mutableStateOf(rules.mix) }
-    var weekly by remember { mutableStateOf(rules.weekly.toString()) }
+    var mix by remember { mutableStateOf(mixNow) }
+    var weekly by remember { mutableStateOf(weeklyNow.toString()) }
+    // The problem of the last save (cleared when the next one starts).
     var problem by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     val floorEur = remember(floor) { Fmt.parseMoneyEur(floor) }
@@ -390,11 +428,11 @@ private fun SortSetUpList(pad: PaddingValues, rules: SortRules, places: Map<Sort
                 modifier = Modifier.padding(vertical = 8.dp),
             )
         }
-        item(key = "binders") {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                for (place in SortPlace.ORDER) {
-                    key(place) {
-                        SortBinderField(place, choices.getValue(place)) { choices = choices + (place to it) }
+        if (levelNames.isNotEmpty()) {
+            item(key = "levels") {
+                Column(Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for ((i, level) in levelNames.withIndex()) {
+                        Text("${placeLabel(i)}: ${level.second}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -458,45 +496,45 @@ private fun SortSetUpList(pad: PaddingValues, rules: SortRules, places: Map<Sort
         item(key = "save") {
             Button(
                 onClick = {
-                    val saved = SortRules(nTop!!, nMid!!, nBulk!!, floorEur!!, mix, nWeekly!!)
                     saving = true
+                    problem = null
                     scope.launch {
-                        // A new binder may not repeat a name (the three places must end up as three different binders).
-                        val problems = SortPlace.ORDER.mapNotNull { place ->
-                            choices.getValue(place).newName?.let { name -> c.repo.binderNameProblem(name)?.let { placeLabel(place) to it } }
+                        // The three levels' binders: the ones they have now, or a new one named as the place is.
+                        val levelChoices = (0..2).map { i ->
+                            val now = c.settings.sortLevels.getOrNull(i)
+                            Triple(
+                                now?.let { BinderChoice(binderId = it.binder.toLongOrNull() ?: 0) } ?: BinderChoice(newName = placeLabel(i)),
+                                when (i) {
+                                    0 -> nTop!!
+                                    1 -> nMid!!
+                                    else -> nBulk!!
+                                },
+                                if (i < 2) floorEur!! else null,
+                            )
                         }
-                        if (problems.isNotEmpty()) {
-                            problem = problems.first().second
+                        val failures = levelChoices.mapNotNull { (choice, _, _) ->
+                            choice.newName?.let { name -> c.repo.binderNameProblem(name) }
+                        }
+                        if (failures.isNotEmpty()) {
+                            problem = failures.first()
                             saving = false
                             return@launch
                         }
-                        // One after the other, so that a new binder's id is never taken for an older one.
-                        val failures = ArrayList<String>()
-                        for (place in SortPlace.ORDER) {
-                            runCatching { c.sorter.setUp(mapOf(place to choices.getValue(place)), saved) }
-                                .onFailure { failures += "${placeLabel(place)}: ${it.message ?: "that didn't work"}" }
+                        val result = runCatching {
+                            c.sorter.setUp(
+                                levelChoices, decks = null, mix = mix, weekly = nWeekly!!, together = Together.NAME,
+                                outlierRatio = 3.0, outlierGap = 5.0, deckCopies = DeckCopies.BEST,
+                            )
                         }
+                        problem = result.exceptionOrNull()?.let { it.message ?: "That didn't work" }
                         saving = false
-                        problem = failures.firstOrNull()
-                        if (failures.isEmpty()) onSave(saved)
+                        if (result.exceptionOrNull() == null) onSave()
                     }
                 },
-                enabled = valid && !saving && choices.values.all { it.isValid },
+                enabled = valid && !saving,
                 modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
             ) { Text("Save and suggest") }
             problem?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 6.dp)) }
         }
     }
-}
-
-/** One place's binder: an existing binder, or a new one named here. */
-@Composable
-private fun SortBinderField(place: SortPlace, choice: BinderChoice, onChange: (BinderChoice) -> Unit) {
-    BinderPicker(
-        label = placeLabel(place),
-        choice = choice,
-        onChange = onChange,
-        suggestedName = place.label,
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
