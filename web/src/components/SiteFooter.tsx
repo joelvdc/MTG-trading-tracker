@@ -1,9 +1,12 @@
 // The footer on every page (2026-11-13): the data sources, Wizards of the Coast's Fan Content Policy wording, and links
-// to the privacy and legal pages and to the project's GitHub issues (the contact).
+// to the privacy and terms pages, the contact email address (since app 1.106) and the legal page.
 
 import Link from "next/link";
 
 export const ISSUES_URL = "https://github.com/joelvdc/MTG-trading-tracker/issues";
+
+/** The address questions and data requests go to; since app 1.106. */
+export const CONTACT_EMAIL = "mtgtrader@astermail.org";
 
 /** The sources named in the footer; the legal page lists them all with what each gives. */
 const SOURCES: [string, string][] = [
@@ -43,9 +46,8 @@ export function SiteFooter() {
         </p>
         <p className="site-footer-links">
           <Link href="/privacy">Privacy</Link>
-          <a href={ISSUES_URL} target="_blank" rel="noreferrer">
-            Contact
-          </a>
+          <Link href="/terms">Terms</Link>
+          <a href={`mailto:${CONTACT_EMAIL}`}>Contact</a>
           <Link href="/legal">Legal &amp; attribution</Link>
         </p>
       </div>

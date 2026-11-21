@@ -27,6 +27,9 @@ export default function LegalPage() {
         <Link href="/">← MTG Trader</Link>
       </p>
       <h1>Legal &amp; attribution</h1>
+      <p>
+        Privacy and terms: see <Link href="/privacy">Privacy</Link> and <Link href="/terms">Terms</Link>.
+      </p>
 
       <h2>Wizards of the Coast</h2>
       <p>
