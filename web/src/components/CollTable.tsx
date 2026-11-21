@@ -218,6 +218,13 @@ export function CollTable({
             {u.decks.length || <span className="muted">0</span>}
           </td>
         );
+      case "deckNames":
+        // The active decks that use the card, A to Z; a card in none has a dash.
+        return (
+          <td className={cellClass(c, "deck-cell")}>
+            {u.decks.length ? u.decks.join(", ") : <span className="muted">—</span>}
+          </td>
+        );
       case "inDecks":
         return <td className={cellClass(c)}>{u.copies || <span className="muted">0</span>}</td>;
       case "spare": {

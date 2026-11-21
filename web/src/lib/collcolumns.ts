@@ -32,6 +32,7 @@ export type ColumnId =
   | "cardkingdom"
   | "ckPays"
   | "decks"
+  | "deckNames"
   | "inDecks"
   | "spare";
 
@@ -80,6 +81,7 @@ export const COLUMNS: ColumnDef[] = [
   { id: "cardkingdom", label: "Card Kingdom", hint: "One copy at Card Kingdom", group: "Prices", className: "num" },
   { id: "ckPays", label: "CK pays", hint: "What Card Kingdom pays for one copy", group: "Prices", className: "num" },
   { id: "decks", label: "Decks", hint: "How many of your decks use the card (point at it for their names)", group: "Decks", field: "DECKS", className: "num" },
+  { id: "deckNames", label: "Deck", hint: "The active decks that use this card", group: "Decks", field: "DECK" },
   { id: "inDecks", label: "In decks", hint: "Copies your decks use, all together", group: "Decks", className: "num" },
   { id: "spare", label: "Spare", hint: "Copies you own (every printing) minus copies your decks use", group: "Decks", field: "SPARE", className: "num" },
 ];
