@@ -912,6 +912,7 @@ export default function CollectionPage() {
         <FilterDialog
           filter={filter}
           sets={sets}
+          decks={view.decks}
           currency={view.currency}
           perEuro={view.perEuro}
           onClose={() => setFiltering(false)}

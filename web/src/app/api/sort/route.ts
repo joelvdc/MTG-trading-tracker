@@ -3,20 +3,18 @@ import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
 import { collectionView } from "@/lib/collview";
 import {
-  SORT_PLACES,
   SORT_SKIPS_PREF,
   sortApply,
-  sortPlacesOf,
-  sortRulesOf,
   sortSetUp,
   sortSettledOf,
   sortSkipsOf,
   sortStartOver,
   sortSuggest,
   type SortMove,
-  type SortPlace,
   type SortPlaceChoice,
-  type SortRules,
+  type SortSettingsInput,
+  type SortTogether,
+  type SortDeckCopies,
 } from "@/lib/collsort";
 import { format } from "@/lib/money";
 import { loadPrices } from "@/lib/pricestore";
@@ -28,28 +26,33 @@ export const dynamic = "force-dynamic";
 type Loaded = Awaited<ReturnType<typeof loadAll>>;
 const loadAll = () => Promise.all([loadPrices(), loadDetails(), loadCardKingdom()]);
 
-/** What the sort page shows: the plan, the rules, the three places' binders and the binders to pick from. */
-function sortView(file: SyncFile, loaded: Loaded) {
+/**
+ * What the sort page shows: the plan, the settings, the levels' and Decks's binders, and the binders to pick from.
+ * [ignoreCap] is the page's "sort everything now": this week's limit doesn't count for this run.
+ */
+function sortView(file: SyncFile, loaded: Loaded, ignoreCap = false) {
   const [prices, details, ck] = loaded;
   const view = collectionView(file, prices, details, ck);
   const p = prefs(file);
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
-  const { plan, binders: places } = sortSuggest(file, prices, details, ck, Date.now(), money);
-  const uids = sortPlacesOf(p);
-  const taken = new Set(Object.values(uids).filter((uid): uid is string => !!uid));
+  const { plan, levels, decks, settings, ownUserSet } = sortSuggest(file, prices, details, ck, Date.now(), money, ignoreCap);
+  // The binders a place can be set to: every binder with a uid.
+  const used = new Set([...levels.map((l) => l.uid), ...(decks ? [decks.uid] : [])]);
   return {
     plan,
-    rules: sortRulesOf(p),
-    places,
-    // The binders a place can be set to: every binder with a uid.
+    // The settings as the page shows them (the levels with their binders' names).
+    settings,
+    levels,
+    decks,
+    ownUserSet,
     binders: binders(file)
       .filter((b) => b.uid)
-      .map((b) => ({ uid: b.uid!, name: b.name, used: taken.has(b.uid!) })),
+      .map((b) => ({ uid: b.uid!, name: b.name, used: used.has(b.uid!) })),
     settled: sortSettledOf(p),
     declined: sortSkipsOf(p).size,
     currency: view.currency,
     perEuro: view.perEuro,
-    /** A money line for the setup (the floor is in the same unit as the trade binder's minimum). */
+    /** A money line for the setup (the minimum prices are in euros). */
     moneyExample: money(1),
     readOnly: view.readOnly,
   };
@@ -57,16 +60,20 @@ function sortView(file: SyncFile, loaded: Loaded) {
 
 export type SortView = ReturnType<typeof sortView>;
 
-export async function GET() {
+export async function GET(req?: Request) {
   const a = await currentAccount();
   if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
   try {
+    const ignoreCap = req ? new URL(req.url).searchParams.get("ignoreCap") === "1" : false;
     const [{ file }, loaded] = await Promise.all([loadSync(a), loadAll()]);
-    return json(sortView(file, loaded));
+    return json(sortView(file, loaded, ignoreCap));
   } catch (e) {
     return errorResponse(e);
   }
 }
+
+/** The setup that can't work, with the message for the page. */
+class BadSetup extends Error {}
 
 /** A move as the page sends it back: its card kind and the two places (the app's SortMove). */
 const moveKey = (m: SortMove) => `${m.key}>${m.from}>${m.to}`;
@@ -89,39 +96,67 @@ const moves = (v: unknown, known: Map<string, SortMove>): SortMove[] | null => {
   return out;
 };
 
-function cleanRules(r: Partial<SortRules> | undefined): SortRules | null {
-  if (!r || typeof r !== "object") return null;
-  const int = (v: unknown, max: number) => (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
-  const maxTop = int(r.maxTop, 100000);
-  const maxMid = int(r.maxMid, 100000);
-  const maxBulk = int(r.maxBulk, 1000000);
-  const mix = int(r.mix, 100);
-  const weekly = int(r.weekly, 10000);
-  const floor = Number(r.floor);
-  if (maxTop === null || maxMid === null || maxBulk === null || mix === null || weekly === null || !Number.isFinite(floor) || floor < 0 || floor > 100000) return null;
-  if (weekly < 1) return null;
-  return { maxTop, maxMid, maxBulk, floor: Math.round(floor * 100) / 100, mix, weekly };
+/** A place's binder: an existing binder's uid, or a name for a new one. */
+function cleanChoice(v: unknown): SortPlaceChoice | null {
+  if (!v || typeof v !== "object") return null;
+  const uid = (v as { uid?: unknown }).uid;
+  const newName = (v as { newName?: unknown }).newName;
+  if (okKey(uid)) return { uid };
+  if (typeof newName === "string" && newName.trim().length > 0 && newName.trim().length <= 200 && !/[\n\r]/.test(newName)) return { newName: newName.trim() };
+  return null;
 }
 
-/** A place's choice: an existing binder's uid, or a name for a new one. */
-function cleanPlaces(v: unknown): Partial<Record<SortPlace, SortPlaceChoice>> | null {
+/** The setup page's setup: the levels (1 to 6, best first), the Decks binder (or none) and how the sort works. */
+interface SetUpBody {
+  levels: { choice: SortPlaceChoice; max: number; minPrice: number | null }[];
+  decks: SortPlaceChoice | null;
+  settings: SortSettingsInput;
+}
+
+function cleanSettings(v: unknown): SortSettingsInput | null {
   if (!v || typeof v !== "object") return null;
-  const out: Partial<Record<SortPlace, SortPlaceChoice>> = {};
-  for (const place of SORT_PLACES) {
-    const c = (v as Record<string, unknown>)[place];
-    if (c === undefined || c === null) continue;
-    if (typeof c !== "object") return null;
-    const uid = (c as { uid?: unknown }).uid;
-    const newName = (c as { newName?: unknown }).newName;
-    if (okKey(uid)) out[place] = { uid };
-    else if (typeof newName === "string" && newName.trim().length > 0 && newName.trim().length <= 200 && !/[\n\r]/.test(newName)) out[place] = { newName: newName.trim() };
-    else return null;
+  const s = v as Record<string, unknown>;
+  const int = (x: unknown, max: number) => (Number.isInteger(Number(x)) && Number(x) >= 0 && Number(x) <= max ? Number(x) : null);
+  const mix = int(s.mix, 100);
+  const weekly = int(s.weekly, 10000);
+  const ratio = Number(s.outlierRatio);
+  const gap = Number(s.outlierGap);
+  const together = s.together;
+  const deckCopies = s.deckCopies;
+  if (mix === null || weekly === null || weekly < 1) return null;
+  if (!Number.isFinite(ratio) || ratio < 1 || ratio > 100) return null;
+  if (!Number.isFinite(gap) || gap < 0 || gap > 10000) return null;
+  if (together !== "off" && together !== "printing" && together !== "name") return null;
+  if (deckCopies !== "best" && deckCopies !== "cheapest") return null;
+  return {
+    mix,
+    weekly,
+    together: together as SortTogether,
+    outlierRatio: Math.round(ratio * 100) / 100,
+    outlierGap: Math.round(gap * 100) / 100,
+    deckCopies: deckCopies as SortDeckCopies,
+  };
+}
+
+/** The levels as the page sends them: at most six, each a binder, a limit and a minimum price (or none). */
+function cleanLevels(v: unknown): SetUpBody["levels"] | null {
+  if (!Array.isArray(v) || v.length < 1 || v.length > 6) return null;
+  const out: SetUpBody["levels"] = [];
+  for (const l of v) {
+    if (!l || typeof l !== "object") return null;
+    const choice = cleanChoice((l as { choice?: unknown }).choice);
+    const max = Number((l as { max?: unknown }).max);
+    const rawMin = (l as { minPrice?: unknown }).minPrice;
+    const minPrice = rawMin === null || rawMin === undefined || rawMin === "" ? null : Number(rawMin);
+    if (!choice || !Number.isInteger(max) || max < 0 || max > 1000000) return null;
+    if (minPrice !== null && (!Number.isFinite(minPrice) || minPrice < 0 || minPrice > 100000)) return null;
+    out.push({ choice, max, minPrice: minPrice === null ? null : Math.round(minPrice * 100) / 100 });
   }
   return out;
 }
 
 /**
- * { action: "setup", places, rules } makes or picks the three binders and saves the rules;
+ * { action: "setup", levels, decks, settings } makes or picks the binders and saves the settings;
  * { action: "apply", accepted, declined } moves the accepted copies and remembers the declined moves (given as the
  * plan's moves: { key, from, to, copies }); { action: "unskip" } suggests the declined moves again;
  * { action: "startover" } forgets the first sort, the rest periods and the declined moves.
@@ -131,15 +166,25 @@ export async function POST(req: Request) {
   const a = await currentAccount();
   if (!a) return json({ error: "Log in first.", loggedOut: true }, 401);
   try {
-    const body = (await req.json()) as { action?: string; places?: unknown; rules?: Partial<SortRules>; accepted?: unknown; declined?: unknown };
+    const body = (await req.json()) as { action?: string; levels?: unknown; decks?: unknown; settings?: unknown; accepted?: unknown; declined?: unknown };
     // Only the plan (and its moves) needs the price files; the other actions just write the sync file.
     const loaded: Loaded | null = body?.action === "apply" || body?.action === "setup" ? await loadAll() : null;
     let change: (file: SyncFile, now: number) => void;
     if (body?.action === "setup") {
-      const places = cleanPlaces(body.places);
-      const rules = cleanRules(body.rules);
-      if (!places || !rules) return json({ error: "Those settings can't be used." }, 400);
-      change = (f, now) => void sortSetUp(f, places, rules, now);
+      const levels = cleanLevels(body.levels);
+      const settings = cleanSettings(body.settings);
+      const decks = body.decks === null || body.decks === undefined ? null : cleanChoice(body.decks);
+      if (!levels || !settings || (body.decks !== null && body.decks !== undefined && !decks)) return json({ error: "Those settings can't be used." }, 400);
+      change = (f, now) => {
+        // The binders' checks (the same binder twice, a level that holds nothing before the last) are sortSetUp's
+        // own: its message is the answer (nothing has been written when it throws).
+        try {
+          sortSetUp(f, levels, decks, settings, now);
+        } catch (e) {
+          if (e instanceof Error) throw new BadSetup(e.message);
+          throw e;
+        }
+      };
     } else if (body?.action === "apply") {
       // The moves come back from the plan the page shows; only those can be applied.
       const { file } = await loadSync(a);
@@ -160,6 +205,7 @@ export async function POST(req: Request) {
     });
     return json(sortView(file, loaded ?? (await loadAll())));
   } catch (e) {
+    if (e instanceof BadSetup) return json({ error: e.message }, 400);
     return errorResponse(e);
   }
 }

@@ -20,8 +20,8 @@ const arcane = row("a1", "Arcane Signet", 1); // 1 owned, 1 used
 const bolt = row("b1", "Lightning Bolt", 1); // in no deck
 const rows = [solA, solB, arcane, bolt];
 const decks: CollDeck[] = [
-  { name: "One", owner: "", cards: { "sol ring": 1, "arcane signet": 1 } },
-  { name: "Two", owner: "", cards: { "sol ring": 1 } },
+  { name: "One", owner: "", cards: { "sol ring": 1, "arcane signet": 1 }, id: -1 },
+  { name: "Two", owner: "", cards: { "sol ring": 1 }, id: -2 },
 ];
 const use = deckUse(rows, decks);
 const names = deckCardNames(decks);

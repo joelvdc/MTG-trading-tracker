@@ -142,6 +142,8 @@ fun FilterDialog(
     initial: CollectionFilter,
     sets: List<OwnedSet>,
     languages: List<String>,
+    /** The active decks' names, for "used by deck" (A to Z). Since 1.107. */
+    deckNames: List<String> = emptyList(),
     count: (CollectionFilter) -> Int,
     onDismiss: () -> Unit,
     onApply: (CollectionFilter) -> Unit,
@@ -241,6 +243,18 @@ fun FilterDialog(
                         Text(d.label, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
+                // One deck's cards (since 1.107); no picker until there's a deck to pick.
+                if (deckNames.isNotEmpty()) {
+                    Part("Used by deck")
+                    val anyDeck = ""
+                    val picked = deckNames.firstOrNull { it.equals(f.deck, true) } ?: anyDeck
+                    DropdownSelector(
+                        "Used by deck", picked, listOf(anyDeck) + deckNames,
+                        { name -> if (name == anyDeck) "Any deck" else name },
+                        { name -> f = f.copy(deck = if (name == anyDeck) null else name) },
+                        Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
         confirmButton = { TextButton(onClick = { onApply(f) }) { Text("Show ${"%,d".format(count(f))} cards") } },
@@ -262,7 +276,14 @@ private fun Part(title: String) {
 /** The active filter, as removable chips under the search field. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ActiveFilterChips(f: CollectionFilter, sets: List<OwnedSet>, onChange: (CollectionFilter) -> Unit, onEdit: () -> Unit) {
+fun ActiveFilterChips(
+    f: CollectionFilter,
+    sets: List<OwnedSet>,
+    /** The active decks' names, for "used by deck" chips (A to Z). Since 1.107. */
+    deckNames: List<String> = emptyList(),
+    onChange: (CollectionFilter) -> Unit,
+    onEdit: () -> Unit,
+) {
     val chips = buildList<Pair<String, CollectionFilter>> {
         if (f.colors.isNotEmpty()) {
             val names = COLOR_CHIPS.filter { it.first in f.colors }.joinToString(", ") { it.second }
@@ -286,6 +307,7 @@ fun ActiveFilterChips(f: CollectionFilter, sets: List<OwnedSet>, onChange: (Coll
             )
         }
         if (f.decks != DeckFilter.ANY) add((if (f.decks == DeckFilter.IN_DECKS) "In my decks" else "In no deck") to f.copy(decks = DeckFilter.ANY))
+        f.deck?.takeIf { it.isNotBlank() }?.let { d -> add("In “${deckNames.firstOrNull { n -> n.equals(d, true) } ?: d}”" to f.copy(deck = null)) }
     }
     if (chips.isEmpty()) return
     FlowRow(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

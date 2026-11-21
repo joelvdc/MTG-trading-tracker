@@ -84,7 +84,8 @@ fun StatsScreen(nav: NavController) {
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val rows by remember { c.db.collectionDao().observeAll() }.collectAsStateWithLifecycle(null)
     val binders = rememberBinders()
-    val deckNames by remember { c.db.deckDao().observeCardNames() }.collectAsStateWithLifecycle(emptyList())
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val deckNames by remember(ownUser) { c.db.deckDao().observeCardNames(ownUser.trim()) }.collectAsStateWithLifecycle(emptyList())
     val gameChangers by c.gameChangers.names.collectAsStateWithLifecycle()
     val setDates by c.setIcons.dates.collectAsStateWithLifecycle()
     var binder by rememberSaveable { mutableStateOf<Long?>(null) }

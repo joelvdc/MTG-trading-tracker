@@ -138,7 +138,7 @@ function file(): SyncFile {
     data: {
       prefs: { updatedAt: 0, values: {} },
       binders: [{ id: 0, name: "Atraxa", createdAt: 0, uid: "DECK", updatedAt: 0 }],
-      decks: [{ deck: { name: "Atraxa" }, cards: [{ card: { name: "Sol Ring" }, quantity: 1 }, { card: { name: "Other" }, quantity: 1, maybeboard: true }] }],
+      decks: [{ deck: { name: "Atraxa", archidektId: -1 }, cards: [{ card: { name: "Sol Ring" }, quantity: 1 }, { card: { name: "Other" }, quantity: 1, maybeboard: true }] }],
       wishlist: [{ card: { name: "Wanted // Back" }, receivedAt: null }],
       collection: [stack("a", "Sol Ring", 2, "DECK", "sr"), stack("b", "Sol Ring", 1, null, "sr"), stack("c", "Popular", 2, null)],
     },

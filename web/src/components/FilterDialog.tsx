@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { CONDITIONS, FINISH_LABELS, FINISHES, LANGUAGES } from "@/lib/cards";
+import type { CollDeck } from "@/lib/collview";
 import {
   COLOR_MATCH_LABELS,
+  deckChoices,
   EMPTY_FILTER,
   FACE_KINDS,
   FILTER_RARITIES,
@@ -63,6 +65,7 @@ function colourDotStyle(code: string): CSSProperties {
 export function FilterDialog({
   filter,
   sets,
+  decks = [],
   currency,
   perEuro,
   onApply,
@@ -71,12 +74,15 @@ export function FilterDialog({
   filter: Filter;
   /** Sets in the collection: code, name, copies. */
   sets: { code: string; name: string; copies: number }[];
+  /** The active decks (the "Used by deck" choice). */
+  decks?: CollDeck[];
   currency: Currency;
   perEuro: number;
   onApply: (f: Filter) => void;
   onClose: () => void;
 }) {
   const [f, setF] = useState<Filter>(filter);
+  const deckNames = deckChoices(decks);
   const [setText, setSetText] = useState("");
   const [setsFocused, setSetsFocused] = useState(false);
   const [min, setMin] = useState(filter.minPrice != null ? (filter.minPrice * perEuro).toFixed(2) : "");
@@ -244,6 +250,24 @@ export function FilterDialog({
             <option value="OUT">Only cards no deck uses (every copy is spare)</option>
             <option value="SPARE">Only spare copies (you own more than your decks use)</option>
           </select>
+        </div>
+
+        <span className="form-label">Used by deck</span>
+        <div className="form-control">
+          <select
+            aria-label="Used by deck"
+            value={f.deck ?? ""}
+            disabled={deckNames.length === 0}
+            onChange={(e) => setF({ ...f, deck: e.target.value || null })}
+          >
+            <option value="">Any deck</option>
+            {deckNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          {deckNames.length === 0 && <p className="muted small">No active decks yet: import your own decks from Archidekt (and set your Archidekt username) or make a deck in the app.</p>}
         </div>
       </div>
       <div className="dialog-actions">

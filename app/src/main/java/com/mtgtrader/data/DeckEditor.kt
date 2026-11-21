@@ -30,7 +30,7 @@ class DeckEditor(
     /** Changes from before 1.78 that never reached Archidekt, per deck. */
     val waiting: Flow<Map<Long, Int>> = edits.observeCounts().map { l -> l.associate { it.deckId to it.count } }
 
-    /** The Archidekt user whose decks count as "own": your Archidekt username, else the one decks were last imported from. */
+    /** Your own Archidekt username, or null when it isn't set: decks of other Archidekt users are followed decks and hold no cards (since 1.107). */
     fun owner(): String? = settings.deckOwner()
 
     /** Whether the deck can be edited here: only local decks since 1.78 (decks from Archidekt are edited there). */

@@ -158,8 +158,13 @@ fun CollectionScreen(nav: NavController) {
     var filterText by rememberSaveable { mutableStateOf("") }
     val cardFilter = remember(filterText) { CollectionFilter.decode(filterText) }
     var filtering by remember { mutableStateOf(false) }
-    val deckNameList by remember { c.db.deckDao().observeCardNames() }.collectAsStateWithLifecycle(emptyList())
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val deckNameList by remember(ownUser) { c.db.deckDao().observeCardNames(ownUser.trim()) }.collectAsStateWithLifecycle(emptyList())
     val deckNames = remember(deckNameList) { deckNameList.map { it.substringBefore(" // ").lowercase() }.toSet() }
+    // Which active decks use each card, for the Deck column, the Deck sort and "used by deck" (since 1.107).
+    val deckCardList by remember(ownUser) { c.db.deckDao().observeActiveDeckCards(ownUser.trim()) }.collectAsStateWithLifecycle(emptyList())
+    val deckUse = remember(deckCardList) { com.mtgtrader.data.DeckUses.of(deckCardList) }
+    val activeDeckNames = remember(deckCardList) { deckCardList.map { it.deck }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER) }
     val details by c.cardDetails.progress.collectAsStateWithLifecycle()
     var tradeBinderId by remember { mutableStateOf(c.settings.tradeBinderId) }
     LaunchedEffect(binders) { tradeBinderId = c.tradeBinder.binder()?.id ?: 0L }
@@ -682,9 +687,9 @@ fun CollectionScreen(nav: NavController) {
         }
         // Sorting and filtering by value follow the price source and its prices (since 1.29).
         val pricing = listOf(com.mtgtrader.data.Pricing.source, com.mtgtrader.data.Pricing.others, com.mtgtrader.data.Pricing.usdPerEuro)
-        val shown = remember(inView, cardFilter, sortSpec, priceType, deckNames, pricing) {
-            val filtered = if (cardFilter.isEmpty) inView else inView.filter { cardFilter.matches(it, priceType, deckNames) }
-            filtered.sortedWith(sortSpec.comparator(priceType))
+        val shown = remember(inView, cardFilter, sortSpec, priceType, deckNames, deckUse, pricing) {
+            val filtered = if (cardFilter.isEmpty) inView else inView.filter { cardFilter.matches(it, priceType, deckNames, deckUse) }
+            filtered.sortedWith(sortSpec.comparator(priceType, deckUse))
         }
         val ownedSets = remember(all) {
             all.groupBy { it.item.card.setCode.lowercase() }.map { (code, r) -> OwnedSet(code, r.first().item.card.setName, r.sumOf { it.item.quantity }) }
@@ -694,7 +699,8 @@ fun CollectionScreen(nav: NavController) {
         if (filtering) {
             FilterDialog(
                 cardFilter, ownedSets, languages,
-                count = { f -> inView.filter { f.matches(it, priceType, deckNames) }.sumOf { it.item.quantity } },
+                deckNames = activeDeckNames,
+                count = { f -> inView.filter { f.matches(it, priceType, deckNames, deckUse) }.sumOf { it.item.quantity } },
                 onDismiss = { filtering = false },
             ) { filtering = false; filterText = if (it.isEmpty) "" else it.encode() }
         }
@@ -794,7 +800,7 @@ fun CollectionScreen(nav: NavController) {
                 filter, { filter = it }, "Filter by name, set or foil type",
                 Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             )
-            ActiveFilterChips(cardFilter, ownedSets, onChange = { filterText = if (it.isEmpty) "" else it.encode() }, onEdit = { filtering = true })
+            ActiveFilterChips(cardFilter, ownedSets, activeDeckNames, onChange = { filterText = if (it.isEmpty) "" else it.encode() }, onEdit = { filtering = true })
             when {
                 wish && wishRows.isEmpty() -> EmptyState(
                     "Your wishlist is empty",
@@ -824,6 +830,11 @@ fun CollectionScreen(nav: NavController) {
                     fun open(row: CollectionRow) {
                         if (wish) editingWish = wishById[row.item.id] else editing = row
                     }
+                    // The decks that use the card (since 1.107): when the sort is by deck, or a deck's filter is on.
+                    val showDecks = sortSpec.levels.any { it.field == com.mtgtrader.data.SortField.DECK } || !cardFilter.deck.isNullOrBlank()
+                    fun decksOf(row: CollectionRow) =
+                        if (showDecks) com.mtgtrader.data.DeckUses.decksOf(com.mtgtrader.data.frontName(row.item.card.name), deckUse)
+                            .takeIf { it.isNotEmpty() }?.joinToString(", ") else null
                     // The wishlist's "Ordered" box on each card (since 1.36); null outside the wishlist, so no box shows.
                     fun orderedOf(row: CollectionRow): Boolean? = if (wish) wishById[row.item.id]?.item?.orderedAt != null else null
                     fun setOrdered(row: CollectionRow, on: Boolean) {
@@ -904,16 +915,16 @@ fun CollectionScreen(nav: NavController) {
                         val (right, left) = swipesFor(row)
                         when (view) {
                             CollectionView.LIST -> SwipeRow(right, left, enabled = !selecting) {
-                                CollectionRowView(row, priceType, binderOf(row), ordered, { setOrdered(row, it) }, noteOf(row), isPicked, { startPicking(row) }, click)
+                                CollectionRowView(row, priceType, binderOf(row), ordered, { setOrdered(row, it) }, noteOf(row), isPicked, { startPicking(row) }, decks = decksOf(row), click)
                             }
                             CollectionView.COMPACT -> SwipeRow(right, left, enabled = !selecting) {
                                 Column(Modifier.background(MaterialTheme.colorScheme.background)) {
-                                    CompactRow(row, priceType, binderOf(row), ordered, { setOrdered(row, it) }, noteOf(row), isPicked, { startPicking(row) }, click)
+                                    CompactRow(row, priceType, binderOf(row), ordered, { setOrdered(row, it) }, noteOf(row), isPicked, { startPicking(row) }, decks = decksOf(row), click)
                                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                 }
                             }
                             // Picture tiles are too small to swipe: a long press selects.
-                            CollectionView.GRID -> CardTile(row, priceType, binderOf(row), ordered, { setOrdered(row, it) }, noteOf(row), isPicked, { startPicking(row) }, click)
+                            CollectionView.GRID -> CardTile(row, priceType, binderOf(row), ordered, { setOrdered(row, it) }, noteOf(row), isPicked, { startPicking(row) }, decks = decksOf(row), click)
                         }
                     }
                     // The wishlist in sections (since 1.38); the collection is one section without a header.
@@ -1174,6 +1185,8 @@ internal fun CompactRow(
     /** Picked while selecting cards; a long press starts selecting (since 1.38). */
     picked: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    /** The decks that use the card, ", "-joined: shown when sorting by deck or filtering by one (since 1.107). */
+    decks: String? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
@@ -1202,6 +1215,7 @@ internal fun CompactRow(
                     binder,
                 ).joinToString(" · ")
                 Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                decks?.let { DeckLine(it) }
                 note?.let { NoteLine(it) }
             }
             Column(horizontalAlignment = Alignment.End) {
@@ -1229,6 +1243,8 @@ internal fun CardTile(
     /** Picked while selecting cards; a long press starts selecting (since 1.38). */
     picked: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    /** The decks that use the card, ", "-joined: shown when sorting by deck or filtering by one (since 1.107). */
+    decks: String? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
@@ -1285,9 +1301,16 @@ internal fun CardTile(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            decks?.let { DeckLine(it) }
             note?.let { NoteLine(it) }
         }
     }
+}
+
+/** The decks that use a card, ", "-joined, under its name (since 1.107). */
+@Composable
+private fun DeckLine(text: String) {
+    Text(text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable
@@ -1302,6 +1325,8 @@ internal fun CollectionRowView(
     /** Picked while selecting cards; a long press starts selecting (since 1.38). */
     picked: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    /** The decks that use the card, ", "-joined: shown when sorting by deck or filtering by one (since 1.107). */
+    decks: String? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
@@ -1327,6 +1352,7 @@ internal fun CollectionRowView(
                     binder?.let {
                         Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
+                    decks?.let { DeckLine(it) }
                     note?.let { NoteLine(it, maxLines = 2) }
                 }
                 Column(horizontalAlignment = Alignment.End) {

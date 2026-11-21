@@ -36,10 +36,13 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
                 val extra = listOfNotNull(
                     binderUid[settings.tradeBinderId]?.let { SyncPrefs.TRADE_BINDER to it },
                     SyncPrefs.TRADE_SKIPS to db.tradeSkipDao().keys().sorted().joinToString("\n"),
-                    // The collection sort's binders too (since 1.104).
+                    // The collection sort's binders too (since 1.104), and its levels (since 1.107).
                     binderUid[settings.sortTopId]?.let { SyncPrefs.SORT_TOP to it },
                     binderUid[settings.sortMidId]?.let { SyncPrefs.SORT_MID to it },
                     binderUid[settings.sortBulkId]?.let { SyncPrefs.SORT_BULK to it },
+                    settings.sortLevels.mapNotNull { l -> binderUid[l.binder.toLongOrNull()]?.let { l.copy(binder = it) } }
+                        .takeIf { it.isNotEmpty() }?.let { SyncPrefs.SORT_LEVELS to SortLevelsCodec.encode(it) },
+                    binderUid[settings.sortDecksId]?.let { SyncPrefs.SORT_DECKS to it },
                 )
                 p.copy(values = p.values + extra)
             },
@@ -78,6 +81,13 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             sortBinder(SyncPrefs.SORT_TOP)?.let { settings.setSortBinderFromSync(SortPlace.TOP, it) }
             sortBinder(SyncPrefs.SORT_MID)?.let { settings.setSortBinderFromSync(SortPlace.MID, it) }
             sortBinder(SyncPrefs.SORT_BULK)?.let { settings.setSortBinderFromSync(SortPlace.BULK, it) }
+            // The sort's levels and Decks binder (since 1.107), by their binders' sync ids; they win over the three above.
+            val idByUid = sortBinders.filter { it.uid != null }.associate { it.uid!! to it.id }
+            merged.prefs.values[SyncPrefs.SORT_LEVELS]?.let { lines ->
+                val levels = SortLevelsCodec.decode(lines).mapNotNull { l -> idByUid[l.binder]?.let { l.copy(binder = it.toString()) } }
+                if (levels.isNotEmpty()) settings.setSortLevelsFromSync(levels)
+            }
+            merged.prefs.values[SyncPrefs.SORT_DECKS]?.let { uid -> idByUid[uid]?.let { settings.setSortDecksFromSync(it) } }
         }
         return done
     }

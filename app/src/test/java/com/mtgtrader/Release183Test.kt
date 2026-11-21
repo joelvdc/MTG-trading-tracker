@@ -39,13 +39,13 @@ class Release183Test {
         val old = dao.get(2)!!
         assertTrue(old.retired)
         assertTrue("retiring stamps the deck for sync", old.updatedAt > 0)
-        assertEquals(listOf("Sol Ring" to 1), dao.cardCounts().map { it.name to it.qty })
-        assertEquals(listOf("Sol Ring"), dao.observeCardNames().first())
+        assertEquals(listOf("Sol Ring" to 1), dao.cardCounts("joelvdc").map { it.name to it.qty })
+        assertEquals(listOf("Sol Ring"), dao.observeCardNames("joelvdc").first())
         assertEquals(listOf(1L), dao.observeUsage().first().map { it.deckId })
         assertEquals(DeckGroup.RETIRED, DeckGroup.of(old, "joelvdc"))
         // A reload from Archidekt keeps it retired (the import copies the old row); bringing it back counts it again.
         dao.setRetired(2, false)
-        assertEquals(2, dao.cardCounts().single { it.name == "Sol Ring" }.qty)
+        assertEquals(2, dao.cardCounts("joelvdc").single { it.name == "Sol Ring" }.qty)
         db.close()
     }
 

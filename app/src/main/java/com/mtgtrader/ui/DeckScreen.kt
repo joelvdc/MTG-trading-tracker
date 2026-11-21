@@ -1844,11 +1844,21 @@ internal fun DeckCompactRow(
 private fun AddDeckToCollectionDialog(deck: Deck, onDismiss: () -> Unit, onConfirm: (onlyMissing: Boolean, skipBasics: Boolean, BinderChoice) -> Unit) {
     val c = LocalContext.current.container
     val counts by produceState<DeckCollectionCounts?>(null, deck.archidektId) { value = c.decks.collectionCounts(deck.archidektId) }
-    var onlyMissing by remember { mutableStateOf(true) }
+    // A deck made from a precon gets all its cards, not just the ones you don't own yet (since 1.107).
+    var onlyMissing by remember { mutableStateOf(!deck.fromPrecon) }
     var skipBasics by remember { mutableStateOf(true) }
     var choice by remember { mutableStateOf(BinderChoice(newName = deck.name)) }
-    // Adding the same deck again goes into its binder from last time.
-    LaunchedEffect(Unit) { c.db.binderDao().byName(deck.name)?.let { choice = BinderChoice(it.id) } }
+    // Adding the same deck again goes into its binder from last time, else into the sort's Decks binder (since 1.107).
+    LaunchedEffect(Unit) {
+        val binders = c.db.binderDao()
+        val same = binders.byName(deck.name)?.id
+        val decks = c.settings.sortDecksId.takeIf { it > 0 }?.let { binders.get(it) }
+        choice = when {
+            same != null -> BinderChoice(same)
+            decks != null -> BinderChoice(decks.id)
+            else -> choice
+        }
+    }
     val n = counts?.count(onlyMissing, skipBasics)
     AlertDialog(
         onDismissRequest = onDismiss,

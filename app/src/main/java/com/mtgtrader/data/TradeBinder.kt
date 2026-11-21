@@ -221,7 +221,7 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
 
     suspend fun suggest(): List<TradeChange> {
         val rows = db.collectionDao().allWithPrices()
-        val needs = db.deckDao().cardCounts().groupBy { it.name.substringBefore(" // ").trim().lowercase() }.mapValues { (_, v) -> v.sumOf { it.qty } }
+        val needs = db.deckDao().cardCounts(settings.ownArchidektUser.value.trim()).groupBy { it.name.substringBefore(" // ").trim().lowercase() }.mapValues { (_, v) -> v.sumOf { it.qty } }
         val wish = db.wishlistDao().wanted().map { it.card.name.substringBefore(" // ").trim().lowercase() }.toSet()
         return TradeBinderPlanner.plan(rows, needs, wish, binder()?.id, settings.tradeRules, settings.priceType.value, db.tradeSkipDao().keys().toSet())
     }
