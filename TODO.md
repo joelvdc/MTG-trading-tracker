@@ -14,26 +14,25 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-21, after app 1.106)
-- **Newest (2026-11-21):** app 1.106 + website: **privacy policy and terms**. /privacy now covers the app too, with
-  the GDPR points (controller joelvdc, legal bases, how long, processors, rights); new /terms page; footer and the
-  app's Settings → About link Privacy, Terms, Legal and the contact address mtgtrader@astermail.org (the owner's mail
-  alias; `CONTACT_EMAIL` in `web/src/components/SiteFooter.tsx` and `ui/SettingsScreen.kt`). Before that, 1.105:
-  ScrollVault removed; the health check reads `/api/health` `services` instead of fetching EDHREC/Archidekt.
-  Built by DeepSeek through Mistral, reviewed by Opus. The owner decided not to rename the app (2026-11-21).
-- **Still open from the terms check:** EDHREC Recommendations and Archidekt imports (user-triggered) stay; asking both
-  for permission is the owner's call (see Collecting, "Outside services' terms").
-- **Waiting on the owner:** try Sort and Find on the phone and the website with the real collection (tests, two
-  screenshot tests and a local website preview with made-up cards only). Still from before: try 1.103's scan price and
-  "Ordered"; green light for the ✕ delete column in the website's wishlist table; Compare with a real Archidekt link;
-  the email to support@moxfield.com.
-- **Expected to look odd:** the first sort with the cards spread over other binders can say "Everything is in place":
-  only Unsorted and the three chosen binders take part. The Find page on the website lists binders in the website's
-  bar order (Unsorted, then by name), the app in its own bar order. Sort lines show the price twice (column and reason).
+## Right now (2026-11-21, after app 1.107)
+- **Newest (2026-11-21):** app 1.107 + website: **sort with your decks**. Active decks = own Archidekt decks (owner =
+  Archidekt username in Settings → Decks, no more guessing from the last import) + local decks, not retired; followed
+  decks hold no cards. One Decks binder, 1–6 levels with limits and minimum prices, keep copies together (outliers go
+  their own way), best/cheapest copies for decks with upgrade swaps, "Sort everything now", no-room note; deck filter
+  and Deck sort in the app's collection, Deck column and filter on the website. New synced settings (`sortLevels`,
+  `sortDecks`, `sortTogether`, `sortOutlier*`, `sortDeckCopies`); the old three-binder keys are still written, so
+  1.106 phones keep working. Built by DeepSeek through Mistral, reviewed by Opus. Health check unchanged.
+- **Waiting on the owner:** set the Archidekt username (Settings → Decks) if it isn't set yet, then open Sort →
+  Settings… on the phone or website: add a Decks binder, check the levels, and try it with the real collection (tests
+  and screenshot tests used made-up cards only). Still from before: try 1.103's scan price and "Ordered"; green light
+  for the ✕ delete column in the website's wishlist table; Compare with a real Archidekt link; the email to
+  support@moxfield.com; asking EDHREC/Archidekt for permission (Collecting, "Outside services' terms").
+- **Expected to look odd:** the first sort after adding a Decks binder moves every copy your decks use at once (moves
+  into and out of Decks don't count against the weekly limit). Without a username, Archidekt decks count as followed
+  and hold nothing. Sort lines show the price twice (column and reason).
 - **Earlier, still true:** a phone on 1.102 or older pauses syncing until updated (sync format 16). AI primers: the
-  owner's account picks Mistral or OpenCode Go; other accounts use their own saved key (`accessFor` in
-  `web/src/lib/aiprimer.ts`); changing `SESSION_SECRET` makes saved AI keys unreadable. A precon tile has no picture
-  until the index has read that deck. `npm test` prints harmless "Failed to load source map" lines.
+  owner's account picks Mistral or OpenCode Go; changing `SESSION_SECRET` makes saved AI keys unreadable.
+  `npm test` prints harmless "Failed to load source map" lines.
 - **GitHub checks:** a red Tests mark after a push to `main` means fix that first.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
@@ -101,6 +100,13 @@ the EDHREC rank it passes on), MTGJSON (MIT), Card Kingdom's API (its robots all
 - Still possible: emails to EDHREC and Archidekt asking permission (Claude drafts, the owner sends).
 - Dropped by the owner (2026-11-21): EDHREC statistics in the card windows.
 
+### Sort with decks: left out of 1.107 (2026-11-21)
+Planned with the owner but dropped from 1.107 to keep it manageable; ask before building:
+- an option for the Decks binder to hold the printing the deck lists, instead of the best or cheapest copy;
+- one tap to send the "no room" cards to the trade binder;
+- a preview on a deck's page of where its cards go when it's retired or deleted (Sort shows the result instead);
+- offering to merge binders named after decks into the Decks binder.
+
 ### Smaller loose ends
 - The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
 - Scanned page on the website: "To trade" for scans, and sending scans to an Archidekt deck (the website only adds to
@@ -143,6 +149,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
 - 1.105 (2026-11-21): ScrollVault removed (app and website); health check reads the website's EDHREC/Archidekt notes
   instead of requesting them; clearer "answer has changed" errors
