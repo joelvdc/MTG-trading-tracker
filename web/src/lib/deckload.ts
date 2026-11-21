@@ -116,7 +116,8 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
     if (primer !== null) deck = { ...deck, primer, notesAt: now };
   }
   if (source !== "EDH_POWER_LEVEL") deck = { ...deck, edhPowerLevel: null, edhPowerAt: null, edhPowerError: null };
-  if (source !== "SCROLLVAULT") deck = { ...deck, svPowerLevel: null, scrollVault: null, svAt: null, svError: null };
+  // ScrollVault's fields are always cleared (ScrollVault was removed in app 1.105; its values never show).
+  deck = { ...deck, svPowerLevel: null, scrollVault: null, svAt: null, svError: null };
   // Cards added in the app (an old deck's "Added in app" ones and, since 1.86, its local maybeboard) stay, as in the app.
   const kept = (previous?.cards ?? []).filter((c) => c.addedInApp);
   const sd: SyncDeck = { deck, cards: sortLines([...a.cards.map((c) => line(r, c, false)), ...a.maybeboard.map((c) => line(r, c, true)), ...kept]) };

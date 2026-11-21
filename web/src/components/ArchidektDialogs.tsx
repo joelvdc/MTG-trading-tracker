@@ -250,7 +250,7 @@ export function ArchidektUpdateDialog({ onClose, onDone }: { onClose: () => void
           <>
             <p className="small">
               Reloads the decks that changed on Archidekt since they were read and scores them again on Commander Salt, and scores decks that have no score
-              yet. Local decks aren&apos;t touched. Power levels from edhpowerlevel.com or ScrollVault are rated by the app at its next update.
+              yet. Local decks aren&apos;t touched. Power levels from edhpowerlevel.com are rated by the app at its next update.
             </p>
             <div className="inline">
               <button className="btn primary" onClick={go}>

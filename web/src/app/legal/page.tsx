@@ -50,7 +50,7 @@ export default function LegalPage() {
           </li>
         ))}
       </ul>
-      <p className="small muted">The Android app also uses EDH Power Level and ScrollVault for power levels.</p>
+      <p className="small muted">The Android app also uses EDH Power Level for power levels.</p>
 
       <h2>Fonts</h2>
       <ul>

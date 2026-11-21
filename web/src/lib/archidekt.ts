@@ -2,8 +2,11 @@
 // Archidekt's own website uses, no login. Requests go at least 1.5 seconds apart (Archidekt starts limiting at about
 // 40 a minute; the app's ArchidektGuard), and the owner's remote switch (remote-switches.json, archidektDecks) turns
 // it off here as on the phones.
+// The weekly health check doesn't ask Archidekt itself (its terms forbid automated requests): each request here notes
+// how it went (lib/servicewatch.ts), and /api/health reports it.
 import { USER_AGENT } from "./config";
 import { primaryType } from "./deckshared";
+import { noteService } from "./servicewatch";
 import { EditError } from "./wishlist";
 
 type Fetch = typeof fetch;
@@ -236,16 +239,33 @@ async function get(url: string, f: Fetch, notFound: string): Promise<unknown> {
   try {
     r = await f(url, { headers: { Accept: "application/json", "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(30_000), cache: "no-store" });
   } catch {
+    // Awaited: on Vercel a promise left unawaited may be dropped once the answer is sent.
+    await noteService("archidekt", "couldn't be reached");
     throw new ArchidektError("Archidekt couldn't be reached.");
   }
+  // A deck that isn't public or a user without decks isn't Archidekt's problem, so it isn't noted.
   if (r.status === 404 || r.status === 403) throw new ArchidektError(notFound);
-  if (!r.ok) throw new ArchidektError(`Archidekt answered ${r.status}.`);
-  return r.json();
+  if (!r.ok) {
+    await noteService("archidekt", `answered ${r.status}`);
+    throw new ArchidektError(`Archidekt answered ${r.status}.`);
+  }
+  try {
+    return await r.json();
+  } catch (e) {
+    // Noted here, so nothing above it notes it again.
+    await noteService("archidekt", `answer changed: ${e instanceof Error ? e.message : String(e)}`);
+    throw e;
+  }
 }
 
 /** A public or unlisted deck. */
 export async function fetchDeck(id: number, f: Fetch = fetch): Promise<ArchidektDeck> {
-  return parseDeck(await get(`https://archidekt.com/api/decks/${id}/`, f, `Archidekt deck ${id} doesn't exist or isn't public.`));
+  // get() notes its own problems (404, 403, switched off, 500, unreachable, unreadable JSON); reading a deck doesn't
+  // fail (a missing field counts as empty), so a deck that arrived was read: a success.
+  const body = await get(`https://archidekt.com/api/decks/${id}/`, f, `Archidekt deck ${id} doesn't exist or isn't public.`);
+  const deck = parseDeck(body);
+  await noteService("archidekt", null);
+  return deck;
 }
 
 /** A user's public decks, most recently updated first (up to 20 pages of 50). */
@@ -253,11 +273,21 @@ export async function userDecks(username: string, f: Fetch = fetch): Promise<Arc
   const out: ArchidektDeckSummary[] = [];
   let url: string | null = `https://archidekt.com/api/decks/v3/?ownerUsername=${encodeURIComponent(username)}&pageSize=50`;
   for (let pages = 0; url && pages < 20; pages++) {
-    const page = parseDeckList(await get(url, f, `Archidekt has no user ${username}.`));
+    // get() notes its own problems (404, 403, switched off, 500, unreachable, unreadable JSON), so only reading a page
+    // is wrapped: that alone means the answer changed.
+    const body = await get(url, f, `Archidekt has no user ${username}.`);
+    let page: { decks: ArchidektDeckSummary[]; next: string | null };
+    try {
+      page = parseDeckList(body);
+    } catch (e) {
+      await noteService("archidekt", `answer changed: ${e instanceof Error ? e.message : String(e)} (${username}'s deck list)`);
+      throw e;
+    }
     out.push(...page.decks);
     // Archidekt's "next" links use http://.
     url = page.next?.replace(/^http:\/\//, "https://") ?? null;
   }
+  await noteService("archidekt", null); // once, after all the pages
   return out;
 }
 

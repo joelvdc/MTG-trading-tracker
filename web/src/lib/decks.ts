@@ -347,12 +347,7 @@ export function deckView(
   const { saltCard, scrollVault, categoryInfo, ...plain } = d;
   void saltCard;
   void categoryInfo;
-  let sv: Record<string, Json> | null = null;
-  try {
-    sv = scrollVault ? (JSON.parse(scrollVault) as Record<string, Json>) : null;
-  } catch {
-    sv = null;
-  }
+  void scrollVault;
   return {
     id,
     local: id < 0,
@@ -361,7 +356,6 @@ export function deckView(
     group: groupOf(d, deckOwner(file)),
     modifiedAt: modifiedAtOf(d),
     salt,
-    scrollVault: sv,
     rows,
     recKey: recListKey(sd.cards.filter((c) => !c.maybeboard).map((c) => ({ name: c.card.name, commander: c.commander }))),
     hidden: Object.keys(decodePicks(p.deckHidden)[String(id)] ?? {}),
@@ -455,7 +449,6 @@ export interface RuleZeroDeck {
   deck: DeckView["deck"];
   cover: string | null;
   salt: NonNullable<DeckView["salt"]>;
-  scrollVault: Record<string, Json> | null;
   power: number | null;
   powerError: string | null;
 }
@@ -470,13 +463,8 @@ export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[]; powerSou
     const { saltCard, scrollVault, categoryInfo, ...plain } = d;
     void saltCard;
     void categoryInfo;
-    let sv: Record<string, Json> | null = null;
-    try {
-      sv = scrollVault ? (JSON.parse(scrollVault) as Record<string, Json>) : null;
-    } catch {
-      sv = null;
-    }
-    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, scrollVault: sv, power: powerOf(d, source), powerError: powerError(d, source) });
+    void scrollVault;
+    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, power: powerOf(d, source), powerError: powerError(d, source) });
   }
   return { decks, powerSource: source };
 }

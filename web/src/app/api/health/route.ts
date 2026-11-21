@@ -7,6 +7,7 @@ import { accountStore } from "@/lib/accounts";
 import { loadPreconIndex } from "@/lib/preconindex";
 import { loadPrices } from "@/lib/pricestore";
 import { mailReady } from "@/lib/mailer";
+import { serviceNotes } from "@/lib/servicewatch";
 import { WEB_FORMAT } from "@/lib/syncfile";
 
 
@@ -129,6 +130,9 @@ export async function GET() {
     // The AI deck primers (Mistral and/or OpenCode Go, the website's own keys): set up, which services, each one answering
     // and whether its model list names its default model; the top-level fields are the first service's.
     ai,
+    // EDHREC and Archidekt aren't fetched by the health check (their terms forbid automated requests): how the website's
+    // own requests for people went (since app 1.105).
+    services: await serviceNotes(Date.now(), store),
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }
