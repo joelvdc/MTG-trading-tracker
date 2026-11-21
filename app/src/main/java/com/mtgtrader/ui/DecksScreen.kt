@@ -122,6 +122,7 @@ fun DecksScreen(nav: NavController) {
     var reversed by remember { mutableStateOf(c.settings.deckSortReversed) }
     var sortMenu by remember { mutableStateOf(false) }
     var moreMenu by remember { mutableStateOf(false) }
+    var askingUsername by rememberSaveable { mutableStateOf(false) }
     fun busy(started: Boolean) {
         if (!started) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
     }
@@ -270,6 +271,20 @@ fun DecksScreen(nav: NavController) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             job?.let { j -> item(key = "job") { JobCard(j, onStop = c.decks::stop) } }
+            // Whose Archidekt decks are yours (since 1.107): until it's set, they count as followed decks.
+            if (ownUser.isBlank() && list.any { !it.local }) item(key = "username") {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                    Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 4.dp)) {
+                        Text("Which Archidekt decks are yours?", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Set your Archidekt username: until then your Archidekt decks count as followed decks and don't hold cards in your collection.",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp, end = 8.dp),
+                        )
+                        TextButton(onClick = { askingUsername = true }, modifier = Modifier.align(Alignment.End)) { Text("Set username") }
+                    }
+                }
+            }
             if (list.isEmpty() && job == null) {
                 item(key = "empty") {
                     EmptyState(
@@ -300,6 +315,8 @@ fun DecksScreen(nav: NavController) {
             }
         }
     }
+
+    if (askingUsername) UsernameDialog(onDismiss = { askingUsername = false })
 
     if (newDeck) {
         NewDeckSheet(onDismiss = { newDeck = false }) { picked ->
@@ -352,6 +369,44 @@ fun DecksScreen(nav: NavController) {
             },
         )
     }
+}
+
+/** Asks for the user's Archidekt username (since 1.107): decks of other users are followed decks and hold no cards. */
+@Composable
+private fun UsernameDialog(onDismiss: () -> Unit) {
+    val c = LocalContext.current.container
+    var name by remember { mutableStateOf("") }
+    fun save() {
+        val v = name.trim()
+        if (v.isBlank()) return
+        c.settings.setOwnArchidektUser(v)
+        onDismiss()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Your Archidekt username") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Your Archidekt username") },
+                    placeholder = { Text(c.settings.archidektUser.ifBlank { "e.g. from archidekt.com/u/username" }) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { save() }),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    "Only your own decks hold cards in your collection: decks of other Archidekt users stay followed decks.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { save() }, enabled = name.isNotBlank()) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

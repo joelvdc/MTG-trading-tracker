@@ -84,6 +84,9 @@ data class SyncPrefs(val updatedAt: Long = 0, val values: Map<String, String> = 
         const val SORT_TOP = "sortTop"
         const val SORT_MID = "sortMid"
         const val SORT_BULK = "sortBulk"
+        /** The collection sort's levels, as [SortLevelsCodec] lines with each binder's uid, and the Decks binder's uid. Since 1.107. */
+        const val SORT_LEVELS = "sortLevels"
+        const val SORT_DECKS = "sortDecks"
     }
 }
 

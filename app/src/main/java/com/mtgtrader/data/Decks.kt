@@ -104,6 +104,9 @@ data class Deck(
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0
 
+    /** Made from a preconstructed deck: its origin says so (see [DeckEditor.fromPrecon]). Since 1.107. */
+    val fromPrecon get() = origin?.startsWith("Precon") == true
+
     /**
      * When the deck was last changed, for the "Last modified" sort: Archidekt's date for an Archidekt deck,
      * the last change in the app or on the website for a local one (any change counts, a re-score too).
@@ -151,7 +154,10 @@ enum class DeckGroup(val title: String) {
     RETIRED("Retired · kept with their games");
 
     companion object {
-        /** [owner] is the Archidekt user whose decks are "own": the one logged in, else the one decks were last imported from. */
+        /**
+         * [owner] is your Archidekt username, or null when it isn't set: other users' decks are followed decks (and
+         * since 1.107 hold no cards in the collection).
+         */
         fun of(deck: Deck, owner: String?): DeckGroup = when {
             deck.retired -> RETIRED
             deck.local -> LOCAL

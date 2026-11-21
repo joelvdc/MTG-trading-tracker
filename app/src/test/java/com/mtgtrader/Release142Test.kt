@@ -133,8 +133,8 @@ class Release142Test {
         assertEquals(listOf("Arcane Signet", "Sol Ring"), dao.observeCards(7).first().map { it.item.card.name }.sorted())
         assertEquals(listOf("The Ozolith"), dao.observeMaybeboard(7).first().map { it.item.card.name })
         // What the collection must keep for the decks, the names shown as "in a deck" and "cards in several decks".
-        assertFalse(dao.cardCounts().any { it.name == "The Ozolith" })
-        assertFalse("The Ozolith" in dao.observeCardNames().first())
+        assertFalse(dao.cardCounts("joelvdc").any { it.name == "The Ozolith" })
+        assertFalse("The Ozolith" in dao.observeCardNames("joelvdc").first())
         assertFalse(dao.observeUsage().first().any { it.name == "The Ozolith" })
         assertEquals(listOf("Arcane Signet"), dao.cardsAddedInApp(7).map { it.card.name })
     }

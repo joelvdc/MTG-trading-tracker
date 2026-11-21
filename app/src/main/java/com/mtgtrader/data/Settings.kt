@@ -273,8 +273,11 @@ class Settings(context: Context) {
         prefs.edit().putString("ownArchidektUser", name).stamp().apply()
     }
 
-    /** Whose Archidekt decks are your own: your username, else the one decks were last imported from. */
-    fun deckOwner(own: String = _ownArchidektUser.value): String? = own.ifBlank { archidektUser }.takeIf { it.isNotBlank() }
+    /**
+     * Your own Archidekt username, or null when it isn't set: decks of other Archidekt users are followed decks and
+     * hold no cards (since 1.107).
+     */
+    fun deckOwner(own: String = _ownArchidektUser.value): String? = own.trim().takeIf { it.isNotBlank() }
 
     /** The trade binder (see [TradeBinder]); 0 until it's made. Since 1.18. */
     var tradeBinderId: Long
@@ -337,6 +340,67 @@ class Settings(context: Context) {
     var sortLog: List<String>
         get() = prefs.getString("sortLog", "").orEmpty().split('\n').filter { it.isNotBlank() }
         set(v) = prefs.edit().putString("sortLog", v.joinToString("\n")).stamp().apply()
+
+    // ---- The sort's new options (since 1.107) ------------------------------------------------------
+
+    /** The sort's levels, best first ([SortLevelSetting.binder] is a local binder id); the three binders of 1.104 until chosen. */
+    var sortLevels: List<SortLevelSetting>
+        get() = prefs.getString("sortLevelIds", null)?.let(SortLevelsCodec::decode) ?: SortLevelsCodec.legacy(
+            prefs.getLong("sortTopId", 0).takeIf { it > 0 }?.toString(),
+            prefs.getLong("sortMidId", 0).takeIf { it > 0 }?.toString(),
+            prefs.getLong("sortBulkId", 0).takeIf { it > 0 }?.toString(),
+            prefs.getInt("sortMaxTop", 200), prefs.getInt("sortMaxMid", 1_000), prefs.getInt("sortMaxBulk", 0),
+            prefs.getFloat("sortFloor", 0.5f).toDouble(),
+        )
+        set(v) = putSortLevels(v, stamp = true)
+
+    /** The levels set in synced settings, by their binders' uids (without stamping the settings as changed here). Since 1.107. */
+    fun setSortLevelsFromSync(levels: List<SortLevelSetting>) = putSortLevels(levels, stamp = false)
+
+    /**
+     * Writes the levels, and keeps the binders and rules of 1.104–1.106 in step: with exactly three levels a phone on
+     * an older version still sorts the same way.
+     */
+    private fun putSortLevels(levels: List<SortLevelSetting>, stamp: Boolean) {
+        val e = prefs.edit().putString("sortLevelIds", SortLevelsCodec.encode(levels))
+        if (levels.size == 3) {
+            e.putLong("sortTopId", levels[0].binder.toLongOrNull() ?: 0)
+                .putLong("sortMidId", levels[1].binder.toLongOrNull() ?: 0)
+                .putLong("sortBulkId", levels[2].binder.toLongOrNull() ?: 0)
+                .putInt("sortMaxTop", levels[0].max).putInt("sortMaxMid", levels[1].max).putInt("sortMaxBulk", levels[2].max)
+                .putFloat("sortFloor", (levels[0].minPrice ?: 0.0).toFloat())
+        }
+        if (stamp) e.stamp()
+        e.apply()
+    }
+
+    /** The Decks binder the sort fills (a local binder id; 0 = none). Synced by its uid. Since 1.107. */
+    var sortDecksId: Long
+        get() = prefs.getLong("sortDecksId", 0)
+        set(v) { if (v != sortDecksId) prefs.edit().putLong("sortDecksId", v).stamp().apply() }
+
+    /** The Decks binder named in synced settings (without stamping the settings as changed here). Since 1.107. */
+    fun setSortDecksFromSync(id: Long) = prefs.edit().putLong("sortDecksId", id).apply()
+
+    /** How the sort keeps copies of a card together. Synced. Since 1.107. */
+    var sortTogether: Together
+        get() = Together.fromKey(prefs.getString("sortTogether", null))
+        set(v) = prefs.edit().putString("sortTogether", v.key).stamp().apply()
+
+    /** A card counts as an outlier when it's worth this many times the one after it (at least 1). Synced. Since 1.107. */
+    var sortOutlierRatio: Double
+        get() = prefs.getFloat("sortOutlierRatio", 3f).toDouble()
+        set(v) { if (v.isFinite() && v >= 1) prefs.edit().putFloat("sortOutlierRatio", v.toFloat()).stamp().apply() }
+
+    /** The price gap (euros) that also makes a card an outlier. Synced. Since 1.107. */
+    var sortOutlierGap: Double
+        get() = prefs.getFloat("sortOutlierGap", 5f).toDouble()
+        set(v) { if (v.isFinite() && v >= 0) prefs.edit().putFloat("sortOutlierGap", v.toFloat()).stamp().apply() }
+
+    /** Which copies of a card the sort puts in the Decks binder. Synced. Since 1.107. */
+    var sortDeckCopies: DeckCopies
+        get() = DeckCopies.fromKey(prefs.getString("sortDeckCopies", null))
+        set(v) = prefs.edit().putString("sortDeckCopies", v.key).stamp().apply()
 
     /** Where deck recommendations come from. Since 1.18. */
     private val _recSource = MutableStateFlow(RecSource.fromKey(prefs.getString("recSource", null)))
@@ -770,6 +834,11 @@ class Settings(context: Context) {
             put("sortSettled", sortSettled.toString())
             put("sortSkips", sortSkips.sorted().joinToString("\n"))
             put("sortLog", sortLog.joinToString("\n"))
+            // The sort's own options (since 1.107); its levels go by their binders' uid (SyncStore).
+            put("sortTogether", sortTogether.key)
+            put("sortOutlierRatio", sortOutlierRatio.toString())
+            put("sortOutlierGap", sortOutlierGap.toString())
+            put("sortDeckCopies", sortDeckCopies.key)
             trackerFlags.forEach { (k, f) -> put(k, f.value.toString()) }
             put("trackerLowLife", trackerLowLife.value.key)
             put("trackerCardLayout", trackerCardLayout.value.key)
@@ -826,6 +895,11 @@ class Settings(context: Context) {
         v["sortSettled"]?.toBooleanStrictOrNull()?.let { e.putBoolean("sortSettled", it) }
         v["sortSkips"]?.let { e.putString("sortSkips", it.split('\n').filter { k -> k.isNotBlank() }.sorted().joinToString("\n")) }
         v["sortLog"]?.let { e.putString("sortLog", it.split('\n').filter { k -> k.isNotBlank() }.joinToString("\n")) }
+        // The sort's own options (since 1.107): unknown keys leave the value as it is, numbers out of range are ignored.
+        v["sortTogether"]?.let { k -> Together.of(k)?.let { e.putString("sortTogether", it.key) } }
+        v["sortOutlierRatio"]?.toFloatOrNull()?.takeIf { it.isFinite() && it >= 1 }?.let { e.putFloat("sortOutlierRatio", it) }
+        v["sortOutlierGap"]?.toFloatOrNull()?.takeIf { it.isFinite() && it >= 0 }?.let { e.putFloat("sortOutlierGap", it) }
+        v["sortDeckCopies"]?.let { k -> DeckCopies.of(k)?.let { e.putString("sortDeckCopies", it.key) } }
         trackerFlags.forEach { (k, f) -> v[k]?.toBooleanStrictOrNull()?.let { f.value = it; e.putBoolean(k, it) } }
         v["trackerLowLife"]?.let { _trackerLowLife.value = LowLifeStyle.fromKey(it); e.putString("trackerLowLife", it) }
         v["trackerCardLayout"]?.let { _trackerCardLayout.value = CardLayout.fromKey(it); e.putString("trackerCardLayout", it) }

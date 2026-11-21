@@ -363,13 +363,16 @@ interface DeckDao {
     @Query("UPDATE deck_cards SET deckId = :to WHERE deckId = :from")
     suspend fun moveCards(from: Long, to: Long)
 
-    /** Copies per card name over all decks but retired ones (for what the collection must keep). */
-    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards WHERE maybeboard = 0 AND deckId NOT IN (SELECT archidektId FROM decks WHERE retired = 1) GROUP BY name")
-    suspend fun cardCounts(): List<NameCount>
+    /**
+     * Copies per card name over the decks that hold cards: not retired, and local or yours (see the Decks tab;
+     * since 1.107 [owner] is your Archidekt username, "" when it isn't set, and decks of other users don't count).
+     */
+    @Query("SELECT name, SUM(quantity) AS qty FROM deck_cards WHERE maybeboard = 0 AND deckId IN (SELECT archidektId FROM decks WHERE retired = 0 AND (archidektId < 0 OR (:owner <> '' AND owner = :owner COLLATE NOCASE))) GROUP BY name")
+    suspend fun cardCounts(owner: String): List<NameCount>
 
-    /** The collection's "in a deck" marks; retired decks don't count (since 1.83). */
-    @Query("SELECT DISTINCT name FROM deck_cards WHERE maybeboard = 0 AND deckId NOT IN (SELECT archidektId FROM decks WHERE retired = 1)")
-    fun observeCardNames(): Flow<List<String>>
+    /** The collection's "in a deck" marks; retired decks don't count (since 1.83), nor other users' (since 1.107; [owner] as in [cardCounts]). */
+    @Query("SELECT DISTINCT name FROM deck_cards WHERE maybeboard = 0 AND deckId IN (SELECT archidektId FROM decks WHERE retired = 0 AND (archidektId < 0 OR (:owner <> '' AND owner = :owner COLLATE NOCASE)))")
+    fun observeCardNames(owner: String): Flow<List<String>>
 
     /** Every card name with the decks it's in (and how many copies each), for "used in several decks". */
     @Query(

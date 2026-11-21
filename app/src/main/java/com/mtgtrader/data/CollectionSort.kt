@@ -350,7 +350,7 @@ class CollectionSorter(private val db: AppDatabase, private val repo: MtgReposit
             )
         }
         // The decks' needs, as for the trade binder: the planner takes off what sits in other binders.
-        val needs = db.deckDao().cardCounts().groupBy { TradeBinderPlanner.nameKey(it.name) }.mapValues { (_, v) -> v.sumOf { it.qty } }
+        val needs = db.deckDao().cardCounts(settings.ownArchidektUser.value.trim()).groupBy { TradeBinderPlanner.nameKey(it.name) }.mapValues { (_, v) -> v.sumOf { it.qty } }
         return CollectionSortPlanner.plan(
             stacks, needs, settings.sortRules, settings.sortSkips, settings.sortLog, settings.sortSettled,
             CollectionSortPlanner.epochDay(System.currentTimeMillis()),

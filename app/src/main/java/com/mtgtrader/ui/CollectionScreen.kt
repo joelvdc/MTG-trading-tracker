@@ -158,7 +158,8 @@ fun CollectionScreen(nav: NavController) {
     var filterText by rememberSaveable { mutableStateOf("") }
     val cardFilter = remember(filterText) { CollectionFilter.decode(filterText) }
     var filtering by remember { mutableStateOf(false) }
-    val deckNameList by remember { c.db.deckDao().observeCardNames() }.collectAsStateWithLifecycle(emptyList())
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
+    val deckNameList by remember(ownUser) { c.db.deckDao().observeCardNames(ownUser.trim()) }.collectAsStateWithLifecycle(emptyList())
     val deckNames = remember(deckNameList) { deckNameList.map { it.substringBefore(" // ").lowercase() }.toSet() }
     val details by c.cardDetails.progress.collectAsStateWithLifecycle()
     var tradeBinderId by remember { mutableStateOf(c.settings.tradeBinderId) }
