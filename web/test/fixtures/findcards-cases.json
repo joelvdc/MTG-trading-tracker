@@ -1,0 +1,320 @@
+[
+  {
+    "name": "picks across two binders in bar order, one binder at a time",
+    "input": {
+      "wanted": [{ "name": "Sol Ring", "qty": 3, "scryfallId": null }],
+      "stacks": [
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 2 },
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:b", "binderName": "Bravo", "copies": 3 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted", "isDeckBinder": false, "isTradeBinder": false },
+        { "key": "b:a", "name": "Alpha", "isDeckBinder": false, "isTradeBinder": false },
+        { "key": "b:b", "name": "Bravo", "isDeckBinder": false, "isTradeBinder": false }
+      ],
+      "decks": [],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:a", "binderName": "Alpha", "lines": [
+          { "lineKey": "sol ring|s1|false|false|b:a", "name": "Sol Ring", "copies": 2, "set": "cmr", "number": "401", "foil": false, "etched": false, "wantedPrinting": false }
+        ] },
+        { "binderKey": "b:b", "binderName": "Bravo", "lines": [
+          { "lineKey": "sol ring|s1|false|false|b:b", "name": "Sol Ring", "copies": 1, "set": "cmr", "number": "401", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 3, "found": 3, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "the wanted printing comes before a bigger stack",
+    "input": {
+      "wanted": [{ "name": "Sol Ring", "qty": 1, "scryfallId": "s1" }],
+      "stacks": [
+        { "name": "Sol Ring", "scryfallId": "s2", "set": "ltc", "number": "280", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 5 },
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 1 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:a", "binderName": "Alpha", "lines": [
+          { "lineKey": "sol ring|s1|false|false|b:a", "name": "Sol Ring", "copies": 1, "set": "cmr", "number": "401", "foil": false, "etched": false, "wantedPrinting": true }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 1, "found": 1, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "deck binders are used last",
+    "input": {
+      "wanted": [{ "name": "Cultivate", "qty": 2, "scryfallId": null }],
+      "stacks": [
+        { "name": "Cultivate", "scryfallId": "c1", "set": "m21", "number": "177", "foil": false, "etched": false, "binderKey": "b:deck", "binderName": "Gruul Times", "copies": 2 },
+        { "name": "Cultivate", "scryfallId": "c1", "set": "m21", "number": "177", "foil": false, "etched": false, "binderKey": "b:box", "binderName": "Green box", "copies": 1 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:box", "name": "Green box" },
+        { "key": "b:deck", "name": "Gruul Times", "isDeckBinder": true }
+      ],
+      "decks": [{ "id": 1, "name": "Gruul Times", "cards": { "cultivate": 1 } }],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:box", "binderName": "Green box", "lines": [
+          { "lineKey": "cultivate|c1|false|false|b:box", "name": "Cultivate", "copies": 1, "set": "m21", "number": "177", "foil": false, "etched": false, "wantedPrinting": false }
+        ] },
+        { "binderKey": "b:deck", "binderName": "Gruul Times", "lines": [
+          { "lineKey": "cultivate|c1|false|false|b:deck", "name": "Cultivate", "copies": 1, "set": "m21", "number": "177", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 2, "found": 2, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "the trade binder comes before deck binders",
+    "input": {
+      "wanted": [{ "name": "Cultivate", "qty": 1, "scryfallId": null }],
+      "stacks": [
+        { "name": "Cultivate", "scryfallId": "c1", "set": "m21", "number": "177", "foil": false, "etched": false, "binderKey": "b:deck", "binderName": "Gruul Times", "copies": 1 },
+        { "name": "Cultivate", "scryfallId": "c1", "set": "m21", "number": "177", "foil": false, "etched": false, "binderKey": "b:trade", "binderName": "Trade binder", "copies": 1 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:trade", "name": "Trade binder", "isTradeBinder": true },
+        { "key": "b:deck", "name": "Gruul Times", "isDeckBinder": true }
+      ],
+      "decks": [{ "id": 1, "name": "Gruul Times", "cards": { "cultivate": 1 } }],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:trade", "binderName": "Trade binder", "lines": [
+          { "lineKey": "cultivate|c1|false|false|b:trade", "name": "Cultivate", "copies": 1, "set": "m21", "number": "177", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 1, "found": 1, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "copies another deck uses are only in decks",
+    "input": {
+      "wanted": [{ "name": "Sol Ring", "qty": 3, "scryfallId": null }],
+      "stacks": [
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 3 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [
+        { "id": 1, "name": "Zubera", "cards": { "sol ring": 2 } },
+        { "id": 2, "name": "Auntie Plague", "cards": { "sol ring": 1 } },
+        { "id": 3, "name": "No Sol Ring", "cards": { "cultivate": 2 } }
+      ],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [],
+      "onlyInDecks": [
+        { "name": "Sol Ring", "copies": 3, "decks": ["Auntie Plague", "Zubera"] }
+      ],
+      "notOwned": [],
+      "total": { "wanted": 3, "found": 0, "inDecks": 3, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "the deck the list came from doesn't count against itself",
+    "input": {
+      "wanted": [{ "name": "Sol Ring", "qty": 2, "scryfallId": null }],
+      "stacks": [
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 2 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [{ "id": 1, "name": "Auntie Plague", "cards": { "sol ring": 1 } }],
+      "fromDeck": 1,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:a", "binderName": "Alpha", "lines": [
+          { "lineKey": "sol ring|s1|false|false|b:a", "name": "Sol Ring", "copies": 2, "set": "cmr", "number": "401", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 2, "found": 2, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "copies not owned at all",
+    "input": {
+      "wanted": [{ "name": "Mana Drain", "qty": 2, "scryfallId": null }],
+      "stacks": [],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [{ "id": 1, "name": "Auntie Plague", "cards": { "counterspell": 1 } }],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [],
+      "onlyInDecks": [],
+      "notOwned": [{ "name": "Mana Drain", "copies": 2 }],
+      "total": { "wanted": 2, "found": 0, "inDecks": 0, "notOwned": 2 }
+    }
+  },
+  {
+    "name": "basic lands are skipped by default, even the Snow-Covered ones",
+    "input": {
+      "wanted": [
+        { "name": "Forest", "qty": 5, "scryfallId": null },
+        { "name": "Snow-Covered Island", "qty": 2, "scryfallId": null },
+        { "name": "Wastes", "qty": 1, "scryfallId": null },
+        { "name": "Sol Ring", "qty": 1, "scryfallId": null }
+      ],
+      "stacks": [
+        { "name": "Forest", "scryfallId": "f1", "set": "dmu", "number": "281", "foil": false, "etched": false, "binderKey": "unsorted", "binderName": "Unsorted", "copies": 5 },
+        { "name": "Snow-Covered Island", "scryfallId": "i1", "set": "khm", "number": "278", "foil": false, "etched": false, "binderKey": "unsorted", "binderName": "Unsorted", "copies": 2 },
+        { "name": "Wastes", "scryfallId": "w1", "set": "ogw", "number": "183", "foil": false, "etched": false, "binderKey": "unsorted", "binderName": "Unsorted", "copies": 1 },
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 1 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:a", "binderName": "Alpha", "lines": [
+          { "lineKey": "sol ring|s1|false|false|b:a", "name": "Sol Ring", "copies": 1, "set": "cmr", "number": "401", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 1, "found": 1, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "basics asked for, and not skipped",
+    "input": {
+      "wanted": [
+        { "name": "Forest", "qty": 5, "scryfallId": null },
+        { "name": "Snow-Covered Island", "qty": 2, "scryfallId": null }
+      ],
+      "stacks": [
+        { "name": "Forest", "scryfallId": "f1", "set": "dmu", "number": "281", "foil": false, "etched": false, "binderKey": "unsorted", "binderName": "Unsorted", "copies": 6 },
+        { "name": "Snow-Covered Island", "scryfallId": "i1", "set": "khm", "number": "278", "foil": false, "etched": false, "binderKey": "unsorted", "binderName": "Unsorted", "copies": 2 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [],
+      "fromDeck": null,
+      "skipBasics": false
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "unsorted", "binderName": "Unsorted", "lines": [
+          { "lineKey": "forest|f1|false|false|unsorted", "name": "Forest", "copies": 5, "set": "dmu", "number": "281", "foil": false, "etched": false, "wantedPrinting": false },
+          { "lineKey": "snow-covered island|i1|false|false|unsorted", "name": "Snow-Covered Island", "copies": 2, "set": "khm", "number": "278", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 7, "found": 7, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "two printings of one card in the same binder: each stack gives all its copies",
+    "input": {
+      "wanted": [{ "name": "Sol Ring", "qty": 3, "scryfallId": null }],
+      "stacks": [
+        { "name": "Sol Ring", "scryfallId": "s2", "set": "ltc", "number": "280", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 2 },
+        { "name": "Sol Ring", "scryfallId": "s1", "set": "cmr", "number": "401", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 1 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" }
+      ],
+      "decks": [],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:a", "binderName": "Alpha", "lines": [
+          { "lineKey": "sol ring|s1|false|false|b:a", "name": "Sol Ring", "copies": 1, "set": "cmr", "number": "401", "foil": false, "etched": false, "wantedPrinting": false },
+          { "lineKey": "sol ring|s2|false|false|b:a", "name": "Sol Ring", "copies": 2, "set": "ltc", "number": "280", "foil": false, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 3, "found": 3, "inDecks": 0, "notOwned": 0 }
+    }
+  },
+  {
+    "name": "two faces are matched by the front name, and duplicates are added together",
+    "input": {
+      "wanted": [
+        { "name": "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki", "qty": 1, "scryfallId": null },
+        { "name": "Fable of the Mirror-Breaker", "qty": 1, "scryfallId": "d1" }
+      ],
+      "stacks": [
+        { "name": "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki", "scryfallId": "d1", "set": "kam", "number": "141", "foil": false, "etched": false, "binderKey": "b:a", "binderName": "Alpha", "copies": 1 },
+        { "name": "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki", "scryfallId": "d2", "set": "sne", "number": "152", "foil": true, "etched": false, "binderKey": "b:b", "binderName": "Bravo", "copies": 1 }
+      ],
+      "binders": [
+        { "key": "unsorted", "name": "Unsorted" },
+        { "key": "b:a", "name": "Alpha" },
+        { "key": "b:b", "name": "Bravo" }
+      ],
+      "decks": [],
+      "fromDeck": null,
+      "skipBasics": true
+    },
+    "expected": {
+      "groups": [
+        { "binderKey": "b:a", "binderName": "Alpha", "lines": [
+          { "lineKey": "fable of the mirror-breaker|d1|false|false|b:a", "name": "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki", "copies": 1, "set": "kam", "number": "141", "foil": false, "etched": false, "wantedPrinting": true }
+        ] },
+        { "binderKey": "b:b", "binderName": "Bravo", "lines": [
+          { "lineKey": "fable of the mirror-breaker|d2|true|false|b:b", "name": "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki", "copies": 1, "set": "sne", "number": "152", "foil": true, "etched": false, "wantedPrinting": false }
+        ] }
+      ],
+      "onlyInDecks": [],
+      "notOwned": [],
+      "total": { "wanted": 2, "found": 2, "inDecks": 0, "notOwned": 0 }
+    }
+  }
+]
