@@ -36,6 +36,12 @@ website and nightly backups; accounts need an invite code for now.
   split cards included). Home-screen widgets.
 - Stats: colours, identities, rarity, types, mana curve, sets, finish, condition, language and more.
 - CSV import and export.
+- **Sort the collection** into a Collection binder, Not bulk and Bulk (limits you set) by value and Commander
+  popularity, leaving the cards your decks use, the trade binder and your other binders alone. After the first sort,
+  cards only move when they clearly belong elsewhere, rest 8 weeks after a move, and at most a set number move a week;
+  the weekly email says what to move.
+- **Find cards:** paste a list or pick a deck and see where each copy is stored, binder by binder, ticking cards off as
+  you pull them; copies only in other decks and cards you don't own are listed apart.
 
 **Scanning and orders**
 - Scan a pile of cards with the camera, then send them to a binder, a trade or a deck. Type what you paid for a scanned

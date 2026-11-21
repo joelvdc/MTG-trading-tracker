@@ -14,35 +14,26 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-20, after app 1.103)
-- **Newest (2026-11-20):** app 1.103 (DB 31, **sync format 16**): scanned cards keep a purchase price (Scan tab editor,
-  shown in the list; "To binder" averages it into the stack via `addBought`, undo restores the stacks), and the
-  collection card page lists the orders holding that printing ("Ordered", `Orders.hits`, tap opens `orders?open=<id>`).
-  Website, same release: price field in the scan window, "Ordered" in the card window (`orderHits`, from
-  `/api/collection/prices`), `/orders?open=<uid>` expands and scrolls to the order. Built by DeepSeek through Mistral.
-- **Expected to look odd:** a phone still on 1.102 or older pauses syncing until updated. "Ordered" only shows imported
-  orders, per printing (not per copy); Cardmarket monthly-file lines say "finish unknown".
-- **Waiting on the owner:** try both on the phone and the website (not tried by hand; unit tests only, no new
-  screenshot test for the card page).
-- **Waiting on the owner:** green light for a ✕ delete column in the website's wishlist table (planned 2026-11-19,
-  list view only, with a confirm question; not built yet).
-- **Website (2026-11-18):** the deck page has a **Compare** button (not on precon previews). It compares the
-  deck with a public Archidekt link, another of your decks or a pasted list, by front-face card name, and lists the cards
-  to add, to remove and in both. It never changes a deck. Code: `web/src/lib/deckcompare.ts`, `/api/decks/[id]/compare`,
-  `web/src/components/ComparePanel.tsx`. The app doesn't have it.
-- **Waiting on the owner:** press Ctrl+F5 and try Compare with a real Archidekt link (only a logged-in account can; tests
-  and a preview with made-up decks passed, and the narrowest width looked at was about 500 pixels). Write one real primer
-  with each AI service and watch what Mistral's costs on the Mistral account. A second account tries a real saved AI key.
-  Playtester feedback (changes of 2026-11-16 to 11-18 not tried by hand yet). An email to support@moxfield.com asking
-  whether a deck import is allowed (see Collecting).
-- **AI primers:** the owner's account picks Mistral or OpenCode Go in Write with AI; other accounts use their one saved
-  key (sealed with `SESSION_SECRET`, table `ai_keys`). `accessFor` in `web/src/lib/aiprimer.ts` alone decides whose key is used.
-- **Expected to look odd:** changing `SESSION_SECRET` makes saved AI keys unreadable; users then see "add it again". The
-  owner's account has no key field in Settings, on purpose. The daily limit stays 20 primers per account.
-- **Earlier, still true:** app 1.101 brought the faster win turn (`WinOddsCalc.VERSION` 13). A precon tile has no picture
-  until the index has read that deck. Right after an edit a website page can show the previous numbers for a moment.
-  Website Card Kingdom prices can be a few hours behind. `npm test` prints harmless "Failed to load source map" lines
-  for `web/src/lib/winodds-js/*.mjs`. The app's primer editor has no `/` list (type `[[…]]` by hand).
+## Right now (2026-11-21, after app 1.104)
+- **Newest (2026-11-21):** app 1.104 + website: **Sort the collection** (Collection binder / Not bulk / Bulk with limits,
+  floor, value↔popularity mix; after the first sort a 25% margin, an 8-week rest per card and at most N moves a week;
+  `data/CollectionSort.kt`, `web/src/lib/collsort.ts`, `/sort`, weekly email section) and **Find cards** (pasted list or
+  deck, grouped by binder, ticks kept on the device; `data/FindCards.kt`, `web/src/lib/findcards.ts`, `/find`, deck
+  Edit ▾ and Select mode "Find"). Shared test cases in `web/test/fixtures/collsort-cases.json` and `findcards-cases.json`.
+  No DB or sync format change (synced prefs `sort*`). Built by DeepSeek through Mistral, reviewed by Opus.
+- **Next, agreed with the owner:** revisit what goes against the terms of EDHREC, Archidekt and ScrollVault (see
+  Collecting, "Outside services' terms").
+- **Waiting on the owner:** try Sort and Find on the phone and the website with the real collection (tests, two
+  screenshot tests and a local website preview with made-up cards only). Still from before: try 1.103's scan price and
+  "Ordered"; green light for the ✕ delete column in the website's wishlist table; Compare with a real Archidekt link;
+  the email to support@moxfield.com.
+- **Expected to look odd:** the first sort with the cards spread over other binders can say "Everything is in place":
+  only Unsorted and the three chosen binders take part. The Find page on the website lists binders in the website's
+  bar order (Unsorted, then by name), the app in its own bar order. Sort lines show the price twice (column and reason).
+- **Earlier, still true:** a phone on 1.102 or older pauses syncing until updated (sync format 16). AI primers: the
+  owner's account picks Mistral or OpenCode Go; other accounts use their own saved key (`accessFor` in
+  `web/src/lib/aiprimer.ts`); changing `SESSION_SECRET` makes saved AI keys unreadable. A precon tile has no picture
+  until the index has read that deck. `npm test` prints harmless "Failed to load source map" lines.
 - **GitHub checks:** a red Tests mark after a push to `main` means fix that first.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
@@ -96,35 +87,17 @@ about where to back up.
 Owner: "not needed for now, add it to the todo as a potential future task". The website's Group printings (one line
 per card name, opens to its piles) for the app's collection list.
 
-### Sort the collection, find cards, EDHREC card stats (2026-11-20)
-Owner: "What if the app would help me organize the collection dividing into bulk, not bulk and a good cards (collection
-tin foil) binder? I would define the maximum quantities for each and the app would decide based on value and commander
-game relevance." Later: "Option to provide a list of cards to be found, that helps when I am building a deck or adding
-multiple cards to the deck and I need to find where cards are stored." and "I would also like to see some edhrec stats
-for cards ... Stats on card window across the app and website." App **and** website for all three.
-Suggested order: three releases, smallest first.
-1. **EDHREC stats in the card window** (app and website, everywhere the card window opens). Ideas offered: popularity
-   rank ("#38 most played", already have it from Scryfall), in how many decks and what share of the decks that could play
-   it, salt score, top 5 commanders playing it, often played with (mark the ones owned), Game Changer label, link to the
-   card's EDHREC page. Loaded when the window opens and kept for a while (fast, offline afterwards).
-   - Open: which of these the owner wants. While planning, check what EDHREC's per-card data really holds (unofficial,
-     like the commander pages `Recommendations.kt` / `web/src/lib/recommend.ts` already read). The weekly health check
-     gains the new address and fields.
-2. **Find these cards**: paste a list or pick a deck's missing cards; shows where each copy is stored, grouped by binder
-   or box so the owner walks one place at a time, tick off when found; "only in another deck" and "not owned" in their
-   own sections at the bottom.
-3. **Sort the collection** into Collection binder ("tin foil"), Not bulk and Bulk; anything that doesn't fit goes to
-   **Unsorted**. Settled with the owner:
-   - Each of the three has a maximum the owner sets; Bulk's limit is optional (unlimited allowed).
-   - Every copy counts (not one per card), in Collection binder and Not bulk alike.
-   - Cards in decks are left out. The trade binder stays separate with its own rules.
-   - Score: value and Commander popularity (EDHREC) in a fixed mix, like the trade binder's, with an option to set the mix
-     yourself; plus a floor ("under €X is always bulk").
-   - Like the trade binder: the app only suggests moves (grouped by where the card is now), the owner ticks what was
-     physically moved, declined suggestions stay declined; running it again later gives only the cards that should move.
-   - Open: does the owner pick existing binders as the four places or does the app create them? Should foils get a
-     bonus? Does the floor beat the score when Bulk is full (then over the floor goes to Unsorted)? Synced settings mean
-     a `Sync.FORMAT` change, so the website ships in the same release.
+### Outside services' terms (checked 2026-11-21; owner: revisit after 1.104)
+Read on 2026-11-21. EDHREC and Archidekt (same terms template) forbid "automated searches, requests, or queries"; ScrollVault
+forbids scraping and automated requests. The app and website break that with: EDHREC Recommendations (json.edhrec.com,
+app and website, and the weekly health check), Archidekt deck import / Reload decklist / Update all decks and the Commander
+Salt step that reads the Archidekt deck, and ScrollVault's bracket tool run in the hidden browser. Unclear (no terms
+found): Commander Salt's API, edhpowerlevel.com (hidden browser; robots allow all), recommander.cards (public-release
+API). Cardmarket's terms couldn't be read (bot check); we use its public price files and links. Fine: Scryfall (incl.
+the EDHREC rank it passes on), MTGJSON (MIT), Card Kingdom's API (its robots allow all), CardTrader (own key), ECB.
+- Proposed: emails to EDHREC, Archidekt and ScrollVault asking permission (Claude drafts, the owner sends); keep the
+  features meanwhile; remove a service's features if it says no or doesn't answer in about two weeks.
+- Dropped by the owner (2026-11-21): EDHREC statistics in the card windows.
 
 ### Smaller loose ends
 - The website's price alerts leave CardTrader out (they need the owner's CardTrader token, which stays on the phone).
@@ -168,6 +141,8 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.104 (2026-11-21): Sort the collection (with gentle weekly moves and a weekly email section) and Find cards, app
+  and website
 - 1.103 (2026-11-20): purchase price for scanned cards (app and website), "Ordered" lines on the card page (sync format 16)
 - 1.102 (2026-11-19): "In no deck." on the card page; website: New binder… in Move to, More ▾ menu, Archidekt preset
   hint, Scanned always shown.

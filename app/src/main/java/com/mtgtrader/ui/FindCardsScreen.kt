@@ -312,7 +312,7 @@ fun FindCardsList(
 }
 
 private fun LazyListScope.findGroupSection(g: FindGroup, ticks: Set<String>, onToggle: (String, Boolean) -> Unit) {
-    item(key = "h_${g.binderKey}") { FindSectionHeader("${g.binderName} · ${g.lines.sumOf { it.copies }} cards") }
+    item(key = "h_${g.binderKey}") { FindSectionHeader(g.lines.sumOf { it.copies }.let { n -> "${g.binderName} · $n ${if (n == 1) "card" else "cards"}" }) }
     // The copies found already go to the bottom of their binder.
     val ordered = g.lines.sortedBy { it.lineKey in ticks }
     items(ordered, key = { "l_${it.lineKey}" }) { line ->
