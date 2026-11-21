@@ -95,13 +95,12 @@ export default function AllRuleZeroCardsPage() {
                 {data.decks.map((d) => {
                   const win = wins[d.id] ?? null;
                   const power = d.power ?? (data.powerSource === "APP" && win ? win.power.power : null);
-                  const sv = d.scrollVault as Parameters<typeof PowerCard>[0]["scrollVault"];
                   return [
                     which !== "POWER" && (
                       <BracketCard key={`b${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} inkSaver={inkSaver} speed={win ? <SpeedSection win={win} /> : undefined} />
                     ),
                     which !== "BRACKET" && (
-                      <PowerCard key={`p${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} source={data.powerSource} power={power} error={d.powerError} scrollVault={sv} inkSaver={inkSaver} />
+                      <PowerCard key={`p${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} source={data.powerSource} power={power} error={d.powerError} inkSaver={inkSaver} />
                     ),
                   ];
                 })}

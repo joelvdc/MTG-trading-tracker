@@ -35,7 +35,6 @@ export const RECEIVED_CLEAR: [string, string][] = [
 export const POWER_SOURCE_CHOICES: [string, string][] = [
   ["COMMANDER_SALT", "Commander Salt"],
   ["EDH_POWER_LEVEL", "EDH Power Level (edhpowerlevel.com)"],
-  ["SCROLLVAULT", "ScrollVault"],
   ["APP", "This app (from the win turn)"],
 ];
 

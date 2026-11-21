@@ -40,7 +40,7 @@ const EFFECTS: [string, string][] = [
   ["combos", "Infinite combos"],
 ];
 
-/** Power level as its source shows it: "4.4" (Commander Salt, ScrollVault), "6.70" (edhpowerlevel.com), "6" (the app's). */
+/** Power level as its source shows it: "4.4" (Commander Salt), "6.70" (edhpowerlevel.com), "6" (the app's). */
 export function formatPower(v: number, source: PowerSource): string {
   return v.toFixed(source === "EDH_POWER_LEVEL" ? 2 : source === "APP" ? 0 : 1);
 }
@@ -223,7 +223,6 @@ export function PowerCard({
   source,
   power,
   error,
-  scrollVault,
   inkSaver,
 }: {
   deck: DeckLike;
@@ -232,11 +231,9 @@ export function PowerCard({
   source: PowerSource;
   power: number | null;
   error: string | null;
-  scrollVault: { margin?: number | null; typicalWin?: number | null; earliestWin?: number | null; bracket?: number | null; borderline?: number | null; podLine?: string | null } | null;
   inkSaver: boolean;
 }) {
   const site = POWER_SOURCES[source].site;
-  const sv = source === "SCROLLVAULT" && power !== null ? scrollVault : null;
   const fmt = (n: number) => formatPower(n, source);
   const effects = EFFECTS.filter(([k]) => data.effects[k] !== undefined).map(([k, label]) => [label, data.effects[k]] as [string, number]);
   const shown = effects.filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
@@ -253,9 +250,7 @@ export function PowerCard({
         <div className="rz-small">
           {source === "COMMANDER_SALT"
             ? [data.playStyle?.toLowerCase(), site].filter(Boolean).join(" · ")
-            : sv?.margin != null
-              ? `by ${site} · ±${fmt(sv.margin)}`
-              : `by ${site}`}
+            : `by ${site}`}
         </div>
         <div className="rz-meter">
           {METER.map((c, i) => (
@@ -274,22 +269,6 @@ export function PowerCard({
           </div>
         )}
       </div>
-      {sv && (sv.typicalWin != null || sv.bracket != null || sv.podLine) && (
-        <Section title="At the table (ScrollVault)">
-          {sv.typicalWin != null && (
-            <p>
-              <strong>Typical win turn {sv.typicalWin}</strong>
-              {sv.earliestWin != null && <span className="rz-small"> · earliest turn {sv.earliestWin}</span>}
-            </p>
-          )}
-          {sv.bracket != null && (
-            <p className="rz-small">
-              Its bracket: {sv.bracket} ({bracketName(sv.bracket)?.toLowerCase()}){sv.borderline != null ? `, borderline ${sv.borderline}` : ""}
-            </p>
-          )}
-          {sv.podLine && <p className="rz-quote">“{sv.podLine}”</p>}
-        </Section>
-      )}
       <Section>
         <div className="rz-two">
           <div>

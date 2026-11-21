@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { appSettings, applySettings } from "@/lib/appsettings";
-import { parse, prefs, type SyncFile } from "@/lib/syncfile";
+import { parse, prefs, setPrefs, type SyncFile } from "@/lib/syncfile";
 import { EditError } from "@/lib/wishlist";
 
 const appFile = (): SyncFile => parse(readFileSync(path.join(__dirname, "fixtures", "app-sync.json"), "utf8"));
@@ -37,11 +37,22 @@ describe("the app's synced settings", () => {
 
   it("changes the power level source and your Archidekt username like the app", () => {
     const f = appFile();
-    applySettings(f, { powerSource: "SCROLLVAULT", ownArchidektUser: "  joel " }, NOW);
-    expect(prefs(f)).toMatchObject({ powerSource: "SCROLLVAULT", ownArchidektUser: "joel" });
-    expect(appSettings(f)).toMatchObject({ powerSource: "SCROLLVAULT", ownArchidektUser: "joel" });
+    applySettings(f, { powerSource: "EDH_POWER_LEVEL", ownArchidektUser: "  joel " }, NOW);
+    expect(prefs(f)).toMatchObject({ powerSource: "EDH_POWER_LEVEL", ownArchidektUser: "joel" });
+    expect(appSettings(f)).toMatchObject({ powerSource: "EDH_POWER_LEVEL", ownArchidektUser: "joel" });
     expect(() => applySettings(f, { powerSource: "MOXFIELD" }, NOW)).toThrow(EditError);
     expect(() => applySettings(f, { ownArchidektUser: "two words" }, NOW)).toThrow(EditError);
+  });
+
+  it("shows a stored ScrollVault power source as Commander Salt, leaving the stored value alone", () => {
+    const f = appFile();
+    // An older phone (up to app 1.104) may still have it.
+    setPrefs(f, { powerSource: "SCROLLVAULT" }, NOW);
+    expect(appSettings(f).powerSource).toBe("COMMANDER_SALT");
+    expect(prefs(f).powerSource).toBe("SCROLLVAULT");
+    // The website can't set it any more.
+    expect(() => applySettings(f, { powerSource: "SCROLLVAULT" }, NOW)).toThrow(EditError);
+    expect(prefs(f).powerSource).toBe("SCROLLVAULT");
   });
 
   it("leaves the file alone when nothing changes", () => {

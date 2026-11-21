@@ -71,7 +71,7 @@ describe("loading decks from Archidekt (DeckRepository.load)", () => {
 
   it("replaces the deck's list, keeps its scores and drops other sites' power levels", () => {
     const f = appFile();
-    setPrefs(f, { powerSource: "SCROLLVAULT" }, NOW);
+    setPrefs(f, { powerSource: "EDH_POWER_LEVEL" }, NOW);
     const before = syncDecks(f).find((d) => d.deck.archidektId === 10710772)!.deck;
     const sd = putLoadedDeck(f, read(), NOW);
     expect(sd.deck.powerLevel).toBe(before.powerLevel);
@@ -84,7 +84,7 @@ describe("loading decks from Archidekt (DeckRepository.load)", () => {
     expect(sd.cards.every((c) => c.lineUid && c.card.imageUrl?.startsWith("https://cards.scryfall.io/"))).toBe(true);
     expect(categories(sd.deck.categoryInfo).find((c) => c.name === "Maybeboard")?.included).toBe(false);
     expect(syncDecks(f).filter((d) => d.deck.archidektId === 10710772)).toHaveLength(1);
-    expect(prefs(f).powerSource).toBe("SCROLLVAULT");
+    expect(prefs(f).powerSource).toBe("EDH_POWER_LEVEL");
   });
 
   it("keeps Commander Salt's scores, or its problem", () => {

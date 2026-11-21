@@ -4,6 +4,7 @@
 // out. Server only, apart from the types.
 import { USER_AGENT } from "./config";
 import { primaryType } from "./deckshared";
+import { noteService } from "./servicewatch";
 import { toCardRef } from "./scryfall";
 import { scryFetch } from "./scrylimit";
 import type { RecCard, RecResult, RecSection, RecSource } from "./recshared";
@@ -124,15 +125,37 @@ export function parseEdhrec(body: unknown): [string, string, EdhEntry[]][] {
 }
 
 async function edhrecPage(commanders: string[]) {
-  const r = await fetch(`https://json.edhrec.com/pages/commanders/${edhrecSlug(commanders)}.json`, {
-    headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-    signal: AbortSignal.timeout(20_000),
-    cache: "no-store",
-  });
+  let r: Response;
+  try {
+    r = await fetch(`https://json.edhrec.com/pages/commanders/${edhrecSlug(commanders)}.json`, {
+      headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+  } catch (e) {
+    // The health check doesn't ask EDHREC itself: it reports how this went (lib/servicewatch.ts). Awaited: on Vercel a
+    // promise left unawaited may be dropped once the answer is sent (noteService never throws).
+    await noteService("edhrec", "couldn't be reached");
+    throw e;
+  }
+  // No page for that commander isn't EDHREC's problem, so it isn't noted.
   if (r.status === 404 || r.status === 403) throw new RecError(`EDHREC has no page for ${commanders.join(" & ")} yet`);
-  if (r.status === 429) throw new RecError("EDHREC is busy; try again in a minute", true, 60);
-  if (!r.ok) throw new RecError(`EDHREC answered ${r.status}`);
-  return parseEdhrec(await r.json());
+  if (r.status === 429) {
+    await noteService("edhrec", "answered 429");
+    throw new RecError("EDHREC is busy; try again in a minute", true, 60);
+  }
+  if (!r.ok) {
+    await noteService("edhrec", `answered ${r.status}`);
+    throw new RecError(`EDHREC answered ${r.status}`);
+  }
+  try {
+    const page = parseEdhrec(await r.json());
+    await noteService("edhrec", null);
+    return page;
+  } catch (e) {
+    await noteService("edhrec", `answer changed: ${e instanceof Error ? e.message : String(e)}`);
+    throw e;
+  }
 }
 
 // ---- recommander.cards ---------------------------------------------------------------------------------------------

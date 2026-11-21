@@ -84,14 +84,14 @@ export interface SyncDeck {
 
 // ---- Scores ------------------------------------------------------------------------------------------------------
 
-export type PowerSource = "COMMANDER_SALT" | "EDH_POWER_LEVEL" | "SCROLLVAULT" | "APP";
+export type PowerSource = "COMMANDER_SALT" | "EDH_POWER_LEVEL" | "APP";
 export const POWER_SOURCES: Record<PowerSource, { label: string; site: string }> = {
   COMMANDER_SALT: { label: "Commander Salt", site: "commandersalt.com" },
   EDH_POWER_LEVEL: { label: "EDH Power Level", site: "edhpowerlevel.com" },
-  SCROLLVAULT: { label: "ScrollVault", site: "scrollvault.net" },
   APP: { label: "This app", site: "the app's win turn" },
 };
 
+/** SCROLLVAULT (a stored setting until app 1.104) falls back to Commander Salt. */
 export function powerSource(key: string | undefined): PowerSource {
   return key && key in POWER_SOURCES ? (key as PowerSource) : "COMMANDER_SALT";
 }
@@ -103,8 +103,6 @@ export function powerOf(d: Deck, s: PowerSource): number | null {
       return d.powerLevel ?? null;
     case "EDH_POWER_LEVEL":
       return d.edhPowerLevel ?? null;
-    case "SCROLLVAULT":
-      return d.svPowerLevel ?? null;
     default:
       return null;
   }
@@ -116,8 +114,6 @@ export function powerError(d: Deck, s: PowerSource): string | null {
       return d.scoreError ?? null;
     case "EDH_POWER_LEVEL":
       return d.edhPowerError ?? null;
-    case "SCROLLVAULT":
-      return d.svError ?? null;
     default:
       return null;
   }
@@ -522,7 +518,6 @@ export interface DeckView {
   /** When the deck last changed, as the list's "Last modified" sort has it (the app's Deck.modifiedAt); null when unknown. */
   modifiedAt: number | null;
   salt: SaltCard | null;
-  scrollVault: Record<string, Json> | null;
   rows: DeckRow[];
   /** Lower-case names of the categories switched off in "Manage categories" (synced). */
   hidden: string[];

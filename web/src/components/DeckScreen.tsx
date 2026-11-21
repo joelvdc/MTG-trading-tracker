@@ -1298,7 +1298,6 @@ function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; st
   const [which, setWhich] = useState<"BOTH" | "BRACKET" | "POWER">(start);
   const salt = view.salt!;
   const deck = view.deck;
-  const sv = view.scrollVault as Parameters<typeof PowerCard>[0]["scrollVault"];
   return (
     <Dialog title="Rule-zero cards" onClose={onClose}>
       <div className="stack">
@@ -1324,7 +1323,7 @@ function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; st
         <div className="rz-print">
           {which !== "POWER" && <BracketCard deck={deck} cover={view.cover} data={salt} inkSaver={inkSaver} speed={win.status === "done" && win.win ? <SpeedSection win={win.win} /> : undefined} />}
           {which !== "BRACKET" && (
-            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} scrollVault={sv} inkSaver={inkSaver} />
+            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} inkSaver={inkSaver} />
           )}
         </div>
         <div className="dialog-actions">
