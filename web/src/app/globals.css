@@ -4926,3 +4926,60 @@ div.primer-ai-body {
   white-space: nowrap;
 }
 
+
+/* ---- Sort the collection and Find these cards (since 1.104) ---- */
+/* A move or a copy to find: the tick box, then the card's name, finish and reason, wrapping on a phone. */
+.sort-move,
+.find-line {
+  align-items: flex-start;
+}
+.sort-move input,
+.find-line input {
+  margin-top: 9px;
+}
+.sort-move .grow,
+.find-line .grow {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sort-move .tag,
+.find-line .tag {
+  margin-left: 4px;
+}
+.find-list li.found .find-line {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.find-deck {
+  display: block;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+.find-names {
+  margin: 4px 0 8px;
+}
+.find-form {
+  margin-top: 10px;
+}
+.find-form .field {
+  margin: 0;
+}
+/* The sort page's Done button: along the bottom of the window, like the deck page's bar. */
+.sort-done {
+  flex-wrap: wrap;
+}
+.sort-done .grow {
+  flex: 1 1 240px;
+}
+@media (max-width: 560px) {
+  .sort-done {
+    left: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    border-radius: 0;
+  }
+  .sort-done .btn {
+    width: 100%;
+  }
+}

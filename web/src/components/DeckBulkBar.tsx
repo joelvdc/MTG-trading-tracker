@@ -209,6 +209,13 @@ export function DeckBulkBar({
         <button className="btn small-btn" disabled={busy} onClick={() => setPackageOpen(true)}>
           Save as package…
         </button>
+        <a
+          className="btn small-btn"
+          href={`/find?deck=${view.id}&names=${encodeURIComponent([...new Set(rows.map((r) => r.name))].join("|"))}`}
+          title="See which binder these cards are in"
+        >
+          Find
+        </a>
         <button className="btn small-btn" disabled={busy} onClick={copyText}>
           {copied ? "Copied" : "Copy as text"}
         </button>

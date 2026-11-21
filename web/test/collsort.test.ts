@@ -73,6 +73,16 @@ describe("sorting the collection (CollectionSortPlanner)", () => {
       expect(got.weekUsed).toBe(c.expected.weekUsed);
       expect(got.budget).toBe(c.expected.budget);
     });
+
+  it("writes the moves' reasons in the account's currency when it is given one", () => {
+    const withReason = cases.find((c) => c.expected.moves.some((m) => m.reason.includes("€")))!;
+    expect(withReason).toBeTruthy();
+    const inKroner = planSort(withReason.input, (eur) => `${(eur * 7.46).toFixed(2)} kr.`);
+    expect(inKroner.moves.map(line)).toEqual(withReason.expected.moves.map(line));
+    for (const m of inKroner.moves) expect(m.reason).not.toContain("€");
+    // The same moves and the same reasons, in kroner where the euros were.
+    expect(inKroner.moves.map((m) => m.reason)).toEqual(planSort(withReason.input).moves.map((m) => m.reason.replace(/€([\d.]+)/g, (_, n) => `${(Number(n) * 7.46).toFixed(2)} kr.`)));
+  });
 });
 
 describe("the sort's synced settings", () => {

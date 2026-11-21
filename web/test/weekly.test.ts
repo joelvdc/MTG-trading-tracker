@@ -96,6 +96,35 @@ describe("the weekly email", () => {
     expect(m.html).not.toContain("<script");
   });
 
+  it("says what the sort suggests, once it is set up and settled", () => {
+    const f = sample();
+    const values = (f.data.prefs as { values: Record<string, string> }).values;
+    // Not set up: nothing.
+    expect(weeklyReport(input({ file: f })).sort).toBeNull();
+    // The three binders and a settled sort, but the card in hand is worth more than the floor: it stays where it is.
+    const binder = (name: string, uid: string) => ({ id: 0, name, createdAt: 0, uid, updatedAt: 0 });
+    (f.data.binders as unknown[]).push(binder("Collection binder", "TOP"), binder("Not bulk", "MID"), binder("Bulk", "BULK"));
+    Object.assign(values, { sortTop: "TOP", sortMid: "MID", sortBulk: "BULK", sortSettled: "true" });
+    expect(weeklyReport(input({ file: f })).sort).toBeNull();
+    // A spare copy under the sort's floor (€0.50) is bulk: the sort has it out to Bulk.
+    const pile = (f.data.collection as { item: { card: Record<string, Json>; uid: string } }[])[0];
+    (f.data.collection as unknown[]).push({ item: { ...pile.item, card: { ...pile.item.card, scryfallId: "22222222-2222-4222-8222-222222222222", name: "Below The Floor", cardmarketId: null, fallbackEur: 0.2 }, uid: "c0000000000000000000000000000002" }, binder: null });
+    const r = weeklyReport(input({ file: f }));
+    expect(r.sort?.moves).toEqual([{ name: "Below The Floor", from: "Unsorted", to: "Bulk", copies: 2 }]);
+    expect(r.sort!.moves.length).toBeLessThanOrEqual(10);
+    const m = weeklyMail(r, "joel", "https://site", "https://site/stop", NOW);
+    expect(m.text).toContain("SORT THE COLLECTION: 1 MOVE THIS WEEK");
+    expect(m.text).toContain("- Below The Floor (2 copies): Unsorted → Bulk");
+    expect(m.text).toContain("- Open the sort: https://site/sort");
+    expect(m.html).toContain('href="https://site/sort"');
+    // A settled sort with nothing left to move says nothing (an empty file has nothing to sort).
+    const empty = sample();
+    (empty.data.collection as unknown[]).length = 0;
+    Object.assign((empty.data.prefs as { values: Record<string, string> }).values, { sortTop: "TOP", sortMid: "MID", sortBulk: "BULK", sortSettled: "true" });
+    (empty.data.binders as unknown[]).push(binder("Collection binder", "TOP"), binder("Not bulk", "MID"), binder("Bulk", "BULK"));
+    expect(weeklyReport(input({ file: empty })).sort).toBeNull();
+  });
+
   it("checks addresses and keeps the stop link when the address changes", () => {
     expect(cleanAddress(" a.b@example.com ")).toBe("a.b@example.com");
     expect(cleanAddress("nope")).toBeNull();

@@ -113,7 +113,13 @@ export interface SortInput {
   today: number;
 }
 
-const money = (eur: number) => format(eur, "EUR");
+const euroMoney = (eur: number) => format(eur, "EUR");
+
+/**
+ * How a move's reason writes money: euros unless the account shows its prices in another currency (the pages pass
+ * `(eur) => format(eur * perEuro, currency)`, as they do for every price).
+ */
+export type MoneyFormat = (eur: number) => string;
 
 /** The synced rules (the app's defaults where a phone hasn't sent them, checked like the trade binder's). */
 export function sortRulesOf(p: Record<string, string>): SortRules {
@@ -214,9 +220,9 @@ function moveOrder(a: SortMove, b: SortMove): number {
 
 /**
  * The pure core (CollectionSortPlanner.plan): where every copy goes, from the stacks, the decks' needs, the rules, the
- * declined moves, the log and whether the first sort is done.
+ * declined moves, the log and whether the first sort is done. [moneyFormat] writes the moves' reasons (euros by default).
  */
-export function planSort(input: SortInput): SortPlan {
+export function planSort(input: SortInput, moneyFormat: MoneyFormat = euroMoney): SortPlan {
   const { rules, settled, today } = input;
   const skips = new Set(input.skips ?? []);
   const needs = input.deckNeeds ?? {};
@@ -303,7 +309,7 @@ export function planSort(input: SortInput): SortPlan {
     // What's left goes to Unsorted, unless that was turned down: then it stays where it is.
     for (const u of units) if (!filled.has(u) && !held.has(u) && !skips.has(`${u.key}>${UNSORTED_KEY}`)) filled.set(u, UNSORTED_KEY);
     const assigned = new Map([...filled, ...held]);
-    return { assigned, pinned: held, moves: groupMoves(units, assigned, rules) };
+    return { assigned, pinned: held, moves: groupMoves(units, assigned, rules, moneyFormat) };
   };
 
   let run = fill(pinned);
@@ -399,7 +405,7 @@ function pinsWith(run: Run, extra: Unit[]): Map<Unit, string> {
  * Groups the copies that change place by card and from/to, with their reason: from the highest place first, then to,
  * then the most valuable card.
  */
-function groupMoves(units: Unit[], finalPlace: Map<Unit, string>, rules: SortRules): SortMove[] {
+function groupMoves(units: Unit[], finalPlace: Map<Unit, string>, rules: SortRules, money: MoneyFormat): SortMove[] {
   const byMove = new Map<string, { key: string; from: string; to: string; list: Unit[] }>();
   for (const u of units) {
     const to = finalPlace.get(u) ?? u.place;
@@ -487,7 +493,8 @@ export function sortBindersOf(file: SyncFile): Record<SortPlace, { uid: string; 
 
 /**
  * The sort's suggestion from the sync file: the stacks (priced as the collection shows them), the decks' needs and
- * the synced rules, skips and log, with the binders of the places.
+ * the synced rules, skips and log, with the binders of the places. [moneyFormat] writes the moves' reasons (euros by
+ * default).
  */
 export function sortSuggest(
   file: SyncFile,
@@ -495,8 +502,9 @@ export function sortSuggest(
   details: DetailsFile | null,
   ck?: CkFile | null,
   now: number = Date.now(),
+  moneyFormat: MoneyFormat = euroMoney,
 ): { plan: SortPlan; binders: Record<SortPlace, { uid: string; name: string } | null> } {
-  return { plan: planSort(sortInputs(file, sortStacks(file, prices, details, ck ?? null), now)), binders: sortBindersOf(file) };
+  return { plan: planSort(sortInputs(file, sortStacks(file, prices, details, ck ?? null), now), moneyFormat), binders: sortBindersOf(file) };
 }
 
 /** Where a place points: an existing binder, or a new one to make. */

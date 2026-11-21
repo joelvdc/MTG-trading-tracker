@@ -631,6 +631,12 @@ export default function CollectionPage() {
               <Link className="menu-link" href="/tradebinder" onClick={closeMenu}>
                 Trade binder
               </Link>
+              <Link className="menu-link" href="/sort" onClick={closeMenu}>
+                Sort the collection
+              </Link>
+              <Link className="menu-link" href="/find" onClick={closeMenu}>
+                Find cards
+              </Link>
               <button
                 disabled={locked}
                 onClick={(e) => {

@@ -819,6 +819,9 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                   <div className="menu-items" onClick={(e) => ((e.currentTarget.parentElement as HTMLDetailsElement).open = false)}>
                     {view.local && <button onClick={() => setAddOpen(true)}>Add a card</button>}
                     {view.local && <button onClick={() => setPasteOpen(true)}>Paste cards…</button>}
+                    <a className="menu-link" href={`/find?deck=${view.id}`}>
+                      Find these cards
+                    </a>
                     <button onClick={() => setSelecting(true)}>Select cards</button>
                     {!view.local && <button onClick={() => fromArchidekt("reload")}>Reload decklist</button>}
                     {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
