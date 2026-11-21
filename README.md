@@ -133,3 +133,8 @@ shows.
 MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions
 of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Not affiliated with or endorsed
 by any of the data sources above. Prices are for guidance only.
+
+The app's and website's privacy policy and terms of use are at
+[mtgtrader.vercel.app/privacy](https://mtgtrader.vercel.app/privacy) and
+[mtgtrader.vercel.app/terms](https://mtgtrader.vercel.app/terms). The privacy and support contact address is on the
+privacy page.
