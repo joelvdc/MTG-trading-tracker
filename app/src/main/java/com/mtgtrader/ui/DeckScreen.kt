@@ -534,6 +534,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             leadingIcon = { Icon(Icons.Default.Inventory2, null) },
                             onClick = { menu = false; packagesOpen = true },
                         )
+                        // Since 1.104: where this deck's cards are stored, binder by binder.
+                        DropdownMenuItem(
+                            text = { Text("Find these cards…") },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            onClick = { menu = false; nav.navigate("findcards?deck=$deckId") },
+                        )
                         // Editing (since 1.46).
                         if (local) {
                             DropdownMenuItem(

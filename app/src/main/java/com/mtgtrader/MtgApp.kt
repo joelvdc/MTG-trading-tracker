@@ -140,6 +140,10 @@ class AppContainer(context: Context) {
     val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), ScrollVaultApi(browser), appScope, winOdds)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
     val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
+    /** Sorts the collection into the Collection binder, Not bulk and Bulk, keeping the rest in Unsorted. Since 1.104. */
+    val sorter = com.mtgtrader.data.CollectionSorter(db, repo, settings)
+    /** Finds where the copies of a pasted list or a deck are stored, binder by binder. Since 1.104. */
+    val cardFinder = com.mtgtrader.data.CardFinder(db, settings)
     val offlineImages = com.mtgtrader.data.OfflineImages(context, db, settings, network, appScope)
     private val store = SyncStore(db, settings)
     private val nextcloud = NextcloudClient(http)
