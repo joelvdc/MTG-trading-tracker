@@ -58,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -79,6 +80,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.roundToInt
+
+/** The privacy and support contact, also on the website's privacy page (since 1.106). */
+private const val CONTACT_EMAIL = "mtgtrader@astermail.org"
 
 private val typeHelp = mapOf(
     PriceType.TREND to "Smoothed recent sales. The usual choice.",
@@ -465,14 +469,27 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                     )
                 }
                 SettingsCategory.ABOUT -> {
+                    val uriHandler = LocalUriHandler.current
                     Text(
                         "Cards: Scryfall. Prices: Cardmarket, TCGplayer, Card Kingdom, CardTrader. Decks: Archidekt, EDHREC, " +
                             "recommander.cards, Commander Salt, Commander Spellbook, EDH Power Level, MTGJSON. " +
                             "Exchange rates: European Central Bank.\n\n" +
                             "Not affiliated with any of these; prices are for guidance only.\n\n" +
                             "MTG Trader is unofficial Fan Content permitted under the Fan Content Policy. Not approved or endorsed by Wizards. " +
-                            "Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.\n\n" +
-                            "Privacy and attribution: mtgtrader.vercel.app/privacy and mtgtrader.vercel.app/legal.\n\nVersion ${BuildConfig.VERSION_NAME}",
+                            "Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Column {
+                        AboutLink("Privacy policy") { runCatching { uriHandler.openUri("https://mtgtrader.vercel.app/privacy") } }
+                        AboutLink("Terms of use") { runCatching { uriHandler.openUri("https://mtgtrader.vercel.app/terms") } }
+                        AboutLink("Legal and attribution") { runCatching { uriHandler.openUri("https://mtgtrader.vercel.app/legal") } }
+                        AboutLink("Contact: $CONTACT_EMAIL") { runCatching { uriHandler.openUri("mailto:$CONTACT_EMAIL") } }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Version ${BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -481,6 +498,12 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
             }
         }
     }
+}
+
+/** A link on the About page that opens an address in the browser (or the mail app). Since 1.106. */
+@Composable
+private fun AboutLink(label: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick) { Text(label) }
 }
 
 @Composable
