@@ -3,7 +3,7 @@
 // applies the accepted ones and remembers the declined ones. Its rules and the declined suggestions are synced
 // settings (since app 1.80): tradeMax, tradeKeepOne, tradeMinValue, tradeKeepBestDecks, tradeKeepBestAll, tradeSkips.
 import { applyCollectionEdit } from "./collection";
-import { decksOf, type CollRow } from "./collview";
+import { activeDecksOf, decksOf, type CollRow } from "./collview";
 import type { PriceFile } from "./prices";
 import { binders, collection, prefs, setPrefs, wishlist, type SyncFile } from "./syncfile";
 
@@ -266,10 +266,10 @@ export function tradeBinderOf(file: SyncFile): string | null {
   return all.find((b) => b.name === TRADE_BINDER_NAME)?.uid ?? null;
 }
 
-/** The plan's inputs from the sync file: deck needs and the wishlist, as the app's TradeBinder.suggest. */
+/** The plan's inputs from the sync file: the active decks' needs and the wishlist, as the app's TradeBinder.suggest. */
 export function planInputs(file: SyncFile): { deckNeeds: Map<string, number>; wishlist: Set<string> } {
   const deckNeeds = new Map<string, number>();
-  for (const d of decksOf(file)) for (const [name, n] of Object.entries(d.cards)) deckNeeds.set(nameKey(name), (deckNeeds.get(nameKey(name)) ?? 0) + n);
+  for (const d of activeDecksOf(file)) for (const [name, n] of Object.entries(d.cards)) deckNeeds.set(nameKey(name), (deckNeeds.get(nameKey(name)) ?? 0) + n);
   const wanted = new Set(wishlist(file).filter((w) => w.receivedAt == null).map((w) => nameKey(w.card.name)));
   return { deckNeeds, wishlist: wanted };
 }

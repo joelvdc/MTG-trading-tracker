@@ -23,8 +23,9 @@ vi.mock("@/lib/store", async (importOriginal) => {
     ...actual,
     loadSync: async () => ({ file: held.file, etag: null, bytes: new Uint8Array() }),
     editSync: async (_a: unknown, change: (f: SyncFile, now: number) => void) => {
-      held.wrote = true;
+      // Like the real editSync: a change that throws writes nothing.
       change(held.file, 4000);
+      held.wrote = true;
       return held.file;
     },
   };
@@ -48,7 +49,7 @@ import { POST as findPost } from "@/app/api/find/route";
 import type { SortView } from "@/app/api/sort/route";
 import type { FindView } from "@/app/api/find/route";
 import type { FindLine } from "@/lib/findcards";
-import { sortLogOf, sortSettledOf, sortSkipsOf } from "@/lib/collsort";
+import { sortLogOf, sortSettledOf, sortSkipsOf, epochDay } from "@/lib/collsort";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -115,24 +116,39 @@ const req = (p: string, payload: unknown, headers: Record<string, string> = { "x
 const body = async <T>(r: Response) => (await r.json()) as T & { error?: string };
 
 describe("the sort route", () => {
-  it("answers the plan with the places, the binders and the rules", async () => {
+  it("answers the plan with the levels, the decks' binder and the settings", async () => {
     held.file = file();
     const r = await sortGet();
     expect(r.status).toBe(200);
     const b = await body<SortView>(r);
-    expect(b.places.top).toEqual({ uid: uidOf(held.file as SyncFile, "Collection binder"), name: "Collection binder" });
-    expect(b.places.mid?.name).toBe("Not bulk");
-    expect(b.places.bulk).toBeNull();
+    expect(b.levels.map((l) => [l.key, l.name, l.uid])).toEqual([
+      ["l1", "Collection binder", uidOf(held.file as SyncFile, "Collection binder")],
+      ["l2", "Not bulk", uidOf(held.file as SyncFile, "Not bulk")],
+    ]);
+    expect(b.decks).toBeNull();
+    expect(b.settings.levels.map((l) => l.max)).toEqual([200, 1000]);
+    expect(b.settings).toMatchObject({ mix: 50, weekly: 10, together: "name", outlierRatio: 3, outlierGap: 5, deckCopies: "best" });
     expect(b.settled).toBe(false);
     expect(b.declined).toBe(0);
     // Every binder, with a flag for the ones the sort uses.
     const decks = uidOf(held.file as SyncFile, "Blue deck");
     expect(b.binders.find((x) => x.uid === decks)).toMatchObject({ name: "Blue deck", used: false });
-    expect(b.binders.find((x) => x.uid === b.places.top?.uid)).toMatchObject({ used: true });
+    expect(b.binders.find((x) => x.uid === b.levels[0].uid)).toMatchObject({ used: true });
     // The first sort has no weekly cap.
     expect(b.plan.budget).toBe(-1);
-    expect(b.rules).toMatchObject({ maxTop: 200, maxMid: 1000, weekly: 10 });
     expect(b.plan.moves.length).toBeGreaterThan(0);
+  });
+
+  it("ignores the weekly limit when asked (?ignoreCap=1)", async () => {
+    // Settled, with the whole week's moves already used: nothing may move now unless the cap is ignored.
+    const today = epochDay(Date.now());
+    const file = settledFile({ sortLog: `${today}|k|10|0` });
+    vi.spyOn(Date, "now").mockReturnValue(4000 * 86_400_000);
+    held.file = file;
+    expect((await body<SortView>(await sortGet())).plan.budget).toBe(0);
+    const r = await sortGet(new Request("https://mtgtrader.vercel.app/api/sort?ignoreCap=1"));
+    expect(r.status).toBe(200);
+    expect((await body<SortView>(r)).plan.budget).toBe(-1);
   });
 
   it("writes the moves' reasons in the account's currency", async () => {
@@ -153,24 +169,46 @@ describe("the sort route", () => {
     expect((await sortGet()).status).toBe(401);
   });
 
-  it("makes the binders and saves the rules (setup)", async () => {
+  it("makes the binders and saves the settings (setup)", async () => {
     held.file = file();
     held.wrote = false;
-    const rules = { maxTop: 50, maxMid: 300, maxBulk: 0, floor: 0.5, mix: 60, weekly: 4 };
-    const r = await sortPost(req("/api/sort", { action: "setup", places: { bulk: { newName: "Bulk" } }, rules }));
+    const settings = { mix: 60, weekly: 4, together: "name", outlierRatio: 3, outlierGap: 5, deckCopies: "best" };
+    const levels = [
+      { choice: { uid: uidOf(held.file, "Collection binder") }, max: 50, minPrice: 0.5 },
+      { choice: { uid: uidOf(held.file, "Not bulk") }, max: 300, minPrice: 0.5 },
+      { choice: { newName: "Bulk" }, max: 0, minPrice: null },
+    ];
+    const r = await sortPost(req("/api/sort", { action: "setup", levels, decks: { newName: "Decks" }, settings }));
     expect(r.status).toBe(200);
     const p = prefs(held.file as SyncFile);
     expect(p.sortBulk).toBe(uidOf(held.file as SyncFile, "Bulk"));
     expect(p.sortMaxTop).toBe("50");
-    expect(p.sortFloor).toBe("0.5");
-    expect((await body<SortView>(r)).rules).toEqual(rules);
+    expect(p.sortMix).toBe("60");
+    expect(p.sortWeekly).toBe("4");
+    const b = await body<SortView>(r);
+    expect(b.settings).toEqual({
+      levels: [
+        { uid: uidOf(held.file as SyncFile, "Collection binder"), max: 50, minPrice: 0.5 },
+        { uid: uidOf(held.file as SyncFile, "Not bulk"), max: 300, minPrice: 0.5 },
+        { uid: uidOf(held.file as SyncFile, "Bulk"), max: 0, minPrice: null },
+      ],
+      decks: uidOf(held.file as SyncFile, "Decks"),
+      ...settings,
+    });
+    expect(b.levels.map((l) => l.name)).toEqual(["Collection binder", "Not bulk", "Bulk"]);
+    expect(b.decks?.name).toBe("Decks");
   });
 
   it("refuses settings that can't be used", async () => {
     held.file = file();
     held.wrote = false;
-    const r = await sortPost(req("/api/sort", { action: "setup", places: {}, rules: { maxTop: -1, maxMid: 1, maxBulk: 0, floor: 0.5, mix: 50, weekly: 10 } }));
+    const settings = { mix: 50, weekly: 10, together: "name", outlierRatio: 3, outlierGap: 5, deckCopies: "best" };
+    const r = await sortPost(req("/api/sort", { action: "setup", levels: [{ choice: { newName: "Negative" }, max: -1, minPrice: null }], decks: null, settings }));
     expect(r.status).toBe(400);
+    // The same binder twice is the setup's own check: its message is the answer.
+    const twice = await sortPost(req("/api/sort", { action: "setup", levels: [{ choice: { uid: uidOf(held.file, "Not bulk") }, max: 10, minPrice: null }], decks: { uid: uidOf(held.file, "Not bulk") }, settings }));
+    expect(twice.status).toBe(400);
+    expect((await body(twice)).error).toMatch(/same binder/);
     expect(held.wrote).toBe(false);
   });
 

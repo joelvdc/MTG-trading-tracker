@@ -91,6 +91,8 @@ export interface Filter {
   marks: MarkFilter[];
   /** MDFC, transforming, split (since 1.90; filters saved before have none). */
   faces: FaceKind[];
+  /** Only the cards one of the active decks uses, by name (null: any deck; filters saved before have none). */
+  deck?: string | null;
 }
 
 export const EMPTY_FILTER: Filter = {
@@ -107,6 +109,7 @@ export const EMPTY_FILTER: Filter = {
   decks: "ANY",
   marks: [],
   faces: [],
+  deck: null,
 };
 
 export const FILTER_TYPES = ["Creature", "Instant", "Sorcery", "Artifact", "Enchantment", "Planeswalker", "Land", "Battle", "Legendary"];
@@ -132,6 +135,7 @@ export function filterCount(f: Filter): number {
     f.decks !== "ANY",
     f.marks.length > 0,
     (f.faces ?? []).length > 0,
+    (f.deck ?? null) != null,
   ].filter(Boolean).length;
 }
 
@@ -144,6 +148,19 @@ export function deckCardNames(decks: CollDeck[]): Set<string> {
 
 export function front(r: CollRow): string {
   return r.card.name.split(" // ")[0].toLowerCase();
+}
+
+/** The front-face names the deck called [name] uses ([decks] holding only the active ones); none when no deck is called that. */
+export function deckCardsNamed(decks: CollDeck[], name: string): Set<string> {
+  const want = name.trim().toLowerCase();
+  const out = new Set<string>();
+  for (const d of decks) if (d.name.toLowerCase() === want) for (const k of Object.keys(d.cards)) out.add(k);
+  return out;
+}
+
+/** The active decks' names, each once, A to Z. */
+export function deckChoices(decks: CollDeck[]): string[] {
+  return [...new Set(decks.map((d) => d.name).filter(Boolean))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 }
 
 /** How a card (by front-face name) is used in the decks, for the Decks, In decks and Spare columns. */
@@ -209,7 +226,7 @@ function colorsMatch(f: Filter, r: CollRow): boolean {
   }
 }
 
-/** [use]: the decks' use of each card, for the Spare choice (without it, Spare lets everything through). */
+/** [use]: the decks' use of each card, for the Spare choice and the deck picked (without it, Spare lets everything through and the deck lets everything through). */
 export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>, use?: Map<string, DeckUse>): boolean {
   if (f.colors.length > 0 && !colorsMatch(f, r)) return false;
   if (f.types.length > 0) {
@@ -237,6 +254,11 @@ export function matchesFilter(f: Filter, r: CollRow, deckNames: Set<string>, use
     if (f.minPrice != null && p < f.minPrice) return false;
     if (f.maxPrice != null && p > f.maxPrice) return false;
   }
+  // One deck picked: only the cards it uses (by name, any case). Without the decks' use, every card passes.
+  const deck = f.deck ?? null;
+  if (deck != null) {
+    if (use && !useOf(use, r).decks.some((n) => n.toLowerCase() === deck.toLowerCase())) return false;
+  }
   if (f.decks === "SPARE") {
     if (!use) return true;
     const u = useOf(use, r);
@@ -262,6 +284,7 @@ export type SortField =
   | "CHANGE_PCT"
   | "CHANGE_MONEY"
   | "DECKS"
+  | "DECK"
   | "SPARE"
   | "EDHREC";
 
@@ -279,6 +302,7 @@ export const SORT_FIELDS: { field: SortField; label: string; forward: string; ba
   { field: "CHANGE_PCT", label: "Change in %", forward: "Biggest rise first", backward: "Biggest fall first" },
   { field: "CHANGE_MONEY", label: "Change in money", forward: "Biggest rise first", backward: "Biggest fall first" },
   { field: "DECKS", label: "Decks using it", forward: "Most first", backward: "Fewest first" },
+  { field: "DECK", label: "Deck", forward: "A to Z, cards in no deck last", backward: "Z to A, cards in no deck last" },
   { field: "SPARE", label: "Spare copies", forward: "Most first", backward: "Fewest first" },
   { field: "EDHREC", label: "EDHREC rank", forward: "Most played first", backward: "Least played first" },
 ];
@@ -321,7 +345,7 @@ function number(n: string): number {
 
 type Cmp = (a: CollRow, b: CollRow) => number;
 
-function fieldCmp(f: SortField, use?: Map<string, DeckUse>): Cmp {
+function fieldCmp(f: SortField, use?: Map<string, DeckUse>, reversed = false): Cmp {
   switch (f) {
     case "NAME":
       return (a, b) => nocase(a.card.name, b.card.name);
@@ -350,6 +374,17 @@ function fieldCmp(f: SortField, use?: Map<string, DeckUse>): Cmp {
       return changeCmp(f, false);
     case "DECKS":
       return (a, b) => useOf(use, b).decks.length - useOf(use, a).decks.length;
+    case "DECK": {
+      // The first deck's name, A to Z; a card in no deck goes last either way.
+      const first = (r: CollRow) => useOf(use, r).decks[0] ?? null;
+      return (a, b) => {
+        const x = first(a);
+        const y = first(b);
+        if (x === null) return y === null ? 0 : 1;
+        if (y === null) return -1;
+        return reversed ? nocase(y, x) : nocase(x, y);
+      };
+    }
     case "SPARE": {
       const spare = (r: CollRow) => useOf(use, r).owned - useOf(use, r).copies;
       return (a, b) => spare(b) - spare(a);
@@ -375,7 +410,9 @@ function changeCmp(f: SortField, fallersFirst: boolean): Cmp {
 /** Sorts in layers; the name breaks remaining ties. [use]: the decks' use of each card (for Decks and Spare). */
 export function comparator(levels: SortLevel[], use?: Map<string, DeckUse>): Cmp {
   const parts: Cmp[] = levels.map((l) => {
+    // The change fields and the deck have their own ways round (a card without a change, or in no deck, goes last).
     if (l.field === "CHANGE_PCT" || l.field === "CHANGE_MONEY") return changeCmp(l.field, l.reversed);
+    if (l.field === "DECK") return fieldCmp(l.field, use, l.reversed);
     const c = fieldCmp(l.field, use);
     return l.reversed ? (a, b) => c(b, a) : c;
   });

@@ -5,13 +5,13 @@
 import type { AlertEvent, EmailSettings, PriceDay, ValuePoint } from "./accounts";
 import type { CkFile } from "./cardkingdom";
 import type { DetailsFile } from "./carddetails";
-import { sortPlacesOf, SORT_PLACES, sortSettledOf, sortSuggest, UNSORTED_KEY, PLACE_LABELS, type SortPlace } from "./collsort";
+import { DECKS_KEY, sortSettingsOf, sortSettledOf, sortSuggest, UNSORTED_KEY } from "./collsort";
 import { collectionView } from "./collview";
 import { syncDecks } from "./decks";
 import { checkLegality, ruleKey, type LegalRule } from "./legality";
 import { format, type Currency } from "./money";
 import type { PriceFile } from "./prices";
-import { prefs, type Json, type SyncFile } from "./syncfile";
+import { binders as bindersOf, prefs, type Json, type SyncFile } from "./syncfile";
 
 /** Days of card prices the nightly job keeps (a week back, plus slack for a missed night). */
 export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -157,18 +157,17 @@ export function weeklyReport(i: WeeklyInput): WeeklyReport {
   }
   decks.sort((a, b) => a.deck.localeCompare(b.deck));
 
-  // The sort's moves for this week: only once the first sort is done and the three binders are there.
+  // The sort's moves for this week: only once the first sort is done and at least one level's binder is there.
   const p = prefs(i.file);
-  const places = sortPlacesOf(p);
-  const sortReady = sortSettledOf(p) && SORT_PLACES.every((place) => places[place] !== null);
+  const sortReady = sortSettledOf(p) && sortSettingsOf(p).levels.some((l) => bindersOf(i.file).some((b) => b.uid === l.uid && b.uid));
   let sort: WeeklyReport["sort"] = null;
   if (sortReady) {
     // The moves' reasons in the owner's currency, as the sort page shows them (DKK has a standing rate with no file).
     const eurTo = cv.currency === "EUR" ? 1 : (i.prices?.rates.perEuro[cv.currency] ?? (cv.currency === "DKK" ? 7.46038 : 1));
     const moneyIn = (eur: number) => format(eur * eurTo, cv.currency);
-    const { plan, binders } = sortSuggest(i.file, i.prices, i.details, i.ck, i.now, moneyIn);
-    if (plan.moves.length > 0) {
-      const nameOf = (place: string) => (place === UNSORTED_KEY ? "Unsorted" : binders[place as SortPlace]?.name ?? PLACE_LABELS[place as SortPlace]);
+    const { plan, levels, decks } = sortSuggest(i.file, i.prices, i.details, i.ck, i.now, moneyIn);
+    if (plan.moves.length > 0 && levels.length > 0) {
+      const nameOf = (place: string) => (place === UNSORTED_KEY ? "Unsorted" : place === DECKS_KEY ? (decks?.name ?? "Decks") : (levels.find((l) => l.key === place)?.name ?? place));
       sort = { moves: plan.moves.slice(0, SORT_MAIL_MOVES).map((m) => ({ name: m.name, from: nameOf(m.from), to: nameOf(m.to), copies: m.copies })) };
     }
   }

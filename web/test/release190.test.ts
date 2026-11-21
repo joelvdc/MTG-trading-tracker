@@ -62,9 +62,9 @@ const old = row("o", "Valki, God of Lies // Tibalt, Cosmic Impostor", undefined)
 const rows = [agadeem, agadeem2, delver, fire, bolt, old];
 
 const decks: CollDeck[] = [
-  { name: "Zombies", owner: "me", cards: { "agadeem's awakening": 1, "lightning bolt": 1 } },
-  { name: "Atraxa", owner: "me", cards: { "agadeem's awakening": 1 } },
-  { name: "Burn", owner: "me", cards: { "lightning bolt": 4 } },
+  { name: "Zombies", owner: "me", cards: { "agadeem's awakening": 1, "lightning bolt": 1 }, id: 101 },
+  { name: "Atraxa", owner: "me", cards: { "agadeem's awakening": 1 }, id: 102 },
+  { name: "Burn", owner: "me", cards: { "lightning bolt": 4 }, id: -1 },
 ];
 
 describe("the Faces filter", () => {
