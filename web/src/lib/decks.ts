@@ -75,11 +75,13 @@ export function modifiedAtOf(d: Deck): number | null {
   return d.archidektId < 0 ? (d.updatedAt > 0 ? d.updatedAt : null) : (d.archidektUpdatedAt ?? null);
 }
 
-/** The Archidekt user whose decks are "own": the one logged in, else the one decks were last imported from. */
+/**
+ * The Archidekt user whose decks are "own": the account's own username when it has one (null otherwise). The user
+ * decks were last imported from doesn't count: a followed deck of another user who was imported once isn't yours.
+ */
 export function deckOwner(file: SyncFile): string | null {
-  const p = prefs(file);
-  const own = (p.ownArchidektUser ?? "").trim() ? p.ownArchidektUser : p.archidektUser;
-  return own && own.trim() ? own : null;
+  const own = (prefs(file).ownArchidektUser ?? "").trim();
+  return own ? own : null;
 }
 
 export function decksView(file: SyncFile, prices: PriceFile | null, details: DetailsFile | null, ck: CkFile | null): DecksView {

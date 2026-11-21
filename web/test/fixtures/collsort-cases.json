@@ -1,428 +1,2771 @@
 [
-  {
-    "name": "first sort with all three limits, and the floor keeping a cheap card out of the top places",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 12.5, "rank": 400, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 0.2, "rank": null, "fixed": false },
-        { "key": "c", "name": "Gamma", "place": "unsorted", "copies": 1, "price": 8.0, "rank": null, "fixed": false },
-        { "key": "d", "name": "Delta", "place": "unsorted", "copies": 1, "price": 4.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
+ {
+  "name": "first sort with all three limits, and the floor keeping a cheap card out of the top places",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 12.5,
+     "rank": 400,
+     "fixed": false
     },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "top", "copies": 1, "price": 12.5, "score": 20.0, "reason": "€12.50 · top 500 on EDHREC" },
-        { "key": "c", "name": "Gamma", "from": "unsorted", "to": "mid", "copies": 1, "price": 8.0, "score": 8.0, "reason": "€8.00" },
-        { "key": "d", "name": "Delta", "from": "unsorted", "to": "bulk", "copies": 1, "price": 4.0, "score": 4.0, "reason": "€4.00" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "bulk", "copies": 1, "price": 0.2, "score": 0.2, "reason": "€0.20" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 2, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 0.2,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 8.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "d",
+     "name": "Delta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 4.0,
+     "rank": null,
+     "fixed": false
     }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
   },
-  {
-    "name": "floor: a cheap card stays out of the top places even when there is room",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 0.4, "rank": 50, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 0.5, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 200, "maxMid": 1000, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 12.5,
+     "score": 20.0,
+     "reason": "\u20ac12.50 \u00b7 top 500 on EDHREC"
     },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "top", "copies": 1, "price": 0.5, "score": 0.5, "reason": "€0.50" },
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "bulk", "copies": 1, "price": 0.4, "score": 0.8, "reason": "€0.40 · top 100 on EDHREC" }
-      ],
-      "after": { "top": 1, "mid": 0, "bulk": 1, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "mix 0 is value only, mix 100 puts popular cards first",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 5.0, "rank": 50, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 8.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 0, "floor": 0.5, "mix": 0, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
+    {
+     "key": "c",
+     "name": "Gamma",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 8.0,
+     "score": 8.0,
+     "reason": "\u20ac8.00"
     },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "top", "copies": 1, "price": 8.0, "score": 8.0, "reason": "€8.00" },
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "mid", "copies": 1, "price": 5.0, "score": 5.0, "reason": "€5.00 · top 100 on EDHREC" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "the same two cards with mix 100",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 5.0, "rank": 50, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 8.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 0, "floor": 0.5, "mix": 100, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
+    {
+     "key": "d",
+     "name": "Delta",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 4.0,
+     "score": 4.0,
+     "reason": "\u20ac4.00"
     },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "top", "copies": 1, "price": 5.0, "score": 25.0, "reason": "€5.00 · top 100 on EDHREC" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "mid", "copies": 1, "price": 8.0, "score": 8.0, "reason": "€8.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 0.2,
+     "score": 0.2,
+     "reason": "\u20ac0.20"
     }
-  },
-  {
-    "name": "full bulk: what doesn't fit goes to unsorted",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "mid", "copies": 2, "price": 3.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 2, "price": 1.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 1, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "mid", "to": "top", "copies": 1, "price": 3.0, "score": 3.0, "reason": "€3.00" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "bulk", "copies": 1, "price": 1.0, "score": 1.0, "reason": "€1.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 1, "unsorted": 1 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "unlimited bulk: everything that fits to the top places, the rest to bulk in one move",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 8.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 2, "price": 4.0, "rank": null, "fixed": false },
-        { "key": "c", "name": "Gamma", "place": "unsorted", "copies": 1, "price": 1.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "top", "copies": 1, "price": 8.0, "score": 8.0, "reason": "€8.00" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "mid", "copies": 1, "price": 4.0, "score": 4.0, "reason": "€4.00" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "bulk", "copies": 1, "price": 4.0, "score": 4.0, "reason": "€4.00" },
-        { "key": "c", "name": "Gamma", "from": "unsorted", "to": "bulk", "copies": 1, "price": 1.0, "score": 1.0, "reason": "€1.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 2, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "deck reserve: the deck's copies stay home",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 2, "price": 9.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 2.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": { "alpha": 1 },
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "top", "copies": 1, "price": 9.0, "score": 9.0, "reason": "€9.00" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "mid", "copies": 1, "price": 2.0, "score": 2.0, "reason": "€2.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 1 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "deck reserve with a copy already in a deck's binder",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 2, "price": 9.0, "rank": null, "fixed": false },
-        { "key": "a", "name": "Alpha", "place": "other", "copies": 1, "price": 9.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": { "alpha": 1 },
-      "rules": { "maxTop": 2, "maxMid": 0, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "top", "copies": 2, "price": 9.0, "score": 9.0, "reason": "€9.00" }
-      ],
-      "after": { "top": 2, "mid": 0, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "signed copies stay where they are and fill their place",
-    "input": {
-      "stacks": [
-        { "key": "s", "name": "Signed", "place": "mid", "copies": 1, "price": 10.0, "rank": null, "fixed": true },
-        { "key": "u", "name": "Unsigned", "place": "unsorted", "copies": 1, "price": 9.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 0, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": false,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "u", "name": "Unsigned", "from": "unsorted", "to": "top", "copies": 1, "price": 9.0, "score": 9.0, "reason": "€9.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "settled: the incumbent isn't pushed out by a challenger 25% stronger",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "top", "copies": 1, "price": 10.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 12.5, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 10, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "mid", "copies": 1, "price": 12.5, "score": 12.5, "reason": "€12.50" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": 10
-    }
-  },
-  {
-    "name": "settled: a challenger 30% stronger takes the top place",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "top", "copies": 1, "price": 10.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 13.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 10, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "top", "to": "mid", "copies": 1, "price": 10.0, "score": 10.0, "reason": "made room for more valuable cards" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "top", "copies": 1, "price": 13.0, "score": 13.0, "reason": "€13.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": 10
-    }
-  },
-  {
-    "name": "settled: a card under the floor stays in the top place when it isn't 25% too cheap",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "top", "copies": 1, "price": 0.45, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 5.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 10, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": [],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "top", "to": "bulk", "copies": 1, "price": 0.45, "score": 0.45, "reason": "under €0.50" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "top", "copies": 1, "price": 5.0, "score": 5.0, "reason": "€5.00" }
-      ],
-      "after": { "top": 1, "mid": 0, "bulk": 1, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": 10
-    }
-  },
-  {
-    "name": "a card that moved 10 days ago rests where it is",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "mid", "copies": 1, "price": 15.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 5.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 10, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": ["19990|a|3|0"],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "top", "copies": 1, "price": 5.0, "score": 5.0, "reason": "€5.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": 10
-    }
-  },
-  {
-    "name": "the rest period is over after 60 days",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "mid", "copies": 1, "price": 15.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 5.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 10, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": [],
-      "log": ["19940|a|3|0"],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "a", "name": "Alpha", "from": "mid", "to": "top", "copies": 1, "price": 15.0, "score": 15.0, "reason": "€15.00" },
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "mid", "copies": 1, "price": 5.0, "score": 5.0, "reason": "€5.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": 10
-    }
-  },
-  {
-    "name": "a turned-down move isn't suggested again",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 10.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "unsorted", "copies": 1, "price": 5.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 1, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 10 },
-      "skips": ["a>top"],
-      "log": [],
-      "settled": false,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "unsorted", "to": "top", "copies": 1, "price": 5.0, "score": 5.0, "reason": "€5.00" },
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "mid", "copies": 1, "price": 10.0, "score": 10.0, "reason": "€10.00" }
-      ],
-      "after": { "top": 1, "mid": 1, "bulk": 0, "unsorted": 0 },
-      "heldBack": 0,
-      "weekUsed": 0,
-      "budget": -1
-    }
-  },
-  {
-    "name": "weekly cap: one copy fits, the other waits",
-    "input": {
-      "stacks": [
-        { "key": "b", "name": "Beta", "place": "mid", "copies": 2, "price": 5.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 0, "maxMid": 0, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 1 },
-      "skips": [],
-      "log": [],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "mid", "to": "bulk", "copies": 1, "price": 5.0, "score": 5.0, "reason": "made room for more valuable cards" }
-      ],
-      "after": { "top": 0, "mid": 1, "bulk": 1, "unsorted": 0 },
-      "heldBack": 1,
-      "weekUsed": 0,
-      "budget": 1
-    }
-  },
-  {
-    "name": "the cap cuts the move out of mid but never the move out of unsorted",
-    "input": {
-      "stacks": [
-        { "key": "a", "name": "Alpha", "place": "unsorted", "copies": 1, "price": 10.0, "rank": null, "fixed": false },
-        { "key": "b", "name": "Beta", "place": "mid", "copies": 3, "price": 5.0, "rank": null, "fixed": false }
-      ],
-      "deckNeeds": {},
-      "rules": { "maxTop": 1, "maxMid": 0, "maxBulk": 0, "floor": 0.5, "mix": 50, "weekly": 1 },
-      "skips": [],
-      "log": [],
-      "settled": true,
-      "today": 20000
-    },
-    "expected": {
-      "moves": [
-        { "key": "b", "name": "Beta", "from": "mid", "to": "bulk", "copies": 1, "price": 5.0, "score": 5.0, "reason": "made room for more valuable cards" },
-        { "key": "a", "name": "Alpha", "from": "unsorted", "to": "top", "copies": 1, "price": 10.0, "score": 10.0, "reason": "€10.00" }
-      ],
-      "after": { "top": 1, "mid": 2, "bulk": 1, "unsorted": 0 },
-      "heldBack": 2,
-      "weekUsed": 0,
-      "budget": 1
-    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 2,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
   }
+ },
+ {
+  "name": "floor: a cheap card stays out of the top places even when there is room",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 0.4,
+     "rank": 50,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 0.5,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 0.5,
+     "score": 0.5,
+     "reason": "\u20ac0.50"
+    },
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 0.4,
+     "score": 0.8,
+     "reason": "\u20ac0.40 \u00b7 top 100 on EDHREC"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "mix 0 is value only, mix 100 puts popular cards first",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 5.0,
+     "rank": 50,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 8.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 0,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 8.0,
+     "score": 8.0,
+     "reason": "\u20ac8.00"
+    },
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "\u20ac5.00 \u00b7 top 100 on EDHREC"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "the same two cards with mix 100",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 5.0,
+     "rank": 50,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 8.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 100,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 5.0,
+     "score": 25.0,
+     "reason": "\u20ac5.00 \u00b7 top 100 on EDHREC"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 8.0,
+     "score": 8.0,
+     "reason": "\u20ac8.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "full bulk: what doesn't fit goes to unsorted",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "l2",
+     "copies": 2,
+     "price": 3.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 1,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "l2",
+     "to": "l1",
+     "copies": 1,
+     "price": 3.0,
+     "score": 3.0,
+     "reason": "\u20ac3.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "\u20ac1.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 1
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "unlimited bulk: everything that fits to the top places, the rest to bulk in one move",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 8.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 4.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 8.0,
+     "score": 8.0,
+     "reason": "\u20ac8.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 4.0,
+     "score": 4.0,
+     "reason": "\u20ac4.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 4.0,
+     "score": 4.0,
+     "reason": "\u20ac4.00"
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "\u20ac1.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 2,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "deck reserve: the deck's copies stay home",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 9.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 2.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "alpha": 1
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 9.0,
+     "score": 9.0,
+     "reason": "\u20ac9.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 2.0,
+     "score": 2.0,
+     "reason": "\u20ac2.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 1
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "deck reserve with a copy already in a deck's binder",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 9.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "other",
+     "copies": 1,
+     "price": 9.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "alpha": 1
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 2,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 2,
+     "price": 9.0,
+     "score": 9.0,
+     "reason": "\u20ac9.00"
+    }
+   ],
+   "after": {
+    "l1": 2,
+    "l2": 0,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "signed copies stay where they are and fill their place",
+  "input": {
+   "stacks": [
+    {
+     "key": "s",
+     "name": "Signed",
+     "place": "l2",
+     "copies": 1,
+     "price": 10.0,
+     "rank": null,
+     "fixed": true
+    },
+    {
+     "key": "u",
+     "name": "Unsigned",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 9.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "u",
+     "name": "Unsigned",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 9.0,
+     "score": 9.0,
+     "reason": "\u20ac9.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "settled: the incumbent isn't pushed out by a challenger 25% stronger",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "l1",
+     "copies": 1,
+     "price": 10.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 12.5,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 10,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 12.5,
+     "score": 12.5,
+     "reason": "\u20ac12.50"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "settled: a challenger 30% stronger takes the top place",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "l1",
+     "copies": 1,
+     "price": 10.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 13.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 10,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "l1",
+     "to": "l2",
+     "copies": 1,
+     "price": 10.0,
+     "score": 10.0,
+     "reason": "made room for more valuable cards"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 13.0,
+     "score": 13.0,
+     "reason": "\u20ac13.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "settled: a card under the floor stays in the top place when it isn't 25% too cheap",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "l1",
+     "copies": 1,
+     "price": 0.45,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 10,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "l1",
+     "to": "l3",
+     "copies": 1,
+     "price": 0.45,
+     "score": 0.45,
+     "reason": "under \u20ac0.50"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "\u20ac5.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "a card that moved 10 days ago rests where it is",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "l2",
+     "copies": 1,
+     "price": 15.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 10,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [
+    "19990|a|3|0"
+   ],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "\u20ac5.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "the rest period is over after 60 days",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "l2",
+     "copies": 1,
+     "price": 15.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 10,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [
+    "19940|a|3|0"
+   ],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "l2",
+     "to": "l1",
+     "copies": 1,
+     "price": 15.0,
+     "score": 15.0,
+     "reason": "\u20ac15.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "\u20ac5.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "a turned-down move isn't suggested again",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 10.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [
+    "a>l1"
+   ],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "\u20ac5.00"
+    },
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 10.0,
+     "score": 10.0,
+     "reason": "\u20ac10.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "weekly cap: one copy fits, the other waits",
+  "input": {
+   "stacks": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "l2",
+     "copies": 2,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 1,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "l2",
+     "to": "l3",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "made room for more valuable cards"
+    }
+   ],
+   "after": {
+    "l1": 0,
+    "l2": 1,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 1,
+   "weekUsed": 0,
+   "budget": 1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "the cap cuts the move out of mid but never the move out of unsorted",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 10.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "l2",
+     "copies": 3,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 1,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "l2",
+     "to": "l3",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "made room for more valuable cards"
+    },
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 10.0,
+     "score": 10.0,
+     "reason": "\u20ac10.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 2,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 2,
+   "weekUsed": 0,
+   "budget": 1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "decks place: the deck gets the dearest copy of its card",
+  "input": {
+   "stacks": [
+    {
+     "key": "sol3",
+     "name": "Sol Ring",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 3.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "sol ring": 1
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": true,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "sol3",
+     "name": "Sol Ring",
+     "from": "unsorted",
+     "to": "decks",
+     "copies": 1,
+     "price": 3.0,
+     "score": 3.0,
+     "reason": "for your decks"
+    },
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "\u20ac1.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 0,
+    "decks": 1,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "decks place: the cheapest copies go to the decks",
+  "input": {
+   "stacks": [
+    {
+     "key": "sol3",
+     "name": "Sol Ring",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 3.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "sol ring": 1
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "cheapest"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": true,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "from": "unsorted",
+     "to": "decks",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "for your decks"
+    },
+    {
+     "key": "sol3",
+     "name": "Sol Ring",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 3.0,
+     "score": 3.0,
+     "reason": "\u20ac3.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 0,
+    "decks": 1,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "decks place: a much dearer copy upgrades the deck's, and the old one goes back to its level",
+  "input": {
+   "stacks": [
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "place": "decks",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "sol5",
+     "name": "Sol Ring",
+     "place": "l1",
+     "copies": 1,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "sol ring": 1
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 1,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": true,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "from": "decks",
+     "to": "l1",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "swapped for a better copy"
+    },
+    {
+     "key": "sol5",
+     "name": "Sol Ring",
+     "from": "l1",
+     "to": "decks",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "upgrade for your decks"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 0,
+    "decks": 1,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "decks place: a copy a little dearer doesn't take the deck's place",
+  "input": {
+   "stacks": [
+    {
+     "key": "sol1",
+     "name": "Sol Ring",
+     "place": "decks",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "sol11",
+     "name": "Sol Ring",
+     "place": "l2",
+     "copies": 1,
+     "price": 1.1,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "sol ring": 1
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": true,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "sol11",
+     "name": "Sol Ring",
+     "from": "l2",
+     "to": "l1",
+     "copies": 1,
+     "price": 1.1,
+     "score": 1.1,
+     "reason": "\u20ac1.10"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 0,
+    "decks": 1,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "decks place: a retired deck's copies go back to the levels, and one has no room",
+  "input": {
+   "stacks": [
+    {
+     "key": "sol",
+     "name": "Sol Ring",
+     "place": "decks",
+     "copies": 3,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 1,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": true,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "sol",
+     "name": "Sol Ring",
+     "from": "decks",
+     "to": "l1",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "no longer in an active deck"
+    },
+    {
+     "key": "sol",
+     "name": "Sol Ring",
+     "from": "decks",
+     "to": "l3",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "no longer in an active deck"
+    },
+    {
+     "key": "sol",
+     "name": "Sol Ring",
+     "from": "decks",
+     "to": "unsorted",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "no longer in an active deck \u00b7 no room"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 1
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "together name: copies of a card go as one, so a short level takes none of them",
+  "input": {
+   "stacks": [
+    {
+     "key": "beast80",
+     "name": "Beast Within",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 0.8,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "beast90",
+     "name": "Beast Within",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 0.9,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "x",
+     "name": "Card X",
+     "place": "l2",
+     "copies": 3,
+     "price": 0.5,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 3,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 4,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "name",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "x",
+     "name": "Card X",
+     "from": "l2",
+     "to": "l1",
+     "copies": 3,
+     "price": 0.5,
+     "score": 0.5,
+     "reason": "\u20ac0.50"
+    },
+    {
+     "key": "beast90",
+     "name": "Beast Within",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 2,
+     "price": 0.9,
+     "score": 0.9,
+     "reason": "\u20ac0.90"
+    },
+    {
+     "key": "beast80",
+     "name": "Beast Within",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 2,
+     "price": 0.8,
+     "score": 0.8,
+     "reason": "\u20ac0.80"
+    }
+   ],
+   "after": {
+    "l1": 3,
+    "l2": 4,
+    "l3": 0,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "together name: a much dearer printing is an outlier and goes its own way",
+  "input": {
+   "stacks": [
+    {
+     "key": "bog30",
+     "name": "Bojuka Bog",
+     "place": "unsorted",
+     "copies": 3,
+     "price": 0.3,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "bog12",
+     "name": "Bojuka Bog",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 12.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "name",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "bog12",
+     "name": "Bojuka Bog",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 12.0,
+     "score": 12.0,
+     "reason": "\u20ac12.00"
+    },
+    {
+     "key": "bog30",
+     "name": "Bojuka Bog",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 3,
+     "price": 0.3,
+     "score": 0.3,
+     "reason": "\u20ac0.30"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 0,
+    "l3": 3,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "together name, settled: copies of a card in a level make room for the rest of their copies",
+  "input": {
+   "stacks": [
+    {
+     "key": "beast",
+     "name": "Beast Within",
+     "place": "l2",
+     "copies": 2,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "beast",
+     "name": "Beast Within",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "x",
+     "name": "Card X",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 2.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 3,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "name",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "beast",
+     "name": "Beast Within",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "\u20ac1.00"
+    },
+    {
+     "key": "x",
+     "name": "Card X",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 2.0,
+     "score": 2.0,
+     "reason": "\u20ac2.00"
+    }
+   ],
+   "after": {
+    "l1": 0,
+    "l2": 3,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": 10,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "ignore the weekly limit: both capped moves go",
+  "input": {
+   "stacks": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "l1",
+     "copies": 2,
+     "price": 5.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 1,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 1,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": true,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": true
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "l1",
+     "to": "l2",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "made room for more valuable cards"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "l1",
+     "to": "l3",
+     "copies": 1,
+     "price": 5.0,
+     "score": 5.0,
+     "reason": "made room for more valuable cards"
+    }
+   ],
+   "after": {
+    "l1": 0,
+    "l2": 1,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "two levels",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 9.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 3.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 0.3,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 9.0,
+     "score": 9.0,
+     "reason": "\u20ac9.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 3.0,
+     "score": 3.0,
+     "reason": "\u20ac3.00"
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 1,
+     "price": 0.3,
+     "score": 0.3,
+     "reason": "\u20ac0.30"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 2,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "five levels",
+  "input": {
+   "stacks": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 20.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "place": "unsorted",
+     "copies": 2,
+     "price": 8.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 3.0,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "d",
+     "name": "Delta",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 0.9,
+     "rank": null,
+     "fixed": false
+    },
+    {
+     "key": "e",
+     "name": "Epsilon",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 0.2,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 1.0
+     },
+     {
+      "key": "l2",
+      "max": 2,
+      "minPrice": 1.0
+     },
+     {
+      "key": "l3",
+      "max": 1,
+      "minPrice": 1.0
+     },
+     {
+      "key": "l4",
+      "max": 1,
+      "minPrice": null
+     },
+     {
+      "key": "l5",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "a",
+     "name": "Alpha",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 20.0,
+     "score": 20.0,
+     "reason": "\u20ac20.00"
+    },
+    {
+     "key": "b",
+     "name": "Beta",
+     "from": "unsorted",
+     "to": "l2",
+     "copies": 2,
+     "price": 8.0,
+     "score": 8.0,
+     "reason": "\u20ac8.00"
+    },
+    {
+     "key": "c",
+     "name": "Gamma",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 3.0,
+     "score": 3.0,
+     "reason": "\u20ac3.00"
+    },
+    {
+     "key": "d",
+     "name": "Delta",
+     "from": "unsorted",
+     "to": "l4",
+     "copies": 1,
+     "price": 0.9,
+     "score": 0.9,
+     "reason": "\u20ac0.90"
+    },
+    {
+     "key": "e",
+     "name": "Epsilon",
+     "from": "unsorted",
+     "to": "l5",
+     "copies": 1,
+     "price": 0.2,
+     "score": 0.2,
+     "reason": "\u20ac0.20"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 2,
+    "l3": 1,
+    "l4": 1,
+    "l5": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
+ },
+ {
+  "name": "decks place: copies the decks need but you don't own",
+  "input": {
+   "stacks": [
+    {
+     "key": "sol",
+     "name": "Sol Ring",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 1.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {
+    "sol ring": 2
+   },
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 200,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 1000,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": true,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "sol",
+     "name": "Sol Ring",
+     "from": "unsorted",
+     "to": "decks",
+     "copies": 1,
+     "price": 1.0,
+     "score": 1.0,
+     "reason": "for your decks"
+    }
+   ],
+   "after": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "decks": 1,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 1
+  }
+ }
 ]

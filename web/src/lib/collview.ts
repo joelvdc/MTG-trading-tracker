@@ -67,6 +67,8 @@ export interface CollDeck {
   owner: string;
   /** Front-face names in lower case, maybeboard left out, with copies. */
   cards: Record<string, number>;
+  /** The deck's Archidekt id (negative for a deck made in the app). */
+  id: number;
 }
 
 export interface CollectionView {
@@ -143,15 +145,25 @@ export function orderBinders(list: CollBinder[], saved: string | undefined): Col
 export function decksOf(file: SyncFile, withRetired = false): CollDeck[] {
   const decks = ((file.data.decks as Json[] | undefined) ?? []).filter((d) => withRetired || !(d as { deck?: { retired?: boolean } }).deck?.retired);
   return decks.map((d) => {
-    const deck = (d as { deck?: { name?: string; owner?: string } }).deck ?? {};
+    const deck = (d as { deck?: { name?: string; owner?: string; archidektId?: number } }).deck ?? {};
     const cards: Record<string, number> = {};
     for (const c of ((d as { cards?: Json[] }).cards ?? []) as { card?: { name?: string }; quantity?: number; maybeboard?: boolean }[]) {
       if (c.maybeboard || !c.card?.name) continue;
       const k = frontName(c.card.name);
       cards[k] = (cards[k] ?? 0) + (c.quantity ?? 1);
     }
-    return { name: deck.name ?? "", owner: deck.owner ?? "", cards };
+    return { name: deck.name ?? "", owner: deck.owner ?? "", cards, id: deck.archidektId ?? 0 };
   });
+}
+
+/**
+ * The decks that hold cards (the sort's Decks binder, the trade binder): not retired, and either made in the app
+ * (a local deck) or the owner's own on Archidekt ([CollDeck.owner] is the account's Archidekt username, any case).
+ * Followed decks (other Archidekt users') hold nothing.
+ */
+export function activeDecksOf(file: SyncFile): CollDeck[] {
+  const own = (prefs(file).ownArchidektUser ?? "").trim().toLowerCase();
+  return decksOf(file).filter((d) => d.id < 0 || (own.length > 0 && d.owner.trim().toLowerCase() === own));
 }
 
 export function setupFor(file: SyncFile, prices: PriceFile | null, details: DetailsFile | null, ck: CkFile | null): PricingSetup {
@@ -230,7 +242,7 @@ export function collectionView(file: SyncFile, prices: PriceFile | null, details
       .filter((w) => w.receivedAt == null)
       .reduce((n, w) => n + w.quantity, 0),
     scanCount: scanCount(file),
-    decks: decksOf(file),
+    decks: activeDecksOf(file),
     currency: cur,
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,
     priceType: setup.type,
