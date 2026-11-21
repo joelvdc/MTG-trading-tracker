@@ -292,6 +292,52 @@ class Settings(context: Context) {
         set(v) = prefs.edit().putInt("tradeMax", v.maxCards).putBoolean("tradeKeepOne", v.keepOne).putFloat("tradeMinValue", v.minValue.toFloat())
             .putBoolean("tradeKeepBestDecks", v.keepBestForDecks).putBoolean("tradeKeepBestAll", v.keepBestAlways).stamp().apply()
 
+    /** The collection's sort (see [CollectionSorter]): its three binders; 0 until one is chosen. Since 1.104. */
+    var sortTopId: Long
+        get() = prefs.getLong("sortTopId", 0)
+        set(v) { if (v != sortTopId) prefs.edit().putLong("sortTopId", v).stamp().apply() } // synced by its uid since 1.104
+
+    var sortMidId: Long
+        get() = prefs.getLong("sortMidId", 0)
+        set(v) { if (v != sortMidId) prefs.edit().putLong("sortMidId", v).stamp().apply() } // synced by its uid since 1.104
+
+    var sortBulkId: Long
+        get() = prefs.getLong("sortBulkId", 0)
+        set(v) { if (v != sortBulkId) prefs.edit().putLong("sortBulkId", v).stamp().apply() } // synced by its uid since 1.104
+
+    /** A sort binder named in synced settings (without stamping the settings as changed here). Since 1.104. */
+    fun setSortBinderFromSync(place: SortPlace, id: Long) = prefs.edit().putLong(
+        when (place) {
+            SortPlace.TOP -> "sortTopId"
+            SortPlace.MID -> "sortMidId"
+            SortPlace.BULK -> "sortBulkId"
+        },
+        id,
+    ).apply()
+
+    var sortRules: SortRules
+        get() = SortRules(
+            prefs.getInt("sortMaxTop", 200), prefs.getInt("sortMaxMid", 1_000), prefs.getInt("sortMaxBulk", 0),
+            prefs.getFloat("sortFloor", 0.5f).toDouble(), prefs.getInt("sortMix", 50), prefs.getInt("sortWeekly", 10),
+        )
+        set(v) = prefs.edit().putInt("sortMaxTop", v.maxTop).putInt("sortMaxMid", v.maxMid).putInt("sortMaxBulk", v.maxBulk)
+            .putFloat("sortFloor", v.floor.toFloat()).putInt("sortMix", v.mix).putInt("sortWeekly", v.weekly).stamp().apply()
+
+    /** True once a sort was applied: from then on it keeps its result steady and caps the moves per week. Since 1.104. */
+    var sortSettled: Boolean
+        get() = prefs.getBoolean("sortSettled", false)
+        set(v) = prefs.edit().putBoolean("sortSettled", v).stamp().apply()
+
+    /** The moves the user turned down, as "<kind key>><place key>". Synced. Since 1.104. */
+    var sortSkips: Set<String>
+        get() = prefs.getString("sortSkips", "").orEmpty().split('\n').filter { it.isNotBlank() }.toSet()
+        set(v) = prefs.edit().putString("sortSkips", v.joinToString("\n")).stamp().apply()
+
+    /** The moves done, as "<day>|<kind key>|<copies>|<from unsorted>". Synced. Since 1.104. */
+    var sortLog: List<String>
+        get() = prefs.getString("sortLog", "").orEmpty().split('\n').filter { it.isNotBlank() }
+        set(v) = prefs.edit().putString("sortLog", v.joinToString("\n")).stamp().apply()
+
     /** Where deck recommendations come from. Since 1.18. */
     private val _recSource = MutableStateFlow(RecSource.fromKey(prefs.getString("recSource", null)))
     val recSource: StateFlow<RecSource> = _recSource
@@ -700,6 +746,18 @@ class Settings(context: Context) {
                 put("tradeKeepBestDecks", r.keepBestForDecks.toString())
                 put("tradeKeepBestAll", r.keepBestAlways.toString())
             }
+            // The collection sort's rules and what it remembers (since 1.104). Its binders go by their uid (SyncStore).
+            sortRules.let { r ->
+                put("sortMaxTop", r.maxTop.toString())
+                put("sortMaxMid", r.maxMid.toString())
+                put("sortMaxBulk", r.maxBulk.toString())
+                put("sortFloor", r.floor.toString())
+                put("sortMix", r.mix.toString())
+                put("sortWeekly", r.weekly.toString())
+            }
+            put("sortSettled", sortSettled.toString())
+            put("sortSkips", sortSkips.sorted().joinToString("\n"))
+            put("sortLog", sortLog.joinToString("\n"))
             trackerFlags.forEach { (k, f) -> put(k, f.value.toString()) }
             put("trackerLowLife", trackerLowLife.value.key)
             put("trackerCardLayout", trackerCardLayout.value.key)
@@ -746,6 +804,16 @@ class Settings(context: Context) {
         v["tradeMinValue"]?.toFloatOrNull()?.takeIf { it >= 0 }?.let { e.putFloat("tradeMinValue", it) }
         v["tradeKeepBestDecks"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepBestDecks", it) }
         v["tradeKeepBestAll"]?.toBooleanStrictOrNull()?.let { e.putBoolean("tradeKeepBestAll", it) }
+        // The collection sort's rules (numbers checked like the trade binder's) and what it remembers. Since 1.104.
+        v["sortMaxTop"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("sortMaxTop", it) }
+        v["sortMaxMid"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("sortMaxMid", it) }
+        v["sortMaxBulk"]?.toIntOrNull()?.takeIf { it >= 0 }?.let { e.putInt("sortMaxBulk", it) }
+        v["sortFloor"]?.toFloatOrNull()?.takeIf { it >= 0 }?.let { e.putFloat("sortFloor", it) }
+        v["sortMix"]?.toIntOrNull()?.takeIf { it in 0..100 }?.let { e.putInt("sortMix", it) }
+        v["sortWeekly"]?.toIntOrNull()?.takeIf { it >= 1 }?.let { e.putInt("sortWeekly", it) }
+        v["sortSettled"]?.toBooleanStrictOrNull()?.let { e.putBoolean("sortSettled", it) }
+        v["sortSkips"]?.let { e.putString("sortSkips", it.split('\n').filter { k -> k.isNotBlank() }.sorted().joinToString("\n")) }
+        v["sortLog"]?.let { e.putString("sortLog", it.split('\n').filter { k -> k.isNotBlank() }.joinToString("\n")) }
         trackerFlags.forEach { (k, f) -> v[k]?.toBooleanStrictOrNull()?.let { f.value = it; e.putBoolean(k, it) } }
         v["trackerLowLife"]?.let { _trackerLowLife.value = LowLifeStyle.fromKey(it); e.putString("trackerLowLife", it) }
         v["trackerCardLayout"]?.let { _trackerCardLayout.value = CardLayout.fromKey(it); e.putString("trackerCardLayout", it) }

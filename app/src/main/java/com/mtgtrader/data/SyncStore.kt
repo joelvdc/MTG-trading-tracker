@@ -36,6 +36,10 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
                 val extra = listOfNotNull(
                     binderUid[settings.tradeBinderId]?.let { SyncPrefs.TRADE_BINDER to it },
                     SyncPrefs.TRADE_SKIPS to db.tradeSkipDao().keys().sorted().joinToString("\n"),
+                    // The collection sort's binders too (since 1.104).
+                    binderUid[settings.sortTopId]?.let { SyncPrefs.SORT_TOP to it },
+                    binderUid[settings.sortMidId]?.let { SyncPrefs.SORT_MID to it },
+                    binderUid[settings.sortBulkId]?.let { SyncPrefs.SORT_BULK to it },
                 )
                 p.copy(values = p.values + extra)
             },
@@ -68,6 +72,12 @@ class SyncStore(private val db: AppDatabase, private val settings: Settings) {
             settings.applySyncedPrefs(merged.prefs)
             merged.prefs.values[SyncPrefs.TRADE_BINDER]?.let { uid -> db.binderDao().all().firstOrNull { it.uid == uid }?.let { settings.setTradeBinderFromSync(it.id) } }
             merged.prefs.values[SyncPrefs.TRADE_SKIPS]?.let { skips -> db.tradeSkipDao().replaceAll(skips.split('\n').filter { it.isNotBlank() }) }
+            // The collection sort's binders, by their sync id (since 1.104).
+            val sortBinders = db.binderDao().all()
+            fun sortBinder(key: String): Long? = merged.prefs.values[key]?.let { uid -> sortBinders.firstOrNull { it.uid == uid }?.id }
+            sortBinder(SyncPrefs.SORT_TOP)?.let { settings.setSortBinderFromSync(SortPlace.TOP, it) }
+            sortBinder(SyncPrefs.SORT_MID)?.let { settings.setSortBinderFromSync(SortPlace.MID, it) }
+            sortBinder(SyncPrefs.SORT_BULK)?.let { settings.setSortBinderFromSync(SortPlace.BULK, it) }
         }
         return done
     }

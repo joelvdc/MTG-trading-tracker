@@ -80,6 +80,10 @@ data class SyncPrefs(val updatedAt: Long = 0, val values: Map<String, String> = 
         const val TRADE_BINDER = "tradeBinder"
         /** The declined trade binder suggestions (the trade_skips table), newline-joined. Since 1.80. */
         const val TRADE_SKIPS = "tradeSkips"
+        /** The collection sort's three binders, by their sync id (their binder's uid). Since 1.104. */
+        const val SORT_TOP = "sortTop"
+        const val SORT_MID = "sortMid"
+        const val SORT_BULK = "sortBulk"
     }
 }
 
