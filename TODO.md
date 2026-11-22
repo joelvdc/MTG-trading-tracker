@@ -60,14 +60,36 @@ Owner: "would it be possible for the app/website to import decks from moxfield? 
 - Decision: ask Moxfield first, and build the link import only if they agree. Pasting Moxfield's export already works
   in the app and on the website.
 
-### Commander Salt scores for local decks (2026-11-05)
-Owner's idea: a copy of the decklist on a site Commander Salt accepts. Every site it accepts (Moxfield, Archidekt,
-TappedOut, ManaBox, MTGGoldfish, Scryfall, …) needs an account to create a deck, with no open way for an app to do it.
-- Proposed: a half-manual "Score on Commander Salt": copy the list and open Archidekt's new-deck page, the owner pastes
-  and saves, then pastes the link back; it is kept as that local deck's scoring link ("Copy list again" after edits).
-  First look for a site that takes a deck link without an account; maybe ask Commander Salt whether it could take a
-  pasted list.
-- Open question: on the website too, or only in the app?
+### Commander Salt scores for local decks (2026-11-05; researched 2026-11-22)
+Owner's idea: a copy of the decklist on a site Commander Salt accepts. Commander Salt itself only takes a deck link
+(`POST api.commandersalt.com/decks?url=`; its site code has no pasted-list import). The 13 sites it accepts, checked
+2026-11-22 for a way for the app/website to put a deck there:
+- **Archidekt**: account needed; no official write API, but the site's own (unofficial) endpoints create and edit
+  decks with the same JWT login the app already uses for collection sync (1.21). Most practical: one reusable
+  "MTG Trader scoring" deck in the user's own Archidekt account, overwritten with the local deck's list, then scored.
+  Needs an Archidekt account per user; unofficial API (same risk as collection sync).
+- **CommanderView** (commanderview.app): account needed; it has real per-user API keys (`/api/account/api-keys`)
+  and deck endpoints (`/api/decks`, `/api/decks/import`, `/api/decks/public`). Possibly an allowed way; untested:
+  needs an account and checking their terms and whether a deck can be public through the key.
+- **Moxfield**: account needed, no public API (access only on request; our email is still pending). No.
+- **TappedOut, MTGGoldfish, Scryfall, untap.in**: account needed, no write API (Scryfall's API is read-only). No.
+- **ManaBox, TopDecked**: phone apps; decks are made in the app, no API. No.
+- **TopDeck.gg, Hareruya**: tournament decklists only, not user decks. No.
+- **EDHREC deckpreview**: previews of decks EDHREC collected from other sites; no way to make one. No.
+- **EDHspace**: account needed, no API; it scores its own decks through Commander Salt behind its login. No.
+- Earlier fallback (still possible): half-manual "Score on Commander Salt": copy the list, open Archidekt's new-deck
+  page, the owner pastes and saves, pastes the link back.
+- Best long-term: ask Commander Salt's devs (Discord) whether they could accept a pasted list or an MTG Trader share
+  link (`mtgtrader.vercel.app/s/<code>`, read-only, could offer a plain-text or JSON decklist for them).
+- Open questions: Archidekt route vs asking the devs first; website too, or only the app.
+
+### Passkeys (2026-11-22)
+Owner: add passkey login, "for both website and app". Plan sketch (from the 1.112 discussion): website with
+SimpleWebAuthn (table of passkeys, "Log in with a passkey", Settings → Add / Remove passkey), then the app with
+Android Credential Manager, which needs the website to publish `/.well-known/assetlinks.json` with the app's signing
+certificate fingerprint (public, not a secret). A passkey counts as password + second step (no two-step code on
+top). Passwords, reset by email and recovery codes stay as the way back.
+- Open questions: offer it at sign-up? Website first, app in a later release, or both together?
 
 ### More places to back up (2026-11-05)
 Owner: "could we in the future expand the sync, so that the user can choose between nextcloud, google drive, dropbox or
