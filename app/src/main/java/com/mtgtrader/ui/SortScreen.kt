@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -78,6 +79,7 @@ import com.mtgtrader.data.UNSORTED_KEY
 import com.mtgtrader.data.isLevelKey
 import com.mtgtrader.data.levelKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -191,8 +193,13 @@ fun SortScreen(nav: NavController) {
                                 scope.launch {
                                     val accepted = kept
                                     val declined = moves.filter { it.rowKey in unticked }
-                                    c.sorter.apply(accepted, declined)
+                                    // Runs on the app's scope, so leaving the screen doesn't cancel (and roll back) the moves (1.110).
+                                    val done = runCatching { c.appScope.async { c.sorter.apply(accepted, declined) }.await() }
                                     applying = false
+                                    if (done.isFailure) {
+                                        snackbar.showSnackbar("Couldn't move the cards")
+                                        return@launch
+                                    }
                                     snackbar.showSnackbar(
                                         if (accepted.isEmpty()) "Nothing moved; ${declined.size} move(s) won't be suggested again"
                                         else "Moved ${accepted.sumOf { it.copies }} card(s)" + if (declined.isNotEmpty()) ", declined ${declined.size}" else "",
@@ -202,7 +209,13 @@ fun SortScreen(nav: NavController) {
                             },
                             enabled = !applying,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text(if (kept.size == moves.size) "Done" else "Done (${kept.size} of ${moves.size} moves)") }
+                        ) {
+                            if (applying) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Moving…")
+                            } else Text(if (kept.size == moves.size) "Done" else "Done (${kept.size} of ${moves.size} moves)")
+                        }
                     }
                 }
             }

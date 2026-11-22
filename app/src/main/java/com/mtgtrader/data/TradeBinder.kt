@@ -65,6 +65,13 @@ data class CardKind(
     }
 }
 
+/** The stacks of the card kind [key] (a [CardKind.key]) in any binder: one indexed query, not the whole collection (1.110). */
+suspend fun CollectionDao.stacksOf(key: String): List<CollectionItem> {
+    val p = key.split('|')
+    if (p.size < 3) return emptyList()
+    return findAny(p[0], p[1].toBoolean(), p[2].toBoolean()).filter { CardKind.of(it).key == key }
+}
+
 /** A suggested change to the trade binder: [copies] of a card in or out, and why. */
 data class TradeChange(
     val add: Boolean,
@@ -266,7 +273,7 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
         val decksId = settings.sortDecksId.takeIf { it > 0 }
         fun source(s: CollectionItem) = TradeBinderPlanner.sourceRank(s.binderId, levelIds, decksId, deckBinders)
         for (c in accepted) {
-            val stacks = db.collectionDao().all().filter { CardKind.of(it) == c.kind }
+            val stacks = db.collectionDao().stacksOf(c.kind.key)
             var left = c.copies
             if (c.add) {
                 for (s in stacks.filter { it.binderId != binderId }.sortedWith(compareBy<CollectionItem> { source(it) }.thenByDescending { it.quantity })) {

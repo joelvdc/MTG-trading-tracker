@@ -681,7 +681,9 @@ class CollectionSorter(private val db: AppDatabase, private val repo: MtgReposit
             val to = binderOf(move.to) ?: continue
             if (from == to) continue
             var left = move.copies
-            val stacks = db.collectionDao().all().filter { it.binderId == from && CardKind.of(it).key == move.key }
+            // Only this card's stacks, by one indexed query: loading the whole collection per move made a big first sort
+            // take minutes (1.110).
+            val stacks = db.collectionDao().stacksOf(move.key).filter { it.binderId == from }
             for (s in stacks.sortedByDescending { it.quantity }) {
                 if (left <= 0) break
                 val n = minOf(left, s.quantity)

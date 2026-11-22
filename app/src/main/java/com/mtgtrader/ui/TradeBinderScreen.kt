@@ -70,6 +70,7 @@ import com.mtgtrader.data.TradeBinderPlanner
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.FilterChip
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
@@ -142,8 +143,13 @@ fun TradeBinderScreen(nav: NavController) {
                             scope.launch {
                                 val accepted = list.filter { it.skipKey !in unticked }
                                 val declined = list.filter { it.skipKey in unticked }
-                                c.tradeBinder.apply(accepted, declined)
+                                // Runs on the app's scope, so leaving the screen doesn't cancel (and roll back) the changes (1.110).
+                                val done = runCatching { c.appScope.async { c.tradeBinder.apply(accepted, declined) }.await() }
                                 applying = false
+                                if (done.isFailure) {
+                                    snackbar.showSnackbar("Couldn't update the trade binder")
+                                    return@launch
+                                }
                                 snackbar.showSnackbar("Trade binder updated: ${accepted.filter { it.add }.sumOf { it.copies }} in, ${accepted.filterNot { it.add }.sumOf { it.copies }} out")
                                 reload++
                             }

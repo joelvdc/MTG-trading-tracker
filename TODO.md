@@ -14,8 +14,11 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-22, after app 1.109)
-- **Newest (2026-11-22):** app 1.109 + website: the trade binder takes spares from Unsorted, other binders, the sort's
+## Right now (2026-11-22, after app 1.110)
+- **Newest (2026-11-22):** app 1.110: Sort → Done (and Trade binder → Apply) look up each card's stacks with one
+  query (`CollectionDao.stacksOf`) instead of loading the whole collection per move, show "Moving…", and run on the
+  app scope so leaving the screen doesn't cancel them (the owner's first sort of 1,882 deck moves seemed dead). Before
+  that, app 1.109 + website: the trade binder takes spares from Unsorted, other binders, the sort's
   levels worst first and the Decks binder last (`TradeBinderPlanner.sourceRank`, website `sourceRank`). Before that, 1.108: game seat pickers offer only active decks (`Deck.isActive`, website
   `MyDeck.followed`); the Sort screen and page cut to labels only (owner: minimal text everywhere); Settings… no longer
   offered inside the settings, Back returns to the suggestions; Decks binder on by default; "Unless ×" no longer
@@ -149,6 +152,7 @@ for later:
 
 ## Done
 - 1.109 (2026-11-22): trade binder takes spares from the Decks binder last
+- 1.110 (2026-11-22): Sort Done and trade binder Apply fast, show progress, survive leaving the screen
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
