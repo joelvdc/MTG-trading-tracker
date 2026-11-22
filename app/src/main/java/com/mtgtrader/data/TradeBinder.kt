@@ -106,6 +106,23 @@ object TradeBinderPlanner {
 
     fun nameKey(name: String) = name.substringBefore(" // ").trim().lowercase()
 
+    /**
+     * Where a spare copy comes from, lowest first: Unsorted (0), any other binder (1), a level binder from the last
+     * (2) to the first (1 + n), the sort's Decks binder (2 + n), then binders named after a deck (3 + n). [levelIds]
+     * is best first; no sort set up (no levels, no Decks binder) keeps the older order (Unsorted 0, other binders 1,
+     * deck-named binders 2). Since 1.109.
+     */
+    fun sourceRank(binderId: Long, levelIds: List<Long>, decksId: Long?, deckBinders: Set<Long>): Int {
+        val n = levelIds.size
+        return when (binderId) {
+            Binder.UNSORTED -> 0
+            in levelIds -> 1 + n - levelIds.indexOf(binderId)
+            decksId -> 2 + n
+            in deckBinders -> n + if (decksId == null && n == 0) 2 else 3
+            else -> 1
+        }
+    }
+
     /** The skip-table key remembering that, for this card, the user wants [kind] in the binder (Swap). */
     fun preferKey(name: String, kind: CardKind) = "prefer|${nameKey(name)}|${kind.key}"
 
@@ -241,14 +258,13 @@ class TradeBinder(private val db: AppDatabase, private val repo: MtgRepository, 
     suspend fun apply(accepted: List<TradeChange>, declined: List<TradeChange>) = db.withTransaction {
         val binderId = binder()?.id ?: repo.createBinder(NAME)
         settings.tradeBinderId = binderId
-        // A binder named after a deck holds that deck's cards: take spare copies from Unsorted and other binders first.
+        // A binder named after a deck holds that deck's cards, the sort's levels hold the best ones and its Decks binder
+        // the decks' copies: spare copies come from Unsorted, other binders and the levels' worst first (since 1.109).
         val deckNames = db.deckDao().all().map { it.name.lowercase() }.toSet()
         val deckBinders = db.binderDao().all().filter { it.name.lowercase() in deckNames }.map { it.id }.toSet()
-        fun source(s: CollectionItem) = when (s.binderId) {
-            Binder.UNSORTED -> 0
-            in deckBinders -> 2
-            else -> 1
-        }
+        val levelIds = settings.sortLevels.mapNotNull { it.binder.toLongOrNull() }
+        val decksId = settings.sortDecksId.takeIf { it > 0 }
+        fun source(s: CollectionItem) = TradeBinderPlanner.sourceRank(s.binderId, levelIds, decksId, deckBinders)
         for (c in accepted) {
             val stacks = db.collectionDao().all().filter { CardKind.of(it) == c.kind }
             var left = c.copies

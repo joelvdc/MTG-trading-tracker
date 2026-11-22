@@ -4,6 +4,7 @@
 // settings (since app 1.80): tradeMax, tradeKeepOne, tradeMinValue, tradeKeepBestDecks, tradeKeepBestAll, tradeSkips.
 import { applyCollectionEdit } from "./collection";
 import { activeDecksOf, decksOf, type CollRow } from "./collview";
+import { liveLevels, sortSettingsOf } from "./collsort";
 import type { PriceFile } from "./prices";
 import { binders, collection, prefs, setPrefs, wishlist, type SyncFile } from "./syncfile";
 
@@ -274,6 +275,22 @@ export function planInputs(file: SyncFile): { deckNeeds: Map<string, number>; wi
   return { deckNeeds, wishlist: wanted };
 }
 
+/**
+ * Where a spare copy comes from (TradeBinderPlanner.sourceRank, since 1.109), lowest first: Unsorted (null, 0), any other
+ * binder (1), a level binder from the last (2) to the first (1 + n), the sort's Decks binder (2 + n), then binders named
+ * after a deck (3 + n). [levelUids] is best first; no sort set up (no levels, no Decks binder) keeps the older order
+ * (Unsorted 0, other binders 1, deck-named binders 2).
+ */
+export function sourceRank(binder: string | null, levelUids: string[], decksUid: string | null, deckBinders: Set<string>): number {
+  const n = levelUids.length;
+  if (binder === null) return 0;
+  const level = levelUids.indexOf(binder);
+  if (level >= 0) return 1 + n - level;
+  if (decksUid !== null && binder === decksUid) return 2 + n;
+  if (deckBinders.has(binder)) return n + (decksUid === null && n === 0 ? 2 : 3);
+  return 1;
+}
+
 /** A change the page sends back: the kind's key, in or out, and how many copies. */
 export interface TradeDecision {
   key: string;
@@ -289,11 +306,14 @@ export function applyTrade(file: SyncFile, accepted: TradeDecision[], declined: 
   let binder = tradeBinderOf(file);
   if (binder === null) binder = applyCollectionEdit(file, { type: "addBinder", name: TRADE_BINDER_NAME }, now, rates).uid!;
   setPrefs(file, { [TRADE_BINDER_PREF]: binder }, now);
-  // A binder named after a deck holds that deck's cards: spare copies come from Unsorted and other binders first.
+  // A binder named after a deck holds that deck's cards, the sort's levels hold the best ones and its Decks binder the
+  // decks' copies: spare copies come from Unsorted, other binders and the levels' worst first (since 1.109).
   // Binders named after a deck, retired ones too (TradeBinder.apply).
   const deckNames = new Set(decksOf(file, true).map((d) => d.name.toLowerCase()));
   const deckBinders = new Set(binders(file).filter((b) => b.uid && deckNames.has(b.name.toLowerCase())).map((b) => b.uid!));
-  const rank = (b: string | null) => (b === null ? 0 : deckBinders.has(b) ? 2 : 1);
+  const levelUids = liveLevels(file).map((l) => l.uid);
+  const decksUid = sortSettingsOf(prefs(file)).decks;
+  const rank = (b: string | null) => sourceRank(b, levelUids, decksUid, deckBinders);
   const known = new Set(binders(file).map((b) => b.uid));
   for (const c of accepted) {
     let left = Math.max(0, Math.floor(c.copies));

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CollRow } from "@/lib/collview";
-import { collection, prefs, type CardRef, type SyncFile } from "@/lib/syncfile";
+import { collection, prefs, setPrefs, type CardRef, type SyncFile } from "@/lib/syncfile";
+import { applyCollectionEdit } from "@/lib/collection";
+import { SORT_DECKS_PREF, SORT_LEVELS_PREF, sortSettingsOf } from "@/lib/collsort";
 import {
   applyTrade,
   DEFAULT_RULES,
@@ -14,6 +16,7 @@ import {
   rulesOf,
   rulesPrefs,
   skipsOf,
+  sourceRank,
   tradeBinderOf,
   type PlanInput,
 } from "@/lib/tradebinder";
@@ -173,6 +176,56 @@ describe("applying the trade binder (TradeBinder.apply)", () => {
     expect(collection(f).map((s) => [s.binder, s.item.quantity])).toContainEqual([null, 1]);
     forgetDeclined(f, 3000);
     expect(skipsOf(prefs(f)).size).toBe(0);
+  });
+
+  it("takes the level's copy before the Decks binder's, once a sort is set up", () => {
+    const f = file();
+    // The sort: one level (the "Top" binder) and a Decks binder, each holding a copy of the same Sol Ring printing.
+    const top = applyCollectionEdit(f, { type: "addBinder", name: "Top" }, 500).uid!;
+    const decks = applyCollectionEdit(f, { type: "addBinder", name: "Decks" }, 500).uid!;
+    setPrefs(f, { [SORT_LEVELS_PREF]: `${top}|0|`, [SORT_DECKS_PREF]: decks }, 600);
+    expect(sortSettingsOf(prefs(f))).toMatchObject({ levels: [{ uid: top }], decks });
+    // The deck's binder copy is no longer there, so the Unsorted one is the only copy before them.
+    const printing = card("Sol Ring", "33333333-3333-3333-3333-333333333333");
+    applyCollectionEdit(f, { type: "remove", uid: "a" }, 650);
+    applyCollectionEdit(f, { type: "add", card: printing, quantity: 1, binder: top }, 700);
+    applyCollectionEdit(f, { type: "add", card: printing, quantity: 1, binder: decks }, 700);
+    const key = "33333333-3333-3333-3333-333333333333|false|false|NM|EN";
+    const at = (binder: string | null) =>
+      collection(f).filter((s) => s.item.card.scryfallId === printing.scryfallId && s.binder === binder).reduce((n, s) => n + s.item.quantity, 0);
+
+    // Unsorted's Sol Ring is another printing, so the level's copy (2) goes in before the Decks binder's (3).
+    const uid = applyTrade(f, [{ key, add: true, copies: 1 }], [], 1000, null);
+    expect(at(uid)).toBe(1);
+    expect(at(top)).toBe(0);
+    expect(at(decks)).toBe(1);
+
+    // One more copy: only the Decks binder has one left, so that's where it comes from.
+    applyTrade(f, [{ key, add: true, copies: 1 }], [], 1100, null);
+    expect(at(uid)).toBe(2);
+    expect(at(decks)).toBe(0);
+  });
+});
+
+describe("where spare copies come from (TradeBinder.sourceRank)", () => {
+  const levels = ["BEST", "MID", "BULK"];
+  const deckBinders = new Set(["DECKBINDER"]);
+
+  it("Unsorted, other binders, the last level to the first, Decks, then deck-named binders", () => {
+    const rank = (b: string | null) => sourceRank(b, levels, "DECKS", deckBinders);
+    expect([null, "OTHER", "BULK", "MID", "BEST", "DECKS", "DECKBINDER"].map(rank)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it("keeps the older order without a sort set up", () => {
+    // No levels and no Decks binder: Unsorted 0, other binders 1, deck-named binders last (as before 1.109).
+    expect([null, "OTHER", "DECKBINDER"].map((b) => sourceRank(b, [], null, deckBinders))).toEqual([0, 1, 2]);
+    // Levels without a Decks binder: deck-named binders still come last.
+    expect(sourceRank("BULK", levels, null, deckBinders)).toBe(2);
+    expect(sourceRank("DECKBINDER", levels, null, deckBinders)).toBe(6);
+  });
+
+  it("a binder that's both a level and named after a deck keeps its level", () => {
+    expect(sourceRank("BULK", levels, "DECKS", new Set(["BULK"]))).toBe(2);
   });
 });
 
