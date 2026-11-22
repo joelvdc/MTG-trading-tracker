@@ -154,13 +154,14 @@ internal fun ReseatPicker(g: LiveGame, seat: Int, pictures: Boolean, onDismiss: 
     val players by c.games.players.collectAsStateWithLifecycle(emptyList())
     val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val s = g.seats.firstOrNull { it.seat == seat } ?: return
     SeatPickerSheet(
         seatIndex = g.seats.indexOf(s),
         choice = seatChoiceOf(s),
         taken = g.seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
         takenDecks = g.seats.filter { it.seat != seat }.mapNotNull { it.deckId }.toSet(),
-        players = players, decks = decks.filter { !it.retired }, friendDecks = friendDecks, pictures = pictures, onDismiss = onDismiss, showLook = false,
+        players = players, decks = decks.filter { it.isActive(ownUser) }, friendDecks = friendDecks, pictures = pictures, onDismiss = onDismiss, showLook = false,
     ) { choice ->
         c.games.update { reseat(it, seat, choice, seatDeck(choice, decks, friendDecks)) }
         c.games.live.value?.let { c.games.keepTable(setupOf(it, c.games.lastTable?.firstSeat)) }

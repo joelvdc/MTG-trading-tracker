@@ -108,6 +108,12 @@ data class Deck(
     val fromPrecon get() = origin?.startsWith("Precon") == true
 
     /**
+     * One of the user's active decks: not retired, and local or theirs on Archidekt ([ownUser], see
+     * [Settings.deckOwner]; blank = only local decks). Followed decks of other users aren't. Since 1.108.
+     */
+    fun isActive(ownUser: String): Boolean = !retired && (local || (ownUser.isNotBlank() && owner.equals(ownUser.trim(), ignoreCase = true)))
+
+    /**
      * When the deck was last changed, for the "Last modified" sort: Archidekt's date for an Archidekt deck,
      * the last change in the app or on the website for a local one (any change counts, a re-score too).
      */

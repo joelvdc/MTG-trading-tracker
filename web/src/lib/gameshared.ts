@@ -105,6 +105,8 @@ export interface MyDeck {
   power: number | null;
   /** Retired decks (app 1.83) aren't offered for new seats; a seat that has one keeps it. */
   retired?: boolean;
+  /** Another Archidekt user's deck (app 1.108): not offered for new seats, like a retired one. */
+  followed?: boolean;
 }
 
 export interface PausedLine {

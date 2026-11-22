@@ -14,16 +14,14 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-21, after app 1.107)
-- **Newest (2026-11-21):** app 1.107 + website: **sort with your decks**. Active decks = own Archidekt decks (owner =
-  Archidekt username in Settings → Decks, no more guessing from the last import) + local decks, not retired; followed
-  decks hold no cards. One Decks binder, 1–6 levels with limits and minimum prices, keep copies together (outliers go
-  their own way), best/cheapest copies for decks with upgrade swaps, "Sort everything now", no-room note; deck filter
-  and Deck sort in the app's collection, Deck column and filter on the website. New synced settings (`sortLevels`,
-  `sortDecks`, `sortTogether`, `sortOutlier*`, `sortDeckCopies`); the old three-binder keys are still written, so
-  1.106 phones keep working. Built by DeepSeek through Mistral, reviewed by Opus. Health check unchanged.
+## Right now (2026-11-22, after app 1.108)
+- **Newest (2026-11-22):** app 1.108 + website: game seat pickers offer only active decks (`Deck.isActive`, website
+  `MyDeck.followed`); the Sort screen and page cut to labels only (owner: minimal text everywhere); Settings… no longer
+  offered inside the settings, Back returns to the suggestions; Decks binder on by default; "Unless ×" no longer
+  shows "3," in Danish; the plan is worked out off the main thread. Done by Opus itself. Before that, 1.107: **sort
+  with your decks** (active decks, Decks binder, 1–6 levels, copies kept together, deck filter/sort/column).
 - **Waiting on the owner:** set the Archidekt username (Settings → Decks) if it isn't set yet, then open Sort →
-  Settings… on the phone or website: add a Decks binder, check the levels, and try it with the real collection (tests
+  Settings… on the phone or website: save once (the Decks binder is ticked by default), check the levels, and try it with the real collection (tests
   and screenshot tests used made-up cards only). Still from before: try 1.103's scan price and "Ordered"; green light
   for the ✕ delete column in the website's wishlist table; Compare with a real Archidekt link; the email to
   support@moxfield.com; asking EDHREC/Archidekt for permission (Collecting, "Outside services' terms").
@@ -149,6 +147,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
 - 1.105 (2026-11-21): ScrollVault removed (app and website); health check reads the website's EDHREC/Archidekt notes

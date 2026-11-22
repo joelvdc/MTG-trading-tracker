@@ -1,7 +1,7 @@
 // The recorded games in the sync file (the app's data/Games.kt, GameStore.kt): reading them for the Games page, and
 // the changes the website makes, following the app's rules (GameDetailScreen, "Add a past game", PlayersScreen). The
 // life tracker itself stays on the phone. Raw objects are edited in place, so fields a newer app adds are kept.
-import { syncDecks } from "./decks";
+import { deckOwner, syncDecks } from "./decks";
 import {
   changeSeat,
   choiceOf,
@@ -126,6 +126,7 @@ export function gamesOf(file: SyncFile): Game[] {
 }
 
 export function myDecks(file: SyncFile): MyDeck[] {
+  const own = (deckOwner(file) ?? "").toLowerCase();
   return syncDecks(file)
     .map((d) => ({
       id: d.deck.archidektId,
@@ -136,6 +137,7 @@ export function myDecks(file: SyncFile): MyDeck[] {
       bracket: d.deck.bracketRealistic ?? null,
       power: d.deck.powerLevel ?? null,
       retired: !!d.deck.retired,
+      followed: d.deck.archidektId >= 0 && (own === "" || (d.deck.owner ?? "").trim().toLowerCase() !== own),
     }))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }

@@ -77,7 +77,11 @@ import com.mtgtrader.data.Together
 import com.mtgtrader.data.UNSORTED_KEY
 import com.mtgtrader.data.isLevelKey
 import com.mtgtrader.data.levelKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.activity.compose.BackHandler
 import kotlin.math.roundToInt
 
 /**
@@ -115,7 +119,8 @@ fun SortScreen(nav: NavController) {
     /** The plan again, with or without this week's limit (as the website's loadPlan). */
     suspend fun loadPlan(ignore: Boolean) {
         loadingPlan = true
-        runCatching { c.sorter.suggest(ignoreCap = ignore) }
+        // Off the main thread: with a big collection the plan takes a while and the screen must stay usable (1.108).
+        runCatching { withContext(Dispatchers.Default) { c.sorter.suggest(ignoreCap = ignore) } }
             .onSuccess { plan = it; ignoreCap = ignore; unticked = emptySet() }
             .onFailure { snackbar.showSnackbar(it.message ?: "Could not load the sort.") }
         loadingPlan = false
@@ -138,6 +143,10 @@ fun SortScreen(nav: NavController) {
         }
     }
 
+    // The settings of an existing setup (opened from the menu), not a first setup.
+    val editing = setUp && levels.isNotEmpty()
+    BackHandler(enabled = editing) { setUp = false }
+
     val moves = plan?.moves.orEmpty()
     val kept = moves.filter { it.rowKey !in unticked }
 
@@ -145,13 +154,15 @@ fun SortScreen(nav: NavController) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(if (setUp) "Set up the sort" else "Sort the collection") },
-                navigationIcon = { IconButton(onClick = { nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text(if (!setUp) "Sort the collection" else if (editing) "Sort settings" else "Set up the sort") },
+                // Back from the settings of an existing setup goes to its suggestions (1.108).
+                navigationIcon = { IconButton(onClick = { if (editing) setUp = false else nav.safePopBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
+                    if (!setUp) {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
                     ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(text = { Text("Settings…") }, onClick = { menu = false; setUp = true })
-                        if (!setUp) {
+                        run {
                             DropdownMenuItem(
                                 text = { Text("Suggest declined moves again") },
                                 onClick = {
@@ -165,6 +176,7 @@ fun SortScreen(nav: NavController) {
                             DropdownMenuItem(text = { Text("Start over") }, onClick = { menu = false; confirmingStartOver = true })
                         }
                     }
+                    }
                 },
             )
         },
@@ -173,12 +185,6 @@ fun SortScreen(nav: NavController) {
             if (!setUp && moves.isNotEmpty()) {
                 Surface(tonalElevation = 3.dp) {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Text(
-                            "Tick what you moved. Unticked moves won't be suggested again.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 6.dp),
-                        )
                         Button(
                             onClick = {
                                 applying = true
@@ -366,69 +372,33 @@ fun SortSuggestions(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(vertical = 6.dp),
                 )
-                if (!ownUserSet) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    ) {
-                        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                            Text(
-                                "Set your Archidekt username so the sort knows which Archidekt decks are yours. " +
-                                    "Until then only your local decks hold cards.",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            if (onSetUsername != null) {
-                                TextButton(onClick = onSetUsername) { Text("Set username") }
-                            }
-                        }
-                    }
-                }
-                if (plan.deckShort > 0) {
-                    Text(
-                        "Your decks need ${"%,d".format(plan.deckShort)} more " +
-                            if (plan.deckShort == 1) "copy you don't own." else "copies you don't own.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                if (!ownUserSet && onSetUsername != null) {
+                    TextButton(onClick = onSetUsername, contentPadding = PaddingValues(0.dp)) { Text("Set Archidekt username") }
                 }
                 if (settled) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            if (ignoreCap) "Ignoring this week's limit."
-                            else "This week: ${plan.weekUsed} of $weekly moves used" +
-                                if (plan.heldBack > 0) " · ${"%,d".format(plan.heldBack)} more wait for next week" else "",
+                            if (ignoreCap) "No weekly limit" else "${plan.weekUsed}/$weekly this week",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         if (onIgnoreCap != null) {
                             TextButton(onClick = { onIgnoreCap(!ignoreCap) }, enabled = !loadingPlan) {
-                                Text(if (ignoreCap) "Back to the weekly limit" else "Sort everything now")
+                                Text(if (ignoreCap) "Weekly limit" else "Sort all now")
                             }
                         }
                     }
-                } else {
-                    Text(
-                        "First sort: everything is placed at once. After this, cards only move when they clearly belong " +
-                            "elsewhere, at most $weekly a week.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
         }
         if (groups.isEmpty()) {
             item(key = "none") {
-                EmptyState(
-                    if (settled) "Nothing to move" else "Everything is in place",
-                    if (settled) "The binders already hold the right cards for these rules."
-                    else "Each card is already in the binder it belongs in.",
-                )
+                EmptyState(if (settled) "Nothing to move" else "Everything is in place", "")
             }
         }
         for (group in groups) {
-            val title = if (group.key == "decks" && hasDecks) "${group.title} (${placeName(DECKS_KEY, placeNames)})" else group.title
-            item(key = "h_${group.key}") { SortSectionHeader("$title (${group.moves.sumOf { it.copies }})") }
+            item(key = "h_${group.key}") { SortSectionHeader("${group.title} (${group.moves.sumOf { it.copies }})") }
             items(group.moves, key = { "${group.key}/${it.rowKey}" }) { move ->
                 SortMoveRow(
                     move = move,
@@ -440,18 +410,7 @@ fun SortSuggestions(
         if (noRoom > 0) {
             item(key = "noroom") {
                 Text(
-                    if (noRoom == 1) "1 card has no room: raise a level's limit or add a level in Settings, or put it in the trade binder."
-                    else "${"%,d".format(noRoom)} cards have no room: raise a level's limit or add a level in Settings, or put them in the trade binder.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-            }
-        }
-        if (plan.moves.isNotEmpty()) {
-            item(key = "note") {
-                Text(
-                    "The trade binder and your other binders are left alone.",
+                    "${"%,d".format(noRoom)} no room",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp),
@@ -572,12 +531,19 @@ internal fun SortSetUpList(
     val decksStart = remember(decksNow) {
         decksNow?.let { BinderChoice(binderId = it.first) } ?: BinderChoice(newName = SORT_NEW_DECKS)
     }
-    var decksOn by remember { mutableStateOf(decksNow != null) }
+    var decksOn by remember { mutableStateOf(true) }
     // Turned off and on again, it starts from the same binder.
     var decksForm by remember(decksNow) { mutableStateOf(decksStart) }
+    // On by default (1.108): a binder already called "Decks" rather than a second one of that name.
+    LaunchedEffect(decksNow) {
+        if (decksNow == null) {
+            c.db.binderDao().observeAll().first().firstOrNull { it.name.trim().equals(SORT_NEW_DECKS, ignoreCase = true) }
+                ?.let { decksForm = BinderChoice(binderId = it.id) }
+        }
+    }
     var deckCopies by remember { mutableStateOf(deckCopiesNow) }
     var together by remember { mutableStateOf(togetherNow) }
-    var ratio by remember { mutableStateOf("%.2f".format(ratioNow).trimEnd('0').trimEnd('.')) }
+    var ratio by remember { mutableStateOf(String.format(java.util.Locale.ROOT, "%.2f", ratioNow).trimEnd('0').trimEnd('.')) }
     var gap by remember { mutableStateOf(Money.input(gapNow)) }
     var mix by remember { mutableStateOf(mixNow) }
     var weekly by remember { mutableStateOf(weeklyNow.toString()) }
@@ -598,27 +564,13 @@ internal fun SortSetUpList(
         levels.indices.any { i -> i < levels.size - 1 && holds[i] == 0 } -> "Only the last level may hold nothing (0 = no limit)."
         decksOn && decksForm.newName?.isBlank() == true -> "Give the Decks binder a name."
         nWeekly == null || nWeekly < 1 -> "Most moves a week is a whole number, 1 or more."
-        together != Together.OFF && (nRatio == null || nRatio < 1) -> "The much-more-valuable times must be 1 or more."
-        together != Together.OFF && (nGap == null || nGap < 0) -> "The much-more-valuable amount must be 0 or more."
+        together != Together.OFF && (nRatio == null || nRatio < 1) -> "“Unless ×” must be 1 or more."
+        together != Together.OFF && (nGap == null || nGap < 0) -> "“and +${Money.symbol}” must be 0 or more."
         else -> null
     }
 
     LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp)) {
-        item(key = "intro") {
-            Column(Modifier.padding(vertical = 8.dp)) {
-                Text(
-                    "Splits your collection into levels by value and Commander popularity: the best cards in the first " +
-                        "level, then the next, down to ${Binder.UNSORTED_NAME}. The copies your active decks use go to the " +
-                        "Decks binder. The trade binder and your other binders are left alone.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    "Prices are typed in ${Money.symbol}.", style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-        }
-        item(key = "levels-head") { SortFormHeading("Levels, best first") }
+        item(key = "levels-head") { SortFormHeading("Levels") }
         val shown = levels.toList()
         for ((i, form) in shown.withIndex()) {
             val last = i == shown.lastIndex
@@ -655,12 +607,6 @@ internal fun SortSetUpList(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
                             )
                         }
-                        if (last && holds[i] == 0) {
-                            Text(
-                                "0 = no limit: this level takes every card the levels before it leave.",
-                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                     }
                 }
             }
@@ -684,11 +630,6 @@ internal fun SortSetUpList(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     )
                 }
-                Text(
-                    "Holds the copies your active decks use: your own Archidekt decks and your local decks, not retired ones.",
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
             }
         }
         item(key = "copies") {
@@ -702,23 +643,16 @@ internal fun SortSetUpList(
                 SortFormHeading("Keep copies together")
                 Together.entries.forEach { t -> SortRadioRow(t.label, together == t) { together = t } }
                 if (together != Together.OFF) {
-                    Text(
-                        "Unless a copy is worth much more: it then goes its own way.",
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("at least", style = MaterialTheme.typography.bodySmall)
                         OutlinedTextField(
                             value = ratio, onValueChange = { ratio = it.filter { c -> c.isDigit() || c == '.' || c == ',' }.take(6) },
-                            label = { Text("times more") }, singleLine = true,
+                            label = { Text("Unless ×") }, singleLine = true,
                             isError = ratio.isNotBlank() && (nRatio == null || nRatio < 1),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
                         )
-                        Text("and", style = MaterialTheme.typography.bodySmall)
                         OutlinedTextField(
                             value = gap, onValueChange = { gap = it },
-                            label = { Text("$symbol more") }, singleLine = true,
+                            label = { Text("and +$symbol") }, singleLine = true,
                             isError = gap.isNotBlank() && (nGap == null || nGap < 0),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
                         )
@@ -727,25 +661,15 @@ internal fun SortSetUpList(
             }
         }
         item(key = "mix") {
-            Column(Modifier.padding(top = 14.dp)) {
+            Column(Modifier.padding(top = 12.dp)) {
                 SortFormHeading("How cards are weighed")
                 Slider(
                     value = mix.toFloat(), onValueChange = { mix = (it / 10).roundToInt() * 10 },
                     valueRange = 0f..100f, steps = 9, modifier = Modifier.fillMaxWidth(),
                 )
-                Row(Modifier.fillMaxWidth()) {
-                    Text("Value", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    Text(
-                        when {
-                            mix < 50 -> "Value counts more"
-                            mix > 50 -> "Commander popularity counts more"
-                            else -> "Value and popularity, like the trade binder"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Commander popularity", style = MaterialTheme.typography.bodySmall)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Value", style = MaterialTheme.typography.bodySmall)
+                    Text("Popularity", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

@@ -429,6 +429,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
     val players by c.games.players.collectAsStateWithLifecycle(emptyList())
     val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
     // The players and decks, changed here before saving (since 1.58).
     var seats by remember(g?.id) { mutableStateOf(g?.seatList.orEmpty()) }
@@ -505,7 +506,7 @@ fun GameDetailScreen(nav: NavController, uid: String, fresh: Boolean) {
             seatIndex = seats.indexOf(old), choice = seatChoiceOf(old),
             taken = seats.filter { it.seat != seat }.mapNotNull { it.playerUid }.toSet(),
             takenDecks = seats.filter { it.seat != seat }.mapNotNull { it.deckId }.toSet(),
-            players = players, decks = decks.filter { !it.retired }, friendDecks = friendDecks, pictures = pictures, onDismiss = { picking = null }, showLook = false,
+            players = players, decks = decks.filter { it.isActive(ownUser) }, friendDecks = friendDecks, pictures = pictures, onDismiss = { picking = null }, showLook = false,
         ) { ch -> seats = seats.map { if (it.seat == seat) changeSeat(it, ch, seatDeck(ch, decks, friendDecks)) else it } }
     }
     if (confirmDelete && g != null) {

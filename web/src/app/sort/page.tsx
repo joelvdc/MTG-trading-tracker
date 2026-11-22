@@ -259,56 +259,26 @@ export default function SortPage() {
         ) : (
           <>
             <section className="stat-block">
-              <h2>{settled ? "Where the cards go" : "First sort"}</h2>
               <p className="value-head">
                 <strong>{countsLine(view)}</strong>
               </p>
               {!view.ownUserSet && (
-                <div className="bar">
-                  Set your Archidekt username in <Link href="/settings">Settings → Archidekt</Link> (on this website&apos;s Settings page or in the app) so the
-                  sort knows which Archidekt decks are yours. Until then only your local decks hold cards.
-                </div>
-              )}
-              {view.plan.deckShort > 0 && (
-                <p className="muted small">
-                  Your decks need {view.plan.deckShort} more {plural(view.plan.deckShort, "copy", "copies")} you don&apos;t own.
+                <p className="small">
+                  <Link href="/settings">Set Archidekt username</Link>
                 </p>
               )}
-              {settled ? (
+              {settled && (
                 <p className="muted small">
-                  {ignoreCap ? (
-                    <>
-                      Ignoring this week&apos;s limit.{" "}
-                      <button className="link" disabled={busy || loadingPlan} onClick={() => void loadPlan(false)}>
-                        Back to the weekly limit
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      This week: {view.plan.weekUsed} of {view.settings.weekly} moves used
-                      {view.plan.heldBack > 0 ? ` · ${view.plan.heldBack} more wait for next week` : ""}{" "}
-                      <button
-                        className="btn"
-                        disabled={busy || loadingPlan}
-                        title="Ignore this week's limit for this sort, e.g. after taking a deck apart"
-                        onClick={() => void loadPlan(true)}
-                      >
-                        Sort everything now
-                      </button>
-                    </>
-                  )}
-                </p>
-              ) : (
-                <p className="muted small">
-                  First sort: everything is placed at once. After this, cards only move when they clearly belong elsewhere, at most {view.settings.weekly} a week.
+                  {ignoreCap ? "No weekly limit" : `${view.plan.weekUsed}/${view.settings.weekly} this week`}{" "}
+                  <button className="btn" disabled={busy || loadingPlan} onClick={() => void loadPlan(!ignoreCap)}>
+                    {ignoreCap ? "Weekly limit" : "Sort all now"}
+                  </button>
                 </p>
               )}
             </section>
 
             {moves.length === 0 && (
-              <p className="muted center">
-                {settled ? "Nothing to move: the binders already hold the right cards for these rules." : "Everything is in place: each card is already in the binder it belongs in."}
-              </p>
+              <p className="muted center">{settled ? "Nothing to move" : "Everything is in place"}</p>
             )}
 
             {groups.map(({ key, title, list }) => {
@@ -348,23 +318,14 @@ export default function SortPage() {
               );
             })}
 
-            {noRoom > 0 && (
-              <p className="muted small">
-                {noRoom} {plural(noRoom, "card has", "cards have")} no room: raise a level&apos;s limit or add a level in Settings, or put{" "}
-                {plural(noRoom, "it", "them")} in the trade binder.
-              </p>
-            )}
-
-            {moves.length > 0 && (
-              <p className="muted small">The trade binder and your other binders are left alone.</p>
-            )}
+            {noRoom > 0 && <p className="muted small">{noRoom} no room</p>}
           </>
         )}
       </main>
 
       {!settingUp && !notSetUp && moves.length > 0 && (
         <div className="bulk-bar sort-done" role="region" aria-label="Done">
-          <span className="muted small grow">Tick what you moved. Unticked moves won&apos;t be suggested again.</span>
+          <span className="grow" />
           <button className="btn primary" disabled={busy || view.readOnly} onClick={done}>
             {busy ? "Saving…" : kept.length === moves.length ? "Done" : `Done (${kept.length} of ${moves.length} moves)`}
           </button>
@@ -448,7 +409,9 @@ function SetUp({
   );
   const [decksPick, setDecksPick] = useState<BinderPick>(() => {
     if (s.decks && view.decks) return BINDER(s.decks);
-    return "none";
+    // On by default (1.108): a binder already called "Decks", or a new one.
+    const named = view.binders.find((b) => b.name.trim().toLowerCase() === "decks");
+    return named ? BINDER(named.uid) : "new";
   });
   const [decksNewName, setDecksNewName] = useState("Decks");
   const [deckCopies, setDeckCopies] = useState<SortDeckCopies>(s.deckCopies);
@@ -494,8 +457,8 @@ function SetUp({
     else if (n === 0 && i < levels.length - 1) problems.push("Only the last level may hold nothing (0 = no limit).");
   });
   if (nWeekly === null || !Number.isInteger(nWeekly) || nWeekly < 1 || nWeekly > 10000) problems.push("Most moves a week is a whole number, 1 or more.");
-  if (nRatio === null || nRatio < 1 || nRatio > 100) problems.push("The much-more-valuable times must be 1 or more.");
-  if (nGap === null || nGap < 0) problems.push("The much-more-valuable amount must be 0 or more.");
+  if (nRatio === null || nRatio < 1 || nRatio > 100) problems.push("“Unless ×” must be 1 or more.");
+  if (nGap === null || nGap < 0) problems.push("“and +” must be 0 or more.");
   const ready = problems.length === 0;
 
   const mixText = mix < 50 ? "Value counts more" : mix > 50 ? "Commander popularity counts more" : "Value and popularity, like the trade binder";
@@ -503,16 +466,9 @@ function SetUp({
   return (
     <section className="stat-block">
       <h2>{onCancel ? "Sort settings" : "Set up the sort"}</h2>
-      <p className="muted small">
-        Splits your collection into levels by value and Commander popularity: the best cards in the first level, then the
-        next, down to Unsorted. The copies your active decks use go to the Decks binder. The trade binder and your other
-        binders are left alone.
-      </p>
-
-      <h3 className="mini-head">Levels, best first</h3>
+      <h3 className="mini-head">Levels</h3>
       <div className="stack tight">
         {levels.map((l, i) => {
-          const n = holdsOf(l);
           const last = i === levels.length - 1;
           return (
             <div key={i} className="stack tight">
@@ -537,7 +493,7 @@ function SetUp({
                   </label>
                 )}
                 <label className="field">
-                  <span>Holds</span>
+                  <span>{last ? "Holds (0 = no limit)" : "Holds"}</span>
                   <input type="number" min={0} max={1000000} step={1} inputMode="numeric" value={l.holds} onChange={(e) => setLevel(i, { holds: e.target.value })} />
                 </label>
                 <label className="field">
@@ -558,7 +514,6 @@ function SetUp({
                   )}
                 </div>
               </div>
-              {last && n === 0 && <p className="muted small">0 = no limit: this level takes every card the levels before it leave.</p>}
             </div>
           );
         })}
@@ -590,7 +545,6 @@ function SetUp({
           </label>
         )}
       </div>
-      <p className="muted small">Holds the copies your active decks use: your own Archidekt decks and your local decks, not retired ones.</p>
 
       <h3 className="mini-head">Copies for decks</h3>
       <div className="inline wrap">
@@ -621,13 +575,12 @@ function SetUp({
       </div>
       {together !== "off" && (
         <div className="inline wrap">
-          <span className="muted small">Unless a copy is worth at least</span>
           <label className="field">
-            <span>times more</span>
+            <span>Unless ×</span>
             <input type="number" min={1} max={100} step={0.5} value={ratio} onChange={(e) => setRatio(e.target.value)} aria-label="Much more valuable: times" />
           </label>
           <label className="field">
-            <span>and more ({view.currency})</span>
+            <span>and +{view.currency}</span>
             <input type="text" inputMode="decimal" value={gap} onChange={(e) => setGap(e.target.value)} aria-label="Much more valuable: amount" />
           </label>
         </div>
@@ -635,18 +588,13 @@ function SetUp({
 
       <h3 className="mini-head">How cards are weighed</h3>
       <label className="field">
-        <span>Value ←→ Commander popularity</span>
+        <span>Value ←→ Popularity</span>
         <input type="range" min={0} max={100} step={10} value={mix} onChange={(e) => setMix(Number(e.target.value))} aria-valuetext={`${mix}: ${mixText}`} />
       </label>
-      <p className="muted small">{mixText}</p>
       <label className="field">
         <span>Most moves a week</span>
         <input type="number" min={1} max={10000} value={weekly} onChange={(e) => setWeekly(e.target.value)} />
       </label>
-      <p className="muted small">
-        You show prices in {view.currency} ({view.moneyExample} = 1 euro): type the minimum prices and the much-more-valuable amount in {view.currency} too.
-      </p>
-
       {(problem ?? (problems.length > 0 ? problems[0] : null)) && <div className="bar error">{problem ?? problems[0]}</div>}
       <div className="dialog-actions">
         {onCancel && (

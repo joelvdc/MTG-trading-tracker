@@ -236,6 +236,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
     val players by c.games.players.collectAsStateWithLifecycle(emptyList())
     val friendDecks by c.games.friendDecks.collectAsStateWithLifecycle(emptyList())
     val decks by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(emptyList())
+    val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val pictures by c.settings.trackerPictures.collectAsStateWithLifecycle()
     val tableView by c.settings.trackerTableView.collectAsStateWithLifecycle()
     var setupText by rememberSaveable { mutableStateOf<String?>(null) }
@@ -369,7 +370,7 @@ fun GameSetupScreen(nav: NavController, rematch: Boolean, addPast: Boolean = fal
             taken = s.seats.filterIndexed { j, _ -> j != i }.mapNotNull { it.playerUid }.toSet(),
             takenDecks = s.seats.filterIndexed { j, _ -> j != i }.mapNotNull { it.deckId }.toSet(),
             players = players,
-            decks = decks.filter { !it.retired },
+            decks = decks.filter { it.isActive(ownUser) },
             friendDecks = friendDecks,
             pictures = pictures,
             onDismiss = { picking = null },
