@@ -14,8 +14,9 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-22, after app 1.108)
-- **Newest (2026-11-22):** app 1.108 + website: game seat pickers offer only active decks (`Deck.isActive`, website
+## Right now (2026-11-22, after app 1.109)
+- **Newest (2026-11-22):** app 1.109 + website: the trade binder takes spares from Unsorted, other binders, the sort's
+  levels worst first and the Decks binder last (`TradeBinderPlanner.sourceRank`, website `sourceRank`). Before that, 1.108: game seat pickers offer only active decks (`Deck.isActive`, website
   `MyDeck.followed`); the Sort screen and page cut to labels only (owner: minimal text everywhere); Settings… no longer
   offered inside the settings, Back returns to the suggestions; Decks binder on by default; "Unless ×" no longer
   shows "3," in Danish; the plan is worked out off the main thread. Done by Opus itself. Before that, 1.107: **sort
@@ -147,6 +148,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.109 (2026-11-22): trade binder takes spares from the Decks binder last
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
