@@ -165,10 +165,11 @@ class SyncManager(
     // ---- Connecting ------------------------------------------------------------------------
 
     /** Logs in to an MTG Trader account on the website and syncs with it from now on, instead of Nextcloud. Since 1.79. */
-    suspend fun loginWeb(username: String, password: String) = useWeb(web.login(username, password, device()))
+    suspend fun loginWeb(username: String, password: String, code: String? = null) = useWeb(web.login(username, password, device(), code))
 
     /** Makes an MTG Trader account with an invite code and syncs with it. Since 1.79. */
-    suspend fun registerWeb(invite: String, username: String, password: String) = useWeb(web.register(invite, username, password, device()))
+    suspend fun registerWeb(invite: String, username: String, password: String, email: String) =
+        useWeb(web.register(invite, username, password, email, device()))
 
     /** Forgets Nextcloud (if this phone synced there before 1.82), then the first sync with the account follows ([prepareFirst]). */
     private suspend fun useWeb(login: WebLogin) {

@@ -1,6 +1,7 @@
 package com.mtgtrader
 
 import com.mtgtrader.data.NextcloudClient
+import com.mtgtrader.data.NeedCodeException
 import com.mtgtrader.data.SyncData
 import com.mtgtrader.data.SyncException
 import com.mtgtrader.data.SyncMerge
@@ -23,6 +24,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -48,8 +50,22 @@ class WebAccountTest {
                 .build()
             if (path == "/api/app/login") {
                 val sent = Buffer().also { req.body!!.writeTo(it) }.readUtf8()
+                // "twostep" has two-step login on: the code "123456" or the recovery code "abcd-efgh" too.
+                if (sent.contains("\"username\":\"twostep\"") && sent.contains("\"password\":\"a long password\"")) {
+                    return when {
+                        sent.contains("\"code\":\"123456\"") || sent.contains("\"code\":\"abcd-efgh\"") ->
+                            answer(200, """{"token":"tok999","username":"twostep"}""")
+                        sent.contains("\"code\":") -> answer(400, """{"error":"Wrong code."}""")
+                        else -> answer(200, """{"needCode":true}""")
+                    }
+                }
                 return if (sent.contains("\"password\":\"a long password\"")) answer(200, """{"token":"tok123","username":"joel"}""")
                 else answer(400, """{"error":"Wrong user name or password."}""")
+            }
+            if (path == "/api/app/register") {
+                val sent = Buffer().also { req.body!!.writeTo(it) }.readUtf8()
+                return if (sent.contains("\"invite\":\"INVITE\"")) answer(200, """{"token":"tok123","username":"makename"}""")
+                else answer(400, """{"error":"That invite code doesn't work."}""")
             }
             if (req.header("Authorization") != "Bearer tok123") return answer(401, """{"error":"Log in first."}""")
             if (path == "/api/app/valuehistory") {
@@ -120,6 +136,51 @@ class WebAccountTest {
             assertTrue(e.message!!.contains("no longer accepts"))
         }
     }
+
+    @Test
+    fun asksForTheTwoStepCodeOnlyWhenNeeded() = runBlocking {
+        // No code: the website says the account needs one, and the app asks for it.
+        try {
+            client.login("twostep", "a long password", "Pixel 8", "")
+            fail()
+        } catch (e: NeedCodeException) {
+            assertEquals("Enter the code from your authenticator app.", e.message)
+        }
+        val login = client.login("joel", "a long password", "Pixel 8")
+        assertEquals(WebLogin("joel", "tok123"), login)
+        assertFalse(sent().contains("code"))
+
+        assertEquals(WebLogin("twostep", "tok999"), client.login("twostep", "a long password", "Pixel 8", " 123456 "))
+        assertEquals("123456", jsonOf(sent())["code"]!!.jsonPrimitive.content)
+        // A recovery code has letters.
+        assertEquals(WebLogin("twostep", "tok999"), client.login("twostep", "a long password", "Pixel 8", "abcd-efgh"))
+        // A wrong code: the website's own words.
+        try {
+            client.login("twostep", "a long password", "Pixel 8", "000000")
+            fail()
+        } catch (e: SyncException) {
+            assertEquals("Wrong code.", e.message)
+        }
+    }
+
+    @Test
+    fun registersWithAnEmailAddress() = runBlocking {
+        assertEquals(WebLogin("makename", "tok123"), client.register("INVITE", "makename", "a long password", " joel@example.com ", "Pixel 8"))
+        val sent = jsonOf(sent())
+        assertEquals("joel@example.com", sent["email"]!!.jsonPrimitive.content)
+        assertEquals("Pixel 8", sent["device"]!!.jsonPrimitive.content)
+        try {
+            client.register("NOPE", "makename", "a long password", "joel@example.com", "Pixel 8")
+            fail()
+        } catch (e: SyncException) {
+            assertEquals("That invite code doesn't work.", e.message)
+        }
+    }
+
+    /** The body of the last request sent, as text. */
+    private fun sent() = Buffer().also { site.seen.last().body!!.writeTo(it) }.readUtf8()
+
+    private fun jsonOf(text: String) = Json.parseToJsonElement(text).jsonObject
 
     @Test
     fun settingsOnlyOneSideKnowsAreKept() {

@@ -20,6 +20,9 @@ import java.io.IOException
 /** Logged in to an MTG Trader account on the website: the user name and this phone's device token. Since 1.79. */
 data class WebLogin(val username: String, val token: String)
 
+/** The account has two-step login on: the code from its authenticator app (or a recovery code) is needed too. */
+class NeedCodeException : Exception("Enter the code from your authenticator app.")
+
 /**
  * Talks to the MTG Trader website (mtgtrader.vercel.app) for syncing through a website account
  * instead of Nextcloud: logging in or making an account (with an invite code), and reading and
@@ -32,14 +35,21 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
         .build()
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** Logs this phone in ([device] names it in the website's list of devices). */
-    suspend fun login(username: String, password: String, device: String): WebLogin =
-        account("api/app/login", buildJsonObject { put("username", username.trim()); put("password", password); put("device", device) })
+    /**
+     * Logs this phone in ([device] names it in the website's list of devices). [code]: the two-step code from the
+     * account's authenticator app or a recovery code; without it, an account with two-step login on gets [NeedCodeException].
+     */
+    suspend fun login(username: String, password: String, device: String, code: String? = null): WebLogin =
+        account("api/app/login", buildJsonObject {
+            put("username", username.trim()); put("password", password); put("device", device)
+            if (!code.isNullOrBlank()) put("code", code.trim())
+        })
 
     /** Makes a new account with an invite code from the owner, and logs this phone in. */
-    suspend fun register(invite: String, username: String, password: String, device: String): WebLogin =
+    suspend fun register(invite: String, username: String, password: String, email: String, device: String): WebLogin =
         account("api/app/register", buildJsonObject {
-            put("invite", invite.trim()); put("username", username.trim()); put("password", password); put("device", device)
+            put("invite", invite.trim()); put("username", username.trim()); put("password", password)
+            put("email", email.trim()); put("device", device)
         })
 
     /** Logs this phone out on the website (its token stops working). */
@@ -217,6 +227,8 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
             val o = runCatching { json.parseToJsonElement(r.body!!.string()).jsonObject }.getOrNull()
             val token = o?.get("token")?.jsonPrimitive?.content
             if (r.isSuccessful && token != null) return@call WebLogin(o["username"]?.jsonPrimitive?.content ?: body.str("username"), token)
+            // The account has two-step login on and no code was sent: the app asks for it and logs in again.
+            if (r.isSuccessful && o?.get("needCode")?.jsonPrimitive?.content == "true") throw NeedCodeException()
             val error = o?.get("error")?.jsonPrimitive?.content
             // The website's own words for wrong passwords, used invite codes and the like.
             if (r.code in 400..499 && error != null) throw SyncException(error)

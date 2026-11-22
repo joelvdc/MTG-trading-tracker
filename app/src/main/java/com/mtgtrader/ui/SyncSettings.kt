@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.container
 import com.mtgtrader.data.FirstChoice
 import com.mtgtrader.data.FirstSync
+import com.mtgtrader.data.NeedCodeException
 import com.mtgtrader.data.WebAccountClient
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -137,16 +139,22 @@ private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
     var newAccount by rememberSaveable { mutableStateOf(false) }
     var invite by rememberSaveable { mutableStateOf("") }
     var user by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var again by remember { mutableStateOf("") }
+    var code by rememberSaveable { mutableStateOf("") }
+    var needCode by rememberSaveable { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    val uri = LocalUriHandler.current
     val problem = when {
         newAccount && password.isNotEmpty() && password.length < 10 -> "At least 10 characters."
         newAccount && again.isNotEmpty() && again != password -> "The two passwords don't match."
         else -> null
     }
-    val ready = user.isNotBlank() && password.isNotEmpty() && (!newAccount || (invite.isNotBlank() && password.length >= 10 && again == password))
+    // An @, then a . after it.
+    val emailOk = email.trim().substringAfter("@", "").contains(".")
+    val ready = user.isNotBlank() && password.isNotEmpty() && (!newAccount || (invite.isNotBlank() && emailOk && password.length >= 10 && again == password))
 
     AlertDialog(
         onDismissRequest = { if (!busy) onDone() },
@@ -171,6 +179,14 @@ private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
                     value = user, onValueChange = { user = it; error = null }, label = { Text("User name") },
                     singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth(),
                 )
+                if (newAccount) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = email, onValueChange = { email = it; error = null }, label = { Text("Email") },
+                        singleLine = true, enabled = !busy, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = password, onValueChange = { password = it; error = null },
@@ -189,6 +205,14 @@ private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
                     )
                 }
                 problem?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error) }
+                if (needCode && !newAccount) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = code, onValueChange = { code = it; error = null }, label = { Text("Code") },
+                        singleLine = true, enabled = !busy, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 if (busy) {
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -203,25 +227,36 @@ private fun AccountDialog(switching: Boolean, onDone: () -> Unit) {
                     Text(
                         if (newAccount) "I have an account already" else "Make a new account (with an invite code)",
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { newAccount = !newAccount; error = null }.padding(vertical = 8.dp),
+                        modifier = Modifier.clickable { newAccount = !newAccount; error = null; needCode = false }.padding(vertical = 8.dp),
                     )
+                    if (!newAccount) {
+                        Text(
+                            "Forgot password?",
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { uri.openUri(WebAccountClient.BASE + "forgot") }.padding(vertical = 8.dp),
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
             TextButton(
-                enabled = !busy && ready,
+                enabled = !busy && ready && (!needCode || code.isNotBlank()),
                 onClick = {
                     busy = true
                     scope.launch {
                         // In the app scope, so leaving the screen doesn't stop the first sync.
                         val r = c.appScope.async {
                             runCatching {
-                                if (newAccount) c.sync.registerWeb(invite, user, password) else c.sync.loginWeb(user, password)
+                                if (newAccount) c.sync.registerWeb(invite, user, password, email)
+                                else c.sync.loginWeb(user, password, code.ifBlank { null })
                             }
                         }.await()
                         busy = false
-                        r.onSuccess { onDone() }.onFailure { error = message(it) }
+                        r.onSuccess { onDone() }.onFailure {
+                            // Two-step login: ask for the code in a field instead of showing an error.
+                            if (it is NeedCodeException) needCode = true else error = message(it)
+                        }
                     }
                 },
             ) { Text(if (newAccount) "Make account" else "Log in") }
