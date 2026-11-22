@@ -14,30 +14,19 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-22, after app 1.111)
-- **Newest (2026-11-22):** app 1.111 + website: signed/altered copies in Unsorted are sorted like any other (pinned
-  only once in a binder; shared case in `collsort-cases.json`), and Sort → Done goes back to the collection. Before
-  that, app 1.110: Sort → Done (and Trade binder → Apply) look up each card's stacks with one
-  query (`CollectionDao.stacksOf`) instead of loading the whole collection per move, show "Moving…", and run on the
-  app scope so leaving the screen doesn't cancel them (the owner's first sort of 1,882 deck moves seemed dead). Before
-  that, app 1.109 + website: the trade binder takes spares from Unsorted, other binders, the sort's
-  levels worst first and the Decks binder last (`TradeBinderPlanner.sourceRank`, website `sourceRank`). Before that, 1.108: game seat pickers offer only active decks (`Deck.isActive`, website
-  `MyDeck.followed`); the Sort screen and page cut to labels only (owner: minimal text everywhere); Settings… no longer
-  offered inside the settings, Back returns to the suggestions; Decks binder on by default; "Unless ×" no longer
-  shows "3," in Danish; the plan is worked out off the main thread. Done by Opus itself. Before that, 1.107: **sort
-  with your decks** (active decks, Decks binder, 1–6 levels, copies kept together, deck filter/sort/column).
-- **Waiting on the owner:** set the Archidekt username (Settings → Decks) if it isn't set yet, then open Sort →
-  Settings… on the phone or website: save once (the Decks binder is ticked by default), check the levels, and try it with the real collection (tests
-  and screenshot tests used made-up cards only). Still from before: try 1.103's scan price and "Ordered"; green light
-  for the ✕ delete column in the website's wishlist table; Compare with a real Archidekt link; the email to
-  support@moxfield.com; asking EDHREC/Archidekt for permission (Collecting, "Outside services' terms").
-- **Expected to look odd:** the first sort after adding a Decks binder moves every copy your decks use at once (moves
-  into and out of Decks don't count against the weekly limit). Without a username, Archidekt decks count as followed
-  and hold nothing. Sort lines show the price twice (column and reason).
-- **Earlier, still true:** a phone on 1.102 or older pauses syncing until updated (sync format 16). AI primers: the
-  owner's account picks Mistral or OpenCode Go; changing `SESSION_SECRET` makes saved AI keys unreadable.
-  `npm test` prints harmless "Failed to load source map" lines.
-- **GitHub checks:** a red Tests mark after a push to `main` means fix that first.
+## Right now (2026-11-22, after app 1.112)
+- **Newest (2026-11-22):** app 1.112 + website: "Forgot password?" by email (`/forgot`, `/reset`, link for an hour, 3 an
+  hour), email required at sign-up (website and app; the weekly email's address, weekly off by default), optional
+  two-step login (Settings → Two-step login, TOTP + 10 recovery codes, asked at login on website and app; the owner's
+  reset turns it off). Tables `password_resets`, `two_factor`; npm `qrcode`. Built by DeepSeek through Mistral.
+  Before that: 1.111 signed cards leave Unsorted, Done goes back; 1.110 fast Sort Done / trade Apply; 1.109 trade binder
+  takes Decks copies last; 1.108 active decks only in seat pickers, minimal Sort screen; 1.107 sort with your decks.
+- **Waiting on the owner:** add your email under Settings → Email (website) if it isn't there and confirm it; try
+  "Forgot password?" once; optionally turn on two-step login. Still from before: try the sort with the real collection,
+  1.103's scan price and "Ordered"; green light for the ✕ delete column in the website's wishlist table; Compare with a
+  real Archidekt link; the email to support@moxfield.com; asking EDHREC/Archidekt for permission.
+- **Expected to look odd:** older app versions (before 1.112) can't log in to an account with two-step login on, nor
+  make accounts. The test emulator was wiped on 2026-11-22 (fresh phone: install the release APK again to test).
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -156,6 +145,7 @@ for later:
 - 1.109 (2026-11-22): trade binder takes spares from the Decks binder last
 - 1.110 (2026-11-22): Sort Done and trade binder Apply fast, show progress, survive leaving the screen
 - 1.111 (2026-11-22): signed cards leave Unsorted in the sort; Done goes back to the collection
+- 1.112 (2026-11-22): forgot password by email, email at sign-up, optional two-step login
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links

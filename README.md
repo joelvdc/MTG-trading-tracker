@@ -23,7 +23,8 @@ and the website stay in sync through your MTG Trader account.
 
 The app works on its own, without an account: it backs up daily to the phone or a folder you choose (let the Nextcloud
 app auto-upload that folder to keep the backups on Nextcloud). An **MTG Trader account** adds sync between phones, the
-website and nightly backups; accounts need an invite code for now.
+website and nightly backups; accounts need an invite code and an email address (for "Forgot password?"), and can
+turn on two-step login with an authenticator app.
 
 ## What it does
 **Collection**
