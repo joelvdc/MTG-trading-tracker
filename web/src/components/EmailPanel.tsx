@@ -14,7 +14,7 @@ interface Settings {
   lastSent: number | null;
 }
 
-/** Settings → Weekly email: the address (confirmed by a link), the weekday, on or off, and a test email. */
+/** Settings → Email: the account's own email (also for password resets) and, below it, the weekly email. */
 export function EmailPanel() {
   const [loaded, setLoaded] = useState<{ settings: Settings | null; mailReady: boolean } | null>(null);
   const [address, setAddress] = useState("");
@@ -71,20 +71,17 @@ export function EmailPanel() {
   const changed = !s || s.address !== address.trim() || s.day !== day || s.enabled !== enabled;
   return (
     <section className="card stack">
-      <h2 className="section-head">Weekly email</h2>
-      <p className="muted small">
-        Once a week: your collection&apos;s value against a week ago, the cards you own that went up or down most, wishlist cards that reached
-        your alert price, and changes in your decks (new game changers, legality problems). In your price source and currency.
-      </p>
-      {loaded && !loaded.mailReady && <div className="bar warn">Sending email isn&apos;t set up on the website yet. You can save your address already.</div>}
+      <h2 className="section-head">Email</h2>
+      {loaded && !loaded.mailReady && <div className="bar warn">Sending email isn&apos;t set up on the website yet.</div>}
       {error && <div className="bar error">{error}</div>}
       {note && <div className="bar">{note}</div>}
       <label className="stack tight">
-        <span className="small">Email address</span>
+        <span className="small">Your email</span>
         <input type="email" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="you@example.com" autoComplete="email" />
       </label>
+      <h3 className="mini-head">Weekly email</h3>
       <label className="stack tight">
-        <span className="small">Day of the week (it arrives in the morning)</span>
+        <span className="small">Day</span>
         <select value={day} onChange={(e) => setDay(Number(e.target.value))}>
           {DAY_NAMES.map((n, i) => (
             <option key={n} value={i}>
@@ -99,7 +96,7 @@ export function EmailPanel() {
       </label>
       {s && (
         <p className="muted small">
-          {s.confirmed ? "Address confirmed." : "Waiting for you to click the link in the confirmation email."}
+          {s.confirmed ? "Address confirmed." : "Address not confirmed."}
           {s.lastSent ? ` Last sent ${formatDate(s.lastSent)}.` : ""}
         </p>
       )}
@@ -109,17 +106,12 @@ export function EmailPanel() {
         </button>
         {s && !s.confirmed && (
           <button className="btn" disabled={busy} onClick={() => act({ action: "save", address: s.address, day: s.day, enabled: s.enabled })}>
-            Send the confirmation again
+            Send confirmation again
           </button>
         )}
         {s?.confirmed && (
           <button className="btn" disabled={busy || !loaded?.mailReady} onClick={() => act({ action: "test" })}>
-            Send a test email now
-          </button>
-        )}
-        {s && (
-          <button className="btn" disabled={busy} onClick={() => window.confirm("Forget the email address and stop the weekly email?") && act({ action: "remove" })}>
-            Remove
+            Send a test email
           </button>
         )}
       </div>

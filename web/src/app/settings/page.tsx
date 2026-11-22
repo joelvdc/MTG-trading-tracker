@@ -9,6 +9,7 @@ import { SharedLinksPanel } from "@/components/SharePanel";
 import { EmailPanel } from "@/components/EmailPanel";
 import { AiKeyPanel } from "@/components/AiKeyPanel";
 import { ThemePanel } from "@/components/ThemePanel";
+import { TwoFactorPanel } from "@/components/TwoFactorPanel";
 import { api, peek } from "@/components/api";
 
 interface Session {
@@ -50,6 +51,7 @@ export default function SettingsPage() {
           <AiKeyPanel />
           <SharedLinksPanel />
           <BackupsPanel />
+          <TwoFactorPanel />
           <AccountPanel onLogout={logout} />
         </div>
       </main>

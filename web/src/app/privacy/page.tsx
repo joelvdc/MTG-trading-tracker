@@ -63,6 +63,13 @@ export default function PrivacyPage() {
           <strong>Your account:</strong> your user name, your password (only as a scrambled hash, never the password itself) and the devices you are logged in on.
         </li>
         <li>
+          <strong>Your email:</strong> the address on your account, used to confirm it, for password resets and, if you switch it on, the weekly email.
+        </li>
+        <li>
+          <strong>Two-step login:</strong> if you switch it on, a secret for the code your authenticator app makes, and the recovery codes (scrambled). A password reset
+          turns two-step login off.
+        </li>
+        <li>
           <strong>Your MTG Trader data:</strong> the sync file the app and the website share (collection, binders, wishlist, decks, trades, games, scans and app settings),
           with up to 10 daily backup copies.
         </li>
@@ -70,8 +77,7 @@ export default function PrivacyPage() {
           <strong>Prices and history:</strong> your collection&apos;s value per day, each card&apos;s price per day (up to a year), and the wishlist price alerts that were reached.
         </li>
         <li>
-          <strong>Website settings:</strong> your saved views, your shared links (and how often each was opened), and, if you switch it on, the weekly email&apos;s address and
-          day.
+          <strong>Website settings:</strong> your saved views, your shared links (and how often each was opened), and, if you switch it on, the weekly email&apos;s day.
         </li>
         <li>
           <strong>Your AI key:</strong> if you add one under Settings → AI key, it is stored encrypted, used only for your own requests and never shown

@@ -142,8 +142,7 @@ export function AccountPanel({ onLogout }: { onLogout: () => void }) {
         <section className="card stack">
           <h2 className="section-head">Accounts (owner)</h2>
           <p className="small">
-            Someone new needs an invite code to make an account (here or in the app). Each code works once. A forgotten password: reset it here and pass the one-time
-            password on; they change it under Settings.
+            Each invite code works once. A password reset gives a one-time password (shown once) and turns off two-step login for that account.
           </p>
           <ul className="plain-list cat-list">
             {info.accounts?.map((a) => (
