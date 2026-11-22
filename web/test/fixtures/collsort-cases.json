@@ -2767,5 +2767,106 @@
    "budget": -1,
    "deckShort": 1
   }
+ },
+ {
+  "name": "a signed copy in Unsorted is placed once, one in a level stays",
+  "input": {
+   "stacks": [
+    {
+     "key": "s",
+     "name": "Signed",
+     "place": "l2",
+     "copies": 1,
+     "price": 10.0,
+     "rank": null,
+     "fixed": true
+    },
+    {
+     "key": "t",
+     "name": "Signed in Unsorted",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 20.0,
+     "rank": null,
+     "fixed": true
+    },
+    {
+     "key": "u",
+     "name": "Unsigned",
+     "place": "unsorted",
+     "copies": 1,
+     "price": 9.0,
+     "rank": null,
+     "fixed": false
+    }
+   ],
+   "deckNeeds": {},
+   "rules": {
+    "levels": [
+     {
+      "key": "l1",
+      "max": 1,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l2",
+      "max": 0,
+      "minPrice": 0.5
+     },
+     {
+      "key": "l3",
+      "max": 0,
+      "minPrice": null
+     }
+    ],
+    "mix": 50,
+    "weekly": 10,
+    "together": "off",
+    "outlierRatio": 3,
+    "outlierGap": 5,
+    "deckCopies": "best"
+   },
+   "skips": [],
+   "log": [],
+   "settled": false,
+   "today": 20000,
+   "decksPlace": false,
+   "ignoreCap": false
+  },
+  "expected": {
+   "moves": [
+    {
+     "key": "t",
+     "name": "Signed in Unsorted",
+     "from": "unsorted",
+     "to": "l1",
+     "copies": 1,
+     "price": 20,
+     "score": 20,
+     "reason": "\u20ac20.00"
+    },
+    {
+     "key": "u",
+     "name": "Unsigned",
+     "from": "unsorted",
+     "to": "l3",
+     "copies": 1,
+     "price": 9,
+     "score": 9,
+     "reason": "\u20ac9.00"
+    }
+   ],
+   "after": {
+    "l1": 1,
+    "l2": 1,
+    "l3": 1,
+    "decks": 0,
+    "unsorted": 0
+   },
+   "heldBack": 0,
+   "weekUsed": 0,
+   "budget": -1,
+   "deckShort": 0
+  }
  }
 ]

@@ -170,11 +170,12 @@ object CollectionSortPlanner {
         for (s in stacks) {
             if (s.place == OTHER) continue
             repeat(max(0, s.copies)) {
-                units += Unit(s.key, s.name, s.place, s.price, s.rank, score(s.price, s.rank, rules.mix), s.fixed)
+                // A signed or altered copy in Unsorted is placed like any other, once; in a binder it stays put (1.111).
+                units += Unit(s.key, s.name, s.place, s.price, s.rank, score(s.price, s.rank, rules.mix), s.fixed && s.place != UNSORTED_KEY)
             }
         }
 
-        // Pinned: the signed and altered copies stay where they are.
+        // Pinned: the signed and altered copies stay where they are (out of Unsorted, since 1.111).
         val pinned = LinkedHashMap<Unit, String>()
         for (u in units) if (u.fixed) pinned[u] = u.place
 

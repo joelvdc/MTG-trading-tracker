@@ -417,10 +417,10 @@ export function planSort(input: SortInput, moneyFormat: MoneyFormat = euroMoney)
     const price = s.price ?? null;
     const rank = s.rank ?? null;
     const score = sortScore(price, rank, rules.mix);
-    for (let i = Math.max(0, Math.floor(s.copies)); i > 0; i--) units.push({ key: s.key, name: s.name, place: s.place, price, rank, score, fixed: s.fixed === true });
+    for (let i = Math.max(0, Math.floor(s.copies)); i > 0; i--) units.push({ key: s.key, name: s.name, place: s.place, price, rank, score, fixed: s.fixed === true && s.place !== UNSORTED_KEY });
   }
 
-  // Pinned: the signed and altered copies stay where they are.
+  // Pinned: the signed and altered copies stay where they are; one in Unsorted is placed like any other, once (app 1.111).
   const pinned = new Map<Unit, string>();
   for (const u of units) if (u.fixed) pinned.set(u, u.place);
 

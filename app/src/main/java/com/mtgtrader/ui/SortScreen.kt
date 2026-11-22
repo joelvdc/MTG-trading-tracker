@@ -195,16 +195,13 @@ fun SortScreen(nav: NavController) {
                                     val declined = moves.filter { it.rowKey in unticked }
                                     // Runs on the app's scope, so leaving the screen doesn't cancel (and roll back) the moves (1.110).
                                     val done = runCatching { c.appScope.async { c.sorter.apply(accepted, declined) }.await() }
-                                    applying = false
                                     if (done.isFailure) {
+                                        applying = false
                                         snackbar.showSnackbar("Couldn't move the cards")
                                         return@launch
                                     }
-                                    snackbar.showSnackbar(
-                                        if (accepted.isEmpty()) "Nothing moved; ${declined.size} move(s) won't be suggested again"
-                                        else "Moved ${accepted.sumOf { it.copies }} card(s)" + if (declined.isNotEmpty()) ", declined ${declined.size}" else "",
-                                    )
-                                    reload++
+                                    // Back to the collection once the cards are moved, without working out the suggestions again (1.111).
+                                    nav.safePopBackStack()
                                 }
                             },
                             enabled = !applying,
