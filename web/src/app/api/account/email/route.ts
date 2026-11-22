@@ -22,7 +22,8 @@ export async function GET() {
 
 /**
  * {action: "save", address, day, enabled}: keeps the settings; a new address gets a confirmation email first.
- * {action: "test"}: sends this week's email now (to a confirmed address). {action: "remove"}: forgets it all.
+ * {action: "test"}: sends this week's email now (to a confirmed address). {action: "remove"}: turns the weekly email
+ * off; the address stays (it's the account's, for resets).
  */
 export async function POST(req: Request) {
   if (!fromOurPages(req)) return json({ error: "Not allowed." }, 403);
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     const body = (await req.json().catch(() => ({}))) as { action?: string; address?: string; day?: number; enabled?: boolean };
     const had = await store.emailSettings(a.accountId);
     if (body.action === "remove") {
-      await store.setEmailSettings(a.accountId, null);
+      if (had) await store.setEmailSettings(a.accountId, { ...had, enabled: false });
       return json({ ok: true });
     }
     if (body.action === "save") {

@@ -240,4 +240,61 @@ describe.each([
     await s.setSavedViews(a.id, []);
     expect(await s.savedViewAccounts()).toBe(0);
   });
+
+  it("two-step login", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    const other = (await s.create("kid", "h", false, NOW))!;
+    expect(await s.twoFactor(a.id)).toBeNull();
+    const tf = { sealedSecret: "sealed", enabled: true, recovery: ["r1", "r2"], lastStep: 61 };
+    await s.setTwoFactor(a.id, tf);
+    expect(await s.twoFactor(a.id)).toEqual(tf);
+    await s.setTwoFactor(a.id, { ...tf, enabled: false, recovery: [], lastStep: 0 });
+    expect(await s.twoFactor(a.id)).toEqual({ sealedSecret: "sealed", enabled: false, recovery: [], lastStep: 0 });
+    await s.setTwoFactor(other.id, tf);
+    // A code used once moves the step on.
+    await s.setTwoFactor(a.id, { ...tf, lastStep: 62 });
+    expect((await s.twoFactor(a.id))!.lastStep).toBe(62);
+    expect((await s.twoFactor(other.id))!.lastStep).toBe(61);
+    await s.setTwoFactor(a.id, null);
+    expect(await s.twoFactor(a.id)).toBeNull();
+    expect((await s.twoFactor(other.id))!.sealedSecret).toBe("sealed");
+  });
+
+  it("an account's email address: rows, finding it, and the reset links", async () => {
+    const s = await make();
+    const a = (await s.create("joel", "h", true, NOW))!;
+    const other = (await s.create("kid", "h", false, NOW))!;
+    const mail = (address: string, confirmed: boolean) => ({ address, confirmed, enabled: false, day: 0, confirmToken: "t", stopToken: "s", lastSent: null, state: {} });
+    expect(await s.accountsByEmail("a@b.cc")).toEqual([]);
+    await s.setEmailSettings(a.id, mail("Shared@Example.com", false));
+    await s.setEmailSettings(other.id, mail("shared@example.com", true));
+    // Only confirmed addresses are found, and the case doesn't matter.
+    expect(await s.accountsByEmail("shared@EXAMPLE.com")).toEqual([other.id]);
+    await s.setEmailSettings(a.id, mail("Shared@Example.com", true));
+    expect(await s.accountsByEmail("shared@example.com")).toEqual([a.id, other.id]);
+    expect(await s.accountsByEmail(" ")).toEqual([]);
+
+    expect(await s.passwordResetCount(a.id, 0)).toBe(0);
+    await s.addPasswordReset("h1", a.id, NOW);
+    await s.addPasswordReset("h2", a.id, NOW + 1000);
+    expect(await s.passwordResetCount(a.id, 0)).toBe(2);
+    expect(await s.passwordResetCount(a.id, NOW + 1000)).toBe(1);
+    expect(await s.usePasswordReset("h1", NOW + 2000, 3_600_000)).toBe(a.id);
+    // Once only.
+    expect(await s.usePasswordReset("h1", NOW + 3000, 3_600_000)).toBeNull();
+    expect(await s.usePasswordReset("nope", NOW + 3000, 3_600_000)).toBeNull();
+    // Too old for the hour.
+    expect(await s.usePasswordReset("h2", NOW + 1000 + 3_600_001, 3_600_000)).toBeNull();
+    expect(await s.usePasswordReset("h2", NOW + 1000 + 3_600_000, 3_600_000)).toBe(a.id);
+    // A new link deletes the rows more than a day old (used or not); the new one always stays.
+    await s.addPasswordReset("old1", a.id, NOW + 3001);
+    await s.addPasswordReset("old2", a.id, NOW + 86_400_000 + 3000);
+    // The two from before are more than a day older than the last link: gone; the used one is still within a day.
+    expect(await s.passwordResetCount(a.id, 0)).toBe(2);
+    await s.addPasswordReset("new", a.id, NOW + 86_400_000 + 3002);
+    expect(await s.passwordResetCount(a.id, 0)).toBe(2);
+    await s.usePasswordReset("new", NOW + 86_400_000 + 3002, 86_400_000);
+    expect(await s.usePasswordReset("new", NOW + 86_400_000 + 3002, 86_400_000)).toBeNull();
+  });
 });

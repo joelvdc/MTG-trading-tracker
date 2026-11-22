@@ -129,3 +129,52 @@ export function confirmMail(username: string, address: string, token: string, da
 </body></html>`;
   return { subject: "Confirm your MTG Trader weekly email", text, html };
 }
+
+/** The email address asked at sign-up: the same address the weekly email would go to, once confirmed. */
+export function accountConfirmMail(username: string, address: string, token: string) {
+  const link = confirmUrl(token);
+  const who = username.replace(/[<>&"]/g, "");
+  const to = address.replace(/[<>&"]/g, "");
+  const text = [
+    `Hello ${username},`,
+    "",
+    `Confirm that ${address} is your email address for MTG Trader:`,
+    link,
+    "",
+    "The weekly email (if you turn it on in Settings) goes to this address, and so does a password reset if you forget yours.",
+    "",
+    "If you didn't ask for this, just ignore this email.",
+  ].join("\n");
+  const html = `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;color:#1f1a2e;font-size:15px;line-height:1.45;max-width:560px;margin:0 auto;padding:20px">
+<p>Hello ${who},</p>
+<p>Confirm that ${to} is your email address for MTG Trader:</p>
+<p><a href="${link}" style="background:#5b3fa0;color:#fff;padding:9px 16px;border-radius:6px;text-decoration:none">Confirm</a></p>
+<p>The weekly email (if you turn it on in Settings) goes to this address, and so does a password reset if you forget yours.</p>
+<p style="color:#6b6478;font-size:12px">If you didn't ask for this, just ignore this email.</p>
+</body></html>`;
+  return { subject: "Confirm your email for MTG Trader", text, html };
+}
+
+/** "Forgot password?" (or Settings → password): a link that works once, for one hour. */
+export function resetMail(username: string, token: string) {
+  const link = `${siteUrl()}/reset?t=${encodeURIComponent(token)}`;
+  const who = username.replace(/[<>&"]/g, "");
+  const text = [
+    `Hello ${username},`,
+    "",
+    "Someone asked to set a new password for your MTG Trader account. To do it, open this link:",
+    link,
+    "",
+    "The link works once, for one hour. It logs out every device (the website and the app) once the new password is set; two-step login stays on.",
+    "",
+    "If you didn't ask for this, just ignore this email: nothing changes.",
+  ].join("\n");
+  const html = `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;color:#1f1a2e;font-size:15px;line-height:1.45;max-width:560px;margin:0 auto;padding:20px">
+<p>Hello ${who},</p>
+<p>Someone asked to set a new password for your MTG Trader account. To do it, open this link:</p>
+<p><a href="${link}" style="background:#5b3fa0;color:#fff;padding:9px 16px;border-radius:6px;text-decoration:none">Set a new password</a></p>
+<p>The link works once, for one hour. It logs out every device (the website and the app) once the new password is set; two-step login stays on.</p>
+<p style="color:#6b6478;font-size:12px">If you didn't ask for this, just ignore this email: nothing changes.</p>
+</body></html>`;
+  return { subject: "Reset your MTG Trader password", text, html };
+}

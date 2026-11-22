@@ -13,7 +13,10 @@ export async function GET(req: Request) {
     if (!found) return emailPage("Link not valid", "This confirmation link isn't valid any more. It may have been used already, or a newer address was saved since.", 404);
     const s = { ...found.settings, confirmed: true, confirmToken: null };
     await store.setEmailSettings(found.accountId, s);
+    // Asked at sign-up (and Settings): the weekly email was off, so this confirms the address only.
+    if (!found.settings.enabled) return emailPage("Confirmed", `Your email address ${s.address} is confirmed.`);
     return emailPage("Confirmed", `The weekly email will go to ${s.address} every ${DAY_NAMES[s.day]} morning. Change or stop it any time in Settings, or with the link in every email.`);
+
   } catch (e) {
     console.error(e);
     return emailPage("Something went wrong", "Try the link again in a moment.", 500);

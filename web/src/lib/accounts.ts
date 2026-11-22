@@ -87,6 +87,18 @@ export interface AiKey {
   savedAt: number;
 }
 
+/** An account's two-step login (Settings → Two-step login), kept in one JSONB row. */
+export interface TwoFactor {
+  /** The base32 TOTP secret, sealed with SESSION_SECRET (like the AI keys). */
+  sealedSecret: string;
+  /** False while being set up (the first code not confirmed yet). */
+  enabled: boolean;
+  /** tokenHash() of each unused recovery code. */
+  recovery: string[];
+  /** The last TOTP time step accepted (a code works once). */
+  lastStep: number;
+}
+
 export interface AccountStore {
   count(): Promise<number>;
   create(username: string, passwordHash: string, admin: boolean, now: number): Promise<UserAccount | null>;
@@ -188,6 +200,18 @@ export interface AccountStore {
   setSavedViews(accountId: number, views: unknown[]): Promise<void>;
   /** How many accounts have saved views (the health check; also shows the table is there). */
   savedViewAccounts(): Promise<number>;
+  /** The account's two-step login (an authenticator app); null when it has none. */
+  twoFactor(accountId: number): Promise<TwoFactor | null>;
+  /** Saves or replaces it; null removes it. */
+  setTwoFactor(accountId: number, tf: TwoFactor | null): Promise<void>;
+  /** Account ids whose email (email_settings) is [address], compared without case, and confirmed. */
+  accountsByEmail(address: string): Promise<number[]>;
+  /** A "Forgot password?" link (its token's hash); also deletes rows older than a day. */
+  addPasswordReset(tokenHash: string, accountId: number, now: number): Promise<void>;
+  /** How many reset links the account got since [since]. */
+  passwordResetCount(accountId: number, since: number): Promise<number>;
+  /** Marks the link used if it exists, is unused and newer than [maxAgeMs]; its account id, or null. One SQL UPDATE … RETURNING. */
+  usePasswordReset(tokenHash: string, now: number, maxAgeMs: number): Promise<number | null>;
 }
 
 /** What a shared link opens (the share pages, /s/<code>). */
@@ -323,6 +347,9 @@ export function memoryStore(): AccountStore {
   const emails = new Map<number, EmailSettings>();
   const priceDays = new Map<number, Map<string, Record<string, number>>>();
   const views = new Map<number, unknown[]>();
+  const twoFactors = new Map<number, TwoFactor>();
+  const resets = new Map<string, { accountId: number; createdAt: number; usedAt: number | null }>();
+  const copy2fa = (t: TwoFactor): TwoFactor => ({ ...t, recovery: [...t.recovery] });
   const copyEmail = (s: EmailSettings): EmailSettings => ({ ...s, state: JSON.parse(JSON.stringify(s.state)) });
   const plain = (a: UserAccount): UserAccount => ({ id: a.id, username: a.username, admin: a.admin, createdAt: a.createdAt });
   const dev = (d: Device & { tokenHash: string }): Device => ({ id: d.id, accountId: d.accountId, name: d.name, createdAt: d.createdAt, lastUsed: d.lastUsed });
@@ -332,7 +359,7 @@ export function memoryStore(): AccountStore {
       if (accounts.some((a) => a.username === username)) return null;
       const a = { id: accounts.length + 1, username, admin, createdAt: now, passwordHash, failures: 0, lockedUntil: 0 };
       accounts.push(a);
-      return plain(a);
+      return { ...a };
     },
     byName: async (username) => {
       const a = accounts.find((x) => x.username === username);
@@ -523,6 +550,30 @@ export function memoryStore(): AccountStore {
     savedViews: async (id) => JSON.parse(JSON.stringify(views.get(id) ?? [])),
     setSavedViews: async (id, v) => void (v.length ? views.set(id, JSON.parse(JSON.stringify(v))) : views.delete(id)),
     savedViewAccounts: async () => views.size,
+    twoFactor: async (id) => {
+      const t = twoFactors.get(id);
+      return t ? copy2fa(t) : null;
+    },
+    setTwoFactor: async (id, tf) => {
+      if (tf) twoFactors.set(id, copy2fa(tf));
+      else twoFactors.delete(id);
+    },
+    accountsByEmail: async (address) => {
+      const want = address.trim().toLowerCase();
+      if (!want) return [];
+      return [...emails.entries()].filter(([, s]) => s.confirmed && s.address.trim().toLowerCase() === want).map(([accountId]) => accountId);
+    },
+    addPasswordReset: async (hash, accountId, now) => {
+      for (const [k, r] of resets) if (r.createdAt < now - 86_400_000) resets.delete(k);
+      resets.set(hash, { accountId, createdAt: now, usedAt: null });
+    },
+    passwordResetCount: async (id, since) => [...resets.values()].filter((r) => r.accountId === id && r.createdAt >= since).length,
+    usePasswordReset: async (hash, now, maxAgeMs) => {
+      const r = resets.get(hash);
+      if (!r || r.usedAt !== null || r.createdAt < now - maxAgeMs) return null;
+      r.usedAt = now;
+      return r.accountId;
+    },
     priceDayStats: async () => {
       const days = [...priceDays.values()].flatMap((m) => [...m.keys()]).sort();
       return { oldest: days[0] ?? null, newest: days[days.length - 1] ?? null, rows: days.length };
@@ -640,6 +691,16 @@ const SCHEMA = [
      provider TEXT NOT NULL,
      sealed_key TEXT NOT NULL,
      saved_at BIGINT NOT NULL)`,
+  // 2026-11-22: optional two-step login (an authenticator app; the secret sealed with SESSION_SECRET) and the
+  // "Forgot password?" links (one use, an hour).
+  `CREATE TABLE IF NOT EXISTS two_factor (
+     account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+     data JSONB NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS password_resets (
+     token_hash TEXT PRIMARY KEY,
+     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+     created_at BIGINT NOT NULL,
+     used_at BIGINT)`,
 ];
 
 export type Row = Record<string, unknown>;
@@ -949,6 +1010,32 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
       else await q("INSERT INTO saved_views (account_id, views) VALUES ($1, $2::jsonb) ON CONFLICT (account_id) DO UPDATE SET views = EXCLUDED.views", [id, JSON.stringify(v)]);
     },
     savedViewAccounts: async () => num((await q("SELECT COUNT(*) AS n FROM saved_views"))[0].n),
+    twoFactor: async (id) => {
+      const r = (await q("SELECT data FROM two_factor WHERE account_id = $1", [id]))[0];
+      return r ? (r.data as TwoFactor) : null;
+    },
+    setTwoFactor: async (id, tf) =>
+      void (tf
+        ? await q("INSERT INTO two_factor (account_id, data) VALUES ($1, $2::jsonb) ON CONFLICT (account_id) DO UPDATE SET data = EXCLUDED.data", [id, JSON.stringify(tf)])
+        : await q("DELETE FROM two_factor WHERE account_id = $1", [id])),
+    accountsByEmail: async (address) => {
+      const want = address.trim().toLowerCase();
+      if (!want) return [];
+      return (await q("SELECT account_id FROM email_settings WHERE lower(settings->>'address') = $1 AND (settings->>'confirmed')::boolean ORDER BY account_id", [want])).map((r) =>
+        num(r.account_id),
+      );
+    },
+    addPasswordReset: async (hash, accountId, now) => {
+      await q("INSERT INTO password_resets (token_hash, account_id, created_at) VALUES ($1, $2, $3)", [hash, accountId, now]);
+      await q("DELETE FROM password_resets WHERE created_at < $1::bigint", [now - 86_400_000]);
+    },
+    passwordResetCount: async (id, since) => num((await q("SELECT COUNT(*) AS n FROM password_resets WHERE account_id = $1 AND created_at >= $2", [id, since]))[0].n),
+    usePasswordReset: async (hash, now, maxAgeMs) => {
+      const r = (
+        await q("UPDATE password_resets SET used_at = $2 WHERE token_hash = $1 AND used_at IS NULL AND created_at >= $2::bigint - $3::bigint RETURNING account_id", [hash, now, maxAgeMs])
+      )[0];
+      return r ? num(r.account_id) : null;
+    },
     priceDayStats: async () => {
       const r = (await q("SELECT MIN(day) AS oldest, MAX(day) AS newest, COUNT(*) AS n FROM card_price_days"))[0];
       return { oldest: r.oldest == null ? null : String(r.oldest), newest: r.newest == null ? null : String(r.newest), rows: num(r.n) };

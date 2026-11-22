@@ -16,13 +16,19 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
     with it through `/api/sync` (below).
   - **Nextcloud** is only a backup place since 2026-11-08 (no longer a way to log in; an old Nextcloud login cookie
     counts as logged out). The code that read the file straight from Nextcloud is still in `lib/store.ts` but unused.
-- **Accounts:** user name and password (scrypt), 15 minutes' wait after 8 wrong passwords. The owner's account was made
-  from the old Nextcloud login (2026-11-06; that way in is gone). Anyone else needs an invite code from the owner (each
-  works once). Forgotten password: the owner resets it under Settings and passes the one-time password on; that logs out every
-  device of that account. Each browser and phone is a device with its own random token (only its SHA-256 is stored);
-  Settings lists them and can log them out.
-- **Phone API** (Bearer token, no cookies): `POST /api/app/login` and `/api/app/register` (`{username, password,
-  device[, invite]}` → `{token, username}`), `POST /api/app/logout`. `GET /api/sync` answers the gzip file with
+- **Accounts:** user name and password (scrypt), 15 minutes' wait after 8 wrong passwords (a wrong two-step code counts
+  too). An email address is asked at sign-up and confirmed by a link (the same address the weekly email uses; the weekly
+  email itself starts off and is turned on in Settings). The owner's account was made from the old Nextcloud login
+  (2026-11-06; that way in is gone). Anyone else needs an invite code from the owner (each works once). **Forgot
+  password?** (`/forgot`): a link by email to a confirmed address (or the user name), for one hour, at most 3 an hour,
+  and the page says the same whether there is an account or not; the new password works once and logs out every device
+  of that account (the owner can still reset one under Settings and pass the one-time password on, which also turns
+  two-step login off). **Two-step login** (Settings → Two-step login): an authenticator app's codes (RFC 6238, the
+  secret kept sealed with `SESSION_SECRET`), 10 recovery codes each to use once; asked at login on the website and in the
+  app (`{needCode: true}` first when the password was right), and the owner's reset turns it off. Each browser and phone
+  is a device with its own random token (only its SHA-256 is stored); Settings lists them and can log them out.
+- **Phone API** (Bearer token, no cookies): `POST /api/app/login` and `/api/app/register` (`{username, password, email,
+  code?, device[, invite]}` → `{token, username}`, or `{needCode: true}` with two-step login on), `POST /api/app/logout`. `GET /api/sync` answers the gzip file with
   `ETag: "v<n>"` (304 for a matching `If-None-Match`, 404 when the account has none yet); `PUT /api/sync` saves it with
   `If-Match: "v<n>"` or `If-None-Match: *` (412 if it changed meanwhile, as on Nextcloud; 428 with neither header), 201/204 with the new ETag.
   Uploads must be a readable sync file, at most 20 MB.
@@ -32,7 +38,7 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   Nextcloud backup → **Connect Nextcloud** (`/api/account/backup`): Nextcloud's Login Flow v2 in a new tab gives the
   website an app password, kept sealed for the nightly job only (a user in `ALLOWED_USERS`); the folder is made if
   needed and today's copy is written at once. **Stop the Nextcloud copy** forgets it and revokes the app password.
-- **Login:** an account's user name and password only. The session lives in an encrypted cookie (AES-256-GCM with
+- **Login:** an account's user name and password (and the two-step code when it's on). The session lives in an encrypted cookie (AES-256-GCM with
   `SESSION_SECRET`, 30 days). Logging out removes the device.
 - **Prices:** a daily cron (`/api/cron/prices`, 05:30 UTC) shrinks Cardmarket's `price_guide_1.json` and the ECB rates
   into a private Vercel Blob (`prices/latest.json.gz`). Card search uses Scryfall.
