@@ -64,15 +64,16 @@ Owner: "would it be possible for the app/website to import decks from moxfield? 
 Owner's idea: a copy of the decklist on a site Commander Salt accepts. Commander Salt itself only takes a deck link
 (`POST api.commandersalt.com/decks?url=`; its site code has no pasted-list import). The 13 sites it accepts, checked
 2026-11-22 for a way for the app/website to put a deck there:
-- **Archidekt**: account needed; no official write API, but the site's own (unofficial) endpoints create and edit
-  decks with the same JWT login the app already uses for collection sync (1.21). Most practical: one reusable
-  "MTG Trader scoring" deck in the user's own Archidekt account, overwritten with the local deck's list, then scored.
-  Needs an Archidekt account per user; unofficial API (same risk as collection sync).
+- **Archidekt**: account needed; no official write API. The site's own (unofficial) endpoints can create and edit
+  decks with a login, but the app dropped its Archidekt login on purpose in 1.78 (collection sync and deck edits
+  removed), and Archidekt's terms forbid automated requests. Would mean bringing a login back: not recommended.
 - **CommanderView** (commanderview.app): account needed; it has real per-user API keys (`/api/account/api-keys`)
   and deck endpoints (`/api/decks`, `/api/decks/import`, `/api/decks/public`). Possibly an allowed way; untested:
   needs an account and checking their terms and whether a deck can be public through the key.
 - **Moxfield**: account needed, no public API (access only on request; our email is still pending). No.
-- **TappedOut, MTGGoldfish, Scryfall, untap.in**: account needed, no write API (Scryfall's API is read-only). No.
+- **TappedOut, MTGGoldfish, untap.in**: account needed, no write API. No.
+- **Scryfall**: has decks on accounts, but its API is read-only; it would mean logging in with the user's password
+  and posting the site's own forms. Fragile, and it risks the one service we're fully fine with. No.
 - **ManaBox, TopDecked**: phone apps; decks are made in the app, no API. No.
 - **TopDeck.gg, Hareruya**: tournament decklists only, not user decks. No.
 - **EDHREC deckpreview**: previews of decks EDHREC collected from other sites; no way to make one. No.
