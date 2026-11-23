@@ -120,8 +120,33 @@ describe.each([
     expect(await s.tagCategoryStats()).toEqual({ cards: 2, updatedAt: NOW + 1 });
   });
 
-  it("win turns and job locks", async () => {
+  it("the card facts table", async () => {
     const s = await make();
+    expect(await s.cardFactStats()).toEqual({ cards: 0, updatedAt: null });
+    expect((await s.cardFacts([])).size).toBe(0);
+    await s.replaceCardFacts(
+      [
+        { key: "cultivate", fact: { tags: ["ramp", "tutor"], gameChanger: false, salt: 1.5 } },
+        { key: "old card", fact: { tags: ["draw"], gameChanger: false, salt: null } },
+      ],
+      NOW,
+    );
+    // The next rebuild replaces everything: cards no longer tagged are gone.
+    await s.replaceCardFacts(
+      [
+        { key: "cultivate", fact: { tags: ["ramp", "tutor"], gameChanger: false, salt: 1.5 } },
+        { key: "rhystic study", fact: { tags: ["draw"], gameChanger: true, salt: 2.25 } },
+      ],
+      NOW + 1,
+    );
+    const got = await s.cardFacts(["cultivate", "old card", "rhystic study", "nope"]);
+    expect(Object.fromEntries(got)).toEqual({
+      cultivate: { tags: ["ramp", "tutor"], gameChanger: false, salt: 1.5 },
+      "rhystic study": { tags: ["draw"], gameChanger: true, salt: 2.25 },
+    });    expect(await s.cardFactStats()).toEqual({ cards: 2, updatedAt: NOW + 1 });
+  });
+
+  it("win turns and job locks", async () => {    const s = await make();
     const a = (await s.create("joel", "h", true, NOW))!;
     expect(await s.claimJob("winturns:1", NOW, 60_000)).toBe(true);
     expect(await s.claimJob("winturns:1", NOW + 1000, 60_000)).toBe(false);

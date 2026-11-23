@@ -67,6 +67,16 @@ export interface AlertEvent {
   setCode: string | null;
 }
 
+/**
+ * What the website knows about a card by name (the card_facts table, lib/cardfacts.ts): the Scryfall Tagger tags it has
+ * (FACT_TAGS), whether it is a Game Changer, and its EDHREC salt score (null: unknown).
+ */
+export interface CardFact {
+  tags: string[];
+  gameChanger: boolean;
+  salt: number | null;
+}
+
 /** Alert history lines are kept a year (plus a day) and at most this many per account. */
 export const ALERT_KEEP_MS = 366 * 86_400_000;
 export const ALERT_MAX_LINES = 500;
@@ -141,6 +151,12 @@ export interface AccountStore {
   replaceTagCategories(rows: { key: string; categories: string[] }[], now: number): Promise<void>;
   /** How many names the table has, and when it was last rebuilt (null: never). */
   tagCategoryStats(): Promise<{ cards: number; updatedAt: number | null }>;
+  /** The card facts (lib/cardfacts.ts) for these name keys; shared by every account. */
+  cardFacts(keys: string[]): Promise<Map<string, CardFact>>;
+  /** Replaces the whole facts table with [rows] (written at [now]). */
+  replaceCardFacts(rows: { key: string; fact: CardFact }[], now: number): Promise<void>;
+  /** How many names the facts table has, and when it was last rebuilt (null: never). */
+  cardFactStats(): Promise<{ cards: number; updatedAt: number | null }>;
   /** Saves a day's value; [replace] false keeps a day that is there already (the phone's history sent once). */
   putValueDays(accountId: number, days: ValueDay[], replace: boolean): Promise<void>;
   /** The chart for one key ("trend", "low@tcgplayer"…), for the whole collection or a [binder] uid ("~": Unsorted), oldest first. */
@@ -336,6 +352,8 @@ export function memoryStore(): AccountStore {
   const aiKeys = new Map<number, AiKey>();
   let tags = new Map<string, string[]>();
   let tagsAt: number | null = null;
+  let facts = new Map<string, CardFact>();
+  let factsAt: number | null = null;
   const valueDays = new Map<number, Map<string, ValueDay>>();
   const levels = new Map<number, Map<string, number>>();
   const alerts = new Map<number, AlertEvent[]>();
@@ -453,6 +471,12 @@ export function memoryStore(): AccountStore {
       tagsAt = now;
     },
     tagCategoryStats: async () => ({ cards: tags.size, updatedAt: tags.size ? tagsAt : null }),
+    cardFacts: async (keys) => new Map(keys.flatMap((k) => (facts.has(k) ? [[k, { ...facts.get(k)!, tags: [...facts.get(k)!.tags] }] as [string, CardFact]] : []))),
+    replaceCardFacts: async (rows, now) => {
+      facts = new Map(rows.map((r) => [r.key, { ...r.fact, tags: [...r.fact.tags] }]));
+      factsAt = now;
+    },
+    cardFactStats: async () => ({ cards: facts.size, updatedAt: facts.size ? factsAt : null }),
     putValueDays: async (id, days, replace) => {
       const m = valueDays.get(id) ?? new Map<string, ValueDay>();
       valueDays.set(id, m);
@@ -623,6 +647,13 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS card_tags (
      name_key TEXT PRIMARY KEY,
      categories TEXT NOT NULL,
+     updated_at BIGINT NOT NULL)`,
+  // 2026-11-23: card facts by name (Tagger tags, Game Changers, EDHREC salt) for the website's deck rating (lib/cardfacts.ts).
+  `CREATE TABLE IF NOT EXISTS card_facts (
+     name_key TEXT PRIMARY KEY,
+     tags TEXT NOT NULL,
+     game_changer BOOLEAN NOT NULL,
+     salt REAL,
      updated_at BIGINT NOT NULL)`,
   // Step D (2026-11-06): the value over time, price alerts reached at night, and the website jobs' last runs.
   `CREATE TABLE IF NOT EXISTS value_history (
@@ -852,6 +883,44 @@ export function sqlStore(run: (text: string, params: unknown[]) => Promise<Row[]
     },
     tagCategoryStats: async () => {
       const r = (await q("SELECT COUNT(*) AS n, MAX(updated_at) AS at FROM card_tags"))[0];
+      return { cards: num(r.n), updatedAt: r.at === null ? null : num(r.at) };
+    },
+    cardFacts: async (keys) =>
+      new Map(
+        keys.length === 0
+          ? []
+          : (
+              await q("SELECT name_key, tags, game_changer, salt FROM card_facts WHERE name_key = ANY($1::text[])", [keys])
+            ).map((r) => [
+              String(r.name_key),
+              {
+                tags: String(r.tags).split(",").filter(Boolean),
+                gameChanger: Boolean(r.game_changer),
+                salt: r.salt === null || r.salt === undefined ? null : num(r.salt),
+              } as CardFact,
+            ]),
+      ),
+    // One statement for the whole table, so it is replaced in one go (no reader sees half a rebuild). The old rows
+    // are deleted by a data-modifying CTE, and the insert must read that CTE's result (the WHERE below) for Postgres
+    // to run it first: a CTE nothing reads may run after the insert, and then a row of the same name clashes.
+    replaceCardFacts: async (rows, now) => {
+      await q(
+        `WITH gone AS (DELETE FROM card_facts RETURNING name_key)
+         INSERT INTO card_facts (name_key, tags, game_changer, salt, updated_at)
+         SELECT k, t, g, s, $5::bigint
+         FROM unnest($1::text[], $2::text[], $3::boolean[], $4::float8[]) AS u(k, t, g, s)
+         WHERE (SELECT COUNT(*) FROM gone) >= 0`,
+        [
+          rows.map((r) => r.key),
+          rows.map((r) => r.fact.tags.join(",")),
+          rows.map((r) => r.fact.gameChanger),
+          rows.map((r) => r.fact.salt),
+          now,
+        ],
+      );
+    },
+    cardFactStats: async () => {
+      const r = (await q("SELECT COUNT(*) AS n, MAX(updated_at) AS at FROM card_facts"))[0];
       return { cards: num(r.n), updatedAt: r.at === null ? null : num(r.at) };
     },
     putValueDays: async (id, days, replace) => {

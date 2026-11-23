@@ -1,0 +1,42 @@
+# EDHREC's salt scores come inside MTGJSON's AtomicCards.json.gz, which is 50+ MB: too big for the website to
+# download. So once a week GitHub's servers download it, slim it down (scripts/card_salt.py) and keep the result on
+# the "card-salt" branch, which only ever holds the latest copy; the website's card facts table reads it from there.
+# Uses no secrets; it only writes that one branch.
+name: Card salt scores
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: card-salt
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download MTGJSON's AtomicCards
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 30 --max-time 600 \
+            -H "User-Agent: MTGTraderAndroid/1.0 (+https://github.com/${{ github.repository }})" \
+            -o AtomicCards.json.gz https://mtgjson.com/api/v5/AtomicCards.json.gz
+      - name: Slim it down to the salt scores
+        run: python3 scripts/card_salt.py AtomicCards.json.gz card-salt.json.gz
+      - name: Save it on the card-salt branch (latest copy only)
+        run: |
+          mkdir out && cd out
+          git init -q -b card-salt
+          cp ../card-salt.json.gz .
+          printf '%s\n' "EDHREC salt scores per card, from MTGJSON's AtomicCards (MIT), for MTG Trader." \
+            "Updated weekly by .github/workflows/card-salt.yml on main." > README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Card salt scores $(date -u +%Y-%m-%d)"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" card-salt

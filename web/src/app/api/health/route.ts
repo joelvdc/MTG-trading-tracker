@@ -73,6 +73,7 @@ export async function GET() {
     loadPreconIndex(),
   ]);
   const tags = store ? await store.tagCategoryStats().catch(() => null) : null;
+  const facts = store ? await store.cardFactStats().catch(() => null) : null;
   const nightly = store ? await store.job("nightly").catch(() => null) : null;
   const winturns = store ? await store.job("winturns").catch(() => null) : null;
   const weekly = store ? await store.job("weekly").catch(() => null) : null;
@@ -108,6 +109,10 @@ export async function GET() {
     categoryCards: tags?.cards ?? null,
     categoriesAgeHours: hours(tags?.updatedAt),
     categoriesFresh: tags?.updatedAt ? Date.now() - tags.updatedAt < 9 * 86_400_000 : false,
+    // The card facts table (Tagger tags, Game Changers, salt; rebuilt weekly, on the days the categories aren't).
+    cardFacts: facts?.cards ?? null,
+    cardFactsAgeHours: hours(facts?.updatedAt),
+    cardFactsFresh: facts?.updatedAt ? Date.now() - facts.updatedAt < 8 * 86_400_000 : false,
     // The nightly job (step D): when it last ran and its counts (no names).
     nightlyAgeHours: hours(nightly?.at),
     nightlyFresh: nightly ? Date.now() - nightly.at < 36 * 3_600_000 : false,
