@@ -1,6 +1,6 @@
 ﻿import { describe, expect, it } from "vitest";
 import { parse, type SyncFile } from "@/lib/syncfile";
-import { putRating, ratingStale } from "@/lib/deckrating";
+import { putRating, RATED_SINCE, ratingStale } from "@/lib/deckrating";
 import { decodeSalt, type Deck, type DeckCard, type SaltCard, type SyncDeck } from "@/lib/deckshared";
 import type { StatsCard } from "@/lib/deckstats";
 import { rateDeck, RATING_VERSION, ratingListKey } from "@/lib/localratings";
@@ -141,6 +141,15 @@ describe("ratingStale", () => {
     // The estimate is there already, for this list: nothing to do.
     expect(ratingStale(false, JSON.stringify(rating()), stats, true)).toBe(false);
     expect(ratingStale(false, JSON.stringify(rating()), [...stats, card("More")], true)).toBe(true);
+  });
+
+  it("makes the website's ratings from before RATED_SINCE again once", () => {
+    const r = JSON.stringify(rating());
+    expect(ratingStale(true, r, stats, false, RATED_SINCE - 1)).toBe(true);
+    expect(ratingStale(true, r, stats, false, null)).toBe(true);
+    expect(ratingStale(true, r, stats, false, RATED_SINCE)).toBe(false);
+    // Commander Salt's data is never touched by it.
+    expect(ratingStale(true, SALT, stats, false, 0)).toBe(false);
   });
 
   it("has no answer without the deck's cards", () => {

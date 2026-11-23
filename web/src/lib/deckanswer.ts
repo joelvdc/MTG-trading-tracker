@@ -99,7 +99,7 @@ export async function deckAnswer(
     layouts,
     detailsError,
     saltCard: synced.deck.saltCard ?? null,
-    ratingStale: ratingStale(view.local, synced.deck.saltCard ?? null, stats, appSettings(file).bracketSource === "APP"),
+    ratingStale: ratingStale(view.local, synced.deck.saltCard ?? null, stats, appSettings(file).bracketSource === "APP", synced.deck.scoredAt ?? null),
     saltSum,
     winTurn,
     games,

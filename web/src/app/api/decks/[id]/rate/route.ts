@@ -31,7 +31,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const stats = deckStatsCards(sd, info);
     // The server decides, as the page leaves it there: another list or version, or (with the estimate chosen) Commander
     // Salt's data on a deck from Archidekt, is rated again; nothing else is.
-    if (!ratingStale(sd.deck.archidektId < 0, sd.deck.saltCard ?? null, stats, appSettings(file).bracketSource === "APP")) return json({ ok: false });
+    if (!ratingStale(sd.deck.archidektId < 0, sd.deck.saltCard ?? null, stats, appSettings(file).bracketSource === "APP", sd.deck.scoredAt ?? null)) return json({ ok: false });
     const card = await rateCards(stats, sd.deck.colorIdentity || null);
     try {
       const kept = await editSync(a, (f, now) => putRating(f, id, card, now));

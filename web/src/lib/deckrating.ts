@@ -29,17 +29,24 @@ export async function rateCards(cards: StatsCard[], identity: string | null): Pr
 }
 
 /**
+ * Ratings made before the full card facts table was built (23 Nov 2026, while a table without the land-tutor tags was
+ * live) counted land tutors and missed salt: each is made again once.
+ */
+export const RATED_SINCE = Date.parse("2026-11-23T17:50:00Z");
+
+/**
  * Whether a deck's kept rating is out of date. [local] is a local deck, [bracketFromApp] the setting "Bracket from:
  * Estimated by the app". Commander Salt's data stays unless the estimate was asked for. With no stats there is no
- * answer (false).
+ * answer (false). [scoredAt] is when the deck was last scored; a rating of the website's from before RATED_SINCE is stale.
  */
-export function ratingStale(local: boolean, saltCard: string | null, stats: StatsCard[], bracketFromApp: boolean): boolean {
+export function ratingStale(local: boolean, saltCard: string | null, stats: StatsCard[], bracketFromApp: boolean, scoredAt?: number | null): boolean {
   if (stats.length === 0) return false;
   if (!local && !bracketFromApp) return false;
   const card = decodeSalt(saltCard);
   if (!card) return true;
   // An Archidekt deck with Commander Salt's data needs the estimate; a local deck holding it never does.
   if (card.source !== "app") return !local;
+  if (scoredAt !== undefined && (scoredAt ?? 0) < RATED_SINCE) return true;
   return card.listKey !== ratingListKey(stats) || card.ratingVersion !== RATING_VERSION;
 }
 

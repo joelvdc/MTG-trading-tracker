@@ -20,7 +20,7 @@ vi.mock("@/lib/store", async (importOriginal) => {
   return {
     ...actual,
     loadSync: async () => ({ file, etag: null, bytes: new Uint8Array() }),
-    editSync: async (_a: unknown, change: (f: unknown, now: number) => unknown) => change(file, 2_000),
+    editSync: async (_a: unknown, change: (f: unknown, now: number) => unknown) => change(file, Date.parse("2026-12-01T00:00:00Z")),
   };
 });
 
