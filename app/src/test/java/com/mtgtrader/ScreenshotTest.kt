@@ -1019,6 +1019,44 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/bracket_card_speed.png", roborazziOptions = screenshotOptions)
     }
 
+    /** 1.114: a local deck the app rated (the website's estimate): the bracket card's one tile and its reasons, and the power card's salt. */
+    @Test @Config(qualifiers = "w411dp-h1600dp-xhdpi") fun appRatedDeckCards() {
+        val deck = com.mtgtrader.data.Deck(
+            -7, "Brew in the app", "", "Nelly Borca, Impulsive Accuser", null, null, "RW", 100,
+            bracketBaseline = 3, scoredAt = 1_760_000_000_000, origin = "Made in the app",
+        )
+        val card = com.mtgtrader.data.SaltCard(
+            source = "app", bracket = 3,
+            twoCardCombos = listOf(listOf("Exquisite Blood", "Sanguine Bond"), listOf("Dramatic Reversal", "Isochron Scepter")),
+            combos = listOf(
+                com.mtgtrader.data.SaltCombo(listOf("Sanguine Bond", "Exquisite Blood"), counts = true, manaValue = 9.0, wins = true),
+                com.mtgtrader.data.SaltCombo(listOf("Dramatic Reversal", "Isochron Scepter"), counts = true, manaValue = 4.0, wins = false),
+            ),
+            gameChangers = listOf("Smothering Tithe"), tutors = listOf("Enlightened Tutor", "Gamble", "Imperial Recruiter", "Mystical Tutor", "Ranger-Captain of Eos"),
+            saltIntensity = "Salty", salt = 6.4,
+            saltiest = listOf(
+                com.mtgtrader.data.SaltyCard("Winter Orb", 2.4), com.mtgtrader.data.SaltyCard("Armageddon", 2.1),
+                com.mtgtrader.data.SaltyCard("Smothering Tithe", 1.8), com.mtgtrader.data.SaltyCard("Rhystic Study", 1.6),
+                com.mtgtrader.data.SaltyCard("Grand Abolisher", 1.2),
+            ),
+            manaFixing = 81, onCurve = 72, manaQuality = 84,
+            effects = mapOf("spotRemoval" to 8, "boardWipes" to 2, "tutors" to 5, "fastmana" to 1, "counters" to 0),
+            wincons = listOf("Commander damage", "Wide tokens"),
+            listKey = "1e63c951", ratingVersion = 1,
+        )
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.mtgtrader.ui.BracketCardView(deck, card, win = win(sargeTurns, mapOf("combat" to 21, "commander" to 79), 100))
+                        com.mtgtrader.ui.PowerCardView(deck, card, com.mtgtrader.data.PowerSource.APP)
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/app_rated_deck_cards.png", roborazziOptions = screenshotOptions)
+    }
+
     /** 1.46: editing a deck: waiting edits, drag handles, selected cards, the card page's controls, the Decks tab's sections. */
     @Test fun deckEditing() {
         fun row(id: Long, name: String, cost: Double, category: String = "Ramp", added: Boolean = false) = com.mtgtrader.data.DeckCardRow(

@@ -136,7 +136,9 @@ class AppContainer(context: Context) {
     val alertHistory = com.mtgtrader.data.AlertHistory(context)
     val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader, alertHistory) { exchangeRates.rates.value }
     private val browser = HiddenBrowser(context)
-    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), appScope, winOdds)
+    /** The MTG Trader website: syncing, and the estimate of local decks (since 1.114). */
+    val webAccount = com.mtgtrader.data.WebAccountClient(http)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), appScope, winOdds, webAccount)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)
     val tradeBinder = com.mtgtrader.data.TradeBinder(db, repo, settings)
     /** Sorts the collection into the Collection binder, Not bulk and Bulk, keeping the rest in Unsorted. Since 1.104. */
@@ -146,7 +148,6 @@ class AppContainer(context: Context) {
     val offlineImages = com.mtgtrader.data.OfflineImages(context, db, settings, network, appScope)
     private val store = SyncStore(db, settings)
     private val nextcloud = NextcloudClient(http)
-    val webAccount = com.mtgtrader.data.WebAccountClient(http)
     val sync = SyncManager(context, db, store, nextcloud, webAccount, network, appScope)
     val backups = com.mtgtrader.data.Backups(context, store, sync)
 

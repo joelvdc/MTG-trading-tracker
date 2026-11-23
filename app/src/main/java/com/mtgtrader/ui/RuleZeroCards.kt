@@ -89,6 +89,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
@@ -143,7 +144,8 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More", tint = Color.White) }
                     ScreenMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(
+                        // Commander Salt's own images exist only for decks it has scored.
+                        if (deck.saltId != null) DropdownMenuItem(
                             text = { Text(if (original) "Show the app's cards" else "Show Commander Salt's original") },
                             onClick = { menu = false; original = !original },
                         )
@@ -157,7 +159,11 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
                     original -> OriginalCardPage(deck, card)
                     data == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (deck.saltId == null) "Commander Salt hasn't scored this deck yet." else "Getting the card details from Commander Salt…",
+                            when {
+                                deck.saltId != null -> "Getting the card details from Commander Salt…"
+                                deck.local -> "Not rated yet."
+                                else -> "Commander Salt hasn't scored this deck yet."
+                            },
                             color = Color.White,
                         )
                     }
@@ -218,10 +224,23 @@ internal val METER = listOf(
 fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier, win: WinOdds? = null) {
     CardFrame(deck, "Bracket", modifier) {
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            BracketTile("Baseline · WotC rules", deck.bracketBaseline, Modifier.weight(1f))
-            BracketTile("Realistic · how it plays", deck.bracketRealistic, Modifier.weight(1f))
+            if (data.fromApp) {
+                BracketTile("Bracket · estimated", data.bracket, Modifier.weight(1f))
+            } else {
+                BracketTile("Baseline · WotC rules", deck.bracketBaseline, Modifier.weight(1f))
+                BracketTile("Realistic · how it plays", deck.bracketRealistic, Modifier.weight(1f))
+            }
         }
         win?.let { SpeedSection(it) }
+        // Why the deck is in its bracket, in the app's own words for local decks; none for decks without. It sits before
+        // the cards' lists, so both stay put when it's shown.
+        val shownBracket = if (data.fromApp) data.bracket else deck.bracketBaseline
+        val reasons = data.bracketReasons(shownBracket)
+        if (reasons.isNotEmpty()) {
+            Section("Why bracket $shownBracket") {
+                reasons.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            }
+        }
         Section("Bracket criteria") {
             val criteria = listOf(
                 "Two-card combos" to data.twoCardCombos.size,
@@ -248,7 +267,21 @@ fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier, w
         val combos = data.twoCardCombos + data.earlyCombos
         if (combos.isNotEmpty() || data.notes.isNotEmpty()) {
             Section("Rule zero: worth mentioning") {
-                combos.distinct().forEach { Text(it.joinToString(" + "), style = MaterialTheme.typography.bodyMedium) }
+                combos.distinct().forEach { combo ->
+                    // What the app's rating knows of it: whether it wins and how much mana it takes.
+                    val known = data.combos.firstOrNull { it.cards.map(SaltCard::key).toSet() == combo.map(SaltCard::key).toSet() }
+                    val extra = listOfNotNull(
+                        if (known?.wins == true) "wins" else null,
+                        known?.manaValue?.let { v -> "mana value " + if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString() },
+                    ).joinToString(" · ")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(combo.joinToString(" + "), style = MaterialTheme.typography.bodyMedium)
+                        if (extra.isNotEmpty()) {
+                            Spacer(Modifier.width(6.dp))
+                            Text(extra, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
                 data.notes.forEach { note ->
                     Text(
                         note.why.ifBlank { note.label },
@@ -259,7 +292,7 @@ fun BracketCardView(deck: Deck, data: SaltCard, modifier: Modifier = Modifier, w
                 }
             }
         }
-        Footer("Bracket data: Commander Salt", deck)
+        Footer(if (data.fromApp) "Bracket data: estimated by the app" else "Bracket data: Commander Salt", deck)
     }
 }
 
@@ -347,15 +380,33 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
                 Column(Modifier.weight(1f)) {
                     Label("Saltiness")
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(deck.saltPercent?.let { "${it.roundToInt()}%" } ?: "—", fontWeight = FontWeight.SemiBold)
+                        Text(
+                            when {
+                                data.fromApp -> data.salt?.let { String.format(Locale.US, "%.1f", it) }
+                                else -> deck.saltPercent?.let { "${it.roundToInt()}%" }
+                            } ?: "—",
+                            fontWeight = FontWeight.SemiBold,
+                        )
                         data.saltIntensity?.let {
                             Spacer(Modifier.width(6.dp))
                             Text(it.lowercase(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
-                    data.saltDriver?.let { Text("mostly ${it.lowercase()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    if (data.fromApp) {
+                        data.saltiest.take(5).forEach {
+                            Text(
+                                "${it.name} · ${String.format(Locale.US, "%.1f", it.salt)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        data.saltDriver?.let { Text("mostly ${it.lowercase()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
                 }
-                Column(Modifier.weight(1f)) {
+                // No manabase numbers (the website's own rating of a local deck has none): salt takes the full width.
+                val hasManabase = data.manaFixing != null || data.onCurve != null || data.manaQuality != null
+                if (hasManabase) Column(Modifier.weight(1f)) {
                     Label("Manabase")
                     data.manaFixing?.let { Text("Fixing $it%", style = MaterialTheme.typography.bodySmall) }
                     data.onCurve?.let { Text("On curve $it%", style = MaterialTheme.typography.bodySmall) }
@@ -390,7 +441,7 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
                 }
             }
         }
-        Footer(powerCredit(source).joinToString("\n"), deck)
+        Footer(powerCredit(source, data.fromApp).joinToString("\n"), deck)
     }
 }
 
@@ -524,14 +575,17 @@ private fun Footer(credit: String, deck: Deck) {
     }
 }
 
-/** The power level card's credit, a line each (since 1.67): "Power level: MTG Trader app", "Data: Commander Salt". */
-internal fun powerCredit(source: PowerSource): List<String> = listOfNotNull(
+/**
+ * The power level card's credit, a line each (since 1.67): "Power level: MTG Trader app", "Data: Commander Salt".
+ * [fromApp] for the website's estimate of a local deck, which takes its data from the sources it names, not Commander Salt.
+ */
+internal fun powerCredit(source: PowerSource, fromApp: Boolean = false): List<String> = listOfNotNull(
     when (source) {
         PowerSource.COMMANDER_SALT -> null
         PowerSource.APP -> "Power level: MTG Trader app"
         else -> "Power level: ${source.site}"
     },
-    "Data: Commander Salt",
+    if (fromApp) "Data: Scryfall, MTGJSON, Commander Spellbook" else "Data: Commander Salt",
 )
 
 // ---- Commander Salt's own images --------------------------------------------------------------

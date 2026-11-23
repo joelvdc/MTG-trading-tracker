@@ -47,10 +47,63 @@ data class SaltCard(
     val combos: List<SaltCombo> = emptyList(),
     /** Which of these fields the data was read with; older data is fetched again (see [CURRENT]). */
     val version: Int = 0,
+    // Estimated by the app through the website's /api/rate (local decks): "app" when the website rated the deck.
+    val source: String? = null,
+    /** The bracket the rating puts the deck in. */
+    val bracket: Int? = null,
+    /** The website's own words for why; worked out from the data when it doesn't say (see [bracketReasons]). */
+    val bracketWhy: List<String> = emptyList(),
+    /** The deck's saltiness, 0–10. */
+    val salt: Double? = null,
+    /** The saltiest cards, saltiest first. */
+    val saltiest: List<SaltyCard> = emptyList(),
+    /** A fingerprint of the list it was rated for (see [LocalRating.listKey]); null when older. */
+    val listKey: String? = null,
+    /** The rating's version (see [LocalRating.RATING_VERSION]). */
+    val ratingVersion: Int? = null,
 ) {
     fun encode(): String = json.encodeToString(serializer(), this)
 
     val current get() = version >= CURRENT
+
+    /** Estimated by the app (the website's rating of a local deck), not Commander Salt's own. */
+    val fromApp get() = source == "app"
+
+    /**
+     * Why the deck is in [bracket]: the website's own lines when it sent them, else worked out from Commander Salt's
+     * data, in the same words the website uses. Empty when there's nothing to say.
+     */
+    fun bracketReasons(bracket: Int?): List<String> = when {
+        bracketWhy.isNotEmpty() -> bracketWhy
+        bracket == null -> emptyList()
+        bracket <= 2 -> listOf("No Game Changers or two-card combos")
+        else -> {
+            val lines = mutableListOf<String>()
+            val counted = if (bracket >= 4) earlyCombos else twoCardCombos
+            for (combo in counted.take(3)) {
+                val match = combos.firstOrNull { c -> c.cards.map(::key).toSet() == combo.map(::key).toSet() }
+                val extra = when {
+                    bracket < 4 && match?.wins == true && match.manaValue != null -> ": wins, mana value ${num(match.manaValue)}"
+                    bracket < 4 && match?.wins == false -> ": doesn't win"
+                    bracket >= 4 && match?.manaValue != null -> ": wins, mana value ${num(match.manaValue)}"
+                    else -> ""
+                }
+                lines += combo.joinToString(" + ") + extra
+            }
+            if (counted.size > 3) lines += "and ${counted.size - 3} more " + if (bracket >= 4) "early combos" else "two-card combos"
+            if (gameChangers.isNotEmpty()) {
+                val n = gameChangers.size
+                lines += (if (n == 1) "1 Game Changer: " else "$n Game Changers: ") + gameChangers.joinToString(", ")
+            }
+            if (massLandDenial.isNotEmpty()) lines += "Mass land denial: " + massLandDenial.joinToString(", ")
+            if (bracket >= 4) {
+                if (extraTurns.size >= 3) lines += "${extraTurns.size} extra-turn cards: " + extraTurns.take(3).joinToString(", ")
+            } else if (tutors.size >= 5) {
+                lines += "${tutors.size} tutors"
+            }
+            lines
+        }
+    }
 
     /**
      * Every combo, those that count for the bracket first. Data from before 1.46 only knows the ones
@@ -101,6 +154,9 @@ data class SaltCard(
         /** Cards are matched by their front face, case-insensitively ("Fable of the Mirror-Breaker // Reflection…"). */
         fun key(name: String) = name.substringBefore(" // ").trim().lowercase()
 
+        /** A mana value as the website writes it: "6", not "6.0". */
+        private fun num(v: Double) = if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString()
+
         fun decode(text: String?): SaltCard? = text?.let { runCatching { json.decodeFromString(serializer(), it) }.getOrNull() }
     }
 }
@@ -118,6 +174,10 @@ data class SaltCombo(
     val spellbookUri: String? = null,
     /** What has to be true first, in Commander Spellbook's words ("you control at least two other creatures"). Since 1.53. */
     val prerequisites: List<String> = emptyList(),
+    /** Its cards' mana values added up, from the app's rating (see [SaltCard.fromApp]). */
+    val manaValue: Double? = null,
+    /** Whether it wins the game, from the app's rating. */
+    val wins: Boolean? = null,
 ) {
     /** "infinite ETB, infinite life loss". */
     val resultText get() = results.joinToString(", ") { r ->
@@ -167,6 +227,10 @@ enum class BracketTag(val label: String, val strict: Boolean) {
 
 @Serializable
 data class SaltNote(val label: String, val why: String = "")
+
+/** One of the deck's saltiest cards, from the app's rating (see [SaltCard.fromApp]). */
+@Serializable
+data class SaltyCard(val name: String, val salt: Double)
 
 /** The interaction and effect counts on the power card, in Commander Salt's order. */
 enum class SaltEffect(val key: String, val label: String) {

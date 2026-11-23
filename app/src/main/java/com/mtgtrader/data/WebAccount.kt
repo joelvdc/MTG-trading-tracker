@@ -183,8 +183,38 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
         result
     }
 
-    sealed interface PriceDownload {
-        /** The website's file is still the one with the ETag sent. */
+    /**
+     * The website's estimated bracket and salt for a deck's list (no login needed; local decks, which Commander Salt
+     * can't score): the [SaltCard] it works out, as JSON. Sends the deck's own lines ([identity] is the deck's colour
+     * identity, e.g. "WUB"); throws [IOException] when the website can't rate it yet or answers with something that
+     * isn't a rating.
+     */
+    suspend fun rate(cards: List<DeckCard>, identity: String): String = call {
+        val body = buildJsonObject {
+            put("cards", JsonArray(cards.filter { !it.maybeboard }.map { c ->
+                buildJsonObject {
+                    put("name", c.card.name)
+                    put("quantity", c.quantity)
+                    put("cmc", c.cmc)
+                    put("types", c.types)
+                    put("commander", c.commander)
+                }
+            }))
+            put("identity", identity)
+        }
+        val req = Request.Builder().url(base + "api/rate")
+            .header("x-requested-with", "mtgtrader")
+            .post(body.toString().toRequestBody("application/json".toMediaType())).build()
+        http.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) throw IOException("The website answered ${r.code}")
+            val card = runCatching { json.parseToJsonElement(r.body!!.string()).jsonObject["saltCard"]?.jsonPrimitive?.content }.getOrNull()
+                ?: throw IOException("The website's answer has no rating")
+            if (SaltCard.decode(card) == null) throw IOException("The website's rating can't be read")
+            card
+        }
+    }
+
+    sealed interface PriceDownload {        /** The website's file is still the one with the ETag sent. */
         data object NotModified : PriceDownload
         data class Saved(val etag: String?) : PriceDownload
     }

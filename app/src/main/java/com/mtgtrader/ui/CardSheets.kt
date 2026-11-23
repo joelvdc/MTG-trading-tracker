@@ -458,7 +458,7 @@ object CardSheets {
 
     private class PowerPrint(p: Painter, card: PrintCard, ink: Boolean) : CardPrint(p, card, ink) {
         override val title = "Power level"
-        override val credit = powerCredit(card.source)
+        override val credit = powerCredit(card.source, card.data?.fromApp == true)
 
         override fun body(data: SaltCard) {
             val power = deck.power(card.source)
@@ -498,11 +498,15 @@ object CardSheets {
         private fun saltAndMana(data: SaltCard) {
             val top = y
             val half = INNER / 2
+            // No manabase numbers (the website's own rating of a local deck has none): salt takes the full width.
+            val hasManabase = data.manaFixing != null || data.onCurve != null || data.manaQuality != null
+            val saltWidth = if (hasManabase) half - 1f else INNER
             label("Saltiness")
-            bodyLine(listOfNotNull(deck.saltPercent?.let { "${it.roundToInt()}%" }, data.saltIntensity?.lowercase()).joinToString(" ").ifEmpty { "—" }, width = half - 1f, weight = Weight.MEDIUM)
+            bodyLine(listOfNotNull(deck.saltPercent?.let { "${it.roundToInt()}%" }, data.saltIntensity?.lowercase()).joinToString(" ").ifEmpty { "—" }, width = saltWidth, weight = Weight.MEDIUM)
             newLine()
             // Wrapped since 1.67: "mostly community salt ratings" doesn't fit on one line of half the card.
-            data.saltDriver?.let { y += p.wrapped("mostly ${it.lowercase()}", PAD, y, half - 1f, BODY_PT, GREY, 2, BODY_LH) }
+            data.saltDriver?.let { y += p.wrapped("mostly ${it.lowercase()}", PAD, y, saltWidth, BODY_PT, GREY, 2, BODY_LH) }
+            if (!hasManabase) return
             val left = y
             y = top
             y += p.lineHeight(6.4f)

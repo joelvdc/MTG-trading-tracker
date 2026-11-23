@@ -465,6 +465,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     LaunchedEffect(deckId, ownDeck) {
         if (ownDeck) c.deckEditor.prepare(deckId)?.let { snackbar.showSnackbar(it) }
     }
+    // A local deck's bracket and salt are the website's estimate (Commander Salt can't score it): asked for when the
+    // deck's list changes (its lines from the database, so another phone's sync counts too).
+    LaunchedEffect(deckId, archidektRows.size, archidektRows.sumOf { it.item.quantity }) {
+        if (deck?.local == true) runCatching { c.decks.rateLocal(deckId) }
+    }
     BackHandler(enabled = searching) { closeSearch() }
     BackHandler(enabled = selection.isNotEmpty()) { selection = emptyList() }
     fun edit(message: String, op: suspend () -> UndoAction) {
@@ -846,12 +851,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     item(key = "primer") { PrimerRow(d.primer, onOpen = { nav.navigate("deck/$deckId/primer") }) }
                     item(key = "rulezero") {
                         Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
+                            Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null || d.saltCard != null, modifier = Modifier.weight(1f)) {
                                 Icon(Icons.Default.Shield, null, Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Bracket card")
                             }
-                            Button(onClick = { showing = RuleZeroCard.POWER }, enabled = d.saltId != null, modifier = Modifier.weight(1f)) {
+                            Button(onClick = { showing = RuleZeroCard.POWER }, enabled = d.saltId != null || d.saltCard != null, modifier = Modifier.weight(1f)) {
                                 Icon(Icons.Default.Bolt, null, Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Power card")
