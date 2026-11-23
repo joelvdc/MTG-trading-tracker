@@ -51,13 +51,6 @@ val prepareSources by tasks.registering {
         write("DeckStats.kt", stats.substringBefore(tokensStart) + tokensEnd + stats.substringAfter(tokensEnd))
         write("ManaOdds.kt", read("ManaOdds.kt"))
         write("SaltCard.kt", read("SaltCard.kt"))
-        // Only AppPowerLevel: the rest of AppPower.kt keeps the app's screen state.
-        val power = read("AppPower.kt")
-        write(
-            "AppPower.kt",
-            power.substringBefore("\n/**\n * The app's power levels worked out so far")
-                .swap("import androidx.compose.runtime.getValue\nimport androidx.compose.runtime.mutableStateOf\nimport androidx.compose.runtime.setValue\n", ""),
-        )
         val win = read("WinOdds.kt")
         write(
             "WinOdds.kt",

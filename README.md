@@ -6,11 +6,11 @@ and the website stay in sync through your MTG Trader account.
 
 | Trade | Collection | Scan tab | Commander decks |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/trade.png" width="200" alt="A fair trade with the value of both sides compared"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection sorted by value, with binder filters and price trends"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Commander decks with power level and brackets"> |
+| <img src="docs/screenshots/trade.png" width="200" alt="A fair trade with the value of both sides compared"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection sorted by value, with binder filters and price trends"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Commander decks with brackets and win turns"> |
 
 | Games | Life tracker | Bracket card | Collection stats |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/games.png" width="200" alt="The Games tab: last games, who won and stats"> | <img src="docs/screenshots/lifetracker.png" width="200" alt="The life tracker for four players, each panel facing its player"> | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket rule-zero card: brackets, criteria, how the deck plays and its combos"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: the color pie and color identities"> |
+| <img src="docs/screenshots/games.png" width="200" alt="The Games tab: last games, who won and stats"> | <img src="docs/screenshots/lifetracker.png" width="200" alt="The life tracker for four players, each panel facing its player"> | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket card: bracket, salt, win turn, criteria and combos"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: the color pie and color identities"> |
 
 ## Install
 [<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/joelvdc/MTG-trading-tracker)
@@ -70,7 +70,7 @@ turn on two-step login with an authenticator app.
   always go in the Land category, and its heading also counts the MDFCs with a land on the back, like Archidekt
   ("Land (37, 40 with MDFCs)").
 - **Browse every Commander precon** on the website (Explore → Commander precons): see one with the auto categories,
-  its simulated win turn and power level, then make it your deck or add its cards to your collection.
+  its simulated win turn, then make it your deck or add its cards to your collection.
 - **Search inside a deck** with Scryfall's search words (`t:creature o:draw mv<=2`), the same in the app and on the
   website; **copy a deck as text** (Moxfield, Archidekt, MTG Arena or a plain list) and **paste cards** into one of
   your own decks, with a check first that shows what's new, what's already there and what wasn't found.
@@ -81,10 +81,10 @@ turn on two-step login with an authenticator app.
   history** per deck, in the app and on the website.
 - On the website: **Undo** for every deck change, **Select** to change many cards at once (category, copies,
   printing, finish), and a **playtester** to draw hands and goldfish the deck, with tokens, counters and odds.
-- Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
-  win turn. Decks made in the app get an **estimated bracket** (Commander Salt can't score them), with the reasons
-  on the bracket card ("Why bracket 4"); Settings → **Bracket from** can estimate Archidekt decks' brackets too. Every
-  deck shows a **salt sum** like Archidekt's (lands included) with its five saltiest cards.
+- Every deck gets an **estimated bracket** from its list (game changers, combos from Commander Spellbook, extra turns,
+  land denial), with the reasons ("Why bracket 4"), a **salt sum** like Archidekt's (lands included) with its saltiest
+  cards, and a simulated **win turn**; also game changers, combos, mana stats and the chance to cast your commander on
+  time.
 - A **Commander legality check**: banned cards, cards outside the commander's colours, extra copies, the card count,
   and whether the commander (or a pair of partners, a Background, a Doctor and companion) may lead.
 - Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the
@@ -93,7 +93,9 @@ turn on two-step login with an authenticator app.
   list hasn't changed aren't asked about again while their recommendations are up to date; 1 day by default).
 - On the website, **Compare** a deck with a public Archidekt deck, another of your decks or a pasted list: it lists the
   cards to add and to remove, matched by name so printings don't matter.
-- Printable **bracket and power level cards** for rule zero, cards you're missing (to the wishlist),
+- A **bracket card** per deck for rule zero (bracket, salt, win turn, criteria, the deck's lands, ramp, draw, removal,
+  wipes and tutors, game changers and combos), the same in the app and on the website, printed nine to an A4 page
+  with cut marks; cards you're missing (to the wishlist),
   and retiring decks you no longer play.
 
 **Games**
@@ -122,8 +124,7 @@ turn on two-step login with an authenticator app.
 
 ## Data
 Card data and pictures from [Scryfall](https://scryfall.com); prices from Cardmarket, TCGplayer and Card Kingdom;
-brackets and combos from [Commander Salt](https://www.commandersalt.com/) and, for estimated brackets,
-[Commander Spellbook](https://commanderspellbook.com/); salt scores from MTGJSON (EDHREC's); recommendations from
+combos from [Commander Spellbook](https://commanderspellbook.com/); salt scores from MTGJSON (EDHREC's); recommendations from
 [EDHREC](https://edhrec.com/) and [recommander.cards](https://recommander.cards/); precons from
 [MTGJSON](https://mtgjson.com/); exchange rates from the European Central Bank; mana symbols from the
 [Mana font](https://mana.andrewgioia.com) by Andrew Gioia.

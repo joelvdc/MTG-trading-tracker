@@ -114,7 +114,7 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   counts, `nightlyAgeHours`, `nightlyFresh`), the precon index (`preconIndexDecks`, `preconIndexAgeHours`,
   `preconIndexMissing`, `preconIndexFresh`) and whether the settings are complete (no secrets).
 - **Top bar** (`components/Nav.tsx`, 2026-11-17): Collection (the wishlist stays a binder inside it), Decks, Games, Trades, then **Explore ▾** (a
-  panel of tiles: Commander precons, Recommendations, Collection stats, Cards in several decks, Rule-zero cards, Trade
+  panel of tiles: Commander precons, Recommendations, Collection stats, Cards in several decks, Bracket cards, Trade
   binder) and the account menu on the right (Orders, Settings, Log out).
 - **Commander precons** (2026-11-17): `/precons` shows every Commander precon as tiles (commander art, colours),
   grouped by set, with search, colour and year filters. MTGJSON's `DeckList.json` has no commanders or colours, so the
@@ -127,8 +127,8 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   `/decks/[id]`): `GET /api/precons/view?deck=` builds the deck in memory from the user's sync file copy, never saved
   (`lib/deckanswer.ts`, the same answer as `GET /api/decks/[id]`; precon lines cached a day per server instance), so
   prices and owned marks are the user's own. Buttons: Make it my deck (`from-precon`), Add its cards to my collection
-  (`/orders?precon=<fileName>` opens the Add a precon dialog with the deck picked), Copy decklist. Scores: Power
-  (from the win turn, `powerSource: "APP"`) and Missing, no Bracket. The win turn is worked out in the browser on
+  (`/orders?precon=<fileName>` opens the Add a precon dialog with the deck picked), Copy decklist. Scores: Wins by
+  (the win turn) and Missing, no Bracket. The win turn is worked out in the browser on
   the first visit and kept once per precon for every account (table `precon_win_turns`, `POST /api/precons/winturn`,
   kept only when its list key matches the server's), so later visits show it at once.
 
@@ -222,7 +222,7 @@ undo that). `.npmrc` has `legacy-peer-deps=true` because of a vitest peer-depend
 
 **The win turn** (deck page, "Winning the game") is the app's own `WinOdds.kt` compiled to JavaScript, so its numbers
 are the phone's. `web/winodds-kt/` is a small Kotlin/JS build: it copies `DeckStats.kt`, `ManaOdds.kt`, `SaltCard.kt`,
-`WinOdds.kt` and `AppPowerLevel` from `app/src/main/java/com/mtgtrader/data`, swaps out the few JVM-only parts (threads
+`WinOdds.kt` from `app/src/main/java/com/mtgtrader/data`, swaps out the few JVM-only parts (threads
 become the same four batches one after another, file storage is left out; each swap fails loudly if the app's text
 moved) and writes the result to `src/lib/winodds-js/` (committed). **After changing the app's win turn, rebuild it**
 from the repository root with JDK 18:

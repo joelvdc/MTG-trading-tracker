@@ -53,7 +53,7 @@ For any assistant (Claude Code, Cline, …) or person working on this repository
   1. `WRITE_WEB_FIXTURES=1 ./gradlew testDebugUnitTest --tests '*WebSyncFixtureTest*'` (writes `web/test/fixtures/app-sync.json`)
   2. `WRITE_WEB_FIXTURES=1 npm test` in `web/` (writes `web-edited-sync.json`)
   3. Run both test suites again without the variable.
-- **Outside services** (Scryfall, Cardmarket, Archidekt, Commander Salt, …) or new synced fields: update
+- **Outside services** (Scryfall, Cardmarket, Archidekt, Commander Spellbook, …) or new synced fields: update
   `docs/health-check-instructions.txt` (the weekly health check reads it from `main`).
 - Scryfall rejects the default OkHttp User-Agent: every request sends `MTGTraderAndroid/1.0`.
 - Deck ids: an Archidekt deck's id in the app is its Archidekt id (`Deck.archidektId`, also the games' `deckId`);

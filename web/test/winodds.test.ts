@@ -9,7 +9,8 @@ const fixture = JSON.parse(readFileSync(new URL("./fixtures/winodds-small.json",
   identity: string;
   saltCard: string | null;
   cards: FixtureCard[];
-  app: { odds: unknown; power: number; exact: number };
+  // The fixture also holds the app's old power level (gone since 1.116), no longer checked.
+  app: { odds: unknown };
 };
 const cards: StatsCard[] = fixture.cards.map((c) => ({ ...c, tokens: c.tokens ? JSON.parse(c.tokens) : null }));
 
@@ -17,8 +18,6 @@ describe("win turn (the app's WinOdds.kt compiled to JavaScript)", () => {
   it("answers what the app answers for the same deck", () => {
     const w = JSON.parse(winOddsJson(winInput(cards), fixture.identity, fixture.saltCard, 500)) as WinResult;
     expect(w.odds).toEqual(fixture.app.odds);
-    expect(w.power.power).toBe(fixture.app.power);
-    expect(w.power.exact).toBe(fixture.app.exact);
   }, 60_000);
 
   it("keeps the deck's cards as the app does (tokens as a JSON list, or none)", () => {

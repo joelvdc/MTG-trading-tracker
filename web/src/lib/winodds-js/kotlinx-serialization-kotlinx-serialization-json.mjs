@@ -488,8 +488,8 @@ protoOf(JsonObject).c2 = function (key) {
     return null;
   return this.fc((!(key == null) ? typeof key === 'string' : false) ? key : THROW_CCE());
 };
-protoOf(JsonObject).q = function () {
-  return this.o15_1.q();
+protoOf(JsonObject).r = function () {
+  return this.o15_1.r();
 };
 protoOf(JsonObject).f2 = function () {
   return this.o15_1.f2();
@@ -544,8 +544,8 @@ protoOf(JsonArray).s15 = function (elements) {
 protoOf(JsonArray).w1 = function (elements) {
   return this.s15(elements);
 };
-protoOf(JsonArray).r = function (index) {
-  return this.q15_1.r(index);
+protoOf(JsonArray).q = function (index) {
+  return this.q15_1.q(index);
 };
 protoOf(JsonArray).t15 = function (element) {
   return this.q15_1.x(element);
@@ -555,8 +555,8 @@ protoOf(JsonArray).x = function (element) {
     return -1;
   return this.t15(element instanceof JsonElement ? element : THROW_CCE());
 };
-protoOf(JsonArray).q = function () {
-  return this.q15_1.q();
+protoOf(JsonArray).r = function () {
+  return this.q15_1.r();
 };
 protoOf(JsonArray).m = function () {
   return this.q15_1.m();
@@ -1532,7 +1532,7 @@ function buildDeserializationNamesMap(_this__u8e3s4, json) {
   // Inline function 'kotlin.collections.ifEmpty' call
   // Inline function 'kotlin.contracts.contract' call
   var tmp_1;
-  if (builder.q()) {
+  if (builder.r()) {
     // Inline function 'kotlinx.serialization.json.internal.buildDeserializationNamesMap.<anonymous>' call
     tmp_1 = emptyMap();
   } else {
@@ -3950,7 +3950,7 @@ protoOf(JsonTreeListDecoder).l10 = function (descriptor, index) {
   return index.toString();
 };
 protoOf(JsonTreeListDecoder).t1b = function (tag) {
-  return this.v1c_1.r(toInt(tag));
+  return this.v1c_1.q(toInt(tag));
 };
 protoOf(JsonTreeListDecoder).un = function (descriptor) {
   while (this.x1c_1 < (this.w1c_1 - 1 | 0)) {
@@ -3993,7 +3993,7 @@ protoOf(JsonTreeMapDecoder).z1 = function () {
 };
 protoOf(JsonTreeMapDecoder).l10 = function (descriptor, index) {
   var i = index / 2 | 0;
-  return this.q1d_1.r(i);
+  return this.q1d_1.q(i);
 };
 protoOf(JsonTreeMapDecoder).un = function (descriptor) {
   while (this.s1d_1 < (this.r1d_1 - 1 | 0)) {

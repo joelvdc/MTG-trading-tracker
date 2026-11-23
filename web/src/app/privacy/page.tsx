@@ -47,8 +47,8 @@ export default function PrivacyPage() {
           Nextcloud), or to a website account (then &quot;What the website keeps&quot; below applies; the login token is stored encrypted on the phone).
         </li>
         <li>
-          <strong>Card and price sites:</strong> the app asks Scryfall, Cardmarket, TCGplayer, Card Kingdom, CardTrader, EDHREC, recommander.cards, Commander Salt,
-          Commander Spellbook, EDH Power Level, Archidekt, MTGJSON and the European Central Bank for card details, prices, deck lists and exchange rates. They get
+          <strong>Card and price sites:</strong> the app asks Scryfall, Cardmarket, TCGplayer, Card Kingdom, CardTrader, EDHREC, recommander.cards,
+          Commander Spellbook, Archidekt, MTGJSON and the European Central Bank for card details, prices, deck lists and exchange rates. They get
           the cards, deck or Archidekt user name asked about, plus what every website gets (your internet address); not your collection. If you add a CardTrader
           token, it is stored encrypted on the phone and sent only to CardTrader.
         </li>

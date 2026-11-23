@@ -208,7 +208,7 @@ export default function DecksPage() {
                 Cards in several decks
               </Link>
               <Link className="menu-link" href="/decks/cards" onClick={closeMenu}>
-                Rule-zero cards of all decks
+                Bracket cards
               </Link>
               {!view.readOnly && (
                 <>

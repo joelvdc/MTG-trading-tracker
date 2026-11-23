@@ -80,11 +80,7 @@ internal class WebWinOdds(
     val damageText: String,
     val comboShare: Int,
     val mazeShare: Int,
-    val power: WebPower,
 )
-
-@Serializable
-internal class WebPower(val power: Int, val exact: Double, val turn: Double?, val wonByEnd: Int, val speed: Double, val adjust: Double?)
 
 private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
@@ -162,14 +158,14 @@ internal object WebBatches {
     }
 }
 
-/** [odds] as the deck page's JSON, with its power level from [salt] (see [winOddsJson]). */
+/** [odds] as the deck page's JSON (see [winOddsJson]); [salt] is no longer read (the power level went in 1.116). */
 private fun webWinOddsJson(odds: WinOdds, salt: SaltCard?): String {
     val window = odds.window
     return json.encodeToString(
         WebWinOdds.serializer(),
         WebWinOdds(
             odds, odds.label, odds.fourInTen, odds.usual, odds.nineInTen, odds.firstWin, window.first, window.last,
-            odds.damageText, odds.comboShare, odds.mazeShare, AppPowerLevel.of(odds, salt).let { WebPower(it.power, it.exact, it.turn, it.wonByEnd, it.speed, it.adjust) },
+            odds.damageText, odds.comboShare, odds.mazeShare,
         ),
     )
 }

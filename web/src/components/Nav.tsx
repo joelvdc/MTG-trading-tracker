@@ -93,8 +93,8 @@ const SHORTCUTS: Shortcut[] = [
   },
   {
     href: "/decks/cards",
-    title: "Rule-zero cards",
-    note: "Game changers and combos in your decks",
+    title: "Bracket cards",
+    note: "Print your decks' bracket cards",
     icon: (
       <>
         <path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z" />

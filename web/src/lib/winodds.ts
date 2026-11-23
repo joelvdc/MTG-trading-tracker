@@ -32,16 +32,6 @@ export interface WinOddsData {
   byMaze: number[];
 }
 
-/** The app's power level from the win turn (AppPowerReading). */
-export interface AppPowerReading {
-  power: number;
-  exact: number;
-  turn: number | null;
-  wonByEnd: number;
-  speed: number;
-  adjust: number | null;
-}
-
 /** What the app's own code (compiled to JavaScript, web/winodds-kt) answers for a deck. */
 export interface WinResult {
   odds: WinOddsData;
@@ -55,7 +45,6 @@ export interface WinResult {
   damageText: string;
   comboShare: number;
   mazeShare: number;
-  power: AppPowerReading;
 }
 
 /** The deck's cards as the app's StatsCard (its tokens as the app keeps them: a JSON list, or null). */

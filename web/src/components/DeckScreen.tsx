@@ -122,7 +122,7 @@ function useFolded(deckId: string): [Set<string>, (key: string, folded: boolean)
 const BASICS = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].flatMap((b) => [b, `Snow-Covered ${b}`]).map((n) => n.toLowerCase()));
 
 /**
- * A deck page: its cards by category or type, what you own, the stats and the rule-zero cards. It draws a saved
+ * A deck page: its cards by category or type, what you own, the stats and the bracket card. It draws a saved
  * deck, or a precon from MTGJSON's list as a preview (read only: nothing is saved, and nothing that edits or belongs
  * to a saved deck is shown).
  */
