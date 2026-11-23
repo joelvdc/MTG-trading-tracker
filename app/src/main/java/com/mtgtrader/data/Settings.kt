@@ -519,6 +519,15 @@ class Settings(context: Context) {
         prefs.edit().putString("powerSource", v.name).stamp().apply()
     }
 
+    /** Where brackets come from: Commander Salt's or the app's estimate, for every deck (synced). Since 1.115. */
+    private val _bracketSource = MutableStateFlow(BracketSource.fromKey(prefs.getString("bracketSource", null)))
+    val bracketSource: StateFlow<BracketSource> = _bracketSource
+
+    fun setBracketSource(v: BracketSource) {
+        _bracketSource.value = v
+        prefs.edit().putString("bracketSource", v.name).stamp().apply()
+    }
+
     private val _conditionAdjust = MutableStateFlow(prefs.getBoolean("conditionAdjust", false))
     /** Whether values count a copy's condition (synced). Off unless switched on. Since 1.33. */
     val conditionAdjust: StateFlow<Boolean> = _conditionAdjust
@@ -815,6 +824,7 @@ class Settings(context: Context) {
             put("deckSortReversed", deckSortReversed.toString())
             put("collectionView", collectionView.value.name)
             put("powerSource", powerSource.value.name)
+            put("bracketSource", bracketSource.value.name)
             put("deckPrintingsOff", _deckPrintingsOff.value.joinToString(","))
             put("deckPicks", encodePicks(_deckPicks.value))
             put("deckTokenPicks", encodePicks(_deckTokenPicks.value))
@@ -880,6 +890,7 @@ class Settings(context: Context) {
         v["deckSortReversed"]?.toBooleanStrictOrNull()?.let { e.putBoolean("deckSortReversed", it) }
         v["collectionView"]?.let { _collectionView.value = CollectionView.fromKey(it); e.putString("collectionView", it) }
         v["powerSource"]?.let { _powerSource.value = PowerSource.fromKey(it); e.putString("powerSource", it) }
+        v["bracketSource"]?.let { _bracketSource.value = BracketSource.fromKey(it); e.putString("bracketSource", it) }
         v["deckPrintingsOff"]?.let { _deckPrintingsOff.value = decodeIds(it); e.putString("deckPrintingsOff", it) }
         v["deckPicks"]?.let { _deckPicks.value = decodePicks(it); e.putString("deckPicks", it) }
         v["deckTokenPicks"]?.let { _deckTokenPicks.value = decodePicks(it); e.putString("deckTokenPicks", it) }

@@ -1,5 +1,6 @@
 package com.mtgtrader
 
+import com.mtgtrader.data.BracketSource
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
@@ -71,18 +72,19 @@ class Release114Test {
 
     @Test
     fun aRatingIsStaleOnlyForALocalDeckWhoseListItNoLongerFits() {
-        assertEquals(1, LocalRating.RATING_VERSION)
-        assertTrue("no rating yet", LocalRating.stale(deck(), sample))
-        assertFalse("a fresh rating", LocalRating.stale(deck(saltCard = rated()), sample))
-        assertTrue("another list", LocalRating.stale(deck(saltCard = rated(listKey = "00000000")), sample))
-        assertTrue("no fingerprint kept (older)", LocalRating.stale(deck(saltCard = rated(listKey = null)), sample))
-        assertTrue("another rating version", LocalRating.stale(deck(saltCard = rated(ratingVersion = 0)), sample))
+        assertEquals(2, LocalRating.RATING_VERSION)
+        val salt = BracketSource.COMMANDER_SALT
+        assertTrue("no rating yet", LocalRating.stale(deck(), sample, salt))
+        assertFalse("a fresh rating", LocalRating.stale(deck(saltCard = rated()), sample, salt))
+        assertTrue("another list", LocalRating.stale(deck(saltCard = rated(listKey = "00000000")), sample, salt))
+        assertTrue("no fingerprint kept (older)", LocalRating.stale(deck(saltCard = rated(listKey = null)), sample, salt))
+        assertTrue("another rating version", LocalRating.stale(deck(saltCard = rated(ratingVersion = 0)), sample, salt))
         // Commander Salt's own data (made local from Archidekt) is never stale.
-        val salt = SaltCard(gameChangers = listOf("Smothering Tithe"), version = SaltCard.CURRENT).encode()
-        assertFalse(LocalRating.stale(deck(saltCard = salt), sample))
+        val own = SaltCard(gameChangers = listOf("Smothering Tithe"), version = SaltCard.CURRENT).encode()
+        assertFalse(LocalRating.stale(deck(saltCard = own), sample, salt))
         // Nor is a deck from Archidekt, or one without cards.
-        assertFalse(LocalRating.stale(deck(local = false), sample))
-        assertFalse(LocalRating.stale(deck(), emptyList()))
+        assertFalse(LocalRating.stale(deck(local = false), sample, salt))
+        assertFalse(LocalRating.stale(deck(), emptyList(), salt))
     }
 
     // ---- SaltCard.decode -------------------------------------------------------------------------

@@ -452,8 +452,11 @@ private suspend fun makePdf(context: Context, plan: PrintPlan, source: PowerSour
     val art = if (inkSaver) emptyMap() else (plan.bracket + plan.power).distinctBy { it.archidektId }.associate { deck ->
         deck.archidektId to deck.coverUrl?.let { loadArt(context, it) }
     }
-    fun card(kind: RuleZeroCard, deck: Deck) =
-        PrintCard(kind, deck, SaltCard.decode(deck.saltCard), wins[deck.archidektId], source, art[deck.archidektId])
+    // The decks' salt sums, as the power level cards print them (since 1.115).
+    val salt = plan.power.associate { deck -> deck.archidektId to runCatching { c.saltScores.sumFor(c.db.deckDao().cards(deck.archidektId)) }.getOrNull() }
+    fun card(kind: RuleZeroCard, deck: Deck) = PrintCard(
+        kind, deck, SaltCard.decode(deck.saltCard), wins[deck.archidektId], source, art[deck.archidektId], salt[deck.archidektId],
+    )
     val pages = CardSheets.pages(plan.bracket.map { card(RuleZeroCard.BRACKET, it) }, plan.power.map { card(RuleZeroCard.POWER, it) })
     return withContext(Dispatchers.Default) {
         val dir = File(context.filesDir, "rulezero").apply { mkdirs() }

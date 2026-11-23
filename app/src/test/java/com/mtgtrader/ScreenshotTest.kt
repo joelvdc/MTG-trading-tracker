@@ -676,7 +676,7 @@ class ScreenshotTest {
                             prices = "Cardmarket · Trend · EUR · daily updates",
                             collection = "Swipe right: move to a binder… · fair trade ±5%",
                             wishlist = "Price alerts on Trend · CardTrader",
-                            decks = "Power level: Commander Salt · Archidekt: joelvdc",
+                            decks = "Power level: Commander Salt · Bracket: Commander Salt · Archidekt: joelvdc",
                             games = "Life tracker controls, look and vibration",
                             backups = "Last backup: 8 Nov 2026, 09:12",
                             appearance = "Follow the phone · pictures saved for offline use",
@@ -939,7 +939,10 @@ class ScreenshotTest {
                         com.mtgtrader.ui.SmallBracketCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, win(cloudTurns)) {}
                         com.mtgtrader.ui.SmallBracketCard(deck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9), com.mtgtrader.data.SaltCard(), win(babaTurns)) {}
                         com.mtgtrader.ui.SmallBracketCard(deck(4, "Sarge", "Sergeant John Benton", "GW", 3, 3, 6.1), com.mtgtrader.data.SaltCard()) {}
-                        com.mtgtrader.ui.SmallPowerCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
+                        com.mtgtrader.ui.SmallPowerCard(
+                            deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, com.mtgtrader.data.PowerSource.COMMANDER_SALT,
+                            com.mtgtrader.data.SaltSum(20.9, "Mild", emptyList()),
+                        ) {}
                         com.mtgtrader.ui.SmallPowerCard(deck(3, "Cult of Athreos (LC)", "Athreos, God of Passage", "WB", 2, 2, 4.8), null, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
                     }
                 }
@@ -1049,7 +1052,10 @@ class ScreenshotTest {
                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         com.mtgtrader.ui.BracketCardView(deck, card, win = win(sargeTurns, mapOf("combat" to 21, "commander" to 79), 100))
-                        com.mtgtrader.ui.PowerCardView(deck, card, com.mtgtrader.data.PowerSource.APP)
+                        com.mtgtrader.ui.PowerCardView(
+                            deck, card, com.mtgtrader.data.PowerSource.APP,
+                            saltSum = com.mtgtrader.data.SaltSum(20.9, "Mild", card.saltiest),
+                        )
                     }
                 }
             }
@@ -1408,7 +1414,14 @@ class ScreenshotTest {
         source: com.mtgtrader.data.PowerSource = com.mtgtrader.data.PowerSource.COMMANDER_SALT,
     ): android.graphics.Bitmap {
         val cards = printCards.map { (deck, data, turns) ->
-            com.mtgtrader.ui.PrintCard(kind, deck.copy(edhPowerLevel = deck.powerLevel, edhPowerAt = deck.scoredAt), data, win(turns), source)
+            com.mtgtrader.ui.PrintCard(
+                kind, deck.copy(edhPowerLevel = deck.powerLevel, edhPowerAt = deck.scoredAt), data, win(turns), source,
+                // Since 1.115 the power card's saltiness is the app's own sum of the deck's cards.
+                saltSum = com.mtgtrader.data.SaltSum(
+                    deck.saltPercent ?: 0.0, com.mtgtrader.data.SaltSum.level(deck.saltPercent ?: 0.0),
+                    listOf("Winter Orb", "Armageddon", "Static Orb", "Rhystic Study", "Smothering Tithe").map { com.mtgtrader.data.SaltyCard(it, 2.4) },
+                ),
+            )
         }
         val bitmap = android.graphics.Bitmap.createBitmap((210 * perMm).toInt(), (297 * perMm).toInt(), android.graphics.Bitmap.Config.ARGB_8888)
         com.mtgtrader.ui.CardSheets.drawPage(android.graphics.Canvas(bitmap), perMm, cards, com.mtgtrader.ui.CardSheets.footer(cards, 0, 2), inkSaver)

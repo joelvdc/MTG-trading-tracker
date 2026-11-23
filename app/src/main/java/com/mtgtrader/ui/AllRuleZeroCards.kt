@@ -64,7 +64,9 @@ import com.mtgtrader.data.DeckSorting
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
+import com.mtgtrader.data.SaltSum
 import com.mtgtrader.data.WinOdds
+import com.mtgtrader.data.saltTotal
 import kotlin.math.roundToInt
 
 /**
@@ -120,7 +122,7 @@ fun AllRuleZeroCardsScreen(nav: NavController, kind: RuleZeroCard) {
                     val win by rememberWinOdds(deck)
                     SmallBracketCard(deck, data, win, onClick)
                 } else {
-                    SmallPowerCard(deck, data, source, onClick)
+                    SmallPowerCard(deck, data, source, onClick = onClick)
                 }
             }
             val unscored = own!!.filter { it !in shown }
@@ -207,7 +209,7 @@ private fun Criterion(label: String, n: Int) {
 }
 
 @Composable
-internal fun SmallPowerCard(deck: Deck, data: SaltCard?, source: PowerSource, onClick: () -> Unit) {
+internal fun SmallPowerCard(deck: Deck, data: SaltCard?, source: PowerSource, saltSum: SaltSum? = null, onClick: () -> Unit) {
     val power = deck.power(source)
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -229,7 +231,7 @@ internal fun SmallPowerCard(deck: Deck, data: SaltCard?, source: PowerSource, on
                 Text(
                     listOfNotNull(
                         data?.playStyle?.lowercase(),
-                        deck.saltPercent?.let { "salt ${it.roundToInt()}%" },
+                        (saltSum ?: rememberSaltSum(deck.archidektId, deck.updatedAt))?.let { "salt " + saltTotal(it.total) },
                         data?.manaFixing?.let { "fixing $it%" },
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,

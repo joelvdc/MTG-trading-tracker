@@ -44,7 +44,7 @@ private data class SaltDeck(
     val details: SaltDetails? = null,
 )
 
-data class SaltScores(
+data class CommanderSaltScores(
     val saltId: String,
     val powerLevel: Double?,
     val bracketRealistic: Int?,
@@ -69,7 +69,7 @@ class CommanderSaltApi(private val http: OkHttpClient) {
      * Its import often fails on the first try and works on the next, so it's retried a few times;
      * if every try fails, the scores from an earlier import are used when there are any.
      */
-    suspend fun score(archidektId: Long): SaltScores {
+    suspend fun score(archidektId: Long): CommanderSaltScores {
         val deckUrl = "https://archidekt.com/decks/$archidektId"
         val url = "$base/decks".toHttpUrl().newBuilder().addQueryParameter("url", deckUrl).build()
         var error: Exception? = null
@@ -90,7 +90,7 @@ class CommanderSaltApi(private val http: OkHttpClient) {
     }
 
     /** Scores from an earlier import, or null if Commander Salt doesn't know the deck. */
-    private suspend fun existing(saltId: String): SaltScores? = runCatching {
+    private suspend fun existing(saltId: String): CommanderSaltScores? = runCatching {
         val url = "$base/decks".toHttpUrl().newBuilder().addQueryParameter("id", saltId).build()
         parse(call(Request.Builder().url(url).get().build())).takeIf { it.complete }
     }.getOrNull()
@@ -135,12 +135,12 @@ class CommanderSaltApi(private val http: OkHttpClient) {
         private val RETRY_WAITS_MS = longArrayOf(0, 2_000, 4_000, 8_000)
         private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true; explicitNulls = false }
 
-        fun parse(body: String): SaltScores {
+        fun parse(body: String): CommanderSaltScores {
             if (body.isBlank() || body == "null") throw IOException("Commander Salt doesn't know this deck")
             val root = json.parseToJsonElement(body) as? JsonObject ?: throw IOException("Commander Salt sent something unexpected")
             val d = json.decodeFromJsonElement(SaltDeck.serializer(), root)
             val b = d.details?.brackets
-            return SaltScores(
+            return CommanderSaltScores(
                 saltId = d.id,
                 powerLevel = d.powerLevelRating,
                 bracketRealistic = (b?.csBracket ?: d.bracketRating)?.roundToInt(),
