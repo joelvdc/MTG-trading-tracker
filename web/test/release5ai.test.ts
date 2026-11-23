@@ -193,7 +193,7 @@ const input: PrimerInput = {
   ],
   roles: "Lands 37 · Ramp 11 · Draw 9",
   bracket: "Bracket 3 (Upgraded)",
-  power: "Power 7.5 (Commander Salt)",
+  power: null,
   combos: ["Sol Ring + Basalt Monolith: infinite mana"],
   notes: [{ name: "Sol Ring", note: "Tutor target" }],
 };
@@ -233,7 +233,7 @@ describe("buildPrompt", () => {
     expect(p.user).toContain("Deck: Vohar Danse");
     expect(p.user).toContain("Commanders: Vohar, Vodalian Desecrator");
     expect(p.user).toContain("Bracket 3 (Upgraded)");
-    expect(p.user).toContain("Power 7.5 (Commander Salt)");
+    expect(p.user).not.toContain("Power:");
     expect(p.user).toContain("Roles: Lands 37 · Ramp 11 · Draw 9");
     expect(p.user).toContain("Sol Ring + Basalt Monolith: infinite mana");
     expect(p.user).toContain("Sol Ring: Tutor target");
@@ -543,15 +543,15 @@ function deckCard(name: string, quantity: number, opts: { id: string; category?:
 }
 
 describe("deckPrimerInput", () => {
-  it("takes the commanders, sections, roles, bracket, power, combos and notes; never prices", () => {
+  it("takes the commanders, sections, roles, bracket, combos and notes; never prices", () => {
     const f = appFile();
     const sd = deckOf(f);
     sd.deck.name = "Vohar Danse";
     sd.deck.commanders = "Vohar, Vodalian Desecrator";
-    sd.deck.bracketRealistic = 3;
-    sd.deck.powerLevel = 7.5;
     sd.deck.cardNotes = JSON.stringify({ "sol ring": "Tutor target", forest: "Never cut", "maybe rock": "Not in the deck" });
     sd.deck.saltCard = JSON.stringify({
+      source: "app",
+      bracket: 3,
       combos: [{ cards: ["Sol Ring", "Basalt Monolith"], results: ["infinite-mana"] }],
       twoCardCombos: [["Exquisite Blood", "Sanguine Bond"]],
     });
@@ -571,7 +571,7 @@ describe("deckPrimerInput", () => {
     expect(got.roles).toContain("Lands 37");
     expect(got.roles).toContain("Ramp 1");
     expect(got.bracket).toBe("Bracket 3 (Upgraded)");
-    expect(got.power).toBe("Power 7.5 (Commander Salt)");
+    expect(got.power).toBeNull();
     expect(got.combos).toContain("Sol Ring + Basalt Monolith: infinite mana");
     expect(got.combos).toContain("Exquisite Blood + Sanguine Bond");
     expect(got.notes).toContainEqual({ name: "Sol Ring", note: "Tutor target" });

@@ -1,6 +1,7 @@
 // The recorded games in the sync file (the app's data/Games.kt, GameStore.kt): reading them for the Games page, and
 // the changes the website makes, following the app's rules (GameDetailScreen, "Add a past game", PlayersScreen). The
 // life tracker itself stays on the phone. Raw objects are edited in place, so fields a newer app adds are kept.
+import { deckBracket } from "./deckshared";
 import { deckOwner, syncDecks } from "./decks";
 import {
   changeSeat,
@@ -134,8 +135,8 @@ export function myDecks(file: SyncFile): MyDeck[] {
       commanders: d.deck.commanders ?? "",
       scryfallId: d.deck.commanderScryfallId ?? null,
       colorIdentity: d.deck.colorIdentity ?? "",
-      bracket: d.deck.bracketRealistic ?? null,
-      power: d.deck.powerLevel ?? null,
+      bracket: deckBracket(d.deck),
+      power: null,
       retired: !!d.deck.retired,
       followed: d.deck.archidektId >= 0 && (own === "" || (d.deck.owner ?? "").trim().toLowerCase() !== own),
     }))

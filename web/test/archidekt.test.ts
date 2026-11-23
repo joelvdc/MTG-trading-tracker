@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
+﻿import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { archidektId, archidektUser, identityOf, parseDeck, parseDeckList, parseTime } from "@/lib/archidekt";
-import { parseSalt, saltDeckId, saltError } from "@/lib/commandersalt";
-import { putLoadedDeck, putScores, updatePlan, type ReadDeck } from "@/lib/deckload";
+import { putLoadedDeck, updatePlan, type ReadDeck } from "@/lib/deckload";
 import { syncDecks } from "@/lib/decks";
 import { decodeSalt } from "@/lib/deckshared";
 import { putRating } from "@/lib/deckrating";
@@ -56,29 +55,15 @@ describe("Archidekt (the app's ArchidektApi and DeckLinks)", () => {
   });
 });
 
-describe("Commander Salt (CommanderSaltApi.parse)", () => {
-  it("reads the scores, rounds the brackets and explains errors", () => {
-    const s = parseSalt(
-      JSON.stringify({ id: "abc", powerLevelRating: 6.4, archetypeLabel: "Combo", details: { brackets: { csBracket: 3.5, wotcBracket: 2.2 }, salt: { profile: { headline: { saltPercentage: 12.5 } } } } }),
-    );
-    expect(s).toMatchObject({ saltId: "abc", powerLevel: 6.4, bracketRealistic: 4, bracketBaseline: 2, saltPercent: 12.5, archetype: "Combo" });
-    expect(() => parseSalt("null")).toThrow(/doesn't know/);
-    expect(saltError('{"message":"ERROR: Deck URL invalid"}', 404)).toBe("Deck URL invalid");
-    expect(saltError("<html>", 502)).toBe("Commander Salt error 502");
-    expect(saltDeckId(10710772)).toBe("5a5d68180054a4028654c7abba9ab2fd");
-  });
-});
-
 describe("loading decks from Archidekt (DeckRepository.load)", () => {
   const read = (): ReadDeck => ({ deck: parseDeck(raw()), found: {} });
 
-  it("replaces the deck's list, keeps its scores and drops other sites' power levels", () => {
+  it("replaces the deck's list, keeping the scores an older app kept", () => {
     const f = appFile();
     setPrefs(f, { powerSource: "EDH_POWER_LEVEL" }, NOW);
     const before = syncDecks(f).find((d) => d.deck.archidektId === 10710772)!.deck;
     const sd = putLoadedDeck(f, read(), NOW);
     expect(sd.deck.powerLevel).toBe(before.powerLevel);
-    expect(sd.deck.edhPowerLevel).toBeNull();
     expect(sd.deck.importedAt).toBe(NOW);
     expect(sd.deck.updatedAt).toBeGreaterThan(before.updatedAt);
     expect(sd.deck.commanders).toBe("Vohar, Vodalian Desecrator");
@@ -87,58 +72,29 @@ describe("loading decks from Archidekt (DeckRepository.load)", () => {
     expect(sd.cards.every((c) => c.lineUid && c.card.imageUrl?.startsWith("https://cards.scryfall.io/"))).toBe(true);
     expect(categories(sd.deck.categoryInfo).find((c) => c.name === "Maybeboard")?.included).toBe(false);
     expect(syncDecks(f).filter((d) => d.deck.archidektId === 10710772)).toHaveLength(1);
+    // The settings the website doesn't know stay as they are.
     expect(prefs(f).powerSource).toBe("EDH_POWER_LEVEL");
   });
 
-  it("keeps Commander Salt's scores, or its problem", () => {
-    const f = appFile();
-    putLoadedDeck(f, read(), NOW);
-    putScores(f, 10710772, { saltId: "", powerLevel: 5, bracketRealistic: 3, bracketBaseline: 2, saltPercent: 1, archetype: null, saltCard: null }, NOW + 5);
-    let d = syncDecks(f).find((x) => x.deck.archidektId === 10710772)!.deck;
-    expect(d).toMatchObject({ powerLevel: 5, bracketRealistic: 3, saltId: saltDeckId(10710772), scoredAt: NOW + 5, scoreError: null });
-    putScores(f, 10710772, { error: "Deck URL invalid" }, NOW + 6);
-    d = syncDecks(f).find((x) => x.deck.archidektId === 10710772)!.deck;
-    expect(d).toMatchObject({ powerLevel: 5, scoreError: "Deck URL invalid" });
-  });
-
-  it("keeps Commander Salt's bracket out when the bracket comes from the app", () => {
+  it("keeps the website's rating when the deck is read again", () => {
     const f = appFile();
     putLoadedDeck(f, read(), NOW);
     const find = () => syncDecks(f).find((x) => x.deck.archidektId === 10710772)!.deck;
-    // The estimate on the deck (its own bracket, and its own card).
-    setPrefs(f, { bracketSource: "APP" }, NOW);
     const estimate = rateDeck([], new Map(), [], null);
     expect(putRating(f, 10710772, estimate, NOW + 1)).toBe(true);
-    // Commander Salt scores it again: its power level, happiness and archetype are kept, its bracket and card aren't.
-    const scores = (saltCard: string) => ({ saltId: "abc", powerLevel: 5, bracketRealistic: 4, bracketBaseline: 3, saltPercent: 30, archetype: "Combo", saltCard });
-    const saltCard = JSON.stringify({ gameChangers: ["Rhystic Study"], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
-    putScores(f, 10710772, scores(saltCard), NOW + 5);
-    let d = find();
-    expect(d.powerLevel).toBe(5);
-    expect(d.saltPercent).toBe(30);
-    expect(d.archetype).toBe("Combo");
-    expect(d.scoredAt).toBe(NOW + 5);
-    expect(d.scoreError).toBeNull();
-    expect(d.saltId).toBe("abc");
+    putLoadedDeck(f, read(), NOW + 5);
+    const d = find();
+    expect(decodeSalt(d.saltCard)!.source).toBe("app");
     expect(d.bracketBaseline).toBe(estimate.bracket);
     expect(d.bracketRealistic).toBeNull();
-    expect(decodeSalt(d.saltCard)!.source).toBe("app");
-    // Back on Commander Salt, both are saved as before.
-    setPrefs(f, { bracketSource: "COMMANDER_SALT" }, NOW + 6);
-    putScores(f, 10710772, scores(saltCard), NOW + 7);
-    d = find();
-    expect(d).toMatchObject({ powerLevel: 5, bracketBaseline: 3, bracketRealistic: 4, saltCard });
   });
 
-  it("plans Update all decks: changed, not listed, unscored", () => {
+  it("plans Update all decks: changed, not listed, or up to date", () => {
     const f = appFile();
     putLoadedDeck(f, read(), NOW);
-    putScores(f, 10710772, { saltId: "x", powerLevel: 5, bracketRealistic: 3, bracketBaseline: 2, saltPercent: 1, archetype: null, saltCard: null }, NOW);
     const at = parseTime(raw().updatedAt);
     expect(updatePlan(f, new Map([[10710772, at]]))).toEqual([]);
     expect(updatePlan(f, new Map([[10710772, at! + 1]]))[0].need).toBe("changed");
     expect(updatePlan(f, new Map())[0].need).toBe("check");
-    putScores(f, 10710772, { error: "down" }, NOW);
-    expect(updatePlan(f, new Map([[10710772, at]]))[0].need).toBe("unscored");
   });
 });

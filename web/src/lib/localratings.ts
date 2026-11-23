@@ -1,7 +1,7 @@
-// The website's own rating of a deck made in the app ("local decks"), which Commander Salt can't score: the same kind
-// of rule-zero card it makes (SaltCard, deckshared.ts) — brackets with their reasons, the effects, the combos and the
-// salt. Pure functions: the caller fetches the facts and the combos (spellbook.ts) and calls rateDeck. Every tunable
-// number is in RATING, so the rules can be tuned without touching the logic.
+// The website's own rating of a deck, local or from Archidekt: the same kind of rule-zero card the app makes
+// (SaltCard, deckshared.ts) — brackets with their reasons, the effects, the combos and the salt. Pure functions: the
+// caller fetches the facts and the combos (spellbook.ts) and calls rateDeck. Every tunable number is in RATING, so the
+// rules can be tuned without touching the logic.
 //
 // The four axes (interaction, consistency, efficiency, manabase) were tried and didn't predict the power level, so
 // they're no longer worked out: axes stays empty and the "how it plays" bars stay hidden.
@@ -16,7 +16,7 @@ export const SALT_CARD_VERSION = 4;
 
 export const RATING = {
   bracket: { tutorsFor3: 5, extraTurnsFor4: 3, gcFor4: 4, earlyMv: 8 },
-  salt: { mild: 30, high: 45 }, // deck total below → "Mild", below "High" → "Moderate", else "High" (Commander Salt's labels)
+  salt: { mild: 30, high: 45 }, // deck total below → "Mild", below "High" → "Moderate", else "High" (the app's labels)
 };
 
 /** What the deck's cards are known to be (Scryfall's tags, Game Changer, salt; accounts.ts keeps the same shape). */
@@ -60,7 +60,7 @@ const tutorCopy = (c: StatsCard, facts: Map<string, CardFact>) =>
 /** The words of a feature name, lowercased, one per hyphen ("Infinite colorless mana" → ["infinite", "colorless", "mana"]). */
 const words = (name: string) => name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 
-// One label per feature, the first match winning, as Commander Salt's results read them.
+// One label per feature, the first match winning, as the app's results read them.
 const RESULT_LABELS: [RegExp, string][] = [
   [/^win the game$/i, "win-game"],
   [/creature tokens?/i, "infinite-tokens"],
@@ -198,7 +198,7 @@ export function saltSumOf(cards: StatsCard[], facts: Map<string, CardFact>): Sal
   return { total: rounded, level: saltIntensity(rounded), saltiest };
 }
 
-/** Commander Salt's salt labels: "Mild" below 30, "Moderate" below 45, else "High" (null: no total). */
+/** The app's salt labels: "Mild" below 30, "Moderate" below 45, else "High" (null: no total). */
 export function saltIntensity(total: number | null): string | null {
   if (total === null) return null;
   const t = RATING.salt;

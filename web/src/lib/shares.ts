@@ -6,7 +6,7 @@ import type { CkFile } from "./cardkingdom";
 import type { DetailsFile } from "./carddetails";
 import { collectionView, type CollectionView } from "./collview";
 import { deckView, syncDecks } from "./decks";
-import { bracketName, POWER_SOURCES, sections } from "./deckshared";
+import { bracketName, deckBracket, sections } from "./deckshared";
 import { gamesOf } from "./games";
 import type { Game } from "./gameshared";
 import type { Legality } from "./legality";
@@ -97,12 +97,16 @@ export interface SharedDeck {
   cover: string | null;
   cards: number;
   bracket: string | null;
+  /** Power levels are gone from the website: always null (kept for the shared page's shape). */
   power: string | null;
   /** The deck's primer (Deck.primer), or null; shared like the notes. */
   primer: string | null;
   sections: { title: string; lines: SharedDeckLine[] }[];
   legality: Legality | null;
 }
+
+/** "Bracket 2 (Core)" for a bracket, or null (the app's bracketName). */
+const bracketText = (b: number | null) => (b != null ? `Bracket ${b}${bracketName(b) ? ` (${bracketName(b)})` : ""}` : null);
 
 export function pricesOf(v: Pick<CollectionView, "currency" | "perEuro" | "sourceLabel" | "priceTypeLabel" | "pricesNote">): SharedPrices {
   const note = v.pricesNote.replace(/^Price lists from /, "price lists from ").replace(/^Prices: /, "");
@@ -187,7 +191,9 @@ export function sharedView(
   const cv = collectionView(file, prices, details, ck);
   const p = pricesOf(cv);
   if (link.kind === "deck") {
-    const v = deckView(file, Number(link.target), prices, details, ck);
+    const target = Number(link.target);
+    const sd = syncDecks(file).find((x) => x.deck.archidektId === target);
+    const v = deckView(file, target, prices, details, ck);
     if (!v) return null;
     const main = v.rows.filter((r) => !r.maybeboard);
     const d = v.deck;
@@ -202,8 +208,8 @@ export function sharedView(
         colorIdentity: d.colorIdentity,
         cover: v.cover,
         cards: main.reduce((n, r) => n + r.quantity, 0),
-        bracket: d.bracketRealistic != null ? `Bracket ${d.bracketRealistic}${bracketName(d.bracketRealistic) ? ` (${bracketName(d.bracketRealistic)})` : ""}` : null,
-        power: v.power != null ? `Power ${v.power.toFixed(1)} (${POWER_SOURCES[v.powerSource].label})` : null,
+        bracket: sd ? bracketText(deckBracket(sd.deck)) : null,
+        power: null,
         // The deck's own words go with the list: its primer and its cards' notes (never purchase prices).
         primer: v.primer,
         sections: sections(main, "CATEGORY").map((s) => ({

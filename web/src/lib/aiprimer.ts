@@ -4,8 +4,8 @@
 import type { AccountStore } from "./accounts";
 import { AI_PROVIDERS, buildPrompt, cleanPrimer, isAiProvider, type AiOptions, type AiProvider, type PrimerInput } from "./aiprimershared";
 import { USER_AGENT } from "./config";
-import { deckView, type DeckViewExtras } from "./decks";
-import { allCombos, bracketName, comboResultText, POWER_SOURCES, sections } from "./deckshared";
+import { deckView, syncDecks, type DeckViewExtras } from "./decks";
+import { allCombos, bracketName, comboResultText, deckBracket, sections } from "./deckshared";
 import { seal, unseal } from "./session";
 import type { SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
@@ -452,12 +452,18 @@ export async function writePrimer(access: AiAccess, input: PrimerInput, options:
   }
 }
 
+/** "Bracket 2 (Core)" for a bracket, or null (the app's bracketName). */
+function bracketText(b: number | null): string | null {
+  return b != null ? `Bracket ${b}${bracketName(b) ? ` (${bracketName(b)})` : ""}` : null;
+}
+
 /**
- * A deck as the prompt sees it: its commanders, its main deck by category, its roles, bracket, power, combos and the
- * owner's card notes. No prices and nothing about the collection. Pass the same extras the deck GET route does, so the
- * roles line is filled in.
+ * A deck as the prompt sees it: its commanders, its main deck by category, its roles, bracket, combos and the owner's
+ * card notes. No prices and nothing about the collection. Pass the same extras the deck GET route does, so the roles
+ * line is filled in.
  */
 export function deckPrimerInput(file: SyncFile, id: number, extras: DeckViewExtras): PrimerInput | null {
+  const sd = syncDecks(file).find((x) => x.deck.archidektId === id);
   const view = deckView(file, id, null, null, null, extras);
   if (!view) return null;
   const main = view.rows.filter((r) => !r.maybeboard);
@@ -471,8 +477,8 @@ export function deckPrimerInput(file: SyncFile, id: number, extras: DeckViewExtr
     commanders: main.filter((r) => r.commander).map((r) => r.name),
     sections: sections(main, "CATEGORY").map((s) => ({ title: s.title, cards: s.rows.map((r) => ({ name: r.name, quantity: r.quantity })) })),
     roles: view.roles.map((r) => `${r.role} ${r.count}`).join(" · "),
-    bracket: d.bracketRealistic != null ? `Bracket ${d.bracketRealistic}${bracketName(d.bracketRealistic) ? ` (${bracketName(d.bracketRealistic)})` : ""}` : null,
-    power: view.power != null ? `Power ${view.power.toFixed(1)} (${POWER_SOURCES[view.powerSource].label})` : null,
+    bracket: bracketText(sd ? deckBracket(sd.deck) : null),
+    power: null,
     combos,
     // The notes of the cards the primer is about; the maybeboard's own notes would name cards the list doesn't have.
     notes: main.flatMap((r) => (r.note ? [{ name: r.name, note: r.note }] : [])),

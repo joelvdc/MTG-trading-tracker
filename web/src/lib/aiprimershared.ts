@@ -79,6 +79,7 @@ export interface PrimerInput {
   /** "Lands 37 · Ramp 11 · Draw 9". */
   roles: string;
   bracket: string | null;
+  /** Power levels are gone from the website: always null (kept for the prompt's shape). */
   power: string | null;
   /** One line each, like "Sol Ring + X: infinite mana". */
   combos: string[];

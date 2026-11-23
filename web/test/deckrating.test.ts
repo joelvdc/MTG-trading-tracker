@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parse, type SyncFile } from "@/lib/syncfile";
 import { putRating, RATED_SINCE, ratingStale } from "@/lib/deckrating";
 import { decodeSalt, type Deck, type DeckCard, type SaltCard, type SyncDeck } from "@/lib/deckshared";
@@ -108,58 +108,41 @@ function syncFile(): SyncFile {
 }
 
 describe("ratingStale", () => {
-  const SALT = JSON.stringify({ gameChangers: ["Rhystic Study"], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
+  // Data of an older app, from before the website rated decks itself.
+  const OLD = JSON.stringify({ gameChangers: ["Rhystic Study"], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
 
-  it("is never stale for a deck from Archidekt when its bracket is Commander Salt's", () => {
-    expect(ratingStale(false, null, stats, false)).toBe(false);
-    expect(ratingStale(false, JSON.stringify(rating()), stats, false)).toBe(false);
-    expect(ratingStale(false, SALT, stats, false)).toBe(false);
+  it("is stale for a deck without a rating", () => {
+    expect(ratingStale(null, stats)).toBe(true);
+    expect(ratingStale("not json", stats)).toBe(true);
   });
 
-  it("is stale for a local deck without a rating", () => {
-    expect(ratingStale(true, null, stats, false)).toBe(true);
-    expect(ratingStale(true, "not json", stats, false)).toBe(true);
+  it("is stale for data that isn't the website's (an older app's)", () => {
+    expect(ratingStale(OLD, stats)).toBe(true);
   });
 
   it("is stale for the website's rating of another list or another version", () => {
     const r = rating();
-    expect(ratingStale(true, JSON.stringify(r), stats, false)).toBe(false);
-    expect(ratingStale(true, JSON.stringify(r), stats, true)).toBe(false);
-    expect(ratingStale(true, JSON.stringify(r), [...stats, card("More")], false)).toBe(true);
-    expect(ratingStale(true, JSON.stringify({ ...r, listKey: "00000000", ratingVersion: RATING_VERSION }), stats, false)).toBe(true);
-    expect(ratingStale(true, JSON.stringify({ ...r, listKey: ratingListKey(stats), ratingVersion: RATING_VERSION + 1 }), stats, false)).toBe(true);
-  });
-
-  it("is never stale for Commander Salt's data on a local deck (a deck made local from Archidekt)", () => {
-    expect(ratingStale(true, SALT, stats, false)).toBe(false);
-    expect(ratingStale(true, SALT, stats, true)).toBe(false);
-  });
-
-  it("asks for the estimate on an Archidekt deck with Commander Salt's data when the bracket comes from the app", () => {
-    expect(ratingStale(false, SALT, stats, true)).toBe(true);
-    expect(ratingStale(false, null, stats, true)).toBe(true);
-    // The estimate is there already, for this list: nothing to do.
-    expect(ratingStale(false, JSON.stringify(rating()), stats, true)).toBe(false);
-    expect(ratingStale(false, JSON.stringify(rating()), [...stats, card("More")], true)).toBe(true);
+    expect(ratingStale(JSON.stringify(r), stats)).toBe(false);
+    expect(ratingStale(JSON.stringify(r), [...stats, card("More")])).toBe(true);
+    expect(ratingStale(JSON.stringify({ ...r, listKey: "00000000", ratingVersion: RATING_VERSION }), stats)).toBe(true);
+    expect(ratingStale(JSON.stringify({ ...r, listKey: ratingListKey(stats), ratingVersion: RATING_VERSION + 1 }), stats)).toBe(true);
   });
 
   it("makes the website's ratings from before RATED_SINCE again once", () => {
     const r = JSON.stringify(rating());
-    expect(ratingStale(true, r, stats, false, RATED_SINCE - 1)).toBe(true);
-    expect(ratingStale(true, r, stats, false, null)).toBe(true);
-    expect(ratingStale(true, r, stats, false, RATED_SINCE)).toBe(false);
-    // Commander Salt's data is never touched by it.
-    expect(ratingStale(true, SALT, stats, false, 0)).toBe(false);
+    expect(ratingStale(r, stats, RATED_SINCE - 1)).toBe(true);
+    expect(ratingStale(r, stats, null)).toBe(true);
+    expect(ratingStale(r, stats, RATED_SINCE)).toBe(false);
   });
 
   it("has no answer without the deck's cards", () => {
-    expect(ratingStale(true, null, [], false)).toBe(false);
-    expect(ratingStale(false, SALT, [], true)).toBe(false);
+    expect(ratingStale(null, [])).toBe(false);
+    expect(ratingStale(OLD, [])).toBe(false);
   });
 });
 
 describe("putRating", () => {
-  it("puts the rating on a local deck, leaving Commander Salt's other scores alone", () => {
+  it("puts the rating on a local deck, leaving the scores an older app kept alone", () => {
     const f = syncFile();
     const r = rating();
     expect(putRating(f, -1, r, NOW + 100)).toBe(true);

@@ -49,7 +49,7 @@ function Progress({ p, onStop }: { p: { done: number; total: number; text: strin
 
 /**
  * Importing from Archidekt (the app's import sheet): a deck link (optionally as a local deck), or a username or
- * profile link to pick decks from. Each deck is read from Archidekt and scored on Commander Salt, one at a time.
+ * profile link to pick decks from. Each deck is read from Archidekt, one at a time.
  */
 export function ArchidektImportDialog({ user, onClose, onDone }: { user: string | null; onClose: () => void; onDone: (text: string, openId?: number) => void }) {
   const [text, setText] = useState(user ?? "");
@@ -64,11 +64,11 @@ export function ArchidektImportDialog({ user, onClose, onDone }: { user: string 
   async function go() {
     setError(null);
     if (isDeck) {
-      setBusy("Reading the deck from Archidekt and scoring it on Commander Salt…");
-      const a = await api<{ id?: number; name?: string; scoreError?: string | null }>("/api/decks", { action: "archidekt-import", link: text, local });
+      setBusy("Reading the deck from Archidekt…");
+      const a = await api<{ id?: number; name?: string }>("/api/decks", { action: "archidekt-import", link: text, local });
       setBusy(null);
       if (!a.ok || a.data.id === undefined) return setError(a.data.error ?? "That did not work.");
-      onDone(a.data.scoreError ? `${a.data.name} saved, but Commander Salt couldn't score it: ${a.data.scoreError}` : `Imported ${a.data.name}${local ? " as a local deck" : ""}.`, a.data.id);
+      onDone(`Imported ${a.data.name}${local ? " as a local deck" : ""}.`, a.data.id);
       return;
     }
     setBusy("Reading the decks from Archidekt…");
@@ -88,23 +88,18 @@ export function ArchidektImportDialog({ user, onClose, onDone }: { user: string 
     if (!list) return;
     const decks = list.decks.filter((d) => picked.has(d.id));
     let ok = 0;
-    const unscored: string[] = [];
     const failed: string[] = [];
     setError(null);
     const finished = await r.run(
       decks,
       (d) => d.name,
       async (d) => {
-        const a = await api<{ id?: number; scoreError?: string | null }>("/api/decks", { action: "archidekt-import", link: String(d.id) });
+        const a = await api<{ id?: number }>("/api/decks", { action: "archidekt-import", link: String(d.id) });
         if (!a.ok) failed.push(d.name);
-        else {
-          ok++;
-          if (a.data.scoreError) unscored.push(d.name);
-        }
+        else ok++;
       },
     );
     const parts = [`Imported ${ok} of ${decks.length} decks`];
-    if (unscored.length) parts.push(`${unscored.length} couldn't be scored (reload them later)`);
     if (failed.length) parts.push(`${failed.length} failed: ${failed.join(", ")}`);
     onDone(parts.join(" · ") + (finished ? "" : " · stopped") + ".");
   }
@@ -126,7 +121,7 @@ export function ArchidektImportDialog({ user, onClose, onDone }: { user: string 
               </label>
             )}
             <p className="muted small">
-              Public and unlisted decks only; the website doesn&apos;t log in to Archidekt. Each deck is scored on Commander Salt as in the app.
+              Public and unlisted decks only; the website doesn&apos;t log in to Archidekt.
             </p>
             <div className="inline">
               <button className="btn primary" disabled={!!busy || !text.trim()} onClick={go}>
@@ -202,8 +197,8 @@ export function ArchidektImportDialog({ user, onClose, onDone }: { user: string 
 }
 
 /**
- * "Update all decks from Archidekt" (the app's updateAll): reloads and scores the decks changed on Archidekt since
- * they were read, and scores those without a good score, one at a time.
+ * "Update all decks from Archidekt" (the app's updateAll): reloads the decks changed on Archidekt since they were
+ * read, one at a time.
  */
 export function ArchidektUpdateDialog({ onClose, onDone }: { onClose: () => void; onDone: (text: string) => void }) {
   const [busy, setBusy] = useState<string | null>(null);
@@ -222,22 +217,17 @@ export function ArchidektUpdateDialog({ onClose, onDone }: { onClose: () => void
       return setError(plan.data.error ?? "That did not work.");
     }
     let updated = 0;
-    let scored = 0;
-    const unscored: string[] = [];
     const failed: string[] = [];
     const finished = await r.run(
       plan.data.decks,
-      (d) => `${d.name}: ${d.need === "unscored" ? "scoring on Commander Salt" : "checking"}…`,
+      (d) => `${d.name}: checking…`,
       async (d) => {
-        const a = await api<{ done?: "updated" | "scored" | "same"; scoreError?: string | null }>(`/api/decks/${d.id}`, { action: "update", need: d.need });
+        const a = await api<{ done?: "updated" | "same" }>(`/api/decks/${d.id}`, { action: "update", need: d.need });
         if (!a.ok) return void failed.push(d.name);
         if (a.data.done === "updated") updated++;
-        if (a.data.done === "scored") scored++;
-        if (a.data.scoreError) unscored.push(d.name);
       },
     );
-    const parts = [updated === 0 && scored === 0 ? "All decks are up to date" : `Updated ${updated} changed deck${updated === 1 ? "" : "s"}${scored ? `, scored ${scored} more` : ""}`];
-    if (unscored.length) parts.push(`${unscored.length} couldn't be scored: ${unscored.join(", ")}`);
+    const parts = [updated === 0 ? "All decks are up to date" : `Updated ${updated} changed deck${updated === 1 ? "" : "s"}`];
     if (failed.length) parts.push(`${failed.length} failed: ${failed.join(", ")}`);
     onDone(parts.join(" · ") + (finished ? "" : " · stopped") + ".");
   }
@@ -248,10 +238,7 @@ export function ArchidektUpdateDialog({ onClose, onDone }: { onClose: () => void
       <div className="stack">
         {!started && (
           <>
-            <p className="small">
-              Reloads the decks that changed on Archidekt since they were read and scores them again on Commander Salt, and scores decks that have no score
-              yet. Local decks aren&apos;t touched. Power levels from edhpowerlevel.com are rated by the app at its next update.
-            </p>
+            <p className="small">Reloads the decks that changed on Archidekt since they were read. Local decks aren&apos;t touched.</p>
             <div className="inline">
               <button className="btn primary" onClick={go}>
                 Update all decks

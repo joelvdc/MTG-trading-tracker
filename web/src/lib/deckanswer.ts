@@ -2,7 +2,6 @@
 // the maybeboard's categories, the win turn kept here and the recorded games. Shared with a precon's read-only page,
 // which builds the deck in memory and never saves it. Server only.
 import { autoCategories, categoriesByName } from "./autocategories";
-import { appSettings } from "./appsettings";
 import { cardFactsByName } from "./cardfacts";
 import type { DetailsFile } from "./carddetails";
 import type { CkFile } from "./cardkingdom";
@@ -99,7 +98,7 @@ export async function deckAnswer(
     layouts,
     detailsError,
     saltCard: synced.deck.saltCard ?? null,
-    ratingStale: ratingStale(view.local, synced.deck.saltCard ?? null, stats, appSettings(file).bracketSource === "APP", synced.deck.scoredAt ?? null),
+    ratingStale: ratingStale(synced.deck.saltCard ?? null, stats, synced.deck.scoredAt ?? null),
     saltSum,
     winTurn,
     games,

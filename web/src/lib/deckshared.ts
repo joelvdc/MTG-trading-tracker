@@ -84,57 +84,18 @@ export interface SyncDeck {
 
 // ---- Scores ------------------------------------------------------------------------------------------------------
 
-export type PowerSource = "COMMANDER_SALT" | "EDH_POWER_LEVEL" | "APP";
-export const POWER_SOURCES: Record<PowerSource, { label: string; site: string }> = {
-  COMMANDER_SALT: { label: "Commander Salt", site: "commandersalt.com" },
-  EDH_POWER_LEVEL: { label: "EDH Power Level", site: "edhpowerlevel.com" },
-  APP: { label: "This app", site: "the app's win turn" },
-};
-
-/** SCROLLVAULT (a stored setting until app 1.104) falls back to Commander Salt. */
-export function powerSource(key: string | undefined): PowerSource {
-  return key && key in POWER_SOURCES ? (key as PowerSource) : "COMMANDER_SALT";
-}
-
-/** The power level from the chosen source; the app's own (from the win turn) isn't synced, so null here. */
-export function powerOf(d: Deck, s: PowerSource): number | null {
-  switch (s) {
-    case "COMMANDER_SALT":
-      return d.powerLevel ?? null;
-    case "EDH_POWER_LEVEL":
-      return d.edhPowerLevel ?? null;
-    default:
-      return null;
-  }
-}
-
-export function powerError(d: Deck, s: PowerSource): string | null {
-  switch (s) {
-    case "COMMANDER_SALT":
-      return d.scoreError ?? null;
-    case "EDH_POWER_LEVEL":
-      return d.edhPowerError ?? null;
-    default:
-      return null;
-  }
-}
-
 /** WotC's names for the five Commander brackets. */
 export function bracketName(b: number | null | undefined): string | null {
   return b === 1 ? "Exhibition" : b === 2 ? "Core" : b === 3 ? "Upgraded" : b === 4 ? "Optimized" : b === 5 ? "cEDH" : null;
 }
 
-/** The bracket shown first (the higher of realistic and baseline) and the other one, labelled; null fields when unscored. */
-export function shownBracket(
-  realistic: number | null | undefined,
-  baseline: number | null | undefined,
-): { main: number | null; other: { label: "realistic" | "baseline"; value: number } | null } {
-  const r = realistic ?? null;
-  const b = baseline ?? null;
-  if (r == null && b == null) return { main: null, other: null };
-  if (b == null) return { main: r, other: null };
-  if (r == null) return { main: b, other: null };
-  return b > r ? { main: b, other: { label: "realistic", value: r } } : { main: r, other: { label: "baseline", value: b } };
+/**
+ * The website's own estimate of the deck's bracket (its rating, localratings.ts): the bracket of its own card, else the
+ * bracket last kept on the deck. null when the deck has no estimate yet.
+ */
+export function deckBracket(d: Pick<Deck, "saltCard" | "bracketBaseline">): number | null {
+  const card = decodeSalt(d.saltCard);
+  return card && card.source === "app" ? (card.bracket ?? d.bracketBaseline ?? null) : null;
 }
 
 /** A deck's cover: its featured art from Archidekt, or its commander's art. */
@@ -150,13 +111,13 @@ export interface SaltCombo {
   needsBoard: boolean;
   spellbookUri: string | null;
   prerequisites: string[];
-  /** The combo's cards' mana values added up; null when not known (Commander Salt doesn't say). */
+  /** The combo's cards' mana values added up; null when not known. */
   manaValue?: number | null;
   /** Whether it wins the game by itself; null when not known. */
   wins?: boolean | null;
 }
 
-/** What the rule-zero cards show from Commander Salt (the app's SaltCard JSON, defaults filled in). */
+/** What the rule-zero cards show (the app's SaltCard JSON, defaults filled in). */
 export interface SaltCard {
   /** The app's SaltCard.CURRENT; a salt card without it is old data. null when the text has none. */
   version?: number | null;
@@ -178,7 +139,7 @@ export interface SaltCard {
   tutors: string[];
   fastMana: string[];
   combos: SaltCombo[];
-  /** Who scored it: "app" for the website's own local-deck rating (localratings.ts); null or missing for Commander Salt. */
+  /** Who scored it: "app" for the website's own rating (localratings.ts); null or missing for data of an older app. */
   source?: "app" | null;
   /** The bracket the website's rating gives (2 to 4); null when not rated by the app. */
   bracket?: number | null;
@@ -300,8 +261,8 @@ function atMostThree(combos: string[][], line: (cards: string[]) => string, more
 const gameChangerLine = (names: string[]) => (names.length === 1 ? `1 Game Changer: ${names[0]}` : `${names.length} Game Changers: ${names.join(", ")}`);
 
 /**
- * Why the bracket card shows [bracket]: the rating's own lines when it has them, else worked out from Commander
- * Salt's lists in localratings.ts's words. Empty when there's no bracket or nothing to say.
+ * Why the bracket card shows [bracket]: the rating's own lines when it has them, else worked out from the card's
+ * lists in localratings.ts's words. Empty when there's no bracket or nothing to say.
  */
 export function bracketReasons(data: SaltCard, bracket: number | null): string[] {
   const own = (data.bracketWhy ?? []).map((l) => l.trim()).filter(Boolean);
@@ -310,7 +271,7 @@ export function bracketReasons(data: SaltCard, bracket: number | null): string[]
   if (bracket <= 2) return ["No Game Changers or two-card combos"];
   const out: string[] = [];
   if (bracket === 4) {
-    // Commander Salt's own early combos: their mana value when the rating knows it.
+    // The card's own early combos: their mana value when the rating knows it.
     const earlyLine = (cards: string[]) => {
       const c = comboData(data, cards);
       return c?.manaValue != null ? `${cards.join(" + ")}: wins, mana value ${manaText(c.manaValue)}` : cards.join(" + ");
@@ -320,7 +281,7 @@ export function bracketReasons(data: SaltCard, bracket: number | null): string[]
     if (data.massLandDenial.length > 0) out.push(`Mass land denial: ${data.massLandDenial.join(", ")}`);
     if (data.extraTurns.length >= 3) out.push(`${data.extraTurns.length} extra-turn cards: ${data.extraTurns.join(", ")}`);
   } else {
-    // Commander Salt's two-card combos: whether they win and their mana value when the rating knows them.
+    // The card's two-card combos: whether they win and their mana value when the rating knows them.
     const twoCardLine = (cards: string[]) => {
       const c = comboData(data, cards);
       if (c?.wins === true && c.manaValue != null) return `${cards.join(" + ")}: wins, mana value ${manaText(c.manaValue)}`;
@@ -508,9 +469,8 @@ export interface DeckSummary {
   legalProblems?: number | null;
   folder: string | null;
   origin: string | null;
-  bracketRealistic: number | null;
-  bracketBaseline: number | null;
-  power: number | null;
+  /** The website's own estimate (deckBracket); null when it has none yet. */
+  bracket: number | null;
   saltPercent: number | null;
   archetype: string | null;
   archidektUpdatedAt: number | null;
@@ -522,14 +482,14 @@ export interface DeckSummary {
   missing: number;
   /** The list's fingerprint for recommendations (recListKey). */
   recKey: string;
+  /** The kept win turn: the turn by which the deck wins 4 games in 10 (filled in by /api/decks); null when it has none. */
+  winTurn?: number | null;
 }
 
 export interface DecksView {
   decks: DeckSummary[];
   currency: Currency;
   perEuro: number;
-  powerSource: PowerSource;
-  powerLabel: string;
   sort: string;
   sortReversed: boolean;
   readOnly: boolean;
@@ -633,9 +593,6 @@ export interface DeckView {
   perEuro: number;
   priceType: PriceType;
   priceTypeLabel: string;
-  powerSource: PowerSource;
-  power: number | null;
-  powerError: string | null;
   readOnly: boolean;
   /** The list's fingerprint for recommendations (recListKey). */
   recKey: string;

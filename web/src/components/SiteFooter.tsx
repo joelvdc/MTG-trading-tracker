@@ -15,7 +15,6 @@ const SOURCES: [string, string][] = [
   ["TCGplayer", "https://www.tcgplayer.com"],
   ["Card Kingdom", "https://www.cardkingdom.com"],
   ["EDHREC", "https://edhrec.com"],
-  ["Commander Salt", "https://commandersalt.com"],
   ["Commander Spellbook", "https://commanderspellbook.com"],
   ["Archidekt", "https://archidekt.com"],
   ["MTGJSON", "https://mtgjson.com"],

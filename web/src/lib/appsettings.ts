@@ -31,17 +31,6 @@ export const RECEIVED_CLEAR: [string, string][] = [
   ["6m", "After 6 months"],
   ["1y", "After 1 year"],
 ];
-/** The app's PowerSource (Settings → Commander deck power level), in its order. */
-export const POWER_SOURCE_CHOICES: [string, string][] = [
-  ["COMMANDER_SALT", "Commander Salt"],
-  ["EDH_POWER_LEVEL", "EDH Power Level (edhpowerlevel.com)"],
-  ["APP", "This app (from the win turn)"],
-];
-/** Where the decks' bracket comes from (Settings → Commander deck bracket). */
-export const BRACKET_SOURCE_CHOICES: [string, string][] = [
-  ["COMMANDER_SALT", "Commander Salt"],
-  ["APP", "Estimated by the app"],
-];
 
 export interface AppSettings {
   priceSource: string;
@@ -55,10 +44,6 @@ export interface AppSettings {
   wishSections: boolean;
   receivedToCollection: boolean;
   receivedClear: string;
-  /** Where the decks' power level comes from. */
-  powerSource: string;
-  /** Where the decks' bracket comes from: Commander Salt's, or the website's own estimate. */
-  bracketSource: string;
   /** Your own Archidekt username: whose Archidekt decks are "your decks" (the app's ownArchidektUser). */
   ownArchidektUser: string;
 }
@@ -81,13 +66,14 @@ export function appSettings(file: SyncFile): AppSettings {
     wishSections: p.wishSections !== "false",
     receivedToCollection: p.receivedToCollection === "true",
     receivedClear: pick(p.receivedClear, RECEIVED_CLEAR, "never"),
-    powerSource: pick(p.powerSource, POWER_SOURCE_CHOICES, "COMMANDER_SALT"),
-    bracketSource: pick(p.bracketSource, BRACKET_SOURCE_CHOICES, "COMMANDER_SALT"),
     ownArchidektUser: (p.ownArchidektUser ?? "").trim(),
   };
 }
 
-/** Saves [changes] in the app's format; refuses values the app wouldn't take. */
+/**
+ * Saves [changes] in the app's format; refuses values the app wouldn't take. The settings the website doesn't know
+ * (the app's own, and ones that only matter on the phones) stay in the file as they are.
+ */
 export function applySettings(file: SyncFile, changes: Partial<AppSettings>, now: number): void {
   const out: Record<string, string> = {};
   const choice = (key: keyof AppSettings, list: [string, string][]) => {
@@ -107,8 +93,6 @@ export function applySettings(file: SyncFile, changes: Partial<AppSettings>, now
   choice("currency", CURRENCY_CHOICES);
   choice("alertPriceType", PRICE_TYPE_CHOICES);
   choice("receivedClear", RECEIVED_CLEAR);
-  choice("powerSource", POWER_SOURCE_CHOICES);
-  choice("bracketSource", BRACKET_SOURCE_CHOICES);
   if (changes.ownArchidektUser !== undefined) {
     const u = changes.ownArchidektUser;
     if (typeof u !== "string" || u.trim().length > 100 || /[\s/?#]/.test(u.trim())) throw new EditError("That isn't an Archidekt username.");

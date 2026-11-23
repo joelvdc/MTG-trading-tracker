@@ -12,7 +12,6 @@ const SOURCES: { name: string; url: string; what: string }[] = [
   { name: "CardTrader", url: "https://www.cardtrader.com", what: "links to its listings (prices only in the app, with your own token)" },
   { name: "EDHREC", url: "https://edhrec.com", what: "Commander recommendations" },
   { name: "recommander.cards", url: "https://recommander.cards", what: "Commander recommendations" },
-  { name: "Commander Salt", url: "https://commandersalt.com", what: "deck brackets, scores and combos" },
   { name: "Commander Spellbook", url: "https://commanderspellbook.com", what: "the combos the deck pages link to" },
   { name: "Archidekt", url: "https://archidekt.com", what: "decklists and the collection export" },
   { name: "MTGJSON", url: "https://mtgjson.com", what: "preconstructed decks" },
@@ -53,7 +52,6 @@ export default function LegalPage() {
           </li>
         ))}
       </ul>
-      <p className="small muted">The Android app also uses EDH Power Level for power levels.</p>
 
       <h2>Fonts</h2>
       <ul>

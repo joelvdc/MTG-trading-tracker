@@ -10,13 +10,10 @@ import { recListKey } from "./recshared";
 import {
   caseless,
   coverUrl,
+  deckBracket,
   decodeSalt,
   isBasicName,
   missingPlan,
-  POWER_SOURCES,
-  powerError,
-  powerOf,
-  powerSource,
   saltKey,
   tagsByCard,
   type BracketTag,
@@ -29,7 +26,6 @@ import {
   type DecksView,
   type DeckView,
   type HeldPile,
-  type PowerSource,
   type SyncDeck,
 } from "./deckshared";
 import { currency, rate } from "./money";
@@ -90,7 +86,6 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
   const p = prefs(file);
   const setup = setupOf(file, prices, details, ck);
   const owned = ownedByName(file);
-  const source = powerSource(p.powerSource);
   const owner = deckOwner(file);
   const cur = currency(p.currency);
   return {
@@ -107,9 +102,7 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
         group: groupOf(d, owner),
         folder: d.folderName ?? null,
         origin: d.origin ?? null,
-        bracketRealistic: d.bracketRealistic ?? null,
-        bracketBaseline: d.bracketBaseline ?? null,
-        power: powerOf(d, source),
+        bracket: deckBracket(d),
         saltPercent: d.saltPercent ?? null,
         archetype: d.archetype ?? null,
         archidektUpdatedAt: d.archidektUpdatedAt ?? null,
@@ -125,8 +118,6 @@ export function decksView(file: SyncFile, prices: PriceFile | null, details: Det
     }),
     currency: cur,
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,
-    powerSource: source,
-    powerLabel: POWER_SOURCES[source].label,
     sort: p.deckSort ?? "NAME",
     sortReversed: p.deckSortReversed === "true",
     readOnly: !canWrite(file),
@@ -294,7 +285,6 @@ export function deckView(
   const main = sd.cards.filter((c) => !c.maybeboard);
   const missing = new Map<DeckCard, number>(missingPlan(main.map((c) => ({ c, name: c.card.name, quantity: c.quantity })), owned, true).map(([l, n]) => [l.c, n]));
   const cur = currency(p.currency);
-  const source = powerSource(p.powerSource);
   const rows = sd.cards.map((c): DeckRow => {
     const key = frontName(c.card.name);
     const mine = myPrintings && !isBasicName(key) && !c.maybeboard ? ownPrinting(c, copiesByName.get(key) ?? [], deckBinder, tradeBinder, picks[key]) : null;
@@ -373,9 +363,6 @@ export function deckView(
     perEuro: rate(cur, prices?.rates ?? null) ?? 1,
     priceType: setup.type,
     priceTypeLabel: PRICE_TYPE_LABELS[setup.type],
-    powerSource: source,
-    power: powerOf(d, source),
-    powerError: powerError(d, source),
     readOnly: !canWrite(file),
   };
 }
@@ -453,15 +440,14 @@ export interface RuleZeroDeck {
   deck: DeckView["deck"];
   cover: string | null;
   salt: NonNullable<DeckView["salt"]>;
-  power: number | null;
-  powerError: string | null;
+  /** The website's own estimate (deckBracket); null when the deck has none yet. */
+  bracket: number | null;
   /** The deck's main-deck cards, for its salt sum (the cards page's route leaves them out of the answer). */
   stats: StatsCard[];
 }
 
-/** Every deck Commander Salt has scored, in name order, with what its bracket and power cards show. */
-export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[]; powerSource: PowerSource } {
-  const source = powerSource(prefs(file).powerSource);
+/** Every deck the website has rated, in name order, with what its bracket card shows. */
+export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[] } {
   const decks: RuleZeroDeck[] = [];
   for (const sd of [...syncDecks(file)].filter((x) => !x.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
     const d = sd.deck;
@@ -472,9 +458,9 @@ export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[]; powerSou
     void categoryInfo;
     void scrollVault;
     const stats = statsOf(sd.cards);
-    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, power: powerOf(d, source), powerError: powerError(d, source), stats });
+    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, bracket: deckBracket(d), stats });
   }
-  return { decks, powerSource: source };
+  return { decks };
 }
 
 /** The main deck's cards as the salt sum and the rating read them (Archidekt's types will do when Scryfall's type line is unknown). */

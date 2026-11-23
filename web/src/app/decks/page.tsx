@@ -10,14 +10,13 @@ import { ClockIcon } from "@/components/Icons";
 import { ColourPips } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { NewDeckDialog } from "@/components/NewDeckDialog";
-import { formatPower } from "@/components/RuleZeroCards";
-import { bracketName, caseless, GROUP_TITLES, shownBracket, type DeckGroup, type DeckSummary, type DecksView } from "@/lib/deckshared";
+import { bracketName, caseless, GROUP_TITLES, type DeckGroup, type DeckSummary, type DecksView } from "@/lib/deckshared";
 import { format } from "@/lib/money";
 
-type Sort = "NAME" | "POWER" | "BRACKET" | "MODIFIED";
+type Sort = "NAME" | "WIN_TURN" | "BRACKET" | "MODIFIED";
 const SORTS: [Sort, string][] = [
   ["NAME", "Name"],
-  ["POWER", "Power level"],
+  ["WIN_TURN", "Win turn"],
   ["BRACKET", "Bracket"],
   ["MODIFIED", "Last modified"],
 ];
@@ -35,34 +34,29 @@ function closeMenu(e: MouseEvent<HTMLElement>) {
 function sortDecks(decks: DeckSummary[], sort: Sort, reverse: boolean): DeckSummary[] {
   const byName = (a: DeckSummary, b: DeckSummary) => caseless(a.name, b.name);
   if (sort === "NAME") return [...decks].sort((a, b) => (reverse ? -byName(a, b) : byName(a, b)));
-  /** A deck's bracket, the higher of the two in front. */
-  const shownOf = (d: DeckSummary) => shownBracket(d.bracketRealistic, d.bracketBaseline);
-  const key = (d: DeckSummary): number | null => (sort === "POWER" ? d.power : sort === "BRACKET" ? shownOf(d).main : d.modifiedAt);
+  // The fastest deck first (the lowest win turn), as the app sorts.
+  const key = (d: DeckSummary): number | null => (sort === "WIN_TURN" ? (d.winTurn != null ? -d.winTurn : null) : sort === "BRACKET" ? d.bracket : d.modifiedAt);
   const known = decks.filter((d) => key(d) !== null);
   const unknown = decks.filter((d) => key(d) === null).sort(byName);
-  const then =
-    sort === "BRACKET"
-      ? (a: DeckSummary, b: DeckSummary) =>
-          (shownOf(b).other?.value ?? 0) - (shownOf(a).other?.value ?? 0) || (b.power ?? 0) - (a.power ?? 0) || caseless(a.name, b.name)
-      : byName;
+  // Bracket ties go by the win turn, the fastest first.
+  const then = (a: DeckSummary, b: DeckSummary) => (sort === "BRACKET" ? (a.winTurn ?? 999) - (b.winTurn ?? 999) : 0) || byName(a, b);
   const sorted = known.sort((a, b) => key(b)! - key(a)! || then(a, b));
   return [...(reverse ? sorted.reverse() : sorted), ...unknown];
 }
 
-/** A deck tile's bracket chip: the higher of the two in front, the other one in the tooltip. */
+/** A deck tile's bracket chip: the website's own estimate. */
 function BracketChip({ d }: { d: DeckSummary }) {
-  const b = shownBracket(d.bracketRealistic, d.bracketBaseline);
-  if (b.main == null) {
+  const b = d.bracket;
+  if (b == null) {
     return (
-      <span className="bracket-chip b0" title="Not scored yet">
+      <span className="bracket-chip b0" title="Not rated yet">
         –
       </span>
     );
   }
-  const other = b.other ? `, ${b.other.label} ${b.other.value}` : "";
   return (
-    <span className={`bracket-chip b${b.main}`} title={`Bracket ${b.main} (${bracketName(b.main)})${other}`}>
-      {`B${b.main}`}
+    <span className={`bracket-chip b${b}`} title={`Bracket ${b} (${bracketName(b)})`}>
+      {`B${b}`}
     </span>
   );
 }
@@ -224,7 +218,7 @@ export default function DecksPage() {
                       closeMenu(e);
                       setArchidekt("update");
                     }}
-                    title="Reload the decks changed on Archidekt and score them again"
+                    title="Reload the decks changed on Archidekt"
                   >
                     Update all decks…
                   </button>
@@ -287,7 +281,7 @@ export default function DecksPage() {
                   </div>
                   <div className="deck-facts">
                     <BracketChip d={d} />
-                    <span title={`Power level (${view.powerLabel})`}>{d.power != null ? `⚡ ${formatPower(d.power, view.powerSource)}` : <span className="muted">⚡ –</span>}</span>
+                    <span title={d.winTurn != null ? `Wins 4 games in 10 by turn ${d.winTurn}` : "No win turn yet"}>{d.winTurn != null ? `T${d.winTurn}` : <span className="muted">–</span>}</span>
                     <span className="muted">{d.cardCount} cards</span>
                     <span className="spacer" />
                     <span className="num">{money(d.valueEur)}</span>
@@ -342,8 +336,7 @@ export default function DecksPage() {
         ))}
         <p className="muted small">
           Values are the decks&apos; cards at their own printings (maybeboard left out). Missing: copies the collection lacks in any printing, basic lands left
-          out. Power levels: {view.powerLabel}
-          {view.powerSource === "APP" ? " (from each deck's win turn, which the website works out by itself when a decklist changes)" : ""}.
+          out.
         </p>
       </main>
       {newOpen && <NewDeckDialog onClose={() => setNewOpen(false)} />}

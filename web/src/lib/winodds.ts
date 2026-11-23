@@ -80,7 +80,7 @@ export function winInput(cards: StatsCard[]): string {
 }
 
 /**
- * The part of Commander Salt's answer (the deck's saltCard) a win result is worked out from: the combos the games play
+ * The part of the deck's rating (its saltCard) a win result is worked out from: the combos the games play
  * (SaltCard.allCombos, made from these three lists) and the ratings the power level reads (axes). The rest (notes,
  * play style, salt, effects, tutors…) can change on a new scoring without changing the result, so it's left out and
  * refreshing a deck keeps its win turn (owner, 2026-11-11). Unreadable or no data: "".
