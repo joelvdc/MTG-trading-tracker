@@ -72,10 +72,11 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   category" use the website's own table `card_tags` (card name → categories). A daily job (`/api/cron/categories`,
   04:00 UTC) rebuilds it from Scryfall's card tags when it is a week old: one tag search per category (paged), about
   16,000 cards in about 2½ minutes; if a page fails the old table stays. The categories and their order: Ramp (ramp),
-  Removal (removal, sweeper, counterspell), Draw (draw), Tutor (tutor), Recursion (recursion), Protection
-  (protection). The first decides the card's section, the others go on the deck line as extra categories; deleting a
-  category moves its cards to their next one. Cards without a tag go by card type. Since 2026-11-17 a card whose
-  front face is a land never gets a tag category (Scryfall tags Evolving Wilds "tutor"): the table leaves lands out
+  Removal (removal, sweeper, counterspell), Draw (draw), Tutor (`otag:tutor` without the land tutors,
+  `-otag:tutor-land`, plus `otag:tutor-land-any`: cards that fetch any land; since 2026-11-23), Recursion (recursion),
+  Protection (protection). The first decides the card's section, the others go on the deck line as extra categories;
+  deleting a category moves its cards to their next one. Cards without a tag go by card type. Since 2026-11-17 a card
+  whose front face is a land never gets a tag category (Scryfall tags Evolving Wilds "tutor"): the table leaves lands
   (`frontIsLand`; a table built before `RULES_SINCE` is rebuilt once) and `autoFor` places them by type anyway, so
   they go in Land; an MDFC with a spell on the front keeps its tags. The Land heading counts MDFC lands elsewhere in
   the deck in brackets, like Archidekt ("Land · 37 (40 with MDFCs)", `lib/mdfclands.ts`; not on shared links, which

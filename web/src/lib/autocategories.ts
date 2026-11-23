@@ -21,12 +21,14 @@ export interface AutoCard {
 /**
  * The categories in their order (the first a card has decides its section; Cultivate is ramp and a tutor: Ramp), with
  * the Scryfall tags that put a card in each (Archidekt's names; Removal takes board wipes and counterspells too).
+ * A group may give `query` instead: the Scryfall search for it, used instead of joining its tags.
  */
-export const TAG_GROUPS: { category: string; tags: string[] }[] = [
+export const TAG_GROUPS: { category: string; tags: string[]; query?: string }[] = [
   { category: "Ramp", tags: ["ramp"] },
   { category: "Removal", tags: ["removal", "sweeper", "counterspell"] },
   { category: "Draw", tags: ["draw"] },
-  { category: "Tutor", tags: ["tutor"] },
+  // Land tutors (Path to Exile, Cultivate) are not tutors; a card that fetches any land (Crop Rotation) is.
+  { category: "Tutor", tags: ["tutor"], query: "(otag:tutor -otag:tutor-land) or otag:tutor-land-any" },
   { category: "Recursion", tags: ["recursion"] },
   { category: "Protection", tags: ["protection"] },
 ];
@@ -35,8 +37,11 @@ export const CATEGORY_ORDER = TAG_GROUPS.map((g) => g.category);
 const SCRYFALL = "https://api.scryfall.com";
 /** The table is rebuilt when it is older than this (the job runs daily and skips the other days). */
 export const REBUILD_AFTER_MS = 6 * 86_400_000;
-/** When the rule "a land never gets a tag category" came in: a table built before it is rebuilt once, at once. */
-export const RULES_SINCE = Date.UTC(2026, 10, 17, 12, 0);
+/**
+ * When the rules changed last (a table built before it is rebuilt once, at once): since 2026-11-17 a land never gets
+ * a tag category; since 2026-11-23 land tutors are no longer Tutor (only any-land tutors, `tutor-land-any`).
+ */
+export const RULES_SINCE = Date.UTC(2026, 10, 23, 21, 0);
 
 /** How a name is looked up: lower case; for "A // B" also "a" (some lists name only the front face). */
 export const nameKey = (name: string) => name.trim().toLowerCase();
@@ -93,7 +98,7 @@ const pause = () => new Promise((r) => setTimeout(r, 100)); // Scryfall asks for
 export async function fetchTagCategories(f: Fetch = scryFetch, deadline = Date.now() + 240_000): Promise<{ name: string; categories: string[] }[]> {
   const byKey = new Map<string, { name: string; categories: string[] }>();
   for (const g of TAG_GROUPS) {
-    const q = g.tags.map((t) => `otag:${t}`).join(" or ");
+    const q = g.query ?? g.tags.map((t) => `otag:${t}`).join(" or ");
     let next: string | null = `${SCRYFALL}/cards/search?${new URLSearchParams({ q: `(${q})`, unique: "cards", order: "name" })}`;
     while (next) {
       if (Date.now() > deadline) throw new Error("Scryfall's tag searches took too long; the old table is kept.");
@@ -117,8 +122,8 @@ export async function fetchTagCategories(f: Fetch = scryFetch, deadline = Date.n
 
 /**
  * The weekly job: rebuilds the table from Scryfall when it is older than REBUILD_AFTER_MS (or empty), and once more
- * right after a change of the rules (RULES_SINCE: lands stopped getting tag categories). Rows are by name; a
- * double-faced card also gets one under its front face.
+ * right after a change of the rules (RULES_SINCE: lands stopped getting tag categories, then land tutors stopped being
+ * Tutor). Rows are by name; a double-faced card also gets one under its front face.
  */
 export async function rebuildTagCategories(now = Date.now(), f: Fetch = scryFetch, deadline = now + 270_000): Promise<{ rebuilt: boolean; cards: number; updatedAt: number | null }> {
   const store = accountStore();

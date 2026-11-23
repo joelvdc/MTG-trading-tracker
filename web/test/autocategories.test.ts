@@ -51,6 +51,21 @@ describe("auto categories (the website's own table, from Scryfall's tags)", () =
     expect(by).toEqual({ Cultivate: ["Ramp", "Tutor"], "Sol Ring": ["Ramp"], Counterspell: ["Removal"], "Fire // Ice": ["Removal"], "Demonic Tutor": ["Tutor"] });
   });
 
+  it("searches Tutor without the land tutors, plus the any-land ones, and the other groups as before", async () => {
+    const build = fakeScryfall();
+    await fetchTagCategories(build.f, Date.now() + 60_000);
+    const qs = [...new Set(build.asked.map((u) => new URL(u).searchParams.get("q")))];
+    expect(qs[3]).toBe("((otag:tutor -otag:tutor-land) or otag:tutor-land-any)");
+    expect(qs).toEqual([
+      "(otag:ramp)",
+      "(otag:removal or otag:sweeper or otag:counterspell)",
+      "(otag:draw)",
+      "((otag:tutor -otag:tutor-land) or otag:tutor-land-any)",
+      "(otag:recursion)",
+      "(otag:protection)",
+    ]);
+  });
+
   it("rebuilds weekly, keeps the old table when Scryfall fails, and answers by name", async () => {
     const first = await rebuildTagCategories(NOW, fakeScryfall().f, Date.now() + 60_000);
     expect(first).toMatchObject({ rebuilt: true, cards: 6, updatedAt: NOW }); // Fire // Ice also as "fire"

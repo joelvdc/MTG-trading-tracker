@@ -3503,6 +3503,10 @@ details.deck-section > summary .mini-head {
   padding: 4px 92px 4px 10px;
   font-size: 13px;
 }
+/* input[type="search"] (above) would otherwise win and the count would cover the text. */
+.deck-filter .deck-filter-input {
+  padding-right: 92px;
+}
 .deck-filter-input.bad {
   border-color: var(--red);
 }
