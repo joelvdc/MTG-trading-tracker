@@ -183,6 +183,7 @@ export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: Deck
           {tile("Realistic · how it plays", deck.bracketRealistic)}
         </div>
       )}
+      {speed}
       {why.length > 0 && (
         <Section title={`Why bracket ${bracketShown}`}>
           {why.map((line, i) => (
@@ -190,7 +191,6 @@ export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: Deck
           ))}
         </Section>
       )}
-      {speed}
       <Section title="Bracket criteria">
         {criteria.map(([label, n]) => (
           <div key={label} className={n > 0 ? "rz-criterion hit" : "rz-criterion"}>
@@ -257,6 +257,8 @@ export function PowerCard({
   inkSaver: boolean;
 }) {
   const app = data.source === "app";
+  // The website's own rating has no manabase numbers: its column (and label) is left out and Saltiness takes the width.
+  const hasManabase = data.manaFixing != null || data.onCurve != null || data.manaQuality != null;
   const site = POWER_SOURCES[source].site;
   const fmt = (n: number) => formatPower(n, source);
   const effects = EFFECTS.filter(([k]) => data.effects[k] !== undefined).map(([k, label]) => [label, data.effects[k]] as [string, number]);
@@ -294,7 +296,7 @@ export function PowerCard({
         )}
       </div>
       <Section>
-        <div className="rz-two">
+        <div className={hasManabase ? "rz-two" : undefined}>
           <div>
             <div className="rz-label">Saltiness</div>
             {app ? (
@@ -319,12 +321,14 @@ export function PowerCard({
               </>
             )}
           </div>
-          <div>
-            <div className="rz-label">Manabase</div>
-            {data.manaFixing != null && <p className="rz-small">Fixing {data.manaFixing}%</p>}
-            {data.onCurve != null && <p className="rz-small">On curve {data.onCurve}%</p>}
-            {data.manaQuality != null && <p className="rz-small">Quality {data.manaQuality}%</p>}
-          </div>
+          {hasManabase && (
+            <div>
+              <div className="rz-label">Manabase</div>
+              {data.manaFixing != null && <p className="rz-small">Fixing {data.manaFixing}%</p>}
+              {data.onCurve != null && <p className="rz-small">On curve {data.onCurve}%</p>}
+              {data.manaQuality != null && <p className="rz-small">Quality {data.manaQuality}%</p>}
+            </div>
+          )}
         </div>
       </Section>
       {effects.length > 0 && (
