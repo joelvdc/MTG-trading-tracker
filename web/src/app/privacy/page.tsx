@@ -129,7 +129,7 @@ export default function PrivacyPage() {
           or your alerts. Switch links off in Settings → Shared links.
         </li>
         <li>
-          <strong>Card and price sites:</strong> to show card details and prices the website asks Scryfall, EDHREC, Commander Salt, Archidekt and the others for card
+          <strong>Card and price sites:</strong> to show card details and prices the website asks Scryfall, EDHREC, Archidekt and the others for card
           names and lists. They get the card or deck asked about, not your account.
         </li>
         <li>

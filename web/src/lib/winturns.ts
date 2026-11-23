@@ -2,7 +2,7 @@
 // win-turn for all decks automatically … then only recalculates if changes happen to the decklist"). The app's own
 // code (web/winodds-kt) plays each deck 10,000 times, about 45 seconds a deck, so a run does what fits in its time and
 // the next run (the daily job, or opening the Decks page) goes on. A result is kept with the key of the decklist it
-// belongs to (its cards, colours and Commander Salt's combos, plus the app's WinOddsCalc.VERSION) and is worked out
+// belongs to (its cards, colours and the card's combos, plus the app's WinOddsCalc.VERSION) and is worked out
 // again only when that key changes. The deck page uses a kept result, or works it out in the browser and keeps it here.
 import { accountStore, type AccountStore, type StoredWinTurn } from "./accounts";
 import { ensureDeckDetails, statsCard, type DeckInfo } from "./deckdetails";

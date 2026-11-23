@@ -43,9 +43,6 @@ export async function GET(req: Request) {
       ...(answer ?? {}),
       readOnly: true,
       winTurn,
-      // A precon has no Commander Salt score: its power comes from the app's win turn.
-      powerSource: "APP",
-      power: null,
       precon: { fileName, name, code: info?.code ?? "", releaseDate: info?.releaseDate ?? null },
     });
   } catch (e) {

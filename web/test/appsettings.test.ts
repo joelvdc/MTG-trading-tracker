@@ -35,36 +35,26 @@ describe("the app's synced settings", () => {
     expect(() => applySettings(f, { tolerancePct: 50 }, NOW)).toThrow(EditError);
   });
 
-  it("changes the power level source and your Archidekt username like the app", () => {
+  it("changes your Archidekt username like the app", () => {
     const f = appFile();
-    applySettings(f, { powerSource: "EDH_POWER_LEVEL", ownArchidektUser: "  joel " }, NOW);
-    expect(prefs(f)).toMatchObject({ powerSource: "EDH_POWER_LEVEL", ownArchidektUser: "joel" });
-    expect(appSettings(f)).toMatchObject({ powerSource: "EDH_POWER_LEVEL", ownArchidektUser: "joel" });
-    expect(() => applySettings(f, { powerSource: "MOXFIELD" }, NOW)).toThrow(EditError);
+    applySettings(f, { ownArchidektUser: "  joel " }, NOW);
+    expect(prefs(f)).toMatchObject({ ownArchidektUser: "joel" });
+    expect(appSettings(f)).toMatchObject({ ownArchidektUser: "joel" });
     expect(() => applySettings(f, { ownArchidektUser: "two words" }, NOW)).toThrow(EditError);
   });
 
-  it("shows a stored ScrollVault power source as Commander Salt, leaving the stored value alone", () => {
+  it("leaves the settings it doesn't know (the power level and bracket sources) in the file as they are", () => {
     const f = appFile();
-    // An older phone (up to app 1.104) may still have it.
-    setPrefs(f, { powerSource: "SCROLLVAULT" }, NOW);
-    expect(appSettings(f).powerSource).toBe("COMMANDER_SALT");
-    expect(prefs(f).powerSource).toBe("SCROLLVAULT");
-    // The website can't set it any more.
-    expect(() => applySettings(f, { powerSource: "SCROLLVAULT" }, NOW)).toThrow(EditError);
-    expect(prefs(f).powerSource).toBe("SCROLLVAULT");
-  });
-
-  it("changes the bracket's source like the power level source", () => {
-    const f = appFile();
-    expect(appSettings(f).bracketSource).toBe("COMMANDER_SALT");
-    applySettings(f, { bracketSource: "APP" }, NOW);
-    expect(prefs(f)).toMatchObject({ bracketSource: "APP" });
-    expect(appSettings(f)).toMatchObject({ bracketSource: "APP", powerSource: "COMMANDER_SALT" });
-    applySettings(f, { bracketSource: "COMMANDER_SALT" }, NOW);
-    expect(appSettings(f).bracketSource).toBe("COMMANDER_SALT");
-    expect(() => applySettings(f, { bracketSource: "EDH_POWER_LEVEL" }, NOW)).toThrow(EditError);
-    expect(appSettings(f).bracketSource).toBe("COMMANDER_SALT");
+    // An older phone (up to app 1.104) may still have ScrollVault's, and the power level and bracket sources were
+    // settings once: the website neither shows nor changes them.
+    setPrefs(f, { powerSource: "SCROLLVAULT", bracketSource: "APP" }, NOW);
+    applySettings(f, { currency: "EUR" }, NOW + 1);
+    expect(prefs(f)).toMatchObject({ currency: "EUR", powerSource: "SCROLLVAULT", bracketSource: "APP" });
+    expect(appSettings(f)).not.toHaveProperty("powerSource");
+    expect(appSettings(f)).not.toHaveProperty("bracketSource");
+    // A change the website doesn't know is ignored, and the stored value stays.
+    applySettings(f, { powerSource: "APP" } as unknown as Parameters<typeof applySettings>[1], NOW + 2);
+    expect(prefs(f)).toMatchObject({ powerSource: "SCROLLVAULT", bracketSource: "APP" });
   });
 
   it("leaves the file alone when nothing changes", () => {

@@ -22,9 +22,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * The decks list (the app's Decks tab). With "This app" as the power level source, each deck's power comes from the
- * win turn the website kept for it. Afterwards the website works out the win turns of decks whose list changed
- * (lib/winturns.ts; one run per account at a time, the daily job does the rest).
+ * The decks list (the app's Decks tab). Each deck's bracket is the website's own estimate and its win turn (the turn by
+ * which it wins 4 games in 10) the one kept for it. Afterwards the website works out the win turns of decks whose list
+ * changed (lib/winturns.ts; one run per account at a time, the daily job does the rest).
  */
 export async function GET() {
   const a = await currentAccount();
@@ -47,7 +47,7 @@ export async function GET() {
     }
     if (isUser(a)) {
       const kept = await keptWins(a.accountId);
-      if (view.powerSource === "APP") for (const d of view.decks) d.power = parseWin(kept.get(d.id))?.power.power ?? null;
+      for (const d of view.decks) d.winTurn = parseWin(kept.get(d.id))?.fourInTen ?? null;
       const started = Date.now();
       after(() => runWinTurns(a.accountId, started + 270_000).catch((e) => console.warn(`Win turns: ${e instanceof Error ? e.message : e}`)));
     }
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
       case "archidekt-import": {
         const id = archidektId(str(body.link, 500));
         if (id === null) throw new EditError("That isn't a link to an Archidekt deck.");
-        return json(await loadFromArchidekt(a, id, { score: true, local: body.local === true }));
+        return json(await loadFromArchidekt(a, id, { local: body.local === true }));
       }
       case "archidekt-check": {
         const { file } = await loadSync(a);

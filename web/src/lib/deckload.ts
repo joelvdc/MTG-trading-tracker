@@ -1,18 +1,16 @@
-// Importing and reloading decks from Archidekt on the website, as the app does (DeckRepository.load / scoreSalt /
-// updateAll). Reading Archidekt, Scryfall and Commander Salt happens first ([readArchidektDeck], [scoreDeck]); the
-// sync file is then changed in one go ([putLoadedDeck], [putScores]), inside editSync.
+// Importing and reloading decks from Archidekt on the website, as the app does (DeckRepository.load / updateAll).
+// Reading Archidekt and Scryfall happens first ([readArchidektDeck]); the sync file is then changed in one go
+// ([putLoadedDeck]), inside editSync.
 import { fetchDeck, identityOf, userDecks, type ArchidektCard, type ArchidektDeck } from "./archidekt";
-import { appSettings } from "./appsettings";
-import { saltDeckId, scoreDeck, type SaltScores } from "./commandersalt";
 import { diffLines, recordHistory } from "./deckhistory";
 import { addDeck, detachDeck, encodeCategories, newDeck, sortLines } from "./deckedit";
 import { primerFromArchidekt } from "./decknotes";
-import { powerSource, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
+import { type Deck, type DeckCard, type SyncDeck } from "./deckshared";
 import { syncDecks } from "./decks";
 import { lookupCollection } from "./scryfall";
 import type { Account } from "./session";
 import { editSync, loadSync } from "./store";
-import { bump, prefs, type CardRef, type Json, type SyncFile } from "./syncfile";
+import { bump, type CardRef, type Json, type SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
 
 /** A deck read from Archidekt with its printings looked up on Scryfall (by Scryfall id; missing ones are left out). */
@@ -83,8 +81,7 @@ function line(r: ReadDeck, c: ArchidektCard, maybeboard: boolean): DeckCard {
 
 /**
  * Saves the deck's list as read from Archidekt (DeckRepository.load): new or in place of the old one, keeping its
- * scores until new ones arrive; the power level of a site other than the chosen one is dropped (it belonged to the old
- * list). Returns the saved deck.
+ * scores until new ones arrive. Returns the saved deck.
  */
 export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDeck {
   const a = r.deck;
@@ -92,7 +89,6 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
   const previous = all.find((d) => d.deck.archidektId === a.id) ?? null;
   const old = previous?.deck ?? null;
   const commanders = a.cards.filter((c) => c.commander);
-  const source = powerSource(prefs(file).powerSource);
   let deck: Deck = {
     ...(old ?? newDeck(a.id, now, {})),
     name: a.name,
@@ -116,7 +112,6 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
     const primer = primerFromArchidekt(a.description);
     if (primer !== null) deck = { ...deck, primer, notesAt: now };
   }
-  if (source !== "EDH_POWER_LEVEL") deck = { ...deck, edhPowerLevel: null, edhPowerAt: null, edhPowerError: null };
   // ScrollVault's fields are always cleared (ScrollVault was removed in app 1.105; its values never show).
   deck = { ...deck, svPowerLevel: null, scrollVault: null, svAt: null, svError: null };
   // Cards added in the app (an old deck's "Added in app" ones and, since 1.86, its local maybeboard) stay, as in the app.
@@ -132,45 +127,19 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
   return sd;
 }
 
-/** Commander Salt's scores (or why it couldn't score) on the deck (DeckRepository.scoreSalt). */
-export function putScores(file: SyncFile, id: number, scores: SaltScores | { error: string }, now: number): void {
-  const sd = syncDecks(file).find((d) => d.deck.archidektId === id);
-  if (!sd) return;
-  const d = sd.deck;
-  // With the bracket estimated by the website, Commander Salt's own bracket fields stay out (the estimate is the deck's).
-  const ownBracket = appSettings(file).bracketSource !== "APP";
-  if ("error" in scores) d.scoreError = scores.error || "unknown error";
-  else {
-    if (ownBracket) d.saltCard = scores.saltCard ?? d.saltCard;
-    d.saltId = scores.saltId || saltDeckId(id);
-    d.powerLevel = scores.powerLevel;
-    if (ownBracket) {
-      d.bracketRealistic = scores.bracketRealistic;
-      d.bracketBaseline = scores.bracketBaseline;
-    }
-    d.saltPercent = scores.saltPercent;
-    d.archetype = scores.archetype;
-    d.scoredAt = now;
-    d.scoreError = null;
-  }
-  d.updatedAt = bump(d.updatedAt ?? 0, now);
-  file.data.decks = syncDecks(file).map((x) => (x.deck.archidektId === id ? sd : x)) as unknown as Json;
-}
-
 /** What "Update all decks" does with a deck (DeckRepository.updateAll). */
-export type UpdateNeed = "changed" | "check" | "unscored";
+export type UpdateNeed = "changed" | "check";
 
 /**
  * The Archidekt decks to update: [listed] holds when each deck last changed on Archidekt, from its owner's public deck
- * list ("check": not in a public list, so the deck itself is read); unchanged decks without a good score are scored.
+ * list ("check": not in a public list, so the deck itself is read).
  */
 export function updatePlan(file: SyncFile, listed: Map<number, number | null>): { id: number; name: string; need: UpdateNeed }[] {
   const out: { id: number; name: string; need: UpdateNeed }[] = [];
   for (const { deck: d } of syncDecks(file)) {
     if (d.archidektId < 0 || d.retired) continue;
     const at = listed.get(d.archidektId);
-    const need: UpdateNeed | null =
-      at == null ? "check" : at !== d.archidektUpdatedAt ? "changed" : d.scoredAt == null || d.scoreError != null ? "unscored" : null;
+    const need: UpdateNeed | null = at == null ? "check" : at !== d.archidektUpdatedAt ? "changed" : null;
     if (need) out.push({ id: d.archidektId, name: d.name, need });
   }
   return out;
@@ -179,32 +148,16 @@ export function updatePlan(file: SyncFile, listed: Map<number, number | null>): 
 // ---- The actions (the pages call them one deck at a time, so each request stays short) ----
 
 /**
- * Reads the deck from Archidekt and saves it; with [score], Commander Salt scores it at the same time (its failure is
- * kept on the deck, as in the app). With [local] it becomes a local deck right after (DeckRepository.import). Returns
- * the deck's id (a new one when made local) and Commander Salt's problem, if any.
+ * Reads the deck from Archidekt and saves it. With [local] it becomes a local deck right after (DeckRepository.import).
+ * Returns the deck's id (a new one when made local).
  */
-export async function loadFromArchidekt(
-  account: Account,
-  id: number,
-  opts: { score: boolean; local?: boolean },
-): Promise<{ id: number; name: string; scoreError: string | null }> {
-  const [read, scores] = await Promise.all([
-    readArchidektDeck(id),
-    opts.score ? scoreDeck(id).catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) })) : Promise.resolve(null),
-  ]);
+export async function loadFromArchidekt(account: Account, id: number, opts: { local?: boolean }): Promise<{ id: number; name: string }> {
+  const read = await readArchidektDeck(id);
   return editSync(account, (file, now) => {
     putLoadedDeck(file, read, now);
-    if (scores) putScores(file, id, scores, now);
     const newId = opts.local ? detachDeck(file, id, now) : id;
-    return { id: newId, name: read.deck.name, scoreError: scores && "error" in scores ? scores.error : null };
+    return { id: newId, name: read.deck.name };
   });
-}
-
-/** Commander Salt scores the deck's list again, without reloading it (the error is kept on the deck and returned). */
-export async function scoreAgain(account: Account, id: number): Promise<string | null> {
-  const scores = await scoreDeck(id).catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }));
-  await editSync(account, (file, now) => putScores(file, id, scores, now));
-  return "error" in scores ? scores.error : null;
 }
 
 /** When each Archidekt deck last changed there: one public deck list per owner (a failed list leaves its decks to "check"). */
@@ -222,20 +175,16 @@ export async function archidektDates(file: SyncFile): Promise<Map<number, number
 }
 
 /**
- * One deck of "Update all decks" (DeckRepository.updateAll): reloaded and scored when it changed on Archidekt (for
- * "check", when the deck itself says so), else scored when it has no good score. What was done.
+ * One deck of "Update all decks" (DeckRepository.updateAll): reloaded when it changed on Archidekt (for "check", when
+ * the deck itself says so). What was done.
  */
-export async function updateOne(account: Account, id: number, need: UpdateNeed): Promise<{ done: "updated" | "scored" | "same"; scoreError: string | null }> {
-  if (need === "unscored") return { done: "scored", scoreError: await scoreAgain(account, id) };
+export async function updateOne(account: Account, id: number, need: UpdateNeed): Promise<{ done: "updated" | "same" }> {
   if (need === "check") {
     const { file } = await loadSync(account);
     const d = syncDecks(file).find((x) => x.deck.archidektId === id)?.deck;
     const remote = await fetchDeck(id);
-    if (d && remote.updatedAt !== null && remote.updatedAt === d.archidektUpdatedAt) {
-      if (d.scoredAt != null && d.scoreError == null) return { done: "same", scoreError: null };
-      return { done: "scored", scoreError: await scoreAgain(account, id) };
-    }
+    if (d && remote.updatedAt !== null && remote.updatedAt === d.archidektUpdatedAt) return { done: "same" };
   }
-  const r = await loadFromArchidekt(account, id, { score: true });
-  return { done: "updated", scoreError: r.scoreError };
+  await loadFromArchidekt(account, id, {});
+  return { done: "updated" };
 }

@@ -1,6 +1,7 @@
-// The website's own rating of local decks, on the server: what the deck's cards are known to be (cardfacts.ts), the
-// combos Commander Spellbook finds (spellbook.ts) and the rating itself (localratings.ts), then whether a deck's kept
-// rating is still the one for its list and how it is put on the deck. Server only.
+// The website's own rating of decks, local and from Archidekt, on the server: what the deck's cards are known to be
+// (cardfacts.ts), the combos Commander Spellbook finds (spellbook.ts) and the rating itself (localratings.ts), then
+// whether a deck's kept rating is still the one for its list and how it is put on the deck. Server only.
+
 import { accountStore } from "./accounts";
 import { cardFactsByName, FACTS_SINCE } from "./cardfacts";
 import { syncDecks } from "./decks";
@@ -35,25 +36,23 @@ export async function rateCards(cards: StatsCard[], identity: string | null): Pr
 export const RATED_SINCE = Date.parse("2026-11-23T17:50:00Z");
 
 /**
- * Whether a deck's kept rating is out of date. [local] is a local deck, [bracketFromApp] the setting "Bracket from:
- * Estimated by the app". Commander Salt's data stays unless the estimate was asked for. With no stats there is no
- * answer (false). [scoredAt] is when the deck was last scored; a rating of the website's from before RATED_SINCE is stale.
+ * Whether a deck's kept rating is out of date. Every deck's bracket is the website's own estimate, so a deck without
+ * one is rated, and so is one whose kept card isn't the website's (data of an older app). With no stats there is no
+ * answer (false). [scoredAt] is when the deck was last rated; a rating of the website's from before RATED_SINCE is stale.
  */
-export function ratingStale(local: boolean, saltCard: string | null, stats: StatsCard[], bracketFromApp: boolean, scoredAt?: number | null): boolean {
+export function ratingStale(saltCard: string | null, stats: StatsCard[], scoredAt?: number | null): boolean {
   if (stats.length === 0) return false;
-  if (!local && !bracketFromApp) return false;
   const card = decodeSalt(saltCard);
   if (!card) return true;
-  // An Archidekt deck with Commander Salt's data needs the estimate; a local deck holding it never does.
-  if (card.source !== "app") return !local;
+  if (card.source !== "app") return true;
   if (scoredAt !== undefined && (scoredAt ?? 0) < RATED_SINCE) return true;
   return card.listKey !== ratingListKey(stats) || card.ratingVersion !== RATING_VERSION;
 }
 
 /**
- * Puts the website's rating on a deck, local or from Archidekt (like putScores in deckload.ts). Its own bracket and
- * salt become the deck's; Commander Salt's power level, salt percentage and archetype stay as they were. False when
- * there's no such deck.
+ * Puts the website's rating on a deck, local or from Archidekt. Its own bracket and salt become the deck's; the
+ * scores an older app kept (a power level, a salt percentage, an archetype) stay as they were. False when there's no
+ * such deck.
  */
 export function putRating(file: SyncFile, id: number, card: SaltCard, now: number): boolean {
   const all = syncDecks(file);

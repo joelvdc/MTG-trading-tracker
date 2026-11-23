@@ -51,14 +51,14 @@ import { isBasicName, type DeckCard, type SyncDeck } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import type { CardRef } from "@/lib/syncfile";
 import { autoCategories } from "@/lib/autocategories";
-import { loadFromArchidekt, scoreAgain, updateOne } from "@/lib/deckload";
+import { loadFromArchidekt, updateOne } from "@/lib/deckload";
 import { lookupCollectionFull, type LookedUp } from "@/lib/scryfall";
 import { deckToText, type ExportFormat } from "@/lib/deckexport";
 import { previewText, textLines } from "@/lib/deckimport";
 import { textCardCount } from "@/lib/decktext";
 
 export const dynamic = "force-dynamic";
-// Commander Salt can take a while (it retries its import), so up to two minutes.
+// Reading a deck from Archidekt can take a while, so up to two minutes.
 export const maxDuration = 120;
 
 type Params = { params: Promise<{ id: string }> };
@@ -178,8 +178,8 @@ function recordDeckChange(before: SyncDeck | null, after: SyncDeck | null, now: 
 }
 
 /**
- * Deck actions. Decks from Archidekt: "reload" (the list), "refresh" (the list and Commander Salt), "rescore"
- * (Commander Salt only), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist"
+ * Deck actions. Decks from Archidekt: "reload" and "refresh" (read the list from Archidekt again; both do the same
+ * now), "update" (one deck of "Update all decks", with its [need]). Every deck: "missing-to-wishlist"
  * (the cards the collection lacks go on the wishlist, any printing), "copy", "detach" (a deck from Archidekt becomes a
  * local deck), "hide-category", "pick" (the printing you own to show), "token-pick" (a token's printing), "delete"
  * (never on Archidekt itself), "category-order" (the deck's own category order), "add-maybe" (into the maybeboard; a
@@ -202,16 +202,15 @@ export async function POST(req: Request, { params }: Params) {
     const id = deckId((await params).id);
     if (id === null) return json({ error: "That deck isn't in the sync file (any more)." }, 404);
     const body = ((await req.json()) ?? {}) as Body;
-    // Decks from Archidekt: read again from there (with or without Commander Salt), or one step of "Update all decks".
-    if (body.action === "reload" || body.action === "refresh" || body.action === "rescore" || body.action === "update") {
+    // Decks from Archidekt: read again from there, or one step of "Update all decks".
+    if (body.action === "reload" || body.action === "refresh" || body.action === "update") {
       if (id < 0) throw new EditError("A local deck isn't on Archidekt.");
-      if (body.action === "rescore") return json({ ok: true, scoreError: await scoreAgain(a, id) });
       if (body.action === "update") {
-        const need = body.need === "changed" || body.need === "unscored" ? body.need : "check";
+        const need = body.need === "changed" ? body.need : "check";
         return json({ ok: true, ...(await updateOne(a, id, need)) });
       }
-      const r = await loadFromArchidekt(a, id, { score: body.action === "refresh" });
-      return json({ ok: true, scoreError: r.scoreError });
+      await loadFromArchidekt(a, id, {});
+      return json({ ok: true });
     }
     if (body.action === "missing-to-wishlist") {
       const added = await editSync(a, (f, now) => {

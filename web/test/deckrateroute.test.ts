@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// POST /api/decks/[id]/rate: rates a local deck and keeps the rating in the sync file. The tests give it a logged-in
+// POST /api/decks/[id]/rate: rates a deck and keeps the rating in the sync file. The tests give it a logged-in
 // account (a website account or an older Nextcloud one), a small sync file, and fake card facts and combos.
 
 const USER = { kind: "user", accountId: 1, username: "joel", admin: true, device: "test" };
@@ -41,7 +41,6 @@ vi.mock("@/lib/cardfacts", async (importOriginal) => {
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
 import { FACTS_SINCE } from "@/lib/cardfacts";
-import { setPrefs, type SyncFile } from "@/lib/syncfile";
 import { POST } from "@/app/api/decks/[id]/rate/route";
 
 const cardRef = (name: string) => ({
@@ -137,15 +136,7 @@ describe("POST /api/decks/[id]/rate", () => {
     expect(JSON.parse(deck.saltCard!).source).toBe("app");
   });
 
-  it("doesn't rate a deck from Archidekt while its bracket is Commander Salt's, nor one that isn't there", async () => {
-    expect(await (await rate(123)).json()).toEqual({ ok: false });
-    expect(deckOf(123).saltCard).toBeNull();
-    expect(combos).not.toHaveBeenCalled();
-    expect((await rate(999)).status).toBe(404);
-  });
-
-  it("rates a deck from Archidekt once: the estimate stands in for Commander Salt's", async () => {
-    setPrefs(file as SyncFile, { bracketSource: "APP" }, 500);
+  it("rates a deck from Archidekt too: the estimate is the deck's bracket", async () => {
     const r = await rate(123);
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ ok: true });
@@ -157,6 +148,14 @@ describe("POST /api/decks/[id]/rate", () => {
     combos.mockClear();
     expect(await (await rate(123)).json()).toEqual({ ok: false });
     expect(combos).not.toHaveBeenCalled();
+  });
+
+  it("rates a deck again while its kept rating isn't the website's, nor one that isn't there", async () => {
+    const old = JSON.stringify({ gameChangers: [], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
+    (file as { data: { decks: { deck: { saltCard: string | null } }[] } }).data.decks[1].deck.saltCard = old;
+    expect(await (await rate(123)).json()).toEqual({ ok: true });
+    expect((JSON.parse(deckOf(123).saltCard!) as { source: string }).source).toBe("app");
+    expect((await rate(999)).status).toBe(404);
   });
 
   it("says so, and keeps nothing, while the card facts aren't there yet", async () => {
