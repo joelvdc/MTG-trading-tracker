@@ -23,6 +23,11 @@ history, the release notes and `web/README.md`.)
   build (web/winodds-kt) no longer copies AppPower.kt. Built by DeepSeek through Mistral (website, lands, tests) and
   Opus (card design, app and website UI), reviewed by Opus.
   Before that: 1.115 salt sum on every deck; 1.114 local decks' estimated bracket.
+- **Website change (2026-11-23, after 1.116):** Tutor no longer takes land tutors (Path to Exile, Cultivate, Farseek,
+  basic landcyclers): the categories table asks Scryfall for `(otag:tutor -otag:tutor-land) or otag:tutor-land-any`
+  (about 620 cards; Crop Rotation, Expedition Map stay). The table rebuilds at the next daily run (04:00 UTC), so
+  until then the old Tutor counts show. The deck filter's "7 of 100" no longer covers the text. Built by DeepSeek
+  (Vibe), reviewed by Opus.
 - **Waiting on the owner:** look at a bracket card on the phone and print one A4 page from the website (Decks → Bracket
   cards → Print, at 100%) to check the size. Still from before: add/confirm your email, try "Forgot password?", the sort
   with the real collection, green light for the ✕ delete column in the website's wishlist, Compare with a real
