@@ -20,7 +20,8 @@ import { deckResults, type Game } from "@/lib/gameshared";
 import { useDeckPrefs, ViewOptionsMenu } from "@/components/DeckViewOptions";
 import { Dialog } from "@/components/Dialog";
 import { useHoverCard, useHoverSetting } from "@/components/HoverCard";
-import { FlipIcon, HoverSwitch } from "@/components/Icons";
+import { FlipIcon } from "@/components/Icons";
+import { DeckViewSwitch } from "@/components/ViewSwitch";
 import { ColourPips, ManaCost } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { OwnedIcon } from "@/components/OwnedIcon";
@@ -352,6 +353,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   /** Whether a line's card has a back face, from Scryfall's layout when known. */
   const flippable = (r: DeckRow) => hasBackFace(view.layouts?.[detailsId(r)], typeLineOf.get(detailsId(r)) ?? r.types);
   const pictureOf = (r: DeckRow) => (r.card.imageUrl && flipped.has(r.lineUid) && flippable(r) ? backImageUrl(r.card.imageUrl) : r.card.imageUrl);
+  /** The picture itself (never null), for a card's <img>: only drawn when there is one. */
+  const picOf = (r: DeckRow) => pictureOf(r) ?? "";
 
   // The primer's [[card]] links: a card of the deck (the main deck's line first) opens its window, and its picture
   // follows the mouse; a link to a card the deck hasn't got is its name in bold.
@@ -473,39 +476,73 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const dropClass = (key: string) =>
     dropAt?.key !== key || !drag ? "" : drag.kind === "cat" ? (dropAt.after ? " drop-after" : " drop-before") : " drop-into";
 
-  const row = (r: DeckRow) => {
-    const basic = BASICS.has(r.name.toLowerCase());
+  /**
+   * What every view's line shares: opening it (or leaving select mode first), ticking it in select mode, the filter's
+   * classes and dragging it to another category. The hover picture follows the pointer in the list only.
+   * [extraClass] is the card's own class (deck-row, the tile, the stack's card).
+   */
+  const lineProps = (r: DeckRow, extraClass: string) => {
     const chosen = selected.has(r.lineUid);
-    const classes = ["deck-row"];
+    const classes = [extraClass];
     if (!selecting) classes.push("clickable");
     if (chosen) classes.push("selected");
     if (filter.test && filter.mode === "HIGHLIGHT") classes.push(filter.test(r) ? "filter-hit" : "filter-miss");
-    return (
-      <li
-        key={r.lineUid}
-        data-movable={canMoveCards && !selecting ? "1" : undefined}
-        onPointerDown={canMoveCards && !selecting ? dnd.press({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category }, r.name) : undefined}
-        onDragStart={canMoveCards && !selecting ? (e) => e.preventDefault() : undefined}
-        className={classes.join(" ")}
-        role="button"
-        tabIndex={0}
-        title={selecting ? (chosen ? "Deselect this card" : "Select this card") : view.local && !view.readOnly ? "Change this card" : "This card"}
-        onClick={() => (selecting ? toggleLine(r.lineUid) : (hover.hide(), setLine(r.lineUid)))}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), selecting ? toggleLine(r.lineUid) : setLine(r.lineUid))}
-        onMouseMove={hover.follow(pictureOf(r))}
-        onMouseLeave={hover.hide}
+    const list = prefs.layout === "LIST";
+    return {
+      "data-movable": canMoveCards && !selecting ? "1" : undefined,
+      onPointerDown: canMoveCards && !selecting ? dnd.press({ kind: "card", uid: r.lineUid, from: r.commander ? "Commander" : r.category }, r.name) : undefined,
+      onDragStart: canMoveCards && !selecting ? (e: React.DragEvent) => e.preventDefault() : undefined,
+      className: classes.join(" "),
+      role: "button",
+      tabIndex: 0,
+      title: selecting ? (chosen ? "Deselect this card" : "Select this card") : view.local && !view.readOnly ? "Change this card" : "This card",
+      onClick: () => (selecting ? toggleLine(r.lineUid) : (hover.hide(), setLine(r.lineUid))),
+      onKeyDown: (e: React.KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), selecting ? toggleLine(r.lineUid) : setLine(r.lineUid)),
+      ...(list ? { onMouseMove: hover.follow(pictureOf(r)), onMouseLeave: hover.hide } : {}),
+    };
+  };
+
+  /** Select mode: the tick at the top left of a picture. */
+  const pictureCheck = (r: DeckRow, extra: string) => (
+    <input
+      type="checkbox"
+      className={`line-check ${extra}`}
+      aria-label={`Select ${r.name}`}
+      checked={selected.has(r.lineUid)}
+      onChange={() => toggleLine(r.lineUid)}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    />
+  );
+
+  /** The flip button of the picture views: turns the card over where it is. */
+  const pictureFlip = (r: DeckRow) =>
+    flippable(r) && r.card.imageUrl ? (
+      <button
+        type="button"
+        className="flip-btn"
+        title={flipped.has(r.lineUid) ? "Show the front" : "Show the back"}
+        aria-label={`Flip ${r.name}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setFlipped((old) => {
+            const next = new Set(old);
+            if (!next.delete(r.lineUid)) next.add(r.lineUid);
+            return next;
+          });
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
       >
-        {selecting && (
-          <input
-            type="checkbox"
-            className="line-check"
-            aria-label={`Select ${r.name}`}
-            checked={chosen}
-            onChange={() => toggleLine(r.lineUid)}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        )}
+        <FlipIcon size={14} />
+      </button>
+    ) : null;
+
+  /** A line of the list view. */
+  const row = (r: DeckRow) => {
+    const basic = BASICS.has(r.name.toLowerCase());
+    return (
+      <li key={r.lineUid} {...lineProps(r, "deck-row")}>
+        {selecting && pictureCheck(r, "")}
         <span className="deck-qty num">{r.quantity}</span>
         <span className="grow deck-card-name">
           <span className="deck-name-text" title={r.name}>
@@ -562,6 +599,44 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
     );
   };
 
+  /** A card of the grid view: its picture, the price and what you own under it (like the collection's pictures). */
+  const tile = (r: DeckRow) => {
+    const basic = BASICS.has(r.name.toLowerCase());
+    return (
+      <li key={r.lineUid} {...lineProps(r, "tile deck-card-tile")}>
+        <div className={r.finish !== "NONFOIL" ? "tile-img foil-glow" : "tile-img"}>
+          {pictureOf(r) !== null ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={picOf(r)} alt={r.name} loading="lazy" />
+          ) : (
+            <span className="tile-noimg">{r.name}</span>
+          )}
+          {r.quantity > 1 && <span className="tile-qty">×{r.quantity}</span>}
+          {selecting && pictureCheck(r, "tile-check")}
+          {pictureFlip(r)}
+        </div>
+        <div className="deck-card-tile-meta">
+          {prefs.price && <span className="num nowrap">{r.unitEur != null ? money(r.unitEur * r.quantity) : "–"}</span>}
+          {prefs.owned && (basic ? null : <OwnedIcon row={r} />)}
+        </div>
+      </li>
+    );
+  };
+
+  /** A card of the stacks view: its picture alone, its count at the top right (the name strip shows when covered). */
+  const stackCard = (r: DeckRow) => (
+    <li key={r.lineUid} {...lineProps(r, "deck-stack-card" + (r.finish !== "NONFOIL" ? " foil-glow" : ""))}>
+      {pictureOf(r) !== null ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={picOf(r)} alt={r.name} loading="lazy" />
+      ) : (
+        <span className="tile-noimg">{r.name}</span>
+      )}
+      {r.quantity > 1 && <span className="tile-qty">×{r.quantity}</span>}
+      {selecting && pictureCheck(r, "tile-check")}
+    </li>
+  );
+
   /**
    * A section. [category]: where a card dropped on it goes (null: nowhere); [orderable]: a category of the deck, which
    * can be dragged to another place (and others dropped next to it). [mdfc]: the MDFC lands elsewhere added to the
@@ -591,10 +666,25 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                 ⠿
               </span>
             )}
-            {title} <span className="muted small">· {copies}{mdfc > 0 && ` (${copies + mdfc} with MDFCs)`} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
+            {title}
+            {prefs.layout === "STACKS" ? (
+              // Narrow columns: the count and price on a line of their own (no leading dot).
+              <span className="muted small deck-stack-sub">
+                {copies}
+                {mdfc > 0 && ` (${copies + mdfc} with MDFCs)`} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}
+              </span>
+            ) : (
+              <span className="muted small">· {copies}{mdfc > 0 && ` (${copies + mdfc} with MDFCs)`} · {money(rows.reduce((s, r) => s + (r.unitEur ?? 0) * r.quantity, 0))}</span>
+            )}
           </h3>
         </summary>
-        <ul className="plain-list deck-list">{rows.map(row)}</ul>
+        {prefs.layout === "LIST" ? (
+          <ul className="plain-list deck-list">{rows.map(row)}</ul>
+        ) : prefs.layout === "GRID" ? (
+          <ul className="wish-grid deck-card-grid">{rows.map(tile)}</ul>
+        ) : (
+          <ul className="deck-stack">{rows.map(stackCard)}</ul>
+        )}
       </details>
     );
   };
@@ -939,7 +1029,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           )}
           <DeckFilterBox filter={filter} shown={shaped.matched} total={view.rows.reduce((s, r) => s + r.quantity, 0)} />
           <span className="deck-toolbar-end">
-            <HoverSwitch on={hoverOn} onChange={setHoverOn} />
+            <DeckViewSwitch layout={prefs.layout} onLayout={(l) => setPrefs({ layout: l })} hover={hoverOn} onHover={setHoverOn} />
             <ViewOptionsMenu prefs={prefs} onChange={setPrefs} />
           </span>
         </div>
@@ -947,18 +1037,26 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           <p className="muted small">Shown in the printings you own, as in the app; the deck itself keeps its printings.</p>
         )}
 
-        <div className={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? "deck-layout has-maybe" : "deck-layout"}>
-          <DeckColumns
-            max={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 2 : 3}
-            minWidth={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 260 : 320}
-            items={[
+        <div className={shaped.maybeSections.length > 0 && prefs.layout === "LIST" && prefs.maybe === "SIDE" ? "deck-layout has-maybe" : "deck-layout"}>
+          {(() => {
+            const items = [
               ...shaped.visible.map((s) => {
                 const commanders = isCommanders(s.rows);
                 return { key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, s.title, byCategory ? (commanders ? "Commander" : s.title) : null, byCategory && !commanders, mdfcOutside(s.title, s.rows)) };
               }),
               ...(shaped.hiddenRows.length > 0 ? [{ key: "\u0000hidden", weight: weight(shaped.hiddenRows), node: block("Hidden categories", shaped.hiddenRows, "\u0000hidden") }] : []),
-            ]}
-          />
+            ];
+            // The list's columns, or the sections full width one under another (grid) or side by side (stacks).
+            return prefs.layout === "LIST" ? (
+              <DeckColumns max={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 2 : 3} minWidth={shaped.maybeSections.length > 0 && prefs.maybe === "SIDE" ? 260 : 320} items={items} />
+            ) : (
+              <div className={prefs.layout === "GRID" ? "deck-grid-sections" : "deck-stacks"}>
+                {items.map((x) => (
+                  <div key={x.key}>{x.node}</div>
+                ))}
+              </div>
+            );
+          })()}
           {shaped.maybeSections.length > 0 && (
             <details
               className={"deck-section deck-maybe" + dropClass("\u0000maybe")}
@@ -972,17 +1070,30 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                   Maybeboard <span className="muted small">· {shaped.maybeCount}</span>
                 </h3>
               </summary>
-              {/* Below the deck: three columns like the deck's; beside it: one. */}
+              {/* One list (maybeboard only): its own view. Below the deck: three columns like the deck's; beside it: one. */}
               {shaped.maybeSections.length === 1 && shaped.maybeSections[0].title.toLowerCase() === "maybeboard" ? (
-                <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
-              ) : prefs.maybe === "BELOW" ? (
-                <DeckColumns
-                  max={3}
-                  minWidth={320}
-                  items={shaped.maybeSections.map((s) => ({ key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title) }))}
-                />
-              ) : (
+                prefs.layout === "LIST" ? (
+                  <ul className="plain-list deck-list">{shaped.maybeSections[0].rows.map(row)}</ul>
+                ) : prefs.layout === "GRID" ? (
+                  <ul className="wish-grid deck-card-grid">{shaped.maybeSections[0].rows.map(tile)}</ul>
+                ) : (
+                  <ul className="deck-stack">{shaped.maybeSections[0].rows.map(stackCard)}</ul>
+                )
+              ) : prefs.layout === "LIST" && prefs.maybe === "SIDE" ? (
                 shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title))
+              ) : (
+                (() => {
+                  const maybeItems = shaped.maybeSections.map((s) => ({ key: s.title, weight: weight(s.rows), node: block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title) }));
+                  return prefs.layout === "LIST" ? (
+                    <DeckColumns max={3} minWidth={320} items={maybeItems} />
+                  ) : (
+                    <div className={prefs.layout === "GRID" ? "deck-grid-sections" : "deck-stacks"}>
+                      {maybeItems.map((x) => (
+                        <div key={x.key}>{x.node}</div>
+                      ))}
+                    </div>
+                  );
+                })()
               )}
             </details>
           )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GROUP_LABELS, type DeckGroup, type DeckSort } from "@/lib/decklayout";
+import type { DeckLayout } from "@/components/ViewSwitch";
 
 const KEY = "mtg.deckView";
 
@@ -17,9 +18,11 @@ export interface DeckPrefs {
   maybe: "SIDE" | "BELOW";
   /** Whether the maybeboard is split into groups the way the deck is (Group by). */
   maybeSplit: boolean;
+  /** How the deck's cards are shown: as lines, as stacks of cards or as a grid of pictures. */
+  layout: DeckLayout;
 }
 
-export const DEFAULT_PREFS: DeckPrefs = { cost: true, price: true, owned: true, sort: "MANA_VALUE", descending: false, group: "CATEGORY", maybe: "SIDE", maybeSplit: false };
+export const DEFAULT_PREFS: DeckPrefs = { cost: true, price: true, owned: true, sort: "MANA_VALUE", descending: false, group: "CATEGORY", maybe: "SIDE", maybeSplit: false, layout: "LIST" };
 
 /** Reads the remembered choices; anything missing or unreadable keeps its default. */
 export function parsePrefs(text: string | null): DeckPrefs {
@@ -34,6 +37,7 @@ export function parsePrefs(text: string | null): DeckPrefs {
       group: p.group && p.group in GROUP_LABELS ? p.group : DEFAULT_PREFS.group,
       maybe: p.maybe === "BELOW" || p.maybe === "SIDE" ? p.maybe : DEFAULT_PREFS.maybe,
       maybeSplit: typeof p.maybeSplit === "boolean" ? p.maybeSplit : DEFAULT_PREFS.maybeSplit,
+      layout: p.layout === "STACKS" || p.layout === "GRID" ? p.layout : DEFAULT_PREFS.layout,
     };
   } catch {
     return DEFAULT_PREFS;
