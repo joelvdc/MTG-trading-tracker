@@ -2,6 +2,7 @@
 // Protection, Recursion. Own tags win; otherwise the deck categories and the website's automatic categories decide.
 // Shared with the browser.
 
+import { backIsLand } from "./mdfclands";
 import { nameKey } from "./decknotes";
 
 export const ROLES = ["Ramp", "Draw", "Removal", "Wipes", "Tutor", "Protection", "Recursion"] as const;
@@ -74,6 +75,7 @@ export function tagsOf(name: string, categories: string[], ownTags: string[] | n
 /** A card as the role counts see it. */
 export interface RoleCard {
   name: string;
+  /** Archidekt's types, used until Scryfall's type line is known. */
   types: string;
   quantity: number;
   commander: boolean;
@@ -81,14 +83,21 @@ export interface RoleCard {
   categories: string[];
   ownTags: string[] | null;
   auto: string[];
+  /** Scryfall's type line (faces joined with " // "), which the lands count from; null or missing until it's known. */
+  typeLine?: string | null;
 }
 
 export type RoleStatus = "low" | "ok" | "high" | "none";
 
+/**
+ * One line under the deck header. `extra` is the double-faced cards whose back is a land (MDFCs), only for Lands,
+ * shown after its count as "37+2".
+ */
 export interface RoleCount {
   role: string;
   count: number;
   status: RoleStatus;
+  extra: number;
 }
 
 /** The guideline ranges under the deck header: below is low, above is high, both ends included in ok. */
@@ -106,9 +115,30 @@ function statusOf(role: string, count: number): RoleStatus {
   return count < guide[0] ? "low" : count > guide[1] ? "high" : "ok";
 }
 
+/** A card's type line: Scryfall's when known, else Archidekt's stored types. */
+function typeLineOf(card: RoleCard): string {
+  return card.typeLine ? card.typeLine : card.types;
+}
+
+/** A face is a land when the types before the dash contain the word Land ("Legendary Land — Desert"). */
+function landFace(face: string): boolean {
+  return face.split(" — ")[0].split(/\s+/).includes("Land");
+}
+
+/** Whether a card is a land (DeckRoles.isLand): its first face counts once, so a pathway ("Land // Land") is a land. */
+export function isLandCard(card: RoleCard): boolean {
+  return landFace(typeLineOf(card).split(" // ")[0]);
+}
+
+/** Whether a card is an MDFC, a spell on the front and a land on a later face ("Instant // Land"). */
+export function isMdfcCard(card: RoleCard): boolean {
+  return backIsLand(typeLineOf(card));
+}
+
 /**
  * Lands, the roles and a deck's other own tags with their copy counts (DeckRoles.counts): maybeboard and commanders
  * left out; Lands, Ramp, Draw and Removal always, the other roles when they have cards, then up to five own tags.
+ * Lands count from Scryfall's type line (the stored types until it's known), and their `extra` is the MDFC copies.
  */
 export function roleCounts(cards: RoleCard[]): RoleCount[] {
   const main = cards.filter((card) => !card.maybeboard && !card.commander);
@@ -116,9 +146,16 @@ export function roleCounts(cards: RoleCard[]): RoleCount[] {
     main
       .filter((card) => tagsOf(card.name, card.categories, card.ownTags, card.auto).some((tag) => tag.toLowerCase() === role.toLowerCase()))
       .reduce((sum, card) => sum + card.quantity, 0);
-  const lands = main.filter((card) => card.types.split(/\s+/).includes("Land")).reduce((sum, card) => sum + card.quantity, 0);
-  const item = (role: string, count: number): RoleCount => ({ role, count, status: statusOf(role, count) });
-  const out: RoleCount[] = [item("Lands", lands), item("Ramp", countOf("Ramp")), item("Draw", countOf("Draw")), item("Removal", countOf("Removal"))];
+  // The guideline colour goes by the lands alone; the MDFCs are added as "+N".
+  const lands = main.filter(isLandCard).reduce((sum, card) => sum + card.quantity, 0);
+  const mdfcs = main.filter(isMdfcCard).reduce((sum, card) => sum + card.quantity, 0);
+  const item = (role: string, count: number): RoleCount => ({ role, count, status: statusOf(role, count), extra: 0 });
+  const out: RoleCount[] = [
+    { ...item("Lands", lands), extra: mdfcs },
+    item("Ramp", countOf("Ramp")),
+    item("Draw", countOf("Draw")),
+    item("Removal", countOf("Removal")),
+  ];
   for (const role of ["Wipes", "Tutor", "Protection", "Recursion"]) {
     const count = countOf(role);
     if (count > 0) out.push(item(role, count));
@@ -143,7 +180,7 @@ export function roleCounts(cards: RoleCard[]): RoleCount[] {
     .filter((tag) => tag.count > 0)
     .sort((a, b) => b.count - a.count || (a.role.toLowerCase() < b.role.toLowerCase() ? -1 : a.role.toLowerCase() > b.role.toLowerCase() ? 1 : 0))
     .slice(0, 5);
-  for (const tag of extras) out.push({ role: tag.role, count: tag.count, status: "none" });
+  for (const tag of extras) out.push({ role: tag.role, count: tag.count, status: "none", extra: 0 });
   return out;
 }
 

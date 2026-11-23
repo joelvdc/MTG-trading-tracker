@@ -131,10 +131,11 @@ class Release197Test {
         val categories: List<String> = emptyList(),
         val ownTags: List<String>? = null,
         val auto: List<String> = emptyList(),
+        val typeLine: String? = null,
     )
 
     @Serializable
-    private class RoleCaseCount(val role: String, val count: Int, val status: String)
+    private class RoleCaseCount(val role: String, val count: Int, val status: String, val extra: Int = 0)
 
     @Serializable
     private class RolesCase(
@@ -155,12 +156,13 @@ class Release197Test {
                 val card = c.cards.firstOrNull { it.name == name } ?: continue
                 assertEquals("${c.name}: tags of $name", expected, DeckRoles.tagsOf(card.name, card.categories, card.ownTags, card.auto))
             }
-            val cards = c.cards.map { DeckRoles.RoleCard(it.name, it.types, it.quantity, it.commander, it.maybeboard, it.categories, it.ownTags, it.auto) }
+            val cards = c.cards.map { DeckRoles.RoleCard(it.name, it.types, it.quantity, it.commander, it.maybeboard, it.categories, it.ownTags, it.auto, it.typeLine) }
             assertEquals(
                 c.name,
                 c.counts.map { Triple(it.role, it.count, it.status) },
                 DeckRoles.counts(cards).map { Triple(it.role, it.count, it.status) },
             )
+            assertEquals(c.name, c.counts.map { it.extra }, DeckRoles.counts(cards).map { it.extra })
         }
     }
 
@@ -403,5 +405,43 @@ class Release197Test {
         )
         // Over the range.
         assertEquals("high", DeckRoles.counts(listOf(card("Forest", 40, types = "Land"))).first().status)
+    }
+
+    @Test
+    fun landsCountFromScryfallsTypeLineAndMdfcsAreExtra() {
+        fun card(
+            name: String,
+            types: String = "Artifact",
+            typeLine: String? = null,
+            quantity: Int = 1,
+            commander: Boolean = false,
+            maybeboard: Boolean = false,
+        ) = DeckRoles.RoleCard(name, types, quantity, commander, maybeboard, emptyList(), null, emptyList(), typeLine)
+
+        val cards = listOf(
+            // A pathway is a land, its two faces counted once.
+            card("Brightclimb Pathway", types = "Land", typeLine = "Land // Land", quantity = 2),
+            // A spell on the front and a land on the back is an MDFC, not a land.
+            card("Sink into Stupor", types = "Instant", typeLine = "Instant // Land", quantity = 2),
+            // Scryfall's type line wins over stored types that are missing ("") or wrong.
+            card("Overgrown Tomb", types = "", typeLine = "Land — Swamp Forest", quantity = 3),
+            card("Mistyped Rock", types = "Land", typeLine = "Artifact", quantity = 4),
+            // Without a type line the stored types decide.
+            card("Command Tower", types = "Land", typeLine = null, quantity = 1),
+            card("Forest", types = "Basic Land — Forest", typeLine = "", quantity = 32),
+            // A later face that isn't a land doesn't count.
+            card("Fire // Ice", types = "Instant", typeLine = "Instant // Instant"),
+            // Neither counts, as now.
+            card("Atraxa", types = "Land", typeLine = "Legendary Creature", commander = true),
+            card("Maybe MDFC", types = "Instant", typeLine = "Instant // Land", maybeboard = true),
+        )
+        val lands = DeckRoles.counts(cards).first()
+        assertEquals("Lands", lands.role)
+        // 2 pathway + 3 tomb + 1 tower + 32 forests; the MDFCs are added as "+2", and they don't count in the colour.
+        assertEquals(DeckRoles.RoleCount("Lands", 38, "ok", extra = 2), lands)
+        // No MDFCs: the extra is 0, and no lands at all is still "low".
+        assertEquals(DeckRoles.RoleCount("Lands", 3, "low", extra = 0), DeckRoles.counts(listOf(card("Island", types = "Land", quantity = 3))).first())
+        // An empty deck has no lands and no MDFCs.
+        assertEquals(DeckRoles.RoleCount("Lands", 0, "low", extra = 0), DeckRoles.counts(emptyList()).first())
     }
 }

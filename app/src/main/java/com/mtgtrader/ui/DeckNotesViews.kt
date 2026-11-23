@@ -95,8 +95,10 @@ fun RoleCountsLine(counts: List<DeckRoles.RoleCount>, onRole: (String) -> Unit, 
                 "ok" -> TrendColors.up
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
-            // The separator belongs to the item before it, so a wrapped line doesn't start with a "·".
-            val label = "${count.role} ${count.count}" + if (i < counts.lastIndex) " ·" else ""
+            // The separator belongs to the item before it, so a wrapped line doesn't start with a "·". Lands show the
+            // MDFCs after their count ("Lands 37+2").
+            val extra = if (count.role == "Lands" && count.extra > 0) "+${count.extra}" else ""
+            val label = "${count.role} ${count.count}$extra" + if (i < counts.lastIndex) " ·" else ""
             val style = MaterialTheme.typography.bodySmall
             if (count.role == "Lands") Text(label, style = style, color = color)
             else Text(label, style = style, color = color, modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable { onRole(count.role) })

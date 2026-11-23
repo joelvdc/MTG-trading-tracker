@@ -794,8 +794,9 @@
     "counts": [
       {
         "role": "Lands",
-        "count": 3,
-        "status": "low"
+        "count": 1,
+        "status": "low",
+        "extra": 2
       },
       {
         "role": "Ramp",
@@ -857,6 +858,132 @@
       {
         "role": "Removal",
         "count": 1,
+        "status": "low"
+      }
+    ]
+  },
+  {
+    "name": "lands from Scryfall's type line, with the MDFCs as extra",
+    "cards": [
+      {
+        "name": "Brightclimb Pathway",
+        "types": "Land",
+        "typeLine": "Land // Land",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Sink into Stupor",
+        "types": "Instant",
+        "typeLine": "Instant // Land",
+        "quantity": 2,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Overgrown Tomb",
+        "types": "",
+        "typeLine": "Land — Swamp Forest",
+        "quantity": 3,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Mistyped Rock",
+        "types": "Land",
+        "typeLine": "Artifact",
+        "quantity": 4,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Command Tower",
+        "types": "Land",
+        "typeLine": null,
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Forest",
+        "types": "Basic Land — Forest",
+        "typeLine": "",
+        "quantity": 28,
+        "commander": false,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Atraxa",
+        "types": "Land",
+        "typeLine": "Instant // Land",
+        "quantity": 1,
+        "commander": true,
+        "maybeboard": false,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      },
+      {
+        "name": "Maybe MDFC",
+        "types": "Instant",
+        "typeLine": "Instant // Land",
+        "quantity": 1,
+        "commander": false,
+        "maybeboard": true,
+        "categories": [],
+        "ownTags": null,
+        "auto": []
+      }
+    ],
+    "tags": {
+      "Brightclimb Pathway": [],
+      "Sink into Stupor": [],
+      "Overgrown Tomb": [],
+      "Mistyped Rock": [],
+      "Command Tower": [],
+      "Forest": [],
+      "Atraxa": [],
+      "Maybe MDFC": []
+    },
+    "counts": [
+      {
+        "role": "Lands",
+        "count": 34,
+        "status": "low",
+        "extra": 2
+      },
+      {
+        "role": "Ramp",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Draw",
+        "count": 0,
+        "status": "low"
+      },
+      {
+        "role": "Removal",
+        "count": 0,
         "status": "low"
       }
     ]

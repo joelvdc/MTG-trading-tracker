@@ -38,6 +38,7 @@ import type { SaltSum } from "@/lib/localratings";
 import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { isLandSection, mdfcLandCopies } from "@/lib/mdfclands";
+import { roleCounts, type RoleCard, type RoleCount } from "@/lib/deckroles";
 import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
@@ -46,6 +47,39 @@ type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCa
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
+
+/**
+ * Deck lines as the roles line's cards, Scryfall's type line added per printing ([typeOf], null until it's known) so its
+ * lands count from it, as the Land heading's MDFC count does. The order is kept, as [withMdfcs] matches the lines by it.
+ */
+export function withTypeLines(rows: DeckRow[], typeOf: (r: DeckRow) => string | null | undefined): RoleCard[] {
+  return rows.map((r) => ({
+    name: r.name,
+    types: r.types,
+    quantity: r.quantity,
+    commander: r.commander,
+    maybeboard: r.maybeboard,
+    categories: r.categories,
+    ownTags: null,
+    auto: [],
+    typeLine: typeOf(r) || null,
+  }));
+}
+
+/**
+ * The roles line's counts, recalculated from Scryfall's type line and re-matched to the server's own counts in order
+ * (the server knows the cards' own tags and automatic categories, which this keeps): each role keeps the server's
+ * count and colour; Lands take theirs from the type lines, with the MDFCs as `extra` (not in the count).
+ */
+export function withMdfcs(roles: RoleCount[], cards: RoleCard[]): RoleCount[] {
+  const local = roleCounts(cards);
+  return roles.map((item, i) => {
+    const mine = local[i];
+    if (mine?.role !== item.role) return { ...item, extra: 0 };
+    // Lands take the count from the type lines too (the server's comes from Archidekt's types, which can be wrong).
+    return mine.role === "Lands" ? { ...item, count: mine.count, status: mine.status, extra: mine.extra } : { ...item, extra: 0 };
+  });
+}
 
 /** "Feb 2024" for a precon's release date ("2024-02-09"), or "" when there is none (the precons page's wording). */
 function monthYear(date: string): string {
@@ -362,6 +396,11 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
   /** A line's card type line, from Scryfall's when known (the deck's own otherwise). */
   const typeOf = (r: DeckRow) => typeLineOf.get(detailsId(r)) ?? r.types;
+  /**
+   * The roles line with Scryfall's type line per card (null until it's known), so its lands count from it as the Land
+   * heading does rather than from Archidekt's types (see `withTypeLines`), with the MDFCs as its Lands' extra.
+   */
+  const roles = withMdfcs(view.roles, withTypeLines(view.rows, typeOf));
   /** MDFC land copies in the whole main deck: Archidekt counts them in the Land heading ("40 w/ MDFC"). */
   const mdfcLands = mdfcLandCopies(shaped.main, typeOf);
   /** How many MDFC lands sit outside the Land section: added to its heading, those inside are in its plain number. */
@@ -970,7 +1009,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
 
         <div className="roles-row">
           <DeckRolesLine
-            roles={view.roles}
+            roles={roles}
             onPick={(role) => {
               // A tag with a space goes in quoted (the filter's tag: key), as Scryfall's search wants it.
               const tag = role.toLowerCase();

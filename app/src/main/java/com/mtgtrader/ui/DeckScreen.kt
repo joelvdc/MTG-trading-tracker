@@ -333,8 +333,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val cardNames = remember(archidektRows, maybeRows) { (archidektRows + maybeRows).associate { it.item.card.scryfallId to it.item.card.name } }
     var autoCats by remember { mutableStateOf(emptyMap<String, List<String>>()) }
     LaunchedEffect(cardNames) { autoCats = runCatching { c.deckEditor.autoCategories(cardNames) }.getOrDefault(emptyMap<String, List<String>>()) }
-    // What the deck's cards do for it, in the line under its header (DeckRoles.counts).
-    val roleCounts = remember(archidektRows, cardTags, autoCats) {
+    // What the deck's cards do for it, in the line under its header (DeckRoles.counts). Lands count from Scryfall's
+    // type line (the stats cards' already-loaded details, as the Land heading's MDFC count does), the stored types
+    // until it's known.
+    val typeLineById = remember(statCards) { statCards.mapNotNull { c -> c.typeLine?.let { c.scryfallId to it } }.toMap() }
+    val roleCounts = remember(archidektRows, cardTags, autoCats, typeLineById) {
         DeckRoles.counts(archidektRows.map { row ->
             val item = row.item
             DeckRoles.RoleCard(
@@ -346,6 +349,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                 categories = item.categoryList,
                 ownTags = cardTags[DeckNotes.nameKey(item.card.name)],
                 auto = autoCats[item.card.scryfallId].orEmpty(),
+                typeLine = typeLineById[item.card.scryfallId],
             )
         })
     }

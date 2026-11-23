@@ -61,10 +61,16 @@ object DeckRoles {
         val ownTags: List<String>?,
         /** The website's automatic categories for the card's name. */
         val auto: List<String>,
+        /** Scryfall's type line (faces joined with " // "), which the lands count from; null until it's known. */
+        val typeLine: String? = null,
     )
 
-    /** One line under the deck's header: [role] (a role's name or an own tag), how many cards, and how that compares to the guideline. */
-    data class RoleCount(val role: String, val count: Int, val status: String)
+    /**
+     * One line under the deck's header: [role] (a role's name or an own tag), how many cards, and how that compares
+     * to the guideline. [extra] is the double-faced cards whose back is a land (MDFCs), only for "Lands", shown after
+     * its count as "37+2".
+     */
+    data class RoleCount(val role: String, val count: Int, val status: String, val extra: Int = 0)
 
     /**
      * A card's tags: its own tags when it has any (as spelled), else the roles its [categories] and [auto] name, in
@@ -77,12 +83,25 @@ object DeckRoles {
     }
 
     /**
+     * Whether a card is a land: the first face of its type line (Scryfall's when known, else its stored [RoleCard.types])
+     * counts once, so a pathway ("Land // Land") is a land. The types before the dash ("Legendary Land — Desert").
+     */
+    fun isLand(card: RoleCard): Boolean {
+        val line = card.typeLine?.takeIf { it.isNotEmpty() } ?: card.types
+        return "Land" in line.split(" // ").first().substringBefore(" — ").split(' ')
+    }
+
+    /** Whether a card is an MDFC, a spell on the front and a land on a later face ("Instant // Land", [MdfcLands]). */
+    fun isMdfc(card: RoleCard): Boolean = MdfcLands.backIsLand(card.typeLine?.takeIf { it.isNotEmpty() } ?: card.types)
+
+    /**
      * The counts line for [cards]: lands, then the roles in their order, then up to five own tags that aren't roles
      * (the most used first). The maybeboard and the commanders don't count.
      */
     fun counts(cards: List<RoleCard>): List<RoleCount> {
         val main = cards.filterNot { it.maybeboard || it.commander }
-        val lands = main.filter { "Land" in it.types.split(' ') }.sumOf { it.quantity }
+        val lands = main.filter(::isLand).sumOf { it.quantity }
+        val mdfcs = main.filter(::isMdfc).sumOf { it.quantity }
         val roles = LinkedHashMap<String, Int>()
         // An own tag that isn't a role's name, by its lower case form to its spelling and copies.
         val other = LinkedHashMap<String, Pair<String, Int>>()
@@ -99,7 +118,8 @@ object DeckRoles {
             }
         }
         return buildList {
-            add(count("Lands", lands))
+            // The guideline colour goes by the lands alone; the MDFCs are added as "+N".
+            add(count("Lands", lands).copy(extra = mdfcs))
             for (role in listOf("Ramp", "Draw", "Removal")) add(count(role, roles[role] ?: 0))
             for (role in listOf("Wipes", "Tutor", "Protection", "Recursion")) roles[role]?.takeIf { it > 0 }?.let { add(count(role, it)) }
             other.values.filter { it.second > 0 }

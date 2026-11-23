@@ -470,7 +470,7 @@ export function deckPrimerInput(file: SyncFile, id: number, extras: DeckViewExtr
     deckName: d.name,
     commanders: main.filter((r) => r.commander).map((r) => r.name),
     sections: sections(main, "CATEGORY").map((s) => ({ title: s.title, cards: s.rows.map((r) => ({ name: r.name, quantity: r.quantity })) })),
-    roles: view.roles.map((r) => `${r.role} ${r.count}`).join(" · "),
+    roles: view.roles.map((r) => `${r.role} ${r.count}${r.role === "Lands" && r.extra > 0 ? `+${r.extra}` : ""}`).join(" · "),
     bracket: d.bracketRealistic != null ? `Bracket ${d.bracketRealistic}${bracketName(d.bracketRealistic) ? ` (${bracketName(d.bracketRealistic)})` : ""}` : null,
     power: view.power != null ? `Power ${view.power.toFixed(1)} (${POWER_SOURCES[view.powerSource].label})` : null,
     combos,

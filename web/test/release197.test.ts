@@ -97,7 +97,7 @@ vi.mock("@/lib/deckimport", async (importOriginal) => {
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
 import { parseDeck } from "@/lib/archidekt";
-import { parseCardTags, encodeCardTags, normaliseTags, roleCounts, tagsOf } from "@/lib/deckroles";
+import { parseCardTags, encodeCardTags, normaliseTags, roleCounts, tagsOf, type RoleCard } from "@/lib/deckroles";
 import { diffLines, parseHistory, recordHistory, type HistoryLine } from "@/lib/deckhistory";
 import { encodeCardNotes, nameKey, parseCardNotes, primerFromArchidekt } from "@/lib/decknotes";
 import { encodePackages, MAX_PACKAGES, normalisePackage, packageUse, parsePackages, type DeckPackage } from "@/lib/deckpackages";
@@ -151,15 +151,16 @@ describe("the shared role cases (DeckRoles)", () => {
       categories: string[];
       ownTags: string[] | null;
       auto: string[];
+      typeLine?: string | null;
     }[];
     tags: Record<string, string[]>;
-    counts: { role: string; count: number; status: string }[];
+    counts: { role: string; count: number; status: string; extra?: number }[];
   }
   const cases = read<RoleCase[]>("deckroles-cases.json");
   for (const c of cases) {
     it(c.name, () => {
       for (const card of c.cards) expect(tagsOf(card.name, card.categories, card.ownTags, card.auto)).toEqual(c.tags[card.name]);
-      expect(roleCounts(c.cards)).toEqual(c.counts);
+      expect(roleCounts(c.cards)).toEqual(c.counts.map((x) => ({ role: x.role, count: x.count, status: x.status, extra: x.extra ?? 0 })));
     });
   }
 });
@@ -247,8 +248,45 @@ describe("own tags and roles", () => {
       { name: "Atraxa", types: "Legendary Creature", quantity: 9, commander: true, maybeboard: false, categories: ["Ramp"], ownTags: null, auto: [] },
       { name: "Maybe Rock", types: "Artifact", quantity: 9, commander: false, maybeboard: true, categories: ["Ramp"], ownTags: null, auto: [] },
     ]);
-    expect(counts[0]).toEqual({ role: "Lands", count: 3, status: "low" });
-    expect(counts[1]).toEqual({ role: "Ramp", count: 0, status: "low" });
+    expect(counts[0]).toEqual({ role: "Lands", count: 3, status: "low", extra: 0 });
+    expect(counts[1]).toEqual({ role: "Ramp", count: 0, status: "low", extra: 0 });
+  });
+
+  it("counts lands from Scryfall's type line and adds the MDFCs as extra", () => {
+    const card = (name: string, types: string, quantity = 1, typeLine: string | null = null, extra: Partial<RoleCard> = {}): RoleCard => ({
+      name,
+      types,
+      quantity,
+      commander: false,
+      maybeboard: false,
+      categories: [],
+      ownTags: null,
+      auto: [],
+      typeLine,
+      ...extra,
+    });
+    const counts = roleCounts([
+      // A pathway is a land, its two faces counted once.
+      card("Brightclimb Pathway", "Land", 2, "Land // Land"),
+      // A spell on the front and a land on the back is an MDFC, not a land.
+      card("Sink into Stupor", "Instant", 2, "Instant // Land"),
+      // Scryfall's type line wins over stored types that are missing ("") or wrong.
+      card("Overgrown Tomb", "", 3, "Land — Swamp Forest"),
+      card("Mistyped Rock", "Land", 4, "Artifact"),
+      // Without a type line the stored types decide.
+      card("Command Tower", "Land", 1, null),
+      card("Forest", "Basic Land — Forest", 32, ""),
+      // A later face that isn't a land doesn't count.
+      card("Fire // Ice", "Instant", 1, "Instant // Instant"),
+      // Neither counts, as now.
+      card("Atraxa", "Land", 1, "Legendary Creature", { commander: true }),
+      card("Maybe MDFC", "Instant", 1, "Instant // Land", { maybeboard: true }),
+    ]);
+    // 2 pathway + 3 tomb + 1 tower + 32 forests; the MDFCs are added as "+2", not in the colour.
+    expect(counts[0]).toEqual({ role: "Lands", count: 38, status: "ok", extra: 2 });
+    expect(counts.filter((x) => x.role !== "Lands").every((x) => x.extra === 0)).toBe(true);
+    // No MDFCs: no extra.
+    expect(roleCounts([card("Island", "Land", 3)]).at(0)).toEqual({ role: "Lands", count: 3, status: "low", extra: 0 });
   });
 });
 
@@ -326,7 +364,7 @@ describe("the deck page's roles, notes and primer", () => {
     expect(row.note).toBe("Tutor target");
     expect(view.primer).toBe("The plan");
     expect(view.history).toEqual([{ day: "2025-11-16", sources: ["app"], added: { "Sol Ring": 1 }, removed: {} }]);
-    expect(view.roles).toContainEqual({ role: "Combo piece", count: 1, status: "none" });
+    expect(view.roles).toContainEqual({ role: "Combo piece", count: 1, status: "none", extra: 0 });
 
     // Without own tags the automatic categories decide; existing callers pass no extras at all.
     const auto = deckView(f, ID, null, null, null, { auto: { "Sol Ring": ["Ramp"] } })!;
