@@ -9,14 +9,14 @@ import { isBasic, type StatsCard } from "./deckstats";
 import { saltKey, type SaltCard, type SaltCombo } from "./deckshared";
 import type { SpellbookCombo } from "./spellbook";
 
-export const RATING_VERSION = 1;
+export const RATING_VERSION = 2;
 
 /** The app's SaltCard.CURRENT: a salt card without it is treated as old data. */
 export const SALT_CARD_VERSION = 4;
 
 export const RATING = {
   bracket: { tutorsFor3: 5, extraTurnsFor4: 3, gcFor4: 4, earlyMv: 8 },
-  salt: { mild: 25, high: 40 }, // deck total below → "Mild", below "High" → "Moderate", else "High" (Commander Salt's labels)
+  salt: { mild: 30, high: 45 }, // deck total below → "Mild", below "High" → "Moderate", else "High" (Commander Salt's labels)
 };
 
 /** What the deck's cards are known to be (Scryfall's tags, Game Changer, salt; accounts.ts keeps the same shape). */
@@ -50,6 +50,10 @@ const fastManaCopy = (c: StatsCard, facts: Map<string, CardFact>) => c.cmc <= 1 
 
 /** A card that denies lands for the bracket: everything tagged for it except planeswalkers. */
 const mldCopy = (c: StatsCard, facts: Map<string, CardFact>) => has(c, "mass-land-denial", facts) && !MLD_EXCLUDED.test(typeLine(c));
+
+/** A tutor for the bracket and the effects: not a ramp spell (Cultivate) nor a land tutor (Evolving Wilds, a fetch). */
+const tutorCopy = (c: StatsCard, facts: Map<string, CardFact>) =>
+  has(c, "tutor", facts) && !has(c, "ramp", facts) && !has(c, "tutor-land", facts) && !/\bLand\b/.test(typeLine(c));
 
 // ---- Combos -------------------------------------------------------------------------------------------------------
 
@@ -162,20 +166,39 @@ function bracketOf(
 
 // ---- Salt ---------------------------------------------------------------------------------------------------------
 
-function saltOf(cards: StatsCard[], facts: Map<string, CardFact>): { total: number | null; saltiest: { name: string; salt: number }[] } {
+/** The basic lands by name, for pages whose cards have no Scryfall type line (Archidekt's "Land" only). */
+const BASIC_NAMES = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"].flatMap((n) => [n, `Snow-Covered ${n}`]));
+
+/** A deck's salt (Archidekt's "Salt sum"): the total, its level and the saltiest cards. */
+export interface SaltSum {
+  /** Σ copies × salt over every card of the deck, lands and commander included; null when no card has a score. */
+  total: number | null;
+  /** "Mild", "Moderate" or "High" (saltIntensity); null without a total. */
+  level: string | null;
+  /** Up to 5 cards with a score, highest first (basic lands left out). */
+  saltiest: { name: string; salt: number }[];
+}
+
+/**
+ * The salt of [cards] with [facts]: every card counts its copies × its salt (lands, basic lands and the commander
+ * included; a card without a score adds nothing), and null when no card has a score.
+ */
+export function saltSumOf(cards: StatsCard[], facts: Map<string, CardFact>): SaltSum {
   let total: number | null = null;
   const rated: { name: string; salt: number }[] = [];
   for (const c of cards) {
     const s = factOf(c, facts).salt;
-    if (s === null || isBasic(c)) continue;
+    if (s === null) continue;
     total = (total ?? 0) + c.quantity * s;
-    rated.push({ name: c.name, salt: s });
+    if (!isBasic(c) && !BASIC_NAMES.has(c.name)) rated.push({ name: c.name, salt: s });
   }
-  if (total === null) return { total: null, saltiest: [] };
+  if (total === null) return { total: null, level: null, saltiest: [] };
+  const rounded = round1(total);
   const saltiest = rated.sort((a, b) => b.salt - a.salt || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)).slice(0, 5);
-  return { total: round1(total), saltiest };
+  return { total: rounded, level: saltIntensity(rounded), saltiest };
 }
 
+/** Commander Salt's salt labels: "Mild" below 30, "Moderate" below 45, else "High" (null: no total). */
 export function saltIntensity(total: number | null): string | null {
   if (total === null) return null;
   const t = RATING.salt;
@@ -209,7 +232,7 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
   const gameChangers = cards.filter((c) => factOf(c, facts).gameChanger).map(nameOf).sort();
   const extraTurns = tagged("extra-turn");
   const massLandDenial = cards.filter((c) => mldCopy(c, facts)).map(nameOf);
-  const tutors = cards.filter((c) => has(c, "tutor", facts) && !has(c, "ramp", facts)).map(nameOf);
+  const tutors = cards.filter((c) => tutorCopy(c, facts)).map(nameOf);
   const fastMana = cards.filter((c) => fastManaCopy(c, facts)).map(nameOf);
 
   const copies = (tag: string, keep: (c: StatsCard) => boolean = () => true) =>
@@ -219,7 +242,7 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
   const boardWipes = copies("sweeper");
   const extraTurnCopies = copies("extra-turn");
   const mldCopies = cards.filter((c) => mldCopy(c, facts)).reduce((s, c) => s + c.quantity, 0);
-  const tutorCopies = cards.filter((c) => has(c, "tutor", facts) && !has(c, "ramp", facts)).reduce((s, c) => s + c.quantity, 0);
+  const tutorCopies = cards.filter((c) => tutorCopy(c, facts)).reduce((s, c) => s + c.quantity, 0);
   const fastManaCopies = cards.filter((c) => fastManaCopy(c, facts)).reduce((s, c) => s + c.quantity, 0);
 
   const cmc = new Map<string, number>();
@@ -249,7 +272,7 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
   put("mld", mldCopies);
   put("combos", winningTwo.length);
 
-  const salt = saltOf(cards, facts);
+  const salt = saltSumOf(cards, facts);
 
   return {
     version: SALT_CARD_VERSION,
@@ -261,7 +284,7 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
     axes: {},
     notes: [],
     playStyle: null,
-    saltIntensity: saltIntensity(salt.total),
+    saltIntensity: salt.level,
     saltDriver: salt.saltiest[0]?.name ?? null,
     manaFixing: null,
     onCurve: null,

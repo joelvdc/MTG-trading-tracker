@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { StatsCard } from "@/lib/deckstats";
 import { decodeSalt } from "@/lib/deckshared";
-import { featureLabel, rateDeck, RATING_VERSION, ratingListKey, saltIntensity, type CardFact } from "@/lib/localratings";
+import { featureLabel, rateDeck, RATING_VERSION, ratingListKey, saltIntensity, saltSumOf, type CardFact } from "@/lib/localratings";
 import type { SpellbookCombo } from "@/lib/spellbook";
 
 function card(name: string, over: Partial<StatsCard> = {}): StatsCard {
@@ -282,7 +282,7 @@ describe("effects, lists and combos", () => {
 });
 
 describe("salt", () => {
-  it("adds up the non-basics' salt, with the saltiest five", () => {
+  it("adds up every card's salt, lands and basic lands included, with the saltiest five", () => {
     const cards = [card("Bomb", { quantity: 2 }), card("Rhystic Study"), card("Cyclonic Rift"), card("Zedruu"), card("Alpha"), card("Beta"), card("Omega"), plains(4)];
     const f = facts({
       Bomb: { salt: 5.04 },
@@ -295,10 +295,11 @@ describe("salt", () => {
       Plains: { salt: 10 },
     });
     const r = rateDeck(cards, f, [], null);
-    // 2 × 5.04 + 2.5 + 2.5 + 1.222 + 1.01 + 0.4 + 0.9 = 18.612 → 18.6
-    expect(r.salt).toBe(18.6);
-    expect(r.saltIntensity).toBe("Mild");
+    // 2 × 5.04 + 2.5 + 2.5 + 1.222 + 1.01 + 0.4 + 0.9 + 4 × 10 = 58.612 → 58.6
+    expect(r.salt).toBe(58.6);
+    expect(r.saltIntensity).toBe("High");
     expect(r.saltDriver).toBe("Bomb");
+    // The basic lands are counted in the total but never in the saltiest list.
     expect(r.saltiest).toEqual([
       { name: "Bomb", salt: 5.04 },
       { name: "Cyclonic Rift", salt: 2.5 },
@@ -308,20 +309,73 @@ describe("salt", () => {
     ]);
   });
 
+  it("counts a commander and its land the same way, and leaves out cards without a score", () => {
+    const cards = [card("Commander", { commander: true }), card("Overgrown Tomb", { typeLine: "Land — Swamp Forest" }), card("Bear"), plains(2)];
+    const f = facts({ Commander: { salt: 12.34 }, "Overgrown Tomb": { salt: 4.5 }, Plains: { salt: 0 } });
+    const r = saltSumOf(cards, f);
+    expect(r.total).toBe(16.8);
+    expect(r.level).toBe("Mild");
+    expect(r.saltiest).toEqual([
+      { name: "Commander", salt: 12.34 },
+      { name: "Overgrown Tomb", salt: 4.5 },
+    ]);
+  });
+
+  it("leaves a basic land out of the saltiest list by its name too, when the card has no Scryfall type line", () => {
+    const cards = [card("Island", { quantity: 4, typeLine: "Land", types: "Land" }), card("Snow-Covered Forest", { typeLine: "Land", types: "Land" }), card("Zedruu")];
+    const f = facts({ Island: { salt: 3 }, "Snow-Covered Forest": { salt: 2 }, Zedruu: { salt: 1 } });
+    const r = saltSumOf(cards, f);
+    expect(r.total).toBe(15);
+    expect(r.saltiest).toEqual([{ name: "Zedruu", salt: 1 }]);
+  });
+
   it("has no salt when no card has one", () => {
     const r = rateDeck([card("Bear"), plains(1)], facts({}), [], null);
     expect(r.salt).toBeNull();
     expect(r.saltIntensity).toBeNull();
     expect(r.saltDriver).toBeNull();
     expect(r.saltiest).toEqual([]);
+    expect(saltSumOf([], facts({}))).toEqual({ total: null, level: null, saltiest: [] });
   });
 
   it("names the intensity by the thresholds (Commander Salt's labels)", () => {
-    expect(saltIntensity(24.9)).toBe("Mild");
-    expect(saltIntensity(25)).toBe("Moderate");
-    expect(saltIntensity(39.9)).toBe("Moderate");
-    expect(saltIntensity(40)).toBe("High");
+    expect(saltIntensity(29.9)).toBe("Mild");
+    expect(saltIntensity(30)).toBe("Moderate");
+    expect(saltIntensity(44.9)).toBe("Moderate");
+    expect(saltIntensity(45)).toBe("High");
     expect(saltIntensity(null)).toBeNull();
+  });
+});
+
+describe("tutors", () => {
+  it("counts a real tutor, but not a land tutor nor a fetch land", () => {
+    const cards = [
+      spell("Demonic Tutor", 2, "Sorcery"),
+      // A tutor tagged as a land tutor too, the way Scryfall tags Rampant Growth.
+      spell("Nature's Lore", 2, "Sorcery"),
+      // A fetch land: a Land, tagged tutor.
+      card("Evolving Wilds", { typeLine: "Land" }),
+      spell("Cultivate", 3, "Sorcery"),
+      plains(1),
+    ];
+    const f = facts({
+      "Demonic Tutor": { tags: ["tutor"] },
+      "Nature's Lore": { tags: ["tutor", "tutor-land"] },
+      "Evolving Wilds": { tags: ["tutor", "tutor-land"] },
+      Cultivate: { tags: ["tutor", "ramp"] },
+    });
+    const r = rateDeck(cards, f, [], null);
+    expect(r.tutors).toEqual(["Demonic Tutor"]);
+    expect(r.effects.tutors).toBe(1);
+  });
+
+  it("five real tutors are bracket 3", () => {
+    const names = ["T1", "T2", "T3", "T4", "T5"];
+    const cards = [...names.map((n) => spell(n, 2, "Sorcery")), card("Evolving Wilds", { typeLine: "Land" })];
+    const f = facts({ ...Object.fromEntries(names.map((n) => [n, { tags: ["tutor"] }])), "Evolving Wilds": { tags: ["tutor", "tutor-land"] } });
+    const r = rateDeck(cards, f, [], null);
+    expect(r.bracket).toBe(3);
+    expect(r.effects.tutors).toBe(5);
   });
 });
 

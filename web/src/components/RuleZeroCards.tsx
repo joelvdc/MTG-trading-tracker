@@ -1,6 +1,7 @@
 "use client";
 
 import { bracketName, comboData, comboNote, bracketReasons, POWER_SOURCES, type Deck, type PowerSource, type SaltCard } from "@/lib/deckshared";
+import type { SaltSum } from "@/lib/localratings";
 import { WIN_SLOW_NOTE, winDamageNote, winWindow, type WinResult } from "@/lib/winodds";
 import { ColourPips } from "./Mana";
 
@@ -50,7 +51,7 @@ export function axisLevel(rating: number): number {
   return rating >= 0.92 ? 5 : rating >= 0.8 ? 4 : rating >= 0.55 ? 3 : 2;
 }
 
-type DeckLike = Pick<Deck, "name" | "commanders" | "colorIdentity" | "bracketBaseline" | "bracketRealistic" | "archetype" | "saltPercent" | "owner" | "scoredAt">;
+type DeckLike = Pick<Deck, "name" | "commanders" | "colorIdentity" | "bracketBaseline" | "bracketRealistic" | "archetype" | "owner" | "scoredAt">;
 
 function Frame({ deck, cover, kind, inkSaver, children }: { deck: DeckLike; cover: string | null; kind: string; inkSaver: boolean; children: React.ReactNode }) {
   return (
@@ -238,7 +239,7 @@ export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: Deck
   );
 }
 
-/** The power level card (the app's PowerCardView). */
+/** The power level card (the app's PowerCardView); [saltSum] is the deck's salt sum, the same for every deck. */
 export function PowerCard({
   deck,
   cover,
@@ -247,6 +248,7 @@ export function PowerCard({
   power,
   error,
   inkSaver,
+  saltSum,
 }: {
   deck: DeckLike;
   cover: string | null;
@@ -255,6 +257,7 @@ export function PowerCard({
   power: number | null;
   error: string | null;
   inkSaver: boolean;
+  saltSum: SaltSum | null;
 }) {
   const app = data.source === "app";
   // The website's own rating has no manabase numbers: its column (and label) is left out and Saltiness takes the width.
@@ -299,27 +302,15 @@ export function PowerCard({
         <div className={hasManabase ? "rz-two" : undefined}>
           <div>
             <div className="rz-label">Saltiness</div>
-            {app ? (
-              <>
-                <p>
-                  <strong>{data.salt != null ? data.salt.toFixed(1) : "—"}</strong>
-                  {data.saltIntensity && <span className="rz-error"> {data.saltIntensity.toLowerCase()}</span>}
-                </p>
-                {(data.saltiest ?? []).slice(0, 5).map((s) => (
-                  <p key={s.name} className="rz-small">
-                    {s.name} · {s.salt.toFixed(1)}
-                  </p>
-                ))}
-              </>
-            ) : (
-              <>
-                <p>
-                  <strong>{deck.saltPercent != null ? `${Math.round(deck.saltPercent)}%` : "—"}</strong>
-                  {data.saltIntensity && <span className="rz-error"> {data.saltIntensity.toLowerCase()}</span>}
-                </p>
-                {data.saltDriver && <p className="rz-small">mostly {data.saltDriver.toLowerCase()}</p>}
-              </>
-            )}
+            <p>
+              <strong>{saltSum?.total != null ? saltSum.total.toFixed(1) : "—"}</strong>
+              {saltSum?.level && <span className="rz-error"> {saltSum.level.toLowerCase()}</span>}
+            </p>
+            {(saltSum?.saltiest ?? []).slice(0, 5).map((s) => (
+              <p key={s.name} className="rz-small">
+                {s.name} · {s.salt.toFixed(1)}
+              </p>
+            ))}
           </div>
           {hasManabase && (
             <div>
@@ -352,7 +343,7 @@ export function PowerCard({
         credit={
           [
             source === "COMMANDER_SALT" ? null : source === "APP" ? "Power level: MTG Trader app" : `Power level: ${site}`,
-            app ? "Data: Scryfall, MTGJSON, Commander Spellbook" : "Data: Commander Salt",
+            app ? "Data: Scryfall, MTGJSON, Commander Spellbook" : "Data: Commander Salt, MTGJSON",
           ]
             .filter(Boolean)
             .join("\n")

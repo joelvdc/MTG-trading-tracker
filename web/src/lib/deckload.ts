@@ -2,6 +2,7 @@
 // updateAll). Reading Archidekt, Scryfall and Commander Salt happens first ([readArchidektDeck], [scoreDeck]); the
 // sync file is then changed in one go ([putLoadedDeck], [putScores]), inside editSync.
 import { fetchDeck, identityOf, userDecks, type ArchidektCard, type ArchidektDeck } from "./archidekt";
+import { appSettings } from "./appsettings";
 import { saltDeckId, scoreDeck, type SaltScores } from "./commandersalt";
 import { diffLines, recordHistory } from "./deckhistory";
 import { addDeck, detachDeck, encodeCategories, newDeck, sortLines } from "./deckedit";
@@ -136,13 +137,17 @@ export function putScores(file: SyncFile, id: number, scores: SaltScores | { err
   const sd = syncDecks(file).find((d) => d.deck.archidektId === id);
   if (!sd) return;
   const d = sd.deck;
+  // With the bracket estimated by the website, Commander Salt's own bracket fields stay out (the estimate is the deck's).
+  const ownBracket = appSettings(file).bracketSource !== "APP";
   if ("error" in scores) d.scoreError = scores.error || "unknown error";
   else {
-    d.saltCard = scores.saltCard ?? d.saltCard;
+    if (ownBracket) d.saltCard = scores.saltCard ?? d.saltCard;
     d.saltId = scores.saltId || saltDeckId(id);
     d.powerLevel = scores.powerLevel;
-    d.bracketRealistic = scores.bracketRealistic;
-    d.bracketBaseline = scores.bracketBaseline;
+    if (ownBracket) {
+      d.bracketRealistic = scores.bracketRealistic;
+      d.bracketBaseline = scores.bracketBaseline;
+    }
     d.saltPercent = scores.saltPercent;
     d.archetype = scores.archetype;
     d.scoredAt = now;

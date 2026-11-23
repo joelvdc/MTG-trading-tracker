@@ -5,7 +5,10 @@ import { archidektId, archidektUser, identityOf, parseDeck, parseDeckList, parse
 import { parseSalt, saltDeckId, saltError } from "@/lib/commandersalt";
 import { putLoadedDeck, putScores, updatePlan, type ReadDeck } from "@/lib/deckload";
 import { syncDecks } from "@/lib/decks";
+import { decodeSalt } from "@/lib/deckshared";
+import { putRating } from "@/lib/deckrating";
 import { categories } from "@/lib/deckedit";
+import { rateDeck } from "@/lib/localratings";
 import { parse, prefs, setPrefs, type SyncFile } from "@/lib/syncfile";
 
 const NOW = 1_793_968_645_412;
@@ -96,6 +99,35 @@ describe("loading decks from Archidekt (DeckRepository.load)", () => {
     putScores(f, 10710772, { error: "Deck URL invalid" }, NOW + 6);
     d = syncDecks(f).find((x) => x.deck.archidektId === 10710772)!.deck;
     expect(d).toMatchObject({ powerLevel: 5, scoreError: "Deck URL invalid" });
+  });
+
+  it("keeps Commander Salt's bracket out when the bracket comes from the app", () => {
+    const f = appFile();
+    putLoadedDeck(f, read(), NOW);
+    const find = () => syncDecks(f).find((x) => x.deck.archidektId === 10710772)!.deck;
+    // The estimate on the deck (its own bracket, and its own card).
+    setPrefs(f, { bracketSource: "APP" }, NOW);
+    const estimate = rateDeck([], new Map(), [], null);
+    expect(putRating(f, 10710772, estimate, NOW + 1)).toBe(true);
+    // Commander Salt scores it again: its power level, happiness and archetype are kept, its bracket and card aren't.
+    const scores = (saltCard: string) => ({ saltId: "abc", powerLevel: 5, bracketRealistic: 4, bracketBaseline: 3, saltPercent: 30, archetype: "Combo", saltCard });
+    const saltCard = JSON.stringify({ gameChangers: ["Rhystic Study"], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
+    putScores(f, 10710772, scores(saltCard), NOW + 5);
+    let d = find();
+    expect(d.powerLevel).toBe(5);
+    expect(d.saltPercent).toBe(30);
+    expect(d.archetype).toBe("Combo");
+    expect(d.scoredAt).toBe(NOW + 5);
+    expect(d.scoreError).toBeNull();
+    expect(d.saltId).toBe("abc");
+    expect(d.bracketBaseline).toBe(estimate.bracket);
+    expect(d.bracketRealistic).toBeNull();
+    expect(decodeSalt(d.saltCard)!.source).toBe("app");
+    // Back on Commander Salt, both are saved as before.
+    setPrefs(f, { bracketSource: "COMMANDER_SALT" }, NOW + 6);
+    putScores(f, 10710772, scores(saltCard), NOW + 7);
+    d = find();
+    expect(d).toMatchObject({ powerLevel: 5, bracketBaseline: 3, bracketRealistic: 4, saltCard });
   });
 
   it("plans Update all decks: changed, not listed, unscored", () => {

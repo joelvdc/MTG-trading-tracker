@@ -38,6 +38,8 @@ import { cardmarketPrice, finishOf, pricingSetup, unitPrice, type PricingSetup }
 import { binders as bindersOf, canWrite, collection, prefs, type CardRef, type Json, type SyncFile } from "./syncfile";
 import type { DetailsFile } from "./carddetails";
 import type { CkFile } from "./cardkingdom";
+import { deckStatsCards } from "./winturns";
+import type { StatsCard } from "./deckstats";
 
 export * from "./deckshared";
 
@@ -453,20 +455,28 @@ export interface RuleZeroDeck {
   salt: NonNullable<DeckView["salt"]>;
   power: number | null;
   powerError: string | null;
+  /** The deck's main-deck cards, for its salt sum (the cards page's route leaves them out of the answer). */
+  stats: StatsCard[];
 }
 
 /** Every deck Commander Salt has scored, in name order, with what its bracket and power cards show. */
 export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[]; powerSource: PowerSource } {
   const source = powerSource(prefs(file).powerSource);
   const decks: RuleZeroDeck[] = [];
-  for (const { deck: d } of [...syncDecks(file)].filter((x) => !x.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+  for (const sd of [...syncDecks(file)].filter((x) => !x.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+    const d = sd.deck;
     const salt = decodeSalt(d.saltCard);
     if (!salt) continue;
     const { saltCard, scrollVault, categoryInfo, ...plain } = d;
     void saltCard;
     void categoryInfo;
     void scrollVault;
-    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, power: powerOf(d, source), powerError: powerError(d, source) });
+    const stats = statsOf(sd.cards);
+    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, power: powerOf(d, source), powerError: powerError(d, source), stats });
   }
   return { decks, powerSource: source };
 }
+
+/** The main deck's cards as the salt sum and the rating read them (Archidekt's types will do when Scryfall's type line is unknown). */
+const statsOf = (cards: SyncDeck["cards"]) =>
+  deckStatsCards({ deck: {} as SyncDeck["deck"], cards }, {}).map((c) => ({ ...c, typeLine: c.typeLine ?? (c.types.trim() || null) }));

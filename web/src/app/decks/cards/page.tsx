@@ -6,9 +6,13 @@ import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
 import { BracketCard, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
 import type { PowerSource, RuleZeroDeck } from "@/lib/decks";
+import type { SaltSum } from "@/lib/localratings";
 import type { WinResult } from "@/lib/winodds";
 
 type Which = "BRACKET" | "POWER" | "BOTH";
+
+/** A deck's cards as the route answers with them: its salt sum is worked out there. */
+type CardDeck = RuleZeroDeck & { saltSum: SaltSum | null };
 
 /** A deck's win turn as this browser kept it (before the website kept them, and for Nextcloud folders); it may be from before a change. */
 function keptWin(id: number): WinResult | null {
@@ -22,7 +26,7 @@ function keptWin(id: number): WinResult | null {
 
 /** The bracket and power cards of every scored deck, to look at or print together (the app's "… cards of all decks"). */
 export default function AllRuleZeroCardsPage() {
-  const [data, setData] = useState<{ decks: RuleZeroDeck[]; powerSource: PowerSource } | null>(null);
+  const [data, setData] = useState<{ decks: CardDeck[]; powerSource: PowerSource } | null>(null);
   const [wins, setWins] = useState<Record<number, WinResult | null>>({});
   const [folder, setFolder] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +39,7 @@ export default function AllRuleZeroCardsPage() {
     (async () => {
       const [s, d] = await Promise.all([
         api<{ loggedIn: boolean; folder?: string }>("/api/session"),
-        api<{ decks?: RuleZeroDeck[]; powerSource?: PowerSource; wins?: Record<number, WinResult | null>; noFolder?: boolean }>("/api/decks/cards"),
+        api<{ decks?: CardDeck[]; powerSource?: PowerSource; wins?: Record<number, WinResult | null>; noFolder?: boolean }>("/api/decks/cards"),
       ]);
       if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
       if (!s.data.folder || d.data.noFolder) return window.location.replace("/settings");
@@ -100,7 +104,7 @@ export default function AllRuleZeroCardsPage() {
                       <BracketCard key={`b${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} inkSaver={inkSaver} speed={win ? <SpeedSection win={win} /> : undefined} />
                     ),
                     which !== "BRACKET" && (
-                      <PowerCard key={`p${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} source={data.powerSource} power={power} error={d.powerError} inkSaver={inkSaver} />
+                      <PowerCard key={`p${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} source={data.powerSource} power={power} error={d.powerError} inkSaver={inkSaver} saltSum={d.saltSum ?? null} />
                     ),
                   ];
                 })}

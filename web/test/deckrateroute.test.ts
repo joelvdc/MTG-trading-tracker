@@ -31,9 +31,17 @@ vi.mock("@/lib/deckdetails", async (importOriginal) => {
 
 const combos = vi.fn(async (_commanders: string[], _main: { name: string; quantity: number }[]) => [] as unknown[]);
 vi.mock("@/lib/spellbook", () => ({ findCombos: (...args: unknown[]) => combos(...(args as [string[], { name: string; quantity: number }[]])) }));
-vi.mock("@/lib/cardfacts", () => ({ cardFactsByName: async (names: string[]) => new Map(names.map((n) => [n, { tags: [], gameChanger: false, salt: null }])) }));
+vi.mock("@/lib/cardfacts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/cardfacts")>();
+  return {
+    ...actual,
+    cardFactsByName: async (names: string[]) => new Map(names.map((n) => [n, { tags: [], gameChanger: false, salt: null }])),
+  };
+});
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
+import { FACTS_SINCE } from "@/lib/cardfacts";
+import { setPrefs, type SyncFile } from "@/lib/syncfile";
 import { POST } from "@/app/api/decks/[id]/rate/route";
 
 const cardRef = (name: string) => ({
@@ -57,21 +65,34 @@ const cardRef = (name: string) => ({
 
 const line = (name: string, commander = false) => ({ card: cardRef(name), quantity: 1, types: "Creature", cmc: 2, commander, maybeboard: false });
 
-/** A small file with one local deck (-1): a commander and one card. */
-const localFile = () => ({
-  format: 16,
-  app: "test",
-  writtenAt: 0,
-  writtenBy: "test",
-  data: {
-    decks: [
-      {
-        deck: { archidektId: -1, name: "My deck", colorIdentity: "UB", updatedAt: 1_000, saltCard: null, powerLevel: 6.5, saltPercent: 12.5 },
-        cards: [line("Cmdr", true), line("Bear")],
-      },
-    ],
-  },
-});
+/** A small file with one local deck (-1) and one from Archidekt (123): a commander and one card each. */
+const localFile = () => {
+  const deck = (id: number) => ({ archidektId: id, name: id < 0 ? "My deck" : "Theirs", colorIdentity: "UB", updatedAt: 1_000, saltCard: null, powerLevel: 6.5, saltPercent: 12.5 });
+  return {
+    format: 16,
+    app: "test",
+    writtenAt: 0,
+    writtenBy: "test",
+    data: {
+      decks: [
+        { deck: deck(-1), cards: [line("Cmdr", true), line("Bear")] },
+        { deck: deck(123), cards: [line("Cmdr", true), line("Bear")] },
+      ],
+      prefs: { values: {} },
+    },
+  };
+};
+/** The website's estimate on a deck of the file. */
+function estimateOn(id: number) {
+  const decks = (file as { data: { decks: { deck: { saltCard: string | null } }[] } }).data.decks;
+  const deck = decks.find((x) => (x.deck as { archidektId?: number }).archidektId === id)!.deck;
+  return deck.saltCard ? (JSON.parse(deck.saltCard) as { source: string }) : null;
+}
+
+const deckOf = (id: number) =>
+  (file as { data: { decks: { deck: { archidektId: number; saltCard: string | null; bracketBaseline: number | null } }[] } }).data.decks.find(
+    (x) => x.deck.archidektId === id,
+  )!.deck;
 
 const rate = (id = -1) =>
   POST(new Request(`https://mtgtrader.vercel.app/api/decks/${id}/rate`, { method: "POST", headers: { "X-Requested-With": "mtgtrader" }, body: "{}" }), {
@@ -84,7 +105,7 @@ beforeEach(async () => {
   account = USER;
   file = localFile();
   combos.mockClear();
-  await accountStore()!.replaceCardFacts([{ key: "bear", fact: { tags: [], gameChanger: false, salt: 1.5 } }], Date.now());
+  await accountStore()!.replaceCardFacts([{ key: "bear", fact: { tags: [], gameChanger: false, salt: 1.5 } }], FACTS_SINCE + 1);
 });
 
 describe("POST /api/decks/[id]/rate", () => {
@@ -116,8 +137,26 @@ describe("POST /api/decks/[id]/rate", () => {
     expect(JSON.parse(deck.saltCard!).source).toBe("app");
   });
 
-  it("doesn't rate a deck from Archidekt, or one that isn't there", async () => {
-    expect((await rate(123)).status).toBe(404);
+  it("doesn't rate a deck from Archidekt while its bracket is Commander Salt's, nor one that isn't there", async () => {
+    expect(await (await rate(123)).json()).toEqual({ ok: false });
+    expect(deckOf(123).saltCard).toBeNull();
+    expect(combos).not.toHaveBeenCalled();
+    expect((await rate(999)).status).toBe(404);
+  });
+
+  it("rates a deck from Archidekt once: the estimate stands in for Commander Salt's", async () => {
+    setPrefs(file as SyncFile, { bracketSource: "APP" }, 500);
+    const r = await rate(123);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true });
+    const card = JSON.parse(deckOf(123).saltCard!) as { source: string; bracket: number };
+    expect(card.source).toBe("app");
+    expect(deckOf(123).bracketBaseline).toBe(card.bracket);
+    expect(estimateOn(123)!.source).toBe("app");
+    // The list hasn't changed: asking again rates nothing.
+    combos.mockClear();
+    expect(await (await rate(123)).json()).toEqual({ ok: false });
+    expect(combos).not.toHaveBeenCalled();
   });
 
   it("says so, and keeps nothing, while the card facts aren't there yet", async () => {
@@ -126,5 +165,13 @@ describe("POST /api/decks/[id]/rate", () => {
     expect(r.status).toBe(503);
     expect(((await r.json()) as { error: string }).error).toBe("Card facts aren't ready yet.");
     expect((file as { data: { decks: { deck: { saltCard: string | null } }[] } }).data.decks[0].deck.saltCard).toBeNull();
+  });
+
+  it("says so too while the facts were built before the current version", async () => {
+    resetMemoryStore();
+    await accountStore()!.replaceCardFacts([{ key: "bear", fact: { tags: [], gameChanger: false, salt: 1.5 } }], FACTS_SINCE - 1);
+    const r = await rate();
+    expect(r.status).toBe(503);
+    expect(((await r.json()) as { error: string }).error).toBe("Card facts aren't ready yet.");
   });
 });

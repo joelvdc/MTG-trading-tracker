@@ -55,6 +55,18 @@ describe("the app's synced settings", () => {
     expect(prefs(f).powerSource).toBe("SCROLLVAULT");
   });
 
+  it("changes the bracket's source like the power level source", () => {
+    const f = appFile();
+    expect(appSettings(f).bracketSource).toBe("COMMANDER_SALT");
+    applySettings(f, { bracketSource: "APP" }, NOW);
+    expect(prefs(f)).toMatchObject({ bracketSource: "APP" });
+    expect(appSettings(f)).toMatchObject({ bracketSource: "APP", powerSource: "COMMANDER_SALT" });
+    applySettings(f, { bracketSource: "COMMANDER_SALT" }, NOW);
+    expect(appSettings(f).bracketSource).toBe("COMMANDER_SALT");
+    expect(() => applySettings(f, { bracketSource: "EDH_POWER_LEVEL" }, NOW)).toThrow(EditError);
+    expect(appSettings(f).bracketSource).toBe("COMMANDER_SALT");
+  });
+
   it("leaves the file alone when nothing changes", () => {
     const f = appFile();
     applySettings(f, { currency: "DKK" }, NOW);

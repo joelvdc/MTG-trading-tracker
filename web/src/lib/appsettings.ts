@@ -37,6 +37,11 @@ export const POWER_SOURCE_CHOICES: [string, string][] = [
   ["EDH_POWER_LEVEL", "EDH Power Level (edhpowerlevel.com)"],
   ["APP", "This app (from the win turn)"],
 ];
+/** Where the decks' bracket comes from (Settings → Commander deck bracket). */
+export const BRACKET_SOURCE_CHOICES: [string, string][] = [
+  ["COMMANDER_SALT", "Commander Salt"],
+  ["APP", "Estimated by the app"],
+];
 
 export interface AppSettings {
   priceSource: string;
@@ -52,6 +57,8 @@ export interface AppSettings {
   receivedClear: string;
   /** Where the decks' power level comes from. */
   powerSource: string;
+  /** Where the decks' bracket comes from: Commander Salt's, or the website's own estimate. */
+  bracketSource: string;
   /** Your own Archidekt username: whose Archidekt decks are "your decks" (the app's ownArchidektUser). */
   ownArchidektUser: string;
 }
@@ -75,6 +82,7 @@ export function appSettings(file: SyncFile): AppSettings {
     receivedToCollection: p.receivedToCollection === "true",
     receivedClear: pick(p.receivedClear, RECEIVED_CLEAR, "never"),
     powerSource: pick(p.powerSource, POWER_SOURCE_CHOICES, "COMMANDER_SALT"),
+    bracketSource: pick(p.bracketSource, BRACKET_SOURCE_CHOICES, "COMMANDER_SALT"),
     ownArchidektUser: (p.ownArchidektUser ?? "").trim(),
   };
 }
@@ -100,6 +108,7 @@ export function applySettings(file: SyncFile, changes: Partial<AppSettings>, now
   choice("alertPriceType", PRICE_TYPE_CHOICES);
   choice("receivedClear", RECEIVED_CLEAR);
   choice("powerSource", POWER_SOURCE_CHOICES);
+  choice("bracketSource", BRACKET_SOURCE_CHOICES);
   if (changes.ownArchidektUser !== undefined) {
     const u = changes.ownArchidektUser;
     if (typeof u !== "string" || u.trim().length > 100 || /[\s/?#]/.test(u.trim())) throw new EditError("That isn't an Archidekt username.");

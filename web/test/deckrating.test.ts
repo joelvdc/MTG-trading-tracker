@@ -108,27 +108,44 @@ function syncFile(): SyncFile {
 }
 
 describe("ratingStale", () => {
-  it("is never stale for a deck from Archidekt", () => {
-    expect(ratingStale(false, null, stats)).toBe(false);
-    expect(ratingStale(false, JSON.stringify(rating()), stats)).toBe(false);
+  const SALT = JSON.stringify({ gameChangers: ["Rhystic Study"], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
+
+  it("is never stale for a deck from Archidekt when its bracket is Commander Salt's", () => {
+    expect(ratingStale(false, null, stats, false)).toBe(false);
+    expect(ratingStale(false, JSON.stringify(rating()), stats, false)).toBe(false);
+    expect(ratingStale(false, SALT, stats, false)).toBe(false);
   });
 
   it("is stale for a local deck without a rating", () => {
-    expect(ratingStale(true, null, stats)).toBe(true);
-    expect(ratingStale(true, "not json", stats)).toBe(true);
+    expect(ratingStale(true, null, stats, false)).toBe(true);
+    expect(ratingStale(true, "not json", stats, false)).toBe(true);
   });
 
   it("is stale for the website's rating of another list or another version", () => {
     const r = rating();
-    expect(ratingStale(true, JSON.stringify(r), stats)).toBe(false);
-    expect(ratingStale(true, JSON.stringify(r), [...stats, card("More")])).toBe(true);
-    expect(ratingStale(true, JSON.stringify({ ...r, listKey: "00000000", ratingVersion: RATING_VERSION }), stats)).toBe(true);
-    expect(ratingStale(true, JSON.stringify({ ...r, listKey: ratingListKey(stats), ratingVersion: RATING_VERSION + 1 }), stats)).toBe(true);
+    expect(ratingStale(true, JSON.stringify(r), stats, false)).toBe(false);
+    expect(ratingStale(true, JSON.stringify(r), stats, true)).toBe(false);
+    expect(ratingStale(true, JSON.stringify(r), [...stats, card("More")], false)).toBe(true);
+    expect(ratingStale(true, JSON.stringify({ ...r, listKey: "00000000", ratingVersion: RATING_VERSION }), stats, false)).toBe(true);
+    expect(ratingStale(true, JSON.stringify({ ...r, listKey: ratingListKey(stats), ratingVersion: RATING_VERSION + 1 }), stats, false)).toBe(true);
   });
 
-  it("is never stale for Commander Salt's data (a deck made local from Archidekt)", () => {
-    const salt = JSON.stringify({ gameChangers: ["Rhystic Study"], combos: [], twoCardCombos: [], earlyCombos: [], extraTurns: [], massLandDenial: [] });
-    expect(ratingStale(true, salt, stats)).toBe(false);
+  it("is never stale for Commander Salt's data on a local deck (a deck made local from Archidekt)", () => {
+    expect(ratingStale(true, SALT, stats, false)).toBe(false);
+    expect(ratingStale(true, SALT, stats, true)).toBe(false);
+  });
+
+  it("asks for the estimate on an Archidekt deck with Commander Salt's data when the bracket comes from the app", () => {
+    expect(ratingStale(false, SALT, stats, true)).toBe(true);
+    expect(ratingStale(false, null, stats, true)).toBe(true);
+    // The estimate is there already, for this list: nothing to do.
+    expect(ratingStale(false, JSON.stringify(rating()), stats, true)).toBe(false);
+    expect(ratingStale(false, JSON.stringify(rating()), [...stats, card("More")], true)).toBe(true);
+  });
+
+  it("has no answer without the deck's cards", () => {
+    expect(ratingStale(true, null, [], false)).toBe(false);
+    expect(ratingStale(false, SALT, [], true)).toBe(false);
   });
 });
 
@@ -152,10 +169,20 @@ describe("putRating", () => {
     expect(back.version).toBe(4);
   });
 
-  it("refuses a deck that isn't local, or isn't there", () => {
+  it("puts it on a deck from Archidekt too", () => {
+    const f = syncFile();
+    const r = rating();
+    expect(putRating(f, 123, r, NOW + 100)).toBe(true);
+    const d = (f.data.decks as unknown as SyncDeck[]).find((x) => x.deck.archidektId === 123)!.deck;
+    expect(d.saltCard).toBe(JSON.stringify(r));
+    expect(d.bracketBaseline).toBe(r.bracket);
+    expect(d.bracketRealistic).toBeNull();
+    expect(d.powerLevel).toBe(6.5);
+  });
+
+  it("refuses a deck that isn't there", () => {
     const f = syncFile();
     const before = JSON.stringify(f.data.decks);
-    expect(putRating(f, 123, rating(), NOW)).toBe(false);
     expect(putRating(f, 999, rating(), NOW)).toBe(false);
     expect(JSON.stringify(f.data.decks)).toBe(before);
   });

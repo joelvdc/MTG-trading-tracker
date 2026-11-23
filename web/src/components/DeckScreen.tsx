@@ -34,6 +34,7 @@ import { PrintDeckDialog } from "@/components/PrintLists";
 import type { Legality } from "@/lib/legality";
 import { ShareDialog } from "@/components/SharePanel";
 import { allCombos, bracketName, caseless, POWER_SOURCES, sections, shownBracket, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import type { SaltSum } from "@/lib/localratings";
 import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
 import { isLandSection, mdfcLandCopies } from "@/lib/mdfclands";
@@ -41,7 +42,7 @@ import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; ratingStale?: boolean; winTurn: KeptWin; games?: Game[]; legality?: Legality | null; precon?: { fileName: string; name: string; code: string; releaseDate: string | null } };
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; ratingStale?: boolean; saltSum?: SaltSum | null; winTurn: KeptWin; games?: Game[]; legality?: Legality | null; precon?: { fileName: string; name: string; code: string; releaseDate: string | null } };
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
@@ -200,7 +201,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   // The website's own rating of a local deck: worked out once per page load when the kept one is for another list.
   // Nothing shows while it runs; a failure is silent and tried again on the next visit.
   const ratingAsked = useRef(false);
-  const ratingStale = view !== null && view.local === true && view.ratingStale === true && !view.readOnly;
+  const ratingStale = view !== null && view.ratingStale === true && !view.readOnly;
   useEffect(() => {
     if (!ratingStale || !view || ratingAsked.current) return;
     ratingAsked.current = true;
@@ -714,9 +715,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const power = view.power ?? (powerFrom === "APP" && win.status === "done" && win.win ? win.win.power.power : null);
   /** What a score box says when it has nothing: a local deck waits for the website's own rating. */
   const notRated = view.local ? "Not rated yet" : "Commander Salt hasn't scored this deck yet";
-  /** The saltiness as its source gives it: Commander Salt's percent, or the website's own total (one decimal, no percent). */
-  const appSalt = view.salt?.source === "app" ? (view.salt.salt ?? null) : null;
-  const saltText = appSalt != null ? appSalt.toFixed(1) : d.saltPercent != null ? `${Math.round(d.saltPercent)}%` : "–";
+  /** The salt sum of every card in the deck, lands and basic lands included (lib/localratings.ts). */
+  const saltSum = view.saltSum ?? null;
   return (
     <>
       <TopBar page={precon ? "precons" : "decks"} folder={folder} />
@@ -847,7 +847,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
             </button>
             <div className="score">
               <span className="muted small">Saltiness</span>
-              <strong>{saltText}</strong>
+              <strong>{saltSum?.total != null ? saltSum.total.toFixed(1) : "–"}</strong>
+              {saltSum?.level && <span className="small">{saltSum.level.toLowerCase()}</span>}
             </div>
             <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
               <span className="muted small">Missing</span>
@@ -857,7 +858,10 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
             {(() => {
               // The date of the scores and the deck's legality, beside the scores rather than on rows of their own.
               const scored = d.scoredAt ? (
-                <p className="muted small">Scored by Commander Salt, {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>
+                <p className="muted small">
+                  {view.salt?.source === "app" ? "Estimated by the app" : "Scored by Commander Salt"},{" "}
+                  {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                </p>
               ) : d.scoreError ? (
                 <p className="warn-text small">Not scored: {d.scoreError}</p>
               ) : null;
@@ -1457,7 +1461,7 @@ function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; st
         <div className="rz-print">
           {which !== "POWER" && <BracketCard deck={deck} cover={view.cover} data={salt} inkSaver={inkSaver} speed={win.status === "done" && win.win ? <SpeedSection win={win.win} /> : undefined} />}
           {which !== "BRACKET" && (
-            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} inkSaver={inkSaver} />
+            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} inkSaver={inkSaver} saltSum={view.saltSum ?? null} />
           )}
         </div>
         <div className="dialog-actions">

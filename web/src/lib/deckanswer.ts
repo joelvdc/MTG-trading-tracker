@@ -2,6 +2,8 @@
 // the maybeboard's categories, the win turn kept here and the recorded games. Shared with a precon's read-only page,
 // which builds the deck in memory and never saves it. Server only.
 import { autoCategories, categoriesByName } from "./autocategories";
+import { appSettings } from "./appsettings";
+import { cardFactsByName } from "./cardfacts";
 import type { DetailsFile } from "./carddetails";
 import type { CkFile } from "./cardkingdom";
 import { ensureDeckDetails, statsCard } from "./deckdetails";
@@ -12,6 +14,7 @@ import { deckView, syncDecks } from "./decks";
 import { gamesOf } from "./games";
 import { gamesOfDeck } from "./gameshared";
 import { deckLegality } from "./legalstore";
+import { saltSumOf, type SaltSum } from "./localratings";
 import type { PriceFile } from "./prices";
 import { isUser, type Account } from "./session";
 import { prefs, type SyncFile } from "./syncfile";
@@ -79,6 +82,14 @@ export async function deckAnswer(
   // Commander legality, looking up the rules of cards the website doesn't know yet (a few seconds at most).
   const legality = await deckLegality(synced, true, Date.now(), Date.now() + 6_000).catch(() => null);
   const games = opts.games !== false ? gamesOfDeck(gamesOf(file), id) : [];
+  // The salt sum of the whole deck (lib/localratings.ts), from the facts table; null when it can't be read or is empty.
+  let saltSum: SaltSum | null = null;
+  try {
+    const facts = await cardFactsByName([...new Set(stats.map((c) => c.name))]);
+    if (facts.size > 0) saltSum = saltSumOf(stats, facts);
+  } catch {
+    saltSum = null;
+  }
   return {
     ...view,
     stats,
@@ -88,7 +99,8 @@ export async function deckAnswer(
     layouts,
     detailsError,
     saltCard: synced.deck.saltCard ?? null,
-    ratingStale: ratingStale(view.local, synced.deck.saltCard ?? null, stats),
+    ratingStale: ratingStale(view.local, synced.deck.saltCard ?? null, stats, appSettings(file).bracketSource === "APP"),
+    saltSum,
     winTurn,
     games,
     legality,

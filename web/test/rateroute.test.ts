@@ -6,9 +6,13 @@ const combos = vi.fn(async (_commanders: string[], _main: { name: string; quanti
 const facts = vi.fn(async (names: string[]) => new Map(names.map((n) => [n, { tags: [], gameChanger: n === "Rhystic Study", salt: n === "Rhystic Study" ? 2.5 : null }])));
 
 vi.mock("@/lib/spellbook", () => ({ findCombos: (...args: unknown[]) => combos(...(args as [string[], { name: string; quantity: number }[]])) }));
-vi.mock("@/lib/cardfacts", () => ({ cardFactsByName: (names: string[]) => facts(names) }));
+vi.mock("@/lib/cardfacts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/cardfacts")>();
+  return { FACTS_SINCE: actual.FACTS_SINCE, cardFactsByName: (names: string[]) => facts(names) };
+});
 
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
+import { FACTS_SINCE } from "@/lib/cardfacts";
 import { POST } from "@/app/api/rate/route";
 
 const card = (name: string, over: Record<string, unknown> = {}) => ({ name, quantity: 1, cmc: 2, types: "Creature", commander: false, ...over });
@@ -28,7 +32,7 @@ beforeEach(async () => {
   resetMemoryStore();
   combos.mockClear();
   facts.mockClear();
-  await accountStore()!.replaceCardFacts([{ key: "rhystic study", fact: { tags: [], gameChanger: true, salt: 2.5 } }], Date.now());
+  await accountStore()!.replaceCardFacts([{ key: "rhystic study", fact: { tags: [], gameChanger: true, salt: 2.5 } }], FACTS_SINCE + 1);
 });
 
 describe("/api/rate", () => {

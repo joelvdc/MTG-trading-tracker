@@ -12,7 +12,13 @@ import { scryFetch } from "./scrylimit";
 export type { CardFact };
 
 /** The Tagger tags kept (all exist on Scryfall; a card has whichever of them it is tagged with). */
-export const FACT_TAGS = ["removal", "sweeper", "counterspell", "draw", "tutor", "ramp", "mana-rock", "mana-dork", "extra-turn", "mass-land-denial"] as const;
+export const FACT_TAGS = ["removal", "sweeper", "counterspell", "draw", "tutor", "tutor-land", "ramp", "mana-rock", "mana-dork", "extra-turn", "mass-land-denial"] as const;
+
+/**
+ * Facts built before this lack the salt-only rows (every card with a salt score gets one) and the land tutors: the
+ * builder rebuilds then, whatever the week says.
+ */
+export const FACTS_SINCE = Date.parse("2026-11-23T15:00:00Z");
 
 /** Where the weekly GitHub job (.github/workflows/card-salt.yml) keeps the salt scores, gzipped JSON by card name. */
 export const SALT_URL = "https://raw.githubusercontent.com/joelvdc/MTG-trading-tracker/card-salt/card-salt.json.gz";
@@ -78,6 +84,8 @@ export async function fetchCardFacts(f: Fetch = scryFetch, deadline = Date.now()
     byName.set(nameKey(c.name), r);
   }
   const salt = await fetchSalt(f, deadline);
+  // Every card with a salt score gets a row, tagged or not, so the salt total counts them all.
+  for (const name of salt?.keys() ?? []) if (!byName.has(nameKey(name))) byName.set(nameKey(name), { name, tags: [], gameChanger: false });
   return [...byName.values()].map((r) => ({
     name: r.name,
     fact: { tags: [...r.tags], gameChanger: r.gameChanger, salt: salt?.get(r.name) ?? (r.name.includes(" // ") ? (salt?.get(r.name.split(" // ")[0]) ?? null) : null) },
@@ -85,15 +93,15 @@ export async function fetchCardFacts(f: Fetch = scryFetch, deadline = Date.now()
 }
 
 /**
- * The weekly job: rebuilds the facts table from Scryfall and the salt scores when it is older than a week (or empty).
- * Rows are by name; a double-faced card also gets one under its front face ("fire" for "Fire // Ice") unless that name
- * has a card of its own.
+ * The weekly job: rebuilds the facts table from Scryfall and the salt scores when it is older than a week (or empty, or
+ * built before FACTS_SINCE). Rows are by name; a double-faced card also gets one under its front face ("fire" for
+ * "Fire // Ice") unless that name has a card of its own.
  */
 export async function rebuildCardFacts(now = Date.now(), f: Fetch = scryFetch, deadline = now + 270_000): Promise<{ rebuilt: boolean; cards: number; updatedAt: number | null }> {
   const store = accountStore();
   if (!store) throw new Error("No database.");
   const before = await store.cardFactStats();
-  if (before.cards > 0 && before.updatedAt !== null && before.updatedAt > now - REBUILD_AFTER_MS) return { rebuilt: false, ...before };
+  if (before.cards > 0 && before.updatedAt !== null && before.updatedAt > now - REBUILD_AFTER_MS && before.updatedAt >= FACTS_SINCE) return { rebuilt: false, ...before };
   const rows = await fetchCardFacts(f, deadline);
   if (rows.length === 0) throw new Error("Scryfall's card searches found no cards; the old table is kept.");
   const keyed = new Map<string, CardFact>();

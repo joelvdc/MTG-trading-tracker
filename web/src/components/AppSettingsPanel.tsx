@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api, peek, remember } from "@/components/api";
-import { CURRENCY_CHOICES, POWER_SOURCE_CHOICES, PRICE_SOURCES, PRICE_TYPE_CHOICES, RECEIVED_CLEAR, type AppSettings } from "@/lib/appsettings";
+import { BRACKET_SOURCE_CHOICES, CURRENCY_CHOICES, POWER_SOURCE_CHOICES, PRICE_SOURCES, PRICE_TYPE_CHOICES, RECEIVED_CLEAR, type AppSettings } from "@/lib/appsettings";
 import { CONDITIONS } from "@/lib/cards";
 
 /** The app's synced settings: changed here, the phones take them at their next sync. */
@@ -64,7 +64,7 @@ export function AppSettingsPanel() {
     } else setMessage({ ok: false, text: r.data.error ?? "Could not save the settings." });
   }
 
-  const select = (k: "priceSource" | "priceType" | "currency" | "alertPriceType" | "receivedClear" | "powerSource", label: string, list: [string, string][]) => (
+  const select = (k: "priceSource" | "priceType" | "currency" | "alertPriceType" | "receivedClear" | "powerSource" | "bracketSource", label: string, list: [string, string][]) => (
     <label className="field">
       <span>{label}</span>
       <select value={s[k]} disabled={readOnly} onChange={(e) => set(k, e.target.value)}>
@@ -125,6 +125,7 @@ export function AppSettingsPanel() {
       <h3 className="mini-head">Decks</h3>
       <div className="form-grid">
         {select("powerSource", "Power level from", POWER_SOURCE_CHOICES)}
+        {select("bracketSource", "Bracket from", BRACKET_SOURCE_CHOICES)}
         <label className="field">
           <span>Your Archidekt username</span>
           <input type="text" maxLength={100} disabled={readOnly} value={s.ownArchidektUser} placeholder="Whose decks are your own" onChange={(e) => set("ownArchidektUser", e.target.value)} />
