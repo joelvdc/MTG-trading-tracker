@@ -14,22 +14,24 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-23, after app 1.114)
-- **Newest (2026-11-23):** app 1.114 + website: local decks get an estimated bracket and salt (the website rates them:
-  Commander Spellbook combos, Scryfall tags in table `card_facts`, MTGJSON salt from the `card-salt` branch, made by the
-  weekly GitHub job `card-salt.yml`); bracket card has "Why bracket N" and combo "wins · mana value N"; power card shows
-  salt total, level and saltiest cards; "Archidekt (other users)"; website deck page Stacks/Grid views; website keeps
-  3 database backups (Nextcloud 10) and has Download a copy now. No power correction for local decks (calibrated
-  against 23 scored decks: it didn't beat no correction). Built by DeepSeek through Mistral, reviewed by Opus.
-  Before that: 1.113 deck headings "MTG Trader"/"Retired"; 1.112 forgot password, email at sign-up, two-step login.
-- **Waiting on the owner:** open a local deck (website or app) to see its bracket card; the first ratings only work
-  once `card_facts` is built (the daily cron builds it on the first day the categories don't rebuild, so by about
-  2026-11-25). Still from before: add/confirm your email, try "Forgot password?", the sort with the real collection,
-  green light for the ✕ delete column in the website's wishlist, Compare with a real Archidekt link, the email to
-  support@moxfield.com, asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** local decks show "Not rated yet" until `card_facts` exists (`/api/health` cardFacts > 0);
-  salt levels are approximate (Mild < 25, Moderate < 40, High), Commander Salt's own salt numbers differ. Older app
-  versions show local decks' new bracket data without the "Why" lines.
+## Right now (2026-11-23, after app 1.115)
+- **Newest (2026-11-23):** app 1.115 + website: every deck shows a salt sum like Archidekt's (EDHREC salt from MTGJSON,
+  lands and commander included; the app downloads the `card-salt` file weekly, the website uses `card_facts`, which now
+  holds every card with a salt score); levels Mild < 30, Moderate < 45, High; Commander Salt's percent is no longer
+  shown. Setting Decks → "Bracket from" (Commander Salt / Estimated by the app, synced key `bracketSource`). Land tutors
+  (Scryfall `otag:tutor-land`, fetch lands) don't count as tutors any more; RATING_VERSION 2, so every estimated deck is
+  rated again once. Built by DeepSeek through Mistral, reviewed by Opus.
+  Before that: 1.114 local decks' estimated bracket, "Why bracket N", Stacks/Grid, 3 database backups.
+- **Waiting on the owner:** the `card_facts` table must be rebuilt once with the new rules (`FACTS_SINCE` in
+  `web/src/lib/cardfacts.ts`; until then ratings answer "not ready"): Vercel → mtgtrader → Settings → Cron Jobs →
+  `/api/cron/categories` → Run, or wait for the daily run at 05:00 Danish time. Then open the Spock deck: expected
+  bracket 2 and a salt sum near Archidekt's 20.87 (the new Star Trek cards have no MTGJSON salt yet). Still from
+  before: add/confirm your email, try "Forgot password?", the sort with the real collection, green light for the ✕
+  delete column in the website's wishlist, Compare with a real Archidekt link, the email to support@moxfield.com,
+  asking EDHREC/Archidekt for permission.
+- **Expected to look odd:** salt sums are a bit lower than Archidekt's for new sets until MTGJSON has their salt; a deck
+  shows no salt sum until the phone has downloaded the salt file once (needs a connection). Phones still on 1.114 ask
+  for a new estimate each time a deck is opened (rating version 2 vs 1) until they update.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -149,6 +151,7 @@ for later:
 - 1.111 (2026-11-22): signed cards leave Unsorted in the sort; Done goes back to the collection
 - 1.112 (2026-11-22): forgot password by email, email at sign-up, optional two-step login
 - 1.113 (2026-11-23): deck headings "MTG Trader" and "Retired"; Share window's Copy shows "Copied ✓"
+- 1.115 (2026-11-23): salt sum on every deck (lands included), Bracket from setting, land tutors don't count
 - 1.114 (2026-11-23): estimated bracket and salt for local decks (website rates them), why-bracket lines, Archidekt (other users), website Stacks/Grid, 3 backups + download
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
