@@ -392,8 +392,8 @@ export type DeckGroup = "OWN" | "OTHERS" | "LOCAL" | "RETIRED";
 export const GROUP_TITLES: Record<DeckGroup, string> = {
   OWN: "Archidekt",
   OTHERS: "Archidekt (read only)",
-  LOCAL: "Local · in the app, synced between your phones",
-  RETIRED: "Retired · kept with their games",
+  LOCAL: "MTG Trader",
+  RETIRED: "Retired",
 };
 
 export interface DeckSummary {

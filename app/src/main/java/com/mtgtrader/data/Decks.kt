@@ -155,9 +155,9 @@ data class Deck(
 enum class DeckGroup(val title: String) {
     OWN("Archidekt"),
     OTHERS("Archidekt (read only)"),
-    LOCAL("Local · in the app, synced between your phones"),
+    LOCAL("MTG Trader"),
     /** Since 1.83. */
-    RETIRED("Retired · kept with their games");
+    RETIRED("Retired");
 
     companion object {
         /**

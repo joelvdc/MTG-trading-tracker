@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, formatDate, peek, remember } from "./api";
 import { Dialog } from "./Dialog";
 
@@ -16,15 +16,23 @@ async function copy(text: string): Promise<boolean> {
 }
 
 /**
- * The Share window: makes (or finds) the item's link, copies it and shows it. Links never expire; Settings → Shared
- * links switches them off. [what] names the item in the window ("this deck", "the whole collection"…).
+ * The Share window: makes (or finds) the item's link and shows it, with a Copy button. Links never expire; Settings →
+ * Shared links switches them off. [what] names the item in the window ("this deck", "the whole collection"…).
  */
 export function ShareDialog({ kind, target, what, onClose }: { kind: Kind; target: string; what: string; onClose: () => void }) {
-  const [state, setState] = useState<{ url?: string; error?: string; copied?: boolean; turnedOn?: boolean }>({});
+  const [state, setState] = useState<{ url?: string; error?: string; turnedOn?: boolean }>({});
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "failed">("idle");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
   useEffect(() => {
-    api<{ url: string; turnedOn?: boolean }>("/api/shares", { action: "make", kind, target }).then(async (r) => {
+    api<{ url: string; turnedOn?: boolean }>("/api/shares", { action: "make", kind, target }).then((r) => {
       if (!r.ok) return setState({ error: r.data.error ?? "The link couldn't be made." });
-      setState({ url: r.data.url, turnedOn: r.data.turnedOn, copied: await copy(r.data.url) });
+      setState({ url: r.data.url, turnedOn: r.data.turnedOn });
     });
   }, [kind, target]);
   return (
@@ -39,7 +47,7 @@ export function ShareDialog({ kind, target, what, onClose }: { kind: Kind; targe
               are now.{state.turnedOn ? " It was switched off; it's on again." : ""}
             </p>
             <input type="text" readOnly value={state.url} aria-label="The link" onFocus={(e) => e.target.select()} />
-            <p className="muted small">{state.copied ? "Copied. " : ""}Switch it off any time in Settings → Shared links.</p>
+            <p className="muted small">Switch it off any time in Settings → Shared links.</p>
           </>
         )}
         <div className="dialog-actions">
@@ -53,10 +61,15 @@ export function ShareDialog({ kind, target, what, onClose }: { kind: Kind; targe
                 className="btn"
                 onClick={async () => {
                   const ok = await copy(state.url!);
-                  setState((s) => ({ ...s, copied: ok }));
+                  setCopyState(ok ? "ok" : "failed");
+                  if (timer.current) clearTimeout(timer.current);
+                  timer.current = setTimeout(() => {
+                    setCopyState("idle");
+                    timer.current = null;
+                  }, 2000);
                 }}
               >
-                Copy
+                {copyState === "ok" ? "Copied ✓" : copyState === "failed" ? "Couldn't copy" : "Copy"}
               </button>
             </>
           )}
