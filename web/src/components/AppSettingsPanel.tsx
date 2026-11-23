@@ -167,10 +167,17 @@ export function BackupsPanel() {
     <section className="card stack">
       <h2 className="section-head">Website backups</h2>
       <p className="muted small">
-        Before its first change of a day, the website keeps a copy of the sync file (the last 10 days). To go back to one, download
+        Before its first change of a day, the website keeps a copy of the sync file (the last 3 days). To go back to one, download
         it and restore it in the app: Settings → Backups → Restore from a file…
       </p>
       {error && <div className="bar error">{error}</div>}
+      {!error && (
+        <div className="controls">
+          <a className="btn" href="/api/backups?name=now" download>
+            Download a copy now
+          </a>
+        </div>
+      )}
       {list && list.backups.length === 0 && <p className="muted">No backups yet: the website hasn&apos;t changed anything.</p>}
       {list && list.backups.length > 0 && (
         <ul className="plain-list">

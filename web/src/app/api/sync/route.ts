@@ -1,6 +1,6 @@
 import { errorResponse, json } from "@/lib/auth";
 import { loggedOut, needStore, phoneAccount } from "@/lib/accountweb";
-import { KEEP_BACKUPS } from "@/lib/store";
+import { KEEP_DB_BACKUPS } from "@/lib/store";
 import { decode } from "@/lib/syncfile";
 
 export const dynamic = "force-dynamic";
@@ -59,8 +59,8 @@ export async function PUT(req: Request) {
     // Neither: refused (428) rather than saved over whatever a phone saved meanwhile. The app always sends one of the two.
     else return json({ error: "Send If-Match or If-None-Match: *." }, 428);
     const now = Date.now();
-    // The day's safety copy (the last 10 days with changes, under Settings → Backups), before the first save of a day.
-    if (current && current.version === expected) await store.backupOnce(p.account.id, new Date(now).toISOString().slice(0, 10), current.bytes, KEEP_BACKUPS);
+    // The day's safety copy (the last 3 days with changes, under Settings → Backups), before the first save of a day.
+    if (current && current.version === expected) await store.backupOnce(p.account.id, new Date(now).toISOString().slice(0, 10), current.bytes, KEEP_DB_BACKUPS);
     const version = await store.putSync(p.account.id, bytes, expected, now);
     if (version === null) return json({ error: "Changed meanwhile." }, 412);
     return new Response(null, { status: expected === null ? 201 : 204, headers: { ETag: tag(version), "Cache-Control": "no-store" } });

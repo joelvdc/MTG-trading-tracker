@@ -103,7 +103,7 @@ export default function PrivacyPage() {
 
       <h2>How long</h2>
       <ul>
-        <li>Account data is kept until you delete your account or ask for it to be removed. Then everything goes within 30 days, backup copies included (the daily backups roll over after 10 days anyway).</li>
+        <li>Account data is kept until you delete your account or ask for it to be removed. Then everything goes within 30 days, backup copies included (the website&apos;s daily backups roll over after 3 days, the Nextcloud copies after 10).</li>
         <li>Price history is kept for up to a year.</li>
         <li>Shared link counts are kept until you remove the link.</li>
         <li>Vercel keeps its technical logs for a short time (days).</li>

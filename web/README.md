@@ -32,7 +32,7 @@ last commit counted, so a push whose last commit didn't touch `web/` skipped the
   `ETag: "v<n>"` (304 for a matching `If-None-Match`, 404 when the account has none yet); `PUT /api/sync` saves it with
   `If-Match: "v<n>"` or `If-None-Match: *` (412 if it changed meanwhile, as on Nextcloud; 428 with neither header), 201/204 with the new ETag.
   Uploads must be a readable sync file, at most 20 MB.
-- **Backups:** before the first change of a day a copy is kept in the database (the newest 10, also before a phone's
+- **Backups:** before the first change of a day a copy is kept in the database (the newest 3, also before a phone's
   first save of the day). A nightly cron (`/api/cron/backup`, 02:30 UTC) also copies each account's file to
   `<folder>/web-backups/sync-YYYY-MM-DD.json.gz` on Nextcloud (the newest 10) while that backup is on. Settings →
   Nextcloud backup → **Connect Nextcloud** (`/api/account/backup`): Nextcloud's Login Flow v2 in a new tab gives the

@@ -8,6 +8,8 @@ import { canWrite, decode, encode, stamp, type SyncFile } from "./syncfile";
 export const SYNC_FILE = "sync.json.gz";
 export const BACKUP_FOLDER = "web-backups";
 export const KEEP_BACKUPS = 10;
+/** Database copies per account, kept small for the free database plan. */
+export const KEEP_DB_BACKUPS = 3;
 const ATTEMPTS = 4;
 
 export class NoSyncFile extends Error {
@@ -59,10 +61,10 @@ export function backupName(now: number): string {
 
 /**
  * Keeps a copy of the file as it was before the website's first change of the day, in web-backups/ next to it,
- * and keeps the newest [KEEP_BACKUPS] of them.
+ * and keeps the newest [KEEP_DB_BACKUPS] of them in the database, the newest [KEEP_BACKUPS] on Nextcloud.
  */
 async function backupOnce(a: Account, bytes: Uint8Array, now: number): Promise<void> {
-  if (isUser(a)) return store().backupOnce(a.accountId, new Date(now).toISOString().slice(0, 10), bytes, KEEP_BACKUPS);
+  if (isUser(a)) return store().backupOnce(a.accountId, new Date(now).toISOString().slice(0, 10), bytes, KEEP_DB_BACKUPS);
   const name = backupName(now);
   const existing = (await listFiles(a, BACKUP_FOLDER)).filter((n) => /^sync-\d{4}-\d{2}-\d{2}\.json\.gz$/.test(n)).sort();
   if (existing.includes(name)) return;

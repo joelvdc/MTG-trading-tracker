@@ -5,7 +5,7 @@ import { accountStore, checkPassword, cleanUsername, hashPassword, memoryStore, 
 import { openAiKey } from "@/lib/aiprimer";
 import { type Mail as MailBody } from "@/lib/mailer";
 import type { UserSession } from "@/lib/session";
-import { editSync, loadSync } from "@/lib/store";
+import { editSync, KEEP_DB_BACKUPS, loadSync } from "@/lib/store";
 import { encode, parse, wishlist } from "@/lib/syncfile";
 import { totpCode } from "@/lib/totp";
 import {
@@ -383,6 +383,18 @@ describe("an account's sync file", () => {
     expect(days).toHaveLength(10);
     expect(days[0]).toBe("2026-11-12");
     expect((await s.backup(1, "2026-11-12"))?.[0]).toBe(12);
+  });
+
+  it("the website keeps only the newest three database backups", async () => {
+    process.env.DATABASE_URL = "memory";
+    resetMemoryStore();
+    const store = accountStore()!;
+    const a = await createFromNextcloud(store, "joel", "a long password", 1);
+    await store.putSync(a.id, encode(sample()), null, 1);
+    const session: UserSession = { kind: "user", accountId: a.id, username: "joel", admin: true, device: "x" };
+    for (let d = 1; d <= 4; d++) await editSync(session, () => undefined, () => Date.UTC(2026, 10, d));
+    expect(await store.backups(a.id)).toEqual(["2026-11-04", "2026-11-03", "2026-11-02"]);
+    expect(KEEP_DB_BACKUPS).toBe(3);
   });
 
   it("the website's edits go to the account's file, redone when a phone saved in between", async () => {
