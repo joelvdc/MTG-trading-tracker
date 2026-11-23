@@ -150,6 +150,10 @@ export interface SaltCombo {
   needsBoard: boolean;
   spellbookUri: string | null;
   prerequisites: string[];
+  /** The combo's cards' mana values added up; null when not known (Commander Salt doesn't say). */
+  manaValue?: number | null;
+  /** Whether it wins the game by itself; null when not known. */
+  wins?: boolean | null;
 }
 
 /** What the rule-zero cards show from Commander Salt (the app's SaltCard JSON, defaults filled in). */
@@ -172,6 +176,20 @@ export interface SaltCard {
   tutors: string[];
   fastMana: string[];
   combos: SaltCombo[];
+  /** Who scored it: "app" for the website's own local-deck rating (localratings.ts); null or missing for Commander Salt. */
+  source?: "app" | null;
+  /** The bracket the website's rating gives (2 to 4); null when not rated by the app. */
+  bracket?: number | null;
+  /** Why that bracket, one line per rule that reached it (localratings.ts). */
+  bracketWhy?: string[];
+  /** The deck's salt total, from the cards' salt; null when no card has one. */
+  salt?: number | null;
+  /** The saltiest cards, highest first. */
+  saltiest?: { name: string; salt: number }[];
+  /** The list the rating was made for (ratingListKey); null when not rated by the app. */
+  listKey?: string | null;
+  /** The rating's version (RATING_VERSION), so a changed formula can be spotted. */
+  ratingVersion?: number | null;
 }
 
 export function decodeSalt(text: string | null | undefined): SaltCard | null {
@@ -203,7 +221,16 @@ export function decodeSalt(text: string | null | undefined): SaltCard | null {
         needsBoard: c.needsBoard ?? false,
         spellbookUri: c.spellbookUri ?? null,
         prerequisites: c.prerequisites ?? [],
+        manaValue: c.manaValue ?? null,
+        wins: c.wins ?? null,
       })),
+      source: j.source === "app" ? "app" : null,
+      bracket: j.bracket ?? null,
+      bracketWhy: j.bracketWhy ?? [],
+      salt: j.salt ?? null,
+      saltiest: (j.saltiest ?? []).map((s) => ({ name: s.name ?? "", salt: s.salt ?? 0 })),
+      listKey: j.listKey ?? null,
+      ratingVersion: j.ratingVersion ?? null,
     };
   } catch {
     return null;
