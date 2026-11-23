@@ -4780,7 +4780,7 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
      */
     suspend fun get(deckId: Long, cards: List<StatsCard>, identity: String, salt: SaltCard?): WinOdds? {
         if (cards.none { it.commander }) {
-            if (cards.isNotEmpty()) AppPower.put(deckId, null)
+            if (cards.isNotEmpty()) WinTurns.put(deckId, null)
             return null
         }
         val odds = kept(deckId, cards, identity, salt) ?: withContext(Dispatchers.Default) {
@@ -4792,7 +4792,7 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
                 withContext(Dispatchers.IO) { runCatching { file.writeText(json.encodeToString(serializer, all)) } }
             }
         }
-        AppPower.put(deckId, odds?.let { AppPowerLevel.of(it, salt) })
+        WinTurns.put(deckId, odds)
         return odds
     }
 
@@ -4813,12 +4813,12 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
     suspend fun fillKept(deck: Deck): Boolean {
         val cards = db.cardInfoDao().deckStats(deck.archidektId)
         if (cards.none { it.commander }) {
-            if (cards.isNotEmpty()) AppPower.put(deck.archidektId, null)
+            if (cards.isNotEmpty()) WinTurns.put(deck.archidektId, null)
             return cards.isNotEmpty()
         }
         val salt = SaltCard.decode(deck.saltCard)
         val odds = kept(deck.archidektId, cards, deck.colorIdentity, salt) ?: return false
-        AppPower.put(deck.archidektId, AppPowerLevel.of(odds, salt))
+        WinTurns.put(deck.archidektId, odds)
         return true
     }
 

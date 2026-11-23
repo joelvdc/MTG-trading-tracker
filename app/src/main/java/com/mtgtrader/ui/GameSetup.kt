@@ -107,7 +107,7 @@ internal fun seatDeck(choice: SeatChoice, decks: List<Deck>, friendDecks: List<F
         val names = d.commanders.split(" & ").map { it.trim() }.filter { it.isNotEmpty() }
         return SeatDeck(
             d.name, names.firstOrNull().orEmpty(), names.getOrNull(1), d.commanderScryfallId, d.colorIdentity,
-            GameStore.artCrop(d.commanderScryfallId) ?: d.artUrl, d.bracketRealistic, d.powerLevel,
+            GameStore.artCrop(d.commanderScryfallId) ?: d.artUrl, d.bracket, null,
         )
     }
     choice.friendDeckUid?.let { uid ->

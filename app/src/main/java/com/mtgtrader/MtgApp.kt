@@ -9,13 +9,10 @@ import coil.disk.DiskCache
 import coil.util.DebugLogger
 import com.mtgtrader.data.AppDatabase
 import com.mtgtrader.data.ArchidektApi
-import com.mtgtrader.data.CommanderSaltApi
 import com.mtgtrader.data.CardmarketCatalog
 import com.mtgtrader.data.DataUpdater
 import com.mtgtrader.data.ValueHistory
 import com.mtgtrader.data.DeckRepository
-import com.mtgtrader.data.EdhPowerLevelApi
-import com.mtgtrader.data.HiddenBrowser
 import com.mtgtrader.data.MtgRepository
 import com.mtgtrader.data.NetworkMonitor
 import com.mtgtrader.data.PriceGuideRepository
@@ -135,10 +132,9 @@ class AppContainer(context: Context) {
     /** The price alerts reached on this phone, as a history kept on the phone only (since 1.77). */
     val alertHistory = com.mtgtrader.data.AlertHistory(context)
     val wishWatch = com.mtgtrader.data.WishlistWatch(context, db, settings, scryfall, priceSources, cardTrader, alertHistory) { exchangeRates.rates.value }
-    private val browser = HiddenBrowser(context)
-    /** The MTG Trader website: syncing, and the estimate of local decks (since 1.114). */
+    /** The MTG Trader website: syncing, and the estimate of every deck (since 1.114; all decks since 1.116). */
     val webAccount = com.mtgtrader.data.WebAccountClient(http)
-    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), CommanderSaltApi(http), repo, settings, EdhPowerLevelApi(browser), appScope, winOdds, webAccount)
+    val decks = DeckRepository(context, db, scryfall, ArchidektApi(http), repo, settings, appScope, winOdds, webAccount)
     /** EDHREC's salt scores, for the salt sum of every deck (since 1.115). */
     val saltScores = com.mtgtrader.data.SaltScores(context, http)
     val recommendations = com.mtgtrader.data.Recommendations(db, scryfall, com.mtgtrader.data.EdhrecApi(http), com.mtgtrader.data.RecommanderApi(http), appScope)

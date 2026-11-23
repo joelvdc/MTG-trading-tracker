@@ -154,8 +154,6 @@ import com.mtgtrader.data.DeckText
 import com.mtgtrader.data.PriceSet
 import com.mtgtrader.data.PriceType
 import com.mtgtrader.data.QueryCard
-import com.mtgtrader.data.RuleZeroCard
-import com.mtgtrader.data.PowerSource
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
@@ -252,7 +250,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     val priceType by c.settings.priceType.collectAsStateWithLifecycle()
     val job by c.decks.job.collectAsStateWithLifecycle()
     val result by c.decks.result.collectAsStateWithLifecycle()
-    val source by c.settings.powerSource.collectAsStateWithLifecycle()
     val groupBy by c.settings.deckGroup.collectAsStateWithLifecycle()
     val cardSort by c.settings.deckCardSort.collectAsStateWithLifecycle()
     val descending by c.settings.deckDescending.collectAsStateWithLifecycle()
@@ -260,7 +257,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var menu by remember { mutableStateOf(false) }
     var copyingText by remember { mutableStateOf(false) }
     var pasting by remember { mutableStateOf(false) }
-    var showing by remember { mutableStateOf<RuleZeroCard?>(null) }
+    var showing by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<DeckCardRow?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRetire by remember { mutableStateOf(false) }
@@ -392,11 +389,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
 
     var addingToCollection by remember { mutableStateOf(false) }
     var onlyBracket by rememberSaveable { mutableStateOf(false) }
-    // Bracket-relevant cards come from Commander Salt's analysis (fetched again when saved by an older version).
-    val saltCard by produceState(SaltCard.decode(deck?.saltCard), deck?.saltCard) {
-        val d = deck ?: return@produceState
-        if (value?.current != true) c.decks.loadCardData(d)?.let { value = it }
-    }
+    // Bracket-relevant cards come from the deck's rating (the website's estimate since 1.116).
+    val saltCard = remember(deck?.saltCard) { SaltCard.decode(deck?.saltCard) }
     fun tagsOf(row: DeckCardRow): Set<BracketTag> {
         val t = saltCard?.tags(row.item.card.name).orEmpty()
         return if (row.item.gameChanger) t + BracketTag.GAME_CHANGER else t
@@ -664,21 +658,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
                                 onClick = { menu = false; runCatching { uriHandler.openUri(d.archidektUrl) } },
                             )
-                            DropdownMenuItem(
-                                text = { Text("Open on edhpowerlevel.com") },
-                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
-                                onClick = {
-                                    menu = false
-                                    scope.launch { c.decks.edhUrl(d.archidektId)?.let { runCatching { uriHandler.openUri(it) } } }
-                                },
-                            )
-                            d.saltUrl?.let { url ->
-                                DropdownMenuItem(
-                                    text = { Text("Open on Commander Salt") },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
-                                    onClick = { menu = false; runCatching { uriHandler.openUri(url) } },
-                                )
-                            }
                         }
                         HorizontalDivider()
                         DropdownMenuItem(
@@ -857,17 +836,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                     item(key = "primer") { PrimerRow(d.primer, onOpen = { nav.navigate("deck/$deckId/primer") }) }
                     item(key = "rulezero") {
-                        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { showing = RuleZeroCard.BRACKET }, enabled = d.saltId != null || d.saltCard != null, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.Default.Shield, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Bracket card")
-                            }
-                            Button(onClick = { showing = RuleZeroCard.POWER }, enabled = d.saltId != null || d.saltCard != null, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.Default.Bolt, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Power card")
-                            }
+                        Button(onClick = { showing = true }, enabled = d.rated, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+                            Icon(Icons.Default.Shield, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Bracket card")
                         }
                     }
                     item(key = "recs") {
@@ -879,7 +851,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                     item(key = "scores") {
                         val sum = rememberSaltSum(d.archidektId, archidektRows.size to archidektRows.sumOf { it.item.quantity })
-                        ScoresCard(d, source, sum, busy = job != null, onRetry = ::refresh) {
+                        ScoresCard(d, sum, busy = job != null) {
                             if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
                         }
                     }
@@ -1013,7 +985,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         }
     }
 
-    showing?.let { card -> deck?.let { d -> RuleZeroDialog(d, card) { showing = null } } }
+    if (showing) deck?.let { d -> RuleZeroDialog(d) { showing = false } }
     tokens.firstOrNull { it.key == openToken }?.let { t ->
         TokenDialog(t, onPick = { c.settings.setDeckTokenPick(deckId, t.key, it) }) { openToken = null }
     }
@@ -1156,7 +1128,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     when {
                         deck?.local == true -> "This deck only exists in this app (and on your other phone after a sync), so it's gone for good. You can undo right after."
                         waiting > 0 -> "The deck is only removed from this app; it stays on Archidekt. Its $waiting change(s) that never reached Archidekt are lost."
-                        else -> "The deck is only removed from this app; it stays on Archidekt and Commander Salt."
+                        else -> "The deck is only removed from this app; it stays on Archidekt."
                     }
                 )
             },
@@ -1482,67 +1454,26 @@ private fun LegalityCard(legality: Legality?) {
     }
 }
 
+/** The deck's scores (since 1.116): its estimated bracket, its salt sum and the turn it wins by, then when it was rated. */
 @Composable
-private fun ScoresCard(deck: Deck, source: PowerSource, saltSum: SaltSum?, busy: Boolean, onRetry: () -> Unit, onRescore: () -> Unit) {
+private fun ScoresCard(deck: Deck, saltSum: SaltSum?, busy: Boolean, onRescore: () -> Unit) {
+    val win by rememberWinOdds(deck)
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
-            if (!deck.scored) {
-                Text("Not scored yet", style = MaterialTheme.typography.titleSmall)
-                deck.scoreError?.let {
-                    Text("Commander Salt couldn't score this deck: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (!busy) TextButton(onClick = onRetry) { Text("Try again") }
-                return@Column
-            }
             Row(Modifier.fillMaxWidth()) {
-                ScoreColumn("Power level", deck.power(source)?.let { Scores.power(it, source) }, "out of 10", Modifier.weight(1f))
-                // A deck the app rated shows its one bracket; otherwise Commander Salt's two (since 1.115).
-                if (SaltCard.decode(deck.saltCard)?.fromApp == true) {
-                    ScoreColumn("Bracket · estimated", deck.bracketBaseline?.toString(), Brackets.name(deck.bracketBaseline), Modifier.weight(1f))
-                } else {
-                    ScoreColumn("Realistic bracket", deck.bracketRealistic?.toString(), Brackets.name(deck.bracketRealistic), Modifier.weight(1f))
-                    ScoreColumn("Baseline bracket", deck.bracketBaseline?.toString(), Brackets.name(deck.bracketBaseline), Modifier.weight(1f))
-                }
-            }
-            HorizontalDivider(Modifier.padding(vertical = 10.dp))
-            val extras = listOfNotNull(saltSum?.let { "Salt " + saltTotal(it.total) + " · " + it.level.lowercase() }, deck.archetype)
-            if (extras.isNotEmpty()) Text(extras.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
-            if (source == PowerSource.APP) {
-                val other = deck.powerLevel?.let { " · Commander Salt ${Scores.power(it)}" } ?: ""
-                val error = deck.powerError(source)
-                Text(
-                    com.mtgtrader.data.AppPower.of(deck.archidektId)?.let { "Power level from the app's win turn$other" }
-                        ?: error?.let { "The app has no power level for this deck: $it.$other" }
-                        ?: "Working out the power level from the win turn…$other",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else if (source.external) {
-                val power = deck.power(source)
-                val error = deck.powerError(source)
-                val other = deck.powerLevel?.let { " · Commander Salt ${Scores.power(it)}" } ?: ""
-                Text(
-                    when {
-                        power != null -> "Power level from ${source.site}" + other
-                        error != null -> "${source.site} couldn't rate this deck ($error)." + other
-                        else -> "Waiting for ${source.site}'s power level…$other"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (power == null && error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                ScoreColumn("Bracket", deck.bracket?.toString(), Brackets.name(deck.bracket), Modifier.weight(1f))
+                ScoreColumn("Salt", saltSum?.let { saltTotal(it.total) }, saltSum?.level, Modifier.weight(1f))
+                ScoreColumn(
+                    "Wins by",
+                    win?.label ?: if (deck.commanders.isBlank()) null else "…",
+                    win?.firstWin?.let { "from turn $it" },
+                    Modifier.weight(1f),
                 )
             }
-            deck.scoreError?.let {
+            // When it was rated, with the refresh button on the same line.
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp).heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "The last update couldn't be scored ($it).",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-            // When Commander Salt scored it, with the refresh button on the same line.
-            Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    deck.scoredAt?.let { "Scored ${Fmt.date(it)}" } ?: "",
+                    if (deck.rated) deck.scoredAt?.let { "Rated ${Fmt.date(it)}" } ?: "" else "Not rated yet",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),

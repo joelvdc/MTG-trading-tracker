@@ -4,7 +4,7 @@ package com.mtgtrader.data
  * The estimated bracket and salt the website rates local decks with (POST /api/rate): the same rating Commander Salt
  * gives decks it has, worked out from the list. Kept with the deck as a [SaltCard] whose [SaltCard.source] is "app",
  * stamped with the [listKey] it was made for and the [RATING_VERSION] the website used, so a changed list or a newer
- * rating is asked for again. Since 1.115 every deck is rated this way when brackets come from the app.
+ * rating is asked for again. Since 1.116 every deck is rated this way.
  */
 object LocalRating {
     /** The rating's version: must equal the website's (web/src/lib/localratings.ts), which is kept in each rating's text. */
@@ -29,26 +29,23 @@ object LocalRating {
     }
 
     /**
-     * Whether the deck's rating needs asking for again: a local deck, or any deck when brackets come from the app
-     * ([source] is [BracketSource.APP]), whose cards no longer match the rating kept on it (or that never got an
-     * estimate), or whose rating the website made with another version. A deck without cards is never stale, nor a
-     * deck from Archidekt when brackets are Commander Salt's (its own data is the rating).
+     * Ratings made before the website's full card facts were built (23 Nov 2026 17:50 UTC, as RATED_SINCE in
+     * web/src/lib/deckrating.ts) counted land tutors: each is made again once.
      */
-    fun stale(deck: Deck, cards: List<DeckCard>, source: BracketSource): Boolean {
-        if (cards.isEmpty()) return false
-        // Local decks are the app's estimate; for the others only when brackets come from the app.
-        if (!deck.local && source != BracketSource.APP) return false
-        val card = SaltCard.decode(deck.saltCard) ?: return true
-        if (!card.fromApp) return !deck.local
-        return card.listKey != listKey(cards) || card.ratingVersion != RATING_VERSION
-    }
+    const val RATED_SINCE = 1_795_456_200_000L
 
     /**
-     * Whether a deck from Archidekt should have Commander Salt score it before the app can estimate its bracket: it
-     * holds the app's estimate but never Commander Salt's own data. Since 1.115.
+     * Whether the deck's rating needs asking for again (every deck since 1.116): it never got the website's estimate
+     * (or holds Commander Salt's data from before), its cards no longer match the rating kept on it, the website made
+     * it with another version, or before [RATED_SINCE]. A deck without cards is never stale.
      */
-    fun needsCommanderSalt(deck: Deck, source: BracketSource): Boolean =
-        !deck.local && source == BracketSource.COMMANDER_SALT && SaltCard.decode(deck.saltCard)?.fromApp == true
+    fun stale(deck: Deck, cards: List<DeckCard>): Boolean {
+        if (cards.isEmpty()) return false
+        val card = SaltCard.decode(deck.saltCard) ?: return true
+        if (!card.fromApp) return true
+        if ((deck.scoredAt ?: 0L) < RATED_SINCE) return true
+        return card.listKey != listKey(cards) || card.ratingVersion != RATING_VERSION
+    }
 
     /** A card's name as the fingerprint writes it: its front face, trimmed, lower case, single spaces. */
     private fun nameKey(name: String) = name.substringBefore(" // ").trim().lowercase().replace(Regex("\\s+"), " ")

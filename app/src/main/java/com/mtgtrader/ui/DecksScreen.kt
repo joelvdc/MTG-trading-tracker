@@ -33,7 +33,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenuItem
 import com.mtgtrader.data.DeckSort
 import com.mtgtrader.data.DeckSorting
-import com.mtgtrader.data.PowerSource
+import com.mtgtrader.data.WinTurns
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
@@ -127,16 +127,10 @@ fun DecksScreen(nav: NavController) {
         if (!started) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
     }
 
-    val source by c.settings.powerSource.collectAsStateWithLifecycle()
-
-    // Decks scored before 1.12 lack the rule-zero card details; they're filled in quietly. (Decks imported before 1.8
-    // learn when they last changed on Archidekt with "Update all decks", so opening this tab doesn't contact Archidekt.)
+    // Decks whose rating is missing or stale for their list are rated again (shown as a job), once per visit.
+    // (Decks imported before 1.8 learn when they last changed on Archidekt with "Update all decks".)
     LaunchedEffect(Unit) {
-        c.decks.fillMissingCardData()
-    }
-    // With another site as the power level source, decks without its power level get one (shown as a job).
-    LaunchedEffect(source, job == null) {
-        if (job == null && c.decks.powerMissing()) c.decks.rateMissingPower()
+        if (c.decks.ratingsStale()) c.decks.refreshRatings()
     }
 
     // A local deck deleted on its page can be brought back here (since 1.46).
@@ -194,28 +188,11 @@ fun DecksScreen(nav: NavController) {
                             enabled = any,
                             onClick = { moreMenu = false; busy(c.decks.updateAll()) },
                         )
-                        DropdownMenuItem(
-                            text = { Text("Re-score all decks on Commander Salt") },
-                            enabled = any,
-                            onClick = { moreMenu = false; busy(c.decks.rescoreAll()) },
-                        )
-                        if (source.external) {
-                            DropdownMenuItem(
-                                text = { Text("Re-score power levels on ${source.site}") },
-                                enabled = any,
-                                onClick = { moreMenu = false; busy(c.decks.rescorePowerAll()) },
-                            )
-                        }
                         HorizontalDivider()
                         DropdownMenuItem(
                             text = { Text("Bracket cards of all decks") },
                             enabled = any,
-                            onClick = { moreMenu = false; nav.navigate("decks/cards/BRACKET") },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Power level cards of all decks") },
-                            enabled = any,
-                            onClick = { moreMenu = false; nav.navigate("decks/cards/POWER") },
+                            onClick = { moreMenu = false; nav.navigate("decks/cards") },
                         )
                         HorizontalDivider()
                         DropdownMenuItem(
@@ -260,7 +237,7 @@ fun DecksScreen(nav: NavController) {
             )
         },
     ) { pad ->
-        val list = decks?.let { remember(it, sort, reversed, source, com.mtgtrader.data.AppPower.readings) { DeckSorting.sort(it, sort, reversed, source) } }
+        val list = decks?.let { remember(it, sort, reversed, WinTurns.odds) { DeckSorting.sort(it, sort, reversed) } }
         if (list == null) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
@@ -289,8 +266,7 @@ fun DecksScreen(nav: NavController) {
                 item(key = "empty") {
                     EmptyState(
                         "No decks yet",
-                        "Import a public deck with its Archidekt link, or share it to this app from Archidekt. " +
-                            "Commander Salt scores its power level and brackets and makes rule-zero cards you can show your table.",
+                        "Import a public deck with its Archidekt link, or share it to this app from Archidekt.",
                     )
                 }
             }
@@ -309,7 +285,7 @@ fun DecksScreen(nav: NavController) {
                 }
                 if (!folded) {
                     items(inGroup, key = { it.archidektId }) { deck ->
-                        DeckRow(deck, source, showModified = sort == DeckSort.MODIFIED, waiting = waiting[deck.archidektId] ?: 0, illegal = deck.archidektId in illegal) { nav.navigate("deck/${deck.archidektId}") }
+                        DeckRow(deck, showModified = sort == DeckSort.MODIFIED, waiting = waiting[deck.archidektId] ?: 0, illegal = deck.archidektId in illegal) { nav.navigate("deck/${deck.archidektId}") }
                     }
                 }
             }
@@ -425,12 +401,13 @@ fun JobCard(job: DeckJob, onStop: (() -> Unit)? = null) {
 /** The "flip the order" menu entry, worded for the current sort. */
 private fun reverseLabel(sort: DeckSort) = when (sort) {
     DeckSort.NAME -> "Z to A"
-    DeckSort.POWER, DeckSort.BRACKET -> "Lowest first"
+    DeckSort.WIN_TURN -> "Slowest first"
+    DeckSort.BRACKET -> "Lowest first"
     DeckSort.MODIFIED -> "Oldest first"
 }
 
 @Composable
-internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, waiting: Int, illegal: Boolean = false, onClick: () -> Unit) {
+internal fun DeckRow(deck: Deck, showModified: Boolean, waiting: Int, illegal: Boolean = false, onClick: () -> Unit) {
     Card(onClick = onClick, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             DeckArt(deck, Modifier.width(88.dp).height(64.dp))
@@ -459,23 +436,18 @@ internal fun DeckRow(deck: Deck, source: PowerSource, showModified: Boolean, wai
                         Text("$waiting change" + (if (waiting == 1) "" else "s") + " never reached Archidekt", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
-                if (deck.local && !deck.scored) {
-                    Text(
-                        listOfNotNull("Local deck", deck.origin).joinToString(" · "),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                    )
-                } else if (deck.scored) {
+                // The bracket and the win turn (since 1.116; the power level and Commander Salt's brackets until 1.115).
+                val bracket = deck.bracket
+                val win = WinTurns.of(deck.archidektId)?.label
+                if (bracket != null || win != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        deck.power(source)?.let { Tag("Power ${Scores.power(it, source)}") }
-                        deck.bracketRealistic?.let { Tag("Realistic B$it") }
-                        deck.bracketBaseline?.let { Tag("Baseline B$it") }
+                        bracket?.let { Tag("Bracket $it") }
+                        win?.let { Tag(it) }
                     }
-                } else {
-                    Text("Not scored yet", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else if (!deck.local) {
+                    Text("Not rated yet", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (deck.local && deck.scored) {
+                if (deck.local) {
                     Text(listOfNotNull("Local deck", deck.origin).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 if (showModified) {
@@ -517,19 +489,6 @@ fun ColorPips(identity: String, size: Int = 12) {
             Box(Modifier.size(size.dp).clip(CircleShape).background(color).border(0.5.dp, Color.Gray.copy(alpha = 0.6f), CircleShape))
         }
     }
-}
-
-object Scores {
-    /** Power level as its source shows it: "4.4" (Commander Salt), "6.70" (edhpowerlevel.com) or "6" (the app's). */
-    fun power(v: Double, source: PowerSource = PowerSource.COMMANDER_SALT): String = String.format(
-        Locale.getDefault(),
-        when (source) {
-            PowerSource.EDH_POWER_LEVEL -> "%.2f"
-            PowerSource.APP -> "%.0f"
-            else -> "%.1f"
-        },
-        v,
-    )
 }
 
 @Composable

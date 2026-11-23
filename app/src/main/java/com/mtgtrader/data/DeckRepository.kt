@@ -5,7 +5,6 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -34,7 +33,7 @@ data class DeckCollectionCounts(val all: Int, val missing: Int, val allNoBasics:
 
 /**
  * Commander decks: the list comes from Archidekt, prices from Scryfall + the Cardmarket price
- * guide, and the power level, brackets and rule-zero cards from Commander Salt. Imports run in
+ * guide, and the bracket and salt from the website's estimate (for every deck since 1.116). Imports run in
  * the app scope, so they finish even if the user leaves the screen; one runs at a time.
  */
 class DeckRepository(
@@ -42,22 +41,22 @@ class DeckRepository(
     private val db: AppDatabase,
     private val scryfall: ScryfallApi,
     private val archidekt: ArchidektApi,
-    private val salt: CommanderSaltApi,
     private val repo: MtgRepository,
     private val settings: Settings,
-    private val edh: EdhPowerLevelApi,
     private val scope: CoroutineScope,
     private val winOdds: WinOddsStore,
-    /** The website's estimate for local decks (see [rateLocal]). */
+    /** The website's estimate of every deck's bracket and salt (see [rateLocal]). */
     private val web: WebAccountClient,
 ) {
     companion object {
         /** Why a deck with changes that never reached Archidekt isn't reloaded. Since 1.78. */
+        /** A deck the website couldn't rate (offline, not logged in, or its card facts not ready). */
+        const val NOT_RATED = "The bracket couldn't be worked out now (no connection to the website?)"
+
         const val UNSENT = "This deck has changes from this phone that never reached Archidekt. Make a local copy to keep them, or discard them, then reload"
     }
 
     private val dao = db.deckDao()
-    private val cardDir = File(context.filesDir, "rulezero")
 
     private val _job = MutableStateFlow<DeckJob?>(null)
     val job: StateFlow<DeckJob?> = _job
@@ -67,12 +66,6 @@ class DeckRepository(
 
     @Volatile
     private var stopRequested = false
-
-    @Volatile
-    private var powerStopped = false
-
-    /** Decks whose app power level was worked out (or tried) since the app started, so they aren't tried over and over. */
-    private val appPowerTried = java.util.Collections.synchronizedSet(HashSet<Long>())
 
     /**
      * Set by [DeckEditor] (since 1.46): whether a deck may be reloaded from Archidekt (false while it holds changes
@@ -99,13 +92,9 @@ class DeckRepository(
     fun import(link: String, local: Boolean = false): Boolean {
         val id = DeckLinks.archidektId(link) ?: return false
         return start(DeckJob(null, "Loading the decklist from Archidekt…")) {
-            val (deck, error) = importOne(id, "")
+            val deck = importOne(id, "")
             val opened = if (local) detacher?.invoke(id) ?: id else id
-            DeckJobResult(
-                opened,
-                error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: ("Imported ${deck.name}" + if (local) " as a local deck" else ""),
-                openDeck = opened,
-            )
+            DeckJobResult(opened, "Imported ${deck.name}" + if (local) " as a local deck" else "", openDeck = opened)
         }
     }
 
@@ -113,7 +102,7 @@ class DeckRepository(
     private suspend fun readDeck(id: Long): ArchidektDeck = archidekt.deck(id)
 
     /**
-     * Reloads a deck's list from Archidekt without scoring it again. Not while it holds changes that never reached
+     * Reloads a deck's list from Archidekt without rating it again. Not while it holds changes that never reached
      * Archidekt. Since 1.46.
      */
     suspend fun reloadList(deckId: Long) {
@@ -124,25 +113,18 @@ class DeckRepository(
     }
 
     /**
-     * Has Commander Salt score the deck again (brackets and its power level) and, when another site
-     * is the power level source, that site too. If the deck changed on Archidekt since it was
-     * loaded, its list is reloaded first, so the scores and the list shown always belong together.
+     * Rates the deck again (its bracket and salt, see [rateLocal]). A deck from Archidekt that changed there since it
+     * was loaded has its list reloaded first, so the rating and the list shown always belong together.
      */
-    fun rescore(deckId: Long): Boolean = start(DeckJob(deckId, "Checking the decklist on Archidekt…")) {
+    fun rescore(deckId: Long): Boolean = start(DeckJob(deckId, "Rating the deck…")) {
         val deck = dao.get(deckId) ?: throw IllegalStateException("The deck is gone")
-        if (deck.local) throw IllegalStateException("A local deck can only be scored once it's on Archidekt")
-        val source = settings.powerSource.value
-        // When Archidekt can't be reached, the deck is scored as it is.
-        val fetched = runCatching { readDeck(deckId) }.getOrNull()
+        // When Archidekt can't be reached, the deck is rated as it is.
+        val fetched = if (deck.local) null else runCatching { readDeck(deckId) }.getOrNull()
         val changed = fetched != null && listChanged(deck, fetched.updatedAt)
-        val done = if (changed) importOne(deckId, "", fetched = fetched).first
-        else score(deck) { _job.value = DeckJob(deckId, it) }
-        val problems = listOfNotNull(
-            done.scoreError?.let { "Commander Salt couldn't score it: $it" },
-            done.powerError(source)?.takeIf { source.external }?.let { "${source.site} couldn't rate it: $it" },
-        )
+        if (changed) importOne(deckId, "", fetched = fetched) else rateLocal(deckId, force = true)
+        val rated = dao.get(deckId)?.rated == true
         val what = if (changed) "Decklist reloaded (it changed on Archidekt)" else null
-        DeckJobResult(deckId, listOfNotNull(what, if (problems.isEmpty()) "Bracket and power level updated" else null).plus(problems).joinToString(" · "))
+        DeckJobResult(deckId, listOfNotNull(what, if (rated) "Bracket updated" else NOT_RATED).joinToString(" · "))
     }
 
     /** True when Archidekt's version of the deck ([remoteAt]) isn't the one the app loaded. */
@@ -158,11 +140,11 @@ class DeckRepository(
         return listed
     }
 
-    /** Re-reads the deck from Archidekt (whether it changed or not) and has it scored again. */
+    /** Re-reads the deck from Archidekt (whether it changed or not) and rates it again when its list changed. */
     fun refresh(deckId: Long): Boolean = start(DeckJob(deckId, "Loading the decklist from Archidekt…")) {
         if (deckId < 0) throw IllegalStateException("A local deck isn't on Archidekt")
-        val (deck, error) = importOne(deckId, "")
-        DeckJobResult(deckId, error?.let { "${deck.name} saved, but Commander Salt couldn't score it: $it" } ?: "Reloaded ${deck.name} from Archidekt and scored it again")
+        val deck = importOne(deckId, "")
+        DeckJobResult(deckId, "Reloaded ${deck.name} from Archidekt")
     }
 
     /** The public decks of an Archidekt user, for choosing which to import. */
@@ -183,23 +165,17 @@ class DeckRepository(
         }
     }
 
-    /**
-     * Imports several decks one after the other, with a short pause between them so Commander Salt
-     * isn't flooded. Can be stopped between decks with [stop].
-     */
+    /** Imports several decks one after the other. Can be stopped between decks with [stop]. */
     fun importMany(decks: List<ArchidektDeckSummary>): Boolean {
         if (decks.isEmpty()) return false
         return start(DeckJob(null, "Importing ${decks.size} decks…", canStop = true)) {
             var imported = 0
-            val unscored = mutableListOf<String>()
             val failed = mutableListOf<String>()
             for ((i, d) in decks.withIndex()) {
                 if (stopRequested) break
-                if (i > 0) delay(1_500)
                 try {
-                    val (_, error) = importOne(d.id, "Deck ${i + 1} of ${decks.size} · ${d.name}: ", canStop = true)
+                    importOne(d.id, "Deck ${i + 1} of ${decks.size} · ${d.name}: ", canStop = true)
                     imported++
-                    if (error != null) unscored += d.name
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -208,7 +184,6 @@ class DeckRepository(
             }
             val parts = buildList {
                 add("Imported $imported of ${decks.size} decks")
-                if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored (refresh them later)")
                 if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
             }
             DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
@@ -216,21 +191,17 @@ class DeckRepository(
     }
 
     /**
-     * Checks every deck against Archidekt (one deck-list call per owner, plus the deck itself for
-     * decks not in a public list) and reloads and re-scores those changed there since they were
-     * imported. Decks that never got a score are scored again too. Can be stopped between decks.
+     * Checks every deck against Archidekt (one deck-list call per owner, plus the deck itself for decks not in a public
+     * list) and reloads those changed there since they were imported; then rates every deck whose rating is out of
+     * date (see [LocalRating.stale]). Can be stopped between decks.
      */
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
         // Decks imported before 1.8 learn when they last changed on Archidekt (until 1.78 done on opening the Decks tab).
         fillMissingUpdateDates()
         val decks = dao.all().filter { !it.local && !it.retired }
-        val source = settings.powerSource.value
         val listed = archidektDates(decks)
         var updated = 0
-        var rescored = 0
-        val unscored = mutableListOf<String>()
         val failed = mutableListOf<String>()
-        var busy = false
         for ((i, d) in decks.withIndex()) {
             if (stopRequested) break
             val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
@@ -238,136 +209,48 @@ class DeckRepository(
             try {
                 val fetched = if (listed[d.archidektId] == null) readDeck(d.archidektId) else null
                 val remoteAt = listed[d.archidektId] ?: fetched?.updatedAt
-                val changed = listChanged(d, remoteAt)
-                val needsPower = source.external && d.power(source) == null
-                if (!changed && d.scored && d.scoreError == null && !needsPower) continue
-                // A pause between decks that hit Commander Salt, so it isn't flooded.
-                if (busy) delay(1_500)
-                busy = true
-                val error = if (changed) {
-                    importOne(d.archidektId, prefix, canStop = true, fetched = fetched).second.also { updated++ }
-                } else if (d.scored && d.scoreError == null) {
-                    ratePower(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }.powerError(source).also { rescored++ }
-                } else {
-                    _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
-                    score(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }.scoreError.also { rescored++ }
-                }
-                if (error != null) unscored += d.name
+                if (!listChanged(d, remoteAt)) continue
+                _job.value = DeckJob(d.archidektId, prefix + "Loading the decklist from Archidekt…", !stopRequested)
+                load(d.archidektId, { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }, fetched)
+                updated++
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 failed += d.name
             }
         }
-        // The website's estimate for decks whose list changed (local decks always, others when brackets come from the app).
-        // Since 1.115 every deck gets the app's estimate when brackets come from the app (and a deck holding it and no
-        // Commander Salt data has Commander Salt score it when they come from Commander Salt).
-        var ratedLocal = 0
-        val bracketSource = settings.bracketSource.value
-        val local = dao.all().filter { !it.retired }
-        for ((i, d) in local.withIndex()) {
-            if (stopRequested) break
-            val cards = dao.cards(d.archidektId)
-            if (!LocalRating.stale(d, cards, bracketSource) && !LocalRating.needsCommanderSalt(d, bracketSource)) continue
-            _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${local.size} · ${d.name}: rating…", !stopRequested)
-            if (rateLocal(d.archidektId)) ratedLocal++
-        }
+        val rated = rateStale()
         val parts = buildList {
-            add(
-                when {
-                    updated == 0 && rescored == 0 -> "All ${decks.size} decks are up to date"
-                    else -> "Updated $updated changed deck" + (if (updated == 1) "" else "s") +
-                        (if (rescored > 0) ", scored $rescored more" else "")
-                }
-            )
-            if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
+            add(if (updated == 0) "All ${decks.size} decks are up to date" else "Updated $updated changed deck" + if (updated == 1) "" else "s")
             if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
-            if (ratedLocal > 0) add("rated $ratedLocal local deck" + (if (ratedLocal == 1) "" else "s"))
+            if (rated > 0) add("rated $rated deck" + if (rated == 1) "" else "s")
         }
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }
 
-    /**
-     * Rates every deck whose bracket or salt the app estimates (see [LocalRating.stale]) and every deck from Archidekt
-     * that holds the app's estimate but not Commander Salt's own data. Can be stopped between decks. Since 1.115.
-     */
+    /** Rates every deck whose rating is out of date (see [LocalRating.stale]). Can be stopped between decks. Since 1.115. */
     fun refreshRatings(): Boolean = start(DeckJob(null, "Rating decks…", canStop = true)) {
-        val source = settings.bracketSource.value
-        val decks = dao.all().filter { !it.retired }
-        var rated = 0
-        for ((i, d) in decks.withIndex()) {
-            if (stopRequested) break
-            val cards = dao.cards(d.archidektId)
-            if (!LocalRating.stale(d, cards, source) && !LocalRating.needsCommanderSalt(d, source)) continue
-            _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${decks.size} · ${d.name}: rating…", !stopRequested)
-            if (rateLocal(d.archidektId)) rated++
-        }
+        val rated = rateStale()
         DeckJobResult(null, "Rated $rated deck" + (if (rated == 1) "" else "s") + if (stopRequested) " · stopped" else "")
     }
 
-    /**
-     * Has Commander Salt score every deck again (brackets, its power level, salt, the rule-zero
-     * card data), e.g. after it changed its scoring. Only Commander Salt: the decklists stay as
-     * they are ("Update all decks from Archidekt" reloads those) and the power level site isn't
-     * asked ([rescorePowerAll]). Can be stopped between decks.
-     */
-    fun rescoreAll(): Boolean = start(DeckJob(null, "Scoring your decks on Commander Salt…", canStop = true)) {
-        val decks = dao.all().filter { !it.local && !it.retired }
-        var scored = 0
-        val unscored = mutableListOf<String>()
-        val failed = mutableListOf<String>()
+    /** The decks not retired whose rating is out of date, rated one after the other; how many were rated. */
+    private suspend fun rateStale(): Int {
+        val decks = dao.all().filter { !it.retired }
+        var rated = 0
+        var failed = 0
         for ((i, d) in decks.withIndex()) {
-            if (stopRequested) break
-            if (i > 0) delay(1_500)
-            val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-            _job.value = DeckJob(d.archidektId, prefix + "Scoring on Commander Salt…", !stopRequested)
-            try {
-                val result = scoreSalt(d)
-                if (result.scoreError == null) scored++ else unscored += d.name
-                // The app's power level uses Commander Salt's ratings too.
-                if (settings.powerSource.value == PowerSource.APP) rateApp(result) {}
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                failed += d.name
-            }
+            // Three failures in a row: the website can't be reached now; the rest wait for the next time.
+            if (stopRequested || failed >= 3) break
+            if (!LocalRating.stale(d, dao.cards(d.archidektId))) continue
+            _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${decks.size} · ${d.name}: rating…", !stopRequested)
+            if (rateLocal(d.archidektId)) { rated++; failed = 0 } else failed++
         }
-        val parts = buildList {
-            add("Commander Salt scored $scored of ${decks.size} decks")
-            if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
-            if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
-        }
-        DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
+        return rated
     }
 
-    /** Has the chosen power level site (EDH Power Level) rate every deck again. Can be stopped between decks. */
-    fun rescorePowerAll(): Boolean {
-        val source = settings.powerSource.value
-        if (!source.external) return false
-        return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
-            val decks = dao.all().filter { !it.local && !it.retired }
-            var rated = 0
-            val retry = mutableListOf<Deck>()
-            for ((i, d) in decks.withIndex()) {
-                if (stopRequested) break
-                val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-                val r = ratePower(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
-                if (r.powerError(source) == null) rated++ else retry += r
-            }
-            // The sites are sometimes slow to answer: decks that failed get one more go.
-            val failed = mutableListOf<String>()
-            for (d in retry) {
-                if (stopRequested) break
-                val r = ratePower(d) { _job.value = DeckJob(d.archidektId, "Trying ${d.name} again: $it", !stopRequested) }
-                if (r.powerError(source) == null) rated++ else failed += d.name
-            }
-            val parts = buildList {
-                add("${source.site} rated $rated of ${decks.size} decks")
-                if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
-            }
-            DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
-        }
-    }
+    /** Whether any deck (not retired) has no rating or a stale one for its list (see [LocalRating.stale]). */
+    suspend fun ratingsStale(): Boolean = dao.all().any { !it.retired && LocalRating.stale(it, dao.cards(it.archidektId)) }
 
     private fun start(first: DeckJob, work: suspend () -> DeckJobResult): Boolean {
         synchronized(this) {
@@ -389,8 +272,8 @@ class DeckRepository(
         return true
     }
 
-    /** Loads, saves and scores one deck. Returns the deck and why scoring failed, if it did. */
-    private suspend fun importOne(id: Long, prefix: String, canStop: Boolean = false, fetched: ArchidektDeck? = null): Pair<Deck, String?> {
+    /** Loads, saves and rates one deck. */
+    private suspend fun importOne(id: Long, prefix: String, canStop: Boolean = false, fetched: ArchidektDeck? = null): Deck {
         fun step(msg: String) {
             _job.value = DeckJob(id, prefix + msg, canStop && !stopRequested)
         }
@@ -398,9 +281,9 @@ class DeckRepository(
         if (dao.get(id) != null && editSender?.invoke(id) == false) throw IOException(UNSENT)
         step("Loading the decklist from Archidekt…")
         val deck = load(id, ::step, fetched)
-        step("Scoring on Commander Salt…")
-        val scored = score(deck, ::step)
-        return scored to scored.scoreError
+        step("Rating the deck…")
+        rateLocal(id)
+        return dao.get(id) ?: deck
     }
 
     /**
@@ -468,12 +351,7 @@ class DeckRepository(
             folderName = old?.folderName?.takeIf { old.folderId == a.folderId },
             visibility = a.visibility,
             categoryInfo = DeckEdits.encode(a.categories),
-        ).let {
-            // The list may have changed: the chosen site's power level is redone right after; ScrollVault's (until 1.104) is dropped.
-            val source = settings.powerSource.value
-            if (source == PowerSource.EDH_POWER_LEVEL) it
-            else it.copy(edhPowerLevel = null, edhPowerAt = null, edhPowerError = null, svPowerLevel = null, scrollVault = null, svAt = null, svError = null)
-        }
+        )
         // Archidekt's description becomes the primer of a deck that never had one ("" means the user cleared it).
         if (deck.primer == null) DeckNotes.primerFromArchidekt(a.description)?.let { deck = deck.copy(primer = it, notesAt = now) }
         // A reload of a deck that was here before adds what the new list changed to its history (a first import has none).
@@ -482,22 +360,15 @@ class DeckRepository(
         return deck
     }
 
-    private suspend fun score(deck: Deck, step: (String) -> Unit): Deck = ratePower(scoreSalt(deck), step)
-
     /**
-     * Has the website estimate a deck's bracket and salt (Commander Salt's own ratings stand aside when brackets come
-     * from the app) when that's stale for its list (see [LocalRating.stale]), and keeps it as the deck's rule-zero
-     * data. True when it rated the deck. Quietly false when the website can't be reached or can't rate it yet.
+     * Has the website estimate a deck's bracket and salt when that's stale for its list (see [LocalRating.stale]), or
+     * with [force] in any case, and keeps it as the deck's rule-zero data. True when it rated the deck. Quietly false
+     * when the website can't be reached or can't rate it yet.
      */
-    suspend fun rateLocal(deckId: Long): Boolean {
+    suspend fun rateLocal(deckId: Long, force: Boolean = false): Boolean {
         val deck = dao.get(deckId) ?: return false
-        val source = settings.bracketSource.value
-        if (LocalRating.needsCommanderSalt(deck, source)) {
-            scoreSalt(deck)
-            return true
-        }
         val cards = dao.cards(deckId)
-        if (!LocalRating.stale(deck, cards, source)) return false
+        if (cards.isEmpty() || !force && !LocalRating.stale(deck, cards)) return false
         val card = try {
             SaltCard.decode(web.rate(cards, deck.colorIdentity)) ?: return false
         } catch (e: CancellationException) {
@@ -517,176 +388,9 @@ class DeckRepository(
         return true
     }
 
-    /** Commander Salt's scores only; failures are kept on the deck rather than thrown. */
-    private suspend fun scoreSalt(deck: Deck): Deck {
-        val scored = try {
-            val s = salt.score(deck.archidektId)
-            // Brackets from the app (since 1.115): its estimate stays, and Commander Salt's bracket numbers don't replace it.
-            val fromApp = settings.bracketSource.value == BracketSource.APP
-            deck.copy(
-                saltCard = if (fromApp) deck.saltCard else s.card?.encode() ?: deck.saltCard,
-                saltId = s.saltId.ifEmpty { CommanderSaltApi.deckId(deck.archidektId) },
-                powerLevel = s.powerLevel,
-                bracketRealistic = if (fromApp) deck.bracketRealistic else s.bracketRealistic,
-                bracketBaseline = if (fromApp) deck.bracketBaseline else s.bracketBaseline,
-                saltPercent = s.saltPercent,
-                archetype = s.archetype,
-                scoredAt = System.currentTimeMillis(),
-                scoreError = null,
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            deck.copy(scoreError = e.message ?: "unknown error")
-        }
-        dao.update(scored)
-        // The rule-zero cards are drawn in the app now; Commander Salt's own images are fetched only when asked for.
-        RuleZeroCard.entries.forEach { cardFile(scored.archidektId, it).delete() }
-        return scored
-    }
-
-    /** The deck's link on edhpowerlevel.com (its list as on Archidekt, without cards added in the app). */
-    suspend fun edhUrl(deckId: Long): String? {
-        val cards = dao.cards(deckId).filter { !it.addedInApp }
-        val commanders = cards.filter { it.commander }.map { it.card.name }.distinct()
-        if (commanders.isEmpty()) return null
-        val main = cards.filter { !it.commander }.groupBy { it.card.name }.map { (name, lines) -> name to lines.sumOf { it.quantity } }
-        return EdhPowerLevelLink.url(commanders, main)
-    }
-
-    /** Has the chosen site (if not Commander Salt) rate the deck's power level; failures are kept on the deck rather than thrown. */
-    private suspend fun ratePower(deck: Deck, step: (String) -> Unit): Deck = when (settings.powerSource.value) {
-        PowerSource.COMMANDER_SALT -> deck
-        PowerSource.EDH_POWER_LEVEL -> rateEdh(deck, step)
-        PowerSource.APP -> deck.also { rateApp(it, step) }
-    }
-
-    /** The app's power level ([AppPower]): the deck's win turn, worked out unless kept from before. Since 1.66. */
-    private suspend fun rateApp(deck: Deck, step: (String) -> Unit) {
-        appPowerTried += deck.archidektId
-        step("Working out the win turn…")
-        try {
-            winOdds.forDeck(dao.get(deck.archidektId) ?: deck)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            // Left without one; the deck page works the win turn out again when it's opened.
-        }
-    }
-
-    private suspend fun rateEdh(deck: Deck, step: (String) -> Unit): Deck {
-        val rated = try {
-            val url = edhUrl(deck.archidektId) ?: throw IllegalStateException("the deck has no commander")
-            val commander = EdhPowerLevelLink.frontFace(deck.commanders.substringBefore(" & "))
-            step("Getting the power level from edhpowerlevel.com…")
-            val r = edh.rate(url, commander)
-            deck.copy(edhPowerLevel = r.power, edhPowerAt = System.currentTimeMillis(), edhPowerError = null)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            deck.copy(edhPowerError = e.message ?: "unknown error")
-        }
-        dao.update(rated)
-        return rated
-    }
-
-    /**
-     * Gets the chosen site's power level for the decks that don't have one yet (after choosing it
-     * as the source). Decks it failed on before are left for "Re-score all" or the deck's refresh.
-     */
-    fun rateMissingPower(): Boolean {
-        val source = settings.powerSource.value
-        if (source == PowerSource.APP) return rateMissingApp()
-        if (!source.external) return false
-        return start(DeckJob(null, "Getting power levels from ${source.site}…", canStop = true)) {
-            powerStopped = false
-            val decks = dao.all().filter { !it.local && !it.retired && it.power(source) == null && it.powerError(source) == null }
-            var rated = 0
-            val failed = mutableListOf<String>()
-            for ((i, d) in decks.withIndex()) {
-                if (stopRequested) break
-                val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-                val r = ratePower(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
-                if (r.powerError(source) == null) rated++ else failed += d.name
-            }
-            // Stopped: don't start again by itself until asked (Settings) or the app restarts.
-            if (stopRequested) powerStopped = true
-            val parts = buildList {
-                add("Got $rated power level" + (if (rated == 1) "" else "s") + " from ${source.site}")
-                if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
-            }
-            DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
-        }
-    }
-
-    /**
-     * Works out the app's power level for the decks without one (local decks too): their win turns, the slow part,
-     * unless kept from before. Since 1.66.
-     */
-    private fun rateMissingApp(): Boolean = start(DeckJob(null, "Working out power levels…", canStop = true)) {
-        powerStopped = false
-        val decks = dao.all().filter { !AppPower.known(it.archidektId) && it.archidektId !in appPowerTried }
-        var done = 0
-        for ((i, d) in decks.withIndex()) {
-            if (stopRequested) break
-            val prefix = "Deck ${i + 1} of ${decks.size} · ${d.name}: "
-            rateApp(d) { _job.value = DeckJob(d.archidektId, prefix + it, !stopRequested) }
-            if (AppPower.of(d.archidektId) != null) done++
-        }
-        if (stopRequested) powerStopped = true
-        DeckJobResult(null, "Worked out $done power level" + (if (done == 1) "" else "s") + if (stopRequested) " · stopped" else "")
-    }
-
-    /** Whether some decks still need the chosen site's power level (or the app's, which fills in the kept ones first). */
-    suspend fun powerMissing(): Boolean {
-        val source = settings.powerSource.value
-        if (source == PowerSource.APP) {
-            if (powerStopped) return false
-            val waiting = dao.all().filter { !AppPower.known(it.archidektId) && it.archidektId !in appPowerTried }
-            return waiting.count { d -> runCatching { !winOdds.fillKept(d) }.getOrDefault(true) } > 0
-        }
-        return !powerStopped && source.external && dao.all().any { !it.local && !it.retired && it.power(source) == null && it.powerError(source) == null }
-    }
-
-    /** Fetches the rule-zero card details for decks scored before 1.12 (without scoring them again). Quietly does nothing when offline. */
-    suspend fun fillMissingCardData() {
-        for (d in dao.all().filter { it.saltId != null && SaltCard.decode(it.saltCard)?.current != true }) loadCardData(d)
-    }
-
-    /** The deck's rule-zero card details, fetching them from Commander Salt when they aren't saved yet. */
-    suspend fun loadCardData(deck: Deck): SaltCard? {
-        val saved = SaltCard.decode(deck.saltCard)
-        if (saved?.current == true) return saved
-        val saltId = deck.saltId ?: return saved
-        val card = runCatching { salt.cardData(saltId) }.getOrNull() ?: return saved
-        dao.get(deck.archidektId)?.let { dao.update(it.copy(saltCard = card.encode())) }
-        return card
-    }
-
-    /** Where a deck's rule-zero card is kept, so it can be shown without a connection. */
-    fun cardFile(deckId: Long, card: RuleZeroCard) = File(cardDir, "${deckId}_${card.name.lowercase()}.png")
-
-    /** Fetches the rule-zero card from Commander Salt and saves it. Throws if that fails. */
-    suspend fun downloadCard(deck: Deck, card: RuleZeroCard): File {
-        val saltId = deck.saltId ?: throw IllegalStateException("The deck hasn't been scored yet")
-        val bytes = salt.ruleZeroCard(saltId, card)
-        return withContext(Dispatchers.IO) {
-            cardDir.mkdirs()
-            val target = cardFile(deck.archidektId, card)
-            val tmp = File(cardDir, target.name + ".tmp")
-            tmp.writeBytes(bytes)
-            if (!tmp.renameTo(target)) {
-                target.delete()
-                tmp.renameTo(target)
-            }
-            target
-        }
-    }
-
     suspend fun delete(deckId: Long) {
         dao.delete(deckId)
         db.deckEditDao().clear(deckId)
-        withContext(Dispatchers.IO) { RuleZeroCard.entries.forEach { cardFile(deckId, it).delete() } }
     }
 
     // ---- deck ↔ collection -----------------------------------------------------------------

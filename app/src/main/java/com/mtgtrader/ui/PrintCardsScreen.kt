@@ -96,10 +96,12 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.mtgtrader.container
 import com.mtgtrader.data.Deck
+import com.mtgtrader.data.DeckCard
+import com.mtgtrader.data.DeckNotes
+import com.mtgtrader.data.DeckRoles
+import com.mtgtrader.data.WinTurns
 import com.mtgtrader.data.DeckGroup
 import com.mtgtrader.data.DeckSorting
-import com.mtgtrader.data.PowerSource
-import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -112,52 +114,26 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDate
 
-/** Which cards go in the PDF. Since 1.65. */
-enum class PrintChoice(val label: String) {
-    BRACKET("Bracket"), POWER("Power level"), BOTH("Both");
-
-    val bracket get() = this != POWER
-    val power get() = this != BRACKET
-}
-
-/** What the PDF will hold for [decks]: the decks with each kind of card, and the pages. */
-data class PrintPlan(val bracket: List<Deck>, val power: List<Deck>) {
-    val cards get() = bracket.size + power.size
-    val pages get() = CardSheets.pages(bracket, power).size
-
-    companion object {
-        /** Power level cards only for decks the chosen source has rated. */
-        fun of(decks: List<Deck>, choice: PrintChoice, source: PowerSource) = PrintPlan(
-            if (choice.bracket) decks else emptyList(),
-            if (choice.power) decks.filter { it.power(source) != null } else emptyList(),
-        )
-    }
-}
-
 /** A finished PDF and what it was made from (so it's made again only when the choices change). */
 private data class MadePdf(val file: File, val pages: Int, val key: List<Any>)
 
 /**
- * The bracket and power level cards of the chosen decks as an A4 PDF, to cut out at the size of a Magic card
- * (since 1.65): preview it, print it, or share it (to Signal's Note to Self, for example).
+ * The bracket cards of the chosen decks as an A4 PDF, to cut out at the size of a Magic card (since 1.65; bracket
+ * cards only since 1.116): preview it, print it, or share it (to Signal's Note to Self, for example).
  */
 @Composable
 fun PrintCardsScreen(nav: NavController) {
     val context = LocalContext.current
     val c = context.container
     val all by remember { c.db.deckDao().observeAll() }.collectAsStateWithLifecycle(null)
-    val source by c.settings.powerSource.collectAsStateWithLifecycle()
     val ownUser by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val owner = c.settings.deckOwner(ownUser)
-    // Decks scored before their card details were kept get them now.
-    LaunchedEffect(Unit) { c.decks.fillMissingCardData() }
     val decks = all?.let { list ->
-        remember(list, owner, source, com.mtgtrader.data.AppPower.readings) {
-            DeckSorting.sort(list, c.settings.deckSort, c.settings.deckSortReversed, source)
-                .filter { DeckGroup.of(it, owner) !in setOf(DeckGroup.OTHERS, DeckGroup.RETIRED) && it.scored }
+        remember(list, owner, WinTurns.odds) {
+            DeckSorting.sort(list, c.settings.deckSort, c.settings.deckSortReversed)
+                .filter { DeckGroup.of(it, owner) !in setOf(DeckGroup.OTHERS, DeckGroup.RETIRED) && it.rated }
         }
     }
-    var choice by remember { mutableStateOf(PrintChoice.entries.firstOrNull { it.name == c.settings.printCards } ?: PrintChoice.BOTH) }
     var inkSaver by remember { mutableStateOf(c.settings.printInkSaver) }
     var unticked by remember { mutableStateOf(emptySet<Long>()) }
     var busy by remember { mutableStateOf(false) }
@@ -167,17 +143,16 @@ fun PrintCardsScreen(nav: NavController) {
     val scope = rememberCoroutineScope()
 
     val chosen = decks.orEmpty().filter { it.archidektId !in unticked }
-    val plan = PrintPlan.of(chosen, choice, source)
 
     /** Makes the PDF (or uses the one already made from the same choices), then does [then] with it. */
     fun withPdf(then: (MadePdf) -> Unit) {
-        val key = listOf(choice, inkSaver, source, plan.bracket.map { it.archidektId to it.saltCard.hashCode() }, plan.power.map { it.archidektId })
+        val key = listOf(inkSaver, chosen.map { listOf(it.archidektId, it.saltCard.hashCode(), it.updatedAt) })
         made?.takeIf { it.key == key && it.file.exists() }?.let { return then(it) }
         scope.launch {
             busy = true
             error = null
             try {
-                val pages = makePdf(context, plan, source, inkSaver)
+                val pages = makePdf(context, chosen, inkSaver)
                 val pdf = MadePdf(pages.first, pages.second, key)
                 made = pdf
                 then(pdf)
@@ -207,9 +182,6 @@ fun PrintCardsScreen(nav: NavController) {
 
     PrintPicker(
         decks = decks,
-        source = source,
-        choice = choice,
-        onChoice = { choice = it; c.settings.printCards = it.name },
         inkSaver = inkSaver,
         onInkSaver = { inkSaver = it; c.settings.printInkSaver = it },
         unticked = unticked,
@@ -228,9 +200,6 @@ fun PrintCardsScreen(nav: NavController) {
 @Composable
 fun PrintPicker(
     decks: List<Deck>?,
-    source: PowerSource,
-    choice: PrintChoice,
-    onChoice: (PrintChoice) -> Unit,
     inkSaver: Boolean,
     onInkSaver: (Boolean) -> Unit,
     unticked: Set<Long>,
@@ -243,7 +212,7 @@ fun PrintPicker(
     onShare: () -> Unit,
 ) {
     val chosen = decks.orEmpty().filter { it.archidektId !in unticked }
-    val plan = PrintPlan.of(chosen, choice, source)
+    val pageCount = CardSheets.pages(chosen).size
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -256,16 +225,11 @@ fun PrintPicker(
             Surface(tonalElevation = 3.dp) {
                 Column(Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(
-                        "${chosen.size} decks · ${plan.cards} cards · ${plan.pages} A4 " + if (plan.pages == 1) "page" else "pages",
+                        "${chosen.size} cards · $pageCount A4 " + if (pageCount == 1) "page" else "pages",
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    val unrated = if (choice.power) chosen.filter { it.power(source) == null } else emptyList()
                     Text(
-                        listOfNotNull(
-                            if (choice == PrintChoice.BOTH) "Bracket cards first, then power level cards." else null,
-                            "Each card is 63 × 88 mm, like a Magic card: print at 100% (actual size).",
-                            unrated.takeIf { it.isNotEmpty() }?.let { list -> "No power level from ${source.site} yet: " + list.joinToString(", ") { it.name } + "." },
-                        ).joinToString(" "),
+                        "63 × 88 mm, like a Magic card: print at 100% (actual size)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -275,7 +239,7 @@ fun PrintPicker(
                         Text("Making the PDF…", style = MaterialTheme.typography.bodySmall)
                         LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 8.dp))
                     }
-                    val enabled = !busy && plan.cards > 0
+                    val enabled = !busy && chosen.isNotEmpty()
                     Button(onClick = onPreview, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Visibility, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Preview")
                     }
@@ -298,16 +262,6 @@ fun PrintPicker(
         LazyColumn(Modifier.padding(pad), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)) {
             item(key = "choices") {
                 Column {
-                    Text("Cards", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        PrintChoice.entries.forEachIndexed { i, option ->
-                            SegmentedButton(
-                                selected = option == choice,
-                                onClick = { onChoice(option) },
-                                shape = SegmentedButtonDefaults.itemShape(i, PrintChoice.entries.size),
-                            ) { Text(option.label, maxLines = 1) }
-                        }
-                    }
                     Row(Modifier.padding(top = 10.dp).clickable { onInkSaver(!inkSaver) }, verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("Ink saver", style = MaterialTheme.typography.bodyLarge)
@@ -323,7 +277,7 @@ fun PrintPicker(
                 }
             }
             if (decks.isEmpty()) {
-                item(key = "empty") { EmptyState("No scored decks yet", "Your own decks get these cards once Commander Salt has scored them.") }
+                item(key = "empty") { EmptyState("No rated decks yet", "Needs a connection to the website") }
             }
             items(decks, key = { it.archidektId }) { deck ->
                 val ticked = deck.archidektId !in unticked
@@ -338,7 +292,7 @@ fun PrintPicker(
                     ColorPips(deck.colorIdentity, size = 10)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        listOfNotNull(deck.bracketRealistic?.let { "B$it" }, deck.power(source)?.let { Scores.power(it, source) }).joinToString(" · "),
+                        listOfNotNull(deck.bracket?.let { "B$it" }, WinTurns.of(deck.archidektId)?.label).joinToString(" · "),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -443,21 +397,9 @@ private fun PreviewPage(page: Int, render: suspend (Int, Int) -> ImageBitmap?, o
 
 // ---- Making, printing and sharing the PDF ---------------------------------------------------------
 
-/** Writes the PDF of [plan] (bracket pages first) to the share folder; returns the file and its page count. */
-private suspend fun makePdf(context: Context, plan: PrintPlan, source: PowerSource, inkSaver: Boolean): Pair<File, Int> {
-    val c = context.container
-    val wins = (plan.bracket).associate { deck ->
-        deck.archidektId to if (deck.commanders.isBlank()) null else runCatching { c.winOdds.forDeck(deck) }.getOrNull()
-    }
-    val art = if (inkSaver) emptyMap() else (plan.bracket + plan.power).distinctBy { it.archidektId }.associate { deck ->
-        deck.archidektId to deck.coverUrl?.let { loadArt(context, it) }
-    }
-    // The decks' salt sums, as the power level cards print them (since 1.115).
-    val salt = plan.power.associate { deck -> deck.archidektId to runCatching { c.saltScores.sumFor(c.db.deckDao().cards(deck.archidektId)) }.getOrNull() }
-    fun card(kind: RuleZeroCard, deck: Deck) = PrintCard(
-        kind, deck, SaltCard.decode(deck.saltCard), wins[deck.archidektId], source, art[deck.archidektId], salt[deck.archidektId],
-    )
-    val pages = CardSheets.pages(plan.bracket.map { card(RuleZeroCard.BRACKET, it) }, plan.power.map { card(RuleZeroCard.POWER, it) })
+/** Writes the PDF of [decks]' bracket cards to the share folder; returns the file and its page count. */
+private suspend fun makePdf(context: Context, decks: List<Deck>, inkSaver: Boolean): Pair<File, Int> {
+    val pages = CardSheets.pages(decks.map { printCard(context, it, inkSaver) })
     return withContext(Dispatchers.Default) {
         val dir = File(context.filesDir, "rulezero").apply { mkdirs() }
         dir.listFiles { f -> f.name.endsWith(".pdf") }?.forEach { it.delete() }
@@ -465,6 +407,47 @@ private suspend fun makePdf(context: Context, plan: PrintPlan, source: PowerSour
         CardSheets.writePdf(file, pages, inkSaver)
         file to pages.size
     }
+}
+
+/**
+ * Everything [deck]'s bracket card shows (see [CardSheets]): the website's estimate, the win turn, the salt sum, the
+ * roles line and (unless saving ink) the cover art. For the PDF and the card on screen. Since 1.116.
+ */
+internal suspend fun printCard(context: Context, deck: Deck, inkSaver: Boolean = false): PrintCard {
+    val c = context.container
+    val cards = c.db.deckDao().cards(deck.archidektId)
+    return PrintCard(
+        deck = deck,
+        data = deck.estimate,
+        win = if (deck.commanders.isBlank()) null else runCatching { c.winOdds.forDeck(deck) }.getOrNull(),
+        art = if (inkSaver) null else deck.coverUrl?.let { loadArt(context, it) },
+        saltSum = runCatching { c.saltScores.sumFor(cards) }.getOrNull(),
+        roles = runCatching { roleCounts(context, deck.archidektId, cards) }.getOrDefault(emptyList()),
+    )
+}
+
+/**
+ * The deck's roles line as its page shows it (DeckRoles.counts): the cards' own tags, the website's automatic
+ * categories (none while offline) and Scryfall's type lines, which the lands count from.
+ */
+private suspend fun roleCounts(context: Context, deckId: Long, cards: List<DeckCard>): List<DeckRoles.RoleCount> {
+    val c = context.container
+    val tags = c.settings.cardTags.value
+    val auto = runCatching { c.deckEditor.autoCategories(cards.associate { it.card.scryfallId to it.card.name }) }.getOrDefault(emptyMap())
+    val typeLines = c.db.cardInfoDao().deckStats(deckId).mapNotNull { s -> s.typeLine?.let { s.scryfallId to it } }.toMap()
+    return DeckRoles.counts(cards.map { item ->
+        DeckRoles.RoleCard(
+            name = item.card.name,
+            types = item.types,
+            quantity = item.quantity,
+            commander = item.commander,
+            maybeboard = item.maybeboard,
+            categories = item.categoryList,
+            ownTags = tags[DeckNotes.nameKey(item.card.name)],
+            auto = auto[item.card.scryfallId].orEmpty(),
+            typeLine = typeLines[item.card.scryfallId],
+        )
+    })
 }
 
 /** The deck's cover art as a software bitmap (for drawing into the PDF); null when it can't be had. */

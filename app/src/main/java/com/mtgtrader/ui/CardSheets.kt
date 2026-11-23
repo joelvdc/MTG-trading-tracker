@@ -12,11 +12,10 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import androidx.compose.ui.graphics.toArgb
+import com.mtgtrader.data.Brackets
 import com.mtgtrader.data.Deck
-import com.mtgtrader.data.PowerSource
-import com.mtgtrader.data.RuleZeroCard
+import com.mtgtrader.data.DeckRoles
 import com.mtgtrader.data.SaltCard
-import com.mtgtrader.data.SaltEffect
 import com.mtgtrader.data.SaltSum
 import com.mtgtrader.data.WinOdds
 import com.mtgtrader.data.saltTotal
@@ -24,22 +23,24 @@ import java.io.File
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-/** One card to print: the deck, Commander Salt's data, its win turn and (unless saving ink) its cover art. Since 1.65. */
+/**
+ * One bracket card: the deck, the website's estimate ([Deck.estimate]; null before it was rated), its win turn, its
+ * salt sum, its roles line (lands, ramp, draw…) and, unless saving ink, its cover art. Since 1.65; one kind since 1.116.
+ */
 data class PrintCard(
-    val kind: RuleZeroCard,
     val deck: Deck,
     val data: SaltCard?,
     val win: WinOdds?,
-    val source: PowerSource,
     val art: Bitmap? = null,
-    /** The deck's salt sum, as the power card prints it (since 1.115). */
     val saltSum: SaltSum? = null,
+    val roles: List<DeckRoles.RoleCount> = emptyList(),
 )
 
 /**
- * The bracket and power level cards as A4 sheets to print and cut (since 1.65): cards the size of a Magic card
- * (63 × 88 mm), 3 × 3 to a page, touching, with cut marks in the margins. Drawn straight onto a canvas, so the
- * PDF holds sharp text and shapes; the same drawing makes the screenshot tests' pictures.
+ * The bracket card (since 1.65; the only rule-zero card since 1.116), the size of a Magic card (63 × 88 mm): as A4
+ * sheets to print and cut, 3 × 3 to a page, touching, with cut marks in the margins, and one at a time for the screen.
+ * Drawn straight onto a canvas, so the PDF holds sharp text and shapes; the same drawing makes the screen's card and
+ * the screenshot tests' pictures. The website draws the same card (web/src/components/RuleZeroCards.tsx).
  */
 object CardSheets {
     const val PAGE_W = 210f
@@ -60,21 +61,18 @@ object CardSheets {
     /** The top left corner of the card in [slot] (0–8, row by row), in mm from the page's top left. */
     fun origin(slot: Int): Pair<Float, Float> = (LEFT + slot % COLS * CARD_W) to (TOP + slot / COLS * CARD_H)
 
-    /** Bracket cards first, then power level cards, each kind starting on a new page. */
-    fun <T> pages(bracket: List<T>, power: List<T>): List<List<T>> = bracket.chunked(PER_PAGE) + power.chunked(PER_PAGE)
+    /** The cards, nine to a page. */
+    fun <T> pages(cards: List<T>): List<List<T>> = cards.chunked(PER_PAGE)
 
     /** "Bracket cards · page 1 of 2" at the foot of each page. */
-    fun footer(cards: List<PrintCard>, page: Int, pageCount: Int): String {
-        val kind = if (cards.firstOrNull()?.kind == RuleZeroCard.POWER) "Power level cards" else "Bracket cards"
-        return "MTG Trader · $kind · page ${page + 1} of $pageCount · print at 100% (actual size)"
-    }
+    fun footer(page: Int, pageCount: Int): String = "MTG Trader · Bracket cards · page ${page + 1} of $pageCount · print at 100% (actual size)"
 
     fun writePdf(file: File, pages: List<List<PrintCard>>, inkSaver: Boolean) {
         val pdf = PdfDocument()
         try {
             pages.forEachIndexed { i, cards ->
                 val page = pdf.startPage(PdfDocument.PageInfo.Builder(PDF_W, PDF_H, i + 1).create())
-                drawPage(page.canvas, POINTS_PER_MM, cards, footer(cards, i, pages.size), inkSaver)
+                drawPage(page.canvas, POINTS_PER_MM, cards, footer(i, pages.size), inkSaver)
                 pdf.finishPage(page)
             }
             file.parentFile?.mkdirs()
@@ -96,15 +94,29 @@ object CardSheets {
             canvas.save()
             canvas.translate(x * U, y * U)
             canvas.clipRect(0f, 0f, CARD_W * U, CARD_H * U)
-            when (card.kind) {
-                RuleZeroCard.BRACKET -> BracketPrint(p, card, inkSaver).draw()
-                RuleZeroCard.POWER -> PowerPrint(p, card, inkSaver).draw()
-            }
+            BracketPrint(p, card, inkSaver).draw()
             canvas.restore()
             p.frame(x, y, CARD_W, CARD_H, LINE, 0.15f)
         }
         p.text(footer, PAGE_W / 2, PAGE_H - 5f, 6.5f, GREY, align = Paint.Align.CENTER)
         canvas.restore()
+    }
+
+    /** Draws one card on [canvas] from its top left corner, at [perMm] canvas units to the millimetre (the screen's card). */
+    fun drawCard(canvas: Canvas, perMm: Float, card: PrintCard, inkSaver: Boolean = false) {
+        canvas.save()
+        canvas.scale(perMm / U, perMm / U)
+        canvas.clipRect(0f, 0f, CARD_W * U, CARD_H * U)
+        BracketPrint(Painter(canvas), card, inkSaver).draw()
+        canvas.restore()
+    }
+
+    /** The card as a picture [widthPx] wide, for the screen. */
+    fun cardBitmap(card: PrintCard, widthPx: Int, inkSaver: Boolean = false): Bitmap {
+        val perMm = widthPx / CARD_W
+        val bitmap = Bitmap.createBitmap(widthPx, (CARD_H * perMm).toInt(), Bitmap.Config.ARGB_8888)
+        drawCard(Canvas(bitmap), perMm, card, inkSaver)
+        return bitmap
     }
 
     /** Short lines in the margins on the lines between the cards (only where there are cards). */
@@ -284,7 +296,7 @@ object CardSheets {
             header()
             val data = card.data
             if (data == null) {
-                p.text("Commander Salt's details aren't loaded yet.", PAD, y + 3f, BODY_PT, GREY, maxWidth = INNER)
+                p.text("Not rated yet", PAD, y + 3f, BODY_PT, GREY, maxWidth = INNER)
             } else {
                 body(data)
             }
@@ -367,13 +379,21 @@ object CardSheets {
 
     private class BracketPrint(p: Painter, card: PrintCard, ink: Boolean) : CardPrint(p, card, ink) {
         override val title = "Bracket"
-        override val credit = listOf("Bracket data: Commander Salt")
+        override val credit = listOf("Data: Scryfall, EDHREC, Commander Spellbook")
 
         override fun body(data: SaltCard) {
-            tiles()
+            tiles(data)
+            // Why the bracket, in one or two lines; the Game Changers have their own block below.
+            val why = data.bracketReasons(data.bracket).filterNot { it.contains("Game Changer") && data.gameChangers.isNotEmpty() }
+            if (why.isNotEmpty()) {
+                rule()
+                label("Why bracket ${data.bracket}")
+                why.take(2).forEach { y += p.wrapped(it, PAD, y, INNER, BODY_PT, INK, 1, BODY_LH) }
+            }
             card.win?.let { rule(); speed(it) }
             rule()
             criteria(data)
+            if (card.roles.isNotEmpty()) { rule(); roles(card.roles) }
             if (data.gameChangers.isNotEmpty()) {
                 rule()
                 label("Game changers")
@@ -385,29 +405,38 @@ object CardSheets {
                 label("Rule zero: combos")
                 val lh = p.lineHeight(BODY_LH)
                 val fit = ((room - 0.5f) / lh).toInt().coerceAtLeast(1)
-                val shown = if (combos.size <= fit) combos else combos.take(fit - 1)
+                val shown = if (combos.size <= fit) combos else combos.take((fit - 1).coerceAtLeast(1))
                 shown.forEach { bodyLine(it.joinToString(" + ")); newLine() }
                 if (shown.size < combos.size) { bodyLine("+${combos.size - shown.size} more", colour = GREY); newLine() }
             }
+            // The saltiest cards, when there's room left for their two lines.
+            val salty = card.saltSum?.saltiest.orEmpty()
+            if (salty.isNotEmpty() && room > 9f) {
+                rule()
+                label("Saltiest cards")
+                wrapped(salty.joinToString(", ") { it.name + " " + saltTotal(it.salt) }, 2)
+            }
         }
 
-        private fun tiles() {
+        /** Three tiles: the bracket (with its name), the salt sum (a whole number, coloured by its level) and the win turn. */
+        private fun tiles(data: SaltCard) {
             val gap = 1.5f
             val w = (INNER - 2 * gap) / 3
-            // No line under the number since 1.67: shorter tiles (since 1.68), the label and number centred.
             val h = 9.8f
             fun tile(i: Int, bg: Int, fg: Int, label: String, big: String, bigColour: Int = fg) {
                 val x = PAD + i * (w + gap)
                 p.fill(x, y, w, h, bg, 1.5f)
                 val cx = x + w / 2
-                p.text(label, cx, y + 2.9f, 5f, fg, align = Paint.Align.CENTER)
+                p.text(label, cx, y + 2.9f, 5f, fg, align = Paint.Align.CENTER, maxWidth = w - 1f)
                 p.text(big, cx, y + 8.15f, 13f, bigColour, Weight.BOLD, align = Paint.Align.CENTER)
             }
-            listOf("Baseline" to deck.bracketBaseline, "Realistic" to deck.bracketRealistic).forEachIndexed { i, (label, b) ->
-                val (bg, fg) = bracketColors(b)
-                tile(i, bg.toArgb(), fg.toArgb(), label, b?.toString() ?: "—")
-            }
-            // The turn 4 in 10 games are won by, in gold like its bar below (without saying so since 1.67).
+            val b = data.bracket
+            val (bg, fg) = bracketColors(b)
+            tile(0, bg.toArgb(), fg.toArgb(), listOfNotNull("Bracket", Brackets.name(b)).joinToString(" · "), b?.toString() ?: "—")
+            val sum = card.saltSum
+            val (sbg, sfg) = saltColors(sum?.level)
+            tile(1, sbg.toArgb(), sfg.toArgb(), sum?.let { "Salt · " + it.level.lowercase() } ?: "Salt", sum?.let { "${it.total.roundToInt()}" } ?: "—")
+            // The turn 4 in 10 games are won by, in gold like its bar below.
             tile(2, 0xFFF1EFF6.toInt(), GREY, "Wins by", card.win?.label ?: "—", GOLD)
             y += h
         }
@@ -437,12 +466,29 @@ object CardSheets {
             y += h + 2.4f
         }
 
+        /** The deck's roles in three columns: lands (+ MDFCs), ramp, draw, then removal, wipes, tutors; outside the guideline in amber. */
+        private fun roles(all: List<DeckRoles.RoleCount>) {
+            label("Deck")
+            val byName = all.associateBy { it.role }
+            val shown = CARD_ROLES.map { byName[it] ?: DeckRoles.RoleCount(it, 0, "none") }
+            val colW = (INNER - 2 * 3f) / 3
+            shown.chunked(3).forEach { row ->
+                row.forEachIndexed { i, r ->
+                    val x = PAD + i * (colW + 3f)
+                    val off = r.status == "low" || r.status == "high"
+                    bodyLine(roleLabel(r.role), x, colW - 5f, INK)
+                    p.text(roleValue(r), x + colW, y + p.lineHeight(BODY_LH) - 0.55f, BODY_PT, if (off) AMBER else INK,
+                        if (off) Weight.MEDIUM else Weight.REGULAR, align = Paint.Align.RIGHT)
+                }
+                newLine()
+            }
+        }
+
         private fun criteria(data: SaltCard) {
             label("Bracket criteria")
             val rows = listOf(
                 "Game changers" to data.gameChangers.size,
                 "Two-card combos" to data.twoCardCombos.size,
-                "Early-game combos" to data.earlyCombos.size,
                 "Extra turns" to data.extraTurns.size,
                 "Land denial" to data.massLandDenial.size,
             ).sortedByDescending { it.second > 0 }
@@ -460,90 +506,13 @@ object CardSheets {
         }
     }
 
-    private class PowerPrint(p: Painter, card: PrintCard, ink: Boolean) : CardPrint(p, card, ink) {
-        override val title = "Power level"
-        override val credit = powerCredit(card.source, card.data?.fromApp == true)
+    /** The roles the card shows, in its order. */
+    val CARD_ROLES = listOf("Lands", "Ramp", "Draw", "Removal", "Wipes", "Tutor")
 
-        override fun body(data: SaltCard) {
-            val power = deck.power(card.source)
-            val base = y + 6.2f
-            val w = p.text(power?.let { Scores.power(it, card.source) } ?: "—", PAD, base, 22f, INK, Weight.MEDIUM)
-            p.text(" / 10", PAD + w, base, 7f, GREY)
-            data.playStyle?.let { style ->
-                val tw = p.width(style, 6f)
-                val pw = tw + 3f
-                p.fill(CARD_W - PAD - pw, base - 4.2f, pw, 3.6f, PILL, 1.2f)
-                p.text(style, CARD_W - PAD - pw / 2, base - 1.6f, 6f, PILL_TEXT, align = Paint.Align.CENTER)
-            }
-            y = base + 1.4f
-            meter(power ?: 0.0)
-            rule()
-            saltAndMana(data)
-            effects(data)
-            if (data.wincons.isNotEmpty()) {
-                rule()
-                label("Win conditions besides combos")
-                wrapped(data.wincons.joinToString(" · "), 2)
-            }
-        }
+    fun roleLabel(role: String) = if (role == "Tutor") "Tutors" else role
 
-        private fun meter(power: Double) {
-            val gap = 0.6f
-            val w = (INNER - gap * 9) / 10
-            for (i in 0 until 10) {
-                val x = PAD + i * (w + gap)
-                p.fill(x, y, w, 2f, TRACK, 0.5f)
-                val fill = (power - i).coerceIn(0.0, 1.0).toFloat()
-                if (fill > 0f) p.fill(x, y, w * fill, 2f, METER[i].toArgb(), 0.5f)
-            }
-            y += 2f
-        }
-
-        private fun saltAndMana(data: SaltCard) {
-            val top = y
-            val half = INNER / 2
-            // No manabase numbers (the website's own rating of a local deck has none): salt takes the full width.
-            val hasManabase = data.manaFixing != null || data.onCurve != null || data.manaQuality != null
-            val saltWidth = if (hasManabase) half - 1f else INNER
-            label("Saltiness")
-            val sum = card.saltSum
-            bodyLine(sum?.let { saltTotal(it.total) + " " + it.level.lowercase() } ?: "—", width = saltWidth, weight = Weight.MEDIUM)
-            newLine()
-            // The deck's saltiest cards, the same for every deck (the app's own sum since 1.115).
-            sum?.saltiest.orEmpty().forEach {
-                y += p.wrapped("${it.name} · ${saltTotal(it.salt)}", PAD, y, saltWidth, BODY_PT, GREY, 1, BODY_LH)
-            }
-            if (!hasManabase) return
-            val left = y
-            y = top
-            y += p.lineHeight(6.4f)
-            p.text("MANABASE", PAD + half, y - 0.45f, LABEL_PT, GREY, Weight.MEDIUM, spacing = 0.04f)
-            listOfNotNull(data.manaFixing?.let { "Fixing $it%" }, data.onCurve?.let { "On curve $it%" }).ifEmpty { listOf("—") }.forEach {
-                bodyLine(it, PAD + half, half)
-                newLine()
-            }
-            y = maxOf(y, left)
-        }
-
-        private fun effects(data: SaltCard) {
-            val shown = SaltEffect.entries.mapNotNull { e -> data.effects[e.key]?.takeIf { it > 0 }?.let { e to it } }
-                .sortedByDescending { it.second }.take(5)
-            if (shown.isEmpty()) return
-            rule()
-            label("Interaction and effects")
-            val max = shown.maxOf { it.second }.coerceAtLeast(1)
-            shown.forEach { (e, n) ->
-                bodyLine(e.label, width = 20f)
-                val bx = PAD + 21f
-                val bw = INNER - 21f - 5f
-                val by = y + 0.9f
-                p.fill(bx, by, bw, 1.6f, TRACK, 0.8f)
-                p.fill(bx, by, bw * n / max, 1.6f, if (ink) withAlpha(BAR, 0.55f) else BAR, 0.8f)
-                p.text("$n", CARD_W - PAD, y + p.lineHeight(BODY_LH) - 0.55f, BODY_PT, GREY, align = Paint.Align.RIGHT)
-                newLine()
-            }
-        }
-    }
+    /** "37+2" for lands with MDFCs, else the count. */
+    fun roleValue(r: DeckRoles.RoleCount) = "${r.count}" + if (r.extra > 0) "+${r.extra}" else ""
 
     private fun withAlpha(colour: Int, alpha: Float): Int = ((alpha * 255).roundToInt().coerceIn(0, 255) shl 24) or (colour and 0xFFFFFF)
 }

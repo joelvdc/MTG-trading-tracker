@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 fun deckCoverUrl(artUrl: String?, commanderScryfallId: String?): String? =
     artUrl ?: commanderScryfallId?.takeIf { it.length > 2 }?.let { id -> "https://cards.scryfall.io/art_crop/front/${id[0]}/${id[1]}/$id.jpg" }
 
-/** A Commander deck imported from Archidekt, with the scores Commander Salt gave it. Since version 1.6. */
+/** A Commander deck imported from Archidekt (or made in the app), with its rating. Since version 1.6. */
 @Serializable
 @Entity(tableName = "decks")
 data class Deck(
@@ -29,7 +29,7 @@ data class Deck(
     val colorIdentity: String,
     val cardCount: Int,
     val importedAt: Long = System.currentTimeMillis(),
-    /** Commander Salt's id for the deck, once it has been scored there. */
+    /** Commander Salt's id for the deck, from app versions up to 1.115 (no longer used, kept so older phones sync). */
     val saltId: String? = null,
     val powerLevel: Double? = null,
     /** Where the deck actually plays (Commander Salt's own reading). */
@@ -120,32 +120,18 @@ data class Deck(
     val modifiedAt: Long? get() = if (local) updatedAt.takeIf { it > 0 } else archidektUpdatedAt
 
     val archidektUrl get() = "https://archidekt.com/decks/$archidektId"
-    val saltUrl get() = saltId?.let { "https://commandersalt.com/details/deck/$it" }
-    val scored get() = powerLevel != null || bracketRealistic != null
+    /** The website's estimate kept on the deck ([LocalRating]), or null before the deck was rated (since 1.116 the only rating). */
+    val estimate: SaltCard? get() = SaltCard.decode(saltCard)?.takeIf { it.fromApp }
+
+    /** Whether the deck has the website's estimate. */
+    val rated get() = estimate != null
+
+    /** The deck's estimated bracket, or null before it was rated. */
+    val bracket: Int? get() = estimate?.let { it.bracket ?: bracketBaseline }
 
     /** The deck's cover: its featured art from Archidekt, or its commander's art. */
     val coverUrl: String?
         get() = deckCoverUrl(artUrl, commanderScryfallId)
-
-    /** The power level from the chosen source. */
-    fun power(source: PowerSource): Double? = when (source) {
-        PowerSource.COMMANDER_SALT -> powerLevel
-        PowerSource.EDH_POWER_LEVEL -> edhPowerLevel
-        PowerSource.APP -> AppPower.of(archidektId)?.power?.toDouble()
-    }
-
-    /** When the chosen source last rated the deck, and why it failed (if it did). */
-    fun powerAt(source: PowerSource): Long? = when (source) {
-        PowerSource.COMMANDER_SALT -> scoredAt
-        PowerSource.EDH_POWER_LEVEL -> edhPowerAt
-        PowerSource.APP -> null
-    }
-
-    fun powerError(source: PowerSource): String? = when (source) {
-        PowerSource.COMMANDER_SALT -> scoreError
-        PowerSource.EDH_POWER_LEVEL -> edhPowerError
-        PowerSource.APP -> if (AppPower.known(archidektId) && AppPower.of(archidektId) == null) "no win turn without a commander" else null
-    }
 }
 
 /**
@@ -170,38 +156,6 @@ enum class DeckGroup(val title: String) {
             owner != null && deck.owner.equals(owner, ignoreCase = true) -> OWN
             else -> OTHERS
         }
-    }
-}
-
-/** Where the power level comes from; everything else (brackets, salt, the cards' details) is Commander Salt's. */
-enum class PowerSource(val label: String, val site: String) {
-    COMMANDER_SALT("Commander Salt", "commandersalt.com"),
-    EDH_POWER_LEVEL("EDH Power Level", "edhpowerlevel.com"),
-    /** Worked out on the phone from the win turn and Commander Salt's ratings ([AppPowerLevel]). Since 1.66. */
-    APP("This app", "the app's win turn");
-
-    /** Rated by another site after Commander Salt has scored the deck. */
-    val external get() = this == EDH_POWER_LEVEL
-
-    /** Not Commander Salt's own power level: the deck's pages say where it comes from. */
-    val separate get() = this != COMMANDER_SALT
-
-    companion object {
-        // SCROLLVAULT until 1.104: falls back to Commander Salt.
-        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT
-    }
-}
-
-/**
- * Where a deck's bracket comes from (Settings → Decks, since 1.115): Commander Salt's own, or the website's estimate of
- * the list (the same one local decks get), for every deck.
- */
-enum class BracketSource(val label: String) {
-    COMMANDER_SALT("Commander Salt"),
-    APP("Estimated by the app");
-
-    companion object {
-        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT
     }
 }
 
@@ -276,12 +230,6 @@ data class DeckCardRow(
     val trend: PriceTrend? get() = if (Pricing.source == PriceSource.CARDMARKET) price?.toSet(item.foil)?.trendChange else null
 }
 
-/** The two rule-zero cards Commander Salt draws for a deck. */
-enum class RuleZeroCard(val label: String, val endpoint: String) {
-    BRACKET("Bracket", "generatebracket"),
-    POWER("Power level", "generateadvanced"),
-}
-
 object Brackets {
     /** WotC's names for the five Commander brackets. */
     fun name(bracket: Int?): String? = when (bracket) {
@@ -334,12 +282,13 @@ data class ArchidektDeckSummary(
 /** How the Decks tab is ordered; each has its natural direction (strongest / newest first). */
 enum class DeckSort(val label: String) {
     NAME("Name"),
-    POWER("Power level"),
+    WIN_TURN("Win turn"),
     BRACKET("Bracket"),
     MODIFIED("Last modified");
 
     companion object {
-        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: NAME
+        // POWER ("Power level") until 1.115 became the win turn.
+        fun fromKey(key: String?) = if (key == "POWER") WIN_TURN else entries.firstOrNull { it.name == key } ?: NAME
     }
 }
 
@@ -350,7 +299,7 @@ object DeckSorting {
      * Sorts decks; with [reverse] the order flips (weakest / oldest / Z first). Decks without the
      * value sorted on (not scored yet, date unknown) always come last, by name.
      */
-    fun sort(decks: List<Deck>, sort: DeckSort, reverse: Boolean, source: PowerSource = PowerSource.COMMANDER_SALT): List<Deck> {
+    fun sort(decks: List<Deck>, sort: DeckSort, reverse: Boolean, winTurn: (Deck) -> Int? = { WinTurns.turn(it.archidektId) }): List<Deck> {
         fun <T : Comparable<T>> by(key: (Deck) -> T?, then: Comparator<Deck> = byName): List<Deck> {
             val (known, unknown) = decks.partition { key(it) != null }
             val sorted = known.sortedWith(compareByDescending<Deck> { key(it)!! }.then(then))
@@ -358,12 +307,10 @@ object DeckSorting {
         }
         return when (sort) {
             DeckSort.NAME -> decks.sortedWith(if (reverse) byName.reversed() else byName)
-            DeckSort.POWER -> by({ it.power(source) })
-            // Realistic bracket first, then the baseline one, then power level to break ties.
-            DeckSort.BRACKET -> by(
-                { it.bracketRealistic },
-                compareByDescending<Deck> { it.bracketBaseline ?: 0 }.thenByDescending { it.power(source) ?: 0.0 }.thenBy { it.name.lowercase() },
-            )
+            // The fastest deck first: the turn it wins 4 in 10 games by, lowest first.
+            DeckSort.WIN_TURN -> by({ winTurn(it)?.let { t -> -t } })
+            // The bracket, then the win turn (fastest first) to break ties.
+            DeckSort.BRACKET -> by({ it.bracket }, compareBy<Deck> { winTurn(it) ?: Int.MAX_VALUE }.then(byName))
             DeckSort.MODIFIED -> by({ it.modifiedAt })
         }
     }
