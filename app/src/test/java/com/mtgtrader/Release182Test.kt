@@ -23,7 +23,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class Release182Test {
-    private val vohar = Deck(archidektId = 7, name = "Vohar Danse", owner = "joelvdc", commanders = "Vohar, Vodalian Desecrator", commanderScryfallId = null, artUrl = null, colorIdentity = "UB", cardCount = 100, importedAt = 0, bracketRealistic = 3, powerLevel = 6.5)
+    private val vohar = Deck(archidektId = 7, name = "Vohar Danse", owner = "joelvdc", commanders = "Vohar, Vodalian Desecrator", commanderScryfallId = null, artUrl = null, colorIdentity = "UB", cardCount = 100, importedAt = 0, bracketBaseline = 3,
+        saltCard = com.mtgtrader.data.SaltCard(source = "app", bracket = 3).encode())
 
     private fun rec(id: String, at: Long, vararg seats: GameSeat) =
         GameRecord(startedAt = at, endedAt = at, durationMs = 60_000, seats = Games.encodeSeats(seats.toList()), uid = id)

@@ -336,7 +336,7 @@ class CommanderSaltTest {
              "archetypeLabel": "Combo / Control", "keyMap": {"keyMap": {"gg": "a", "gG": "b"}},
              "details": {"brackets": {"csBracket": 2, "wotcBracket": 3, "displayBracket": 3},
                          "salt": {"profile": {"headline": {"saltPercentage": 51.4}}},
-                         "powerLevel": {"ratings": {"overall": 4.43}}}}
+                         "powerLevel": {"ratings": {"overall": 4.43, "inferredTypeLabel": "Combo / Control"}}}}
         """.trimIndent()
         val s = SaltCardParser.parse(Json.parseToJsonElement(body).jsonObject)
         assertEquals("Combo / Control", s.playStyle)

@@ -14,24 +14,22 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-23, after app 1.115)
-- **Newest (2026-11-23):** app 1.115 + website: every deck shows a salt sum like Archidekt's (EDHREC salt from MTGJSON,
-  lands and commander included; the app downloads the `card-salt` file weekly, the website uses `card_facts`, which now
-  holds every card with a salt score); levels Mild < 30, Moderate < 45, High; Commander Salt's percent is no longer
-  shown. Setting Decks → "Bracket from" (Commander Salt / Estimated by the app, synced key `bracketSource`). Land tutors
-  (Scryfall `otag:tutor-land`, fetch lands) don't count as tutors any more; RATING_VERSION 2, so every estimated deck is
-  rated again once. Built by DeepSeek through Mistral, reviewed by Opus.
-  Before that: 1.114 local decks' estimated bracket, "Why bracket N", Stacks/Grid, 3 database backups.
-- **Waiting on the owner:** the `card_facts` table must be rebuilt once with the new rules (`FACTS_SINCE` in
-  `web/src/lib/cardfacts.ts`; until then ratings answer "not ready"): Vercel → mtgtrader → Settings → Cron Jobs →
-  `/api/cron/categories` → Run, or wait for the daily run at 05:00 Danish time. Then open the Spock deck: expected
-  bracket 2 and a salt sum near Archidekt's 20.87 (the new Star Trek cards have no MTGJSON salt yet). Still from
-  before: add/confirm your email, try "Forgot password?", the sort with the real collection, green light for the ✕
-  delete column in the website's wishlist, Compare with a real Archidekt link, the email to support@moxfield.com,
-  asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** salt sums are a bit lower than Archidekt's for new sets until MTGJSON has their salt; a deck
-  shows no salt sum until the phone has downloaded the salt file once (needs a connection). Phones still on 1.114 ask
-  for a new estimate each time a deck is opened (rating version 2 vs 1) until they update.
+## Right now (2026-11-23, after app 1.116)
+- **Newest (2026-11-23):** app 1.116 + website: one bracket card everywhere (63 × 88 mm; app screen, website, A4 print
+  with 9 cards and cut marks): tiles Bracket · Salt · Wins by, why, speed, criteria, Deck roles (Lands "37+2" from
+  Scryfall type lines), game changers, combos, saltiest cards if room. Deck scores Bracket · Salt · Wins by. Commander
+  Salt, edhpowerlevel.com, the power level, the Power card and the "Bracket from" setting are gone; every deck is
+  estimated by the website (no login). Old stored scores kept (no DB or sync format change). The website's win-turn
+  build (web/winodds-kt) no longer copies AppPower.kt. Built by DeepSeek through Mistral (website, lands, tests) and
+  Opus (card design, app and website UI), reviewed by Opus.
+  Before that: 1.115 salt sum on every deck; 1.114 local decks' estimated bracket.
+- **Waiting on the owner:** look at a bracket card on the phone and print one A4 page from the website (Decks → Bracket
+  cards → Print, at 100%) to check the size. Still from before: add/confirm your email, try "Forgot password?", the sort
+  with the real collection, green light for the ✕ delete column in the website's wishlist, Compare with a real
+  Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for permission.
+- **Expected to look odd:** Archidekt decks that Commander Salt scored before show "Not rated yet" for a moment until
+  the app or website rates them (once, automatically); their bracket may differ from Commander Salt's. Phones still on
+  1.115 keep showing the old power level until they update.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -94,6 +92,7 @@ the EDHREC rank it passes on), MTGJSON (MIT), Card Kingdom's API (its robots all
 - Done in 1.105 (owner, 2026-11-21): ScrollVault removed everywhere; the health check no longer requests EDHREC or
   Archidekt (it reads the website's notes on its own requests instead). The owner sees Archidekt as fine since every
   request comes from a person's tap.
+- Done in 1.116 (2026-11-23): Commander Salt and edhpowerlevel.com removed everywhere (with the power level).
 - Still possible: emails to EDHREC and Archidekt asking permission (Claude drafts, the owner sends).
 - Dropped by the owner (2026-11-21): EDHREC statistics in the card windows.
 
@@ -151,6 +150,7 @@ for later:
 - 1.111 (2026-11-22): signed cards leave Unsorted in the sort; Done goes back to the collection
 - 1.112 (2026-11-22): forgot password by email, email at sign-up, optional two-step login
 - 1.113 (2026-11-23): deck headings "MTG Trader" and "Retired"; Share window's Copy shows "Copied ✓"
+- 1.116 (2026-11-23): one bracket card everywhere (screen, website, A4 print), Bracket · Salt · Wins by; Commander Salt, edhpowerlevel.com and power level removed
 - 1.115 (2026-11-23): salt sum on every deck (lands included), Bracket from setting, land tutors don't count
 - 1.114 (2026-11-23): estimated bracket and salt for local decks (website rates them), why-bracket lines, Archidekt (other users), website Stacks/Grid, 3 backups + download
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
