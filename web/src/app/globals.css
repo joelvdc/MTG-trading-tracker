@@ -5,6 +5,8 @@
   --red: #d32f2f;
   --teal: #00897b;
   --radius: 12px;
+  /* The Stacks view's card width on the deck page (smaller or larger with the picture size). */
+  --stack-w: 150px;
   /* The playtester's card size (changed by its zoom buttons); 1 is 100%. */
   --pt-zoom: 1;
 }
@@ -2108,7 +2110,9 @@ details.card > summary {
   outline-offset: 2px;
   border-radius: 6px;
 }
-.deck-row[data-movable="1"] {
+.deck-row[data-movable="1"],
+.tile.deck-card-tile[data-movable="1"],
+.deck-stack-card[data-movable="1"] {
   cursor: grab;
 }
 
@@ -2145,6 +2149,134 @@ body.pointer-dragging * {
 
 .deck-section .mini-head {
   margin: 6px 0 2px;
+}
+
+/* The deck page's picture views (Stacks and Grid): the card size, and the sections' places. */
+.deck-layout {
+  --stack-w: 150px;
+}
+
+html[data-pic-size="s"] .deck-layout {
+  --stack-w: 120px;
+}
+
+html[data-pic-size="l"] .deck-layout {
+  --stack-w: 190px;
+}
+
+.deck-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+}
+
+html[data-pic-size="s"] .deck-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+}
+
+html[data-pic-size="l"] .deck-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+/* Grid: every section full width, one under another. */
+.deck-grid-sections > * {
+  display: block;
+}
+
+/* Stacks: the sections side by side, each as wide as one card. */
+.deck-stacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.deck-stacks > * {
+  width: var(--stack-w);
+  min-width: 0;
+}
+
+.deck-stacks .mini-head {
+  font-size: 14px;
+}
+
+/* Stacks: the section's count and price on a line of their own, so neither jumps to another line. */
+.deck-stack-sub {
+  display: block;
+  white-space: nowrap;
+}
+
+/* A stack: the cards one over the other, each showing its top strip (the name) under the one before. */
+.deck-stack {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-stack-card {
+  position: relative;
+  aspect-ratio: 488 / 680;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--raised);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.deck-stack-card + .deck-stack-card {
+  margin-top: calc(var(--stack-w) * -1.395 + var(--stack-w) * 0.14);
+}
+
+.deck-stack-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.deck-stack-card:hover,
+.deck-stack-card:focus-visible {
+  z-index: 2;
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.45);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.deck-stack-card .tile-qty {
+  top: 4px;
+  bottom: auto;
+  left: auto;
+  right: 6px;
+}
+
+.deck-stack-card.selected,
+.tile.deck-card-tile.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.deck-stack-card.filter-miss,
+.tile.deck-card-tile.filter-miss {
+  opacity: 0.35;
+}
+
+/* Select mode's tick on a picture (grid and stacks). */
+.tile-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+}
+
+/* A grid card's price and what you own, under its picture. */
+.deck-card-tile-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 0 2px;
 }
 
 .deck-row {
@@ -2643,6 +2775,13 @@ body.pointer-dragging * {
   }
   .deck-cost {
     display: none;
+  }
+  /* Narrower cards in the stacks, unless the pictures are large. */
+  .deck-layout {
+    --stack-w: 110px;
+  }
+  html[data-pic-size="l"] .deck-layout {
+    --stack-w: 190px;
   }
 }
 

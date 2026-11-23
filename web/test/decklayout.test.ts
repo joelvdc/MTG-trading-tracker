@@ -92,11 +92,23 @@ describe("parsePrefs", () => {
   });
   it("reads what was saved and ignores junk", () => {
     const p = parsePrefs(JSON.stringify({ cost: false, sort: "NAME", descending: true, group: "COLOUR", price: "x", owned: false }));
-    expect(p).toEqual({ cost: false, price: true, owned: false, sort: "NAME", descending: true, group: "COLOUR", maybe: "SIDE", maybeSplit: false });
+    expect(p).toEqual({ cost: false, price: true, owned: false, sort: "NAME", descending: true, group: "COLOUR", maybe: "SIDE", maybeSplit: false, layout: "LIST" });
     expect(parsePrefs(JSON.stringify({ group: "Bogus" })).group).toBe("CATEGORY");
     expect(parsePrefs(JSON.stringify({ maybe: "BELOW" })).maybe).toBe("BELOW");
     expect(parsePrefs(JSON.stringify({ maybe: "Elsewhere" })).maybe).toBe("SIDE");
     expect(parsePrefs(JSON.stringify({ maybeSplit: true })).maybeSplit).toBe(true);
     expect(parsePrefs(JSON.stringify({ maybeSplit: "yes" })).maybeSplit).toBe(false);
+  });
+  it("remembers the deck's view (list by default, stacks or grid), and nothing else", () => {
+    expect(parsePrefs(null).layout).toBe("LIST");
+    expect(parsePrefs(JSON.stringify({})).layout).toBe("LIST");
+    expect(parsePrefs(JSON.stringify({ layout: "STACKS" })).layout).toBe("STACKS");
+    expect(parsePrefs(JSON.stringify({ layout: "GRID" })).layout).toBe("GRID");
+    expect(parsePrefs(JSON.stringify({ layout: "LIST" })).layout).toBe("LIST");
+    expect(parsePrefs(JSON.stringify({ layout: "TILES" })).layout).toBe("LIST");
+    expect(parsePrefs(JSON.stringify({ layout: 3 })).layout).toBe("LIST");
+    const p = parsePrefs(JSON.stringify({ layout: "GRID", price: false }));
+    expect(p.layout).toBe("GRID");
+    expect(p.price).toBe(false);
   });
 });

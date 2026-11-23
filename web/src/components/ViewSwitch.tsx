@@ -49,8 +49,11 @@ export function usePicSize(): [PicSize, (s: PicSize) => void] {
   return [size, set];
 }
 
+/** The deck page's views: its lines, its cards as stacks, or its cards in a grid. */
+export type DeckLayout = "LIST" | "STACKS" | "GRID";
+
 /** Small / medium / large pictures, as three round buttons with a growing square. */
-function SizeSwitch() {
+export function SizeSwitch() {
   const [size, setSize] = usePicSize();
   return (
     <div className="seg" role="group" aria-label="Picture size">
@@ -112,6 +115,70 @@ export function ViewSwitch({
       {layout === "list" && <HoverToggle on={hover} onChange={onHover} />}
     </div>
     {layout === "images" && <SizeSwitch />}
+    </>
+  );
+}
+
+/**
+ * The deck page's list / stacks / grid buttons with, for the list, the "Card on hover" switch and, for the picture
+ * views, the picture size.
+ */
+export function DeckViewSwitch({
+  layout,
+  onLayout,
+  hover,
+  onHover,
+}: {
+  layout: DeckLayout;
+  onLayout: (l: DeckLayout) => void;
+  hover: boolean;
+  onHover: (on: boolean) => void;
+}) {
+  return (
+    <>
+    <div className="seg" role="group" aria-label="View">
+      <button
+        className={layout === "LIST" ? "on" : undefined}
+        aria-pressed={layout === "LIST"}
+        aria-label="View as list"
+        title="View as list"
+        onClick={() => onLayout("LIST")}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <circle cx="5" cy="6" r="1.6" fill="currentColor" />
+          <circle cx="5" cy="12" r="1.6" fill="currentColor" />
+          <circle cx="5" cy="18" r="1.6" fill="currentColor" />
+          <path d="M9.5 6h10M9.5 12h10M9.5 18h10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      </button>
+      <button
+        className={layout === "STACKS" ? "on" : undefined}
+        aria-pressed={layout === "STACKS"}
+        aria-label="View as stacks"
+        title="View as stacks"
+        onClick={() => onLayout("STACKS")}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <rect x="4" y="3" width="16" height="6" rx="2" fill="currentColor" opacity="0.45" />
+          <rect x="4" y="7" width="16" height="6" rx="2" fill="currentColor" opacity="0.7" />
+          <rect x="4" y="11" width="16" height="10" rx="2" fill="currentColor" />
+        </svg>
+      </button>
+      <button
+        className={layout === "GRID" ? "on" : undefined}
+        aria-pressed={layout === "GRID"}
+        aria-label="View as grid"
+        title="View as grid"
+        onClick={() => onLayout("GRID")}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <rect x="9" y="3" width="11" height="15" rx="2" fill="currentColor" opacity="0.55" transform="rotate(12 14.5 10.5)" />
+          <rect x="4" y="5" width="11" height="15" rx="2" fill="currentColor" />
+        </svg>
+      </button>
+      {layout === "LIST" && <HoverToggle on={hover} onChange={onHover} />}
+    </div>
+    {layout !== "LIST" && <SizeSwitch />}
     </>
   );
 }
