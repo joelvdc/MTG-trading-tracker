@@ -14,8 +14,10 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-22, after app 1.112)
-- **Newest (2026-11-22):** app 1.112 + website: "Forgot password?" by email (`/forgot`, `/reset`, link for an hour, 3 an
+## Right now (2026-11-23, after app 1.113)
+- **Newest (2026-11-23):** app 1.113 + website: Decks headings "MTG Trader" (was "Local · in the app…") and
+  "Retired"; the website's Share window no longer copies on opening, Copy shows "Copied ✓" for 2 s.
+  Before that, 1.112 + website: "Forgot password?" by email (`/forgot`, `/reset`, link for an hour, 3 an
   hour), email required at sign-up (website and app; the weekly email's address, weekly off by default), optional
   two-step login (Settings → Two-step login, TOTP + 10 recovery codes, asked at login on website and app; the owner's
   reset turns it off). Tables `password_resets`, `two_factor`; npm `qrcode`. Built by DeepSeek through Mistral.
@@ -169,6 +171,7 @@ for later:
 - 1.110 (2026-11-22): Sort Done and trade binder Apply fast, show progress, survive leaving the screen
 - 1.111 (2026-11-22): signed cards leave Unsorted in the sort; Done goes back to the collection
 - 1.112 (2026-11-22): forgot password by email, email at sign-up, optional two-step login
+- 1.113 (2026-11-23): deck headings "MTG Trader" and "Retired"; Share window's Copy shows "Copied ✓"
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
