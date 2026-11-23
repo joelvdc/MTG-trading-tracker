@@ -297,7 +297,7 @@ describe("salt", () => {
     const r = rateDeck(cards, f, [], null);
     // 2 × 5.04 + 2.5 + 2.5 + 1.222 + 1.01 + 0.4 + 0.9 = 18.612 → 18.6
     expect(r.salt).toBe(18.6);
-    expect(r.saltIntensity).toBe("Moderate");
+    expect(r.saltIntensity).toBe("Mild");
     expect(r.saltDriver).toBe("Bomb");
     expect(r.saltiest).toEqual([
       { name: "Bomb", salt: 5.04 },
@@ -316,12 +316,11 @@ describe("salt", () => {
     expect(r.saltiest).toEqual([]);
   });
 
-  it("names the intensity by the thresholds", () => {
-    expect(saltIntensity(9.9)).toBe("Mild");
-    expect(saltIntensity(10)).toBe("Moderate");
-    expect(saltIntensity(20)).toBe("Spicy");
-    expect(saltIntensity(34.9)).toBe("Spicy");
-    expect(saltIntensity(35)).toBe("Salty");
+  it("names the intensity by the thresholds (Commander Salt's labels)", () => {
+    expect(saltIntensity(24.9)).toBe("Mild");
+    expect(saltIntensity(25)).toBe("Moderate");
+    expect(saltIntensity(39.9)).toBe("Moderate");
+    expect(saltIntensity(40)).toBe("High");
     expect(saltIntensity(null)).toBeNull();
   });
 });
@@ -330,6 +329,7 @@ describe("the rating", () => {
   it("says it's the app's, with its version", () => {
     const r = rateDeck([card("Bear"), plains(1)], facts({}), [], null);
     expect(r.source).toBe("app");
+    expect(r.version).toBe(4);
     expect(r.ratingVersion).toBe(RATING_VERSION);
     expect(r.axes).toEqual({});
     expect(r.playStyle).toBeNull();
@@ -355,6 +355,7 @@ describe("decodeSalt", () => {
     const r = rateDeck([card("Bear"), plains(1)], facts({}), [combo("c", ["Bear", "Cmdr"], ["Infinite mana"], { notablePrerequisites: "X" })], null);
     const back = decodeSalt(JSON.stringify(r))!;
     expect(back.source).toBe("app");
+    expect(back.version).toBe(4);
     expect(back.ratingVersion).toBe(RATING_VERSION);
     expect(back.bracket).toBe(r.bracket);
     expect(back.bracketWhy).toEqual(r.bracketWhy);

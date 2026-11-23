@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, formatDate, peek, remember } from "@/components/api";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
@@ -41,7 +41,7 @@ import { DeckColumns } from "@/components/DeckColumns";
 import { ComboLine } from "@/components/ComboLine";
 import { format } from "@/lib/money";
 
-type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; winTurn: KeptWin; games?: Game[]; legality?: Legality | null; precon?: { fileName: string; name: string; code: string; releaseDate: string | null } };
+type Answer = DeckView & { stats: StatsCard[]; maybeStats?: StatsCard[]; maybeCategories?: Record<string, string>; tokenInfo: Record<string, { oi: string | null; pt: string | null }>; layouts: Record<string, string>; detailsError: string | null; saltCard: string | null; ratingStale?: boolean; winTurn: KeptWin; games?: Game[]; legality?: Legality | null; precon?: { fileName: string; name: string; code: string; releaseDate: string | null } };
 
 const NO_CARDS: StatsCard[] = [];
 const NO_ROWS: DeckRow[] = [];
@@ -196,6 +196,21 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   useEffect(() => {
     if (!precon && view) remember(`/api/decks/${encodeURIComponent(String(view.id))}`, view);
   }, [view, precon]);
+
+  // The website's own rating of a local deck: worked out once per page load when the kept one is for another list.
+  // Nothing shows while it runs; a failure is silent and tried again on the next visit.
+  const ratingAsked = useRef(false);
+  const ratingStale = view !== null && view.local === true && view.ratingStale === true && !view.readOnly;
+  useEffect(() => {
+    if (!ratingStale || !view || ratingAsked.current) return;
+    ratingAsked.current = true;
+    (async () => {
+      const r = await api<{ ok?: boolean }>(`/api/decks/${encodeURIComponent(String(view.id))}/rate`, {});
+      if (!r.ok || !r.data.ok) return;
+      const d = await api<Answer>(loadPath);
+      if (d.ok && Array.isArray(d.data.rows)) setView(d.data);
+    })().catch(() => undefined);
+  }, [ratingStale, view, loadPath]);
 
   // Lines that went away after a reload (removed, or moved) leave the selection.
   useEffect(() => {
@@ -697,6 +712,11 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const powerFrom = view.powerSource;
   // The app's own power level isn't synced: the website works it out from the win turn, as the phone does.
   const power = view.power ?? (powerFrom === "APP" && win.status === "done" && win.win ? win.win.power.power : null);
+  /** What a score box says when it has nothing: a local deck waits for the website's own rating. */
+  const notRated = view.local ? "Not rated yet" : "Commander Salt hasn't scored this deck yet";
+  /** The saltiness as its source gives it: Commander Salt's percent, or the website's own total (one decimal, no percent). */
+  const appSalt = view.salt?.source === "app" ? (view.salt.salt ?? null) : null;
+  const saltText = appSalt != null ? appSalt.toFixed(1) : d.saltPercent != null ? `${Math.round(d.saltPercent)}%` : "–";
   return (
     <>
       <TopBar page={precon ? "precons" : "decks"} folder={folder} />
@@ -794,7 +814,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               type="button"
               className="score score-btn"
               disabled={!view.salt}
-              title={view.salt ? "Show and print the bracket card" : "Commander Salt hasn't scored this deck yet"}
+              title={view.salt ? "Show and print the bracket card" : notRated}
               onClick={() => setRz("BRACKET")}
             >
               <span className="muted small">Bracket</span>
@@ -810,7 +830,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               type="button"
               className="score score-btn"
               disabled={!view.salt}
-              title={view.salt ? "Show and print the power card" : "Commander Salt hasn't scored this deck yet"}
+              title={view.salt ? "Show and print the power card" : notRated}
               onClick={() => setRz("POWER")}
             >
               <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
@@ -827,7 +847,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
             </button>
             <div className="score">
               <span className="muted small">Saltiness</span>
-              <strong>{d.saltPercent != null ? `${Math.round(d.saltPercent)}%` : "–"}</strong>
+              <strong>{saltText}</strong>
             </div>
             <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
               <span className="muted small">Missing</span>
@@ -982,7 +1002,10 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                 <ComboLine key={i} combo={c} />
               ))}
             </ul>
-            <p className="muted small">From Commander Salt&apos;s analysis. Red: counts for the bracket (two cards, or early in the game); blue: doesn&apos;t.</p>
+            <p className="muted small">
+              {view.salt?.source === "app" ? "Found by Commander Spellbook. " : "From Commander Salt’s analysis. "}Red: counts for the bracket (two cards, or early
+              in the game); blue: doesn&apos;t.
+            </p>
           </details>
         )}
 

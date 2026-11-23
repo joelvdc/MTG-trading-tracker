@@ -1,6 +1,6 @@
 "use client";
 
-import { bracketName, POWER_SOURCES, type Deck, type PowerSource, type SaltCard } from "@/lib/deckshared";
+import { bracketName, comboData, comboNote, bracketReasons, POWER_SOURCES, type Deck, type PowerSource, type SaltCard } from "@/lib/deckshared";
 import { WIN_SLOW_NOTE, winDamageNote, winWindow, type WinResult } from "@/lib/winodds";
 import { ColourPips } from "./Mana";
 
@@ -169,12 +169,27 @@ export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: Deck
     .sort((a, b) => Number(b.c[1] > 0) - Number(a.c[1] > 0) || a.i - b.i)
     .map((x) => x.c);
   const combos = [...new Map([...data.twoCardCombos, ...data.earlyCombos].map((c) => [JSON.stringify(c), c])).values()];
+  // The website's own rating gives one bracket; Commander Salt's gives the baseline and the realistic one.
+  const app = data.source === "app";
+  const bracketShown = app ? (data.bracket ?? null) : deck.bracketBaseline;
+  const why = bracketReasons(data, bracketShown);
   return (
     <Frame deck={deck} cover={cover} kind="Bracket" inkSaver={inkSaver}>
-      <div className="rz-tiles">
-        {tile("Baseline · WotC rules", deck.bracketBaseline)}
-        {tile("Realistic · how it plays", deck.bracketRealistic)}
-      </div>
+      {app ? (
+        <div className="rz-tiles">{tile("Bracket · estimated", data.bracket ?? null)}</div>
+      ) : (
+        <div className="rz-tiles">
+          {tile("Baseline · WotC rules", deck.bracketBaseline)}
+          {tile("Realistic · how it plays", deck.bracketRealistic)}
+        </div>
+      )}
+      {why.length > 0 && (
+        <Section title={`Why bracket ${bracketShown}`}>
+          {why.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
+        </Section>
+      )}
       {speed}
       <Section title="Bracket criteria">
         {criteria.map(([label, n]) => (
@@ -200,9 +215,17 @@ export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: Deck
       )}
       {(combos.length > 0 || data.notes.length > 0) && (
         <Section title="Rule zero: worth mentioning">
-          {combos.map((c) => (
-            <p key={c.join("+")}>{c.join(" + ")}</p>
-          ))}
+          {combos.map((c) => {
+            // The rating's own data for the combo (its mana value and whether it wins) goes after its cards.
+            const info = comboData(data, c);
+            const note = info ? comboNote(info) : null;
+            return (
+              <p key={c.join("+")}>
+                {c.join(" + ")}
+                {note && <span className="rz-small muted"> · {note}</span>}
+              </p>
+            );
+          })}
           {data.notes.map((n, i) => (
             <p key={i} className="rz-note">
               {n.why.trim() ? n.why : n.label}
@@ -210,7 +233,7 @@ export function BracketCard({ deck, cover, data, inkSaver, speed }: { deck: Deck
           ))}
         </Section>
       )}
-      <Footer credit="Bracket data: Commander Salt" deck={deck} />
+      <Footer credit={app ? "Bracket data: estimated by the app" : "Bracket data: Commander Salt"} deck={deck} />
     </Frame>
   );
 }
@@ -233,6 +256,7 @@ export function PowerCard({
   error: string | null;
   inkSaver: boolean;
 }) {
+  const app = data.source === "app";
   const site = POWER_SOURCES[source].site;
   const fmt = (n: number) => formatPower(n, source);
   const effects = EFFECTS.filter(([k]) => data.effects[k] !== undefined).map(([k, label]) => [label, data.effects[k]] as [string, number]);
@@ -273,11 +297,27 @@ export function PowerCard({
         <div className="rz-two">
           <div>
             <div className="rz-label">Saltiness</div>
-            <p>
-              <strong>{deck.saltPercent != null ? `${Math.round(deck.saltPercent)}%` : "—"}</strong>
-              {data.saltIntensity && <span className="rz-error"> {data.saltIntensity.toLowerCase()}</span>}
-            </p>
-            {data.saltDriver && <p className="rz-small">mostly {data.saltDriver.toLowerCase()}</p>}
+            {app ? (
+              <>
+                <p>
+                  <strong>{data.salt != null ? data.salt.toFixed(1) : "—"}</strong>
+                  {data.saltIntensity && <span className="rz-error"> {data.saltIntensity.toLowerCase()}</span>}
+                </p>
+                {(data.saltiest ?? []).slice(0, 5).map((s) => (
+                  <p key={s.name} className="rz-small">
+                    {s.name} · {s.salt.toFixed(1)}
+                  </p>
+                ))}
+              </>
+            ) : (
+              <>
+                <p>
+                  <strong>{deck.saltPercent != null ? `${Math.round(deck.saltPercent)}%` : "—"}</strong>
+                  {data.saltIntensity && <span className="rz-error"> {data.saltIntensity.toLowerCase()}</span>}
+                </p>
+                {data.saltDriver && <p className="rz-small">mostly {data.saltDriver.toLowerCase()}</p>}
+              </>
+            )}
           </div>
           <div>
             <div className="rz-label">Manabase</div>
@@ -305,7 +345,14 @@ export function PowerCard({
         </Section>
       )}
       <Footer
-        credit={[source === "COMMANDER_SALT" ? null : source === "APP" ? "Power level: MTG Trader app" : `Power level: ${site}`, "Data: Commander Salt"].filter(Boolean).join("\n")}
+        credit={
+          [
+            source === "COMMANDER_SALT" ? null : source === "APP" ? "Power level: MTG Trader app" : `Power level: ${site}`,
+            app ? "Data: Scryfall, MTGJSON, Commander Spellbook" : "Data: Commander Salt",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        }
         deck={deck}
       />
     </Frame>

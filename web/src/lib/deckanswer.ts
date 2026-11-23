@@ -6,6 +6,7 @@ import type { DetailsFile } from "./carddetails";
 import type { CkFile } from "./cardkingdom";
 import { ensureDeckDetails, statsCard } from "./deckdetails";
 import { maybeCategoryOf } from "./deckedit";
+import { ratingStale } from "./deckrating";
 import { parseCardTags } from "./deckroles";
 import { deckView, syncDecks } from "./decks";
 import { gamesOf } from "./games";
@@ -78,5 +79,18 @@ export async function deckAnswer(
   // Commander legality, looking up the rules of cards the website doesn't know yet (a few seconds at most).
   const legality = await deckLegality(synced, true, Date.now(), Date.now() + 6_000).catch(() => null);
   const games = opts.games !== false ? gamesOfDeck(gamesOf(file), id) : [];
-  return { ...view, stats, maybeStats, maybeCategories, tokenInfo, layouts, detailsError, saltCard: synced.deck.saltCard ?? null, winTurn, games, legality };
+  return {
+    ...view,
+    stats,
+    maybeStats,
+    maybeCategories,
+    tokenInfo,
+    layouts,
+    detailsError,
+    saltCard: synced.deck.saltCard ?? null,
+    ratingStale: ratingStale(view.local, synced.deck.saltCard ?? null, stats),
+    winTurn,
+    games,
+    legality,
+  };
 }

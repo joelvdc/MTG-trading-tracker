@@ -11,9 +11,12 @@ import type { SpellbookCombo } from "./spellbook";
 
 export const RATING_VERSION = 1;
 
+/** The app's SaltCard.CURRENT: a salt card without it is treated as old data. */
+export const SALT_CARD_VERSION = 4;
+
 export const RATING = {
   bracket: { tutorsFor3: 5, extraTurnsFor4: 3, gcFor4: 4, earlyMv: 8 },
-  salt: { mild: 10, moderate: 20, spicy: 35 }, // deck total below → "Mild", "Moderate", "Spicy", else "Salty"
+  salt: { mild: 25, high: 40 }, // deck total below → "Mild", below "High" → "Moderate", else "High" (Commander Salt's labels)
 };
 
 /** What the deck's cards are known to be (Scryfall's tags, Game Changer, salt; accounts.ts keeps the same shape). */
@@ -176,7 +179,7 @@ function saltOf(cards: StatsCard[], facts: Map<string, CardFact>): { total: numb
 export function saltIntensity(total: number | null): string | null {
   if (total === null) return null;
   const t = RATING.salt;
-  return total < t.mild ? "Mild" : total < t.moderate ? "Moderate" : total < t.spicy ? "Spicy" : "Salty";
+  return total < t.mild ? "Mild" : total < t.high ? "Moderate" : "High";
 }
 
 // ---- The list key -------------------------------------------------------------------------------------------------
@@ -249,6 +252,7 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
   const salt = saltOf(cards, facts);
 
   return {
+    version: SALT_CARD_VERSION,
     gameChangers,
     twoCardCombos,
     earlyCombos,

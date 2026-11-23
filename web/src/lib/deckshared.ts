@@ -158,6 +158,8 @@ export interface SaltCombo {
 
 /** What the rule-zero cards show from Commander Salt (the app's SaltCard JSON, defaults filled in). */
 export interface SaltCard {
+  /** The app's SaltCard.CURRENT; a salt card without it is old data. null when the text has none. */
+  version?: number | null;
   gameChangers: string[];
   twoCardCombos: string[][];
   earlyCombos: string[][];
@@ -197,6 +199,7 @@ export function decodeSalt(text: string | null | undefined): SaltCard | null {
   try {
     const j = JSON.parse(text) as Partial<SaltCard>;
     return {
+      version: j.version ?? null,
       gameChangers: j.gameChangers ?? [],
       twoCardCombos: j.twoCardCombos ?? [],
       earlyCombos: j.earlyCombos ?? [],
@@ -276,6 +279,73 @@ export function allCombos(s: SaltCard): SaltCombo[] {
     ...counted.filter((c) => !known.has(setKey(c))).map((cards) => ({ cards, counts: true, results: [], needsBoard: false, spellbookUri: null, prerequisites: [] })),
   ];
   return all.map((c, i) => ({ c, i })).sort((a, b) => Number(b.c.counts) - Number(a.c.counts) || a.c.cards.length - b.c.cards.length || a.i - b.i).map((x) => x.c);
+}
+
+// ---- Why that bracket ----------------------------------------------------------------------------------------------
+
+/** The combo's cards, lowercased and sorted: how a combo is matched against SaltCard.combos. */
+const comboKey = (cards: string[]) => [...new Set(cards.map(saltKey))].sort().join("|");
+
+/** A mana value as it is written: a whole number without decimals ("6", "5.5"). */
+const manaText = (mv: number) => String(mv);
+
+/** The first three combos as lines, then "and <k> more …" (only when the third isn't the last). */
+function atMostThree(combos: string[][], line: (cards: string[]) => string, more: string): string[] {
+  const shown = combos.slice(0, 3).map(line);
+  if (combos.length > 3) shown.push(`and ${combos.length - 3} more ${more}`);
+  return shown;
+}
+
+/** "1 Game Changer: X" or "N Game Changers: X, Y". */
+const gameChangerLine = (names: string[]) => (names.length === 1 ? `1 Game Changer: ${names[0]}` : `${names.length} Game Changers: ${names.join(", ")}`);
+
+/**
+ * Why the bracket card shows [bracket]: the rating's own lines when it has them, else worked out from Commander
+ * Salt's lists in localratings.ts's words. Empty when there's no bracket or nothing to say.
+ */
+export function bracketReasons(data: SaltCard, bracket: number | null): string[] {
+  const own = (data.bracketWhy ?? []).map((l) => l.trim()).filter(Boolean);
+  if (own.length > 0) return own;
+  if (bracket == null) return [];
+  if (bracket <= 2) return ["No Game Changers or two-card combos"];
+  const out: string[] = [];
+  if (bracket === 4) {
+    // Commander Salt's own early combos: their mana value when the rating knows it.
+    const earlyLine = (cards: string[]) => {
+      const c = comboData(data, cards);
+      return c?.manaValue != null ? `${cards.join(" + ")}: wins, mana value ${manaText(c.manaValue)}` : cards.join(" + ");
+    };
+    out.push(...atMostThree(data.earlyCombos, earlyLine, "early combos"));
+    if (data.gameChangers.length > 0) out.push(gameChangerLine(data.gameChangers));
+    if (data.massLandDenial.length > 0) out.push(`Mass land denial: ${data.massLandDenial.join(", ")}`);
+    if (data.extraTurns.length >= 3) out.push(`${data.extraTurns.length} extra-turn cards: ${data.extraTurns.join(", ")}`);
+  } else {
+    // Commander Salt's two-card combos: whether they win and their mana value when the rating knows them.
+    const twoCardLine = (cards: string[]) => {
+      const c = comboData(data, cards);
+      if (c?.wins === true && c.manaValue != null) return `${cards.join(" + ")}: wins, mana value ${manaText(c.manaValue)}`;
+      if (c?.wins === false) return `${cards.join(" + ")}: doesn't win`;
+      return cards.join(" + ");
+    };
+    out.push(...atMostThree(data.twoCardCombos, twoCardLine, "two-card combos"));
+    if (data.gameChangers.length > 0) out.push(gameChangerLine(data.gameChangers));
+    if (data.tutors.length >= 5) out.push(`${data.tutors.length} tutors`);
+  }
+  return out;
+}
+
+/** What a combo's own data adds to its line on the bracket card ("wins, mana value 5"; null when the rating didn't know). */
+export function comboNote(c: SaltCombo): string | null {
+  if (c.wins == null && c.manaValue == null) return null;
+  const mv = c.manaValue != null ? `mana value ${c.manaValue}` : null;
+  if (c.wins === true) return mv ? `wins · ${mv}` : "wins";
+  return mv;
+}
+
+/** The combo's entry in SaltCard.combos (matched by the set of its card names). */
+export function comboData(data: SaltCard, cards: string[]): SaltCombo | null {
+  const k = comboKey(cards);
+  return data.combos.find((c) => comboKey(c.cards) === k) ?? null;
 }
 
 export type BracketTag = "GAME_CHANGER" | "COMBO" | "COMBO_3" | "EXTRA_TURN" | "LAND_DENIAL" | "OTHER_COMBO" | "OTHER_COMBO_3" | "TUTOR" | "FAST_MANA";
@@ -418,7 +488,7 @@ export function missingPlan<T extends { name: string; quantity: number }>(lines:
 export type DeckGroup = "OWN" | "OTHERS" | "LOCAL" | "RETIRED";
 export const GROUP_TITLES: Record<DeckGroup, string> = {
   OWN: "Archidekt",
-  OTHERS: "Archidekt (read only)",
+  OTHERS: "Archidekt (other users)",
   LOCAL: "MTG Trader",
   RETIRED: "Retired",
 };
