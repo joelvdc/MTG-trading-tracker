@@ -154,7 +154,7 @@ data class Deck(
  */
 enum class DeckGroup(val title: String) {
     OWN("Archidekt"),
-    OTHERS("Archidekt (read only)"),
+    OTHERS("Archidekt (other users)"),
     LOCAL("MTG Trader"),
     /** Since 1.83. */
     RETIRED("Retired");

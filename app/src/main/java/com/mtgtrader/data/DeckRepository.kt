@@ -48,6 +48,8 @@ class DeckRepository(
     private val edh: EdhPowerLevelApi,
     private val scope: CoroutineScope,
     private val winOdds: WinOddsStore,
+    /** The website's estimate for local decks (see [rateLocal]). */
+    private val web: WebAccountClient,
 ) {
     companion object {
         /** Why a deck with changes that never reached Archidekt isn't reloaded. Since 1.78. */
@@ -257,6 +259,14 @@ class DeckRepository(
                 failed += d.name
             }
         }
+        // Local decks can't be scored by Commander Salt: the website estimates theirs, for those whose list changed.
+        var ratedLocal = 0
+        val local = dao.all().filter { it.local && !it.retired }
+        for ((i, d) in local.withIndex()) {
+            if (stopRequested) break
+            _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${local.size} · ${d.name}: rating…", !stopRequested)
+            if (rateLocal(d.archidektId)) ratedLocal++
+        }
         val parts = buildList {
             add(
                 when {
@@ -267,6 +277,7 @@ class DeckRepository(
             )
             if (unscored.isNotEmpty()) add("${unscored.size} couldn't be scored: ${unscored.joinToString()}")
             if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
+            if (ratedLocal > 0) add("rated $ratedLocal local deck" + (if (ratedLocal == 1) "" else "s"))
         }
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }
@@ -449,6 +460,34 @@ class DeckRepository(
     }
 
     private suspend fun score(deck: Deck, step: (String) -> Unit): Deck = ratePower(scoreSalt(deck), step)
+
+    /**
+     * Has the website estimate a local deck's bracket and salt (Commander Salt can't score local decks) when that's
+     * stale for its list (see [LocalRating.stale]), and keeps it as the deck's rule-zero data. True when it rated the
+     * deck. Quietly false when the website can't be reached or can't rate it yet.
+     */
+    suspend fun rateLocal(deckId: Long): Boolean {
+        val deck = dao.get(deckId) ?: return false
+        val cards = dao.cards(deckId)
+        if (!LocalRating.stale(deck, cards)) return false
+        val card = try {
+            SaltCard.decode(web.rate(cards, deck.colorIdentity)) ?: return false
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return false
+        }
+        dao.update(
+            deck.copy(
+                saltCard = card.encode(),
+                bracketBaseline = card.bracket,
+                bracketRealistic = null,
+                scoredAt = System.currentTimeMillis(),
+                scoreError = null,
+            )
+        )
+        return true
+    }
 
     /** Commander Salt's scores only; failures are kept on the deck rather than thrown. */
     private suspend fun scoreSalt(deck: Deck): Deck {
