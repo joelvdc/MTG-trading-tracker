@@ -1,6 +1,7 @@
 package com.mtgtrader
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -924,26 +925,16 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/commander_odds.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.46: the bracket and power level cards of all decks, small. */
+    /** 1.46: the bracket cards of all decks, small; since 1.116 Bracket, Salt (a whole number) and Wins by, and one not rated yet. */
     @Test fun allDecksCards() {
-        fun deck(id: Long, name: String, cmd: String, colours: String, base: Int, real: Int, power: Double) =
-            com.mtgtrader.data.Deck(id, name, "joelvdc", cmd, null, null, colours, 100, powerLevel = power, bracketBaseline = base, bracketRealistic = real, saltPercent = 31.0, saltId = "s")
-        val card = com.mtgtrader.data.SaltCard(
-            gameChangers = listOf("A", "B", "C"), twoCardCombos = listOf(listOf("X", "Y"), listOf("Z", "W")), playStyle = "Focused", manaFixing = 86,
-        )
         compose.setContent {
             MtgColors(dark = true) {
                 Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Since 1.52 with the turn each deck wins by ("…" while it's worked out); 4 in 10 games since 1.54.
-                        com.mtgtrader.ui.SmallBracketCard(deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, win(cloudTurns)) {}
-                        com.mtgtrader.ui.SmallBracketCard(deck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9), com.mtgtrader.data.SaltCard(), win(babaTurns)) {}
-                        com.mtgtrader.ui.SmallBracketCard(deck(4, "Sarge", "Sergeant John Benton", "GW", 3, 3, 6.1), com.mtgtrader.data.SaltCard()) {}
-                        com.mtgtrader.ui.SmallPowerCard(
-                            deck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4), card, com.mtgtrader.data.PowerSource.COMMANDER_SALT,
-                            com.mtgtrader.data.SaltSum(20.9, "Mild", emptyList()),
+                        estDecks.take(3).forEachIndexed { i, (deck, data, turns) -> com.mtgtrader.ui.SmallBracketCard(deck, data, win(turns), estSalt[i]) {} }
+                        com.mtgtrader.ui.SmallBracketCard(
+                            com.mtgtrader.data.Deck(9, "Kenrith brew", "joelvdc", "Kenrith, the Returned King", null, null, "WUBRG", 100), null,
                         ) {}
-                        com.mtgtrader.ui.SmallPowerCard(deck(3, "Cult of Athreos (LC)", "Athreos, God of Passage", "WB", 2, 2, 4.8), null, com.mtgtrader.data.PowerSource.COMMANDER_SALT) {}
                     }
                 }
             }
@@ -1006,61 +997,18 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/winning_mazes_end.png", roborazziOptions = screenshotOptions)
     }
 
-    /** 1.52: the bracket card's Speed section (Sarge: commander damage with pump spells); 4 in 10 games and the first win since 1.54. */
-    @Test @Config(qualifiers = "w411dp-h1200dp-xhdpi") fun bracketCardSpeed() {
-        val deck = com.mtgtrader.data.Deck(5, "Sarge", "joelvdc", "Sergeant John Benton", null, null, "GW", 100, powerLevel = 6.1, bracketBaseline = 3, bracketRealistic = 3, saltPercent = 22.0, saltId = "s")
-        val card = com.mtgtrader.data.SaltCard(gameChangers = listOf("Smothering Tithe"), axes = mapOf("speed" to 0.55, "consistency" to 0.6))
+    /** 1.116: the bracket card on screen, the same drawing as the printed card, as large as the phone's width allows. */
+    @Test fun bracketCardOnScreen() {
+        val (deck, data, turns) = estDecks[1]
+        val card = com.mtgtrader.ui.PrintCard(deck, data, win(turns), saltSum = estSalt[1], roles = estRoles[1])
         compose.setContent {
             MtgColors(dark = true) {
-                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
-                    Column(Modifier.padding(12.dp)) {
-                        com.mtgtrader.ui.BracketCardView(deck, card, win = win(sargeTurns, mapOf("combat" to 17, "commander" to 83), 100))
-                    }
+                Box(Modifier.fillMaxSize().background(Color.Black).padding(12.dp), contentAlignment = Alignment.Center) {
+                    com.mtgtrader.ui.BracketCardImage(card)
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/bracket_card_speed.png", roborazziOptions = screenshotOptions)
-    }
-
-    /** 1.114: a local deck the app rated (the website's estimate): the bracket card's one tile and its reasons, and the power card's salt. */
-    @Test @Config(qualifiers = "w411dp-h1600dp-xhdpi") fun appRatedDeckCards() {
-        val deck = com.mtgtrader.data.Deck(
-            -7, "Brew in the app", "", "Nelly Borca, Impulsive Accuser", null, null, "RW", 100,
-            bracketBaseline = 3, scoredAt = 1_760_000_000_000, origin = "Made in the app",
-        )
-        val card = com.mtgtrader.data.SaltCard(
-            source = "app", bracket = 3,
-            twoCardCombos = listOf(listOf("Exquisite Blood", "Sanguine Bond"), listOf("Dramatic Reversal", "Isochron Scepter")),
-            combos = listOf(
-                com.mtgtrader.data.SaltCombo(listOf("Sanguine Bond", "Exquisite Blood"), counts = true, manaValue = 9.0, wins = true),
-                com.mtgtrader.data.SaltCombo(listOf("Dramatic Reversal", "Isochron Scepter"), counts = true, manaValue = 4.0, wins = false),
-            ),
-            gameChangers = listOf("Smothering Tithe"), tutors = listOf("Enlightened Tutor", "Gamble", "Imperial Recruiter", "Mystical Tutor", "Ranger-Captain of Eos"),
-            saltIntensity = "Salty", salt = 6.4,
-            saltiest = listOf(
-                com.mtgtrader.data.SaltyCard("Winter Orb", 2.4), com.mtgtrader.data.SaltyCard("Armageddon", 2.1),
-                com.mtgtrader.data.SaltyCard("Smothering Tithe", 1.8), com.mtgtrader.data.SaltyCard("Rhystic Study", 1.6),
-                com.mtgtrader.data.SaltyCard("Grand Abolisher", 1.2),
-            ),
-            manaFixing = 81, onCurve = 72, manaQuality = 84,
-            effects = mapOf("spotRemoval" to 8, "boardWipes" to 2, "tutors" to 5, "fastmana" to 1, "counters" to 0),
-            wincons = listOf("Commander damage", "Wide tokens"),
-            listKey = "1e63c951", ratingVersion = 1,
-        )
-        compose.setContent {
-            MtgColors(dark = true) {
-                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        com.mtgtrader.ui.BracketCardView(deck, card, win = win(sargeTurns, mapOf("combat" to 21, "commander" to 79), 100))
-                        com.mtgtrader.ui.PowerCardView(
-                            deck, card, com.mtgtrader.data.PowerSource.APP,
-                            saltSum = com.mtgtrader.data.SaltSum(20.9, "Mild", card.saltiest),
-                        )
-                    }
-                }
-            }
-        }
-        compose.onRoot().captureRoboImage("src/test/screenshots/app_rated_deck_cards.png", roborazziOptions = screenshotOptions)
+        compose.onRoot().captureRoboImage("src/test/screenshots/bracket_card_on_screen.png", roborazziOptions = screenshotOptions)
     }
 
     /** 1.46: editing a deck: waiting edits, drag handles, selected cards, the card page's controls, the Decks tab's sections. */
@@ -1081,12 +1029,15 @@ class ScreenshotTest {
                     Column(Modifier.padding(horizontal = 12.dp)) {
                         com.mtgtrader.ui.DeckRow(
                             com.mtgtrader.data.Deck(-5, "Kenrith brew", "", "Kenrith, the Returned King", null, null, "WUBRG", 100, origin = "Pasted decklist"),
-                            com.mtgtrader.data.PowerSource.COMMANDER_SALT, showModified = false, waiting = 0,
+                            showModified = false, waiting = 0,
                         ) {}
                         Spacer(Modifier.height(6.dp))
                         com.mtgtrader.ui.DeckRow(
-                            com.mtgtrader.data.Deck(5, "Auntie Plague", "joelvdc", "Auntie Ool, Cursewretch", null, null, "BRG", 100, powerLevel = 6.4, bracketRealistic = 3, bracketBaseline = 4),
-                            com.mtgtrader.data.PowerSource.COMMANDER_SALT, showModified = false, waiting = 2,
+                            com.mtgtrader.data.Deck(
+                                5, "Auntie Plague", "joelvdc", "Auntie Ool, Cursewretch", null, null, "BRG", 100, bracketBaseline = 3,
+                                saltCard = com.mtgtrader.data.SaltCard(source = "app", bracket = 3).encode(),
+                            ),
+                            showModified = false, waiting = 2,
                         ) {}
                         com.mtgtrader.ui.UnsentBanner(2, onKeep = {}, onDiscard = {})
                         com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Ramp", emptyList()), 4.3, folded = false, count = 3, highlight = true, menu = {
@@ -1374,72 +1325,61 @@ class ScreenshotTest {
     }
 
     // 1.65: the cards as an A4 PDF to print and cut (Magic card size), the choices and the preview.
-    private fun printDeck(id: Long, name: String, cmd: String, colours: String, base: Int, real: Int, power: Double, salt: Double) =
-        com.mtgtrader.data.Deck(
-            id, name, "joelvdc", cmd, null, null, colours, 100, powerLevel = power, bracketBaseline = base, bracketRealistic = real,
-            saltPercent = salt, saltId = "s", scoredAt = 1_793_000_000_000L,
-        )
-
-    private val printCards = listOf(
-        Triple(printDeck(1, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 4, 3, 6.4, 31.0), com.mtgtrader.data.SaltCard(
-            gameChangers = listOf("Rhystic Study", "Demonic Tutor", "Jeska's Will"), twoCardCombos = listOf(listOf("Exquisite Blood", "Sanguine Bond")),
-            playStyle = "Focused", saltIntensity = "Mild", saltDriver = "Community Salt Ratings", manaFixing = 86, onCurve = 74,
-            effects = mapOf("spotRemoval" to 9, "boardWipes" to 4, "tutors" to 5, "fastmana" to 3, "counters" to 0),
-            wincons = listOf("Commander damage", "Drain", "Wide tokens", "Aristocrats"),
-        ), auntieTurns),
-        Triple(printDeck(2, "Baba", "Baba Lysaga, Night Witch", "BRG", 2, 3, 5.9, 18.0), com.mtgtrader.data.SaltCard(
-            playStyle = "Casual", manaFixing = 78, onCurve = 70, effects = mapOf("spotRemoval" to 7, "boardWipes" to 2, "tutors" to 1),
-            wincons = listOf("Sacrifice drain", "Combat"),
-        ), babaTurns),
-        Triple(printDeck(3, "Sarge", "Sergeant John Benton", "GW", 3, 3, 6.1, 22.0), com.mtgtrader.data.SaltCard(
-            gameChangers = listOf("Smothering Tithe"), playStyle = "Focused", manaFixing = 91, onCurve = 80,
-            effects = mapOf("spotRemoval" to 6, "boardWipes" to 3, "grouphug" to 1), wincons = listOf("Commander damage", "Equipment voltron"),
-        ), sargeTurns),
-        Triple(printDeck(4, "Elves", "Lathril, Blade of the Elves", "BG", 4, 4, 7.6, 34.0), com.mtgtrader.data.SaltCard(
-            gameChangers = listOf("Survival of the Fittest", "Gaea's Cradle", "Seedborn Muse", "Vampiric Tutor"),
-            twoCardCombos = listOf(listOf("Ashaya, Soul of the Wild", "Quirion Ranger"), listOf("Priest of Titania", "Umbral Mantle"), listOf("Devoted Druid", "Vizier of Remedies")),
-            playStyle = "Optimized", manaFixing = 83, effects = mapOf("tutors" to 7, "fastmana" to 6, "spotRemoval" to 5, "boardWipes" to 1),
-            wincons = listOf("Craterhoof", "Drain"),
-        ), listOf(0, 0, 0, 3, 11, 27, 48, 69, 84, 92, 96, 98, 99, 99, 99)),
-        Triple(printDeck(5, "Shrine Gate Win", "Go-Shintai of Life's Origin", "WUBRG", 3, 2, 5.2, 15.0), com.mtgtrader.data.SaltCard(
-            gameChangers = listOf("Cyclonic Rift"), playStyle = "Casual", manaFixing = 95, effects = mapOf("spotRemoval" to 4, "boardWipes" to 3),
-            wincons = listOf("Maze's End", "Shrine drain"),
-        ), shrineTurns),
-        Triple(printDeck(6, "Kenrith brew", "Kenrith, the Returned King", "WUBRG", 2, 2, 5.0, 9.0), null, slowTurns),
+    // 1.116: decks the website rated (its estimate), with the app's salt sums and roles lines.
+    private fun est(id: Long, name: String, cmd: String, colours: String, b: Int, gc: List<String> = emptyList(), combos: List<List<String>> = emptyList(), tutors: List<String> = emptyList()) =
+        com.mtgtrader.data.Deck(id, name, "joelvdc", cmd, null, null, colours, 100, bracketBaseline = b, scoredAt = 1_795_500_000_000L) to
+            com.mtgtrader.data.SaltCard(source = "app", bracket = b, gameChangers = gc, twoCardCombos = combos, tutors = tutors,
+                combos = combos.map { com.mtgtrader.data.SaltCombo(it, counts = true, manaValue = 6.0, wins = true) })
+    private val estDecks = listOf(
+        est(1, "Copy of Landing Party (precon)", "Commander Spock", "WUG", 2),
+        est(2, "Auntie Plague", "Auntie Ool, Cursewretch", "BRG", 3, listOf("Rhystic Study", "Jeska's Will"), listOf(listOf("Exquisite Blood", "Sanguine Bond"))),
+        est(3, "Elves", "Lathril, Blade of the Elves", "BG", 4, listOf("Survival of the Fittest", "Gaea's Cradle", "Seedborn Muse", "Vampiric Tutor"),
+            listOf(listOf("Ashaya, Soul of the Wild", "Quirion Ranger"), listOf("Priest of Titania", "Umbral Mantle"))),
+        est(4, "Sarge", "Sergeant John Benton", "GW", 3, listOf("Smothering Tithe"), tutors = listOf("Enlightened Tutor", "Gamble", "Imperial Recruiter", "Mystical Tutor", "Worldly Tutor")),
+        est(5, "Baba", "Baba Lysaga, Night Witch", "BRG", 2),
+        est(6, "Shrine Gate Win", "Go-Shintai of Life's Origin", "WUBRG", 2),
+    ).zip(listOf(listOf(0, 0, 0, 0, 0, 0, 0, 0, 1, 7, 31, 64, 85, 94, 98), auntieTurns, listOf(0, 0, 0, 3, 11, 27, 48, 69, 84, 92, 96, 98, 99, 99, 99), sargeTurns, babaTurns, shrineTurns))
+        .map { (dc, turns) -> Triple(dc.first, dc.second, turns) }
+    private fun salty(vararg c: Pair<String, Double>) = c.map { com.mtgtrader.data.SaltyCard(it.first, it.second) }
+    private val estSalt = listOf(
+        com.mtgtrader.data.SaltSum(19.6, "Mild", salty("Sol Ring" to 1.59, "Scute Swarm" to 1.51, "Exploration" to 0.89, "Heroic Intervention" to 0.85, "Austere Command" to 0.78)),
+        com.mtgtrader.data.SaltSum(36.2, "Moderate", salty("Rhystic Study" to 2.73, "Jeska's Will" to 1.85, "Sanguine Bond" to 1.62, "Sol Ring" to 1.59, "Exquisite Blood" to 1.4)),
+        com.mtgtrader.data.SaltSum(48.7, "High", salty("Gaea's Cradle" to 2.4, "Seedborn Muse" to 1.9, "Vampiric Tutor" to 1.8, "Survival of the Fittest" to 1.7, "Sol Ring" to 1.59)),
+        com.mtgtrader.data.SaltSum(27.4, "Mild", salty("Smothering Tithe" to 2.1, "Sol Ring" to 1.59, "Enlightened Tutor" to 1.2, "Gamble" to 1.0, "Worldly Tutor" to 0.9)),
+        com.mtgtrader.data.SaltSum(22.0, "Mild", salty("Sol Ring" to 1.59, "Blood Artist" to 0.9, "Zulaport Cutthroat" to 0.7, "Viscera Seer" to 0.6, "Ashnod's Altar" to 0.6)),
+        com.mtgtrader.data.SaltSum(14.8, "Mild", salty("Sol Ring" to 1.59, "Maze's End" to 0.9, "Cultivate" to 0.4, "Kodama's Reach" to 0.3, "Farseek" to 0.3)),
     )
+    private fun rc(l: Int, mdfc: Int, r: Int, d: Int, rm: Int, w: Int, t: Int) = listOf(
+        com.mtgtrader.data.DeckRoles.RoleCount("Lands", l, if (l < 35) "low" else if (l > 38) "high" else "ok", extra = mdfc),
+        com.mtgtrader.data.DeckRoles.RoleCount("Ramp", r, if (r < 10) "low" else if (r > 12) "high" else "ok"),
+        com.mtgtrader.data.DeckRoles.RoleCount("Draw", d, if (d < 10) "low" else if (d > 12) "high" else "ok"),
+        com.mtgtrader.data.DeckRoles.RoleCount("Removal", rm, if (rm < 8) "low" else if (rm > 12) "high" else "ok"),
+        com.mtgtrader.data.DeckRoles.RoleCount("Wipes", w, if (w < 2) "low" else if (w > 4) "high" else "ok"),
+        com.mtgtrader.data.DeckRoles.RoleCount("Tutor", t, "none"),
+    )
+    private val estRoles = listOf(rc(37, 2, 11, 10, 9, 3, 1), rc(36, 0, 12, 14, 9, 4, 5), rc(33, 0, 18, 12, 6, 1, 7), rc(37, 0, 10, 11, 8, 3, 6), rc(36, 1, 11, 9, 7, 2, 1), rc(38, 0, 14, 8, 6, 3, 2))
 
-    /** With [source] a site other than Commander Salt, the power cards show its power level (edhpowerlevel.com's "6.40" since 1.105). */
-    private fun printSheet(
-        kind: com.mtgtrader.data.RuleZeroCard, inkSaver: Boolean, perMm: Float = 6f,
-        source: com.mtgtrader.data.PowerSource = com.mtgtrader.data.PowerSource.COMMANDER_SALT,
-    ): android.graphics.Bitmap {
-        val cards = printCards.map { (deck, data, turns) ->
-            com.mtgtrader.ui.PrintCard(
-                kind, deck.copy(edhPowerLevel = deck.powerLevel, edhPowerAt = deck.scoredAt), data, win(turns), source,
-                // Since 1.115 the power card's saltiness is the app's own sum of the deck's cards.
-                saltSum = com.mtgtrader.data.SaltSum(
-                    deck.saltPercent ?: 0.0, com.mtgtrader.data.SaltSum.level(deck.saltPercent ?: 0.0),
-                    listOf("Winter Orb", "Armageddon", "Static Orb", "Rhystic Study", "Smothering Tithe").map { com.mtgtrader.data.SaltyCard(it, 2.4) },
-                ),
-            )
-        }
+    private fun printSheet(inkSaver: Boolean, perMm: Float = 6f): android.graphics.Bitmap {
+        val cards = estDecks.mapIndexed { i, (deck, data, turns) ->
+            com.mtgtrader.ui.PrintCard(deck, data, win(turns), saltSum = estSalt[i], roles = estRoles[i])
+        } + com.mtgtrader.ui.PrintCard(com.mtgtrader.data.Deck(9, "Kenrith brew", "joelvdc", "Kenrith, the Returned King", null, null, "WUBRG", 100), null, win(slowTurns))
         val bitmap = android.graphics.Bitmap.createBitmap((210 * perMm).toInt(), (297 * perMm).toInt(), android.graphics.Bitmap.Config.ARGB_8888)
-        com.mtgtrader.ui.CardSheets.drawPage(android.graphics.Canvas(bitmap), perMm, cards, com.mtgtrader.ui.CardSheets.footer(cards, 0, 2), inkSaver)
+        com.mtgtrader.ui.CardSheets.drawPage(android.graphics.Canvas(bitmap), perMm, cards, com.mtgtrader.ui.CardSheets.footer(0, 2), inkSaver)
         return bitmap
     }
 
     @Test fun printSheetBracket() =
-        printSheet(com.mtgtrader.data.RuleZeroCard.BRACKET, inkSaver = false).captureRoboImage("src/test/screenshots/print_bracket_sheet.png", roborazziOptions = screenshotOptions)
+        printSheet(inkSaver = false).captureRoboImage("src/test/screenshots/print_bracket_sheet.png", roborazziOptions = screenshotOptions)
 
-    @Test fun printSheetPowerInkSaver() =
-        printSheet(com.mtgtrader.data.RuleZeroCard.POWER, inkSaver = true, source = com.mtgtrader.data.PowerSource.EDH_POWER_LEVEL).captureRoboImage("src/test/screenshots/print_power_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
+    @Test fun printSheetInkSaver() =
+        printSheet(inkSaver = true).captureRoboImage("src/test/screenshots/print_bracket_sheet_ink_saver.png", roborazziOptions = screenshotOptions)
 
     @Test fun printChoices() {
-        val decks = printCards.map { it.first }
+        val decks = estDecks.map { it.first }
         compose.setContent {
             MtgColors(dark = true) {
                 com.mtgtrader.ui.PrintPicker(
-                    decks = decks, source = com.mtgtrader.data.PowerSource.COMMANDER_SALT, choice = com.mtgtrader.ui.PrintChoice.BOTH, onChoice = {},
+                    decks = decks,
                     inkSaver = true, onInkSaver = {}, unticked = setOf(2L), onUnticked = {}, busy = false, error = null,
                     onBack = {}, onPreview = {}, onPrint = {}, onShare = {},
                 )
@@ -1453,7 +1393,7 @@ class ScreenshotTest {
             MtgColors(dark = true) {
                 com.mtgtrader.ui.PdfPreview(
                     pageCount = 2,
-                    render = { _, width -> printSheet(com.mtgtrader.data.RuleZeroCard.BRACKET, inkSaver = true, perMm = width / 210f).asImageBitmap() },
+                    render = { _, width -> printSheet(inkSaver = true, perMm = width / 210f).asImageBitmap() },
                     onBack = {}, onPrint = {}, onShare = {},
                 )
             }
