@@ -5,7 +5,7 @@ import { frontName } from "./collview";
 import { categories, included } from "./deckedit";
 import { parseHistory } from "./deckhistory";
 import { nameKey, parseCardNotes } from "./decknotes";
-import { roleCounts, tagsOf } from "./deckroles";
+import { roleCounts, tagsOf, type RoleCard, type RoleCount } from "./deckroles";
 import { recListKey } from "./recshared";
 import {
   caseless,
@@ -214,6 +214,12 @@ export interface DeckViewExtras {
   auto?: Record<string, string[]>;
 }
 
+/** A deck line's categories (one per line in Archidekt's list), or its one category. */
+function lineCategories(c: DeckCard): string[] {
+  const list = (c.categories ?? "").split("\n").filter((x) => x.trim());
+  return list.length ? list : [c.category];
+}
+
 export function deckView(
   file: SyncFile,
   id: number,
@@ -229,10 +235,6 @@ export function deckView(
   const cardTags = extras.cardTags ?? {};
   const auto = extras.auto ?? {};
   const notes = parseCardNotes(d.cardNotes);
-  const lineCategories = (c: DeckCard) => {
-    const list = (c.categories ?? "").split("\n").filter((x) => x.trim());
-    return list.length ? list : [c.category];
-  };
   const setup = setupOf(file, prices, details, ck);
   const owned = ownedByName(file);
   const salt = decodeSalt(d.saltCard);
@@ -336,6 +338,8 @@ export function deckView(
       categories: lineCategories(c),
       ownTags: cardTags[nameKey(c.card.name)] ?? null,
       auto: auto[c.card.name] ?? [],
+      // The lands count from Scryfall's type line where the card details know it (Archidekt's types otherwise).
+      typeLine: details?.cards[c.card.scryfallId]?.t ?? null,
     })),
   );
   const { saltCard, scrollVault, categoryInfo, ...plain } = d;
@@ -439,28 +443,60 @@ export interface RuleZeroDeck {
   id: number;
   deck: DeckView["deck"];
   cover: string | null;
+  /** The website's own estimate (the deck's rating). */
   salt: NonNullable<DeckView["salt"]>;
-  /** The website's own estimate (deckBracket); null when the deck has none yet. */
+  /** The website's own estimate (deckBracket). */
   bracket: number | null;
+  /** The roles line (lands, ramp, draw…), as the deck page shows it. */
+  roles: RoleCount[];
   /** The deck's main-deck cards, for its salt sum (the cards page's route leaves them out of the answer). */
   stats: StatsCard[];
 }
 
-/** Every deck the website has rated, in name order, with what its bracket card shows. */
-export function ruleZeroDecks(file: SyncFile): { decks: RuleZeroDeck[] } {
+/** What the bracket cards' roles lines read: the cards' own tags, the automatic categories and Scryfall's type lines. */
+export interface RuleZeroExtras {
+  cardTags?: Record<string, string[]>;
+  auto?: Record<string, string[]>;
+  /** Scryfall's type line by Scryfall id; null when it isn't known. */
+  typeLine?: (scryfallId: string) => string | null;
+}
+
+/**
+ * The bracket card of every own deck the website has rated (the app's "Bracket cards of all decks": the own and local
+ * decks, not retired), in name order, and the names of those not rated yet.
+ */
+export function ruleZeroDecks(file: SyncFile, extras: RuleZeroExtras = {}): { decks: RuleZeroDeck[]; unrated: string[] } {
   const decks: RuleZeroDeck[] = [];
-  for (const sd of [...syncDecks(file)].filter((x) => !x.deck.retired).sort((a, b) => caseless(a.deck.name, b.deck.name))) {
+  const unrated: string[] = [];
+  const owner = deckOwner(file);
+  const cardTags = extras.cardTags ?? {};
+  const auto = extras.auto ?? {};
+  const own = [...syncDecks(file)].filter((x) => groupOf(x.deck, owner) === "OWN" || groupOf(x.deck, owner) === "LOCAL");
+  for (const sd of own.sort((a, b) => caseless(a.deck.name, b.deck.name))) {
     const d = sd.deck;
     const salt = decodeSalt(d.saltCard);
-    if (!salt) continue;
+    if (!salt || salt.source !== "app") {
+      unrated.push(d.name);
+      continue;
+    }
     const { saltCard, scrollVault, categoryInfo, ...plain } = d;
     void saltCard;
     void categoryInfo;
     void scrollVault;
-    const stats = statsOf(sd.cards);
-    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, bracket: deckBracket(d), stats });
+    const cards: RoleCard[] = sd.cards.map((c) => ({
+      name: c.card.name,
+      types: c.types,
+      quantity: c.quantity,
+      commander: c.commander,
+      maybeboard: c.maybeboard,
+      categories: lineCategories(c),
+      ownTags: cardTags[nameKey(c.card.name)] ?? null,
+      auto: auto[c.card.name] ?? [],
+      typeLine: extras.typeLine?.(c.card.scryfallId) ?? null,
+    }));
+    decks.push({ id: d.archidektId, deck: plain, cover: coverUrl(d), salt, bracket: deckBracket(d), roles: roleCounts(cards), stats: statsOf(sd.cards) });
   }
-  return { decks };
+  return { decks, unrated };
 }
 
 /** The main deck's cards as the salt sum and the rating read them (Archidekt's types will do when Scryfall's type line is unknown). */

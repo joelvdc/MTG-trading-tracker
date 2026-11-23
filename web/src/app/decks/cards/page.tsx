@@ -4,15 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
-import { BracketCard, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
-import type { PowerSource, RuleZeroDeck } from "@/lib/decks";
+import { BracketCardSvg, BracketPrintRoot, type BracketCardData } from "@/components/RuleZeroCards";
+import type { RuleZeroDeck } from "@/lib/decks";
 import type { SaltSum } from "@/lib/localratings";
 import type { WinResult } from "@/lib/winodds";
 
-type Which = "BRACKET" | "POWER" | "BOTH";
-
-/** A deck's cards as the route answers with them: its salt sum is worked out there. */
-type CardDeck = RuleZeroDeck & { saltSum: SaltSum | null };
+/** A deck's card as the route answers with it: its salt sum is worked out there. */
+type CardDeck = Omit<RuleZeroDeck, "stats"> & { saltSum: SaltSum | null };
 
 /** A deck's win turn as this browser kept it (before the website kept them, and for Nextcloud folders); it may be from before a change. */
 function keptWin(id: number): WinResult | null {
@@ -24,30 +22,36 @@ function keptWin(id: number): WinResult | null {
   }
 }
 
-/** The bracket and power cards of every scored deck, to look at or print together (the app's "… cards of all decks"). */
+/** The bracket cards of every rated deck, to look at or print together, nine to an A4 page (the app's "Bracket cards"). */
 export default function AllRuleZeroCardsPage() {
-  const [data, setData] = useState<{ decks: CardDeck[]; powerSource: PowerSource } | null>(null);
-  const [wins, setWins] = useState<Record<number, WinResult | null>>({});
+  const [cards, setCards] = useState<BracketCardData[] | null>(null);
+  const [unrated, setUnrated] = useState<string[]>([]);
   const [folder, setFolder] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [which, setWhich] = useState<Which>("BRACKET");
   const [inkSaver, setInkSaver] = useState(false);
 
   useEffect(() => {
-    const w = new URLSearchParams(window.location.search).get("cards");
-    if (w === "POWER" || w === "BOTH") setWhich(w);
     (async () => {
       const [s, d] = await Promise.all([
         api<{ loggedIn: boolean; folder?: string }>("/api/session"),
-        api<{ decks?: CardDeck[]; powerSource?: PowerSource; wins?: Record<number, WinResult | null>; noFolder?: boolean }>("/api/decks/cards"),
+        api<{ decks?: CardDeck[]; unrated?: string[]; wins?: Record<number, WinResult | null>; noFolder?: boolean }>("/api/decks/cards"),
       ]);
       if (!s.data.loggedIn || d.status === 401 || d.data.loggedOut) return window.location.replace("/login");
       if (!s.data.folder || d.data.noFolder) return window.location.replace("/settings");
       setFolder(s.data.folder ?? "");
       if (d.ok && Array.isArray(d.data.decks)) {
-        setData({ decks: d.data.decks, powerSource: d.data.powerSource ?? "COMMANDER_SALT" });
         const kept = d.data.wins ?? {};
-        setWins(Object.fromEntries(d.data.decks.map((x) => [x.id, x.id in kept ? kept[x.id] : keptWin(x.id)])));
+        setCards(
+          d.data.decks.map((x) => ({
+            deck: x.deck,
+            cover: x.cover,
+            data: x.salt,
+            win: x.id in kept ? kept[x.id] : keptWin(x.id),
+            saltSum: x.saltSum ?? null,
+            roles: x.roles ?? [],
+          })),
+        );
+        setUnrated(d.data.unrated ?? []);
       } else setError(d.data.error ?? "Could not load the decks.");
     })();
   }, []);
@@ -59,57 +63,32 @@ export default function AllRuleZeroCardsPage() {
         <Link href="/decks" className="small">
           ← Decks
         </Link>
-        <h1 className="section-head">Rule-zero cards of all decks</h1>
+        <h1 className="section-head">Bracket cards</h1>
         {error && <div className="bar error">{error}</div>}
-        {!data && !error && <p className="muted center">Loading…</p>}
-        {data && (
+        {!cards && !error && <p className="muted center">Loading…</p>}
+        {cards && (
           <>
             <div className="controls">
-              <div className="seg text" role="group" aria-label="Cards">
-                {(
-                  [
-                    ["BRACKET", "Bracket"],
-                    ["POWER", "Power level"],
-                    ["BOTH", "Both"],
-                  ] as const
-                ).map(([k, l]) => (
-                  <button key={k} className={which === k ? "on" : ""} onClick={() => setWhich(k)}>
-                    {l}
-                  </button>
-                ))}
-              </div>
               <label className="check small">
                 <input type="checkbox" checked={inkSaver} onChange={(e) => setInkSaver(e.target.checked)} />
-                <span>Ink saver (light headers without the commander art)</span>
+                <span>Ink saver</span>
               </label>
               <span className="spacer" />
-              <button className="btn primary small-btn" disabled={data.decks.length === 0} onClick={() => window.print()}>
+              <button className="btn primary small-btn" disabled={cards.length === 0} onClick={() => window.print()}>
                 Print
               </button>
             </div>
-            <p className="muted small">
-              {data.decks.length} deck{data.decks.length === 1 ? "" : "s"} scored by Commander Salt. The speed on a bracket card
-              {data.powerSource === "APP" ? " and the app's own power level show" : " shows"} for decks whose win turn the website has worked out (it does
-              so by itself after a decklist changes, within a day).
-            </p>
-            {data.decks.length === 0 ? (
-              <p className="muted center">No deck has been scored yet.</p>
+            {unrated.length > 0 && <p className="muted small">Not rated yet: {unrated.join(", ")}</p>}
+            {cards.length === 0 ? (
+              <p className="muted center">No deck has been rated yet.</p>
             ) : (
-              <div className="rz-print">
-                {data.decks.map((d) => {
-                  const win = wins[d.id] ?? null;
-                  const power = d.power ?? (data.powerSource === "APP" && win ? win.power.power : null);
-                  return [
-                    which !== "POWER" && (
-                      <BracketCard key={`b${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} inkSaver={inkSaver} speed={win ? <SpeedSection win={win} /> : undefined} />
-                    ),
-                    which !== "BRACKET" && (
-                      <PowerCard key={`p${d.id}`} deck={d.deck} cover={d.cover} data={d.salt} source={data.powerSource} power={power} error={d.powerError} inkSaver={inkSaver} saltSum={d.saltSum ?? null} />
-                    ),
-                  ];
-                })}
+              <div className="rz-grid">
+                {cards.map((c, i) => (
+                  <BracketCardSvg key={i} card={c} inkSaver={inkSaver} />
+                ))}
               </div>
             )}
+            {cards.length > 0 && <BracketPrintRoot cards={cards} inkSaver={inkSaver} />}
           </>
         )}
       </main>

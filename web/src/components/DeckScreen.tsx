@@ -26,14 +26,14 @@ import { ColourPips, ManaCost } from "@/components/Mana";
 import { TopBar } from "@/components/Nav";
 import { OwnedIcon } from "@/components/OwnedIcon";
 import { RecommendationsPanel } from "@/components/RecommendationsPanel";
-import { BracketCard, formatPower, PowerCard, SpeedSection } from "@/components/RuleZeroCards";
+import { BracketCardSvg, BracketPrintRoot, type BracketCardData } from "@/components/RuleZeroCards";
 import { usePointerDrag } from "@/components/useDragScroll";
 import { useWinOdds, type KeptWin, type WinState } from "@/components/useWinOdds";
 import type { StatsCard } from "@/lib/deckstats";
 import { PrintDeckDialog } from "@/components/PrintLists";
 import type { Legality } from "@/lib/legality";
 import { ShareDialog } from "@/components/SharePanel";
-import { allCombos, bracketName, caseless, POWER_SOURCES, sections, shownBracket, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
+import { allCombos, bracketName, caseless, deckBracket, sections, TAG_LABELS, type DeckRow, type DeckView } from "@/lib/deckshared";
 import type { SaltSum } from "@/lib/localratings";
 import { linkMatches } from "@/lib/decknotes";
 import { backImageUrl, categoryOrder, costColours, dropSpot, GROUP_LABELS, hasBackFace, layoutSections, type DeckGroup, type DeckSort, type DropTarget } from "@/lib/decklayout";
@@ -145,7 +145,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const [missingOpen, setMissingOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [rz, setRz] = useState<"BRACKET" | "POWER" | null>(null);
+  const [rz, setRz] = useState(false);
   const [line, setLine] = useState<string | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -270,13 +270,12 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
     return () => window.removeEventListener("keydown", onKey);
   }, [selecting]);
 
-  /** Reads an Archidekt deck again ("reload": the list, "refresh": and Commander Salt, "rescore": Commander Salt only). */
-  async function fromArchidekt(action: "reload" | "refresh" | "rescore") {
-    setNotice(action === "reload" ? "Reading the decklist from Archidekt…" : action === "refresh" ? "Reading the decklist from Archidekt and scoring it on Commander Salt…" : "Scoring the deck on Commander Salt…");
-    const r = await api<{ ok?: boolean; scoreError?: string | null }>(loadPath, { action });
+  /** Reads an Archidekt deck's list again. */
+  async function fromArchidekt() {
+    setNotice("Reading the decklist from Archidekt…");
+    const r = await api<{ ok?: boolean }>(loadPath, { action: "reload" });
     if (!r.ok) return setNotice(r.data.error ?? "That did not work.");
-    const done = action === "reload" ? "Decklist reloaded from Archidekt." : action === "refresh" ? "Reloaded from Archidekt and scored again." : "Scored again on Commander Salt.";
-    await reload(r.data.scoreError ? `${action === "reload" ? done : "Saved"}, but Commander Salt couldn't score it: ${r.data.scoreError}` : done);
+    await reload("Decklist reloaded from Archidekt.");
   }
 
   /** Retires the deck or brings it back (app 1.83). */
@@ -390,8 +389,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const ownedCopies = mainRows.reduce((s, r) => s + r.quantity - r.missing, 0);
   const totalCopies = mainRows.reduce((s, r) => s + r.quantity, 0);
   const money = (eur: number) => format(eur * view.perEuro, view.currency);
-  /** The bracket in front (the higher of the two) and the other one, labelled. */
-  const bracket = shownBracket(d.bracketRealistic, d.bracketBaseline);
+  /** The website's estimated bracket (the deck's rating); null before it was rated. */
+  const bracket = deckBracket({ saltCard: view.saltCard, bracketBaseline: d.bracketBaseline });
   const costOf = new Map(allCards.map((s) => [s.scryfallId, s.manaCost]));
   const typeLineOf = new Map(allCards.map((s) => [s.scryfallId, s.typeLine]));
   /** A line's card type line, from Scryfall's when known (the deck's own otherwise). */
@@ -749,11 +748,18 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const combos = view.salt ? allCombos(view.salt) : [];
   const counted = combos.filter((c) => c.counts).length;
 
-  const powerFrom = view.powerSource;
-  // The app's own power level isn't synced: the website works it out from the win turn, as the phone does.
-  const power = view.power ?? (powerFrom === "APP" && win.status === "done" && win.win ? win.win.power.power : null);
+  /** Rated by the website (its estimate): the bracket card has something to show. */
+  const rated = view.salt?.source === "app";
+  /** The win turn's score: 4 in 10 games won by turn N, and the first win. */
+  const winScore = (
+    <div className="score">
+      <span className="muted small">Wins by</span>
+      <strong>{win.status === "done" ? (win.win?.label ?? "–") : win.status === "working" ? (win.estimate ? "≈ " + win.estimate.label : "…") : "–"}</strong>
+      {win.status === "done" && win.win?.firstWin != null && <span className="small">from turn {win.win.firstWin}</span>}
+    </div>
+  );
   /** What a score box says when it has nothing: a local deck waits for the website's own rating. */
-  const notRated = view.local ? "Not rated yet" : "Commander Salt hasn't scored this deck yet";
+  const notRated = "Not rated yet";
   /** The salt sum of every card in the deck, lands and basic lands included (lib/localratings.ts). */
   const saltSum = view.saltSum ?? null;
   return (
@@ -825,21 +831,10 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
         {view.detailsError && <div className="bar warn">Card details: {view.detailsError} The stats use what is known so far.</div>}
 
         {precon && (
-          // A precon's scores are just what the website works out itself: its power level from the win turn, and what
-          // you're missing. It has no Commander Salt scores, legality or actions.
+          // A precon's scores are just what the website works out itself: its win turn, and what you're missing. It has no
+          // rating, legality or actions.
           <section className="card deck-scores">
-            <div className="score">
-              <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
-              <strong>
-                {power != null
-                  ? formatPower(power, powerFrom)
-                  : powerFrom === "APP" && win.status === "working"
-                    ? win.estimate
-                      ? "≈ " + formatPower(win.estimate.power.power, powerFrom)
-                      : "…"
-                    : "–"}
-              </strong>
-            </div>
+            {winScore}
             <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
               <span className="muted small">Missing</span>
               <strong className={shaped.missing > 0 ? "warn-text" : "ok-text"}>{shaped.missing}</strong>
@@ -849,46 +844,17 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
         )}
         {!precon && (
           <section className="card deck-scores">
-            <button
-              type="button"
-              className="score score-btn"
-              disabled={!view.salt}
-              title={view.salt ? "Show and print the bracket card" : notRated}
-              onClick={() => setRz("BRACKET")}
-            >
+            <button type="button" className="score score-btn" disabled={!rated} title={rated ? "Show and print the bracket card" : notRated} onClick={() => setRz(true)}>
               <span className="muted small">Bracket</span>
-              <strong>{bracket.main ?? "–"}</strong>
-              <span className="small">{bracketName(bracket.main) ?? "not scored"}</span>
-              {bracket.other && (
-                <span className="muted small">
-                  {bracket.other.label} {bracket.other.value}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              className="score score-btn"
-              disabled={!view.salt}
-              title={view.salt ? "Show and print the power card" : notRated}
-              onClick={() => setRz("POWER")}
-            >
-              <span className="muted small">{powerFrom === "APP" ? "Power" : `Power (${POWER_SOURCES[powerFrom].label})`}</span>
-              <strong>
-                {power != null
-                  ? formatPower(power, powerFrom)
-                  : powerFrom === "APP" && win.status === "working"
-                    ? win.estimate
-                      ? "≈ " + formatPower(win.estimate.power.power, powerFrom)
-                      : "…"
-                    : "–"}
-              </strong>
-              {d.archetype && <span className="small">{d.archetype}</span>}
+              <strong>{bracket ?? "–"}</strong>
+              <span className="small">{bracketName(bracket) ?? "not rated"}</span>
             </button>
             <div className="score">
-              <span className="muted small">Saltiness</span>
+              <span className="muted small">Salt</span>
               <strong>{saltSum?.total != null ? saltSum.total.toFixed(1) : "–"}</strong>
               {saltSum?.level && <span className="small">{saltSum.level.toLowerCase()}</span>}
             </div>
+            {winScore}
             <button type="button" className="score score-btn" title="Cards I'm missing" onClick={() => setMissingOpen(true)}>
               <span className="muted small">Missing</span>
               <strong className={shaped.missing > 0 ? "warn-text" : "ok-text"}>{shaped.missing}</strong>
@@ -896,14 +862,10 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
             </button>
             {(() => {
               // The date of the scores and the deck's legality, beside the scores rather than on rows of their own.
-              const scored = d.scoredAt ? (
-                <p className="muted small">
-                  {view.salt?.source === "app" ? "Estimated by the app" : "Scored by Commander Salt"},{" "}
-                  {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
-                </p>
-              ) : d.scoreError ? (
-                <p className="warn-text small">Not scored: {d.scoreError}</p>
-              ) : null;
+              const scored =
+                rated && d.scoredAt ? (
+                  <p className="muted small">Rated {new Date(d.scoredAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>
+                ) : null;
               if (!view.legality && !scored) return null;
               return (
                 <div className="deck-meta">
@@ -959,11 +921,6 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                       Open on Archidekt
                     </a>
                   )}
-                  {d.saltId && (
-                    <a className="menu-link" href={`https://commandersalt.com/details/deck/${d.saltId}`} target="_blank" rel="noreferrer">
-                      Open on Commander Salt
-                    </a>
-                  )}
                 </div>
               </details>
               {!view.readOnly && (
@@ -976,9 +933,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                       Find these cards
                     </a>
                     <button onClick={() => setSelecting(true)}>Select cards</button>
-                    {!view.local && <button onClick={() => fromArchidekt("reload")}>Reload decklist</button>}
-                    {!view.local && <button onClick={() => fromArchidekt("refresh")}>Reload and score again</button>}
-                    {!view.local && <button onClick={() => fromArchidekt("rescore")}>Score again on Commander Salt</button>}
+                    {!view.local && <button onClick={fromArchidekt}>Reload decklist</button>}
                     <button onClick={() => setCatsOpen(true)}>Categories</button>
                     <button onClick={openPrimer}>Primer…</button>
                     <button onClick={() => setPackagesOpen(true)}>Packages…</button>
@@ -1046,7 +1001,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
               ))}
             </ul>
             <p className="muted small">
-              {view.salt?.source === "app" ? "Found by Commander Spellbook. " : "From Commander Salt’s analysis. "}Red: counts for the bracket (two cards, or early
+              Found by Commander Spellbook. Red: counts for the bracket (two cards, or early
               in the game); blue: doesn&apos;t.
             </p>
           </details>
@@ -1276,8 +1231,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           commanders={d.commanders}
           details={[
             `${d.cardCount} cards`,
-            ...(d.bracketRealistic != null ? [`Bracket ${d.bracketRealistic}`] : []),
-            ...(power != null ? [`Power ${formatPower(power, powerFrom)}`] : []),
+            ...(bracket != null ? [`Bracket ${bracket}`] : []),
           ]}
           sections={sections(shaped.main, prefs.group === "TYPE" ? "TYPE" : "CATEGORY")}
           priceLine={`Prices: ${view.priceTypeLabel}, in ${view.currency}`}
@@ -1285,9 +1239,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           onClose={() => setPrintOpen(false)}
         />
       )}
-      {rz && view.salt && (
-        <RuleZeroDialog view={view} start={rz} onClose={() => setRz(null)} win={win} power={power} />
-      )}
+      {rz && rated && <RuleZeroDialog view={view} roles={roles} onClose={() => setRz(false)} win={win} />}
       {line && view.rows.find((r) => r.lineUid === line) && (
         <LineDialog
           key={line + view.rows.find((r) => r.lineUid === line)!.quantity}
@@ -1470,45 +1422,26 @@ function MissingDialog({ view, money, showWishlist = true, onClose, onDone }: { 
   );
 }
 
-function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; start: "BRACKET" | "POWER"; onClose: () => void; win: WinState; power: number | null }) {
+/** The deck's bracket card (the app's), to look at or print on an A4 page with cut marks. */
+function RuleZeroDialog({ view, roles, onClose, win }: { view: Answer; roles: RoleCount[]; onClose: () => void; win: WinState }) {
   const [inkSaver, setInkSaver] = useState(false);
-  const [which, setWhich] = useState<"BOTH" | "BRACKET" | "POWER">(start);
-  const salt = view.salt!;
-  const deck = view.deck;
+  const card: BracketCardData = {
+    deck: view.deck,
+    cover: view.cover,
+    data: view.salt,
+    win: win.status === "done" ? win.win : null,
+    saltSum: view.saltSum ?? null,
+    roles,
+  };
   return (
-    <Dialog title="Rule-zero cards" onClose={onClose}>
+    <Dialog title="Bracket card" onClose={onClose}>
       <div className="stack">
-        <div className="inline">
-          <div className="seg text" role="group" aria-label="Cards">
-            {(
-              [
-                ["BRACKET", "Bracket"],
-                ["POWER", "Power level"],
-                ["BOTH", "Both"],
-              ] as const
-            ).map(([k, l]) => (
-              <button key={k} className={which === k ? "on" : ""} onClick={() => setWhich(k)}>
-                {l}
-              </button>
-            ))}
-          </div>
+        <BracketCardSvg card={card} inkSaver={inkSaver} className="rz-card-svg rz-dialog-card" />
+        <div className="dialog-actions">
           <label className="check small">
             <input type="checkbox" checked={inkSaver} onChange={(e) => setInkSaver(e.target.checked)} />
-            <span>Ink saver (light headers without the commander art)</span>
+            <span>Ink saver</span>
           </label>
-        </div>
-        <div className="rz-print">
-          {which !== "POWER" && <BracketCard deck={deck} cover={view.cover} data={salt} inkSaver={inkSaver} speed={win.status === "done" && win.win ? <SpeedSection win={win.win} /> : undefined} />}
-          {which !== "BRACKET" && (
-            <PowerCard deck={deck} cover={view.cover} data={salt} source={view.powerSource} power={power} error={view.powerError} inkSaver={inkSaver} saltSum={view.saltSum ?? null} />
-          )}
-        </div>
-        <div className="dialog-actions">
-          {deck.saltId && (
-            <a className="btn" href={`https://commandersalt.com/details/deck/${deck.saltId}`} target="_blank" rel="noreferrer">
-              Commander Salt&apos;s originals
-            </a>
-          )}
           <span className="spacer" />
           <button className="btn" onClick={onClose}>
             Close
@@ -1518,6 +1451,7 @@ function RuleZeroDialog({ view, start, onClose, win, power }: { view: Answer; st
           </button>
         </div>
       </div>
+      <BracketPrintRoot cards={[card]} inkSaver={inkSaver} />
     </Dialog>
   );
 }

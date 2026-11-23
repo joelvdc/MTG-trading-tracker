@@ -2422,276 +2422,64 @@ html[data-pic-size="l"] .deck-card-grid {
   }
 }
 
-/* ---- Rule-zero cards (the bracket and power cards), also for printing ---- */
-.rz-print {
-  display: flex;
-  flex-wrap: wrap;
+/* ---- Bracket cards (RuleZeroCards.tsx): SVG drawings of 63 x 88 mm, as the app draws them ---- */
+.rz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
-  justify-content: center;
+  margin-top: 12px;
 }
 
-.rz-card {
-  width: 360px;
-  max-width: 100%;
-  background: #fff;
-  color: #1c1b1f;
-  border-radius: 16px;
-  overflow: hidden;
-  font-size: 14px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
-}
-
-.rz-head {
-  height: 116px;
-  background-color: #26215c;
-  background-size: cover;
-  background-position: center 30%;
-}
-
-.rz-tint {
-  height: 100%;
-  background: rgba(38, 33, 92, 0.8);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 16px;
-}
-
-.rz-card.ink .rz-head {
-  background: #eeedfe;
-}
-
-.rz-card.ink .rz-tint {
-  background: transparent;
-}
-
-.rz-kind {
-  color: #afa9ec;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.rz-name {
-  color: #fff;
-  font-size: 22px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rz-commanders {
-  color: #cecbf6;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rz-card.ink .rz-kind {
-  color: #534ab7;
-}
-.rz-card.ink .rz-name {
-  color: #26215c;
-}
-.rz-card.ink .rz-commanders {
-  color: #3c3489;
-}
-
-.rz-tiles {
-  display: flex;
-  gap: 10px;
-  padding: 16px;
-}
-
-.rz-tile {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
-.rz-label-in {
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.rz-big {
-  font-size: 44px;
-  font-weight: 600;
-  line-height: 46px;
-}
-
-.rz-section {
-  border-top: 0.5px solid #cac4d0;
-  padding: 10px 16px;
-}
-
-.rz-section p {
-  margin: 2px 0;
-}
-
-.rz-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #49454f;
-  margin-bottom: 4px;
-}
-
-.rz-criterion {
-  display: flex;
-  gap: 8px;
-  color: #49454f;
-  padding: 2px 0;
-}
-
-.rz-criterion.hit {
-  color: #1c1b1f;
-}
-
-.rz-criterion.hit span:first-child,
-.rz-criterion.hit span:last-child {
-  color: #ba7517;
-  font-weight: 600;
-}
-
-.rz-bar-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 28px;
-  gap: 6px;
-  align-items: center;
-  padding: 2px 0;
-}
-
-.rz-track {
-  height: 9px;
-  border-radius: 5px;
-  background: #e7e0ec;
-  overflow: hidden;
-}
-
-.rz-fill {
+.rz-card-svg {
   display: block;
-  height: 100%;
-  background: #7f77dd;
-  border-radius: 5px;
-}
-
-.rz-value {
-  text-align: right;
-  font-size: 12px;
-  color: #49454f;
-}
-
-.rz-note,
-.rz-small {
-  font-size: 12px;
-  color: #49454f;
-}
-
-.rz-error {
-  color: #b3261e;
-}
-
-.rz-pill {
-  font-size: 12px;
-  color: #3c3489;
-  background: #eeedfe;
-  border-radius: 8px;
-  padding: 3px 8px;
-}
-
-.rz-quote {
-  color: #3c3489;
-  background: #eeedfe;
-  border-radius: 8px;
-  padding: 6px 10px;
-}
-
-.rz-meter {
-  display: flex;
-  gap: 3px;
-  margin-top: 8px;
-}
-
-.rz-meter > span {
-  flex: 1;
-  height: 12px;
-  border-radius: 3px;
-  background: #e7e0ec;
-  overflow: hidden;
-}
-
-.rz-meter > span > span {
-  display: block;
-  height: 100%;
-}
-
-.rz-two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.rz-wincons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  font-size: 12px;
-  gap: 0 8px;
-}
-
-.rz-foot {
-  border-top: 0.5px solid #cac4d0;
-  padding: 8px 16px;
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 11px;
-  color: #49454f;
-}
-
-.rz-speed-bars {
-  display: flex;
-  gap: 3px;
-  margin-top: 6px;
-}
-
-.rz-speed-bars > div {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 11px;
-}
-
-.rz-speed-bars .cell {
   width: 100%;
-  height: 22px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: auto;
+  aspect-ratio: 63 / 88;
+  border-radius: 12px;
+}
+
+.rz-dialog-card {
+  display: block;
+  width: min(100%, 380px);
+  margin: 0 auto;
+}
+
+/* The A4 sheets exist only for printing: body.printing-cards (set while printing) shows them alone, margin-free. */
+.rz-print-root {
+  display: none;
+}
+
+@page rzcards {
+  size: A4;
+  margin: 0;
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  body.printing-cards > *:not(.rz-print-root) {
+    display: none !important;
   }
-  .rz-print,
-  .rz-print * {
+  body.printing-cards {
+    background: #fff;
+    margin: 0;
+  }
+  body.printing-cards .rz-print-root {
+    display: block;
+  }
+  .rz-print-root,
+  .rz-print-root * {
     visibility: visible;
   }
-  .rz-print {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-  .rz-card {
-    box-shadow: none;
-    border: 1px solid #ccc;
-    break-inside: avoid;
+  .rz-sheet {
+    page: rzcards;
+    display: block;
+    width: 210mm;
+    height: 297mm;
+    break-after: page;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+  .rz-sheet:last-child {
+    break-after: auto;
   }
 }
 
