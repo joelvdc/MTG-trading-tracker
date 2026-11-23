@@ -82,7 +82,8 @@ turn on two-step login with an authenticator app.
 - On the website: **Undo** for every deck change, **Select** to change many cards at once (category, copies,
   printing, finish), and a **playtester** to draw hands and goldfish the deck, with tokens, counters and odds.
 - Bracket, power level, game changers, combos, mana stats, the chance to cast your commander on time, and a simulated
-  win turn.
+  win turn. Decks made in the app get an **estimated bracket and salt** (Commander Salt can't score them), with the
+  reasons on the bracket card ("Why bracket 4").
 - A **Commander legality check**: banned cards, cards outside the commander's colours, extra copies, the card count,
   and whether the commander (or a pair of partners, a Background, a Doctor and companion) may lead.
 - Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the
@@ -113,12 +114,15 @@ turn on two-step login with an authenticator app.
 - **Themes** (Settings → Theme): System, Dark, Light, and one per basic land (Plains, Island, Swamp, Mountain,
   Forest), kept per browser.
 - **Print** the collection, a binder or a deck as a list (save it as PDF).
+- Decks as a list, as **Stacks** (overlapping card pictures per category) or as a **Grid** of pictures.
+- **Download a copy now** of your data (Settings → Website backups); the website keeps the last 3 days of backups.
 - A **weekly email** on the day you choose: your collection's value against a week ago, the week's biggest gainers and
   losers, wishlist cards at your price, and changes in your decks.
 
 ## Data
 Card data and pictures from [Scryfall](https://scryfall.com); prices from Cardmarket, TCGplayer and Card Kingdom;
-brackets and combos from [Commander Salt](https://www.commandersalt.com/); recommendations from
+brackets and combos from [Commander Salt](https://www.commandersalt.com/) and, for decks made in the app,
+[Commander Spellbook](https://commanderspellbook.com/) and salt scores from MTGJSON (EDHREC's); recommendations from
 [EDHREC](https://edhrec.com/) and [recommander.cards](https://recommander.cards/); precons from
 [MTGJSON](https://mtgjson.com/); exchange rates from the European Central Bank; mana symbols from the
 [Mana font](https://mana.andrewgioia.com) by Andrew Gioia.

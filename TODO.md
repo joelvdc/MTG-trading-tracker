@@ -14,21 +14,22 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-23, after app 1.113)
-- **Newest (2026-11-23):** app 1.113 + website: Decks headings "MTG Trader" (was "Local · in the app…") and
-  "Retired"; the website's Share window no longer copies on opening, Copy shows "Copied ✓" for 2 s.
-  Before that, 1.112 + website: "Forgot password?" by email (`/forgot`, `/reset`, link for an hour, 3 an
-  hour), email required at sign-up (website and app; the weekly email's address, weekly off by default), optional
-  two-step login (Settings → Two-step login, TOTP + 10 recovery codes, asked at login on website and app; the owner's
-  reset turns it off). Tables `password_resets`, `two_factor`; npm `qrcode`. Built by DeepSeek through Mistral.
-  Before that: 1.111 signed cards leave Unsorted, Done goes back; 1.110 fast Sort Done / trade Apply; 1.109 trade binder
-  takes Decks copies last; 1.108 active decks only in seat pickers, minimal Sort screen; 1.107 sort with your decks.
-- **Waiting on the owner:** add your email under Settings → Email (website) if it isn't there and confirm it; try
-  "Forgot password?" once; optionally turn on two-step login. Still from before: try the sort with the real collection,
-  1.103's scan price and "Ordered"; green light for the ✕ delete column in the website's wishlist table; Compare with a
-  real Archidekt link; the email to support@moxfield.com; asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** older app versions (before 1.112) can't log in to an account with two-step login on, nor
-  make accounts. The test emulator was wiped on 2026-11-22 (fresh phone: install the release APK again to test).
+## Right now (2026-11-23, after app 1.114)
+- **Newest (2026-11-23):** app 1.114 + website: local decks get an estimated bracket and salt (the website rates them:
+  Commander Spellbook combos, Scryfall tags in table `card_facts`, MTGJSON salt from the `card-salt` branch, made by the
+  weekly GitHub job `card-salt.yml`); bracket card has "Why bracket N" and combo "wins · mana value N"; power card shows
+  salt total, level and saltiest cards; "Archidekt (other users)"; website deck page Stacks/Grid views; website keeps
+  3 database backups (Nextcloud 10) and has Download a copy now. No power correction for local decks (calibrated
+  against 23 scored decks: it didn't beat no correction). Built by DeepSeek through Mistral, reviewed by Opus.
+  Before that: 1.113 deck headings "MTG Trader"/"Retired"; 1.112 forgot password, email at sign-up, two-step login.
+- **Waiting on the owner:** open a local deck (website or app) to see its bracket card; the first ratings only work
+  once `card_facts` is built (the daily cron builds it on the first day the categories don't rebuild, so by about
+  2026-11-25). Still from before: add/confirm your email, try "Forgot password?", the sort with the real collection,
+  green light for the ✕ delete column in the website's wishlist, Compare with a real Archidekt link, the email to
+  support@moxfield.com, asking EDHREC/Archidekt for permission.
+- **Expected to look odd:** local decks show "Not rated yet" until `card_facts` exists (`/api/health` cardFacts > 0);
+  salt levels are approximate (Mild < 25, Moderate < 40, High), Commander Salt's own salt numbers differ. Older app
+  versions show local decks' new bracket data without the "Why" lines.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -61,30 +62,6 @@ Owner: "would it be possible for the app/website to import decks from moxfield? 
   automated readers).
 - Decision: ask Moxfield first, and build the link import only if they agree. Pasting Moxfield's export already works
   in the app and on the website.
-
-### Commander Salt scores for local decks (2026-11-05; researched 2026-11-22)
-Owner's idea: a copy of the decklist on a site Commander Salt accepts. Commander Salt itself only takes a deck link
-(`POST api.commandersalt.com/decks?url=`; its site code has no pasted-list import). The 13 sites it accepts, checked
-2026-11-22 for a way for the app/website to put a deck there:
-- **Archidekt**: account needed; no official write API. The site's own (unofficial) endpoints can create and edit
-  decks with a login, but the app dropped its Archidekt login on purpose in 1.78 (collection sync and deck edits
-  removed), and Archidekt's terms forbid automated requests. Would mean bringing a login back: not recommended.
-- **CommanderView** (commanderview.app): account needed; it has real per-user API keys (`/api/account/api-keys`)
-  and deck endpoints (`/api/decks`, `/api/decks/import`, `/api/decks/public`). Possibly an allowed way; untested:
-  needs an account and checking their terms and whether a deck can be public through the key.
-- **Moxfield**: account needed, no public API (access only on request; our email is still pending). No.
-- **TappedOut, MTGGoldfish, untap.in**: account needed, no write API. No.
-- **Scryfall**: has decks on accounts, but its API is read-only; it would mean logging in with the user's password
-  and posting the site's own forms. Fragile, and it risks the one service we're fully fine with. No.
-- **ManaBox, TopDecked**: phone apps; decks are made in the app, no API. No.
-- **TopDeck.gg, Hareruya**: tournament decklists only, not user decks. No.
-- **EDHREC deckpreview**: previews of decks EDHREC collected from other sites; no way to make one. No.
-- **EDHspace**: account needed, no API; it scores its own decks through Commander Salt behind its login. No.
-- Earlier fallback (still possible): half-manual "Score on Commander Salt": copy the list, open Archidekt's new-deck
-  page, the owner pastes and saves, pastes the link back.
-- Best long-term: ask Commander Salt's devs (Discord) whether they could accept a pasted list or an MTG Trader share
-  link (`mtgtrader.vercel.app/s/<code>`, read-only, could offer a plain-text or JSON decklist for them).
-- Open questions: Archidekt route vs asking the devs first; website too, or only the app.
 
 ### Passkeys (2026-11-22)
 Owner: add passkey login, "for both website and app". Plan sketch (from the 1.112 discussion): website with
@@ -172,6 +149,7 @@ for later:
 - 1.111 (2026-11-22): signed cards leave Unsorted in the sort; Done goes back to the collection
 - 1.112 (2026-11-22): forgot password by email, email at sign-up, optional two-step login
 - 1.113 (2026-11-23): deck headings "MTG Trader" and "Retired"; Share window's Copy shows "Copied ✓"
+- 1.114 (2026-11-23): estimated bracket and salt for local decks (website rates them), why-bracket lines, Archidekt (other users), website Stacks/Grid, 3 backups + download
 - 1.108 (2026-11-22): active decks only in game seat pickers, minimal Sort screen, Decks binder on by default, fixes
 - 1.107 (2026-11-21): sort with your decks (active decks, Decks binder, own levels, copies together, deck filter/sort/column), app and website
 - 1.106 (2026-11-21): privacy policy covers the app, terms page, contact address, About links
