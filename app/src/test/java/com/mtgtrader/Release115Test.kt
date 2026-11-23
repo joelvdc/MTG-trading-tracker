@@ -1,11 +1,9 @@
 package com.mtgtrader
 
-import com.mtgtrader.data.BracketSource
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
 import com.mtgtrader.data.LocalRating
-import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltSum
 import org.junit.Assert.assertEquals
@@ -16,7 +14,7 @@ import org.junit.Test
 
 /**
  * 1.115: the deck's salt sum, added up from EDHREC's salt per card as the website does (lands, basics and the commander
- * included, the maybeboard left out), and the rating that follows the "Bracket from" setting.
+ * included, the maybeboard left out), and since 1.116 the stale rating that every deck follows.
  */
 class Release115Test {
     // ---- SaltSum.of ------------------------------------------------------------------------------
@@ -130,10 +128,10 @@ class Release115Test {
         assertEquals(listOf("Winter Orb"), snow.saltiest.map { it.name })
     }
 
-    // ---- stale and needsCommanderSalt -------------------------------------------------------------
+    // ---- stale ------------------------------------------------------------------------------------
 
-    private fun deck(local: Boolean = true, saltCard: String? = null) =
-        Deck(if (local) -5 else 5, "Brew", "", "Atraxa, Praetors' Voice", null, null, "WUBG", 34, saltCard = saltCard, saltId = if (local) null else "s")
+    private fun deck(local: Boolean = true, saltCard: String? = null, scoredAt: Long = 2_000_000_000_000L) =
+        Deck(if (local) -5 else 5, "Brew", "", "Atraxa, Praetors' Voice", null, null, "WUBG", 34, saltCard = saltCard, saltId = if (local) null else "s", scoredAt = scoredAt)
 
     // A card for the deck's list. It comes after [deck]: the member functions above it aren't set up when it's made.
     private fun listCard(name: String, quantity: Int = 1, commander: Boolean = false) =
@@ -150,68 +148,18 @@ class Release115Test {
     private val own = SaltCard(gameChangers = listOf("Smothering Tithe"), version = SaltCard.CURRENT).encode()
 
     @Test
-    fun aLocalDeckFollowsTheListWhenBracketsComeFromCommanderSalt() {
-        val source = BracketSource.COMMANDER_SALT
-        assertTrue(LocalRating.stale(deck(), cards, source))
-        assertFalse(LocalRating.stale(deck(saltCard = app()), cards, source))
-        // Its own Commander Salt data (made local from Archidekt) isn't replaced.
-        assertFalse(LocalRating.stale(deck(saltCard = own), cards, source))
-        // Nor is a deck from Archidekt, which Commander Salt scored itself long ago.
-        assertFalse(LocalRating.stale(deck(local = false, saltCard = own), cards, source))
-        // A deck from Archidekt holding the app's estimate but no Commander Salt data has Commander Salt score it first.
-        assertFalse(LocalRating.stale(deck(local = false, saltCard = app()), cards, source))
-        assertTrue(LocalRating.needsCommanderSalt(deck(local = false, saltCard = app()), source))
-    }
-
-    @Test
-    fun aDeckFromArchidektIsLeftAloneWhenBracketsComeFromCommanderSalt() {
-        val source = BracketSource.COMMANDER_SALT
-        assertFalse(LocalRating.stale(deck(local = false), cards, source))
-        assertFalse(LocalRating.stale(deck(local = false, saltCard = own), cards, source))
-        // It holds the app's estimate and no Commander Salt data: Commander Salt has to score it first.
-        assertFalse(LocalRating.stale(deck(local = false, saltCard = app()), cards, source))
-        assertTrue(LocalRating.needsCommanderSalt(deck(local = false, saltCard = app()), source))
-        assertFalse(LocalRating.needsCommanderSalt(deck(local = false), source))
-        assertFalse(LocalRating.needsCommanderSalt(deck(local = false, saltCard = own), source))
-        assertFalse(LocalRating.needsCommanderSalt(deck(saltCard = app()), source))
-    }
-
-    @Test
-fun everyDeckFollowsTheListWhenBracketsComeFromTheApp() {
-        val source = BracketSource.APP
+    fun everyDeckFollowsTheListSince116() {
         for (local in listOf(true, false)) {
-            assertTrue("no card, local=$local", LocalRating.stale(deck(local = local), cards, source))
-            // Commander Salt's own data: replaced by the app's estimate for a deck from Archidekt, kept for a local one.
-            assertEquals("Commander Salt's card, local=$local", !local, LocalRating.stale(deck(local = local, saltCard = own), cards, source))
+            assertTrue("no card, local=$local", LocalRating.stale(deck(local = local), cards))
+            // Commander Salt's own data is no longer what the cards show: made again.
+            assertTrue("Commander Salt's card, local=$local", LocalRating.stale(deck(local = local, saltCard = own), cards))
             // The app's estimate, made for this list and this rating version, is kept.
-            assertFalse("a fresh estimate, local=$local", LocalRating.stale(deck(local = local, saltCard = app()), cards, source))
-            assertTrue("another list, local=$local", LocalRating.stale(deck(local = local, saltCard = app(listKey = "00000000")), cards, source))
-            assertTrue("rating version 1, local=$local", LocalRating.stale(deck(local = local, saltCard = app(ratingVersion = 1)), cards, source))
-            assertTrue("no fingerprint kept, local=$local", LocalRating.stale(deck(local = local, saltCard = app(listKey = null)), cards, source))
-            assertFalse("no cards, local=$local", LocalRating.stale(deck(local = local), emptyList(), source))
-            // Nothing to fetch from Commander Salt: it's the app that rates.
-            assertFalse("Commander Salt not needed, local=$local", LocalRating.needsCommanderSalt(deck(local = local, saltCard = own), source))
+            assertFalse("a fresh estimate, local=$local", LocalRating.stale(deck(local = local, saltCard = app()), cards))
+            assertTrue("another list, local=$local", LocalRating.stale(deck(local = local, saltCard = app(listKey = "00000000")), cards))
+            assertTrue("rating version 1, local=$local", LocalRating.stale(deck(local = local, saltCard = app(ratingVersion = 1)), cards))
+            assertTrue("no fingerprint kept, local=$local", LocalRating.stale(deck(local = local, saltCard = app(listKey = null)), cards))
+            assertTrue("rated before RATED_SINCE, local=$local", LocalRating.stale(deck(local = local, saltCard = app(), scoredAt = LocalRating.RATED_SINCE - 1), cards))
+            assertFalse("no cards, local=$local", LocalRating.stale(deck(local = local), emptyList()))
         }
-    }
-    // ---- the setting -----------------------------------------------------------------------------------------------------------------------
-
-    @Test
-    fun theBracketSourceReadsItsKey() {
-        assertEquals(BracketSource.COMMANDER_SALT, BracketSource.fromKey("COMMANDER_SALT"))
-        assertEquals(BracketSource.APP, BracketSource.fromKey("APP"))
-        assertEquals(BracketSource.COMMANDER_SALT, BracketSource.fromKey(null))
-        assertEquals(BracketSource.COMMANDER_SALT, BracketSource.fromKey("nonsense"))
-        assertEquals(listOf("Commander Salt", "Estimated by the app"), BracketSource.entries.map { it.label })
-    }
-
-    @Test
-    fun thePowerCardsCreditTheSaltFromMTGJSON() {
-        // Commander Salt's card is a line about the data; the app's estimate names its own sources.
-        assertEquals(listOf("Data: Commander Salt, MTGJSON"), com.mtgtrader.ui.powerCredit(PowerSource.COMMANDER_SALT))
-        assertEquals(
-            listOf("Power level: edhpowerlevel.com", "Data: Commander Salt, MTGJSON"),
-            com.mtgtrader.ui.powerCredit(PowerSource.EDH_POWER_LEVEL),
-        )
-        assertEquals(listOf("Data: Scryfall, MTGJSON, Commander Spellbook"), com.mtgtrader.ui.powerCredit(PowerSource.COMMANDER_SALT, fromApp = true))
     }
 }

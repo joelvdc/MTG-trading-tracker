@@ -1,9 +1,9 @@
 package com.mtgtrader
 
 import com.mtgtrader.data.BracketTag
-import com.mtgtrader.data.CommanderSaltApi
 import com.mtgtrader.data.ManaOddsCalc
 import com.mtgtrader.data.SaltCard
+import com.mtgtrader.data.SaltCardParser
 import com.mtgtrader.data.SaltCombo
 import com.mtgtrader.data.StatsCard
 import kotlinx.serialization.Serializable
@@ -45,7 +45,7 @@ class Release146ComboTest {
            ]}}}
     """.trimIndent()
 
-    private val card = CommanderSaltApi.parse(body).card!!
+    private val card = SaltCardParser.parse(Json.parseToJsonElement(body).jsonObject)
 
     @Test
     fun readsEveryComboAndWhetherItCounts() {

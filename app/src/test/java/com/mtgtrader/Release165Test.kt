@@ -1,17 +1,15 @@
 package com.mtgtrader
 
 import com.mtgtrader.data.Deck
-import com.mtgtrader.data.PowerSource
+import com.mtgtrader.data.SaltCard
 import com.mtgtrader.ui.CardSheets
-import com.mtgtrader.ui.PrintChoice
-import com.mtgtrader.ui.PrintPlan
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.65: the bracket and power level cards as an A4 PDF, at the size of a Magic card, to print and cut. */
+/** 1.65: the bracket cards as an A4 PDF, at the size of a Magic card, to print and cut (the only rule-zero card since 1.116). */
 class Release165Test {
-    private fun deck(id: Long, power: Double? = 6.0) = Deck(id, "Deck $id", "joelvdc", "Commander", null, null, "G", 100, powerLevel = power, bracketRealistic = 3)
+    private fun deck(id: Long, rated: Boolean = true) =
+        Deck(id, "Deck $id", "joelvdc", "Commander", null, null, "G", 100, saltCard = if (rated) SaltCard(source = "app", bracket = 3).encode() else null)
 
     @Test fun nineMagicSizedCardsFitOnA4WithMargins() {
         assertEquals(63f, CardSheets.CARD_W)
@@ -32,24 +30,13 @@ class Release165Test {
         assertEquals(297.0, CardSheets.PDF_H / CardSheets.POINTS_PER_MM.toDouble(), 0.5)
     }
 
-    @Test fun bracketCardsComeFirstAndEachKindStartsANewPage() {
-        val pages = CardSheets.pages((1..10).map { "b$it" }, (1..4).map { "p$it" })
-        assertEquals(listOf(9, 1, 4), pages.map { it.size })
+    @Test fun nineBracketCardsToAPage() {
+        val pages = CardSheets.pages((1..10).map { "b$it" })
+        assertEquals(listOf(9, 1), pages.map { it.size })
         assertEquals("b10", pages[1].single())
-        assertTrue(pages[2].all { it.startsWith("p") })
-        assertEquals(emptyList<List<String>>(), CardSheets.pages(emptyList<String>(), emptyList()))
-    }
-
-    @Test fun powerCardsOnlyForRatedDecks() {
-        val decks = listOf(deck(1), deck(2, power = null), deck(3))
-        val both = PrintPlan.of(decks, PrintChoice.BOTH, PowerSource.COMMANDER_SALT)
-        assertEquals(3, both.bracket.size)
-        assertEquals(listOf(1L, 3L), both.power.map { it.archidektId })
-        assertEquals(5, both.cards)
-        assertEquals(2, both.pages)
-        assertEquals(0, PrintPlan.of(decks, PrintChoice.BRACKET, PowerSource.COMMANDER_SALT).power.size)
-        assertEquals(0, PrintPlan.of(decks, PrintChoice.POWER, PowerSource.COMMANDER_SALT).bracket.size)
-        // Another power level source that hasn't rated the decks: no power cards.
-        assertEquals(0, PrintPlan.of(decks, PrintChoice.POWER, PowerSource.EDH_POWER_LEVEL).cards)
+        assertEquals(emptyList<List<String>>(), CardSheets.pages(emptyList<String>()))
+        // Only decks the website rated get a card.
+        val decks = listOf(deck(1), deck(2, rated = false), deck(3))
+        assertEquals(listOf(1L, 3L), decks.filter { it.rated }.map { it.archidektId })
     }
 }

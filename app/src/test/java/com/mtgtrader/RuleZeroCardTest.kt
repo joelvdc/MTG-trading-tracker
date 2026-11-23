@@ -1,16 +1,17 @@
 package com.mtgtrader
 
 import com.mtgtrader.data.BracketAxes
-import com.mtgtrader.data.CommanderSaltApi
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckSort
 import com.mtgtrader.data.DeckSorting
-import com.mtgtrader.data.EdhPowerLevelLink
-import com.mtgtrader.data.EdhReading
-import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.SaltCard
+import com.mtgtrader.data.SaltCardParser
+import com.mtgtrader.data.WinCounted
+import com.mtgtrader.data.WinOdds
+import com.mtgtrader.data.WinTurns
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RuleZeroCardTest {
@@ -49,7 +50,7 @@ class RuleZeroCardTest {
                "salt": {"profile": {"headline": {"saltPercentage": 51.4, "intensityLabel": "High", "dominantFamilyLabel": "Board wipes"}}},
                "manabase": {"percentages": {"curve": 99.85, "manaFixing": 92.997, "quality": 66.19}}}}
         """.trimIndent()
-        val card = CommanderSaltApi.parse(body).card!!
+        val card = SaltCardParser.parse(Json.parseToJsonElement(body).jsonObject)
         assertEquals(listOf("Field of the Dead"), card.gameChangers)
         assertEquals(listOf(listOf("Devoted Druid", "Mikaeus, the Unhallowed")), card.twoCardCombos)
         assertEquals(listOf("Redundant combo wins"), card.notes.map { it.label })
@@ -67,28 +68,18 @@ class RuleZeroCardTest {
     }
 
     @Test
-    fun edhPowerLevelLinkUsesFrontFacesAndSections() {
-        val url = EdhPowerLevelLink.url(listOf("Auntie Ool, Cursewretch"), listOf("Malakir Rebirth // Malakir Mire" to 1, "Swamp" to 5))
-        assertEquals(
-            "https://edhpowerlevel.com/?d=Commander~1+Auntie+Ool%2C+Cursewretch~~Mainboard~1+Malakir+Rebirth~5+Swamp~Z~",
-            url,
-        )
-    }
-
-    @Test
-    fun readsThePowerLevelOffThePage() {
-        val page = "Reset All\nAuntie Ool, Cursewretch\n100 total cards imported.\n⚡\nPower Level\n6.70 / 10\n⚖️\nTipping Point\n4"
-        assertEquals(EdhReading(6.70, 100), EdhPowerLevelLink.parse(page))
-        assertNull(EdhPowerLevelLink.parse("Scan your deck\nAnalyze List"))
-    }
-
-    @Test
-    fun sortingFollowsThePowerSource() {
-        fun deck(name: String, salt: Double?, edh: Double?) =
-            Deck(name.hashCode().toLong(), name, "", "", null, null, "", 100, powerLevel = salt, edhPowerLevel = edh)
-        val decks = listOf(deck("A", 4.4, 6.7), deck("B", 6.4, 5.1), deck("C", 5.4, null))
-        assertEquals(listOf("B", "C", "A"), DeckSorting.sort(decks, DeckSort.POWER, false, PowerSource.COMMANDER_SALT).map { it.name })
-        // Decks edhpowerlevel.com hasn't rated yet go last.
-        assertEquals(listOf("A", "B", "C"), DeckSorting.sort(decks, DeckSort.POWER, false, PowerSource.EDH_POWER_LEVEL).map { it.name })
+    fun sortingFollowsTheWinTurn() {
+        fun deck(name: String) = Deck(name.hashCode().toLong(), name, "", "", null, null, "", 100)
+        val decks = listOf(deck("A"), deck("B"), deck("C"))
+        // The turn 4 in 10 games are won by (10% by turn 7, 40% by turn 9, 60% by turn 8): as worked out by WinOdds.
+        fun odds(byTurn: List<Int>) = WinOdds(10_000, byTurn, byTurn.map { 0 }, emptyMap(), 0, WinCounted())
+        WinTurns.put(decks[0].archidektId, odds(listOf(0, 0, 0, 0, 0, 0, 10, 60, 60)))
+        WinTurns.put(decks[1].archidektId, odds(listOf(0, 0, 0, 0, 0, 0, 0, 20, 40)))
+        WinTurns.put(decks[2].archidektId, null)
+        assertEquals(listOf("A", "B", "C"), DeckSorting.sort(decks, DeckSort.WIN_TURN, false).map { it.name })
+        // Decks without a win turn go last, whichever way round.
+        assertEquals(listOf("B", "A", "C"), DeckSorting.sort(decks, DeckSort.WIN_TURN, true).map { it.name })
+        // A setting saved by an older version still means the win turn.
+        assertEquals(DeckSort.WIN_TURN, DeckSort.fromKey("POWER"))
     }
 }

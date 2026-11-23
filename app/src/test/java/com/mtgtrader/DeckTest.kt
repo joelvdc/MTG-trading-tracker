@@ -3,7 +3,6 @@ package com.mtgtrader
 import com.mtgtrader.data.ArchidektApi
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.CardTarget
-import com.mtgtrader.data.CommanderSaltApi
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckSort
 import com.mtgtrader.data.DeckSorting
@@ -14,12 +13,15 @@ import com.mtgtrader.data.DeckCardSort
 import com.mtgtrader.data.DeckGroupBy
 import com.mtgtrader.data.DeckGrouping
 import com.mtgtrader.data.DeckLinks
+import com.mtgtrader.data.SaltCard
+import com.mtgtrader.data.SaltCardParser
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.IOException
 
 class DeckLinksTest {
     @Test
@@ -244,28 +246,36 @@ class ArchidektParseTest {
 }
 
 class DeckSortingTest {
-    private fun deck(name: String, power: Double?, realistic: Int?, baseline: Int?, updated: Long?) =
+    private fun deck(name: String, baseline: Int?, updated: Long?, saltCard: String? = null) =
         Deck(archidektId = name.hashCode().toLong().let { if (it < 0) -it else it } + 1, name = name, owner = "", commanders = "", commanderScryfallId = null,
-            artUrl = null, colorIdentity = "", cardCount = 100, powerLevel = power, bracketRealistic = realistic,
-            bracketBaseline = baseline, archidektUpdatedAt = updated)
+            artUrl = null, colorIdentity = "", cardCount = 100, bracketBaseline = baseline, archidektUpdatedAt = updated, saltCard = saltCard)
+
+    /** The website's estimate in [bracket], as it keeps it with the deck since 1.116. */
+    private fun estimate(bracket: Int?) = SaltCard(source = "app", bracket = bracket).encode()
 
     private val decks = listOf(
-        deck("Baba", 6.4, 3, 3, 300),
-        deck("Auntie Plague", 4.4, 2, 3, 200),
-        deck("Taranika", 5.4, 3, 2, null),
-        deck("Unscored", null, null, null, 100),
+        deck("Baba", 3, 300, estimate(3)),
+        deck("Auntie Plague", 3, 200, estimate(2)),
+        deck("Taranika", null, null, estimate(3)),
+        deck("Unscored", null, 100),
     )
 
-    private fun names(sort: DeckSort, reverse: Boolean = false) = DeckSorting.sort(decks, sort, reverse).map { it.name }
+    // The turn each deck wins 4 in 10 games by (worked out by WinOdds, far too slow for a test): null for none.
+    private val turns = mapOf("Baba" to 9, "Auntie Plague" to 7, "Taranika" to 8, "Unscored" to null)
+
+    private fun names(sort: DeckSort, reverse: Boolean = false) =
+        DeckSorting.sort(decks, sort, reverse) { turns[it.name] }.map { it.name }
 
     @Test
-    fun sortsStrongestAndNewestFirstWithUnknownsLast() {
+    fun sortsByNameFastestAndNewestFirstWithUnknownsLast() {
         assertEquals(listOf("Auntie Plague", "Baba", "Taranika", "Unscored"), names(DeckSort.NAME))
         assertEquals(listOf("Unscored", "Taranika", "Baba", "Auntie Plague"), names(DeckSort.NAME, reverse = true))
-        assertEquals(listOf("Baba", "Taranika", "Auntie Plague", "Unscored"), names(DeckSort.POWER))
-        assertEquals(listOf("Auntie Plague", "Taranika", "Baba", "Unscored"), names(DeckSort.POWER, reverse = true))
-        // Same realistic bracket 3: the higher baseline bracket wins.
-        assertEquals(listOf("Baba", "Taranika", "Auntie Plague", "Unscored"), names(DeckSort.BRACKET))
+        // The win turn, lowest first; the deck without one last, even when reversed.
+        assertEquals(listOf("Auntie Plague", "Taranika", "Baba", "Unscored"), names(DeckSort.WIN_TURN))
+        assertEquals(listOf("Baba", "Taranika", "Auntie Plague", "Unscored"), names(DeckSort.WIN_TURN, reverse = true))
+        // Brackets 2 and 3: the 3s by win turn (same as the win turn sort), then the 2.
+        assertEquals(listOf("Taranika", "Baba", "Auntie Plague", "Unscored"), names(DeckSort.BRACKET))
+        assertEquals(listOf("Auntie Plague", "Baba", "Taranika", "Unscored"), names(DeckSort.BRACKET, reverse = true))
         assertEquals(listOf("Baba", "Auntie Plague", "Unscored", "Taranika"), names(DeckSort.MODIFIED))
         assertEquals(listOf("Unscored", "Auntie Plague", "Baba", "Taranika"), names(DeckSort.MODIFIED, reverse = true))
     }
@@ -280,7 +290,7 @@ class DeckSortingTest {
         assertEquals(300L, decks[0].modifiedAt)
         assertEquals(
             listOf("Baba", "Local new", "Auntie Plague", "Unscored", "Local unknown", "Taranika"),
-            DeckSorting.sort(decks + local + localUnknown, DeckSort.MODIFIED, false).map { it.name },
+            DeckSorting.sort(decks + local + localUnknown, DeckSort.MODIFIED, false) { turns[it.name] }.map { it.name },
         )
     }
 
@@ -318,6 +328,7 @@ class ArchidektUserDecksTest {
 }
 
 class CommanderSaltTest {
+    /** What the rule-zero cards keep of Commander Salt's deck reply (the API that fetched it left in 1.116). */
     @Test
     fun readsScoresFromDeckReply() {
         val body = """
@@ -327,38 +338,8 @@ class CommanderSaltTest {
                          "salt": {"profile": {"headline": {"saltPercentage": 51.4}}},
                          "powerLevel": {"ratings": {"overall": 4.43}}}}
         """.trimIndent()
-        val s = CommanderSaltApi.parse(body)
-        assertEquals("aee8080ad777055f553ef746883373fa", s.saltId)
-        assertEquals(4.432166, s.powerLevel!!, 1e-9)
-        assertEquals(2, s.bracketRealistic)
-        assertEquals(3, s.bracketBaseline)
-        assertEquals(51.4, s.saltPercent!!, 1e-9)
-        assertEquals("Combo / Control", s.archetype)
-        assertTrue(s.complete)
-    }
-
-    @Test(expected = IOException::class)
-    fun unknownDeckIsAnError() {
-        CommanderSaltApi.parse("null")
-    }
-
-    @Test
-    fun deckIdIsMd5OfArchidektApiUrl() {
-        assertEquals("aee8080ad777055f553ef746883373fa", CommanderSaltApi.deckId(20263351))
-    }
-
-    @Test
-    fun errorMessageUsesServerText() {
-        assertEquals(
-            "Deck URL invalid, or deck is not publicly visible",
-            CommanderSaltApi.errorMessage("""{"message":"ERROR: Deck URL invalid, or deck is not publicly visible"}""", 404),
-        )
-        assertEquals("Commander Salt error 502", CommanderSaltApi.errorMessage("<html>bad gateway</html>", 502))
-    }
-
-    @Test
-    fun recognisesPng() {
-        assertTrue(CommanderSaltApi.isPng(byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 13, 10, 26, 10, 0)))
-        assertFalse(CommanderSaltApi.isPng("{\"message\":\"x\"}".toByteArray()))
+        val s = SaltCardParser.parse(Json.parseToJsonElement(body).jsonObject)
+        assertEquals("Combo / Control", s.playStyle)
+        assertTrue(s.current)
     }
 }

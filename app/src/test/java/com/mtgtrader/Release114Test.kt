@@ -1,6 +1,5 @@
 package com.mtgtrader
 
-import com.mtgtrader.data.BracketSource
 import com.mtgtrader.data.CardRef
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
@@ -64,27 +63,31 @@ class Release114Test {
 
     // ---- stale -----------------------------------------------------------------------------------
 
-    private fun deck(local: Boolean = true, saltCard: String? = null) =
-        Deck(if (local) -5 else 5, "Brew", "", "Atraxa, Praetors' Voice", null, null, "WUBG", 34, saltCard = saltCard)
+    private fun deck(local: Boolean = true, saltCard: String? = null, scoredAt: Long = 2_000_000_000_000L) =
+        Deck(if (local) -5 else 5, "Brew", "", "Atraxa, Praetors' Voice", null, null, "WUBG", 34, saltCard = saltCard, scoredAt = scoredAt)
 
     private fun rated(source: String? = "app", listKey: String? = "1e63c951", ratingVersion: Int? = LocalRating.RATING_VERSION) =
         SaltCard(source = source, bracket = 3, listKey = listKey, ratingVersion = ratingVersion).encode()
 
     @Test
-    fun aRatingIsStaleOnlyForALocalDeckWhoseListItNoLongerFits() {
+    fun aRatingIsStaleOnlyWhileTheDeckNoLongerHoldsIt() {
         assertEquals(2, LocalRating.RATING_VERSION)
-        val salt = BracketSource.COMMANDER_SALT
-        assertTrue("no rating yet", LocalRating.stale(deck(), sample, salt))
-        assertFalse("a fresh rating", LocalRating.stale(deck(saltCard = rated()), sample, salt))
-        assertTrue("another list", LocalRating.stale(deck(saltCard = rated(listKey = "00000000")), sample, salt))
-        assertTrue("no fingerprint kept (older)", LocalRating.stale(deck(saltCard = rated(listKey = null)), sample, salt))
-        assertTrue("another rating version", LocalRating.stale(deck(saltCard = rated(ratingVersion = 0)), sample, salt))
-        // Commander Salt's own data (made local from Archidekt) is never stale.
+        assertTrue("no rating yet", LocalRating.stale(deck(), sample))
+        assertFalse("a fresh rating", LocalRating.stale(deck(saltCard = rated()), sample))
+        assertTrue("another list", LocalRating.stale(deck(saltCard = rated(listKey = "00000000")), sample))
+        assertTrue("no fingerprint kept (older)", LocalRating.stale(deck(saltCard = rated(listKey = null)), sample))
+        assertTrue("another rating version", LocalRating.stale(deck(saltCard = rated(ratingVersion = 0)), sample))
+        // Since 1.116 every deck is rated the same way, local or from Archidekt; Commander Salt's own data (made local
+        // from Archidekt) no longer counts and is made again.
         val own = SaltCard(gameChangers = listOf("Smothering Tithe"), version = SaltCard.CURRENT).encode()
-        assertFalse(LocalRating.stale(deck(saltCard = own), sample, salt))
-        // Nor is a deck from Archidekt, or one without cards.
-        assertFalse(LocalRating.stale(deck(local = false), sample, salt))
-        assertFalse(LocalRating.stale(deck(), emptyList(), salt))
+        assertTrue("Commander Salt's own data", LocalRating.stale(deck(saltCard = own), sample))
+        assertTrue("not rated before, local=false", LocalRating.stale(deck(local = false), sample))
+        assertFalse("rated, local=false", LocalRating.stale(deck(local = false, saltCard = rated()), sample))
+        // Made before the website counted land tutors right (RATED_SINCE): asked for again.
+        assertTrue("rated before RATED_SINCE", LocalRating.stale(deck(saltCard = rated(), scoredAt = LocalRating.RATED_SINCE - 1), sample))
+        assertTrue("never scored", LocalRating.stale(deck(saltCard = rated(), scoredAt = 0), sample))
+        // Nor is a deck without cards.
+        assertFalse(LocalRating.stale(deck(), emptyList()))
     }
 
     // ---- SaltCard.decode -------------------------------------------------------------------------
