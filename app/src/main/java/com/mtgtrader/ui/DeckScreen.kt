@@ -110,6 +110,8 @@ import com.mtgtrader.data.BracketTag
 import com.mtgtrader.data.Brackets
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltCombo
+import com.mtgtrader.data.SaltSum
+import com.mtgtrader.data.saltTotal
 import com.mtgtrader.data.DeckEdits
 import com.mtgtrader.data.DeckEditor
 import com.mtgtrader.data.UndoAction
@@ -465,10 +467,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     LaunchedEffect(deckId, ownDeck) {
         if (ownDeck) c.deckEditor.prepare(deckId)?.let { snackbar.showSnackbar(it) }
     }
-    // A local deck's bracket and salt are the website's estimate (Commander Salt can't score it): asked for when the
-    // deck's list changes (its lines from the database, so another phone's sync counts too).
+    // Every deck's bracket and salt can be the website's estimate (Commander Salt can't score local decks, and since
+    // 1.115 its brackets can come from the app for any deck): asked for when the deck's list changes (its lines from
+    // the database, so another phone's sync counts too).
     LaunchedEffect(deckId, archidektRows.size, archidektRows.sumOf { it.item.quantity }) {
-        if (deck?.local == true) runCatching { c.decks.rateLocal(deckId) }
+        runCatching { c.decks.rateLocal(deckId) }
     }
     BackHandler(enabled = searching) { closeSearch() }
     BackHandler(enabled = selection.isNotEmpty()) { selection = emptyList() }
@@ -871,7 +874,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                         }
                     }
                     item(key = "scores") {
-                        ScoresCard(d, source, busy = job != null, onRetry = ::refresh) {
+                        val sum = rememberSaltSum(d.archidektId, archidektRows.size to archidektRows.sumOf { it.item.quantity })
+                        ScoresCard(d, source, sum, busy = job != null, onRetry = ::refresh) {
                             if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
                         }
                     }
@@ -1475,7 +1479,7 @@ private fun LegalityCard(legality: Legality?) {
 }
 
 @Composable
-private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: () -> Unit, onRescore: () -> Unit) {
+private fun ScoresCard(deck: Deck, source: PowerSource, saltSum: SaltSum?, busy: Boolean, onRetry: () -> Unit, onRescore: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             if (!deck.scored) {
@@ -1488,11 +1492,16 @@ private fun ScoresCard(deck: Deck, source: PowerSource, busy: Boolean, onRetry: 
             }
             Row(Modifier.fillMaxWidth()) {
                 ScoreColumn("Power level", deck.power(source)?.let { Scores.power(it, source) }, "out of 10", Modifier.weight(1f))
-                ScoreColumn("Realistic bracket", deck.bracketRealistic?.toString(), Brackets.name(deck.bracketRealistic), Modifier.weight(1f))
-                ScoreColumn("Baseline bracket", deck.bracketBaseline?.toString(), Brackets.name(deck.bracketBaseline), Modifier.weight(1f))
+                // A deck the app rated shows its one bracket; otherwise Commander Salt's two (since 1.115).
+                if (SaltCard.decode(deck.saltCard)?.fromApp == true) {
+                    ScoreColumn("Bracket · estimated", deck.bracketBaseline?.toString(), Brackets.name(deck.bracketBaseline), Modifier.weight(1f))
+                } else {
+                    ScoreColumn("Realistic bracket", deck.bracketRealistic?.toString(), Brackets.name(deck.bracketRealistic), Modifier.weight(1f))
+                    ScoreColumn("Baseline bracket", deck.bracketBaseline?.toString(), Brackets.name(deck.bracketBaseline), Modifier.weight(1f))
+                }
             }
             HorizontalDivider(Modifier.padding(vertical = 10.dp))
-            val extras = listOfNotNull(deck.saltPercent?.let { "Salt ${it.roundToInt()}%" }, deck.archetype)
+            val extras = listOfNotNull(saltSum?.let { "Salt " + saltTotal(it.total) + " · " + it.level.lowercase() }, deck.archetype)
             if (extras.isNotEmpty()) Text(extras.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
             if (source == PowerSource.APP) {
                 val other = deck.powerLevel?.let { " · Commander Salt ${Scores.power(it)}" } ?: ""

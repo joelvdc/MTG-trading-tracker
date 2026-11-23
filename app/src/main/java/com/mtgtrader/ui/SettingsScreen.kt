@@ -67,6 +67,7 @@ import com.mtgtrader.container
 import com.mtgtrader.data.CT_LANGUAGES
 import com.mtgtrader.data.CardTrader
 import com.mtgtrader.data.CtCondition
+import com.mtgtrader.data.BracketSource
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.ReceivedClear
 import com.mtgtrader.data.SwipeAction
@@ -128,6 +129,7 @@ internal fun settingsSummaries(): Map<SettingsCategory, String> {
     val ctOn by c.settings.cardTraderOn.collectAsStateWithLifecycle()
     val alertType by c.settings.alertPriceType.collectAsStateWithLifecycle()
     val powerSource by c.settings.powerSource.collectAsStateWithLifecycle()
+    val bracketSource by c.settings.bracketSource.collectAsStateWithLifecycle()
     val ownArchidekt by c.settings.ownArchidektUser.collectAsStateWithLifecycle()
     val themeMode by c.settings.themeMode.collectAsStateWithLifecycle()
     val offlineImages by c.settings.offlineImages.collectAsStateWithLifecycle()
@@ -140,7 +142,8 @@ internal fun settingsSummaries(): Map<SettingsCategory, String> {
         prices = listOf(priceSource.label, priceType.label, currency.name, if (autoUpdate) "daily updates" else "updates by hand").joinToString(" · "),
         collection = "Swipe right: ${swipeRight.label.replaceFirstChar { it.lowercase() }} · fair trade ±$tolerance%",
         wishlist = "Price alerts on ${alertType.label}" + if (ctOn) " · CardTrader" else "",
-        decks = "Power level: ${powerSource.label}" + (ownArchidekt.takeIf { it.isNotBlank() }?.let { " · Archidekt: $it" } ?: ""),
+        decks = "Power level: ${powerSource.label} · Bracket: ${bracketSource.label}" +
+            (ownArchidekt.takeIf { it.isNotBlank() }?.let { " · Archidekt: $it" } ?: ""),
         games = "Life tracker controls, look and vibration",
         backups = if (c.backups.lastBackupAt == 0L) "Restore points of all your data" else "Last backup: ${Fmt.dateTime(c.backups.lastBackupAt)}",
         appearance = themeMode.label + if (offlineImages) " · pictures saved for offline use" else "",
@@ -225,6 +228,7 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
     val wifiOnly by c.settings.wifiOnly.collectAsStateWithLifecycle()
     val offlineImages by c.settings.offlineImages.collectAsStateWithLifecycle()
     val powerSource by c.settings.powerSource.collectAsStateWithLifecycle()
+    val bracketSource by c.settings.bracketSource.collectAsStateWithLifecycle()
     val themeMode by c.settings.themeMode.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -392,7 +396,7 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                 SettingsCategory.DECKS -> {
                     Text("Commander deck power level", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Shown on the Decks tab and deck pages. Brackets come from Commander Salt.",
+                        "Shown on the Decks tab and deck pages.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -420,6 +424,27 @@ fun SettingsCategoryScreen(nav: NavController, cat: SettingsCategory) {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        }
+                    }
+
+                    // Where brackets come from (since 1.115).
+                    Spacer(Modifier.height(16.dp))
+                    Text("Bracket from", style = MaterialTheme.typography.titleMedium)
+                    BracketSource.entries.forEach { src ->
+                        val pick = {
+                            if (src != bracketSource) {
+                                c.settings.setBracketSource(src)
+                                // Either way some decks need rating again: holding the app's estimate when brackets go
+                                // back to Commander Salt, or Commander Salt's card when they come from the app.
+                                c.appScope.launch { runCatching { c.decks.refreshRatings() } }
+                            }
+                        }
+                        Row(
+                            Modifier.fillMaxWidth().clickable(onClick = pick).padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = src == bracketSource, onClick = pick)
+                            Text(src.label)
                         }
                     }
 

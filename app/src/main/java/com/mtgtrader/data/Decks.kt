@@ -192,6 +192,19 @@ enum class PowerSource(val label: String, val site: String) {
     }
 }
 
+/**
+ * Where a deck's bracket comes from (Settings → Decks, since 1.115): Commander Salt's own, or the website's estimate of
+ * the list (the same one local decks get), for every deck.
+ */
+enum class BracketSource(val label: String) {
+    COMMANDER_SALT("Commander Salt"),
+    APP("Estimated by the app");
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.name == key } ?: COMMANDER_SALT
+    }
+}
+
 /** One line of a deck's list (a card can have several, e.g. one normal and one foil copy). */
 @Serializable
 @Entity(

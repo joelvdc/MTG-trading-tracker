@@ -17,7 +17,9 @@ import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltEffect
+import com.mtgtrader.data.SaltSum
 import com.mtgtrader.data.WinOdds
+import com.mtgtrader.data.saltTotal
 import java.io.File
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -30,6 +32,8 @@ data class PrintCard(
     val win: WinOdds?,
     val source: PowerSource,
     val art: Bitmap? = null,
+    /** The deck's salt sum, as the power card prints it (since 1.115). */
+    val saltSum: SaltSum? = null,
 )
 
 /**
@@ -502,10 +506,13 @@ object CardSheets {
             val hasManabase = data.manaFixing != null || data.onCurve != null || data.manaQuality != null
             val saltWidth = if (hasManabase) half - 1f else INNER
             label("Saltiness")
-            bodyLine(listOfNotNull(deck.saltPercent?.let { "${it.roundToInt()}%" }, data.saltIntensity?.lowercase()).joinToString(" ").ifEmpty { "—" }, width = saltWidth, weight = Weight.MEDIUM)
+            val sum = card.saltSum
+            bodyLine(sum?.let { saltTotal(it.total) + " " + it.level.lowercase() } ?: "—", width = saltWidth, weight = Weight.MEDIUM)
             newLine()
-            // Wrapped since 1.67: "mostly community salt ratings" doesn't fit on one line of half the card.
-            data.saltDriver?.let { y += p.wrapped("mostly ${it.lowercase()}", PAD, y, saltWidth, BODY_PT, GREY, 2, BODY_LH) }
+            // The deck's saltiest cards, the same for every deck (the app's own sum since 1.115).
+            sum?.saltiest.orEmpty().forEach {
+                y += p.wrapped("${it.name} · ${saltTotal(it.salt)}", PAD, y, saltWidth, BODY_PT, GREY, 1, BODY_LH)
+            }
             if (!hasManabase) return
             val left = y
             y = top

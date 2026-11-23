@@ -259,11 +259,16 @@ class DeckRepository(
                 failed += d.name
             }
         }
-        // Local decks can't be scored by Commander Salt: the website estimates theirs, for those whose list changed.
+        // The website's estimate for decks whose list changed (local decks always, others when brackets come from the app).
+        // Since 1.115 every deck gets the app's estimate when brackets come from the app (and a deck holding it and no
+        // Commander Salt data has Commander Salt score it when they come from Commander Salt).
         var ratedLocal = 0
-        val local = dao.all().filter { it.local && !it.retired }
+        val bracketSource = settings.bracketSource.value
+        val local = dao.all().filter { !it.retired }
         for ((i, d) in local.withIndex()) {
             if (stopRequested) break
+            val cards = dao.cards(d.archidektId)
+            if (!LocalRating.stale(d, cards, bracketSource) && !LocalRating.needsCommanderSalt(d, bracketSource)) continue
             _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${local.size} · ${d.name}: rating…", !stopRequested)
             if (rateLocal(d.archidektId)) ratedLocal++
         }
@@ -280,6 +285,24 @@ class DeckRepository(
             if (ratedLocal > 0) add("rated $ratedLocal local deck" + (if (ratedLocal == 1) "" else "s"))
         }
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
+    }
+
+    /**
+     * Rates every deck whose bracket or salt the app estimates (see [LocalRating.stale]) and every deck from Archidekt
+     * that holds the app's estimate but not Commander Salt's own data. Can be stopped between decks. Since 1.115.
+     */
+    fun refreshRatings(): Boolean = start(DeckJob(null, "Rating decks…", canStop = true)) {
+        val source = settings.bracketSource.value
+        val decks = dao.all().filter { !it.retired }
+        var rated = 0
+        for ((i, d) in decks.withIndex()) {
+            if (stopRequested) break
+            val cards = dao.cards(d.archidektId)
+            if (!LocalRating.stale(d, cards, source) && !LocalRating.needsCommanderSalt(d, source)) continue
+            _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${decks.size} · ${d.name}: rating…", !stopRequested)
+            if (rateLocal(d.archidektId)) rated++
+        }
+        DeckJobResult(null, "Rated $rated deck" + (if (rated == 1) "" else "s") + if (stopRequested) " · stopped" else "")
     }
 
     /**
@@ -462,14 +485,19 @@ class DeckRepository(
     private suspend fun score(deck: Deck, step: (String) -> Unit): Deck = ratePower(scoreSalt(deck), step)
 
     /**
-     * Has the website estimate a local deck's bracket and salt (Commander Salt can't score local decks) when that's
-     * stale for its list (see [LocalRating.stale]), and keeps it as the deck's rule-zero data. True when it rated the
-     * deck. Quietly false when the website can't be reached or can't rate it yet.
+     * Has the website estimate a deck's bracket and salt (Commander Salt's own ratings stand aside when brackets come
+     * from the app) when that's stale for its list (see [LocalRating.stale]), and keeps it as the deck's rule-zero
+     * data. True when it rated the deck. Quietly false when the website can't be reached or can't rate it yet.
      */
     suspend fun rateLocal(deckId: Long): Boolean {
         val deck = dao.get(deckId) ?: return false
+        val source = settings.bracketSource.value
+        if (LocalRating.needsCommanderSalt(deck, source)) {
+            scoreSalt(deck)
+            return true
+        }
         val cards = dao.cards(deckId)
-        if (!LocalRating.stale(deck, cards)) return false
+        if (!LocalRating.stale(deck, cards, source)) return false
         val card = try {
             SaltCard.decode(web.rate(cards, deck.colorIdentity)) ?: return false
         } catch (e: CancellationException) {
@@ -493,12 +521,14 @@ class DeckRepository(
     private suspend fun scoreSalt(deck: Deck): Deck {
         val scored = try {
             val s = salt.score(deck.archidektId)
+            // Brackets from the app (since 1.115): its estimate stays, and Commander Salt's bracket numbers don't replace it.
+            val fromApp = settings.bracketSource.value == BracketSource.APP
             deck.copy(
-                saltCard = s.card?.encode() ?: deck.saltCard,
+                saltCard = if (fromApp) deck.saltCard else s.card?.encode() ?: deck.saltCard,
                 saltId = s.saltId.ifEmpty { CommanderSaltApi.deckId(deck.archidektId) },
                 powerLevel = s.powerLevel,
-                bracketRealistic = s.bracketRealistic,
-                bracketBaseline = s.bracketBaseline,
+                bracketRealistic = if (fromApp) deck.bracketRealistic else s.bracketRealistic,
+                bracketBaseline = if (fromApp) deck.bracketBaseline else s.bracketBaseline,
                 saltPercent = s.saltPercent,
                 archetype = s.archetype,
                 scoredAt = System.currentTimeMillis(),

@@ -79,11 +79,13 @@ import com.mtgtrader.container
 import com.mtgtrader.data.BracketAxes
 import com.mtgtrader.data.BracketAxis
 import com.mtgtrader.data.Brackets
+import com.mtgtrader.data.BracketSource
 import com.mtgtrader.data.Deck
 import com.mtgtrader.data.PowerSource
 import com.mtgtrader.data.RuleZeroCard
 import com.mtgtrader.data.SaltCard
 import com.mtgtrader.data.SaltEffect
+import com.mtgtrader.data.SaltSum
 import com.mtgtrader.data.WinOdds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -109,6 +111,7 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
         val context = LocalContext.current
         val c = context.container
         val source by c.settings.powerSource.collectAsStateWithLifecycle()
+        val bracket by c.settings.bracketSource.collectAsStateWithLifecycle()
         val pager = rememberPagerState(initialPage = start.ordinal) { RuleZeroCard.entries.size }
         val scope = rememberCoroutineScope()
         var original by remember { mutableStateOf(false) }
@@ -160,8 +163,9 @@ fun RuleZeroDialog(deck: Deck, start: RuleZeroCard, onDismiss: () -> Unit) {
                     data == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             when {
-                                deck.saltId != null -> "Getting the card details from Commander Salt…"
-                                deck.local -> "Not rated yet."
+                                // Since 1.115 the estimate is the deck's bracket when that's where brackets come from.
+                                deck.saltId != null && bracket != BracketSource.APP -> "Getting the card details from Commander Salt…"
+                                deck.local || bracket == BracketSource.APP -> "Not rated yet."
                                 else -> "Commander Salt hasn't scored this deck yet."
                             },
                             color = Color.White,
@@ -197,6 +201,19 @@ internal fun rememberWinOdds(deck: Deck): androidx.compose.runtime.State<WinOdds
     return produceState<WinOdds?>(null, deck.archidektId, deck.saltCard, deck.colorIdentity) {
         if (deck.commanders.isNotBlank()) value = runCatching { c.winOdds.forDeck(deck) }.getOrNull()
     }
+}
+
+/**
+ * The deck's salt sum (see [SaltSum]), from the EDHREC salt file on the phone: worked out again whenever [key] changes
+ * (its lines, say). Null until it's known, or when none of its cards has a salt score. Since 1.115.
+ */
+@Composable
+fun rememberSaltSum(deckId: Long, key: Any?): SaltSum? {
+    val c = LocalContext.current.container
+    val sum by produceState<SaltSum?>(null, deckId, key) {
+        value = runCatching { c.saltScores.sumFor(c.db.deckDao().cards(deckId)) }.getOrNull()
+    }
+    return sum
 }
 
 // ---- The cards --------------------------------------------------------------------------------
@@ -346,7 +363,7 @@ private fun SpeedSection(win: WinOdds) {
 }
 
 @Composable
-fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Modifier = Modifier) {
+fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Modifier = Modifier, saltSum: SaltSum? = null) {
     CardFrame(deck, "Power level", modifier) {
         val power = deck.power(source)
         Column(Modifier.padding(16.dp)) {
@@ -376,32 +393,27 @@ fun PowerCardView(deck: Deck, data: SaltCard, source: PowerSource, modifier: Mod
             }
         }
         Section(null) {
+            val sum = saltSum ?: rememberSaltSum(deck.archidektId, deck.updatedAt)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Label("Saltiness")
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            when {
-                                data.fromApp -> data.salt?.let { String.format(Locale.US, "%.1f", it) }
-                                else -> deck.saltPercent?.let { "${it.roundToInt()}%" }
-                            } ?: "—",
+                            sum?.let { String.format(Locale.US, "%.1f", it.total) } ?: "—",
                             fontWeight = FontWeight.SemiBold,
                         )
-                        data.saltIntensity?.let {
+                        sum?.let {
                             Spacer(Modifier.width(6.dp))
-                            Text(it.lowercase(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                            Text(it.level.lowercase(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
-                    if (data.fromApp) {
-                        data.saltiest.take(5).forEach {
-                            Text(
-                                "${it.name} · ${String.format(Locale.US, "%.1f", it.salt)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    } else {
-                        data.saltDriver?.let { Text("mostly ${it.lowercase()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    // The deck's saltiest cards, the same for every deck (the app's own sum since 1.115).
+                    sum?.saltiest.orEmpty().forEach {
+                        Text(
+                            "${it.name} · ${String.format(Locale.US, "%.1f", it.salt)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
                 // No manabase numbers (the website's own rating of a local deck has none): salt takes the full width.
@@ -576,8 +588,9 @@ private fun Footer(credit: String, deck: Deck) {
 }
 
 /**
- * The power level card's credit, a line each (since 1.67): "Power level: MTG Trader app", "Data: Commander Salt".
+ * The power level card's credit, a line each (since 1.67): "Power level: MTG Trader app", "Data: Commander Salt, MTGJSON".
  * [fromApp] for the website's estimate of a local deck, which takes its data from the sources it names, not Commander Salt.
+ * The salt is the app's own sum, from MTGJSON's card data, whatever the rating (since 1.115).
  */
 internal fun powerCredit(source: PowerSource, fromApp: Boolean = false): List<String> = listOfNotNull(
     when (source) {
@@ -585,7 +598,7 @@ internal fun powerCredit(source: PowerSource, fromApp: Boolean = false): List<St
         PowerSource.APP -> "Power level: MTG Trader app"
         else -> "Power level: ${source.site}"
     },
-    if (fromApp) "Data: Scryfall, MTGJSON, Commander Spellbook" else "Data: Commander Salt",
+    if (fromApp) "Data: Scryfall, MTGJSON, Commander Spellbook" else "Data: Commander Salt, MTGJSON",
 )
 
 // ---- Commander Salt's own images --------------------------------------------------------------
