@@ -229,6 +229,52 @@
   width: calc(92px * var(--pt-zoom, 1));
 }
 
+/* A counter tile on the battlefield (for example how many tokens there are): above the cards, dragged by its body. */
+.pt-tracker {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: calc(92px * var(--pt-zoom, 1));
+  padding: 4px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.pt-tracker.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+.pt-tracker-label {
+  max-width: calc(120px * var(--pt-zoom, 1));
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pt-tracker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pt-tracker-value {
+  min-width: 2ch;
+  font-size: calc(22px * var(--pt-zoom, 1));
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
 .pt-card {
   position: relative;
   width: 100%;

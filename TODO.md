@@ -14,37 +14,24 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-24, after app 1.117)
-- **Newest (2026-11-24):** app 1.117 + website: the win turn plays Commander Spock's "enters or attacks" ability (top
-  card cast for free when its mana value is at most the differently named lands, a land onto the battlefield tapped,
-  else drawn; it was read as "draw a card"). WinOddsCalc.VERSION 14, so every win turn is worked out again once (app
-  and website); the website's winodds-js rebuilt, golden tallies re-recorded (same games, new version). By Opus.
-- **Before (2026-11-23):** app 1.116 + website: one bracket card everywhere (63 × 88 mm; app screen, website, A4 print
-  with 9 cards and cut marks): tiles Bracket · Salt · Wins by, why, speed, criteria, Deck roles (Lands "37+2" from
-  Scryfall type lines), game changers, combos, saltiest cards if room. Deck scores Bracket · Salt · Wins by. Commander
-  Salt, edhpowerlevel.com, the power level, the Power card and the "Bracket from" setting are gone; every deck is
-  estimated by the website (no login). Old stored scores kept (no DB or sync format change). The website's win-turn
-  build (web/winodds-kt) no longer copies AppPower.kt. Built by DeepSeek through Mistral (website, lands, tests) and
-  Opus (card design, app and website UI), reviewed by Opus.
-  Before that: 1.115 salt sum on every deck; 1.114 local decks' estimated bracket.
-- **Website change (2026-11-23, after 1.116):** Tutor no longer takes land tutors (Path to Exile, Cultivate, Farseek,
-  basic landcyclers): the categories table asks Scryfall for `(otag:tutor -otag:tutor-land) or otag:tutor-land-any`
-  (about 620 cards; Crop Rotation, Expedition Map stay). The table rebuilds at the next daily run (04:00 UTC), so
-  until then the old Tutor counts show. The deck filter's "7 of 100" no longer covers the text. Built by DeepSeek
-  (Vibe), reviewed by Opus.
-- **Website change (2026-11-24):** Bracket cards page: tick which decks to print (box at each card's top right,
-  Select all / None, "N cards · P A4 pages"), like the app; not remembered. Built by DeepSeek (Vibe), reviewed by
-  Opus. Later that day (Opus): README screenshots decks.png and bracket.png retaken; a one-list Maybeboard in stack
-  view is one card wide again; the deck filter box keeps room on the right only while the count shows, and on a tight
-  row the view buttons move to a second line instead of the box covering "Show only". The repository description and the
-  1.116 release no longer mention the old bracket source.
-- **Waiting on the owner:** look at a bracket card on the phone and print one A4 page from the website (Decks → Bracket
-  cards → Print, at 100%) to check the size. Still from before: add/confirm your email, try "Forgot password?", the sort
-  with the real collection, green light for the ✕ delete column in the website's wishlist, Compare with a real
-  Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** win turns show as being worked out again after updating to 1.117 (once per deck); Archidekt decks that Commander Salt scored before show "Not rated yet" for a moment until
-  the app or website rates them (once, automatically); their bracket may differ from Commander Salt's. Phones still on
-  1.115 keep showing the old power level until they update.
+## Right now (2026-11-24, website change after app 1.117)
+- **Newest (2026-11-24, website only):** playtester: the card dragged last lies on top (drag a creature onto
+  equipment); "Add counter" in the battlefield menu puts a counter tile (name, number, − +; click it for Rename/Remove)
+  on the board, for counting tokens; the card menu's counters are an editable list (Edit list…, remembered per
+  browser), counters made with Other… join it, and counters already on a card always show; a selection can go to the
+  bottom of the library in random order. By Opus.
+- **Before:** app 1.117 + website (2026-11-24): the win turn plays Commander Spock's "enters or attacks" ability;
+  WinOddsCalc.VERSION 14. App 1.116 (2026-11-23): one bracket card everywhere (app, website, A4 print), every deck
+  estimated by the website. Website 2026-11-23/24: Tutor no longer counts land tutors; Bracket cards page lets you
+  tick which decks to print; Maybeboard stack and deck filter box fixes.
+- **Waiting on the owner:** try the four playtester changes (Playtest on any deck). Look at a bracket card on the phone
+  and print one A4 page (Decks → Bracket cards → Print, at 100%). Still from before: add/confirm your email, try
+  "Forgot password?", the sort with the real collection, green light for the ✕ delete column in the website's
+  wishlist, Compare with a real Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for
+  permission.
+- **Expected to look odd:** the counter list starts as +1/+1, −1/−1, Loyalty, Charge on every browser and is not shared
+  between PC and phone. Win turns are worked out again once per deck after updating to 1.117; some Archidekt decks show
+  "Not rated yet" for a moment until rated; phones still on 1.115 show the old power level until they update.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -182,6 +169,8 @@ for later:
   owner's only.
 - 1.101 (2026-11-17): faster win turn (land choice, Renewed Solidarity check), same games; website playtester:
   hover picture, multi-select with group actions, snap grid, tapped cards stay turned while dragged.
+- Website (2026-11-24): playtester: last-dragged card on top, counter tiles, editable counter list, random-order bottom
+  of library.
 - Website (2026-11-17): playtester corner preview, zoom, battlefield menu (tap all, proliferate), View card,
   custom tokens, real card back; deck page primer folds, tighter Stats.
 - Website (2026-11-16): Next.js 16.4.6 security update.

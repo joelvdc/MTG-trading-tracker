@@ -1071,3 +1071,118 @@ describe("a whole little game", () => {
     expect(state.log.length).toBeGreaterThan(5);
   });
 });
+
+describe("the card last dragged lies on top", () => {
+  it("moves a dragged card to the end of the board order, without an undo step", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    const elf = idOf(g, "Llanowar Elves");
+    g = act(g, { type: "move", id: ring, to: "battlefield" });
+    g = act(g, { type: "move", id: elf, to: "battlefield" });
+    expect(g.state.zones.battlefield).toEqual([ring, elf]);
+    const steps = g.past.length;
+    // Dragged back to where it already is still brings it on top.
+    const card = g.state.cards[ring];
+    const dragged = act(g, { type: "position", id: ring, x: card.x, y: card.y });
+    expect(dragged.state.zones.battlefield).toEqual([elf, ring]);
+    expect(dragged.past).toHaveLength(steps);
+    expect(g.state.zones.battlefield).toEqual([ring, elf]); // the old state is untouched
+  });
+
+  it("keeps the order of a selection dragged together", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    const elves = Object.values(g.state.cards).filter((c) => c.def.name === "Llanowar Elves").map((c) => c.id);
+    for (const id of [ring, ...elves]) g = act(g, { type: "move", id, to: "battlefield" });
+    const after = act(g, {
+      type: "group",
+      actions: [ring, elves[0]].map((id): Action => ({ type: "position", id, x: 50, y: 50 })),
+    });
+    expect(after.state.zones.battlefield).toEqual([elves[1], ring, elves[0]]);
+  });
+});
+
+describe("counter tiles", () => {
+  it("adds, counts, renames and removes a tile, each an undo step", () => {
+    let g = playing();
+    g = act(g, { type: "trackerAdd", x: 120, y: 30 });
+    expect(g.state.trackers).toHaveLength(1);
+    const tile = g.state.trackers[0];
+    expect(tile).toMatchObject({ label: "Tokens", value: 0, x: 100, y: 30 });
+    const steps = g.past.length;
+    g = act(g, { type: "tracker", id: tile.id, delta: 1 });
+    g = act(g, { type: "tracker", id: tile.id, delta: 4 });
+    expect(g.state.trackers[0].value).toBe(5);
+    expect(g.past).toHaveLength(steps + 2);
+    expect(act(g, { type: "undo" }).state.trackers[0].value).toBe(1);
+    // Not below zero.
+    expect(act(g, { type: "tracker", id: tile.id, delta: -9 }).state.trackers[0].value).toBe(0);
+    g = act(g, { type: "trackerRename", id: tile.id, label: "  Soldiers  " });
+    expect(g.state.trackers[0].label).toBe("Soldiers");
+    expect(act(g, { type: "trackerRename", id: tile.id, label: "" }).state.trackers[0].label).toBe("Counter");
+    g = act(g, { type: "trackerRemove", id: tile.id });
+    expect(g.state.trackers).toHaveLength(0);
+    expect(act(g, { type: "undo" }).state.trackers[0].label).toBe("Soldiers");
+  });
+
+  it("moves a tile without an undo step, and ignores unknown tiles", () => {
+    let g = playing();
+    g = act(g, { type: "trackerAdd", x: 10, y: 10 });
+    const id = g.state.trackers[0].id;
+    const steps = g.past.length;
+    const moved = act(g, { type: "trackerPosition", id, x: 40, y: 60 });
+    expect(moved.state.trackers[0]).toMatchObject({ x: 40, y: 60 });
+    expect(moved.past).toHaveLength(steps);
+    expect(act(moved, { type: "tracker", id: "nope", delta: 1 })).toBe(moved);
+    expect(act(moved, { type: "trackerRemove", id: "nope" })).toBe(moved);
+  });
+
+  it("is gone after a restart and not offered before the hand is kept", () => {
+    const fresh = start();
+    expect(act(fresh, { type: "trackerAdd", x: 10, y: 10 })).toBe(fresh);
+    const g = act(playing(), { type: "trackerAdd", x: 10, y: 10 });
+    expect(act(g, { type: "restart", seed: 3 }).state.trackers).toEqual([]);
+  });
+});
+
+describe("bottom of the library in random order", () => {
+  it("puts every selected card underneath, as one step, without naming them in the log", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    const elves = Object.values(g.state.cards).filter((c) => c.def.name === "Llanowar Elves").map((c) => c.id);
+    const ids = [ring, ...elves];
+    for (const id of ids) g = act(g, { type: "move", id, to: "battlefield" });
+    g = act(g, { type: "token", def: card("Soldier", { typeLine: "Token Creature — Soldier" }), count: 1 });
+    const token = g.state.zones.battlefield[g.state.zones.battlefield.length - 1];
+    const before = library(g).length;
+    const steps = g.past.length;
+    const after = act(g, { type: "bottomRandom", ids: [...ids, token] });
+    expect(after.past).toHaveLength(steps + 1);
+    expect(after.state.zones.battlefield).toEqual([]);
+    expect(library(after)).toHaveLength(before + 3);
+    expect([...library(after).slice(-3)].sort()).toEqual([...ids].sort());
+    expect(library(after).slice(0, before)).toEqual(library(g));
+    expect(after.state.cards[token]).toBeUndefined(); // the token vanished
+    const lines = after.state.log.slice(-2).map((l) => l.text);
+    expect(lines[0]).toBe("Put 3 cards on the bottom of the library in random order.");
+    expect(lines.join(" ")).not.toContain("Sol Ring");
+    expect(act(after, { type: "undo" }).state).toEqual(g.state);
+  });
+
+  it("gives a different order for a different seed, and ignores library cards", () => {
+    const orders = new Set<string>();
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      let g = act(start({ seed }), { type: "keep" });
+      const ids = Object.values(g.state.cards)
+        .filter((c) => c.def.isLand)
+        .slice(0, 5)
+        .map((c) => c.id);
+      for (const id of ids) if (!g.state.zones.battlefield.includes(id)) g = act(g, { type: "move", id, to: "battlefield" });
+      const names = (x: Game) => library(x).slice(-5).map((id) => x.state.cards[id].def.name).join(",");
+      orders.add(names(act(g, { type: "bottomRandom", ids })));
+    }
+    expect(orders.size).toBeGreaterThan(1);
+    const g = playing();
+    expect(act(g, { type: "bottomRandom", ids: [library(g)[0]] })).toBe(g);
+  });
+});

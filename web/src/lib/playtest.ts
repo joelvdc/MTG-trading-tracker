@@ -50,6 +50,17 @@ export interface CardInstance {
   revealed: boolean;
 }
 
+/** A counter tile of its own on the battlefield (for example how many tokens there are): a name and a number. */
+export interface Tracker {
+  /** Unique in the game ("k1", …). */
+  id: string;
+  label: string;
+  value: number;
+  /** Battlefield position in percent of the board (0–100). */
+  x: number;
+  y: number;
+}
+
 /** The player's own numbers; the commander tax is per commander card id, in steps of 2. */
 export interface PlayerCounters {
   life: number;
@@ -90,6 +101,8 @@ export interface GameState {
    * follows whatever is on top: whenever the library changes, the top card's `revealed` field is kept in step.
    */
   topRevealed: boolean;
+  /** The counter tiles on the battlefield, oldest first. */
+  trackers: Tracker[];
   /** The deck this game was made from and the quantities, so "restart" can deal the same cards again. */
   deck: { def: CardDef; quantity: number }[];
 }
@@ -125,6 +138,13 @@ export type Action =
   | { type: "flip"; id: string }
   | { type: "faceDown"; id: string }
   | { type: "counter"; id: string; kind: string; delta: number }
+  /** Several cards to the bottom of the library in a random order (one step). */
+  | { type: "bottomRandom"; ids: string[] }
+  | { type: "trackerAdd"; x: number; y: number; label?: string }
+  | { type: "tracker"; id: string; delta: number }
+  | { type: "trackerRename"; id: string; label: string }
+  | { type: "trackerRemove"; id: string }
+  | { type: "trackerPosition"; id: string; x: number; y: number }
   /** A token copy of a battlefield permanent, or of a card in the graveyard (which stays in the graveyard). */
   | { type: "copy"; id: string }
   | { type: "token"; def: CardDef; count: number }
@@ -275,6 +295,7 @@ function cloneState(state: GameState): GameState {
     log: state.log.slice(),
     deck: state.deck.slice(),
     peek: state.peek ? { ids: state.peek.ids.slice(), mode: state.peek.mode } : null,
+    trackers: state.trackers.map((t) => ({ ...t })),
   };
 }
 
@@ -340,6 +361,53 @@ function sameIds(expected: string[], given: string[]): boolean {
   return true;
 }
 
+/**
+ * Moves one card from [from] to another zone on a state that is already a copy, and returns the log line. A token that
+ * leaves the battlefield stops existing; a card that leaves it becomes a new object.
+ */
+function moveCard(
+  next: GameState,
+  id: string,
+  from: ZoneId,
+  to: ZoneId,
+  position?: "top" | "bottom" | number,
+  x?: number,
+  y?: number,
+): string {
+  const card = next.cards[id];
+  removeFromZone(next, id);
+  if (from === "battlefield" && card.token) {
+    delete next.cards[id];
+    return `${card.def.name} left the battlefield and vanished.`;
+  }
+  if (from === "battlefield") {
+    // It is a new object now: untapped, no counters, face up and front side.
+    card.tapped = false;
+    card.counters = [];
+    card.flipped = false;
+    card.faceDown = false;
+  }
+  if (from === "command" && to === "battlefield" && card.def.commander) {
+    // The tax is raised per cast, not per trip back: the log shows the tax this cast cost.
+    const tax = next.player.commanderTax[id] ?? 0;
+    addLog(next, `Cast ${displayName(next, id)} from the command zone (tax +${tax}).`);
+    next.player.commanderTax[id] = tax + 2;
+  }
+  if (to === "battlefield") {
+    const spot = battlefieldSpot(next, card.def, x, y);
+    card.x = spot.x;
+    card.y = spot.y;
+  }
+  addToZone(next, id, to, position);
+  return `${displayName(next, id)} → ${zoneLabel(to)}.`;
+}
+
+/** A counter tile's name: trimmed, at most 24 characters, "Counter" when empty. */
+function trackerLabel(label: string | undefined): string {
+  const text = (label ?? "").trim().slice(0, 24);
+  return text === "" ? "Counter" : text;
+}
+
 // ---------------------------------------------------------------------------------------------- a new game
 
 /**
@@ -395,6 +463,7 @@ export function newGame(
     nextId,
     peek: null,
     topRevealed: false,
+    trackers: [],
     deck: cards.map((entry) => ({ def: entry.def, quantity: entry.quantity })),
   };
 
@@ -439,7 +508,7 @@ export function act(game: Game, action: Action): Game {
       for (const step of steps) inner = act(inner, step);
       if (inner.state === state) return game;
       // Moving cards around the board is not an undo step (as for one "position"): only anything else is.
-      const movingOnly = steps.every((a) => a.type === "position");
+      const movingOnly = steps.every((a) => a.type === "position" || a.type === "trackerPosition");
       return movingOnly ? { state: inner.state, past: game.past } : commit(game, inner.state);
     }
 
@@ -588,35 +657,7 @@ export function act(game: Game, action: Action): Game {
       // Two places on the board are the "position" action; a board-to-board "move" is not a move.
       if (from === "battlefield" && action.to === "battlefield") return game;
       const next = cloneState(state);
-      const card = next.cards[action.id];
-      removeFromZone(next, action.id);
-
-      if (from === "battlefield" && card.token) {
-        // A token that leaves the battlefield stops existing.
-        delete next.cards[action.id];
-        addLog(next, `${card.def.name} left the battlefield and vanished.`);
-        return commit(game, next);
-      }
-      if (from === "battlefield") {
-        // It is a new object now: untapped, no counters, face up and front side.
-        card.tapped = false;
-        card.counters = [];
-        card.flipped = false;
-        card.faceDown = false;
-      }
-      if (from === "command" && action.to === "battlefield" && card.def.commander) {
-        // The tax is raised per cast, not per trip back: the log shows the tax this cast cost.
-        const tax = next.player.commanderTax[action.id] ?? 0;
-        addLog(next, `Cast ${displayName(next, action.id)} from the command zone (tax +${tax}).`);
-        next.player.commanderTax[action.id] = tax + 2;
-      }
-      if (action.to === "battlefield") {
-        const spot = battlefieldSpot(next, card.def, action.x, action.y);
-        card.x = spot.x;
-        card.y = spot.y;
-      }
-      addToZone(next, action.id, action.to, action.position);
-      addLog(next, `${displayName(next, action.id)} → ${zoneLabel(action.to)}.`);
+      addLog(next, moveCard(next, action.id, from, action.to, action.position, action.x, action.y));
       return commit(game, next);
     }
 
@@ -625,12 +666,104 @@ export function act(game: Game, action: Action): Game {
       const x = clampPercent(action.x);
       const y = clampPercent(action.y);
       const card = state.cards[action.id];
-      if (card.x === x && card.y === y) return game;
+      const board = state.zones.battlefield;
+      const onTop = board[board.length - 1] === action.id;
+      if (card.x === x && card.y === y && onTop) return game;
       const next = cloneState(state);
       next.cards[action.id].x = x;
       next.cards[action.id].y = y;
+      // The card last dragged lies on top of the others (drawn last), so a creature can be dragged over equipment.
+      removeFromZone(next, action.id);
+      next.zones.battlefield.push(action.id);
       syncRevealed(next);
       // Dragging a card around the board is not an undo step (and not worth a log line).
+      return { state: next, past: game.past };
+    }
+
+    case "bottomRandom": {
+      if (!playing || !Array.isArray(action.ids)) return game;
+      const ids = [...new Set(action.ids)].filter((id) => {
+        const zone = zoneOf(state, id);
+        return zone !== null && zone !== "library";
+      });
+      if (ids.length === 0) return game;
+      const next = cloneState(state);
+      const shuffled = shuffleIds(ids, next.seed);
+      next.seed = shuffled.seed;
+      let vanished = 0;
+      for (const id of shuffled.ids) {
+        const from = zoneOf(next, id) as ZoneId;
+        if (from === "battlefield" && next.cards[id].token) vanished += 1;
+        moveCard(next, id, from, "library", "bottom");
+      }
+      const placed = ids.length - vanished;
+      // The log does not name the cards, so it does not give their order away.
+      if (placed > 0) addLog(next, `Put ${placed} card${placed === 1 ? "" : "s"} on the bottom of the library in random order.`);
+      if (vanished > 0) addLog(next, `${vanished} token${vanished === 1 ? "" : "s"} left the battlefield and vanished.`);
+      return commit(game, next);
+    }
+
+    case "trackerAdd": {
+      if (!playing) return game;
+      const next = cloneState(state);
+      const tracker: Tracker = {
+        id: `k${next.nextId++}`,
+        label: trackerLabel(action.label ?? "Tokens"),
+        value: 0,
+        x: clampPercent(Number.isFinite(action.x) ? action.x : 50),
+        y: clampPercent(Number.isFinite(action.y) ? action.y : 50),
+      };
+      next.trackers.push(tracker);
+      addLog(next, `Added a ${tracker.label} counter.`);
+      return commit(game, next);
+    }
+
+    case "tracker": {
+      if (!playing || !Number.isInteger(action.delta) || action.delta === 0) return game;
+      const at = state.trackers.findIndex((t) => t.id === action.id);
+      if (at < 0) return game;
+      const before = state.trackers[at].value;
+      const value = Math.max(0, before + action.delta);
+      if (value === before) return game;
+      const next = cloneState(state);
+      next.trackers[at].value = value;
+      addLog(next, `${next.trackers[at].label} ${before} → ${value}.`);
+      return commit(game, next);
+    }
+
+    case "trackerRename": {
+      if (!playing) return game;
+      const at = state.trackers.findIndex((t) => t.id === action.id);
+      if (at < 0) return game;
+      const label = trackerLabel(action.label);
+      if (label === state.trackers[at].label) return game;
+      const next = cloneState(state);
+      addLog(next, `Renamed the ${next.trackers[at].label} counter to ${label}.`);
+      next.trackers[at].label = label;
+      return commit(game, next);
+    }
+
+    case "trackerRemove": {
+      if (!playing) return game;
+      const found = state.trackers.find((t) => t.id === action.id);
+      if (!found) return game;
+      const next = cloneState(state);
+      next.trackers = next.trackers.filter((t) => t.id !== action.id);
+      addLog(next, `Removed the ${found.label} counter.`);
+      return commit(game, next);
+    }
+
+    case "trackerPosition": {
+      if (!playing) return game;
+      const at = state.trackers.findIndex((t) => t.id === action.id);
+      if (at < 0) return game;
+      const x = clampPercent(action.x);
+      const y = clampPercent(action.y);
+      if (state.trackers[at].x === x && state.trackers[at].y === y) return game;
+      const next = cloneState(state);
+      next.trackers[at].x = x;
+      next.trackers[at].y = y;
+      // Moving a tile is not an undo step, as for a card.
       return { state: next, past: game.past };
     }
 

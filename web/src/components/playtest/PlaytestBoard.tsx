@@ -10,9 +10,11 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { ZONE_IDS, type Action, type CardDef, type CardInstance, type Game, type ZoneId } from "@/lib/playtest";
+import { ZONE_IDS, type Action, type CardDef, type CardInstance, type Game, type Tracker, type ZoneId } from "@/lib/playtest";
+import { counterLabel } from "@/lib/playtestcounters";
 import { useCornerPreview } from "./CornerPreview";
 import type { PlaytestDialog } from "./PlaytestDialogs";
+import { useQuickCounters } from "./useQuickCounters";
 
 /** Where a dragged card can land. */
 type DropTarget = "battlefield" | "hand" | "library" | "graveyard" | "exile" | "command";
@@ -26,20 +28,13 @@ const LONG_PRESS_MS = 500;
 /** Where the browser remembers whether dropped cards snap to the grid. */
 const SNAP_KEY = "mtg.playtest.snap";
 
-/** The counters the card menu offers with − and + (the engine's kinds). */
-const COUNTER_KINDS: { kind: string; label: string }[] = [
-  { kind: "+1/+1", label: "+1/+1" },
-  { kind: "-1/-1", label: "−1/−1" },
-  { kind: "loyalty", label: "Loyalty" },
-  { kind: "charge", label: "Charge" },
-];
-
 type Menu =
   | { kind: "card"; id: string; x: number; y: number }
   | { kind: "library"; x: number; y: number }
   | { kind: "pile"; zone: "graveyard" | "exile"; x: number; y: number }
   | { kind: "board"; x: number; y: number }
-  | { kind: "group"; x: number; y: number };
+  | { kind: "group"; x: number; y: number }
+  | { kind: "tracker"; id: string; x: number; y: number };
 
 /** The zones whose pile shows one card on top: that card can be dragged out while playing. */
 function isPileZone(zone: ZoneId | null): boolean {
@@ -259,6 +254,17 @@ export function PlaytestBoard({
     setMenu({ kind: "board", x: e.clientX, y: e.clientY });
   };
 
+  /** A counter tile where the board's menu was opened (its corner at the pointer, kept on the board). */
+  const addTracker = (clientX: number, clientY: number) => {
+    const board = boardRef.current;
+    if (!board) return;
+    const rect = board.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const x = clampPercent(((clientX - rect.left) / rect.width) * 100);
+    const y = clampPercent(((clientY - rect.top) / rect.height) * 100);
+    dispatch({ type: "trackerAdd", x: Math.min(x, 90), y: Math.min(y, 85) });
+  };
+
   /** An item of one of the board's menus that closes the menu after it runs. */
   const menuItem = (label: string, run: () => void) => (
     <button
@@ -390,7 +396,7 @@ export function PlaytestBoard({
   function onBoardPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.button !== 0 || state.phase !== "playing") return;
     // A press on a card is the card's own (tapping, dragging); only the bare board starts a box.
-    if ((e.target as HTMLElement).closest(".pt-card")) return;
+    if ((e.target as HTMLElement).closest(".pt-card, .pt-tracker")) return;
     const board = boardRef.current;
     if (!board) return;
     const rect = board.getBoundingClientRect();
@@ -650,6 +656,18 @@ export function PlaytestBoard({
             </div>
           );
         })}
+        {state.trackers.map((tracker) => (
+          <TrackerTile
+            key={tracker.id}
+            tracker={tracker}
+            boardRef={boardRef}
+            dispatch={dispatch}
+            openMenu={(x, y) => {
+              hover.hide();
+              setMenu({ kind: "tracker", id: tracker.id, x, y });
+            }}
+          />
+        ))}
         {box && (
           <div className="pt-select-box" style={{ left: box.left, top: box.top, width: box.width, height: box.height }} />
         )}
@@ -954,6 +972,7 @@ export function PlaytestBoard({
           <span className="pt-menu-sep" />
           {menuItem("Create token… (T)", () => openDialog({ kind: "token" }))}
           {menuItem("Custom token…", () => openDialog({ kind: "token", custom: true }))}
+          {menuItem("Add counter", () => addTracker(menu.x, menu.y))}
           {menuItem("Search the library…", () => openDialog({ kind: "search" }))}
           {menuItem("Shuffle library (S)", () => dispatch({ type: "shuffle" }))}
           <span className="pt-menu-sep" />
@@ -976,8 +995,25 @@ export function PlaytestBoard({
           {menuItem("To hand", () => moveSelected("hand"))}
           {menuItem("To top of library", () => moveSelected("library", "top"))}
           {menuItem("To bottom of library", () => moveSelected("library", "bottom"))}
+          {menuItem("To bottom of library, random order", () => {
+            const ids = selectedIds();
+            if (ids.length > 0) dispatch({ type: "bottomRandom", ids });
+            setSelected(new Set());
+          })}
           <span className="pt-menu-sep" />
           {menuItem("Clear selection", () => setSelected(new Set()))}
+        </FloatMenu>
+      )}
+
+      {menu && menu.kind === "tracker" && state.trackers.some((t) => t.id === menu.id) && (
+        <FloatMenu
+          menuRef={menuRef}
+          x={menu.x}
+          y={menu.y}
+          title={state.trackers.find((t) => t.id === menu.id)?.label ?? "Counter"}
+        >
+          {menuItem("Rename…", () => openDialog({ kind: "trackerRename", id: menu.id }))}
+          {menuItem("Remove", () => dispatch({ type: "trackerRemove", id: menu.id }))}
         </FloatMenu>
       )}
 
@@ -1138,6 +1174,12 @@ function CardMenu({
   );
   const to = (target: ZoneId, label: string, position?: "top" | "bottom") =>
     item(label, () => dispatch({ type: "move", id: card.id, to: target, ...(position ? { position } : {}) }));
+  // The quick list, then any other kind this card already has, so whatever is on it can be changed from here.
+  const [quick] = useQuickCounters();
+  const kinds = [
+    ...quick,
+    ...card.counters.filter((c) => c.amount > 0 && !quick.includes(c.kind)).map((c) => c.kind),
+  ];
 
   return (
     <FloatMenu menuRef={menuRef} x={x} y={y} title={card.faceDown ? "Face-down card" : card.def.name}>
@@ -1154,7 +1196,9 @@ function CardMenu({
           {item(card.faceDown ? "Turn face up" : "Turn face down", () => dispatch({ type: "faceDown", id: card.id }))}
           <span className="pt-menu-sep" />
           <span className="pt-menu-title">Counters</span>
-          {COUNTER_KINDS.map(({ kind, label }) => (
+          {kinds.map((kind) => {
+            const label = counterLabel(kind);
+            return (
             <span key={kind} className="pt-menu-row">
               <span>{label}</span>
               <button
@@ -1172,8 +1216,10 @@ function CardMenu({
                 +
               </button>
             </span>
-          ))}
+            );
+          })}
           {item("Other…", () => openDialog({ kind: "counter", id: card.id }))}
+          {item("Edit list…", () => openDialog({ kind: "counterList" }))}
           <span className="pt-menu-sep" />
           {item("Create token copy", () => dispatch({ type: "copy", id: card.id }))}
           <span className="pt-menu-title">Move to</span>
@@ -1233,6 +1279,104 @@ function CardMenu({
         </>
       )}
     </FloatMenu>
+  );
+}
+
+/**
+ * A counter tile on the battlefield: its name, its number, − and +. Dragged by its body; a click (or a right-click)
+ * on it opens its menu.
+ */
+function TrackerTile({
+  tracker,
+  boardRef,
+  dispatch,
+  openMenu,
+}: {
+  tracker: Tracker;
+  boardRef: RefObject<HTMLDivElement | null>;
+  dispatch: (a: Action) => void;
+  openMenu: (x: number, y: number) => void;
+}) {
+  // While dragged: how far it has moved from where the press started (in pixels), drawn before it is dropped.
+  const [shift, setShift] = useState<{ dx: number; dy: number } | null>(null);
+  const start = useRef<{ x: number; y: number; pointerId: number; moved: boolean } | null>(null);
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+    e.stopPropagation();
+    start.current = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, moved: false };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Gone already: the press simply ends.
+    }
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const s = start.current;
+    if (!s || s.pointerId !== e.pointerId) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (!s.moved && Math.hypot(dx, dy) < 5) return;
+    s.moved = true;
+    setShift({ dx, dy });
+  };
+  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const s = start.current;
+    if (!s || s.pointerId !== e.pointerId) return;
+    start.current = null;
+    setShift(null);
+    if (!s.moved) {
+      openMenu(e.clientX, e.clientY);
+      return;
+    }
+    const board = boardRef.current;
+    if (!board) return;
+    const rect = board.getBoundingClientRect();
+    const tile = e.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    // The tile's corner where it was let go (it is drawn shifted already), kept on the board.
+    const left = Math.max(0, Math.min(rect.width - tile.width, tile.left - rect.left));
+    const top = Math.max(0, Math.min(rect.height - tile.height, tile.top - rect.top));
+    dispatch({ type: "trackerPosition", id: tracker.id, x: (left / rect.width) * 100, y: (top / rect.height) * 100 });
+  };
+  const onPointerCancel = () => {
+    start.current = null;
+    setShift(null);
+  };
+  const step = (delta: number) => (e: ReactMouseEvent) => {
+    e.stopPropagation();
+    dispatch({ type: "tracker", id: tracker.id, delta });
+  };
+
+  return (
+    <div
+      className={"pt-tracker" + (shift ? " dragging" : "")}
+      style={{
+        left: `${tracker.x}%`,
+        top: `${tracker.y}%`,
+        ...(shift ? { transform: `translate(${shift.dx}px, ${shift.dy}px)` } : {}),
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openMenu(e.clientX, e.clientY);
+      }}
+    >
+      <span className="pt-tracker-label">{tracker.label}</span>
+      <span className="pt-tracker-row">
+        <button className="pt-menu-mini" title="One less" onPointerDown={(e) => e.stopPropagation()} onClick={step(-1)}>
+          −
+        </button>
+        <span className="pt-tracker-value">{tracker.value}</span>
+        <button className="pt-menu-mini" title="One more" onPointerDown={(e) => e.stopPropagation()} onClick={step(1)}>
+          +
+        </button>
+      </span>
+    </div>
   );
 }
 

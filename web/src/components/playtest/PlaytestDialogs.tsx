@@ -17,7 +17,9 @@ import {
   type Game,
   type ZoneId,
 } from "@/lib/playtest";
+import { counterKind, counterLabel, MAX_COUNTERS, withCounter } from "@/lib/playtestcounters";
 import { CustomFace } from "./PlaytestBoard";
+import { useQuickCounters } from "./useQuickCounters";
 
 /**
  * The playtest page's dialogs: the zone lists, the library search, the look/scry/surveil window, counters, putting a
@@ -30,6 +32,8 @@ export type PlaytestDialog =
   | { kind: "search" }
   | { kind: "peek" } // shown automatically while state.peek is set
   | { kind: "counter"; id: string }
+  | { kind: "counterList" }
+  | { kind: "trackerRename"; id: string }
   | { kind: "card"; id: string }
   | { kind: "libraryPosition"; id: string }
   | { kind: "token"; custom?: boolean }
@@ -148,6 +152,10 @@ export function PlaytestDialogs({
       return <PeekDialog game={game} dispatch={dispatch} onClose={onClose} />;
     case "counter":
       return <CounterDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
+    case "counterList":
+      return <CounterListDialog onClose={onClose} />;
+    case "trackerRename":
+      return <TrackerRenameDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
     case "card":
       return <CardViewDialog id={dialog.id} game={game} onClose={onClose} />;
     case "libraryPosition":
@@ -614,12 +622,16 @@ function CounterDialog({
 }) {
   const [kind, setKind] = useState("");
   const [amount, setAmount] = useState(1);
+  const [quick, setQuick] = useQuickCounters();
   const card = game.state.cards[id];
 
   const add = () => {
-    const name = kind.trim();
+    const name = counterKind(kind);
     if (name === "") return;
     dispatch({ type: "counter", id, kind: name, delta: whole(amount, 1, 99) });
+    // A new kind joins the card menu's quick list, so it can be changed there from now on.
+    const next = withCounter(quick, name);
+    if (next !== quick) setQuick(next);
     setKind("");
     setAmount(1);
   };
@@ -637,7 +649,7 @@ function CounterDialog({
               <div>
                 {card.counters.map((counter) => (
                   <div key={counter.kind} className="pt-counter-row">
-                    <span>{counter.kind}</span>
+                    <span>{counterLabel(counter.kind)}</span>
                     <span className="muted">{counter.amount}</span>
                     <button
                       className="pt-menu-mini"
@@ -696,6 +708,120 @@ function CounterDialog({
           <span className="spacer" />
           <button className="btn" onClick={onClose}>
             Close
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** The card menu's quick counter list: remove a kind, or add one. */
+function CounterListDialog({ onClose }: { onClose: () => void }) {
+  const [quick, setQuick] = useQuickCounters();
+  const [name, setName] = useState("");
+  const add = () => {
+    const next = withCounter(quick, name);
+    if (next !== quick) setQuick(next);
+    setName("");
+  };
+  const full = quick.length >= MAX_COUNTERS;
+  return (
+    <Dialog title="Counters in the menu" onClose={onClose}>
+      <div className="stack">
+        <div>
+          {quick.map((kind) => (
+            <div key={kind} className="pt-counter-row">
+              <span>{counterLabel(kind)}</span>
+              <button
+                className="pt-menu-mini"
+                title={`Remove ${counterLabel(kind)}`}
+                aria-label={`Remove ${counterLabel(kind)}`}
+                onClick={() => setQuick(quick.filter((k) => k !== kind))}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="inline">
+          <input
+            type="text"
+            list="pt-counter-list-kinds"
+            value={name}
+            placeholder="Counter"
+            aria-label="Kind of counter"
+            disabled={full}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                add();
+              }
+            }}
+          />
+          <datalist id="pt-counter-list-kinds">
+            {COUNTER_SUGGESTIONS.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+          <button className="btn" disabled={full || counterKind(name) === ""} onClick={add}>
+            Add
+          </button>
+        </div>
+        <div className="dialog-actions">
+          <span className="spacer" />
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** A new name for a counter tile on the battlefield. */
+function TrackerRenameDialog({
+  id,
+  game,
+  dispatch,
+  onClose,
+}: {
+  id: string;
+  game: Game;
+  dispatch: (a: Action) => void;
+  onClose: () => void;
+}) {
+  const tracker = game.state.trackers.find((t) => t.id === id);
+  const [name, setName] = useState(tracker?.label ?? "");
+  if (!tracker) return null;
+  const save = () => {
+    dispatch({ type: "trackerRename", id, label: name });
+    onClose();
+  };
+  return (
+    <Dialog title="Rename counter" onClose={onClose}>
+      <div className="stack">
+        <input
+          type="text"
+          value={name}
+          maxLength={24}
+          aria-label="Name"
+          autoFocus
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              save();
+            }
+          }}
+        />
+        <div className="dialog-actions">
+          <span className="spacer" />
+          <button className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn primary" onClick={save}>
+            Save
           </button>
         </div>
       </div>
