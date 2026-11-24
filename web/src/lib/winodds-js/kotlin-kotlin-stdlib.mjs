@@ -48,6 +48,12 @@ if (typeof Math.clz32 === 'undefined') {
     };
   }(Math.log, Math.LN2);
 }
+if (typeof String.prototype.startsWith === 'undefined') {
+  Object.defineProperty(String.prototype, 'startsWith', {value: function (searchString, position) {
+    position = position || 0;
+    return this.lastIndexOf(searchString, position) === position;
+  }});
+}
 if (typeof String.prototype.endsWith === 'undefined') {
   Object.defineProperty(String.prototype, 'endsWith', {value: function (searchString, position) {
     var subjectString = this.toString();
@@ -57,12 +63,6 @@ if (typeof String.prototype.endsWith === 'undefined') {
     position -= searchString.length;
     var lastIndex = subjectString.indexOf(searchString, position);
     return lastIndex !== -1 && lastIndex === position;
-  }});
-}
-if (typeof String.prototype.startsWith === 'undefined') {
-  Object.defineProperty(String.prototype, 'startsWith', {value: function (searchString, position) {
-    position = position || 0;
-    return this.lastIndexOf(searchString, position) === position;
   }});
 }
 //endregion
@@ -897,6 +897,19 @@ function sum_0(_this__u8e3s4) {
 }
 function sortedDescending(_this__u8e3s4) {
   return sortedWith(_this__u8e3s4, reverseOrder());
+}
+function firstOrNull_0(_this__u8e3s4) {
+  if (isInterface(_this__u8e3s4, KtList)) {
+    if (_this__u8e3s4.r())
+      return null;
+    else
+      return _this__u8e3s4.q(0);
+  } else {
+    var iterator = _this__u8e3s4.m();
+    if (!iterator.n())
+      return null;
+    return iterator.o();
+  }
 }
 function minOrNull(_this__u8e3s4) {
   var iterator = _this__u8e3s4.m();
@@ -12801,6 +12814,7 @@ export {
   fill as fill2542d4m9l93pn,
   filterNotNull as filterNotNullhujglslymx1l,
   firstOrNull as firstOrNull1982767dljvdy,
+  firstOrNull_0 as firstOrNullf6vlo6vdgu1e,
   first as first58ocm7j58k3q,
   flatten as flatten2dh4kibw1u0qq,
   getOrNull_0 as getOrNull1go7ef9ldk0df,

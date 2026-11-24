@@ -197,9 +197,9 @@ object WinOddsCalc {
      * 10: lands making more mana, ability costs, finishers, Sagas, Vehicles, toxic (1.69). 11: Currency Converter, Renewed
      * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70). 12: which land is played,
      * "enters tapped unless …" conditions (1.71). 13: mana sinks when picking the land, more "unless …" conditions, a ramp
-     * spell's basic of one colour (1.77).
+     * spell's basic of one colour (1.77). 14: Commander Spock's top card cast for free or put in as a land (1.117).
      */
-    const val VERSION = 13
+    const val VERSION = 14
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -459,6 +459,7 @@ object WinOddsCalc {
     )
     private val copyArtifactToken = Regex("create a token that's a copy of (?:up to one )?target artifact token you control", I)
     private val copyExiled = Regex("create a token that's a copy of the exiled card", I)
+    private val topFreeText = Regex("reveal the top card of your library\\. you may cast that card without paying its mana cost if that spell's mana value is equal to or less than the number of differently named lands you control")
     private val polymorph = Regex("reveals? cards from the top of (?:your|their) library until (?:you|they) reveal (a creature|that many creature)", I)
     private val doubleStrikeFor = Regex("([a-z]+?)s? you control gain double strike", I)
     private val sacrificeForToken = Regex("target creature's controller sacrifices it, then that player creates a (\\d+)/\\d+", I)
@@ -701,6 +702,11 @@ object WinOddsCalc {
         var cheapArtifact = false
         /** Currency Converter's "put a card exiled with this into its owner's graveyard": a Treasure or a Rogue (since 1.70). */
         var fromExiled = false
+        /**
+         * Commander Spock (since 1.117): the top card is cast for free when its mana value is at most the number of
+         * differently named lands, put onto the battlefield tapped when it's a land, and else drawn.
+         */
+        var topFree = false
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
         val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
@@ -713,7 +719,7 @@ object WinOddsCalc {
                 selfCounters + countersAll + countersTarget + countersHit + eachPlayerDraws + oppDraws > 0 || doubleCounters || tokensPer != null ||
                 drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0 ||
                 proliferate + poison + poisonTo + emblemAnthem > 0 || minusOwn + minusTarget + minusEach + minusOpp + amass > 0 || drawX ||
-                addMana.isNotEmpty() || cheapArtifact
+                addMana.isNotEmpty() || cheapArtifact || topFree
     }
 
     /** What a card does in the game, read once per card from its type, power and rules text. */
@@ -2043,6 +2049,8 @@ object WinOddsCalc {
                 else -> w.onAttack.also { w.onAttackEquipped = equipped }
             }
             readAbility(a, line.substringAfter(',').trim(), w, full = true)
+            // Commander Spock: the "draw a card" at the end only happens when the top card wasn't cast or put in.
+            if (topFreeText.containsMatchIn(low)) { a.topFree = true; a.draw = 0 }
             whileCondition.find(low)?.let { a.needsPower = it.groupValues[1].toInt() }
             if (Regex("(?:other )?creatures you control get \\+(\\d+)/").find(low)?.let { w.attackOverrun += it.groupValues[1].toInt() } != null) a.teamPump = 0
             // "Whenever this creature enters or attacks" (Archon of Cruelty) also does it when it enters.
@@ -2054,6 +2062,7 @@ object WinOddsCalc {
                 a.made.forEach { (k, n) -> w.madeOnce[k] = (w.madeOnce[k] ?: 0) + n; w.artifactsOnce += n }
                 if (a.treasures > 0) { w.madeOnce["treasure"] = (w.madeOnce["treasure"] ?: 0) + a.treasures; w.artifactsOnce += a.treasures; w.treasuresOnce += a.treasures }
                 w.onEnter.proliferate += a.proliferate
+                if (a.topFree) w.onEnter.topFree = true
             }
             return true
         }
@@ -3210,6 +3219,7 @@ object WinOddsCalc {
             if (a.doubleCounters && user != null) addCounters(user, user.counters)
             if (a.drawPerCounters && user != null) draw(user.counters)
             if (a.copySelf && user?.card != null) enter(user.card, cheated = true, token = true)
+            if (a.topFree) topFree()
             if (a.landFromHand) hand.firstOrNull { it.land }?.let { l -> hand.remove(l); landOnto(l, tapped = true) }
             if (a.eachPlayerDraws > 0) { draw(a.eachPlayerDraws); life.indices.filter { life[it] > 0 }.forEach { oppDraw(it, a.eachPlayerDraws) } }
             if (a.oppDraws > 0) life.indices.firstOrNull { life[it] > 0 }?.let { oppDraw(it, a.oppDraws) }
@@ -3445,6 +3455,26 @@ object WinOddsCalc {
                 cascading++
                 cast(hit).let { overrun += it }
                 cascading--
+            }
+        }
+
+        /** The number of differently named lands on the battlefield (a ramp spell's basics by their colour). Since 1.117. */
+        fun landNames(): Int = board.filter { it.isA("land") }
+            .map { e -> e.card?.name ?: ManaOddsCalc.basicTypes(e.source?.colours.orEmpty()).firstOrNull() ?: "basic" }.toSet().size
+
+        /** Commander Spock's top card (since 1.117): a land onto the battlefield tapped, a cheap enough spell cast for free, else drawn. */
+        fun topFree() {
+            if (drawn >= rest.size) return
+            val top = rest[drawn]
+            when {
+                top.land -> { rest.removeAt(drawn); landOnto(top, tapped = true) }
+                cascading <= 6 && top.manaValue <= landNames() -> {
+                    rest.removeAt(drawn)
+                    cascading++
+                    cast(top).let { overrun += it }
+                    cascading--
+                }
+                else -> draw(1)
             }
         }
 

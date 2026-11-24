@@ -14,8 +14,12 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-23, after app 1.116)
-- **Newest (2026-11-23):** app 1.116 + website: one bracket card everywhere (63 × 88 mm; app screen, website, A4 print
+## Right now (2026-11-24, after app 1.117)
+- **Newest (2026-11-24):** app 1.117 + website: the win turn plays Commander Spock's "enters or attacks" ability (top
+  card cast for free when its mana value is at most the differently named lands, a land onto the battlefield tapped,
+  else drawn; it was read as "draw a card"). WinOddsCalc.VERSION 14, so every win turn is worked out again once (app
+  and website); the website's winodds-js rebuilt, golden tallies re-recorded (same games, new version). By Opus.
+- **Before (2026-11-23):** app 1.116 + website: one bracket card everywhere (63 × 88 mm; app screen, website, A4 print
   with 9 cards and cut marks): tiles Bracket · Salt · Wins by, why, speed, criteria, Deck roles (Lands "37+2" from
   Scryfall type lines), game changers, combos, saltiest cards if room. Deck scores Bracket · Salt · Wins by. Commander
   Salt, edhpowerlevel.com, the power level, the Power card and the "Bracket from" setting are gone; every deck is
@@ -38,7 +42,7 @@ history, the release notes and `web/README.md`.)
   cards → Print, at 100%) to check the size. Still from before: add/confirm your email, try "Forgot password?", the sort
   with the real collection, green light for the ✕ delete column in the website's wishlist, Compare with a real
   Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** Archidekt decks that Commander Salt scored before show "Not rated yet" for a moment until
+- **Expected to look odd:** win turns show as being worked out again after updating to 1.117 (once per deck); Archidekt decks that Commander Salt scored before show "Not rated yet" for a moment until
   the app or website rates them (once, automatically); their bracket may differ from Commander Salt's. Phones still on
   1.115 keep showing the old power level until they update.
 
