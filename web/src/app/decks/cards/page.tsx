@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/components/api";
 import { TopBar } from "@/components/Nav";
-import { BracketCardSvg, BracketPrintRoot, type BracketCardData } from "@/components/RuleZeroCards";
+import { BracketCardSvg, BracketPrintRoot, PER_PAGE, type BracketCardData } from "@/components/RuleZeroCards";
 import type { RuleZeroDeck } from "@/lib/decks";
 import type { SaltSum } from "@/lib/localratings";
 import type { WinResult } from "@/lib/winodds";
@@ -29,6 +29,18 @@ export default function AllRuleZeroCardsPage() {
   const [folder, setFolder] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [inkSaver, setInkSaver] = useState(false);
+  // The indexes (in cards) of the cards not ticked for printing; every card starts ticked and nothing is kept.
+  const [off, setOff] = useState<Set<number>>(new Set());
+
+  /** Tick or untick one card for printing. */
+  function toggle(i: number) {
+    setOff((was) => {
+      const next = new Set(was);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
 
   useEffect(() => {
     (async () => {
@@ -56,6 +68,10 @@ export default function AllRuleZeroCardsPage() {
     })();
   }, []);
 
+  // The ticked cards: only these are shown printed, and only these count for the pages.
+  const chosen = cards ? cards.filter((_, i) => !off.has(i)) : [];
+  const pages = Math.ceil(chosen.length / PER_PAGE);
+
   return (
     <>
       <TopBar page="decks" folder={folder} />
@@ -73,8 +89,22 @@ export default function AllRuleZeroCardsPage() {
                 <input type="checkbox" checked={inkSaver} onChange={(e) => setInkSaver(e.target.checked)} />
                 <span>Ink saver</span>
               </label>
+              {cards.length > 0 && (
+                <>
+                  <button className="btn small-btn" onClick={() => setOff(new Set())}>
+                    Select all
+                  </button>
+                  <button className="btn small-btn" onClick={() => setOff(new Set(cards.map((_, i) => i)))}>
+                    None
+                  </button>
+                </>
+              )}
               <span className="spacer" />
-              <button className="btn primary small-btn" disabled={cards.length === 0} onClick={() => window.print()}>
+              <span className="muted small">
+                {chosen.length} {chosen.length === 1 ? "card" : "cards"}
+                {chosen.length > 0 && ` · ${pages} A4 ${pages === 1 ? "page" : "pages"}`}
+              </span>
+              <button className="btn primary small-btn" disabled={chosen.length === 0} onClick={() => window.print()}>
                 Print
               </button>
             </div>
@@ -84,11 +114,20 @@ export default function AllRuleZeroCardsPage() {
             ) : (
               <div className="rz-grid">
                 {cards.map((c, i) => (
-                  <BracketCardSvg key={i} card={c} inkSaver={inkSaver} />
+                  <label key={i} className={off.has(i) ? "rz-pick off" : "rz-pick"}>
+                    <input
+                      type="checkbox"
+                      className="rz-pick-box"
+                      checked={!off.has(i)}
+                      onChange={() => toggle(i)}
+                      aria-label={`Print ${c.deck.name}`}
+                    />
+                    <BracketCardSvg card={c} inkSaver={inkSaver} />
+                  </label>
                 ))}
               </div>
             )}
-            {cards.length > 0 && <BracketPrintRoot cards={cards} inkSaver={inkSaver} />}
+            {chosen.length > 0 && <BracketPrintRoot cards={chosen} inkSaver={inkSaver} />}
           </>
         )}
       </main>

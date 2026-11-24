@@ -2430,6 +2430,27 @@ html[data-pic-size="l"] .deck-card-grid {
   margin-top: 12px;
 }
 
+/* A card to tick for printing: the box sits on its top right corner; an unticked card fades. */
+.rz-pick {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+.rz-pick-box {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  z-index: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.rz-pick.off .rz-card-svg {
+  opacity: 0.35;
+}
+
 .rz-card-svg {
   display: block;
   width: 100%;
