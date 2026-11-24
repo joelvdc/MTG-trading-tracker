@@ -32,7 +32,8 @@ history, the release notes and `web/README.md`.)
   Select all / None, "N cards · P A4 pages"), like the app; not remembered. Built by DeepSeek (Vibe), reviewed by
   Opus. Later that day (Opus): README screenshots decks.png and bracket.png retaken; a one-list Maybeboard in stack
   view is one card wide again; the deck filter box keeps room on the right only while the count shows, and on a tight
-  row the view buttons move to a second line instead of the box covering "Show only".
+  row the view buttons move to a second line instead of the box covering "Show only". The repository description and the
+  1.116 release no longer mention the old bracket source.
 - **Waiting on the owner:** look at a bracket card on the phone and print one A4 page from the website (Decks → Bracket
   cards → Print, at 100%) to check the size. Still from before: add/confirm your email, try "Forgot password?", the sort
   with the real collection, green light for the ✕ delete column in the website's wishlist, Compare with a real
