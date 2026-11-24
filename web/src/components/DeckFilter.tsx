@@ -130,19 +130,20 @@ export type DeckFilterState = ReturnType<typeof useDeckFilter>;
 
 /** The filter box in the deck toolbar, with the Show only / Highlight switch. */
 export function DeckFilterBox({ filter, shown, total }: { filter: DeckFilterState; shown: number | null; total: number }) {
+  const counting = !!filter.text.trim() && !filter.error && (filter.busy || shown !== null);
   return (
     <div className="deck-filter">
       <span className="deck-filter-box">
         <input
           type="search"
-          className={filter.error ? "deck-filter-input bad" : "deck-filter-input"}
+          className={"deck-filter-input" + (filter.error ? " bad" : "") + (counting ? " has-count" : "")}
           value={filter.text}
           onChange={(e) => filter.setText(e.target.value)}
           placeholder="Filter deck (eg: o:haste c:red)"
           aria-label="Filter the deck with Scryfall's search words"
           title="Scryfall's search words: t:creature, o:draw, c:rg, mv<=2, is:commander, cat:ramp, … Words only Scryfall knows (otag:, art:) are looked up there."
         />
-        {filter.text.trim() && !filter.error && (filter.busy || shown !== null) && (
+        {counting && (
           <span className="deck-filter-count small muted" role="status">
             {filter.busy ? "Scryfall…" : `${shown} of ${total}`}
           </span>

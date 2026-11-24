@@ -3346,10 +3346,11 @@ details.deck-section > summary .mini-head {
   min-height: 32px;
 }
 
-/* On a wide window the whole toolbar stays on one line: the filter box takes the leftover room and may shrink. */
+/* On a wide window the filter box takes the leftover room; when even its smallest size doesn't fit (more view
+   buttons in stack and grid view), the view buttons move to a second line instead of the box running over them. */
 @media (min-width: 1100px) {
   .deck-toolbar {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .deck-toolbar > * {
@@ -3357,13 +3358,9 @@ details.deck-section > summary .mini-head {
     white-space: nowrap;
   }
 
+  /* The smallest size: a 150px box plus the Show only / Highlight switch. */
   .deck-toolbar .deck-filter {
-    flex: 1 1 200px;
-    min-width: 140px;
-  }
-
-  .deck-toolbar .deck-filter-box {
-    min-width: 0;
+    flex: 1 1 390px;
   }
 }
 
@@ -3521,11 +3518,11 @@ details.deck-section > summary .mini-head {
   width: 100%;
   min-width: 0;
   min-height: 32px;
-  padding: 4px 92px 4px 10px;
+  padding: 4px 10px;
   font-size: 13px;
 }
-/* input[type="search"] (above) would otherwise win and the count would cover the text. */
-.deck-filter .deck-filter-input {
+/* Room at the right end only while the match count shows there (the double class beats input[type="search"]). */
+.deck-filter .deck-filter-input.has-count {
   padding-right: 92px;
 }
 .deck-filter-input.bad {

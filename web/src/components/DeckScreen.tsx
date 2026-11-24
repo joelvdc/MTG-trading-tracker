@@ -1098,7 +1098,12 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                 ) : prefs.layout === "GRID" ? (
                   <ul className="wish-grid deck-card-grid">{shaped.maybeSections[0].rows.map(tile)}</ul>
                 ) : (
-                  <ul className="deck-stack">{shaped.maybeSections[0].rows.map(stackCard)}</ul>
+                  // In the stacks' row like the deck's own sections, so the stack is one card wide.
+                  <div className="deck-stacks">
+                    <div>
+                      <ul className="deck-stack">{shaped.maybeSections[0].rows.map(stackCard)}</ul>
+                    </div>
+                  </div>
                 )
               ) : prefs.layout === "LIST" && prefs.maybe === "SIDE" ? (
                 shaped.maybeSections.map((s) => block(s.title, s.rows, `m:${s.title}`, prefs.maybeSplit ? null : s.title))
