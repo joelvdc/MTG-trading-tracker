@@ -28,6 +28,9 @@ history, the release notes and `web/README.md`.)
   (about 620 cards; Crop Rotation, Expedition Map stay). The table rebuilds at the next daily run (04:00 UTC), so
   until then the old Tutor counts show. The deck filter's "7 of 100" no longer covers the text. Built by DeepSeek
   (Vibe), reviewed by Opus.
+- **Website change (2026-11-24):** Bracket cards page: tick which decks to print (box at each card's top right,
+  Select all / None, "N cards · P A4 pages"), like the app; not remembered. Built by DeepSeek (Vibe), reviewed by
+  Opus.
 - **Waiting on the owner:** look at a bracket card on the phone and print one A4 page from the website (Decks → Bracket
   cards → Print, at 100%) to check the size. Still from before: add/confirm your email, try "Forgot password?", the sort
   with the real collection, green light for the ✕ delete column in the website's wishlist, Compare with a real
