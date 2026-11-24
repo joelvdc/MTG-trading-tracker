@@ -6,11 +6,11 @@ and the website stay in sync through your MTG Trader account.
 
 | Trade | Collection | Scan tab | Commander decks |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/trade.png" width="200" alt="A fair trade with the value of both sides compared"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection sorted by value, with binder filters and price trends"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Commander decks with brackets and win turns"> |
+| <img src="docs/screenshots/trade.png" width="200" alt="A fair trade with the value of both sides compared"> | <img src="docs/screenshots/collection.png" width="200" alt="The collection sorted by value, with binder filters and price trends"> | <img src="docs/screenshots/scan.png" width="200" alt="Scanned cards waiting to be sent to a binder, trade or deck"> | <img src="docs/screenshots/decks.png" width="200" alt="Commander decks with their bracket and win turn, fastest first"> |
 
 | Games | Life tracker | Bracket card | Collection stats |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/games.png" width="200" alt="The Games tab: last games, who won and stats"> | <img src="docs/screenshots/lifetracker.png" width="200" alt="The life tracker for four players, each panel facing its player"> | <img src="docs/screenshots/bracket.png" width="200" alt="The app's bracket card: bracket, salt, win turn, criteria and combos"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: the color pie and color identities"> |
+| <img src="docs/screenshots/games.png" width="200" alt="The Games tab: last games, who won and stats"> | <img src="docs/screenshots/lifetracker.png" width="200" alt="The life tracker for four players, each panel facing its player"> | <img src="docs/screenshots/bracket.png" width="200" alt="The bracket card: bracket, salt, win turn, speed, criteria, deck counts and combos"> | <img src="docs/screenshots/stats.png" width="200" alt="Collection stats: the color pie and color identities"> |
 
 ## Install
 [<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/joelvdc/MTG-trading-tracker)
@@ -95,7 +95,7 @@ turn on two-step login with an authenticator app.
   cards to add and to remove, matched by name so printings don't matter.
 - A **bracket card** per deck for rule zero (bracket, salt, win turn, criteria, the deck's lands, ramp, draw, removal,
   wipes and tutors, game changers and combos), the same in the app and on the website, printed nine to an A4 page
-  with cut marks; cards you're missing (to the wishlist),
+  with cut marks, for the decks you tick; cards you're missing (to the wishlist),
   and retiring decks you no longer play.
 
 **Games**
