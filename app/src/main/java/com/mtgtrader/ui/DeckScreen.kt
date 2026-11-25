@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.LibraryAddCheck
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -158,6 +159,8 @@ import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
 import androidx.compose.material.icons.filled.Style
+import com.mtgtrader.data.DeckOwned
+import com.mtgtrader.data.DeckOwnership
 import com.mtgtrader.data.DeckPrintings
 import com.mtgtrader.data.DeckToCollection
 import com.mtgtrader.data.CardRef
@@ -288,6 +291,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         }
     }
     val rows = matched.rows
+    // "Show cards I own" (since 1.118): green for the deck's own printing, blue for another one, by Archidekt's printings.
+    val showOwned by c.settings.deckShowOwned.collectAsStateWithLifecycle()
+    val ownership = remember(showOwned, archidektRows, maybeRows, owned) {
+        if (showOwned) DeckOwnership.of(archidektRows + maybeRows, owned) else emptyMap()
+    }
 
     // A card tapped in the primer page (since 1.99): it opens in this page's own card window, and closing that window
     // goes back to the primer. The name waits in this page's saved state, which the primer page fills before popping.
@@ -602,6 +610,12 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             leadingIcon = { Icon(Icons.Default.Inventory2, null) },
                             trailingIcon = { if (showMaybeboard) Icon(Icons.Default.Check, "On") },
                             onClick = { menu = false; c.settings.setDeckMaybeboard(!showMaybeboard) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Show cards I own") },
+                            leadingIcon = { Icon(Icons.Default.LibraryAddCheck, null) },
+                            trailingIcon = { if (showOwned) Icon(Icons.Default.Check, "On") },
+                            onClick = { menu = false; c.settings.setDeckShowOwned(!showOwned) },
                         )
                         DropdownMenuItem(
                             text = { Text(if (anyOpen) "Collapse all sections" else "Expand all sections") },
@@ -930,8 +944,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             val key = "c_${row.item.id}"
                             val editing = rowEditing(row, key)
                             dragged(key) {
-                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
-                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
+                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes, owned = ownership[row.item.id]) { onRow(row) }
+                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes, owned = ownership[row.item.id]) { onRow(row) }
                             }
                         }
                     }
@@ -948,8 +962,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             val key = "x_${row.item.id}"
                             val editing = rowEditing(row, key)
                             dragged(key) {
-                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
-                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
+                                if (compact) DeckCompactRow(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes, owned = ownership[row.item.id]) { onRow(row) }
+                                else DeckCardRowView(row, priceType, tagged[row.item.id].orEmpty(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes, owned = ownership[row.item.id]) { onRow(row) }
                             }
                         }
                     }
@@ -974,8 +988,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 val rowKey = "m_${row.item.id}"
                                 val editing = rowEditing(row, rowKey)
                                 dragged(rowKey) {
-                                    if (compact) DeckCompactRow(row, priceType, emptySet(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
-                                    else DeckCardRowView(row, priceType, emptySet(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes) { onRow(row) }
+                                    if (compact) DeckCompactRow(row, priceType, emptySet(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes, owned = ownership[row.item.id]) { onRow(row) }
+                                    else DeckCardRowView(row, priceType, emptySet(), cost, editing, note = DeckNotes.nameKey(row.item.card.name) in cardNotes, owned = ownership[row.item.id]) { onRow(row) }
                                 }
                             }
                         }
@@ -1512,6 +1526,22 @@ private fun Modifier.rowClicks(editing: RowEditing?, onClick: () -> Unit): Modif
         .combinedClickable(onClick = onClick, onLongClick = editing?.onLongClick)
 }
 
+/** The green and blue of "Show cards I own" (since 1.118), the website's collection tracker colours. */
+private val OWNED_GREEN = Color(0xFF2E9E5B)
+private val OWNED_BLUE = Color(0xFF6B8FD4)
+
+private val DeckOwned?.tinted get() = this == DeckOwned.EXACT || this == DeckOwned.OTHER
+
+/** A soft green or blue background. */
+private fun Modifier.ownedTint(owned: DeckOwned?): Modifier = when (owned) {
+    DeckOwned.EXACT -> background(OWNED_GREEN.copy(alpha = 0.22f))
+    DeckOwned.OTHER -> background(OWNED_BLUE.copy(alpha = 0.22f))
+    else -> this
+}
+
+/** A little room inside every row while "Show cards I own" is on, so text doesn't touch a tint's edges and stays lined up. */
+private fun Modifier.ownedRoom(owned: DeckOwned?): Modifier = if (owned != null) padding(horizontal = 6.dp) else this
+
 @Composable
 private fun SelectMark(editing: RowEditing?) {
     val selected = editing?.selected ?: return
@@ -1533,12 +1563,14 @@ internal fun DeckCardRowView(
     editing: RowEditing? = null,
     /** The card has a note in its window (since 1.97). */
     note: Boolean = false,
+    /** What the collection holds of it, when "Show cards I own" is on (since 1.118). */
+    owned: DeckOwned? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
     val unit = row.unitPrice(priceType)
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).rowClicks(editing, onClick).padding(vertical = 4.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).ownedTint(owned).rowClicks(editing, onClick).ownedRoom(owned).padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SelectMark(editing)
@@ -1759,11 +1791,12 @@ internal fun DeckCompactRow(
     cost: String?,
     editing: RowEditing? = null,
     note: Boolean = false,
+    owned: DeckOwned? = null,
     onClick: () -> Unit,
 ) {
     val item = row.item
     val unit = row.unitPrice(priceType)
-    Column(Modifier.fillMaxWidth().rowClicks(editing, onClick)) {
+    Column(Modifier.fillMaxWidth().then(if (owned.tinted) Modifier.clip(RoundedCornerShape(6.dp)) else Modifier).ownedTint(owned).rowClicks(editing, onClick).ownedRoom(owned)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 34.dp).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             SelectMark(editing)
             Text(

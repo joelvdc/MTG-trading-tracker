@@ -13,9 +13,9 @@ function printing(c: { setCode: string; setName: string; collectorNumber: string
 }
 
 /**
- * A deck line's "Collection tracker" (like Moxfield's): a green tick when the collection holds enough copies of the
- * printing and finish shown, an amber ring when it holds the card in another printing or finish (or too few copies),
- * an empty grey ring when it holds none. Pointing at it (or focusing it) shows what the deck needs and what the
+ * A deck line's "Collection tracker" (like Moxfield's): a green dot when the collection holds enough copies of the
+ * printing and finish shown, a blue dot when it holds the card in another printing or finish (or too few copies),
+ * an empty grey ring when it holds none (colours like Archidekt's since 2026-11-25). Pointing at it (or focusing it) shows what the deck needs and what the
  * collection holds; clicking opens the collection on that card. On a touch screen the first tap shows the box.
  */
 export function OwnedIcon({ row }: { row: DeckRow }) {
@@ -62,7 +62,6 @@ export function OwnedIcon({ row }: { row: DeckRow }) {
           }
         }}
       >
-        {kind === "ok" ? "✓" : ""}
       </Link>
       {shown && (
         <span id={tipId} role="tooltip" className="own-tip small">

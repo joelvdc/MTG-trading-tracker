@@ -906,6 +906,40 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/combo_flags.png", roborazziOptions = screenshotOptions)
     }
 
+    /** 1.118: "Show cards I own": green for the deck's printing, blue for another one, plain when not owned; both list styles. */
+    @Test fun deckOwnedHighlight() {
+        fun row(id: Long, name: String, eur: Double) = com.mtgtrader.data.DeckCardRow(
+            com.mtgtrader.data.DeckCard(
+                id = id, deckId = 7, card = ref(name, "dmu", "$id", "rare").copy(fallbackEur = eur), quantity = 1, category = "Protection",
+                types = "Instant", cmc = 2.0, commander = false, foil = false,
+            ),
+            null,
+        )
+        val ex = com.mtgtrader.data.DeckOwned.EXACT
+        val ot = com.mtgtrader.data.DeckOwned.OTHER
+        val no = com.mtgtrader.data.DeckOwned.NONE
+        val rows = listOf(
+            Triple(row(1, "Grand Crescendo", 0.84), "{X}{W}{W}", ex),
+            Triple(row(2, "Propaganda", 2.73), "{2}{U}", ot),
+            Triple(row(3, "Teferi's Reproach", 1.12), "{2}{W}", no),
+            Triple(row(4, "Taunt from the Rampart", 1.56), "{3}{R}{W}", ot),
+            Triple(row(5, "Darksteel Angel", 3.19), "{9}", ex),
+        )
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.SectionHeading(com.mtgtrader.data.DeckSection("Protection", rows.map { it.first }), 9.44, folded = false) {}
+                        for ((r, cost, own) in rows) com.mtgtrader.ui.DeckCardRowView(r, PriceType.TREND, emptySet(), cost, owned = own) {}
+                        Spacer(Modifier.height(12.dp))
+                        for ((r, cost, own) in rows) com.mtgtrader.ui.DeckCompactRow(r, PriceType.TREND, emptySet(), cost, owned = own) {}
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/deck_owned_highlight.png", roborazziOptions = screenshotOptions)
+    }
+
     /** 1.46: when Auntie Plague can cast its commander and has its colours (the table the owner picked). */
     @Test fun commanderOdds() {
         val odds = com.mtgtrader.data.ManaOdds(

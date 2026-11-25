@@ -114,6 +114,15 @@ class Settings(context: Context) {
         prefs.edit().putBoolean("deckMaybeboard", on).apply()
     }
 
+    /** Deck pages tint the cards you own green, or blue in another printing (this phone only). Since 1.118. */
+    private val _deckShowOwned = MutableStateFlow(prefs.getBoolean("deckShowOwned", false))
+    val deckShowOwned: StateFlow<Boolean> = _deckShowOwned
+
+    fun setDeckShowOwned(on: Boolean) {
+        _deckShowOwned.value = on
+        prefs.edit().putBoolean("deckShowOwned", on).apply()
+    }
+
     /**
      * Section headings folded away on deck pages, e.g. "Lands", for every deck that has them (this phone
      * only). Since 1.42.

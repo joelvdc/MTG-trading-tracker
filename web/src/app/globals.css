@@ -2347,11 +2347,12 @@ html[data-pic-size="l"] .deck-card-grid {
 .own-icon.own-ok {
   background: var(--green);
   border-color: var(--green);
-  color: #fff;
 }
 
+/* Archidekt's blue: the card in another printing (the same in every theme, like the green). */
 .own-icon.own-some {
-  border-color: var(--accent);
+  background: #6b8fd4;
+  border-color: #6b8fd4;
 }
 
 .own-icon.own-none {

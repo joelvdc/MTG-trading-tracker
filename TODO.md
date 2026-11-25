@@ -14,22 +14,22 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-24, website change after app 1.117)
-- **Newest (2026-11-24, website only):** playtester: the card dragged last lies on top (drag a creature onto
-  equipment); "Add counter" in the battlefield menu puts a counter tile (name, number, − +; click it for Rename/Remove)
-  on the board, for counting tokens; the card menu's counters are an editable list (Edit list…, remembered per
-  browser), counters made with Other… join it, and counters already on a card always show; a selection can go to the
-  bottom of the library in random order. By Opus.
-- **Before:** app 1.117 + website (2026-11-24): the win turn plays Commander Spock's "enters or attacks" ability;
-  WinOddsCalc.VERSION 14. App 1.116 (2026-11-23): one bracket card everywhere (app, website, A4 print), every deck
-  estimated by the website. Website 2026-11-23/24: Tutor no longer counts land tutors; Bracket cards page lets you
-  tick which decks to print; Maybeboard stack and deck filter box fixes.
-- **Waiting on the owner:** try the four playtester changes (Playtest on any deck). Look at a bracket card on the phone
+## Right now (2026-11-25, app 1.118 + website)
+- **Newest (2026-11-25):** app 1.118: "Show cards I own" in the deck page's ⋮ menu (off by default, this phone only)
+  tints lines green (deck's printing owned) or blue (another printing / too few copies), compared with Archidekt's
+  printing like the website (`DeckOwnership`). Website: collection dots are green / blue (#6b8fd4) / grey ring, no
+  ticks. By Opus.
+- **Before:** website 2026-11-24: playtester counter tiles, editable counter list, last-dragged card on top. App 1.117
+  (2026-11-24): the win turn plays Commander Spock's ability; WinOddsCalc.VERSION 14. App 1.116: one bracket card
+  everywhere.
+- **Waiting on the owner:** switch on "Show cards I own" on a deck in 1.118 and check the colours; try the playtester
+  changes (Playtest on any deck). Look at a bracket card on the phone
   and print one A4 page (Decks → Bracket cards → Print, at 100%). Still from before: add/confirm your email, try
   "Forgot password?", the sort with the real collection, green light for the ✕ delete column in the website's
   wishlist, Compare with a real Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for
   permission.
-- **Expected to look odd:** the counter list starts as +1/+1, −1/−1, Loyalty, Charge on every browser and is not shared
+- **Expected to look odd:** with "Show the printings I own" on, a blue line can already show your own copy: blue
+  means you don't own the printing the deck lists on Archidekt. The counter list starts as +1/+1, −1/−1, Loyalty, Charge on every browser and is not shared
   between PC and phone. Win turns are worked out again once per deck after updating to 1.117; some Archidekt decks show
   "Not rated yet" for a moment until rated; phones still on 1.115 show the old power level until they update.
 

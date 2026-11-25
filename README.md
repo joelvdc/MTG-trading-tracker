@@ -69,6 +69,9 @@ turn on two-step login with an authenticator app.
   categories into your own order (the app follows it) and drag cards between categories of your own decks. Lands
   always go in the Land category, and its heading also counts the MDFCs with a land on the back, like Archidekt
   ("Land (37, 40 with MDFCs)").
+- **See which cards you own**: on the website a dot on each line (green: you own that printing, blue: another
+  printing or too few copies, grey ring: not owned); in the app, **Show cards I own** in the deck page's menu tints
+  the lines green or blue the same way.
 - **Browse every Commander precon** on the website (Explore → Commander precons): see one with the auto categories,
   its simulated win turn, then make it your deck or add its cards to your collection.
 - **Search inside a deck** with Scryfall's search words (`t:creature o:draw mv<=2`), the same in the app and on the
