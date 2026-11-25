@@ -106,6 +106,11 @@ export function coverUrl(d: Deck): string | null {
 
 export interface SaltCombo {
   cards: string[];
+  /**
+   * Pieces it needs besides its cards, "any card of this kind" in Commander Spellbook's words ("Man-Land that Enters
+   * Untapped"), one entry per piece. Since rating version 3.
+   */
+  extras?: string[];
   counts: boolean;
   results: string[];
   needsBoard: boolean;
@@ -180,6 +185,7 @@ export function decodeSalt(text: string | null | undefined): SaltCard | null {
       fastMana: j.fastMana ?? [],
       combos: (j.combos ?? []).map((c) => ({
         cards: c.cards ?? [],
+        ...(c.extras?.length ? { extras: c.extras } : {}),
         counts: c.counts ?? false,
         results: c.results ?? [],
         needsBoard: c.needsBoard ?? false,
@@ -239,8 +245,14 @@ export function allCombos(s: SaltCard): SaltCombo[] {
     ...s.combos,
     ...counted.filter((c) => !known.has(setKey(c))).map((cards) => ({ cards, counts: true, results: [], needsBoard: false, spellbookUri: null, prerequisites: [] })),
   ];
-  return all.map((c, i) => ({ c, i })).sort((a, b) => Number(b.c.counts) - Number(a.c.counts) || a.c.cards.length - b.c.cards.length || a.i - b.i).map((x) => x.c);
+  return all.map((c, i) => ({ c, i })).sort((a, b) => Number(b.c.counts) - Number(a.c.counts) || comboPieces(a.c) - comboPieces(b.c) || a.i - b.i).map((x) => x.c);
 }
+
+/** How many pieces a combo needs: its cards and the "any card of this kind" pieces. */
+export const comboPieces = (c: SaltCombo) => c.cards.length + (c.extras?.length ?? 0);
+
+/** The combo's pieces in words: "A + B + any Man-Land that Enters Untapped". */
+export const comboPiecesText = (c: SaltCombo, cards: string[] = c.cards) => [...cards, ...(c.extras ?? []).map((e) => `any ${e}`)].join(" + ");
 
 // ---- Why that bracket ----------------------------------------------------------------------------------------------
 
@@ -334,7 +346,7 @@ export function tagsByCard(s: SaltCard): Map<string, BracketTag[]> {
     }
   };
   tag(s.gameChangers, "GAME_CHANGER");
-  for (const c of allCombos(s)) tag(c.cards, c.counts ? (c.cards.length <= 2 ? "COMBO" : "COMBO_3") : c.cards.length <= 2 ? "OTHER_COMBO" : "OTHER_COMBO_3");
+  for (const c of allCombos(s)) tag(c.cards, c.counts ? (comboPieces(c) <= 2 ? "COMBO" : "COMBO_3") : comboPieces(c) <= 2 ? "OTHER_COMBO" : "OTHER_COMBO_3");
   for (const t of m.values()) {
     if (t.has("COMBO")) t.delete("COMBO_3");
     if (t.has("OTHER_COMBO")) t.delete("OTHER_COMBO_3");

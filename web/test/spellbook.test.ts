@@ -19,6 +19,7 @@ const answer = {
       {
         id: "90ab-cdef",
         uses: [{ card: { name: "Dockside Extortionist" } }],
+        requires: [{ template: { name: "Man-Land that Enters Untapped" }, quantity: 1 }, { template: { name: "Card that Earthbends" }, quantity: 2 }],
         produces: [{ feature: { name: "Infinite colorless mana" } }],
         notablePrerequisites: "",
         easyPrerequisites: "",
@@ -61,6 +62,7 @@ describe("Commander Spellbook's combos", () => {
       {
         id: "1234-5678",
         cards: ["Thopter Foundry", "Sword of the Meek"],
+        templates: [],
         features: ["Win the game", "Infinite creature tokens"],
         notablePrerequisites: "All permanents on the battlefield.",
         easyPrerequisites: "3 mana available. Thopter Foundry does not have summoning sickness.",
@@ -70,6 +72,7 @@ describe("Commander Spellbook's combos", () => {
       {
         id: "90ab-cdef",
         cards: ["Dockside Extortionist"],
+        templates: ["Man-Land that Enters Untapped", "Card that Earthbends", "Card that Earthbends"],
         features: ["Infinite colorless mana"],
         notablePrerequisites: "",
         easyPrerequisites: "",

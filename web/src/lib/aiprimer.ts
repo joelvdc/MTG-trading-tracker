@@ -5,7 +5,7 @@ import type { AccountStore } from "./accounts";
 import { AI_PROVIDERS, buildPrompt, cleanPrimer, isAiProvider, type AiOptions, type AiProvider, type PrimerInput } from "./aiprimershared";
 import { USER_AGENT } from "./config";
 import { deckView, syncDecks, type DeckViewExtras } from "./decks";
-import { allCombos, bracketName, comboResultText, deckBracket, sections } from "./deckshared";
+import { allCombos, bracketName, comboPiecesText, comboResultText, deckBracket, sections } from "./deckshared";
 import { seal, unseal } from "./session";
 import type { SyncFile } from "./syncfile";
 import { EditError } from "./wishlist";
@@ -470,7 +470,7 @@ export function deckPrimerInput(file: SyncFile, id: number, extras: DeckViewExtr
   const d = view.deck;
   const combos = (view.salt ? allCombos(view.salt) : []).map((c) => {
     const what = comboResultText(c);
-    return what ? `${c.cards.join(" + ")}: ${what}` : c.cards.join(" + ");
+    return what ? `${comboPiecesText(c)}: ${what}` : comboPiecesText(c);
   });
   return {
     deckName: d.name,

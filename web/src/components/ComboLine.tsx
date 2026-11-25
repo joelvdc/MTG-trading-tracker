@@ -1,4 +1,4 @@
-import { comboResultText, type SaltCombo } from "@/lib/deckshared";
+import { comboPiecesText, comboResultText, type SaltCombo } from "@/lib/deckshared";
 
 /** A combo in words: its cards (or the others than [cardName]), what it does and a link to Commander Spellbook (the app's ComboLine). */
 export function ComboLine({ combo, cardName }: { combo: SaltCombo; cardName?: string }) {
@@ -9,7 +9,7 @@ export function ComboLine({ combo, cardName }: { combo: SaltCombo; cardName?: st
       <span className={combo.counts ? "combo-dot counts" : "combo-dot"} aria-hidden="true" />
       <span className="grow small">
         {cardName ? "Combo with " : ""}
-        {others.join(" + ")}
+        {comboPiecesText(combo, others)}
         {combo.needsBoard ? " (needs more on the battlefield)" : ""}
         <br />
         <span className="muted">

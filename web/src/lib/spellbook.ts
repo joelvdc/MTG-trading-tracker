@@ -8,6 +8,11 @@ export interface SpellbookCombo {
   id: string;
   /** Its cards' names, in the order the combo lists them. */
   cards: string[];
+  /**
+   * The pieces it needs besides its cards, as Commander Spellbook names them ("Man-Land that Enters Untapped"): one
+   * entry per piece, so a template needed twice is listed twice.
+   */
+  templates: string[];
   /** What it produces, as Commander Spellbook names it ("Win the game", "Infinite lifeloss"…). */
   features: string[];
   notablePrerequisites: string;
@@ -30,6 +35,11 @@ export function parseCombos(body: unknown): SpellbookCombo[] {
     return {
       id: str(c.id),
       cards: list(c.uses).map((u) => str(obj(obj(u).card).name)),
+      templates: list(c.requires).flatMap((r) => {
+        const name = str(obj(obj(r).template).name);
+        const n = num(obj(r).quantity) ?? 1;
+        return name ? Array.from({ length: Math.max(1, Math.round(n)) }, () => name) : [];
+      }),
       features: list(c.produces).map((p) => str(obj(obj(p).feature).name)),
       notablePrerequisites: str(c.notablePrerequisites),
       easyPrerequisites: str(c.easyPrerequisites),

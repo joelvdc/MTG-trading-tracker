@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StatsCard } from "@/lib/deckstats";
-import { decodeSalt } from "@/lib/deckshared";
+import { decodeSalt, tagsByCard } from "@/lib/deckshared";
 import { featureLabel, rateDeck, RATING_VERSION, ratingListKey, saltIntensity, saltSumOf, type CardFact } from "@/lib/localratings";
 import type { SpellbookCombo } from "@/lib/spellbook";
 
@@ -32,7 +32,7 @@ const facts = (m: Record<string, Partial<CardFact>>): Map<string, CardFact> => {
 const plains = (n: number) => card("Plains", { quantity: n, typeLine: "Basic Land — Plains", producedMana: "W" });
 
 function combo(id: string, cards: string[], features: string[], over: Partial<SpellbookCombo> = {}): SpellbookCombo {
-  return { id, cards, features, notablePrerequisites: "", easyPrerequisites: "", bracketTag: null, salt: null, ...over };
+  return { id, cards, templates: [], features, notablePrerequisites: "", easyPrerequisites: "", bracketTag: null, salt: null, ...over };
 }
 
 describe("the rating has no axes", () => {
@@ -78,6 +78,22 @@ describe("the bracket", () => {
     expect(late.earlyCombos).toEqual([]);
     expect(late.effects).toEqual({});
     expect(late.combos[0].manaValue).toBe(12);
+  });
+
+  it("two cards plus \"any card of this kind\" is a three-piece combo: not counted, the piece named (Springheart Nantuko)", () => {
+    const cards = deck([{ name: "Springheart Nantuko", cmc: 2, typeLine: "Creature" }, { name: "Tireless Provisioner", cmc: 3, typeLine: "Creature" }], facts({}));
+    const r = rateDeck(cards, facts({}), [combo("3875-5702--131", ["Springheart Nantuko", "Tireless Provisioner"], ["Infinite landfall triggers"], { templates: ["Man-Land that Enters Untapped"] })], null);
+    expect(r.bracket).toBe(2);
+    expect(r.twoCardCombos).toEqual([]);
+    expect(r.combos[0].counts).toBe(false);
+    expect(r.combos[0].extras).toEqual(["Man-Land that Enters Untapped"]);
+    expect(tagsByCard(decodeSalt(JSON.stringify(r))!).get("springheart nantuko")).toEqual(["OTHER_COMBO_3"]);
+
+    // One card plus one template is two pieces: it counts, and the reason names the piece.
+    const two = rateDeck(cards, facts({}), [combo("x", ["Springheart Nantuko"], ["Infinite untap"], { templates: ["Man-Land that Enters Untapped"] })], null);
+    expect(two.combos[0].counts).toBe(true);
+    expect(two.bracketWhy).toEqual(["Springheart Nantuko + any Man-Land that Enters Untapped: doesn't win"]);
+    expect(decodeSalt(JSON.stringify(two))?.combos[0].extras).toEqual(["Man-Land that Enters Untapped"]);
   });
 
   it("a two-card combo of mana value 9 doesn't win by itself: bracket 3, \"doesn't win\"", () => {

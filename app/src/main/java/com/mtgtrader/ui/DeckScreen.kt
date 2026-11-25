@@ -2067,7 +2067,7 @@ internal fun ComboLine(cardName: String, combo: SaltCombo, onOpen: ((String) -> 
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                "Combo with " + others.joinToString(" + ") + if (combo.needsBoard) " (needs more on the battlefield)" else "",
+                "Combo with " + combo.piecesText(others) + if (combo.needsBoard) " (needs more on the battlefield)" else "",
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(

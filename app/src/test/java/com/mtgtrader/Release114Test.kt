@@ -71,7 +71,7 @@ class Release114Test {
 
     @Test
     fun aRatingIsStaleOnlyWhileTheDeckNoLongerHoldsIt() {
-        assertEquals(2, LocalRating.RATING_VERSION)
+        assertEquals(3, LocalRating.RATING_VERSION)
         assertTrue("no rating yet", LocalRating.stale(deck(), sample))
         assertFalse("a fresh rating", LocalRating.stale(deck(saltCard = rated()), sample))
         assertTrue("another list", LocalRating.stale(deck(saltCard = rated(listKey = "00000000")), sample))

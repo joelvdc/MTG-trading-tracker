@@ -6,10 +6,10 @@
 // The four axes (interaction, consistency, efficiency, manabase) were tried and didn't predict the power level, so
 // they're no longer worked out: axes stays empty and the "how it plays" bars stay hidden.
 import { isBasic, type StatsCard } from "./deckstats";
-import { saltKey, type SaltCard, type SaltCombo } from "./deckshared";
+import { comboPieces, comboPiecesText, saltKey, type SaltCard, type SaltCombo } from "./deckshared";
 import type { SpellbookCombo } from "./spellbook";
 
-export const RATING_VERSION = 2;
+export const RATING_VERSION = 3;
 
 /** The app's SaltCard.CURRENT: a salt card without it is treated as old data. */
 export const SALT_CARD_VERSION = 4;
@@ -95,7 +95,9 @@ const lines = (text: string) =>
 function saltCombo(combo: SpellbookCombo, cmc: Map<string, number>): SaltCombo {
   return {
     cards: combo.cards,
-    counts: combo.cards.length === 2,
+    ...(combo.templates.length > 0 ? { extras: combo.templates } : {}),
+    // Two pieces in all: a combo that also needs "any man-land" is a three-piece combo (rating version 3).
+    counts: combo.cards.length + combo.templates.length === 2,
     results: comboResults(combo),
     needsBoard: false,
     spellbookUri: `https://commanderspellbook.com/combo/${combo.id}/`,
@@ -107,7 +109,7 @@ function saltCombo(combo: SpellbookCombo, cmc: Map<string, number>): SaltCombo {
 
 // ---- Bracket ------------------------------------------------------------------------------------------------------
 
-const comboName = (c: SaltCombo) => c.cards.join(" + ");
+const comboName = (c: SaltCombo) => comboPiecesText(c);
 const mv = (c: SaltCombo) => c.manaValue ?? 0;
 const earlyLine = (c: SaltCombo) => `${comboName(c)}: wins, mana value ${mv(c)}`;
 const comboLine = (c: SaltCombo) => (c.wins ? `${comboName(c)}: wins, mana value ${mv(c)}` : `${comboName(c)}: doesn't win`);
@@ -250,7 +252,7 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
     const k = saltKey(c.name);
     if (!cmc.has(k)) cmc.set(k, c.cmc);
   }
-  const all = combos.map((c) => saltCombo(c, cmc)).sort((a, b) => Number(b.counts) - Number(a.counts) || b.cards.length - a.cards.length);
+  const all = combos.map((c) => saltCombo(c, cmc)).sort((a, b) => Number(b.counts) - Number(a.counts) || comboPieces(b) - comboPieces(a));
   const twoCardCombos = all.filter((c) => c.counts).map((c) => c.cards);
   const earlyCombos = all
     .filter((c) => c.counts && c.wins === true && c.manaValue != null && c.manaValue <= RATING.bracket.earlyMv)

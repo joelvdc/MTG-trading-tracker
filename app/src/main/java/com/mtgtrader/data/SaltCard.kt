@@ -113,7 +113,7 @@ data class SaltCard(
         val counted = (twoCardCombos + earlyCombos).distinct()
         val known = combos.map { c -> c.cards.map(::key).toSet() }.toSet()
         val all = combos + counted.filter { it.map(::key).toSet() !in known }.map { SaltCombo(it, counts = true) }
-        all.sortedWith(compareByDescending<SaltCombo> { it.counts }.thenBy { it.cards.size })
+        all.sortedWith(compareByDescending<SaltCombo> { it.counts }.thenBy { it.pieces })
     }
 
     /** The bracket-relevant tags of each card, keyed by [key]. */
@@ -122,7 +122,7 @@ data class SaltCard(
         fun tag(names: List<String>, t: BracketTag) = names.forEach { m.getOrPut(key(it)) { sortedSetOf() } += t }
         tag(gameChangers, BracketTag.GAME_CHANGER)
         // One combo flag of each colour per card: the smallest combo it's in.
-        allCombos.forEach { combo -> tag(combo.cards, BracketTag.combo(combo.counts, combo.cards.size)) }
+        allCombos.forEach { combo -> tag(combo.cards, BracketTag.combo(combo.counts, combo.pieces)) }
         m.values.forEach { tags ->
             if (BracketTag.COMBO in tags) tags -= BracketTag.COMBO_3
             if (BracketTag.OTHER_COMBO in tags) tags -= BracketTag.OTHER_COMBO_3
@@ -165,6 +165,11 @@ data class SaltCard(
 @Serializable
 data class SaltCombo(
     val cards: List<String>,
+    /**
+     * Pieces it needs besides its cards, "any card of this kind" in Commander Spellbook's words ("Man-Land that Enters
+     * Untapped"), one entry per piece. Since 1.119 (rating version 3).
+     */
+    val extras: List<String> = emptyList(),
     /** Counted for the bracket (Commander Salt's two-card and early-game combos). */
     val counts: Boolean = false,
     /** What it does, as Commander Salt's labels ("infinite-etb", "win-game"…). */
@@ -179,6 +184,12 @@ data class SaltCombo(
     /** Whether it wins the game, from the app's rating. */
     val wins: Boolean? = null,
 ) {
+    /** How many pieces it needs: its cards and the "any card of this kind" pieces. */
+    val pieces get() = cards.size + extras.size
+
+    /** Its pieces in words ("A + B + any Man-Land that Enters Untapped"), [shown] being the cards to name. */
+    fun piecesText(shown: List<String> = cards) = (shown + extras.map { "any $it" }).joinToString(" + ")
+
     /** "infinite ETB, infinite life loss". */
     val resultText get() = results.joinToString(", ") { r ->
         when (r) {
