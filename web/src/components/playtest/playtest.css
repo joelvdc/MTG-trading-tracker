@@ -599,6 +599,19 @@
   flex: 1;
 }
 
+/* A counter's current number, between its − and + buttons in the card menu. */
+.pt-menu-count {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pt-menu-count.none {
+  opacity: 0.4;
+  font-weight: 400;
+}
+
 .pt-menu-mini,
 .pt-menu .pt-menu-mini,
 .menu-items .pt-menu-mini {

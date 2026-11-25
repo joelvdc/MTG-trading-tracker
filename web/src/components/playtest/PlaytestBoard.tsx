@@ -82,6 +82,15 @@ interface Press {
   longPress: boolean;
   timer: number;
   el: HTMLElement;
+  /** The other selected cards dragged along, measured when the drag starts. */
+  others: DragOther[];
+}
+
+/** A selected card dragged along with the held one: where its top left corner is from the held card's (px). */
+interface DragOther {
+  id: string;
+  dx: number;
+  dy: number;
 }
 
 interface DragView {
@@ -92,6 +101,7 @@ interface DragView {
   offsetY: number;
   width: number;
   height: number;
+  others: DragOther[];
 }
 
 /**
@@ -311,6 +321,7 @@ export function PlaytestBoard({
       longPress: false,
       timer: 0,
       el,
+      others: [],
     };
     try {
       el.setPointerCapture(e.pointerId);
@@ -344,9 +355,28 @@ export function PlaytestBoard({
       setMenu(null);
       // Dragging a card that is not part of the selection works on its own, so the selection goes.
       if (!selected.has(p.id) && selected.size > 0) setSelected(new Set());
+      // A selection dragged on the battlefield: the other cards follow the pointer too, at their spacing on the board.
+      else if (p.zone === "battlefield" && selected.size > 1) p.others = measureOthers(p);
     }
-    setDrag({ id: p.id, x: e.clientX, y: e.clientY, offsetX: p.offsetX, offsetY: p.offsetY, width: p.width, height: p.height });
+    setDrag({ id: p.id, x: e.clientX, y: e.clientY, offsetX: p.offsetX, offsetY: p.offsetY, width: p.width, height: p.height, others: p.others });
     setDropAt(targetAt(e.clientX, e.clientY));
+  }
+
+  /** Where each other selected battlefield card sits from the held card, measured on the board's unrotated wrappers. */
+  function measureOthers(p: Press): DragOther[] {
+    const board = boardRef.current;
+    if (!board) return [];
+    const heldLeft = p.startX - p.offsetX;
+    const heldTop = p.startY - p.offsetY;
+    const out: DragOther[] = [];
+    for (const id of selected) {
+      if (id === p.id || zoneOf(id) !== "battlefield") continue;
+      const box = board.querySelector<HTMLElement>(`.pt-board-card[data-card-id="${CSS.escape(id)}"]`);
+      if (!box) continue;
+      const r = box.getBoundingClientRect();
+      out.push({ id, dx: r.left - heldLeft, dy: r.top - heldTop });
+    }
+    return out;
   }
 
   function endPress(e: ReactPointerEvent<HTMLElement>) {
@@ -864,6 +894,24 @@ export function PlaytestBoard({
         </div>
       </div>
 
+      {drag &&
+        ghost &&
+        drag.others.map((o) => {
+          const card = state.cards[o.id];
+          if (!card) return null;
+          return (
+            <div
+              key={o.id}
+              className="pt-ghost"
+              aria-hidden="true"
+              style={{ left: drag.x - drag.offsetX + o.dx, top: drag.y - drag.offsetY + o.dy, width: drag.width, height: drag.height }}
+            >
+              <div className={"pt-card" + (card.tapped ? " tapped" : "")}>
+                <CardFace card={card} />
+              </div>
+            </div>
+          );
+        })}
       {drag && ghost && (
         <div
           className="pt-ghost"
@@ -1198,6 +1246,8 @@ function CardMenu({
           <span className="pt-menu-title">Counters</span>
           {kinds.map((kind) => {
             const label = counterLabel(kind);
+            // How many the card has now, between − and + (faint at 0); since 2026-11-25.
+            const amount = card.counters.find((c) => c.kind === kind)?.amount ?? 0;
             return (
             <span key={kind} className="pt-menu-row">
               <span>{label}</span>
@@ -1208,6 +1258,9 @@ function CardMenu({
               >
                 −
               </button>
+              <span className={"pt-menu-count" + (amount === 0 ? " none" : "")} aria-label={`${amount} ${label} counters`}>
+                {amount}
+              </span>
               <button
                 className="pt-menu-mini"
                 title={`One ${label} counter more`}

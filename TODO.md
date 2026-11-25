@@ -14,8 +14,10 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-25, app 1.118 + website)
-- **Newest (2026-11-25):** app 1.118: "Show cards I own" in the deck page's ⋮ menu (off by default, this phone only)
+## Right now (2026-11-25, website change after app 1.118)
+- **Newest (2026-11-25, website only):** playtester: the card menu shows each counter's number between − and + (faint
+  0 when none); dragging a selection shows every selected card following the pointer at its board spacing. By Opus.
+- **Before (2026-11-25):** app 1.118: "Show cards I own" in the deck page's ⋮ menu (off by default, this phone only)
   tints lines green (deck's printing owned) or blue (another printing / too few copies), compared with Archidekt's
   printing like the website (`DeckOwnership`). Website: collection dots are green / blue (#6b8fd4) / grey ring, no
   ticks. By Opus.
@@ -23,7 +25,7 @@ history, the release notes and `web/README.md`.)
   (2026-11-24): the win turn plays Commander Spock's ability; WinOddsCalc.VERSION 14. App 1.116: one bracket card
   everywhere.
 - **Waiting on the owner:** switch on "Show cards I own" on a deck in 1.118 and check the colours; try the playtester
-  changes (Playtest on any deck). Look at a bracket card on the phone
+  changes (counter numbers in the right-click menu, dragging several selected cards). Look at a bracket card on the phone
   and print one A4 page (Decks → Bracket cards → Print, at 100%). Still from before: add/confirm your email, try
   "Forgot password?", the sort with the real collection, green light for the ✕ delete column in the website's
   wishlist, Compare with a real Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for
