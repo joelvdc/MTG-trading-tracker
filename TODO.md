@@ -135,9 +135,22 @@ for later:
   `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
   `targetSdk` 36 as its own release with new screenshots.
 
-- 2026-11-26 (follow-up from 1.120, not asked for yet): the win turn doesn't count blinking a must-enter combo piece
-  back in (Teleportation Circle, Thassa with Ondu Spiritdancer already out), and pieces Spellbook lists in the
-  graveyard, library or exile are treated as before (anywhere). Open question: worth modelling?
+- 2026-11-26 (follow-up from 1.120; owner: "Blinking Ondu Spiritdancer works, but note that it does not make it being
+  cast again, but it triggers its ETB." and for the other zones: "Matters little today, but maybe matters a lot
+  tomorrow."). Plan written 2026-11-26, waiting for a green light:
+  - **Blink:** a combo piece that has to enter during the combo, already on the battlefield, can start the combo again
+    when a blink card makes it leave and re-enter (its enter trigger fires again; it is not cast). Only for pieces
+    whose entering starts the combo (Spellbook's steps say "<card> enters" / "When it enters"), not for ones that must
+    be cast. Blink cards: end-step ones on the battlefield (Teleportation Circle, Thassa, Deep-Dwelling: the combo
+    goes at our end step) and blink spells or creatures castable with the mana left (Ephemerate, Restoration Angel).
+    Thassa, Deep-Dwelling ("up to one other target") isn't read as a blink card today.
+  - **All starting zones:** each piece must be in one of the places Spellbook allows when the combo starts: hand,
+    battlefield, command zone, graveyard (the simulator already keeps one), library (not drawn yet) or exile. Fixes
+    1.120's gap where "hand or command zone" (High Perfect Morcant) wasn't treated as must-enter. Graveyard
+    prerequisites ("at least six other cards in your graveyard") are read. Exile: only "exiled by <combo card>"
+    (Dramatic Reversal on Isochron Scepter) when both are cast together; other exile pieces don't count.
+  - Data: new SaltCombo fields for the pieces that re-enter and "exiled by"; RATING_VERSION 5, WinOddsCalc.VERSION 16.
+    Health check: Spellbook's description (steps) and uses[].exileCardState.
 
 ### Decided, keep in mind
 - Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
