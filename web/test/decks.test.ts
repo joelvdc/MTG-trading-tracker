@@ -107,6 +107,10 @@ describe("Scryfall's deck details (the app's CardInfo.toInfo)", () => {
     expect(d).toMatchObject({ t: "Creature — Elf // Land", m: "{1}{B}{G} // ", p: "BGC", o: "Front text\n//\nBack text", pt: "2/3", l: null, oi: "x", i: "BG" });
     expect(d.k?.map((t) => t.id)).toEqual(["tok", "mon"]);
     expect(toDeckInfo({ id: "p", type_line: "Legendary Planeswalker — Jace", mana_cost: "{2}{U}{U}" }, 1).l).toBe("");
+    const battle = toDeckInfo({ id: "b", type_line: "Battle — Siege // Creature — Elemental", card_faces: [{ defense: "3" }, {}] }, 1);
+    expect(battle.d).toBe("3");
+    expect(statsCard({ name: "B", scryfallId: "b", quantity: 1, cmc: 3, types: "Battle", commander: false }, battle).defense).toBe("3");
+    expect(d.d).toBeNull();
     const s = statsCard({ name: "X", scryfallId: "a", quantity: 1, cmc: 3, types: "Creature", commander: false }, d);
     expect(s.manaCost).toBe("{1}{B}{G} // ");
     expect(statsCard({ name: "X", scryfallId: "a", quantity: 1, cmc: 3, types: "Creature", commander: false }, undefined).producedMana).toBeNull();

@@ -7,6 +7,7 @@ import { api } from "@/components/api";
 import { PlaytestBoard } from "@/components/playtest/PlaytestBoard";
 import { PlaytestDialogs, type PlaytestDialog } from "@/components/playtest/PlaytestDialogs";
 import { scryfallImage, tokens, type DeckToken, type StatsCard } from "@/lib/deckstats";
+import { isSaga, startCounters } from "@/lib/entercounters";
 import { backImageUrl, hasBackFace } from "@/lib/decklayout";
 import type { DeckView } from "@/lib/deckshared";
 import { act, newGame, type Action, type CardDef, type Game, type PlayerKey } from "@/lib/playtest";
@@ -81,7 +82,7 @@ function saveZoom(zoom: number): void {
 
 /**
  * The deck's cards as the playtester's engine wants them: one entry per line (its quantity copies), with the type line
- * from the stats, the back face for a double-faced card, and whether the front is a land.
+ * from the stats, the back face for a double-faced card, whether the front is a land, and the counters it enters with.
  */
 function buildCards(view: Answer): { def: CardDef; quantity: number }[] {
   const out: { def: CardDef; quantity: number }[] = [];
@@ -103,6 +104,14 @@ function buildCards(view: Answer): { def: CardDef; quantity: number }[] {
         manaValue: row.cmc,
         isLand: front.split(/\s+/).includes("Land"),
         commander: row.commander,
+        startCounters: startCounters({
+          name: row.name,
+          typeLine,
+          oracleText: stat?.oracleText,
+          loyalty: stat?.loyalty,
+          defense: stat?.defense,
+        }),
+        saga: isSaga(typeLine),
       },
       quantity: row.quantity,
     });

@@ -14,11 +14,14 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-25, app 1.119)
-- **Newest (2026-11-25):** app 1.119 + website: Commander Spellbook combos that also need "any card of a kind" (e.g.
-  Springheart Nantuko + Tireless Provisioner + any man-land) count that piece: three-piece, blue, C3+, and the combo
-  line names it ("+ any Man-Land that Enters Untapped"). New optional `extras` on SaltCombo; RATING_VERSION 3, so every
-  deck is re-rated once. By Opus.
+## Right now (2026-11-26, app 1.119)
+- **Newest (2026-11-26, website only):** playtester: cards enter the battlefield with their starting counters
+  (planeswalker loyalty, 1 lore on a saga, a battle's defense, "enters with three +1/+1 counters", Vanishing, Fading,
+  Modular, Graft; not X / "for each" / conditional ones), also commanders, searched cards and token copies; sagas get
+  one more lore counter each new turn. New `web/src/lib/entercounters.ts`; deck details keep a battle's defense ("d").
+  By Opus.
+- **Before (2026-11-25):** app 1.119 + website: Commander Spellbook combos that also need "any card of a kind" count
+  that piece (`extras` on SaltCombo; RATING_VERSION 3). By Opus.
 - **Before (2026-11-25, website only):** playtester: the card menu shows each counter's number between − and + (faint
   0 when none); dragging a selection shows every selected card following the pointer at its board spacing. By Opus.
 - **Before (2026-11-25):** app 1.118: "Show cards I own" in the deck page's ⋮ menu (off by default, this phone only)
@@ -28,13 +31,13 @@ history, the release notes and `web/README.md`.)
 - **Before:** website 2026-11-24: playtester counter tiles, editable counter list, last-dragged card on top. App 1.117
   (2026-11-24): the win turn plays Commander Spock's ability; WinOddsCalc.VERSION 14. App 1.116: one bracket card
   everywhere.
-- **Waiting on the owner:** check the Nantuko deck's combos (blue now, man-land named) on the website and in 1.119; switch on "Show cards I own" on a deck in 1.118 and check the colours; try the playtester
+- **Waiting on the owner:** play a planeswalker, a saga and a battle in the playtester and check their counters; check the Nantuko deck's combos (blue now, man-land named) on the website and in 1.119; switch on "Show cards I own" on a deck in 1.118 and check the colours; try the playtester
   changes (counter numbers in the right-click menu, dragging several selected cards). Look at a bracket card on the phone
   and print one A4 page (Decks → Bracket cards → Print, at 100%). Still from before: add/confirm your email, try
   "Forgot password?", the sort with the real collection, green light for the ✕ delete column in the website's
   wishlist, Compare with a real Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for
   permission.
-- **Expected to look odd:** with "Show the printings I own" on, a blue line can already show your own copy: blue
+- **Expected to look odd:** the first deck page that shows a battle looks its details up on Scryfall once more. with "Show the printings I own" on, a blue line can already show your own copy: blue
   means you don't own the printing the deck lists on Archidekt. The counter list starts as +1/+1, −1/−1, Loyalty, Charge on every browser and is not shared
   between PC and phone. Every deck is re-rated once after 1.119 (a deck may drop a bracket); phones still on 1.118 keep asking for a new rating until they update. some Archidekt decks show
   "Not rated yet" for a moment until rated; phones still on 1.115 show the old power level until they update.

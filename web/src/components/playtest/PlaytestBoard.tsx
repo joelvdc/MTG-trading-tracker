@@ -1545,6 +1545,8 @@ export function CustomFace({ def }: { def: CardDef }) {
 function counterText(kind: string, amount: number): string {
   if (kind === "loyalty") return `Loyalty ${amount}`;
   if (kind === "charge") return `Charge ${amount}`;
+  if (kind === "lore") return `Lore ${amount}`;
+  if (kind === "defense") return `Defense ${amount}`;
   return `${kind} ×${amount}`;
 }
 

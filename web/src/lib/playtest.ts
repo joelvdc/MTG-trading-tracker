@@ -22,6 +22,10 @@ export interface CardDef {
   commander: boolean;
   /** A token the player made up (no Scryfall card): drawn from these instead of a picture. */
   custom?: { colors: string[]; power: string; toughness: string; text: string };
+  /** The counters it enters the battlefield with (loyalty, lore, defense, "enters with three +1/+1 counters"…). */
+  startCounters?: Counter[];
+  /** Its front face is a saga: one more lore counter each new turn. */
+  saga?: boolean;
 }
 
 /** A kind of counter on a card: "+1/+1", "-1/-1", "loyalty", "charge", or any name. */
@@ -393,19 +397,32 @@ function moveCard(
     addLog(next, `Cast ${displayName(next, id)} from the command zone (tax +${tax}).`);
     next.player.commanderTax[id] = tax + 2;
   }
+  let extra = "";
   if (to === "battlefield") {
     const spot = battlefieldSpot(next, card.def, x, y);
     card.x = spot.x;
     card.y = spot.y;
+    extra = enterWithCounters(card);
   }
   addToZone(next, id, to, position);
-  return `${displayName(next, id)} → ${zoneLabel(to)}.`;
+  return `${displayName(next, id)} → ${zoneLabel(to)}${extra}.`;
 }
 
 /** A counter tile's name: trimmed, at most 24 characters, "Counter" when empty. */
 function trackerLabel(label: string | undefined): string {
   const text = (label ?? "").trim().slice(0, 24);
   return text === "" ? "Counter" : text;
+}
+
+/**
+ * Puts a card's starting counters on it as it enters the battlefield (not face down), and returns the log's
+ * " (3 loyalty)" part, or "" when it gets none.
+ */
+function enterWithCounters(card: CardInstance): string {
+  const start = card.faceDown ? [] : (card.def.startCounters ?? []).filter((c) => c.amount > 0);
+  if (start.length === 0) return "";
+  card.counters = start.map((c) => ({ ...c }));
+  return ` (${start.map((c) => `${c.amount} ${c.kind}`).join(", ")})`;
 }
 
 // ---------------------------------------------------------------------------------------------- a new game
@@ -773,10 +790,12 @@ export function act(game: Game, action: Action): Game {
       const card = next.cards[action.id];
       removeFromZone(next, action.id);
       // The commander tax is raised by casting from the command zone only ("move" does that), not by a search.
+      let extra = "";
       if (action.to === "battlefield") {
         const spot = battlefieldSpot(next, card.def);
         card.x = spot.x;
         card.y = spot.y;
+        extra = enterWithCounters(card);
       }
       addToZone(next, action.id, action.to, action.position);
       // Searching the library leaves it shuffled, unless the card is put back in the library itself.
@@ -785,7 +804,7 @@ export function act(game: Game, action: Action): Game {
         next.zones.library = shuffled.ids;
         next.seed = shuffled.seed;
       }
-      addLog(next, `Searched for ${card.def.name}.`);
+      addLog(next, `Searched for ${card.def.name}${extra}.`);
       return commit(game, next);
     }
 
@@ -899,7 +918,9 @@ export function act(game: Game, action: Action): Game {
         revealed: false,
       };
       next.zones.battlefield.push(id);
-      addLog(next, `Created a token copy of ${origin.def.name}${fromGraveyard ? " from the graveyard" : ""}.`);
+      // A copy enters the battlefield too, so it gets the card's starting counters (not the original's counters).
+      const extra = next.cards[id].flipped ? "" : enterWithCounters(next.cards[id]);
+      addLog(next, `Created a token copy of ${origin.def.name}${fromGraveyard ? " from the graveyard" : ""}${extra}.`);
       return commit(game, next);
     }
 
@@ -964,6 +985,15 @@ export function act(game: Game, action: Action): Game {
       for (const id of next.zones.battlefield) next.cards[id].tapped = false;
       addLog(next, `Turn ${next.turn}.`);
       drawCards(next, 1);
+      // A saga gets a lore counter before the main phase (the player resolves the chapter).
+      const sagas = next.zones.battlefield.filter((id) => {
+        const card = next.cards[id];
+        return card.def.saga === true && !card.faceDown && !card.flipped;
+      });
+      for (const id of sagas) changeCounters(next.cards[id], "lore", 1);
+      if (sagas.length > 0) {
+        addLog(next, `Lore counter on ${sagas.map((id) => displayName(next, id)).join(", ")}.`);
+      }
       return commit(game, next);
     }
 

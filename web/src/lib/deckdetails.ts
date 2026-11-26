@@ -31,6 +31,8 @@ export interface DeckInfo {
   pt: string | null;
   /** Starting loyalty ("" for a planeswalker without one, null for other cards). */
   l: string | null;
+  /** A battle's printed defense (front face); missing in entries made before the playtester used it. */
+  d?: string | null;
   /** Scryfall's oracle id (a token's, to tell printings of the same token apart). */
   oi: string | null;
   /** On the Game Changers list. */
@@ -52,6 +54,7 @@ interface Face {
   power?: string;
   toughness?: string;
   loyalty?: string;
+  defense?: string;
   oracle_id?: string;
   colors?: string[];
 }
@@ -65,6 +68,7 @@ export interface ScryDeckCard extends ScryDetail {
   power?: string;
   toughness?: string;
   loyalty?: string;
+  defense?: string;
   card_faces?: Face[];
   all_parts?: { id: string; component: string; name: string; type_line: string }[];
 }
@@ -109,6 +113,7 @@ export function toDeckInfo(c: ScryDeckCard, now: number): DeckInfo {
     k: tokenParts(c),
     pt,
     l: loyalty,
+    d: c.defense ?? faces[0]?.defense ?? null,
     oi: c.oracle_id ?? faces[0]?.oracle_id ?? null,
     g: c.game_changer === true,
     y: c.layout,
@@ -164,7 +169,9 @@ export async function ensureDeckDetails(ids: string[], deadline = Date.now() + 2
   const wanted = validIds(ids);
   let file = await loadDeckDetails();
   const now = Date.now();
-  const stale = (id: string) => !file.cards[id] || now - file.cards[id].at > REFRESH_MS;
+  // A battle saved before its defense was kept is looked up again once.
+  const stale = (id: string) =>
+    !file.cards[id] || now - file.cards[id].at > REFRESH_MS || (file.cards[id].d === undefined && file.cards[id].t.includes("Battle"));
   if (wanted.some(stale)) {
     file = await loadDeckDetails(true);
     let changed = false;
@@ -210,5 +217,6 @@ export function statsCard(
     tokens: known ? d.k : null,
     powerToughness: known ? d.pt : null,
     loyalty: known ? d.l : null,
+    defense: known ? (d.d ?? null) : null,
   };
 }

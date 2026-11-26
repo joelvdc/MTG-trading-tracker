@@ -27,6 +27,7 @@ export interface StatsCard {
   tokens: TokenPart[] | null;
   powerToughness?: string | null;
   loyalty?: string | null;
+  defense?: string | null;
 }
 
 function faceTypes(c: StatsCard): string[] {
