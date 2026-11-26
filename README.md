@@ -84,10 +84,11 @@ turn on two-step login with an authenticator app.
   history** per deck, in the app and on the website.
 - On the website: **Undo** for every deck change, **Select** to change many cards at once (category, copies,
   printing, finish), and a **playtester** to draw hands and goldfish the deck, with tokens, counters and odds.
-- Every deck gets an **estimated bracket** from its list (game changers, combos from Commander Spellbook, extra turns,
-  land denial), with the reasons ("Why bracket 4"), a **salt sum** like Archidekt's (lands included) with its saltiest
-  cards, and a simulated **win turn**; also game changers, combos, mana stats and the chance to cast your commander on
-  time.
+- Every deck gets an **estimated bracket** from its list (game changers, combos from Commander Spellbook with the
+  lowest bracket of each combo's Spellbook tag as a floor, extra turns, land denial), with the reasons ("Why bracket
+  4"), a **salt sum** like Archidekt's (lands included) with its saltiest cards, and a simulated **win turn** (combos
+  played in Commander Spellbook's order: a piece it lists in hand has to be cast during the combo); also game changers,
+  combos, mana stats and the chance to cast your commander on time.
 - A **Commander legality check**: banned cards, cards outside the commander's colours, extra copies, the card count,
   and whether the commander (or a pair of partners, a Background, a Doctor and companion) may lead.
 - Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the

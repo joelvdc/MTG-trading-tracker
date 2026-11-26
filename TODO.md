@@ -14,33 +14,25 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-26, app 1.119)
-- **Newest (2026-11-26, website only):** playtester: cards enter the battlefield with their starting counters
-  (planeswalker loyalty, 1 lore on a saga, a battle's defense, "enters with three +1/+1 counters", Vanishing, Fading,
-  Modular, Graft; not X / "for each" / conditional ones), also commanders, searched cards and token copies; sagas get
-  one more lore counter each new turn. New `web/src/lib/entercounters.ts`; deck details keep a battle's defense ("d").
-  By Opus.
-- **Before (2026-11-25):** app 1.119 + website: Commander Spellbook combos that also need "any card of a kind" count
-  that piece (`extras` on SaltCombo; RATING_VERSION 3). By Opus.
-- **Before (2026-11-25, website only):** playtester: the card menu shows each counter's number between − and + (faint
-  0 when none); dragging a selection shows every selected card following the pointer at its board spacing. By Opus.
-- **Before (2026-11-25):** app 1.118: "Show cards I own" in the deck page's ⋮ menu (off by default, this phone only)
-  tints lines green (deck's printing owned) or blue (another printing / too few copies), compared with Archidekt's
-  printing like the website (`DeckOwnership`). Website: collection dots are green / blue (#6b8fd4) / grey ring, no
-  ticks. By Opus.
-- **Before:** website 2026-11-24: playtester counter tiles, editable counter list, last-dragged card on top. App 1.117
-  (2026-11-24): the win turn plays Commander Spock's ability; WinOddsCalc.VERSION 14. App 1.116: one bracket card
-  everywhere.
-- **Waiting on the owner:** play a planeswalker, a saga and a battle in the playtester and check their counters; check the Nantuko deck's combos (blue now, man-land named) on the website and in 1.119; switch on "Show cards I own" on a deck in 1.118 and check the colours; try the playtester
-  changes (counter numbers in the right-click menu, dragging several selected cards). Look at a bracket card on the phone
-  and print one A4 page (Decks → Bracket cards → Print, at 100%). Still from before: add/confirm your email, try
-  "Forgot password?", the sort with the real collection, green light for the ✕ delete column in the website's
-  wishlist, Compare with a real Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for
-  permission.
-- **Expected to look odd:** the first deck page that shows a battle looks its details up on Scryfall once more. with "Show the printings I own" on, a blue line can already show your own copy: blue
-  means you don't own the printing the deck lists on Archidekt. The counter list starts as +1/+1, −1/−1, Loyalty, Charge on every browser and is not shared
-  between PC and phone. Every deck is re-rated once after 1.119 (a deck may drop a bracket); phones still on 1.118 keep asking for a new rating until they update. some Archidekt decks show
-  "Not rated yet" for a moment until rated; phones still on 1.115 show the old power level until they update.
+## Right now (2026-11-26, app 1.120)
+- **Newest (2026-11-26):** app 1.120 + website: a combo's bracket floor is Commander Spellbook's tag (lowest bracket of
+  its range: R 4, S/P 3, O/C 2, E 1), replacing the two-card / mana-value rule; "Why bracket" and the bracket card
+  name the tag; criteria row "Combos". Win turn (WinOddsCalc.VERSION 15) reads Spellbook's starting zones: a piece
+  listed in hand ("H") must enter during the combo and waits in hand while the rest is in sight; a combo also needs
+  Spellbook's manaNeeded. New SaltCombo fields bracketTag, zones, manaNeeded; RATING_VERSION 4. Website parts by
+  DeepSeek (Mistral, Vibe), simulator and review by Opus.
+- **Before (2026-11-26, website only):** playtester: cards enter with their starting counters (`entercounters.ts`).
+- **Before:** app 1.119 ("any card of a kind" combo pieces), 1.118 ("Show cards I own"), 1.117 (Spock), 1.116 (one
+  bracket card everywhere).
+- **Waiting on the owner:** after updating, open Zur (Ondu + Secret Arcade, Spicy) and Auntie Plague (bracket 4 by its
+  Ruthless combos) and check "Why bracket" and the bracket card; play a planeswalker, saga and battle in the
+  playtester; check the Nantuko deck's combos; "Show cards I own" colours. Still from before: email/"Forgot
+  password?", the ✕ delete column in the wishlist, Compare with a real Archidekt link, the email to
+  support@moxfield.com, asking EDHREC/Archidekt for permission.
+- **Expected to look odd:** every deck is re-rated once after 1.120: Auntie Plague reaches 4 by its Ruthless combos, Tawnos' Army gets a combo
+  floor of 3 (3-card Urza combo), Smasher's Exhibition combo no longer raises it. Win turns are worked out again;
+  Zur's combo share drops (13% → 9%) because Ondu cast before Secret Arcade no longer counts. Phones still on 1.119
+  keep asking for a new rating until they update.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -143,6 +135,10 @@ for later:
   `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
   `targetSdk` 36 as its own release with new screenshots.
 
+- 2026-11-26 (follow-up from 1.120, not asked for yet): the win turn doesn't count blinking a must-enter combo piece
+  back in (Teleportation Circle, Thassa with Ondu Spiritdancer already out), and pieces Spellbook lists in the
+  graveyard, library or exile are treated as before (anywhere). Open question: worth modelling?
+
 ### Decided, keep in mind
 - Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
 - Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
@@ -156,6 +152,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.120 (2026-11-26): combo bracket floors from Commander Spellbook's tags; win turn plays combos in Spellbook's order (must-enter pieces, mana needed)
 - 1.109 (2026-11-22): trade binder takes spares from the Decks binder last
 - 1.110 (2026-11-22): Sort Done and trade binder Apply fast, show progress, survive leaving the screen
 - 1.111 (2026-11-22): signed cards leave Unsorted in the sort; Done goes back to the collection

@@ -9,6 +9,11 @@ export interface SpellbookCombo {
   /** Its cards' names, in the order the combo lists them. */
   cards: string[];
   /**
+   * Where each card must be when the combo starts, one entry per card of cards and in the same order: its zone codes
+   * joined ("H" hand, "B" battlefield, "C" command zone, "G" graveyard, "L" library, "E" exile), so "HB" means either.
+   */
+  zones: string[];
+  /**
    * The pieces it needs besides its cards, as Commander Spellbook names them ("Man-Land that Enters Untapped"): one
    * entry per piece, so a template needed twice is listed twice.
    */
@@ -18,6 +23,8 @@ export interface SpellbookCombo {
   notablePrerequisites: string;
   easyPrerequisites: string;
   bracketTag: string | null;
+  /** The mana the whole combo needs, as Commander Spellbook writes it ("{4}{W}"); empty when it needs none. */
+  manaNeeded: string;
   salt: number | null;
 }
 
@@ -35,6 +42,7 @@ export function parseCombos(body: unknown): SpellbookCombo[] {
     return {
       id: str(c.id),
       cards: list(c.uses).map((u) => str(obj(obj(u).card).name)),
+      zones: list(c.uses).map((u) => list(obj(u).zoneLocations).map((z) => str(z)).join("")),
       templates: list(c.requires).flatMap((r) => {
         const name = str(obj(obj(r).template).name);
         const n = num(obj(r).quantity) ?? 1;
@@ -44,6 +52,7 @@ export function parseCombos(body: unknown): SpellbookCombo[] {
       notablePrerequisites: str(c.notablePrerequisites),
       easyPrerequisites: str(c.easyPrerequisites),
       bracketTag: str(c.bracketTag) || null,
+      manaNeeded: str(c.manaNeeded),
       salt: num(c.salt),
     };
   });

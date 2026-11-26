@@ -69,6 +69,9 @@ data class SaltCard(
     /** Estimated by the app (the website's rating of a local deck), not Commander Salt's own. */
     val fromApp get() = source == "app"
 
+    /** The entry of [combos] with these cards (matched by the set of their names), or null. */
+    fun comboFor(cards: List<String>): SaltCombo? = combos.firstOrNull { c -> c.cards.map(::key).toSet() == cards.map(::key).toSet() }
+
     /**
      * Why the deck is in [bracket]: the website's own lines when it sent them, else worked out from Commander Salt's
      * data, in the same words the website uses. Empty when there's nothing to say.
@@ -81,7 +84,7 @@ data class SaltCard(
             val lines = mutableListOf<String>()
             val counted = if (bracket >= 4) earlyCombos else twoCardCombos
             for (combo in counted.take(3)) {
-                val match = combos.firstOrNull { c -> c.cards.map(::key).toSet() == combo.map(::key).toSet() }
+                val match = comboFor(combo)
                 val extra = when {
                     bracket < 4 && match?.wins == true && match.manaValue != null -> ": wins, mana value ${num(match.manaValue)}"
                     bracket < 4 && match?.wins == false -> ": doesn't win"
@@ -183,9 +186,25 @@ data class SaltCombo(
     val manaValue: Double? = null,
     /** Whether it wins the game, from the app's rating. */
     val wins: Boolean? = null,
+    /**
+     * Commander Spellbook's bracket tag ("R" Ruthless, "S" Spicy, "P" Powerful, "O" Oddball, "C" Core, "E" Exhibition,
+     * "B" Banned): its lowest bracket is the deck's floor. Since 1.120 (rating version 4).
+     */
+    val bracketTag: String? = null,
+    /**
+     * Per card, in the order of [cards]: where it has to be when the combo starts, Commander Spellbook's letters ("H"
+     * hand, "B" battlefield, "C" command zone, "G" graveyard, "L" library, "E" exile; several when any of them works).
+     * Since 1.120.
+     */
+    val zones: List<String> = emptyList(),
+    /** The mana the whole combo needs, e.g. "{4}{W}". Since 1.120. */
+    val manaNeeded: String? = null,
 ) {
     /** How many pieces it needs: its cards and the "any card of this kind" pieces. */
     val pieces get() = cards.size + extras.size
+
+    /** Commander Spellbook's tag as a word ("Spicy"), or null without one. Since 1.120. */
+    val tagName get() = TAG_NAMES[bracketTag]
 
     /** Its pieces in words ("A + B + any Man-Land that Enters Untapped"), [shown] being the cards to name. */
     fun piecesText(shown: List<String> = cards) = (shown + extras.map { "any $it" }).joinToString(" + ")
@@ -206,6 +225,9 @@ data class SaltCombo(
         }
     }
 }
+
+/** Commander Spellbook's bracket tags as words. */
+private val TAG_NAMES = mapOf("R" to "Ruthless", "S" to "Spicy", "P" to "Powerful", "O" to "Oddball", "C" to "Core", "E" to "Exhibition", "B" to "Banned")
 
 /**
  * What makes a card matter for the deck's bracket, shown next to it in the decklist. [strict]: one of WotC's

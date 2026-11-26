@@ -6,16 +6,16 @@
 // The four axes (interaction, consistency, efficiency, manabase) were tried and didn't predict the power level, so
 // they're no longer worked out: axes stays empty and the "how it plays" bars stay hidden.
 import { isBasic, type StatsCard } from "./deckstats";
-import { comboPieces, comboPiecesText, saltKey, type SaltCard, type SaltCombo } from "./deckshared";
+import { comboPieces, comboPiecesText, saltKey, tagFloor, tagText, type SaltCard, type SaltCombo } from "./deckshared";
 import type { SpellbookCombo } from "./spellbook";
 
-export const RATING_VERSION = 3;
+export const RATING_VERSION = 4;
 
 /** The app's SaltCard.CURRENT: a salt card without it is treated as old data. */
 export const SALT_CARD_VERSION = 4;
 
 export const RATING = {
-  bracket: { tutorsFor3: 5, extraTurnsFor4: 3, gcFor4: 4, earlyMv: 8 },
+  bracket: { tutorsFor3: 5, extraTurnsFor4: 3, gcFor4: 4 },
   salt: { mild: 30, high: 45 }, // deck total below → "Mild", below "High" → "Moderate", else "High" (the app's labels)
 };
 
@@ -96,23 +96,25 @@ function saltCombo(combo: SpellbookCombo, cmc: Map<string, number>): SaltCombo {
   return {
     cards: combo.cards,
     ...(combo.templates.length > 0 ? { extras: combo.templates } : {}),
-    // Two pieces in all: a combo that also needs "any man-land" is a three-piece combo (rating version 3).
-    counts: combo.cards.length + combo.templates.length === 2,
+    // A combo counts for the bracket when its Commander Spellbook tag puts the deck in bracket 3 or higher (rating
+    // version 4).
+    counts: tagFloor(combo.bracketTag) >= 3,
     results: comboResults(combo),
     needsBoard: false,
     spellbookUri: `https://commanderspellbook.com/combo/${combo.id}/`,
     prerequisites: [...lines(combo.notablePrerequisites), ...lines(combo.easyPrerequisites)],
     manaValue: combo.cards.reduce((s, n) => s + (cmc.get(saltKey(n)) ?? 0), 0),
     wins: comboWins(combo),
+    ...(combo.bracketTag ? { bracketTag: combo.bracketTag } : {}),
+    ...(combo.zones.some((z) => z) ? { zones: combo.zones } : {}),
+    ...(combo.manaNeeded ? { manaNeeded: combo.manaNeeded } : {}),
   };
 }
 
 // ---- Bracket ------------------------------------------------------------------------------------------------------
 
 const comboName = (c: SaltCombo) => comboPiecesText(c);
-const mv = (c: SaltCombo) => c.manaValue ?? 0;
-const earlyLine = (c: SaltCombo) => `${comboName(c)}: wins, mana value ${mv(c)}`;
-const comboLine = (c: SaltCombo) => (c.wins ? `${comboName(c)}: wins, mana value ${mv(c)}` : `${comboName(c)}: doesn't win`);
+const tagLine = (c: SaltCombo) => `${comboName(c)}: ${tagText(c.bracketTag)}`;
 
 /** The first three lines, then "and <k> more …" (only when the third isn't the last). */
 function atMostThree(combos: SaltCombo[], line: (c: SaltCombo) => string, more: string): string[] {
@@ -135,22 +137,22 @@ function bracketOf(
   tutors: number,
 ): BracketPlan {
   const b = RATING.bracket;
-  const early = all.filter((c) => c.counts && c.wins === true && c.manaValue != null && c.manaValue <= b.earlyMv);
-  const twoCard = all.filter((c) => c.counts);
+  const ruthless = all.filter((c) => tagFloor(c.bracketTag) >= 4);
+  const strong = all.filter((c) => tagFloor(c.bracketTag) === 3);
   let bracket = 2;
   if (gameChangers.length >= b.gcFor4) bracket = Math.max(bracket, 4);
   else if (gameChangers.length >= 1) bracket = Math.max(bracket, 3);
-  if (early.length > 0) bracket = Math.max(bracket, 4);
-  else if (twoCard.length > 0) bracket = Math.max(bracket, 3);
+  if (ruthless.length > 0) bracket = Math.max(bracket, 4);
+  else if (strong.length > 0) bracket = Math.max(bracket, 3);
   if (mld.length > 0) bracket = Math.max(bracket, 4);
   if (extraTurns.length >= b.extraTurnsFor4) bracket = Math.max(bracket, 4);
   if (tutors >= b.tutorsFor3) bracket = Math.max(bracket, 3);
   bracket = Math.min(4, Math.max(2, bracket));
 
   const why: string[] = [];
-  if (bracket < 3) return { bracket, why: ["No Game Changers or two-card combos"] };
+  if (bracket < 3) return { bracket, why: ["No Game Changers or combos above bracket 2"] };
   if (bracket === 4) {
-    if (early.length > 0) why.push(...atMostThree(early, earlyLine, "early combos"));
+    if (ruthless.length > 0) why.push(...atMostThree(ruthless, tagLine, "Ruthless combos"));
     if (gameChangers.length > 0) {
       why.push(
         gameChangers.length === 1 ? `1 Game Changer: ${gameChangers[0]}` : `${gameChangers.length} Game Changers: ${gameChangers.join(", ")}`,
@@ -159,7 +161,7 @@ function bracketOf(
     if (mld.length > 0) why.push(`Mass land denial: ${mld.join(", ")}`);
     if (extraTurns.length >= b.extraTurnsFor4) why.push(`${extraTurns.length} extra-turn cards: ${extraTurns.join(", ")}`);
   } else {
-    if (twoCard.length > 0) why.push(...atMostThree(twoCard, comboLine, "two-card combos"));
+    if (strong.length > 0) why.push(...atMostThree(strong, tagLine, "combos"));
     if (gameChangers.length > 0) why.push(`${gameChangers.length} Game Changer${gameChangers.length === 1 ? "" : "s"}: ${gameChangers.join(", ")}`);
     if (tutors >= b.tutorsFor3) why.push(`${tutors} tutors`);
   }
@@ -252,11 +254,13 @@ export function rateDeck(cards: StatsCard[], facts: Map<string, CardFact>, combo
     const k = saltKey(c.name);
     if (!cmc.has(k)) cmc.set(k, c.cmc);
   }
-  const all = combos.map((c) => saltCombo(c, cmc)).sort((a, b) => Number(b.counts) - Number(a.counts) || comboPieces(b) - comboPieces(a));
+  // The strongest tag first, then the fewest pieces, then as Commander Spellbook listed them.
+  const all = combos
+    .map((c, i) => ({ c: saltCombo(c, cmc), i }))
+    .sort((x, y) => tagFloor(y.c.bracketTag) - tagFloor(x.c.bracketTag) || comboPieces(x.c) - comboPieces(y.c) || x.i - y.i)
+    .map((x) => x.c);
   const twoCardCombos = all.filter((c) => c.counts).map((c) => c.cards);
-  const earlyCombos = all
-    .filter((c) => c.counts && c.wins === true && c.manaValue != null && c.manaValue <= RATING.bracket.earlyMv)
-    .map((c) => c.cards);
+  const earlyCombos = all.filter((c) => tagFloor(c.bracketTag) >= 4).map((c) => c.cards);
   const winningTwo = all.filter((c) => c.counts && c.wins === true);
 
   const { bracket, why } = bracketOf(all, gameChangers, massLandDenial, extraTurns, tutorCopies);

@@ -406,7 +406,7 @@ object CardSheets {
                 val lh = p.lineHeight(BODY_LH)
                 val fit = ((room - 0.5f) / lh).toInt().coerceAtLeast(1)
                 val shown = if (combos.size <= fit) combos else combos.take((fit - 1).coerceAtLeast(1))
-                shown.forEach { bodyLine(it.joinToString(" + ")); newLine() }
+                shown.forEach { c -> bodyLine(c.joinToString(" + ") + (data.comboFor(c)?.tagName?.let { " · $it" } ?: "")); newLine() }
                 if (shown.size < combos.size) { bodyLine("+${combos.size - shown.size} more", colour = GREY); newLine() }
             }
             // The saltiest cards, when there's room left for their two lines.
@@ -488,7 +488,7 @@ object CardSheets {
             label("Bracket criteria")
             val rows = listOf(
                 "Game changers" to data.gameChangers.size,
-                "Two-card combos" to data.twoCardCombos.size,
+                "Combos" to data.twoCardCombos.size,
                 "Extra turns" to data.extraTurns.size,
                 "Land denial" to data.massLandDenial.size,
             ).sortedByDescending { it.second > 0 }

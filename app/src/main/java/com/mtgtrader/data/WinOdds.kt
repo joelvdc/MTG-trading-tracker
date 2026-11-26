@@ -174,6 +174,9 @@ data class WinCounted(
  * - Akroma's Will's double strike for every attacker, Jeska's Will (an opponent's hand taken as five cards), Soul
  *   Immolation's blight X for X damage to each opponent, Mizzix's Mastery; Storm of Souls bringing creatures back as 1/1s;
  * - Saga chapters (Maximum Carnage, Urza's Saga), Vehicles crewed, toxic, Twenty-Toed Toad's win.
+ * Since 1.120, combos follow Commander Spellbook's starting zones: a piece it lists as in hand has to enter during the
+ * combo (one already on the battlefield doesn't count, and it waits in hand while the rest of its combo is in sight),
+ * and the combo needs the mana Commander Spellbook says it needs as well as the mana to cast its missing pieces.
  * Since 1.70 also:
  * - Currency Converter's Rogues and Treasures only for the cards exiled with it (discarded ones); Renewed Solidarity copying
  *   the tokens of the chosen type (the one the deck's tokens share most) that entered this turn, and their +1/+0;
@@ -198,8 +201,9 @@ object WinOddsCalc {
      * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70). 12: which land is played,
      * "enters tapped unless …" conditions (1.71). 13: mana sinks when picking the land, more "unless …" conditions, a ramp
      * spell's basic of one colour (1.77). 14: Commander Spock's top card cast for free or put in as a land (1.117).
+     * 15: combo pieces' starting zones and the mana a combo needs (1.120).
      */
-    const val VERSION = 14
+    const val VERSION = 15
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -249,8 +253,9 @@ object WinOddsCalc {
      * A combo as the win turn reads it: whether it [wins] outright, what it [loops], whether it makes endless
      * [tokens]; and what it needs besides its cards: [creatures] other creatures on the battlefield, an opponent's
      * creature ([opponentCreature], taken as there from turn 4), and for each "you have a way to …" another card of
-     * the deck on the battlefield whose text has one of the [enablers] words. [kind] and [payoffs] are settled per
-     * deck ([settle]).
+     * the deck on the battlefield whose text has one of the [enablers] words. [handKeys] are the pieces Commander
+     * Spellbook lists as in hand only: they have to enter during the combo (since 1.120). [manaNeeded] is the mana the
+     * whole combo needs (since 1.120). [kind] and [payoffs] are settled per deck ([settle]).
      */
     class ComboPlan(
         val names: List<String>,
@@ -260,6 +265,8 @@ object WinOddsCalc {
         val creatures: Int = 0,
         val opponentCreature: Boolean = false,
         val enablers: List<List<String>> = emptyList(),
+        val handKeys: Set<String> = emptySet(),
+        val manaNeeded: ManaOddsCalc.Cost? = null,
     ) {
         val keys = names.map(SaltCard::key).toSet()
         var kind = if (wins) ComboKind.WINS else ComboKind.TOKENS
@@ -296,7 +303,11 @@ object WinOddsCalc {
                 }
             }
         }
-        return ComboPlan(combo.cards, wins, loops, tokens, creatures, opponent, enablers)
+        // A piece listed as in hand only ("H", not "HB") has to be cast, or enter, during the combo (Ondu Spiritdancer
+        // with Secret Arcade already unlocked).
+        val inHand = combo.cards.filterIndexed { i, _ -> combo.zones.getOrNull(i) == "H" }.map(SaltCard::key).toSet()
+        val mana = combo.manaNeeded?.takeIf { it.isNotBlank() }?.let(ManaOddsCalc::cost)?.takeIf { it.manaValue > 0 }
+        return ComboPlan(combo.cards, wins, loops, tokens, creatures, opponent, enablers, inHand, mana)
     }
 
     /**
@@ -2529,7 +2540,7 @@ object WinOddsCalc {
         /** Paradigm spells that have resolved: a copy of each is cast for free every first main phase. */
         val paradigms = ArrayList<WinCard>()
 
-        fun mainOptions() = (command + hand).filter { useful(it, spellTriggers, creatureTriggers, fodder) && ready(it) }
+        fun mainOptions() = (command + hand).filter { useful(it, spellTriggers, creatureTriggers, fodder) && ready(it) && !holding(it) }
             .sortedWith(compareByDescending<WinCard> { it in command }.thenByDescending { it.manaValue })
 
         // Items 9–11 of 1.55: cards drawn this turn, opponents' draws, triggers once each turn.
@@ -3915,7 +3926,7 @@ object WinOddsCalc {
                         break
                     }
                 }
-                for (c in hand.filter { it.mana.kind in RAMP_KINDS }.sortedBy { it.manaValue }) {
+                for (c in hand.filter { it.mana.kind in RAMP_KINDS && !holding(it) }.sortedBy { it.manaValue }) {
                     if (c !in hand) continue
                     val left = spend(pool, costOf(c), c.manaValue) ?: continue
                     pool = left
@@ -4704,6 +4715,8 @@ object WinOddsCalc {
             for (combo in combos) {
                 val need = combo.keys - there
                 if (!need.all { it in at }) continue
+                // A piece that has to enter during the combo is already on the battlefield (since 1.120).
+                if (combo.handKeys.any { it in there }) continue
                 if (combo.opponentCreature && turn < OPPONENTS_HAVE_CREATURES) continue
                 if (combo.keys.any { k -> at[k]?.tapPiece == true && k !in there }) continue
                 if (board.any { e -> e.card?.let { it.key in combo.keys && it.tapPiece } == true && e.turn >= turn && !e.haste }) continue
@@ -4718,9 +4731,23 @@ object WinOddsCalc {
                 }
                 var p: List<Pair<Set<Char>, Int>>? = pool
                 for (c in cast.sortedByDescending { it.manaValue }) p = p?.let { ManaOddsCalc.pay(it, costOf(c)) }
+                // The mana Commander Spellbook says the combo needs, which may be more than casting what's missing.
+                if (p != null && combo.manaNeeded != null && ManaOddsCalc.pay(pool, combo.manaNeeded) == null) continue
                 if (p != null) return combo.kind
             }
             return null
+        }
+
+        /**
+         * Whether a combo piece that has to enter during its combo (Commander Spellbook lists it as in hand) waits in hand
+         * or the command zone: while the rest of that combo is on the battlefield, in hand or in the command zone, and
+         * none of its other must-enter pieces has come in already. Since 1.120.
+         */
+        fun holding(c: WinCard): Boolean {
+            if (!c.combo) return false
+            val out = board.mapNotNull { it.card?.key }.toSet()
+            val sight = out + hand.map { it.key } + command.map { it.key }
+            return combos.any { p -> c.key in p.handKeys && c.key !in out && p.keys.all { it in sight } && p.handKeys.none { it in out } }
         }
 
         /**
@@ -4730,7 +4757,9 @@ object WinOddsCalc {
         fun tutor(types: Set<String>, toTop: Boolean) {
             val have = (board.mapNotNull { it.card } + hand + command)
             val haveKeys = have.map { it.key }.toSet()
-            val wanted = combos.map { p ->
+            val out = board.mapNotNull { it.card?.key }.toSet()
+            // A combo whose must-enter piece is already on the battlefield can't be finished (since 1.120).
+            val wanted = combos.filter { p -> p.handKeys.none { it in out } }.map { p ->
                 val missing = (p.keys - haveKeys).toMutableSet()
                 if (p.kind == ComboKind.LOOP && p.keys.none { it in p.payoffs } && haveKeys.none { it in p.payoffs }) missing += PAYOFF
                 p to missing
@@ -4863,7 +4892,7 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
             val text = buildString {
                 append(WinOddsCalc.VERSION).append('|').append(identity).append('|')
                 cards.sortedWith(compareBy({ it.name }, { it.scryfallId })).forEach { append(it.toString()).append('\n') }
-                combos.forEach { append(it.cards).append(it.results).append(it.needsBoard).append(it.prerequisites).append('\n') }
+                combos.forEach { append(it.cards).append(it.results).append(it.needsBoard).append(it.prerequisites).append(it.zones).append(it.manaNeeded).append('\n') }
             }
             return MessageDigest.getInstance("MD5").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
         }

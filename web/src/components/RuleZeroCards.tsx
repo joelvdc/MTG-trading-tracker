@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { bracketName, bracketReasons, type Deck, type SaltCard } from "@/lib/deckshared";
+import { bracketName, bracketReasons, comboData, tagName, type Deck, type SaltCard } from "@/lib/deckshared";
 import type { RoleCount } from "@/lib/deckroles";
 import type { SaltSum } from "@/lib/localratings";
 import { winWindow, type WinResult } from "@/lib/winodds";
@@ -299,7 +299,9 @@ class CardDrawing {
       const fit = Math.max(1, Math.floor((this.room - 0.5) / lh));
       const shown = combos.length <= fit ? combos : combos.slice(0, Math.max(1, fit - 1));
       for (const c of shown) {
-        this.bodyLine(c.join(" + "));
+        // The bracket tag in words after the pieces, when Commander Spellbook gave the combo one.
+        const name = tagName(comboData(data, c)?.bracketTag);
+        this.bodyLine(name ? `${c.join(" + ")} · ${name}` : c.join(" + "));
         this.newLine();
       }
       if (shown.length < combos.length) {
@@ -365,7 +367,7 @@ class CardDrawing {
     const rows: [string, number][] = (
       [
         ["Game changers", data.gameChangers.length],
-        ["Two-card combos", data.twoCardCombos.length],
+        ["Combos", data.twoCardCombos.length],
         ["Extra turns", data.extraTurns.length],
         ["Land denial", data.massLandDenial.length],
       ] as [string, number][]

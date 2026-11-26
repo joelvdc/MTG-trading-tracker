@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StatsCard } from "@/lib/deckstats";
-import { decodeSalt, tagsByCard } from "@/lib/deckshared";
+import { decodeSalt, tagFloor, tagName, tagsByCard, tagText } from "@/lib/deckshared";
 import { featureLabel, rateDeck, RATING_VERSION, ratingListKey, saltIntensity, saltSumOf, type CardFact } from "@/lib/localratings";
 import type { SpellbookCombo } from "@/lib/spellbook";
 
@@ -32,7 +32,19 @@ const facts = (m: Record<string, Partial<CardFact>>): Map<string, CardFact> => {
 const plains = (n: number) => card("Plains", { quantity: n, typeLine: "Basic Land — Plains", producedMana: "W" });
 
 function combo(id: string, cards: string[], features: string[], over: Partial<SpellbookCombo> = {}): SpellbookCombo {
-  return { id, cards, templates: [], features, notablePrerequisites: "", easyPrerequisites: "", bracketTag: null, salt: null, ...over };
+  return {
+    id,
+    cards,
+    zones: cards.map(() => "B"),
+    templates: [],
+    features,
+    notablePrerequisites: "",
+    easyPrerequisites: "",
+    bracketTag: null,
+    manaNeeded: "",
+    salt: null,
+    ...over,
+  };
 }
 
 describe("the rating has no axes", () => {
@@ -48,7 +60,7 @@ describe("the bracket", () => {
   it("2 with nothing", () => {
     const r = rateDeck(deck([{ name: "Bear", cmc: 2, typeLine: "Creature" }], facts({})), facts({}), [], null);
     expect(r.bracket).toBe(2);
-    expect(r.bracketWhy).toEqual(["No Game Changers or two-card combos"]);
+    expect(r.bracketWhy).toEqual(["No Game Changers or combos above bracket 2"]);
   });
 
   it("3 with 1 to 3 Game Changers, 4 with 4", () => {
@@ -63,21 +75,47 @@ describe("the bracket", () => {
     expect(r4.bracketWhy).toEqual(["4 Game Changers: GC0, GC1, GC2, GC3"]);
   });
 
-  it("a winning two-card combo of mana value 8 is bracket 4, a bigger one bracket 3", () => {
-    const cards = [...deck([{ name: "A", cmc: 4, typeLine: "Creature" }, { name: "B", cmc: 4, typeLine: "Creature" }], facts({})), spell("C", 4, "Creature")];
-    const early = rateDeck(cards, facts({}), [combo("1", ["A", "B"], ["Win the game"])], null);
-    expect(early.bracket).toBe(4);
-    expect(early.bracketWhy).toEqual(["A + B: wins, mana value 8"]);
-    expect(early.twoCardCombos).toEqual([["A", "B"]]);
-    expect(early.earlyCombos).toEqual([["A", "B"]]);
-    expect(early.effects.combos).toBe(1);
+  it("counts a combo only when its tag is bracket 3 or higher", () => {
+    const cards = deck([{ name: "A", cmc: 1, typeLine: "Creature" }, { name: "B", cmc: 1, typeLine: "Creature" }], facts({}));
+    const counts = (tag: string | null) => rateDeck(cards, facts({}), [combo("c", ["A", "B"], ["Infinite untap"], { bracketTag: tag })], null).combos[0].counts;
+    for (const tag of ["R", "S", "P"]) expect(counts(tag), tag).toBe(true);
+    for (const tag of ["O", "C", "E", "B", null]) expect(counts(tag), String(tag)).toBe(false);
+  });
 
-    // A three-card combo doesn't count as a two-card one, whatever its mana value.
-    const late = rateDeck(cards, facts({}), [combo("1", ["A", "B", "C"], ["Win the game"])], null);
-    expect(late.bracket).toBe(2);
-    expect(late.earlyCombos).toEqual([]);
-    expect(late.effects).toEqual({});
-    expect(late.combos[0].manaValue).toBe(12);
+  it("a Ruthless (R) combo is bracket 4, with its tag in words", () => {
+    const cards = deck([{ name: "A", cmc: 4, typeLine: "Creature" }, { name: "B", cmc: 4, typeLine: "Creature" }], facts({}));
+    const r = rateDeck(cards, facts({}), [combo("1", ["A", "B"], ["Win the game"], { bracketTag: "R" })], null);
+    expect(r.bracket).toBe(4);
+    expect(r.bracketWhy).toEqual(["A + B: Ruthless (bracket 4+)"]);
+    expect(r.twoCardCombos).toEqual([["A", "B"]]);
+    expect(r.earlyCombos).toEqual([["A", "B"]]);
+    expect(r.effects.combos).toBe(1);
+  });
+
+  it("a Spicy (S) combo is bracket 3, three cards or not; a Powerful (P) one too", () => {
+    const cards = deck(
+      [{ name: "A", cmc: 1, typeLine: "Creature" }, { name: "B", cmc: 1, typeLine: "Creature" }, { name: "C", cmc: 1, typeLine: "Creature" }],
+      facts({}),
+    );
+    const s = rateDeck(cards, facts({}), [combo("s", ["A", "B", "C"], ["Infinite untap"], { bracketTag: "S" })], null);
+    expect(s.bracket).toBe(3);
+    expect(s.bracketWhy).toEqual(["A + B + C: Spicy (bracket 3-4)"]);
+    expect(s.earlyCombos).toEqual([]);
+    const p = rateDeck(cards, facts({}), [combo("p", ["A", "B"], ["Infinite untap"], { bracketTag: "P" })], null);
+    expect(p.bracket).toBe(3);
+    expect(p.bracketWhy).toEqual(["A + B: Powerful (bracket 3+)"]);
+  });
+
+  it("Oddball, Core, Exhibition and untagged combos stay at bracket 2", () => {
+    const cards = deck([{ name: "A", cmc: 1, typeLine: "Creature" }, { name: "B", cmc: 1, typeLine: "Creature" }], facts({}));
+    for (const tag of ["O", "C", "E", null]) {
+      const r = rateDeck(cards, facts({}), [combo("t", ["A", "B"], ["Win the game"], { bracketTag: tag })], null);
+      expect(r.bracket, String(tag)).toBe(2);
+      expect(r.bracketWhy, String(tag)).toEqual(["No Game Changers or combos above bracket 2"]);
+      expect(r.twoCardCombos, String(tag)).toEqual([]);
+      expect(r.earlyCombos, String(tag)).toEqual([]);
+      expect(r.effects.combos, String(tag)).toBeUndefined();
+    }
   });
 
   it("two cards plus \"any card of this kind\" is a three-piece combo: not counted, the piece named (Springheart Nantuko)", () => {
@@ -89,36 +127,27 @@ describe("the bracket", () => {
     expect(r.combos[0].extras).toEqual(["Man-Land that Enters Untapped"]);
     expect(tagsByCard(decodeSalt(JSON.stringify(r))!).get("springheart nantuko")).toEqual(["OTHER_COMBO_3"]);
 
-    // One card plus one template is two pieces: it counts, and the reason names the piece.
-    const two = rateDeck(cards, facts({}), [combo("x", ["Springheart Nantuko"], ["Infinite untap"], { templates: ["Man-Land that Enters Untapped"] })], null);
+    // With a tag that counts, the reason names the "any card of this kind" piece too.
+    const two = rateDeck(cards, facts({}), [combo("x", ["Springheart Nantuko"], ["Infinite untap"], { templates: ["Man-Land that Enters Untapped"], bracketTag: "S" })], null);
     expect(two.combos[0].counts).toBe(true);
-    expect(two.bracketWhy).toEqual(["Springheart Nantuko + any Man-Land that Enters Untapped: doesn't win"]);
+    expect(two.bracketWhy).toEqual(["Springheart Nantuko + any Man-Land that Enters Untapped: Spicy (bracket 3-4)"]);
     expect(decodeSalt(JSON.stringify(two))?.combos[0].extras).toEqual(["Man-Land that Enters Untapped"]);
   });
 
-  it("a two-card combo of mana value 9 doesn't win by itself: bracket 3, \"doesn't win\"", () => {
-    const cards = deck([{ name: "A", cmc: 5, typeLine: "Creature" }, { name: "B", cmc: 4, typeLine: "Creature" }], facts({}));
-    const r = rateDeck(cards, facts({}), [combo("1", ["A", "B"], ["Infinite mana"])], null);
-    expect(r.bracket).toBe(3);
-    expect(r.bracketWhy).toEqual(["A + B: wins, mana value 9"]);
-    expect(r.earlyCombos).toEqual([]);
-    expect(r.effects.combos).toBe(1);
-  });
-
-  it("a non-winning two-card combo is bracket 3 with \"doesn't win\"", () => {
+  it("knows what a combo wins and what it results in, whatever its bracket", () => {
     const cards = deck([{ name: "A", cmc: 2, typeLine: "Artifact" }, { name: "B", cmc: 2, typeLine: "Creature" }], facts({}));
-    const r = rateDeck(cards, facts({}), [combo("u", ["A", "B"], ["Infinite untap"])], null);
+    const r = rateDeck(cards, facts({}), [combo("u", ["A", "B"], ["Infinite untap"], { bracketTag: "P" })], null);
     expect(r.bracket).toBe(3);
-    expect(r.bracketWhy).toEqual(["A + B: doesn't win"]);
+    expect(r.bracketWhy).toEqual(["A + B: Powerful (bracket 3+)"]);
     expect(r.combos[0].wins).toBe(false);
     expect(r.combos[0].manaValue).toBe(4);
     expect(r.combos[0].results).toEqual(["infinite-untap"]);
-    expect(r.earlyCombos).toEqual([]);
+    expect(r.effects.combos).toBeUndefined();
   });
 
   it("infinite mana, creature tokens and lifegain count as winning", () => {
     for (const feature of ["Infinite colorless mana", "Infinite creature tokens", "Infinite lifegain", "Infinite green mana", "Infinite life loss", "Infinite turns"]) {
-      const r = rateDeck(deck([{ name: "A", cmc: 1, typeLine: "Artifact" }, { name: "B", cmc: 1, typeLine: "Artifact" }], facts({})), facts({}), [combo("w", ["A", "B"], [feature])], null);
+      const r = rateDeck(deck([{ name: "A", cmc: 1, typeLine: "Artifact" }, { name: "B", cmc: 1, typeLine: "Artifact" }], facts({})), facts({}), [combo("w", ["A", "B"], [feature], { bracketTag: "R" })], null);
       expect(r.bracket, feature).toBe(4);
       expect(r.combos[0].wins, feature).toBe(true);
     }
@@ -128,23 +157,35 @@ describe("the bracket", () => {
 
   it("a hyphenated word before the result still wins: infinite self-mill", () => {
     const cards = deck([{ name: "A", cmc: 1, typeLine: "Artifact" }, { name: "B", cmc: 1, typeLine: "Artifact" }], facts({}));
-    const r = rateDeck(cards, facts({}), [combo("h", ["A", "B"], ["Infinite self-mill"])], null);
+    const r = rateDeck(cards, facts({}), [combo("h", ["A", "B"], ["Infinite self-mill"], { bracketTag: "R" })], null);
     expect(r.combos[0].wins).toBe(true);
     expect(r.bracket).toBe(4);
     expect(r.earlyCombos).toEqual([["A", "B"]]);
-    expect(r.bracketWhy).toEqual(["A + B: wins, mana value 2"]);
+    expect(r.bracketWhy).toEqual(["A + B: Ruthless (bracket 4+)"]);
   });
 
-  it("two-card combos: the first three lines, then how many more", () => {
+  it("combos: the first three lines, then how many more", () => {
     const names = ["A", "B", "C", "D", "E"];
     const cards = deck(
       names.map((n) => ({ name: n, cmc: 2, typeLine: "Artifact" })),
       facts({}),
     );
-    const combos = [combo("1", ["A", "B"], ["Infinite untap"]), combo("2", ["A", "C"], ["Infinite untap"]), combo("3", ["D", "E"], ["Infinite untap"]), combo("4", ["C", "D"], ["Infinite untap"]), combo("5", ["B", "E"], ["Infinite untap"])];
+    const tag = { bracketTag: "P" };
+    const combos = [
+      combo("1", ["A", "B"], ["Infinite untap"], tag),
+      combo("2", ["A", "C"], ["Infinite untap"], tag),
+      combo("3", ["D", "E"], ["Infinite untap"], tag),
+      combo("4", ["C", "D"], ["Infinite untap"], tag),
+      combo("5", ["B", "E"], ["Infinite untap"], tag),
+    ];
     const r = rateDeck(cards, facts({}), combos, null);
     expect(r.bracket).toBe(3);
-    expect(r.bracketWhy).toEqual(["A + B: doesn't win", "A + C: doesn't win", "D + E: doesn't win", "and 2 more two-card combos"]);
+    expect(r.bracketWhy).toEqual([
+      "A + B: Powerful (bracket 3+)",
+      "A + C: Powerful (bracket 3+)",
+      "D + E: Powerful (bracket 3+)",
+      "and 2 more combos",
+    ]);
   });
 
   it("mass land denial and 3 extra turns are bracket 4", () => {
@@ -193,12 +234,12 @@ describe("the bracket", () => {
     expect(four.bracket).toBe(2);
   });
 
-  it("one early combo is listed once even when other rules also reach 4", () => {
+  it("one Ruthless combo is listed once even when other rules also reach 4", () => {
     const cards = deck([{ name: "A", cmc: 2, typeLine: "Creature" }, { name: "B", cmc: 2, typeLine: "Creature" }], facts({}));
     const f = facts({ A: { gameChanger: true }, B: { tags: ["mass-land-denial"] } });
-    const r = rateDeck(cards, f, [combo("e", ["A", "B"], ["Win the game"])], null);
+    const r = rateDeck(cards, f, [combo("e", ["A", "B"], ["Win the game"], { bracketTag: "R" })], null);
     expect(r.bracket).toBe(4);
-    expect(r.bracketWhy).toEqual(["A + B: wins, mana value 4", "1 Game Changer: A", "Mass land denial: B"]);
+    expect(r.bracketWhy).toEqual(["A + B: Ruthless (bracket 4+)", "1 Game Changer: A", "Mass land denial: B"]);
   });
 
   it("never below 2 or above 4", () => {
@@ -236,11 +277,14 @@ describe("effects, lists and combos", () => {
     expect(r.massLandDenial).toEqual(["LandDenial"]);
   });
 
-  it("makes the combo cards, results, prerequisites and mana values", () => {
+  it("makes the combo cards, results, prerequisites, mana value and tag", () => {
     const cards = [card("Thopter Foundry"), card("Sword of the Meek"), card("Dockside Extortionist")];
     const c = combo("abc", ["Thopter Foundry", "Sword of the Meek"], ["Win the game", "Infinite creature tokens", "Infinite ETB", "Infinite death triggers", "Infinite damage"], {
       notablePrerequisites: "All permanents on the battlefield.\nNone.",
       easyPrerequisites: "",
+      bracketTag: "R",
+      zones: ["B", "H"],
+      manaNeeded: "{3}",
     });
     const r = rateDeck(cards, facts({}), [c], null);
     expect(r.combos).toHaveLength(1);
@@ -254,6 +298,9 @@ describe("effects, lists and combos", () => {
     expect(s.counts).toBe(true);
     expect(s.manaValue).toBe(0);
     expect(s.wins).toBe(true);
+    expect(s.bracketTag).toBe("R");
+    expect(s.zones).toEqual(["B", "H"]);
+    expect(s.manaNeeded).toBe("{3}");
   });
 
   it("labels each feature once per combo", () => {
@@ -290,10 +337,19 @@ describe("effects, lists and combos", () => {
     expect(plain.combos[0].wins).toBe(false);
   });
 
-  it("puts two-card combos first", () => {
+  it("puts the strongest tag first, then the fewest pieces, then Commander Spellbook's order", () => {
     const cards = [card("A"), card("B"), card("C")];
-    const r = rateDeck(cards, facts({}), [combo("1", ["A", "B", "C"], ["Infinite untap"]), combo("2", ["A", "B"], ["Infinite untap"])], null);
-    expect(r.combos.map((c) => c.cards.length)).toEqual([2, 3]);
+    const r = rateDeck(cards, facts({}), [
+      combo("1", ["A", "B"], ["Infinite untap"], { bracketTag: "P" }),
+      combo("2", ["A", "B", "C"], ["Infinite untap"], { bracketTag: "R" }),
+    ], null);
+    expect(r.combos.map((c) => c.cards.length)).toEqual([3, 2]);
+    // The same floor: the fewest pieces first.
+    const same = rateDeck(cards, facts({}), [
+      combo("3", ["A", "B", "C"], ["Infinite untap"], { bracketTag: "S" }),
+      combo("4", ["B", "C"], ["Infinite untap"], { bracketTag: "S" }),
+    ], null);
+    expect(same.combos.map((c) => c.cards.length)).toEqual([2, 3]);
   });
 });
 
@@ -396,7 +452,8 @@ describe("tutors", () => {
 });
 
 describe("the rating", () => {
-  it("says it's the app's, with its version", () => {
+  it("says it's the app's, with rating version 4", () => {
+    expect(RATING_VERSION).toBe(4);
     const r = rateDeck([card("Bear"), plains(1)], facts({}), [], null);
     expect(r.source).toBe("app");
     expect(r.version).toBe(4);
@@ -437,6 +494,16 @@ describe("decodeSalt", () => {
     expect(back.combos[0].wins).toBe(true);
   });
 
+  it("keeps the bracket tag, the zones and the mana a combo needs", () => {
+    const r = rateDeck([card("A"), card("B")], facts({}), [
+      combo("c", ["A", "B"], ["Win the game"], { bracketTag: "S", zones: ["H", "B"], manaNeeded: "{4}{W}" }),
+    ], null);
+    const c = decodeSalt(JSON.stringify(r))!.combos[0];
+    expect(c.bracketTag).toBe("S");
+    expect(c.zones).toEqual(["H", "B"]);
+    expect(c.manaNeeded).toBe("{4}{W}");
+  });
+
   it("defaults them for Commander Salt's data", () => {
     const old = decodeSalt(JSON.stringify({ gameChangers: ["X"], combos: [{ cards: ["A", "B"], counts: true, results: [], needsBoard: false, spellbookUri: null, prerequisites: [] }] }))!;
     expect(old.source).toBeNull();
@@ -448,5 +515,48 @@ describe("decodeSalt", () => {
     expect(old.ratingVersion).toBeNull();
     expect(old.combos[0].manaValue).toBeNull();
     expect(old.combos[0].wins).toBeNull();
+    // Old data has no tag, zones or needed mana: the keys stay away.
+    expect("bracketTag" in old.combos[0]).toBe(false);
+    expect("zones" in old.combos[0]).toBe(false);
+    expect("manaNeeded" in old.combos[0]).toBe(false);
+  });
+});
+
+describe("the bracket tags", () => {
+  it("takes the lowest bracket of the tag's range as its floor", () => {
+    expect(tagFloor("R")).toBe(4);
+    expect(tagFloor("S")).toBe(3);
+    expect(tagFloor("P")).toBe(3);
+    expect(tagFloor("O")).toBe(2);
+    expect(tagFloor("C")).toBe(2);
+    expect(tagFloor("E")).toBe(1);
+    expect(tagFloor("B")).toBe(0);
+    expect(tagFloor(null)).toBe(0);
+    expect(tagFloor(undefined)).toBe(0);
+    expect(tagFloor("X")).toBe(0);
+  });
+
+  it("names the tag with its bracket range", () => {
+    expect(tagText("R")).toBe("Ruthless (bracket 4+)");
+    expect(tagText("S")).toBe("Spicy (bracket 3-4)");
+    expect(tagText("P")).toBe("Powerful (bracket 3+)");
+    expect(tagText("O")).toBe("Oddball (bracket 2-3)");
+    expect(tagText("C")).toBe("Core (bracket 2+)");
+    expect(tagText("E")).toBe("Exhibition (any bracket)");
+    expect(tagText("B")).toBe("Banned in Commander");
+    expect(tagText(null)).toBeNull();
+    expect(tagText("X")).toBeNull();
+  });
+
+  it("names the tag in one word", () => {
+    expect(tagName("R")).toBe("Ruthless");
+    expect(tagName("S")).toBe("Spicy");
+    expect(tagName("P")).toBe("Powerful");
+    expect(tagName("O")).toBe("Oddball");
+    expect(tagName("C")).toBe("Core");
+    expect(tagName("E")).toBe("Exhibition");
+    expect(tagName("B")).toBe("Banned");
+    expect(tagName(null)).toBeNull();
+    expect(tagName("X")).toBeNull();
   });
 });

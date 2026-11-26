@@ -120,6 +120,15 @@ export interface SaltCombo {
   manaValue?: number | null;
   /** Whether it wins the game by itself; null when not known. */
   wins?: boolean | null;
+  /** Commander Spellbook's bracket tag letter ("R", "S", "P", "O", "C", "E" or "B"). Since rating version 4. */
+  bracketTag?: string | null;
+  /**
+   * Where each card must be when the combo starts, one entry per card of cards and in the same order: "H", "B", "C",
+   * "G", "L" or "E", several when any of them works. Since rating version 4.
+   */
+  zones?: string[];
+  /** The mana the whole combo needs, e.g. "{4}{W}". Since rating version 4. */
+  manaNeeded?: string | null;
 }
 
 /** What the rule-zero cards show (the app's SaltCard JSON, defaults filled in). */
@@ -186,6 +195,9 @@ export function decodeSalt(text: string | null | undefined): SaltCard | null {
       combos: (j.combos ?? []).map((c) => ({
         cards: c.cards ?? [],
         ...(c.extras?.length ? { extras: c.extras } : {}),
+        ...(c.bracketTag ? { bracketTag: c.bracketTag } : {}),
+        ...(c.zones?.length ? { zones: c.zones } : {}),
+        ...(c.manaNeeded ? { manaNeeded: c.manaNeeded } : {}),
         counts: c.counts ?? false,
         results: c.results ?? [],
         needsBoard: c.needsBoard ?? false,
@@ -253,6 +265,45 @@ export const comboPieces = (c: SaltCombo) => c.cards.length + (c.extras?.length 
 
 /** The combo's pieces in words: "A + B + any Man-Land that Enters Untapped". */
 export const comboPiecesText = (c: SaltCombo, cards: string[] = c.cards) => [...cards, ...(c.extras ?? []).map((e) => `any ${e}`)].join(" + ");
+
+// Commander Spellbook's bracket tags: the word and the bracket range it stands for.
+const TAG_INFO: Record<string, { name: string; text: string }> = {
+  R: { name: "Ruthless", text: "Ruthless (bracket 4+)" },
+  S: { name: "Spicy", text: "Spicy (bracket 3-4)" },
+  P: { name: "Powerful", text: "Powerful (bracket 3+)" },
+  O: { name: "Oddball", text: "Oddball (bracket 2-3)" },
+  C: { name: "Core", text: "Core (bracket 2+)" },
+  E: { name: "Exhibition", text: "Exhibition (any bracket)" },
+  B: { name: "Banned", text: "Banned in Commander" },
+};
+
+/** The bracket floor a Commander Spellbook tag sets: the lowest bracket of the tag's range; 0 when none. */
+export function tagFloor(tag: string | null | undefined): number {
+  switch (tag) {
+    case "R":
+      return 4;
+    case "S":
+    case "P":
+      return 3;
+    case "O":
+    case "C":
+      return 2;
+    case "E":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+/** The tag in words: "Ruthless", "Spicy", "Banned"…; null when there is none. */
+export function tagName(tag: string | null | undefined): string | null {
+  return (tag && TAG_INFO[tag]?.name) || null;
+}
+
+/** The tag in words with Commander Spellbook's bracket range, e.g. "Spicy (bracket 3-4)"; null when none. */
+export function tagText(tag: string | null | undefined): string | null {
+  return (tag && TAG_INFO[tag]?.text) || null;
+}
 
 // ---- Why that bracket ----------------------------------------------------------------------------------------------
 

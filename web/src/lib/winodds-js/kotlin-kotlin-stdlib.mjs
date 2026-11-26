@@ -48,12 +48,6 @@ if (typeof Math.clz32 === 'undefined') {
     };
   }(Math.log, Math.LN2);
 }
-if (typeof String.prototype.startsWith === 'undefined') {
-  Object.defineProperty(String.prototype, 'startsWith', {value: function (searchString, position) {
-    position = position || 0;
-    return this.lastIndexOf(searchString, position) === position;
-  }});
-}
 if (typeof String.prototype.endsWith === 'undefined') {
   Object.defineProperty(String.prototype, 'endsWith', {value: function (searchString, position) {
     var subjectString = this.toString();
@@ -63,6 +57,12 @@ if (typeof String.prototype.endsWith === 'undefined') {
     position -= searchString.length;
     var lastIndex = subjectString.indexOf(searchString, position);
     return lastIndex !== -1 && lastIndex === position;
+  }});
+}
+if (typeof String.prototype.startsWith === 'undefined') {
+  Object.defineProperty(String.prototype, 'startsWith', {value: function (searchString, position) {
+    position = position || 0;
+    return this.lastIndexOf(searchString, position) === position;
   }});
 }
 //endregion
@@ -874,6 +874,9 @@ function contains_5(_this__u8e3s4, element) {
 function lastOrNull(_this__u8e3s4) {
   return _this__u8e3s4.r() ? null : _this__u8e3s4.q(_this__u8e3s4.p() - 1 | 0);
 }
+function getOrNull_0(_this__u8e3s4, index) {
+  return (0 <= index ? index < _this__u8e3s4.p() : false) ? _this__u8e3s4.q(index) : null;
+}
 function maxOrNull(_this__u8e3s4) {
   var iterator = _this__u8e3s4.m();
   if (!iterator.n())
@@ -931,9 +934,6 @@ function toMutableSet(_this__u8e3s4) {
     tmp = toCollection_0(_this__u8e3s4, LinkedHashSet_init_$Create$());
   }
   return tmp;
-}
-function getOrNull_0(_this__u8e3s4, index) {
-  return (0 <= index ? index < _this__u8e3s4.p() : false) ? _this__u8e3s4.q(index) : null;
 }
 function shuffle(_this__u8e3s4, random) {
   var inductionVariable = get_lastIndex_3(_this__u8e3s4);
