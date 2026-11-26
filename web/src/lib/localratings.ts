@@ -7,9 +7,9 @@
 // they're no longer worked out: axes stays empty and the "how it plays" bars stay hidden.
 import { isBasic, type StatsCard } from "./deckstats";
 import { comboPieces, comboPiecesText, saltKey, tagFloor, tagText, type SaltCard, type SaltCombo } from "./deckshared";
-import type { SpellbookCombo } from "./spellbook";
+import { reentering, type SpellbookCombo } from "./spellbook";
 
-export const RATING_VERSION = 4;
+export const RATING_VERSION = 5;
 
 /** The app's SaltCard.CURRENT: a salt card without it is treated as old data. */
 export const SALT_CARD_VERSION = 4;
@@ -93,6 +93,7 @@ const lines = (text: string) =>
     .filter((l) => l);
 
 function saltCombo(combo: SpellbookCombo, cmc: Map<string, number>): SaltCombo {
+  const reenters = reentering(combo.cards, combo.zones, combo.steps);
   return {
     cards: combo.cards,
     ...(combo.templates.length > 0 ? { extras: combo.templates } : {}),
@@ -108,6 +109,9 @@ function saltCombo(combo: SpellbookCombo, cmc: Map<string, number>): SaltCombo {
     ...(combo.bracketTag ? { bracketTag: combo.bracketTag } : {}),
     ...(combo.zones.some((z) => z) ? { zones: combo.zones } : {}),
     ...(combo.manaNeeded ? { manaNeeded: combo.manaNeeded } : {}),
+    // The cards whose entering starts the combo (rating version 5), so the simulator knows it can blink them.
+    ...(reenters.length > 0 ? { reenters } : {}),
+    ...(combo.exiledBy.some((e) => e) ? { exiledBy: combo.exiledBy } : {}),
   };
 }
 

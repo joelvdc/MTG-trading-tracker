@@ -17,9 +17,29 @@ describe("combo bracket tags", () => {
   });
 
   it("decodes the new combo fields and leaves them out of older data", () => {
-    const card = decodeSalt(JSON.stringify({ combos: [{ cards: ["A", "B"], bracketTag: "S", zones: ["H", "B"], manaNeeded: "{4}{W}" }] }))!;
-    expect(card.combos[0]).toMatchObject({ bracketTag: "S", zones: ["H", "B"], manaNeeded: "{4}{W}" });
+    const card = decodeSalt(
+      JSON.stringify({
+        combos: [
+          {
+            cards: ["A", "B"],
+            bracketTag: "S",
+            zones: ["H", "B"],
+            manaNeeded: "{4}{W}",
+            reenters: ["A"],
+            exiledBy: ["", "Isochron Scepter"],
+          },
+        ],
+      }),
+    )!;
+    expect(card.combos[0]).toMatchObject({
+      bracketTag: "S",
+      zones: ["H", "B"],
+      manaNeeded: "{4}{W}",
+      reenters: ["A"],
+      exiledBy: ["", "Isochron Scepter"],
+    });
     const old = decodeSalt(JSON.stringify({ combos: [{ cards: ["A", "B"] }] }))!;
-    expect("bracketTag" in old.combos[0] || "zones" in old.combos[0] || "manaNeeded" in old.combos[0]).toBe(false);
+    const keys = ["bracketTag", "zones", "manaNeeded", "reenters", "exiledBy"];
+    expect(keys.some((k) => k in old.combos[0])).toBe(false);
   });
 });

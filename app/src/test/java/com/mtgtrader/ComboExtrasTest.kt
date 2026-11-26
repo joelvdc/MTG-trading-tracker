@@ -39,6 +39,6 @@ class ComboExtrasTest {
 
     @Test
     fun ratingsFromBeforeAreAskedForAgain() {
-        assertEquals(4, LocalRating.RATING_VERSION)
+        assertEquals(5, LocalRating.RATING_VERSION)
     }
 }

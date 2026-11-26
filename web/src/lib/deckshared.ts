@@ -129,6 +129,13 @@ export interface SaltCombo {
   zones?: string[];
   /** The mana the whole combo needs, e.g. "{4}{W}". Since rating version 4. */
   manaNeeded?: string | null;
+  /** The cards whose entering starts the combo, so making them leave and enter again also works. Since rating version 5. */
+  reenters?: string[];
+  /**
+   * The card each card has to be exiled by, one entry per card of cards and in the same order ("Isochron Scepter"), or
+   * "" when it doesn't need exiling. Since rating version 5.
+   */
+  exiledBy?: string[];
 }
 
 /** What the rule-zero cards show (the app's SaltCard JSON, defaults filled in). */
@@ -198,6 +205,8 @@ export function decodeSalt(text: string | null | undefined): SaltCard | null {
         ...(c.bracketTag ? { bracketTag: c.bracketTag } : {}),
         ...(c.zones?.length ? { zones: c.zones } : {}),
         ...(c.manaNeeded ? { manaNeeded: c.manaNeeded } : {}),
+        ...(c.reenters?.length ? { reenters: c.reenters } : {}),
+        ...(c.exiledBy?.some((e) => e) ? { exiledBy: c.exiledBy } : {}),
         counts: c.counts ?? false,
         results: c.results ?? [],
         needsBoard: c.needsBoard ?? false,

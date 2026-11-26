@@ -176,7 +176,10 @@ data class WinCounted(
  * - Saga chapters (Maximum Carnage, Urza's Saga), Vehicles crewed, toxic, Twenty-Toed Toad's win.
  * Since 1.120, combos follow Commander Spellbook's starting zones: a piece it lists as in hand has to enter during the
  * combo (one already on the battlefield doesn't count, and it waits in hand while the rest of its combo is in sight),
- * and the combo needs the mana Commander Spellbook says it needs as well as the mana to cast its missing pieces.
+ * and the combo needs the mana Commander Spellbook says it needs as well as the mana to cast its missing pieces. Since
+ * 1.121 every starting zone counts (hand or command zone, battlefield, graveyard, library, a card exiled by another
+ * piece), and a must-enter piece already out can start the combo again when a blink card makes it re-enter (its
+ * enter trigger, not a new cast), when the combo starts with it entering.
  * Since 1.70 also:
  * - Currency Converter's Rogues and Treasures only for the cards exiled with it (discarded ones); Renewed Solidarity copying
  *   the tokens of the chosen type (the one the deck's tokens share most) that entered this turn, and their +1/+0;
@@ -201,9 +204,11 @@ object WinOddsCalc {
      * Solidarity, spree, "when this dies", Wilderness Reclamation, lands' token abilities (1.70). 12: which land is played,
      * "enters tapped unless …" conditions (1.71). 13: mana sinks when picking the land, more "unless …" conditions, a ramp
      * spell's basic of one colour (1.77). 14: Commander Spock's top card cast for free or put in as a land (1.117).
-     * 15: combo pieces' starting zones and the mana a combo needs (1.120).
+     * 15: combo pieces' starting zones and the mana a combo needs (1.120). 16: every starting zone, blinking a must-enter
+     * piece, graveyard prerequisites; "exile target creature you control, then return it" and "up to one other target"
+     * read as flicker (1.121).
      */
-    const val VERSION = 15
+    const val VERSION = 16
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -253,8 +258,12 @@ object WinOddsCalc {
      * A combo as the win turn reads it: whether it [wins] outright, what it [loops], whether it makes endless
      * [tokens]; and what it needs besides its cards: [creatures] other creatures on the battlefield, an opponent's
      * creature ([opponentCreature], taken as there from turn 4), and for each "you have a way to …" another card of
-     * the deck on the battlefield whose text has one of the [enablers] words. [handKeys] are the pieces Commander
-     * Spellbook lists as in hand only: they have to enter during the combo (since 1.120). [manaNeeded] is the mana the
+     * the deck on the battlefield whose text has one of the [enablers] words. [zones] are where each piece may start,
+     * in Commander Spellbook's letters ("H" hand, "B" battlefield, "C" command zone, "G" graveyard, "L" library, "E"
+     * exile), by key; a piece without them may start anywhere it could before 1.120. [handKeys] are the pieces that
+     * have to be cast during the combo (hand or command zone, not the battlefield; since 1.120). [reenterKeys] start the
+     * combo by entering, so a blink works too; [exiledBy] is the piece another piece has to exile (Dramatic Reversal on
+     * Isochron Scepter); [graveyardCards] the other cards the graveyard needs (since 1.121). [manaNeeded] is the mana the
      * whole combo needs (since 1.120). [kind] and [payoffs] are settled per deck ([settle]).
      */
     class ComboPlan(
@@ -265,9 +274,16 @@ object WinOddsCalc {
         val creatures: Int = 0,
         val opponentCreature: Boolean = false,
         val enablers: List<List<String>> = emptyList(),
-        val handKeys: Set<String> = emptySet(),
+        val zones: Map<String, String> = emptyMap(),
         val manaNeeded: ManaOddsCalc.Cost? = null,
+        val reenterKeys: Set<String> = emptySet(),
+        val exiledBy: Map<String, String> = emptyMap(),
+        val graveyardCards: Int = 0,
     ) {
+        val handKeys = zones.filterValues { z -> 'B' !in z && ('H' in z || 'C' in z) }.keys
+
+        /** Whether a piece only starts in the graveyard, library or exile, never in hand or on the battlefield. */
+        fun offHand(key: String) = zones[key]?.let { z -> z.isNotEmpty() && z.none { it in "HBC" } } == true
         val keys = names.map(SaltCard::key).toSet()
         var kind = if (wins) ComboKind.WINS else ComboKind.TOKENS
         /** The deck's cards that turn this loop into life loss. */
@@ -278,6 +294,7 @@ object WinOddsCalc {
     private val putsCounters = Regex("\\bput (?:a|one or more) -1/-1 counters? on", RegexOption.IGNORE_CASE)
     private val atLeastCreatures = Regex("you control at least (\\w+) (?:other |additional )?creatures?", RegexOption.IGNORE_CASE)
     private val wayTo = Regex("you have a way to (.*)", RegexOption.IGNORE_CASE)
+    private val graveyardAtLeast = Regex("at least (\\w+) (?:other )?cards? in your graveyard", RegexOption.IGNORE_CASE)
 
     /** How the win turn reads a combo of Commander Salt's (since 1.53), or null when it can't win. */
     fun plan(combo: SaltCombo): ComboPlan? {
@@ -287,10 +304,12 @@ object WinOddsCalc {
         if (!wins && loops.isEmpty() && !tokens) return null
         var creatures = 0
         var opponent = false
+        var graveyard = 0
         val enablers = ArrayList<List<String>>()
         for (line in combo.prerequisites.map { it.lowercase() }) {
             atLeastCreatures.find(line)?.let { creatures = maxOf(creatures, number(it.groupValues[1])) }
             if ("opponent controls" in line || "opponents control" in line) opponent = true
+            graveyardAtLeast.find(line)?.let { graveyard = maxOf(graveyard, number(it.groupValues[1])) }
             wayTo.find(line)?.let { m ->
                 val what = m.groupValues[1]
                 enablers += when {
@@ -303,11 +322,14 @@ object WinOddsCalc {
                 }
             }
         }
-        // A piece listed as in hand only ("H", not "HB") has to be cast, or enter, during the combo (Ondu Spiritdancer
-        // with Secret Arcade already unlocked).
-        val inHand = combo.cards.filterIndexed { i, _ -> combo.zones.getOrNull(i) == "H" }.map(SaltCard::key).toSet()
+        // Where each piece may start (Ondu Spiritdancer "H": cast with Secret Arcade "B" already unlocked).
+        val zones = combo.cards.mapIndexedNotNull { i, n -> combo.zones.getOrNull(i)?.takeIf { it.isNotEmpty() }?.let { SaltCard.key(n) to it.uppercase() } }.toMap()
+        val exiledBy = combo.cards.mapIndexedNotNull { i, n -> combo.exiledBy.getOrNull(i)?.takeIf { it.isNotBlank() }?.let { SaltCard.key(n) to SaltCard.key(it) } }.toMap()
         val mana = combo.manaNeeded?.takeIf { it.isNotBlank() }?.let(ManaOddsCalc::cost)?.takeIf { it.manaValue > 0 }
-        return ComboPlan(combo.cards, wins, loops, tokens, creatures, opponent, enablers, inHand, mana)
+        return ComboPlan(
+            combo.cards, wins, loops, tokens, creatures, opponent, enablers, zones, mana,
+            combo.reenters.map(SaltCard::key).toSet(), exiledBy, graveyard,
+        )
     }
 
     /**
@@ -463,7 +485,8 @@ object WinOddsCalc {
         I,
     )
     private val toHandText = Regex("return (?:up to (\\w+) )?target ([a-z ]*?)cards? from your graveyard to your hand", I)
-    private val flickerText = Regex("exile (?:up to )?(\\w+) target [^.]*?you control, then return (?:those cards|them|that card|it) to the battlefield", I)
+    // "Exile target creature you control, then return it" (Ephemerate) and "up to one other target" (Thassa) since 1.121.
+    private val flickerText = Regex("exile (?:up to )?(?:(\\w+) )?(?:other )?target [^.]*?you control, then return (?:those cards|them|that card|it) to the battlefield", I)
     private val copyText = Regex(
         "create (a|two) tokens? that(?:'s| are) (?:a )?cop(?:y|ies) of (?:up to one )?(?:target )?(?:(?:nonlegendary |another )?(?:artifact or creature|creature|permanent)(?: you control)?|it)\\b",
         I,
@@ -4707,16 +4730,33 @@ object WinOddsCalc {
          * The first combo that can be finished now: its missing cards at hand (or in the command zone) with the mana to
          * cast them, its {T} pieces out since last turn, the creatures and enablers it needs on the battlefield, and for
          * a loop a card that turns it into life loss (castable with it when it isn't out yet). Null when there's none.
+         * Since 1.121 each piece has to be in a place Commander Spellbook allows ([ComboPlan.zones]): one that must enter
+         * and is already out only counts when a blink card makes it enter again.
          */
         fun comboReady(pool: List<Pair<Set<Char>, Int>>): ComboKind? {
             if (combos.isEmpty()) return null
             val there = board.mapNotNull { it.card?.key }.toSet()
             val at = (hand + command).associateBy { it.key }
+            val inHand = hand.map { it.key }.toSet()
+            val yard = graveyard.map { it.key }.toSet()
+            val library = (drawn until rest.size).map { rest[it].key }.toSet()
             for (combo in combos) {
-                val need = combo.keys - there
-                if (!need.all { it in at }) continue
-                // A piece that has to enter during the combo is already on the battlefield (since 1.120).
-                if (combo.handKeys.any { it in there }) continue
+                val cast = ArrayList<WinCard>()
+                val ready = combo.keys.all { k ->
+                    val z = combo.zones[k]
+                    when {
+                        z == null -> k in there || at[k]?.also { cast += it } != null
+                        k in there -> 'B' in z || k in combo.reenterKeys && reentry(k)?.also { cast += it } != null
+                        k in at && ('H' in z || 'C' in z || 'B' in z) -> { cast += at.getValue(k); true }
+                        'G' in z && k in yard -> true
+                        'L' in z && k in library -> true
+                        // Dramatic Reversal exiled by Isochron Scepter as it enters: the Scepter is cast now.
+                        'E' in z -> combo.exiledBy[k]?.let { x -> k in inHand && x in combo.keys && x !in there } == true
+                        else -> false
+                    }
+                }
+                if (!ready) continue
+                if (graveyard.count { it.key !in combo.keys } < combo.graveyardCards) continue
                 if (combo.opponentCreature && turn < OPPONENTS_HAVE_CREATURES) continue
                 if (combo.keys.any { k -> at[k]?.tapPiece == true && k !in there }) continue
                 if (board.any { e -> e.card?.let { it.key in combo.keys && it.tapPiece } == true && e.turn >= turn && !e.haste }) continue
@@ -4725,12 +4765,11 @@ object WinOddsCalc {
                         board.none { e -> e.card?.let { c -> c.key !in combo.keys && !c.land && words.any { it in c.text } } == true }
                     }
                 ) continue
-                val cast = need.map { at.getValue(it) }.toMutableList()
                 if (combo.kind == ComboKind.LOOP && combo.keys.none { it in combo.payoffs } && combo.payoffs.none { it in there }) {
                     cast += hand.filter { it.key in combo.payoffs }.minByOrNull { it.manaValue } ?: continue
                 }
                 var p: List<Pair<Set<Char>, Int>>? = pool
-                for (c in cast.sortedByDescending { it.manaValue }) p = p?.let { ManaOddsCalc.pay(it, costOf(c)) }
+                for (c in cast.distinct().sortedByDescending { it.manaValue }) p = p?.let { ManaOddsCalc.pay(it, costOf(c)) }
                 // The mana Commander Spellbook says the combo needs, which may be more than casting what's missing.
                 if (p != null && combo.manaNeeded != null && ManaOddsCalc.pay(pool, combo.manaNeeded) == null) continue
                 if (p != null) return combo.kind
@@ -4739,15 +4778,30 @@ object WinOddsCalc {
         }
 
         /**
+         * How a must-enter combo piece that is already out enters again (since 1.121): an empty list for a blink at the
+         * end step from the battlefield (Teleportation Circle, Thassa), the blink card to cast with the combo (Ephemerate),
+         * or null when it can't.
+         */
+        fun reentry(key: String): List<WinCard>? {
+            val e = board.firstOrNull { it.card?.key == key }?.takeIf { it.creature && !it.token } ?: return null
+            if (board.any { b -> b !== e && (b.card?.eachTurn?.flicker ?: 0) > 0 }) return emptyList()
+            return hand.filter { it.onEnter.flicker > 0 && it.key != key }.minByOrNull { it.manaValue }?.let { listOf(it) }
+        }
+
+        /**
          * Whether a combo piece that has to enter during its combo (Commander Spellbook lists it as in hand) waits in hand
-         * or the command zone: while the rest of that combo is on the battlefield, in hand or in the command zone, and
-         * none of its other must-enter pieces has come in already. Since 1.120.
+         * or the command zone: while the rest of that combo is on the battlefield, in hand or in the command zone (or
+         * starts in the graveyard, library or exile), and none of its other must-enter pieces has come in already, unless
+         * that one can be blinked. Since 1.120.
          */
         fun holding(c: WinCard): Boolean {
             if (!c.combo) return false
             val out = board.mapNotNull { it.card?.key }.toSet()
             val sight = out + hand.map { it.key } + command.map { it.key }
-            return combos.any { p -> c.key in p.handKeys && c.key !in out && p.keys.all { it in sight } && p.handKeys.none { it in out } }
+            return combos.any { p ->
+                c.key in p.handKeys && c.key !in out && p.keys.all { it in sight || p.offHand(it) } &&
+                    p.handKeys.none { it in out && it !in p.reenterKeys }
+            }
         }
 
         /**
@@ -4758,9 +4812,10 @@ object WinOddsCalc {
             val have = (board.mapNotNull { it.card } + hand + command)
             val haveKeys = have.map { it.key }.toSet()
             val out = board.mapNotNull { it.card?.key }.toSet()
-            // A combo whose must-enter piece is already on the battlefield can't be finished (since 1.120).
-            val wanted = combos.filter { p -> p.handKeys.none { it in out } }.map { p ->
-                val missing = (p.keys - haveKeys).toMutableSet()
+            // A combo whose must-enter piece is already on the battlefield can't be finished (since 1.120), unless a
+            // blink brings it in again; pieces that start in the graveyard, library or exile aren't fetched (since 1.121).
+            val wanted = combos.filter { p -> p.handKeys.none { it in out && it !in p.reenterKeys } }.map { p ->
+                val missing = (p.keys - haveKeys).filterNot(p::offHand).toMutableSet()
                 if (p.kind == ComboKind.LOOP && p.keys.none { it in p.payoffs } && haveKeys.none { it in p.payoffs }) missing += PAYOFF
                 p to missing
             }.filter { it.second.isNotEmpty() }.sortedBy { it.second.size }
@@ -4892,7 +4947,7 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
             val text = buildString {
                 append(WinOddsCalc.VERSION).append('|').append(identity).append('|')
                 cards.sortedWith(compareBy({ it.name }, { it.scryfallId })).forEach { append(it.toString()).append('\n') }
-                combos.forEach { append(it.cards).append(it.results).append(it.needsBoard).append(it.prerequisites).append(it.zones).append(it.manaNeeded).append('\n') }
+                combos.forEach { append(it.cards).append(it.results).append(it.needsBoard).append(it.prerequisites).append(it.zones).append(it.manaNeeded).append(it.reenters).append(it.exiledBy).append('\n') }
             }
             return MessageDigest.getInstance("MD5").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
         }

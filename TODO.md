@@ -14,24 +14,22 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-26, app 1.120)
-- **Newest (2026-11-26):** app 1.120 + website: a combo's bracket floor is Commander Spellbook's tag (lowest bracket of
-  its range: R 4, S/P 3, O/C 2, E 1), replacing the two-card / mana-value rule; "Why bracket" and the bracket card
-  name the tag; criteria row "Combos". Win turn (WinOddsCalc.VERSION 15) reads Spellbook's starting zones: a piece
-  listed in hand ("H") must enter during the combo and waits in hand while the rest is in sight; a combo also needs
-  Spellbook's manaNeeded. New SaltCombo fields bracketTag, zones, manaNeeded; RATING_VERSION 4. Website parts by
-  DeepSeek (Mistral, Vibe), simulator and review by Opus.
-- **Before (2026-11-26, website only):** playtester: cards enter with their starting counters (`entercounters.ts`).
-- **Before:** app 1.119 ("any card of a kind" combo pieces), 1.118 ("Show cards I own"), 1.117 (Spock), 1.116 (one
-  bracket card everywhere).
-- **Waiting on the owner:** after updating, open Zur (Ondu + Secret Arcade, Spicy) and Auntie Plague (bracket 4 by its
-  Ruthless combos) and check "Why bracket" and the bracket card; play a planeswalker, saga and battle in the
-  playtester; check the Nantuko deck's combos; "Show cards I own" colours. Still from before: email/"Forgot
-  password?", the ✕ delete column in the wishlist, Compare with a real Archidekt link, the email to
-  support@moxfield.com, asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** every deck is re-rated once after 1.120: Auntie Plague reaches 4 by its Ruthless combos, Tawnos' Army gets a combo
-  floor of 3 (3-card Urza combo), Smasher's Exhibition combo no longer raises it. Win turns are worked out again;
-  Zur's combo share drops (13% → 9%) because Ondu cast before Secret Arcade no longer counts. Phones still on 1.119
+## Right now (2026-11-26, app 1.121)
+- **Newest (2026-11-26):** app 1.121 + website: the win turn (WinOddsCalc.VERSION 16) checks every starting zone
+  Commander Spellbook gives (hand, command zone, battlefield, graveyard with "at least N other cards", library, exile
+  "exiled by <combo card>"); a must-enter piece already out restarts its combo when blinked (end-step blinkers on the
+  battlefield, blink spells in hand); "HC" pieces (High Perfect Morcant) count as must-enter. Ephemerate and Thassa,
+  Deep-Dwelling are now read as blink cards. New SaltCombo fields reenters and exiledBy (website reads them from
+  Spellbook's description and uses[].exileCardState); RATING_VERSION 5. Website parts by DeepSeek (Mistral, Vibe),
+  simulator and review by Opus.
+- **Before:** 1.120 (combo bracket floors from Spellbook tags, combos in Spellbook's order), 1.119, 1.118, 1.117.
+- **Waiting on the owner:** after updating, open Zur and check its win turn's combo share (about 11%, up from 9%);
+  from 1.120: "Why bracket" on Zur and Auntie Plague; play a planeswalker, saga and battle in the playtester; the
+  Nantuko deck's combos; "Show cards I own" colours. Still from before: email/"Forgot password?", the ✕ delete column
+  in the wishlist, Compare with a real Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for
+  permission.
+- **Expected to look odd:** every deck is re-rated once after 1.121 (same brackets, new combo fields); win turns are
+  worked out again: Zur's combo share 9% → 11%, Auntie Plague's 39% → 38%, others unchanged. Phones still on 1.120
   keep asking for a new rating until they update.
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
@@ -135,23 +133,6 @@ for later:
   `DeckScreen.kt` and `web/src/app/collection/page.tsx` are large (split a piece off when changing it anyway);
   `targetSdk` 36 as its own release with new screenshots.
 
-- 2026-11-26 (follow-up from 1.120; owner: "Blinking Ondu Spiritdancer works, but note that it does not make it being
-  cast again, but it triggers its ETB." and for the other zones: "Matters little today, but maybe matters a lot
-  tomorrow."). Plan written 2026-11-26, waiting for a green light:
-  - **Blink:** a combo piece that has to enter during the combo, already on the battlefield, can start the combo again
-    when a blink card makes it leave and re-enter (its enter trigger fires again; it is not cast). Only for pieces
-    whose entering starts the combo (Spellbook's steps say "<card> enters" / "When it enters"), not for ones that must
-    be cast. Blink cards: end-step ones on the battlefield (Teleportation Circle, Thassa, Deep-Dwelling: the combo
-    goes at our end step) and blink spells or creatures castable with the mana left (Ephemerate, Restoration Angel).
-    Thassa, Deep-Dwelling ("up to one other target") isn't read as a blink card today.
-  - **All starting zones:** each piece must be in one of the places Spellbook allows when the combo starts: hand,
-    battlefield, command zone, graveyard (the simulator already keeps one), library (not drawn yet) or exile. Fixes
-    1.120's gap where "hand or command zone" (High Perfect Morcant) wasn't treated as must-enter. Graveyard
-    prerequisites ("at least six other cards in your graveyard") are read. Exile: only "exiled by <combo card>"
-    (Dramatic Reversal on Isochron Scepter) when both are cast together; other exile pieces don't count.
-  - Data: new SaltCombo fields for the pieces that re-enter and "exiled by"; RATING_VERSION 5, WinOddsCalc.VERSION 16.
-    Health check: Spellbook's description (steps) and uses[].exileCardState.
-
 ### Decided, keep in mind
 - Website address mtgtrader.vercel.app; Cloudflare rules for it on nocar.me are described in `web/README.md`.
 - Archidekt is contacted only on a tap ("Reload decklist", "Update all decks"); decks from Archidekt are read-only.
@@ -165,6 +146,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.121 (2026-11-26): win turn: blinking must-enter combo pieces, every Spellbook starting zone (graveyard, library, exiled by)
 - 1.120 (2026-11-26): combo bracket floors from Commander Spellbook's tags; win turn plays combos in Spellbook's order (must-enter pieces, mana needed)
 - 1.109 (2026-11-22): trade binder takes spares from the Decks binder last
 - 1.110 (2026-11-22): Sort Done and trade binder Apply fast, show progress, survive leaving the screen

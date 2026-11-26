@@ -199,6 +199,13 @@ data class SaltCombo(
     val zones: List<String> = emptyList(),
     /** The mana the whole combo needs, e.g. "{4}{W}". Since 1.120. */
     val manaNeeded: String? = null,
+    /** The cards whose entering (not casting) starts the combo, so a blink works too. Since 1.121 (rating version 5). */
+    val reenters: List<String> = emptyList(),
+    /**
+     * Per card, in the order of [cards]: the card it has to be exiled by ("Isochron Scepter"), or "" when none. Since
+     * 1.121.
+     */
+    val exiledBy: List<String> = emptyList(),
 ) {
     /** How many pieces it needs: its cards and the "any card of this kind" pieces. */
     val pieces get() = cards.size + extras.size

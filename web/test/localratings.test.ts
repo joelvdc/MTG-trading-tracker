@@ -42,6 +42,8 @@ function combo(id: string, cards: string[], features: string[], over: Partial<Sp
     easyPrerequisites: "",
     bracketTag: null,
     manaNeeded: "",
+    steps: "",
+    exiledBy: cards.map(() => ""),
     salt: null,
     ...over,
   };
@@ -303,6 +305,25 @@ describe("effects, lists and combos", () => {
     expect(s.manaNeeded).toBe("{3}");
   });
 
+  it("keeps the cards that re-enter and the card others must be exiled by", () => {
+    const cards = [card("Ondu Spiritdancer"), card("Dramatic Reversal")];
+    const c = combo("abc", ["Ondu Spiritdancer", "Dramatic Reversal"], ["Win the game"], {
+      zones: ["H", "E"],
+      exiledBy: ["", "Isochron Scepter"],
+      steps: "Cast Ondu Spiritdancer by paying {4}{W}.\nWhen Ondu Spiritdancer enters, it triggers, making a token copy.",
+    });
+    const s = rateDeck(cards, facts({}), [c], null).combos[0];
+    // Only Ondu must start off the battlefield and has a step saying it enters.
+    expect(s.reenters).toEqual(["Ondu Spiritdancer"]);
+    expect(s.exiledBy).toEqual(["", "Isochron Scepter"]);
+  });
+
+  it("leaves those keys away when a combo has neither", () => {
+    const s = rateDeck([card("A"), card("B")], facts({}), [combo("d", ["A", "B"], ["Infinite mana"])], null).combos[0];
+    expect("reenters" in s).toBe(false);
+    expect("exiledBy" in s).toBe(false);
+  });
+
   it("labels each feature once per combo", () => {
     const cards = [card("A"), card("B")];
     const r = rateDeck(cards, facts({}), [combo("d", ["A", "B"], ["Infinite creature tokens", "Infinite creature tokens", "Win the game"])], null);
@@ -452,8 +473,8 @@ describe("tutors", () => {
 });
 
 describe("the rating", () => {
-  it("says it's the app's, with rating version 4", () => {
-    expect(RATING_VERSION).toBe(4);
+  it("says it's the app's, with rating version 5", () => {
+    expect(RATING_VERSION).toBe(5);
     const r = rateDeck([card("Bear"), plains(1)], facts({}), [], null);
     expect(r.source).toBe("app");
     expect(r.version).toBe(4);
@@ -494,14 +515,22 @@ describe("decodeSalt", () => {
     expect(back.combos[0].wins).toBe(true);
   });
 
-  it("keeps the bracket tag, the zones and the mana a combo needs", () => {
-    const r = rateDeck([card("A"), card("B")], facts({}), [
-      combo("c", ["A", "B"], ["Win the game"], { bracketTag: "S", zones: ["H", "B"], manaNeeded: "{4}{W}" }),
+  it("keeps the bracket tag, the zones, the mana, the re-entering cards and the exiles", () => {
+    const r = rateDeck([card("Bear"), card("Sword of the Meek")], facts({}), [
+      combo("c", ["Bear", "Sword of the Meek"], ["Win the game"], {
+        bracketTag: "S",
+        zones: ["H", "B"],
+        manaNeeded: "{4}{W}",
+        exiledBy: ["", "Isochron Scepter"],
+        steps: "When Bear enters, draw a card.",
+      }),
     ], null);
     const c = decodeSalt(JSON.stringify(r))!.combos[0];
     expect(c.bracketTag).toBe("S");
     expect(c.zones).toEqual(["H", "B"]);
     expect(c.manaNeeded).toBe("{4}{W}");
+    expect(c.reenters).toEqual(["Bear"]);
+    expect(c.exiledBy).toEqual(["", "Isochron Scepter"]);
   });
 
   it("defaults them for Commander Salt's data", () => {
@@ -515,10 +544,12 @@ describe("decodeSalt", () => {
     expect(old.ratingVersion).toBeNull();
     expect(old.combos[0].manaValue).toBeNull();
     expect(old.combos[0].wins).toBeNull();
-    // Old data has no tag, zones or needed mana: the keys stay away.
+    // Old data has no tag, zones, needed mana, re-entering cards or exiles: the keys stay away.
     expect("bracketTag" in old.combos[0]).toBe(false);
     expect("zones" in old.combos[0]).toBe(false);
     expect("manaNeeded" in old.combos[0]).toBe(false);
+    expect("reenters" in old.combos[0]).toBe(false);
+    expect("exiledBy" in old.combos[0]).toBe(false);
   });
 });
 

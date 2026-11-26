@@ -8,7 +8,7 @@ package com.mtgtrader.data
  */
 object LocalRating {
     /** The rating's version: must equal the website's (web/src/lib/localratings.ts), which is kept in each rating's text. */
-    const val RATING_VERSION = 4
+    const val RATING_VERSION = 5
 
     /**
      * A short fingerprint of a deck's list, worked out exactly like the website's rating keeps it: one line per card in
