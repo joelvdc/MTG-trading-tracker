@@ -127,10 +127,11 @@ fun DecksScreen(nav: NavController) {
         if (!started) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
     }
 
-    // Decks whose rating is missing or stale for their list are rated again (shown as a job), once per visit.
+    // Decks whose rating is missing or stale for their list are rated again (shown as a job), once per visit, and since
+    // 1.122 their win turns worked out when missing or out of date.
     // (Decks imported before 1.8 learn when they last changed on Archidekt with "Update all decks".)
     LaunchedEffect(Unit) {
-        if (c.decks.ratingsStale()) c.decks.refreshRatings()
+        if (c.decks.ratingsStale() || c.decks.winTurnsStale()) c.decks.refreshRatings()
     }
 
     // A local deck deleted on its page can be brought back here (since 1.46).

@@ -2235,6 +2235,8 @@ object WinOddsCalc {
         games: Int = GAMES,
         turns: Int = TURNS,
         random: Random = Random(52),
+        // Asked between games: true stops the games and gives null (the deck page was left; since 1.122).
+        stop: () -> Boolean = { false },
     ): WinOdds? {
         val commanders = cards.filter { it.commander }
         val library = cards.filterNot { it.commander }
@@ -2279,7 +2281,7 @@ object WinOddsCalc {
         val threads = (0 until batches).map { b ->
             Thread {
                 try {
-                    results[b] = playBatch(games / batches + if (b < games % batches) 1 else 0, Random(seeds[b]), deck, leaders, own, plans, features, turns)
+                    results[b] = playBatch(games / batches + if (b < games % batches) 1 else 0, Random(seeds[b]), deck, leaders, own, plans, features, turns, stop)
                 } catch (e: Throwable) {
                     failed[b] = e
                 }
@@ -2287,6 +2289,7 @@ object WinOddsCalc {
         }
         threads.forEach { it.join() }
         failed.firstOrNull { it != null }?.let { throw it }
+        if (stop()) return null
         for (r in results.filterNotNull()) {
             for (t in 0..turns) {
                 won[t] += r.won[t]
@@ -2360,9 +2363,11 @@ object WinOddsCalc {
         plans: List<ComboPlan>,
         features: Features,
         turns: Int,
+        stop: () -> Boolean,
     ): Batch {
         val r = Batch(turns)
         repeat(count) {
+            if (stop()) return r
             val (hand, rest) = ManaOddsCalc.keepHand(deck, random) { it.mana }
             val game = Game(hand, rest.toMutableList(), leaders, own, plans, features)
             val turn = game.play(turns)
@@ -4897,8 +4902,11 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
             if (cards.isNotEmpty()) WinTurns.put(deckId, null)
             return null
         }
+        // Stopped when the one asking stops waiting (the deck page was left; since 1.122): nothing is kept then.
         val odds = kept(deckId, cards, identity, salt) ?: withContext(Dispatchers.Default) {
-            WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty())
+            val job = coroutineContext[kotlinx.coroutines.Job]
+            WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty(), stop = { job?.isActive == false })
+                .also { if (job?.isActive == false) throw kotlinx.coroutines.CancellationException("Win turn stopped") }
         }?.also { odds ->
             mutex.withLock {
                 val all = saved ?: mutableMapOf()
@@ -4922,13 +4930,13 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
 
     /**
      * Fills in the app's power level of [deck] when its win turn is kept from before (quick); false when it would have
-     * to be worked out. Since 1.66.
+     * to be worked out (a deck without cards or a commander has none to work out: true). Since 1.66.
      */
     suspend fun fillKept(deck: Deck): Boolean {
         val cards = db.cardInfoDao().deckStats(deck.archidektId)
         if (cards.none { it.commander }) {
             if (cards.isNotEmpty()) WinTurns.put(deck.archidektId, null)
-            return cards.isNotEmpty()
+            return true
         }
         val salt = SaltCard.decode(deck.saltCard)
         val odds = kept(deck.archidektId, cards, deck.colorIdentity, salt) ?: return false

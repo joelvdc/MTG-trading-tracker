@@ -906,6 +906,35 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/combo_flags.png", roborazziOptions = screenshotOptions)
     }
 
+    /** 1.122: the deck page's Combos section: every combo in the deck, those that count for the bracket first, with its Spellbook tag. */
+    @Test fun deckCombos() {
+        val combos = listOf(
+            com.mtgtrader.data.SaltCombo(
+                listOf("Ondu Spiritdancer", "Secret Arcade // Dusty Parlor"),
+                counts = true, results = listOf("infinite-etb", "infinite-tokens"), spellbookUri = "x", bracketTag = "S",
+            ),
+            com.mtgtrader.data.SaltCombo(
+                listOf("Devoted Druid", "Mikaeus, the Unhallowed", "Yawgmoth, Thran Physician"),
+                counts = true, results = listOf("win-game"), spellbookUri = "x", bracketTag = "R",
+            ),
+            com.mtgtrader.data.SaltCombo(
+                listOf("Arboreal Grazer", "Retreat to Coralhelm"),
+                extras = listOf("Man-Land that Enters Untapped"), counts = false, needsBoard = true, spellbookUri = "x", bracketTag = "C",
+            ),
+        )
+        compose.setContent {
+            MtgColors(dark = true) {
+                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
+                    Column(Modifier.padding(horizontal = 12.dp)) {
+                        com.mtgtrader.ui.StatsHeading("Combos · 3", folded = false) {}
+                        combos.forEach { com.mtgtrader.ui.ComboLine(null, it) {} }
+                    }
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/deck_combos.png", roborazziOptions = screenshotOptions)
+    }
+
     /** 1.118: "Show cards I own": green for the deck's printing, blue for another one, plain when not owned; both list styles. */
     @Test fun deckOwnedHighlight() {
         fun row(id: Long, name: String, eur: Double) = com.mtgtrader.data.DeckCardRow(

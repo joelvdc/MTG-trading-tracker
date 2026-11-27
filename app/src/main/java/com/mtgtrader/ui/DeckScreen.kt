@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,6 +78,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -404,14 +406,23 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         return if (row.item.gameChanger) t + BracketTag.GAME_CHANGER else t
     }
 
-    // When the deck can win (since 1.52): worked out with the commander odds, and again when the cards or combos change.
-    val win by produceState<com.mtgtrader.data.WinOdds?>(null, statCards, deck?.colorIdentity, saltCard, oddsWanted) {
-        val identity = deck?.colorIdentity
-        if (!oddsWanted || identity == null) return@produceState
+    // When the deck can win (since 1.52). Since 1.122 worked out once when the page opens and again with ↻ (winFor:
+    // what it was worked out for), not on every edit; the deck's card details or a new rating for the same list are
+    // taken in by themselves. Leaving the page stops it.
+    val winNow = deck?.colorIdentity?.takeIf { statCards.isNotEmpty() }?.let { WinInput(statCards, it, saltCard) }
+    var winFor by remember(deckId) { mutableStateOf<WinInput?>(null) }
+    LaunchedEffect(winNow) {
+        if (winNow != null && (winFor == null || winFor!!.sameList(winNow))) winFor = winNow
+    }
+    val winStale = winNow != null && winFor != null && winNow != winFor
+    val win by produceState<com.mtgtrader.data.WinOdds?>(null, winFor) {
+        val f = winFor ?: return@produceState
         value = null
-        value = c.winOdds.get(deckId, statCards, identity, saltCard)
+        value = runCatching { c.winOdds.get(deckId, f.cards, f.identity, f.salt) }.getOrElse { if (it is kotlinx.coroutines.CancellationException) throw it else null }
     }
     val tagged = remember(rows, saltCard) { rows.associate { it.item.id to tagsOf(it) }.filterValues { it.isNotEmpty() } }
+    // Every combo the deck has (since 1.122), those that count for the bracket first, for its own section.
+    val combos = remember(saltCard) { deckCombos(saltCard) }
     // Categories switched off in "Manage categories" (since 1.47): their cards go to one folded section at the bottom.
     val hiddenAll by c.settings.deckHidden.collectAsStateWithLifecycle()
     val hidden = hiddenAll[deckId].orEmpty().keys
@@ -865,13 +876,25 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                     }
                     item(key = "scores") {
                         val sum = rememberSaltSum(d.archidektId, archidektRows.size to archidektRows.sumOf { it.item.quantity })
-                        ScoresCard(d, sum, busy = job != null) {
+                        ScoresCard(d, sum, win, winStale, { winFor = winNow }, busy = job != null) {
                             if (!c.decks.rescore(deckId)) scope.launch { snackbar.showSnackbar("Wait for the current import to finish") }
                         }
                     }
                     if (archidektRows.isNotEmpty()) item(key = "legality") { LegalityCard(legality) }
                     if (tagged.isNotEmpty()) {
                         item(key = "bracketcards") { BracketSummary(tagged.values, saltCard?.allCombos.orEmpty(), onlyBracket) { onlyBracket = it } }
+                    }
+                    // The deck's combos (since 1.122), folded until opened, like the stats below.
+                    if (combos.isNotEmpty()) {
+                        val combosFolded = DeckStats.COMBOS !in statsOpen
+                        item(key = "combos_h") { StatsHeading("Combos · ${combos.size}", combosFolded) { toggleStats(DeckStats.COMBOS) } }
+                        if (!combosFolded) {
+                            itemsIndexed(combos, key = { i, _ -> "combo_$i" }) { _, combo ->
+                                Box(Modifier.padding(vertical = 4.dp)) {
+                                    ComboLine(null, combo) { uri -> runCatching { uriHandler.openUri(uri) } }
+                                }
+                            }
+                        }
                     }
                     // The stats and tokens, folded until opened (remembered for every deck).
                     val statsFolded = DeckStats.STATS !in statsOpen
@@ -897,7 +920,9 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                                 if (statCards.any { it.commander }) CommanderOddsCard(odds, statCards.count { it.oracleText == null })
                             }
                             item(key = "stats_win") {
-                                if (statCards.any { it.commander }) WinningCard(win, statCards.count { it.oracleText == null })
+                                if (statCards.any { it.commander }) Box(Modifier.alpha(if (winStale) 0.5f else 1f)) {
+                                    WinningCard(win, statCards.count { it.oracleText == null })
+                                }
                             }
                         }
                     }
@@ -1470,18 +1495,27 @@ private fun LegalityCard(legality: Legality?) {
 
 /** The deck's scores (since 1.116): its estimated bracket, its salt sum and the turn it wins by, then when it was rated. */
 @Composable
-private fun ScoresCard(deck: Deck, saltSum: SaltSum?, busy: Boolean, onRescore: () -> Unit) {
-    val win by rememberWinOdds(deck)
+private fun ScoresCard(
+    deck: Deck,
+    saltSum: SaltSum?,
+    win: com.mtgtrader.data.WinOdds?,
+    winStale: Boolean,
+    onRefreshWin: () -> Unit,
+    busy: Boolean,
+    onRescore: () -> Unit,
+) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.fillMaxWidth().padding(12.dp)) {
             Row(Modifier.fillMaxWidth()) {
                 ScoreColumn("Bracket", deck.bracket?.toString(), Brackets.name(deck.bracket), Modifier.weight(1f))
                 ScoreColumn("Salt", saltSum?.let { saltTotal(it.total) }, saltSum?.level, Modifier.weight(1f))
+                // Greyed with ↻ once the deck changed since it was worked out (since 1.122).
                 ScoreColumn(
                     "Wins by",
                     win?.label ?: if (deck.commanders.isBlank()) null else "…",
                     win?.firstWin?.let { "from turn $it" },
                     Modifier.weight(1f),
+                    onRefresh = onRefreshWin.takeIf { winStale && deck.commanders.isNotBlank() },
                 )
             }
             // When it was rated, with the refresh button on the same line.
@@ -1505,11 +1539,21 @@ private fun ScoresCard(deck: Deck, saltSum: SaltSum?, busy: Boolean, onRescore: 
 }
 
 @Composable
-private fun ScoreColumn(label: String, value: String?, caption: String?, modifier: Modifier = Modifier) {
+internal fun ScoreColumn(label: String, value: String?, caption: String?, modifier: Modifier = Modifier, onRefresh: (() -> Unit)? = null) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
-        Text(value ?: "—", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold)
-        Text(caption ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            value ?: "—", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.SemiBold,
+            color = if (onRefresh != null) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else Color.Unspecified,
+        )
+        if (onRefresh == null) {
+            Text(caption ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            // Out of date: worked out again on a tap (since 1.122).
+            IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Refresh, "Work out again", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
 
@@ -2054,11 +2098,12 @@ fun BracketTags(tags: Set<BracketTag>) {
 
 /**
  * One of the card's combos: the other cards, whether it counts for the bracket and what it does, with a
- * link to it on Commander Spellbook. Since 1.46.
+ * link to it on Commander Spellbook. Since 1.46. Since 1.122 also for the whole deck (no [cardName])
+ * and with its tag.
  */
 @Composable
-internal fun ComboLine(cardName: String, combo: SaltCombo, onOpen: ((String) -> Unit)?) {
-    val others = combo.cards.filter { SaltCard.key(it) != SaltCard.key(cardName) }
+internal fun ComboLine(cardName: String?, combo: SaltCombo, onOpen: ((String) -> Unit)?) {
+    val others = if (cardName == null) combo.cards else combo.cards.filter { SaltCard.key(it) != SaltCard.key(cardName) }
     Row(verticalAlignment = Alignment.Top) {
         Box(
             Modifier.padding(top = 5.dp).size(8.dp).clip(CircleShape)
@@ -2066,13 +2111,15 @@ internal fun ComboLine(cardName: String, combo: SaltCombo, onOpen: ((String) -> 
         )
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
+            val what = if (cardName == null) combo.piecesText(others) else "Combo with " + combo.piecesText(others)
             Text(
-                "Combo with " + combo.piecesText(others) + if (combo.needsBoard) " (needs more on the battlefield)" else "",
+                what + if (combo.needsBoard) " (needs more on the battlefield)" else "",
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
                 listOfNotNull(
                     if (combo.counts) "Counts for the bracket" else "Doesn't count for the bracket",
+                    combo.tagName,
                     combo.resultText.takeIf { it.isNotEmpty() },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.labelSmall,
@@ -2088,3 +2135,16 @@ internal fun ComboLine(cardName: String, combo: SaltCombo, onOpen: ((String) -> 
         }
     }
 }
+
+/**
+ * What the deck page's win turn was worked out from (since 1.122). [sameList]: the same lines (names, printings, counts,
+ * commanders), so only card details or the rating differ, which are taken in without a tap.
+ */
+internal data class WinInput(val cards: List<com.mtgtrader.data.StatsCard>, val identity: String, val salt: SaltCard?) {
+    private fun lines() = cards.map { listOf(it.name, it.scryfallId, it.quantity, it.commander) }.sortedBy { it.toString() }
+    fun sameList(other: WinInput) = identity == other.identity && lines() == other.lines()
+}
+
+/** The deck's combos for the Combos section (since 1.122): those that count for the bracket first, the rest after. */
+internal fun deckCombos(salt: SaltCard?): List<SaltCombo> =
+    salt?.allCombos.orEmpty().sortedBy { if (it.counts) 0 else 1 }

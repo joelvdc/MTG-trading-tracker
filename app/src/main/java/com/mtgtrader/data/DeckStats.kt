@@ -120,6 +120,8 @@ fun scryfallImage(id: String, size: String = "normal") = "https://cards.scryfall
 object DeckStats {
     const val STATS = "stats"
     const val TOKENS = "tokens"
+    /** The deck page's Combos section (since 1.122), folded until opened like the stats and tokens. */
+    const val COMBOS = "combos"
 
     private const val COLOURS = "WUBRGC"
     private val BASIC_TYPES = listOf("Plains", "Island", "Swamp", "Mountain", "Forest")

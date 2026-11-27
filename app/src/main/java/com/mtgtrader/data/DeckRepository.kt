@@ -193,7 +193,8 @@ class DeckRepository(
     /**
      * Checks every deck against Archidekt (one deck-list call per owner, plus the deck itself for decks not in a public
      * list) and reloads those changed there since they were imported; then rates every deck whose rating is out of
-     * date (see [LocalRating.stale]). Can be stopped between decks.
+     * date (see [LocalRating.stale]) and works out the win turns that are out of date (since 1.122). Can be stopped
+     * between decks.
      */
     fun updateAll(): Boolean = start(DeckJob(null, "Checking your decks on Archidekt…", canStop = true)) {
         // Decks imported before 1.8 learn when they last changed on Archidekt (until 1.78 done on opening the Decks tab).
@@ -220,18 +221,56 @@ class DeckRepository(
             }
         }
         val rated = rateStale()
+        val worked = workOutWinTurns()
         val parts = buildList {
             add(if (updated == 0) "All ${decks.size} decks are up to date" else "Updated $updated changed deck" + if (updated == 1) "" else "s")
             if (failed.isNotEmpty()) add("${failed.size} failed: ${failed.joinToString()}")
             if (rated > 0) add("rated $rated deck" + if (rated == 1) "" else "s")
+            if (worked > 0) add(winTurnsText(worked))
         }
         DeckJobResult(null, parts.joinToString(" · ") + if (stopRequested) " · stopped" else "")
     }
 
-    /** Rates every deck whose rating is out of date (see [LocalRating.stale]). Can be stopped between decks. Since 1.115. */
-    fun refreshRatings(): Boolean = start(DeckJob(null, "Rating decks…", canStop = true)) {
+    /**
+     * Rates every deck whose rating is out of date (see [LocalRating.stale]), then works out the win turns that are
+     * missing or out of date (since 1.122). Can be stopped between decks. Since 1.115.
+     */
+    fun refreshRatings(): Boolean = start(DeckJob(null, "Checking decks…", canStop = true)) {
         val rated = rateStale()
-        DeckJobResult(null, "Rated $rated deck" + (if (rated == 1) "" else "s") + if (stopRequested) " · stopped" else "")
+        val worked = workOutWinTurns()
+        val parts = buildList {
+            if (rated > 0 || worked == 0) add("Rated $rated deck" + if (rated == 1) "" else "s")
+            if (worked > 0) add(winTurnsText(worked))
+        }
+        DeckJobResult(null, parts.joinToString(" · ").replaceFirstChar { it.uppercase() } + if (stopRequested) " · stopped" else "")
+    }
+
+    private fun winTurnsText(n: Int) = "worked out $n win turn" + if (n == 1) "" else "s"
+
+    /** Shows every deck's win turn kept from before in the lists (quick; at app start, since 1.122). */
+    suspend fun fillKeptWinTurns() = dao.all().forEach { d -> runCatching { winOdds.fillKept(d) } }
+
+    /** Whether a deck (not retired) has no win turn kept for its current list, rating and simulator. Since 1.122. */
+    suspend fun winTurnsStale(): Boolean = dao.all().any { !it.retired && !winOdds.fillKept(it) }
+
+    /** The decks not retired whose win turn is missing or out of date, worked out one after the other; how many. */
+    private suspend fun workOutWinTurns(): Int {
+        val decks = dao.all().filter { !it.retired }
+        var worked = 0
+        for ((i, d) in decks.withIndex()) {
+            if (stopRequested) break
+            if (winOdds.fillKept(d)) continue
+            _job.value = DeckJob(d.archidektId, "Deck ${i + 1} of ${decks.size} · ${d.name}: win turn…", !stopRequested)
+            try {
+                winOdds.forDeck(d)
+                worked++
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // One deck that can't be played doesn't stop the others.
+            }
+        }
+        return worked
     }
 
     /** The decks not retired whose rating is out of date, rated one after the other; how many were rated. */
