@@ -58,9 +58,8 @@ describe("Blob files kept in memory (2026-11-27)", () => {
 
   it("counts the day's downloads and starts again the next day", async () => {
     const day = Date.UTC(2026, 10, 27, 12);
-    await countDownload("a", 100, day);
-    await countDownload("a", 50, day);
-    await countDownload("b", 10, day);
+    // At the same time, as a page reading several files does.
+    await Promise.all([countDownload("a", 100, day), countDownload("a", 50, day), countDownload("b", 10, day)]);
     expect(await blobDownloads(day)).toEqual({ day: "2026-11-27", count: 3, bytes: 160, files: { a: 2, b: 1 } });
     expect(await blobDownloads(day + 86_400_000)).toEqual({ day: "2026-11-28", count: 0, bytes: 0, files: {} });
     await countDownload("a", 5, day + 86_400_000);

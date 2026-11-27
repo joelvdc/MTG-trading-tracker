@@ -71,8 +71,16 @@ export interface BlobDownloads {
 
 const JOB = "blobdownloads";
 
+// Counts made at the same time (a page reading four files) would overwrite each other: one after the other.
+let counting: Promise<void> = Promise.resolve();
+
 /** Counts one download of [path] ([bytes]) for today; never fails the page. */
-export async function countDownload(path: string, bytes: number, now = Date.now()): Promise<void> {
+export function countDownload(path: string, bytes: number, now = Date.now()): Promise<void> {
+  counting = counting.then(() => addDownload(path, bytes, now));
+  return counting;
+}
+
+async function addDownload(path: string, bytes: number, now: number): Promise<void> {
   try {
     const store = accountStore();
     if (!store) return;
