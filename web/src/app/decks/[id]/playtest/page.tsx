@@ -81,8 +81,22 @@ function saveZoom(zoom: number): void {
 }
 
 /**
+ * A deck statistic's power and toughness (such as "3/3", or one side a star) split at its first "/" and trimmed, for
+ * the card's printed values. Each side stays undefined when it is missing or empty.
+ */
+function printedPT(text: string | null | undefined): { power?: string; toughness?: string } {
+  if (!text) return {};
+  const at = text.indexOf("/");
+  if (at < 0) return {};
+  const power = text.slice(0, at).trim();
+  const toughness = text.slice(at + 1).trim();
+  return { power: power === "" ? undefined : power, toughness: toughness === "" ? undefined : toughness };
+}
+
+/**
  * The deck's cards as the playtester's engine wants them: one entry per line (its quantity copies), with the type line
- * from the stats, the back face for a double-faced card, whether the front is a land, and the counters it enters with.
+ * from the stats, the back face for a double-faced card, whether the front is a land, the counters it enters with and its
+ * printed power and toughness.
  */
 function buildCards(view: Answer): { def: CardDef; quantity: number }[] {
   const out: { def: CardDef; quantity: number }[] = [];
@@ -104,6 +118,7 @@ function buildCards(view: Answer): { def: CardDef; quantity: number }[] {
         manaValue: row.cmc,
         isLand: front.split(/\s+/).includes("Land"),
         commander: row.commander,
+        ...printedPT(stat?.powerToughness),
         startCounters: startCounters({
           name: row.name,
           typeLine,

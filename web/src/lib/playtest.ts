@@ -20,6 +20,9 @@ export interface CardDef {
   manaValue: number;
   isLand: boolean;
   commander: boolean;
+  /** Printed power and toughness of the front face ("3", "*"), for a creature; missing when it has neither. */
+  power?: string;
+  toughness?: string;
   /** A token the player made up (no Scryfall card): drawn from these instead of a picture. */
   custom?: { colors: string[]; power: string; toughness: string; text: string };
   /** The counters it enters the battlefield with (loyalty, lore, defense, "enters with three +1/+1 counters"…). */
@@ -47,6 +50,8 @@ export interface CardInstance {
   flipped: boolean;
   faceDown: boolean;
   counters: Counter[];
+  /** The player's own power and toughness change (an anthem, a pump spell), added to the printed value; 0/0 is nothing. */
+  pt?: { power: number; toughness: number };
   /** Battlefield position in percent of the board (0–100); kept elsewhere too. */
   x: number;
   y: number;
@@ -142,6 +147,9 @@ export type Action =
   | { type: "flip"; id: string }
   | { type: "faceDown"; id: string }
   | { type: "counter"; id: string; kind: string; delta: number }
+  /** A power and toughness change of the player's own on a battlefield card, added to what it already is. */
+  | { type: "pt"; id: string; power: number; toughness: number }
+  | { type: "ptClear"; id: string }
   /** Several cards to the bottom of the library in a random order (one step). */
   | { type: "bottomRandom"; ids: string[] }
   | { type: "trackerAdd"; x: number; y: number; label?: string }
@@ -289,7 +297,7 @@ function cloneState(state: GameState): GameState {
   for (const zone of ZONE_IDS) zones[zone] = state.zones[zone].slice();
   const cards: Record<string, CardInstance> = {};
   for (const [id, card] of Object.entries(state.cards)) {
-    cards[id] = { ...card, counters: card.counters.map((c) => ({ ...c })) };
+    cards[id] = { ...card, counters: card.counters.map((c) => ({ ...c })), pt: card.pt ? { ...card.pt } : undefined };
   }
   return {
     ...state,
@@ -385,9 +393,10 @@ function moveCard(
     return `${card.def.name} left the battlefield and vanished.`;
   }
   if (from === "battlefield") {
-    // It is a new object now: untapped, no counters, face up and front side.
+    // It is a new object now: untapped, no counters or changes to its power and toughness, face up and front side.
     card.tapped = false;
     card.counters = [];
+    delete card.pt;
     card.flipped = false;
     card.faceDown = false;
   }
@@ -423,6 +432,52 @@ function enterWithCounters(card: CardInstance): string {
   if (start.length === 0) return "";
   card.counters = start.map((c) => ({ ...c }));
   return ` (${start.map((c) => `${c.amount} ${c.kind}`).join(", ")})`;
+}
+
+// ---------------------------------------------------------------------------------------------- power and toughness
+
+/** A change as the rules write it: "+1", "+0", "-2" (a plain hyphen, so it reads well in the log). */
+function signed(n: number): string {
+  return n < 0 ? `${n}` : `+${n}`;
+}
+
+/**
+ * A printed power or toughness with a change on it: a plain number adds up ("3" with +2 is "5"); anything else keeps its
+ * own text and shows the change after it ("*" with +2 is "*+2"), the way such values are written on cards. A card with no
+ * printed value at all shows the change alone, both sides signed ("+2/+0").
+ */
+function changedPT(printed: string, change: number): string {
+  const text = printed.trim();
+  if (/^[+-]?\d+$/.test(text)) return String(Number(text) + change);
+  if (text === "") return signed(change);
+  if (change === 0) return text;
+  return `${text}${signed(change)}`;
+}
+
+/**
+ * The power and toughness a card has now: its printed value, plus its +1/+1 and -1/-1 counters and the player's own
+ * change. `up` and `down` say whether either side ends above or below the printed value, for the badge's colour.
+ * Null when the card has no power and toughness at all and nothing changed it, or when it is face down.
+ */
+export function currentPT(card: CardInstance): { power: string; toughness: string; up: boolean; down: boolean } | null {
+  if (card.faceDown) return null;
+  const custom = card.def.custom;
+  const printedPower = (custom ? custom.power : card.def.power) ?? "";
+  const printedToughness = (custom ? custom.toughness : card.def.toughness) ?? "";
+  // +1/+1 and -1/-1 counters move both sides together; any other kind (loyalty, charge…) leaves them alone.
+  const plus = card.counters.filter((c) => c.kind === "+1/+1").reduce((sum, c) => sum + c.amount, 0);
+  const minus = card.counters.filter((c) => c.kind === "-1/-1").reduce((sum, c) => sum + c.amount, 0);
+  const counters = plus - minus;
+  const powerChange = counters + (card.pt?.power ?? 0);
+  const toughnessChange = counters + (card.pt?.toughness ?? 0);
+  const noPrinted = printedPower.trim() === "" && printedToughness.trim() === "";
+  if (noPrinted && powerChange === 0 && toughnessChange === 0) return null;
+  return {
+    power: changedPT(printedPower, powerChange),
+    toughness: changedPT(printedToughness, toughnessChange),
+    up: powerChange > 0 || toughnessChange > 0,
+    down: powerChange < 0 || toughnessChange < 0,
+  };
 }
 
 // ---------------------------------------------------------------------------------------------- a new game
@@ -888,6 +943,32 @@ export function act(game: Game, action: Action): Game {
         const gone = -action.delta;
         addLog(next, `Removed ${gone} ${action.kind} counter${gone === 1 ? "" : "s"} from ${name}${total > 0 ? ` (now ${total})` : ""}.`);
       }
+      return commit(game, next);
+    }
+
+    case "pt": {
+      // The player's own change, on top of the printed value and the counters (which currentPT adds up).
+      if (!playing || zoneOf(state, action.id) !== "battlefield") return game;
+      if (!Number.isInteger(action.power) || !Number.isInteger(action.toughness)) return game;
+      const before = state.cards[action.id].pt ?? { power: 0, toughness: 0 };
+      const power = before.power + action.power;
+      const toughness = before.toughness + action.toughness;
+      if (power === before.power && toughness === before.toughness) return game;
+      const next = cloneState(state);
+      const card = next.cards[action.id];
+      // Back to where it was printed (0/0 is no change at all, so nothing is kept).
+      if (power === 0 && toughness === 0) delete card.pt;
+      else card.pt = { power, toughness };
+      addLog(next, `${displayName(next, action.id)} gets ${signed(action.power)}/${signed(action.toughness)}.`);
+      return commit(game, next);
+    }
+
+    case "ptClear": {
+      if (!playing || zoneOf(state, action.id) !== "battlefield") return game;
+      if (!state.cards[action.id].pt) return game;
+      const next = cloneState(state);
+      delete next.cards[action.id].pt;
+      addLog(next, `${displayName(next, action.id)}'s power and toughness changes cleared.`);
       return commit(game, next);
     }
 
