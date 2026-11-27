@@ -2664,6 +2664,69 @@ details.menu > summary::-webkit-details-marker {
   color: var(--red-text);
 }
 
+/* A card's right-click menu (CardMenu): a small menu at the pointer on the deck page and its shared page, looking
+   like the drop-down menus, with the card's name at the top and the deck's own changes under a line. */
+.card-menu {
+  position: fixed;
+  z-index: 30;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--raised);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  padding: 4px;
+}
+
+.card-menu:focus-visible {
+  outline: none;
+}
+
+.card-menu .card-menu-head {
+  padding: 8px 10px 6px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.card-menu button,
+.card-menu a {
+  background: none;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.card-menu button:hover,
+.card-menu button:focus-visible,
+.card-menu a:hover,
+.card-menu a:focus-visible {
+  background: var(--surface);
+}
+
+.card-menu button.danger-text {
+  color: var(--red-text);
+}
+
+/* "Move to category ›": the deck's categories beside the menu, on its other side near the window's right edge. */
+.card-menu .card-menu-sub {
+  position: absolute;
+  top: -4px;
+  left: 100%;
+}
+
+.card-menu .card-menu-sub.flip-left {
+  right: 100%;
+  left: auto;
+}
+
 .line-picture {
   width: 200px;
   max-width: 60%;
@@ -4442,7 +4505,8 @@ button.multiselect-clear {
 
 /* Decks toolbar: search, Sort, ▼ and one Decks ▾ menu, New deck at the right (2026-11-15) */
 /* A line between groups of items in a menu (the Decks ▾ menu's Archidekt part and its retired-deck toggle). */
-.menu-items > hr.menu-sep {
+.menu-items > hr.menu-sep,
+.card-menu > hr.menu-sep {
   width: auto;
   margin: 4px 6px;
   border: 0;

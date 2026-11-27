@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useHoverCard } from "@/components/HoverCard";
+import { CardMenu } from "@/components/CardMenu";
 import { PrimerText } from "@/components/DeckNotes";
 import { Logo } from "@/components/Logo";
 import { duration, ordinal, outReasonLabel, winTypeLabel } from "@/lib/gameshared";
 import { format } from "@/lib/money";
-import type { SharedDeck, SharedPile, SharedPrices, SharedView, SharedWant } from "@/lib/shares";
+import type { SharedDeck, SharedDeckLine, SharedPile, SharedPrices, SharedView, SharedWant } from "@/lib/shares";
 
 type Answer = { state: "ok"; view: SharedView } | { state: "off" | "gone" | "unknown" } | { state: "error"; error?: string };
 
@@ -75,8 +76,19 @@ function SharedDeckView({ deck, prices }: { deck: SharedDeck; prices: SharedPric
   const hover = useHoverCard(true);
   const total = deck.sections.flatMap((s) => s.lines).reduce((n, l) => n + (l.unitEur ?? 0) * l.quantity, 0);
   const legal = deck.legality;
+  // A card's right-click menu (the long press of a touch screen too) and the short notice it leaves ("Copied…").
+  const [menu, setMenu] = useState<{ row: SharedDeckLine; x: number; y: number } | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   return (
     <div className="stack">
+      {notice && (
+        <div className="bar ok" role="status">
+          {notice}
+          <button className="link" onClick={() => setNotice(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
       <div className="card">
         <h1 className="share-title">{deck.name}</h1>
         <p className="muted">{deck.commanders}</p>
@@ -130,7 +142,16 @@ function SharedDeckView({ deck, prices }: { deck: SharedDeck; prices: SharedPric
                 </th>
               </tr>
               {s.lines.map((l, i) => (
-                <tr key={`${l.name}-${i}`} onMouseMove={hover.follow(l.image) as never} onMouseLeave={hover.hide}>
+                <tr
+                  key={`${l.name}-${i}`}
+                  onMouseMove={hover.follow(l.image) as never}
+                  onMouseLeave={hover.hide}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    hover.hide();
+                    setMenu({ row: l, x: e.clientX, y: e.clientY });
+                  }}
+                >
                   <td className="num">{l.quantity}</td>
                   <td>
                     {l.name}
@@ -148,6 +169,7 @@ function SharedDeckView({ deck, prices }: { deck: SharedDeck; prices: SharedPric
           ))}
         </table>
       </div>
+      {menu && <CardMenu row={menu.row} x={menu.x} y={menu.y} editable={false} onClose={() => setMenu(null)} onNotice={setNotice} onError={setNotice} />}
       {hover.picture}
     </div>
   );

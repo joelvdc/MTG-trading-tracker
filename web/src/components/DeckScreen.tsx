@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, formatDate, peek, remember } from "@/components/api";
+import { CardMenu } from "@/components/CardMenu";
 import { AddCardDialog, CategoriesDialog, ConfirmDialog, deckAction, LineDialog, NameDialog } from "@/components/DeckEditDialogs";
 import { CopyTextDialog, PasteCardsDialog } from "@/components/DeckTextDialogs";
 import { ComparePanel } from "@/components/ComparePanel";
@@ -147,6 +148,10 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const [sharing, setSharing] = useState(false);
   const [rz, setRz] = useState(false);
   const [line, setLine] = useState<string | null>(null);
+  // That window opened on the card's printings instead (the right-click menu's "Change printing").
+  const [lineChanging, setLineChanging] = useState(false);
+  // A card's right-click menu: the line it is for and where the pointer was.
+  const [menu, setMenu] = useState<{ row: DeckRow; x: number; y: number } | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
@@ -415,7 +420,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const cardLinks: PrimerCardLinks = {
     find: (name) => {
       const hit = view.rows.find((r) => !r.maybeboard && linkMatches(name, r.name)) ?? view.rows.find((r) => linkMatches(name, r.name));
-      return hit ? { open: () => setLine(hit.lineUid), picture: pictureOf(hit) } : null;
+      return hit ? { open: () => openLine(hit.lineUid), picture: pictureOf(hit) } : null;
     },
     follow: hover.follow,
     hide: hover.hide,
@@ -530,9 +535,16 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const dropClass = (key: string) =>
     dropAt?.key !== key || !drag ? "" : drag.kind === "cat" ? (dropAt.after ? " drop-after" : " drop-before") : " drop-into";
 
+  /** Opens a card's window, as a click on its line does (or straight on its printings, from the card's menu). */
+  function openLine(uid: string, printing = false) {
+    setLineChanging(printing);
+    setLine(uid);
+  }
+
   /**
    * What every view's line shares: opening it (or leaving select mode first), ticking it in select mode, the filter's
-   * classes and dragging it to another category. The hover picture follows the pointer in the list only.
+   * classes, dragging it to another category and its right-click menu (the long press of a touch screen opens that
+   * too). The hover picture follows the pointer in the list only.
    * [extraClass] is the card's own class (deck-row, the tile, the stack's card).
    */
   const lineProps = (r: DeckRow, extraClass: string) => {
@@ -550,8 +562,16 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
       role: "button",
       tabIndex: 0,
       title: selecting ? (chosen ? "Deselect this card" : "Select this card") : view.local && !view.readOnly ? "Change this card" : "This card",
-      onClick: () => (selecting ? toggleLine(r.lineUid) : (hover.hide(), setLine(r.lineUid))),
-      onKeyDown: (e: React.KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), selecting ? toggleLine(r.lineUid) : setLine(r.lineUid)),
+      onClick: () => (selecting ? toggleLine(r.lineUid) : (hover.hide(), openLine(r.lineUid))),
+      onKeyDown: (e: React.KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), selecting ? toggleLine(r.lineUid) : openLine(r.lineUid)),
+      // In select mode a right-click stays the browser's own (its menu, or nothing).
+      onContextMenu: selecting
+        ? undefined
+        : (e: React.MouseEvent) => {
+            e.preventDefault();
+            hover.hide();
+            setMenu({ row: r, x: e.clientX, y: e.clientY });
+          },
       ...(list ? { onMouseMove: hover.follow(pictureOf(r)), onMouseLeave: hover.hide } : {}),
     };
   };
@@ -1252,11 +1272,34 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           row={view.rows.find((r) => r.lineUid === line)!}
           layout={view.layouts?.[detailsId(view.rows.find((r) => r.lineUid === line)!)]}
           typeLine={typeLineOf.get(detailsId(view.rows.find((r) => r.lineUid === line)!))}
-          onClose={() => setLine(null)}
+          startChanging={lineChanging}
+          onClose={() => {
+            setLine(null);
+            setLineChanging(false);
+          }}
           onChanged={async (t) => {
             await reload(t);
             if (t) setLine(null);
           }}
+        />
+      )}
+      {menu && (
+        <CardMenu
+          row={menu.row}
+          view={view}
+          x={menu.x}
+          y={menu.y}
+          editable={view.local && !view.readOnly}
+          onClose={() => setMenu(null)}
+          onOpen={() => openLine(menu.row.lineUid)}
+          onChangePrinting={() => openLine(menu.row.lineUid, true)}
+          onSelect={() => {
+            setSelecting(true);
+            if (!selected.has(menu.row.lineUid)) toggleLine(menu.row.lineUid);
+          }}
+          onChanged={(t) => void reload(t)}
+          onNotice={setNotice}
+          onError={setError}
         />
       )}
       {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
