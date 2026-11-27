@@ -5,21 +5,11 @@ import { useEffect, useState } from "react";
 import type { CardUse } from "@/lib/decks";
 import { recFacts, type RecCard, type RecSource } from "@/lib/recshared";
 import { api } from "./api";
-import { cardmarketUrlFor, cardtraderUrlFor } from "./cardLinks";
+import { cardmarketUrlFor, cardtraderUrlFor, edhrecUrlFor } from "./cardLinks";
 import { CardRulesTabs } from "./CardRules";
 import { Dialog } from "./Dialog";
 import { FlipPicture } from "./FlipPicture";
 import { addKey, type RecDeck, type RecTarget } from "./RecTiles";
-
-/** The card's page on EDHREC (the app's RecCardDialog link). */
-function edhrecCardSlug(name: string): string {
-  return name
-    .split(" // ")[0]
-    .toLowerCase()
-    .replace(/[^a-z0-9 -]/g, "")
-    .trim()
-    .replace(/[ -]+/g, "-");
-}
 
 /**
  * A recommended card's window (the app's RecCardDialog), near-full-screen: its picture, what the source says,
@@ -134,7 +124,7 @@ export function RecCardDialog({
             <button className="btn small-btn" disabled={busy || onWishlist || readOnly} onClick={() => onSend("wish", null)}>
               {adding === addKey("wish", null, rec.name) ? "Adding…" : onWishlist ? "★ On the wishlist" : "☆ Add to wishlist"}
             </button>
-            <a className="btn small-btn" href={`https://edhrec.com/cards/${edhrecCardSlug(rec.name)}`} target="_blank" rel="noreferrer">
+            <a className="btn small-btn" href={edhrecUrlFor(rec.name)} target="_blank" rel="noreferrer">
               EDHREC ↗
             </a>
             <a className="btn small-btn" href={cardmarketUrlFor(card, false)} target="_blank" rel="noreferrer">

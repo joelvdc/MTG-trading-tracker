@@ -39,8 +39,8 @@ export async function deckAction(
   return { error: r.data.error ?? "That did not work." };
 }
 
-/** The categories cards can be moved to, Commander and Maybeboard included. */
-function targets(view: DeckView): string[] {
+/** The categories cards can be moved to, Commander and Maybeboard included (the card menu's list too). */
+export function categoryTargets(view: DeckView): string[] {
   const names = view.categories.map((c) => c.name);
   for (const n of [COMMANDER, MAYBEBOARD]) if (!names.some((x) => x.toLowerCase() === n.toLowerCase())) names.push(n);
   return names;
@@ -48,7 +48,7 @@ function targets(view: DeckView): string[] {
 
 function CategoryPicker({ view, value, onChange, allowAuto, autoLabel }: { view: DeckView; value: string; onChange: (v: string) => void; allowAuto: boolean; autoLabel: string }) {
   const [newName, setNewName] = useState("");
-  const list = targets(view);
+  const list = categoryTargets(view);
   const choice = value === AUTO || list.includes(value) ? value : NEW;
   return (
     <div className="stack">
@@ -234,6 +234,7 @@ export function LineDialog({
   row,
   layout,
   typeLine,
+  startChanging,
   onClose,
   onChanged,
 }: {
@@ -242,6 +243,8 @@ export function LineDialog({
   /** Scryfall's layout and type line of the line's card, to know whether it has a back face (Flip). */
   layout?: string | null;
   typeLine?: string | null;
+  /** Opens straight in the printings, as the card menu's "Change printing" does. */
+  startChanging?: boolean;
   onClose: () => void;
   onChanged: (notice: string | null) => void;
 }) {
@@ -250,7 +253,7 @@ export function LineDialog({
   const cardCombos = view.salt ? allCombos(view.salt).filter((c) => c.cards.some((n) => saltKey(n) === saltKey(row.name))) : [];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [changing, setChanging] = useState(false);
+  const [changing, setChanging] = useState(startChanging === true);
   const editable = view.local && !view.readOnly;
 
   async function run(body: Record<string, unknown>, notice: string | null) {
