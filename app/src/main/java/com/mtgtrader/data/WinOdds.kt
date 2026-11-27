@@ -206,9 +206,10 @@ object WinOddsCalc {
      * spell's basic of one colour (1.77). 14: Commander Spock's top card cast for free or put in as a land (1.117).
      * 15: combo pieces' starting zones and the mana a combo needs (1.120). 16: every starting zone, blinking a must-enter
      * piece, graveyard prerequisites; "exile target creature you control, then return it" and "up to one other target"
-     * read as flicker (1.121).
+     * read as flicker (1.121). 17: landfall choose-one, Landers, station, creature lands and the other 1.124 reading
+     * fixes (1.124).
      */
-    const val VERSION = 16
+    const val VERSION = 17
 
     private const val OPPONENTS = 3
     private const val LIFE = 40
@@ -373,6 +374,11 @@ object WinOddsCalc {
             "|target (?:player|opponent) ${ALSO}loses (\\d+|x) life",
         RegexOption.IGNORE_CASE,
     )
+    /**
+     * "Any number of target opponents each sacrifice … and lose 3 life" (Will of the Abzan): each opponent, not one; the
+     * life loss can sit anywhere in the sentence. Since 1.124.
+     */
+    private val targetOpponentsEach = Regex("target opponents each [^.]*?\\blose (\\d+|x) life", RegexOption.IGNORE_CASE)
     private val manaValueDamage = Regex("(?:deals? damage|loses life) equal to (?:that spell's|its) mana value", RegexOption.IGNORE_CASE)
     private val castTrigger = Regex(
         "whenever (you|a player) casts? (your first spell each turn|their first spell each turn|a spell|an instant or sorcery spell|a noncreature spell|a creature spell)",
@@ -450,6 +456,22 @@ object WinOddsCalc {
     private val equippedAttack = Regex("^whenever equipped creature attacks", I)
     private val youAttack = Regex("^whenever you attack(?: with one or more ([a-z]+?)s?)?(?: a player)?,", I)
     private val landfallCounters = Regex("put a \\+1/\\+1 counter on each ([a-z]+) (?:creature )?you control", I)
+    /** Amanda Grayson, Syndicate Liquidators: "put two +1/+1 counters on target creature you control". Since 1.124. */
+    private val landfallTargetCounters = Regex("put (\\w+) \\+1/\\+1 counters? on target creature you control", I)
+    /** Lotus Cobra: "add one mana of any color". Since 1.124. */
+    private val landfallMana = Regex("add (\\w+) mana of any colou?r", I)
+    /** Starship Enterprise: charge counters for each land entering. Since 1.124. */
+    private val landfallChargeText = Regex("put (\\w+) charge counters? on", I)
+    /** U.S.S. Farragut: a creature card from the hand with haste for the turn, then a card. Since 1.124. */
+    private val landfallSneakText = Regex(
+        "you may put a creature card from your hand onto the battlefield\\. that creature gains haste\\. " +
+            "at the beginning of the next end step, put it on the bottom of your library",
+        I,
+    )
+    /** A Spacecraft's threshold: "It's an artifact creature at 8+". Since 1.124. */
+    private val stationCreatureText = Regex("it's an artifact creature at (\\d+)\\+", I)
+    /** A Station card's gated line, "8+ | Flying" or just "8+". Since 1.124. */
+    private val stationGate = Regex("^(\\d+)\\+\\s*(?:\\|\\s*(.*))?$", I)
     private val attachOnEnter = Regex("when [^,]+ enters, attach (?:up to one )?target equipment you control to it", I)
     private val attachEntering = Regex("whenever [^,]* or another equipment you control enters, you may attach that equipment", I)
     private val equipLess = Regex("equip abilities you activate of other equipment cost \\{(\\d)\\} less", I)
@@ -493,6 +515,12 @@ object WinOddsCalc {
     )
     private val copyArtifactToken = Regex("create a token that's a copy of (?:up to one )?target artifact token you control", I)
     private val copyExiled = Regex("create a token that's a copy of the exiled card", I)
+    /** Coiling Rebirth: the gift promised, a 1/1 copy of the creature it brought back. Since 1.124. */
+    private val reanimateCopyText = Regex("if the gift was promised and that creature isn't legendary, create a token that's a copy of that creature", I)
+    /** Saw in Half: the creature's controller makes two half copies of it. Since 1.124. */
+    private val sawInHalfText = Regex("destroy target creature\\. if that creature dies this way, its controller creates two tokens that are copies of that creature", I)
+    /** Planar Genesis: the top cards looked at, a land of them onto the battlefield tapped. Since 1.124. */
+    private val digLandText = Regex("look at the top (\\w+) cards of your library\\. you may put a land card from among them onto the battlefield tapped", I)
     private val topFreeText = Regex("reveal the top card of your library\\. you may cast that card without paying its mana cost if that spell's mana value is equal to or less than the number of differently named lands you control")
     private val polymorph = Regex("reveals? cards from the top of (?:your|their) library until (?:you|they) reveal (a creature|that many creature)", I)
     private val doubleStrikeFor = Regex("([a-z]+?)s? you control gain double strike", I)
@@ -533,6 +561,8 @@ object WinOddsCalc {
         "search your library( and/or graveyard)? for an? ((?:non-?)?[a-z]+ )?creature card with mana value x or less and put it onto the battlefield", I,
     )
     private val modeHeader = Regex("(?:^|, )choose (one|two) —$", I)
+    /** A "choose one" (or two, or more) under a trigger, its ability word ("Landfall — ") kept. Since 1.124. */
+    private val triggerModes = Regex("^((?:landfall — )?(?:when|whenever|at the beginning of)[^,]*, )choose (one|two|one or more) —$", I)
     private val secondMain = Regex("^at the beginning of your second main phase, (if you attacked this turn, )?(.*)$", I)
     private val eachUpkeepLine = Regex("^at the beginning of each upkeep, (.*)$", I)
     // Since 1.64: deaths, sacrifice outlets, -1/-1 counters and the rest of the 1.64 cards.
@@ -741,6 +771,12 @@ object WinOddsCalc {
          * differently named lands, put onto the battlefield tapped when it's a land, and else drawn.
          */
         var topFree = false
+        /** Planar Genesis (since 1.124): the number of top cards looked at, a land of them onto the battlefield tapped. */
+        var digLand = 0
+        /** Saw in Half (since 1.124): our nontoken creature dies and its controller makes two copies of it. */
+        var sawInHalf = false
+        /** Coiling Rebirth (since 1.124): a 1/1 token copy of the creature it brought back, unless it's legendary. */
+        var reanimateCopy = false
 
         val graveyard get() = mill + surveil + lootDiscard + reanimate + toHand + exileGraveyard + flicker > 0 || copyExiled || landBack || thatMany
         val copying get() = copies + polymorph + populate > 0 || copyArtifactToken || copyExiled || copyFromGraveyard || copyArtifact
@@ -748,12 +784,12 @@ object WinOddsCalc {
         private var frozen: Boolean? = null
         fun freeze() { frozen = null; frozen = any }
         val any: Boolean get() = frozen ?: anything()
-        private fun anything() = draw + drainEach + drainOne + tokens + artifacts + treasures + selfPump + teamPump + landRamp + sacrificeForToken > 0 ||
+        private fun anything() = draw + drainEach + drainOne + tokens + artifacts + treasures + selfPump + teamPump + landRamp + sacrificeForToken + digLand > 0 ||
                 graveyard || copying || doubleStrikeFor != null || drawPerEquipped || toBottom > 0 || made.isNotEmpty() ||
                 selfCounters + countersAll + countersTarget + countersHit + eachPlayerDraws + oppDraws > 0 || doubleCounters || tokensPer != null ||
                 drawPerCounters || copySelf || landFromHand || extraCombat || copyFromGraveyard || copyArtifact || populate > 0 ||
                 proliferate + poison + poisonTo + emblemAnthem > 0 || minusOwn + minusTarget + minusEach + minusOpp + amass > 0 || drawX ||
-                addMana.isNotEmpty() || cheapArtifact || topFree
+                addMana.isNotEmpty() || cheapArtifact || topFree || sawInHalf || reanimateCopy
     }
 
     /** What a card does in the game, read once per card from its type, power and rules text. */
@@ -903,6 +939,20 @@ object WinOddsCalc {
         var landfallTokens = 0
         var landfallToken: TokenKind? = null
         var landfallCounters: String? = null
+        /** Landfall counters on a creature of ours (Amanda Grayson: 2; since 1.124). */
+        var landfallTargetCounters = 0
+        /** Landfall mana of any colour (Lotus Cobra; since 1.124). */
+        var landfallMana = 0
+        /** Charge counters for each land entering (Starship Enterprise; since 1.124). */
+        var landfallCharge = 0
+        /** Landfall bringing a creature card from the hand with haste, for a card at the end (U.S.S. Farragut; since 1.124). */
+        var landfallSneak = false
+        /** The charge counters a Station needs to be an artifact creature (Exploration Broodship: 8; since 1.124). */
+        var stationCreature: Int? = null
+        /** The charge counters a Station needs for an extra land drop (Exploration Broodship: 3; since 1.124). */
+        var stationLands: Int? = null
+        /** A creature land's cost and the power it becomes (Mutavault: {1}, 2; since 1.124). */
+        var manland: Pair<ManaOddsCalc.Cost, Int>? = null
         var tokenDrain = 0
         var tokenBatchDrain = 0
         var dieDrain = 0
@@ -1116,7 +1166,9 @@ object WinOddsCalc {
                 activated.any { it.any } || (planeswalker && loyalties.isNotEmpty()) || lords.isNotEmpty() || pumps.isNotEmpty() ||
                 attackOverrun > 0 || overrunPerCreature || hasteFor != null || myriadFor != null || background > 0 || reducers.isNotEmpty() ||
                 treasuresOnce + treasuresTurn + treasuresLandfall > 0 || treasureDouble || treasureExtra || landfallTokens > 0 ||
-                landfallCounters != null || attachEntering || equipZero || equipLess > 0 || firstEquipFree || sneakCost != null ||
+                landfallCounters != null || landfallTargetCounters > 0 || landfallMana > 0 ||
+                landfallCharge > 0 || landfallSneak || stationCreature != null || stationLands != null || manland != null ||
+                attachEntering || equipZero || equipLess > 0 || firstEquipFree || sneakCost != null ||
                 xTokens > 0 || leaveToken != null || leaveDraw || castFromGraveyard != null || crucible || monument || discardToken > 0 ||
                 entersAsCopy || copyReanimated || onSecondDraw.any || onOppSecondDraw.any || oppDrawDrain > 0 || oppDrawTreasure ||
                 eachDrawStep > 0 || eachUpkeepDraws || eachUpkeep.any || onSecondSpell.any || onCast.isNotEmpty() || onCreatureEnter.any ||
@@ -1182,6 +1234,11 @@ object WinOddsCalc {
                 w.manaPerCost = ManaOddsCalc.cost(m.groupValues[1]).manaValue
             }
             if ("Saga" in w.subtypes) w.chapters = readChapters(w, landText)
+            // A creature land (Mutavault; since 1.124), and a Planet's Station thresholds.
+            for (line in landText.split('\n')) manlandText.find(line.trim())?.let { m ->
+                w.manland = ManaOddsCalc.cost(m.groupValues[1]) to m.groupValues[2].toInt()
+            }
+            readStation(w, landText)
             // A land's token ability (Mirrex, Castle Ardenvale; since 1.70).
             for (line in landText.split('\n')) landTapText.find(line.trim())?.let { m ->
                 val a = Ability()
@@ -1215,24 +1272,36 @@ object WinOddsCalc {
         w.toughness = c.powerToughness?.substringAfter('/', "")?.trim()?.toIntOrNull() ?: maxOf(1, w.power)
         if (w.planeswalker) w.loyalty = c.loyalty?.toIntOrNull() ?: (w.manaValue - 1).coerceAtLeast(1)
         // "Choose one" and "choose two": only the best modes (since 1.62; before, all of them added up).
-        val text = chooseModes(c, own, lands, comboKeys, front)
+        var text = chooseModes(c, own, lands, comboKeys, front)
+        // A Station card's "3+ | …" lines only count from that many charge counters on, so they're read apart and taken
+        // out of the text the rest of the card is read from (since 1.124).
+        readStation(w, text)?.let { kept -> text = kept.joinToString("\n") }
         // Animate Dead's "enchant creature card in a graveyard" brings a creature back: no gear (since 1.64).
         w.aura = "Aura" in type && "enchant creature" in text.lowercase() && "enchant creature card in a graveyard" !in text.lowercase()
         w.text = text.lowercase()
         // The modes under a trigger ("At the beginning of your first main phase, choose one or more — • …") are read with
-        // the trigger; a Class's later levels aren't counted (they cost more). Since 1.55.
+        // the trigger; a Class's later levels aren't counted (they cost more). Since 1.55. A "choose one" reads only its
+        // first mode that does something (since 1.124); the ability word ("Landfall — ") stays part of the trigger.
         var prefix = ""
+        var oneMode = false
+        var modesRead = 0
         val saga = "Saga" in w.subtypes
         for (raw in text.split('\n')) {
             val line = raw.trim()
             if ("Class" in w.subtypes && Regex("^(?:\\{[^}]+\\})+: level \\d", I).containsMatchIn(line)) break
             if (line.startsWith("•") && prefix.isNotEmpty()) {
+                if (oneMode && modesRead > 0) continue
+                val before = readScore(w)
                 readLine(w, prefix + line.removePrefix("•").trim().replace(Regex("^[^—:{]{1,40} — "), ""))
+                if (readScore(w) > before) modesRead++
                 continue
             }
             // A Saga's chapters are read apart (since 1.69).
             if (saga && chapterLine.containsMatchIn(line)) continue
-            prefix = Regex("^((?:when|whenever|at the beginning of)[^,]*, )choose (?:one|two|one or more) —$", I).find(line)?.groupValues?.get(1) ?: ""
+            val header = triggerModes.find(line)
+            prefix = header?.groupValues?.get(1) ?: ""
+            oneMode = header?.groupValues?.get(2)?.equals("one", true) == true
+            modesRead = 0
             // An instant's or sorcery's modes are read without their bullet (since 1.69: Akroma's Will, Jeska's Will).
             readLine(w, if (w.permanent) line else line.removePrefix("•").trim())
         }
@@ -1252,6 +1321,7 @@ object WinOddsCalc {
             }
         }
         readSacrifice(w, c.manaCost.orEmpty())
+        w.landfallSneak = landfallSneakText.containsMatchIn(w.text)
         w.leavesToken = leavesTokenText.find(w.text)?.groupValues?.get(1)?.toInt() ?: 0
         if ("gate card" in w.text && "search your library" in w.text) {
             when {
@@ -1275,6 +1345,44 @@ object WinOddsCalc {
         if (w.blightX) w.onEnter.minusOwn = 0
         w.abilities().forEach { it.freeze() }
         return w
+    }
+
+    /**
+     * A Station card (Exploration Broodship, Starship Enterprise; since 1.124): the charge counters it needs to be an
+     * artifact creature, and its "3+ | …" gated lines — an extra land drop and Flying (which only counts once it's a
+     * creature). A line that is just "8+" applies to the next one. Returns the lines with the gated ones taken out, so
+     * nothing reads them as always on; null when the card has no Station.
+     */
+    private fun readStation(w: WinCard, text: String): List<String>? {
+        val lines = text.split('\n')
+        if (lines.none { "Station (" in it }) return null
+        stationCreatureText.find(text)?.let { w.stationCreature = it.groupValues[1].toInt() }
+        val kept = ArrayList<String>()
+        var next = 0
+        for (raw in lines) {
+            val line = raw.trim()
+            val gate = stationGate.find(line)
+            if (gate != null) {
+                val n = gate.groupValues[1].toInt()
+                val rest = gate.groupValues[2].trim()
+                if (rest.isEmpty()) next = n else stationLine(w, n, rest)
+                continue
+            }
+            if (next > 0) {
+                stationLine(w, next, line)
+                next = 0
+                continue
+            }
+            kept += raw
+        }
+        return kept
+    }
+
+    /** A Station's gated line: its extra land drop, or Flying. Since 1.124. */
+    private fun stationLine(w: WinCard, n: Int, line: String) {
+        val low = line.lowercase()
+        if ("play an additional land" in low) w.stationLands = n
+        if (low.trim().trimEnd('.') == "flying") w.flying = true
     }
 
     /** Rituals and extra land drops (since 1.62). */
@@ -1366,6 +1474,8 @@ object WinOddsCalc {
 
     private val spreeMode = Regex("^\\+ ((?:\\{[^}]+\\})+) — (.*)$")
     private val landTapText = Regex("^((?:\\{[^}]+\\})+), \\{T\\}: Create (.*)$", I)
+    /** Mutavault: "{1}: This land becomes a 2/2 creature …" — its cost, then the power. Since 1.124. */
+    private val manlandText = Regex("^(\\{[^}]+\\}(?:\\{[^}]+\\})*): (?:until end of turn, )?this land becomes an? (\\d+)/\\d+ [^.]*creature", I)
 
     /**
      * A spree card (since 1.70) as the spell with the modes worth at least their extra mana (by [modeScore]; else the best
@@ -1422,9 +1532,14 @@ object WinOddsCalc {
         w.abilities().sumOf { a ->
             2 * a.draw + 3 * a.drainEach + a.drainOne + a.tokens * maxOf(1, a.token?.power ?: 1) + a.treasures + a.artifacts +
                 4 * a.reanimate.coerceAtMost(3) + 4 * a.copies + 3 * a.flicker + 2 * a.toHand + 2 * a.landRamp + a.made.values.sum() + a.proliferate +
-                // Since 1.70: spree and "dies" modes.
-                (if (a.extraCombat) 6 else 0) + a.lootDraw + 2 * a.countersAll
+                // Since 1.70: spree and "dies" modes. Since 1.124: Saw in Half's two copies, Planar Genesis's land.
+                (if (a.extraCombat) 6 else 0) + a.lootDraw + 2 * a.countersAll + (if (a.sawInHalf) 8 else 0) + 2 * a.digLand
         }
+
+    /** How much the card does so far, to tell whether a mode of a "choose one" trigger read as something. Since 1.124. */
+    private fun readScore(w: WinCard): Int = modeScore(w) + w.landfallTokens + w.landfallMana + w.landfallTargetCounters +
+        w.landfallProliferate + w.madeLandfall.values.sum() + w.enterTriggers.size + w.kindTriggers.size +
+        (if (w.landfallCounters != null) 1 else 0) + (if (w.landfallToken != null) 1 else 0)
 
     private val leavesTokenText = Regex("when (?:this \\w+|[^,.]+) is put into a graveyard from the battlefield, create (?:a|an) (?:tapped )?(\\d+)/\\d+")
 
@@ -1457,7 +1572,8 @@ object WinOddsCalc {
     /** What the win turn reads since 1.55 from the whole text. */
     private fun read55(w: WinCard, text: String) {
         val t = w.text
-        w.flying = Regex("^flying\\b", setOf(I, RegexOption.MULTILINE)).containsMatchIn(text)
+        // A Station's gated "8+ | Flying" counts too (since 1.124).
+        w.flying = w.flying || Regex("^flying\\b", setOf(I, RegexOption.MULTILINE)).containsMatchIn(text)
         w.myriad = Regex("^myriad\\b", setOf(I, RegexOption.MULTILINE)).containsMatchIn(text)
         if ("nonlegendary artifact creatures you control have myriad" in t) w.myriadFor = "artifact"
         backgroundPump.find(t)?.let { w.background = it.groupValues[1].toInt() }
@@ -1631,6 +1747,10 @@ object WinOddsCalc {
             if ("from a graveyard" !in low && "an opponent controls" !in low.substring(m.range.first).substringBefore('.')) a.copies += number(m.groupValues[1]) * (if (w.demonstrate) 2 else 1)
         }
         if (copyArtifactToken.containsMatchIn(low)) a.copyArtifactToken = true
+        // Since 1.124: Saw in Half's two copies, Coiling Rebirth's 1/1 copy of what came back, Planar Genesis's land.
+        if (sawInHalfText.containsMatchIn(low)) a.sawInHalf = true
+        if (reanimateCopyText.containsMatchIn(low)) a.reanimateCopy = true
+        digLandText.find(low)?.let { a.digLand = number(it.groupValues[1]) }
         if (Regex("create a token that's a copy of target artifact you control, except it's a 1/1").containsMatchIn(low)) a.copyArtifact = true
         if (Regex("\\bpopulate\\b").containsMatchIn(low)) a.populate += 1
         if (copyExiled.containsMatchIn(low) && "artifact token" in low) a.copyExiled = true
@@ -1821,17 +1941,28 @@ object WinOddsCalc {
                     w.landfallToken = tokenKind(line.substring(m.range.first))
                 }
                 landfallCounters.find(line)?.let { w.landfallCounters = it.groupValues[1] }
+                // Since 1.124: counters on a creature of ours, and the mana of any colour Lotus Cobra makes.
+                landfallTargetCounters.find(line)?.let { w.landfallTargetCounters = number(it.groupValues[1]) }
+                landfallMana.find(line)?.let { w.landfallMana = number(it.groupValues[1]) }
+                // Starship Enterprise's charge counters (since 1.124).
+                landfallChargeText.find(line)?.let { w.landfallCharge = number(it.groupValues[1]) }
             }
             return
         }
+        // "Any number of target opponents each sacrifice … and lose 3 life" drains each of them (since 1.124).
         val e = eachOpponent.find(line)
+        val each = if (e == null) targetOpponentsEach.find(line) else null
         val o = oneOpponent.find(line)
-        if (e != null || o != null) {
-            val n = if (e != null) number(e.groupValues[1].ifEmpty { e.groupValues[2] }) else number(o!!.groupValues[1].ifEmpty { o.groupValues[2] })
+        if (e != null || each != null || o != null) {
+            val n = when {
+                e != null -> number(e.groupValues[1].ifEmpty { e.groupValues[2] })
+                each != null -> number(each.groupValues[1])
+                else -> number(o!!.groupValues[1].ifEmpty { o.groupValues[2] })
+            }
             when {
                 n <= 0 -> Unit
-                recurring || tap -> if (e != null) w.drainTurn += n else w.oneTurn += n
-                once -> if (e != null) w.drainOnce += n else w.oneOnce += n
+                recurring || tap -> if (e != null || each != null) w.drainTurn += n else w.oneTurn += n
+                once -> if (e != null || each != null) w.drainOnce += n else w.oneOnce += n
             }
         }
         // "Then if you control three or more Deserts, create…": a condition the win turn can't check.
@@ -2443,6 +2574,10 @@ object WinOddsCalc {
         var hasteNow = false
         /** Sacrificed at the end of the turn (Sneak Attack). */
         var sacrificeAtEnd = false
+        /** Put on the bottom of the library at the end of the turn, for a card (U.S.S. Farragut; since 1.124). */
+        var bottomAtEnd = false
+        /** Charge counters on it, for Station (since 1.124). */
+        var charge = 0
         var loyalty = card?.loyalty ?: 0
         /** The card that goes to the graveyard (a Phyrexian Metamorph copying something stays a Metamorph). */
         var self: WinCard? = card
@@ -2486,9 +2621,12 @@ object WinOddsCalc {
         val animate = cards.any { it.animateClues > 0 || it.animateArtifacts > 0 }
         val pumps = cards.any { it.pumps.isNotEmpty() }
         val attack55 = cards.any { it.onAttack.any || it.onYouAttack.any || it.onKindAttack.any || it.attackOverrun > 0 }
-        val afterCombat = cards.any { it.onAnyHit.any || it.counteredHitDraw || it.onHit.any || it.postCombat.any || it.endDrawIfToken || it.monarch || it.sneakCost != null }
+        /** Since 1.124 also U.S.S. Farragut's creature, which goes at the end of the turn. */
+        val afterCombat = cards.any { it.onAnyHit.any || it.counteredHitDraw || it.onHit.any || it.postCombat.any || it.endDrawIfToken || it.monarch || it.sneakCost != null || it.landfallSneak }
         val clues = cards.any { it.onClueSac.any } || cards.any { c -> (c.madeOnce + c.madeTurn + c.madeLandfall).containsKey("clue") || c.abilities().any { it.made.containsKey("clue") } || c.kindTriggers.any { it.made.containsKey("clue") } }
         val mutagens = cards.any { c -> c.extraMutagen || (c.madeOnce + c.madeTurn + c.madeLandfall).containsKey("mutagen") || c.abilities().any { it.made.containsKey("mutagen") } || c.kindTriggers.any { it.made.containsKey("mutagen") } }
+        /** Landers, used for {2} and a basic land (since 1.124). */
+        val landers = cards.any { c -> (c.madeOnce + c.madeTurn + c.madeLandfall).containsKey("lander") || c.abilities().any { it.made.containsKey("lander") } || c.kindTriggers.any { it.made.containsKey("lander") } }
         val drawnBonus = cards.any { it.drawnAnthem || it.combatCountersDrawn || it.tapTwoDraw }
         val doubles = cards.any { it.attackersDouble || it.doubleCountered || it.background > 0 || it.attackDouble || it.targetedBonus > 0 }
         val graveyardCasts = cards.any { it.castFromGraveyard != null || it.selfFromGraveyard != null || it.flashbackCost != null }
@@ -2535,6 +2673,8 @@ object WinOddsCalc {
         var drawn = 0
         var turn = 0
         var spells = 0
+        /** The mana the lands that entered this turn made (Lotus Cobra; since 1.124), waiting to be added to the pool. */
+        var landfallManaNow = 0
         var byCombo = false
         /** Since 1.69: mana a Saga chapter adds this turn, and the abilities chapters grant, paid once the mana is there. */
         val chapterMana = ArrayList<Pair<Set<Char>, Int>>()
@@ -2583,6 +2723,8 @@ object WinOddsCalc {
         var extraCombat = false
         /** Cyberdrive Awakener's 4/4 artifacts this turn. */
         var animateNow = 0
+        /** Creature lands made creatures this turn (Mutavault; since 1.124). */
+        val manlands = ArrayList<Entry>()
 
         fun newTurn() {
             drawnThisTurn = 0
@@ -2859,8 +3001,24 @@ object WinOddsCalc {
                 makeAll(c.madeLandfall)
                 repeat(c.landfallTokens) { token(c.landfallToken?.power ?: 1, c.landfallToken) }
                 c.landfallCounters?.let { k -> board.filter { it.creature && it.isA(k) }.forEach { addCounters(it, 1) } }
+                // Since 1.124: counters on one of our creatures, and the mana Lotus Cobra makes.
+                if (c.landfallTargetCounters > 0) bestForCounters()?.let { addCounters(it, c.landfallTargetCounters) }
+                landfallManaNow += c.landfallMana
+                // Starship Enterprise's charge counters, and U.S.S. Farragut's creature from the hand (since 1.124).
+                if (c.landfallCharge > 0) b.charge += c.landfallCharge
+                if (c.landfallSneak) sneakFromHand()
                 proliferate(c.landfallProliferate)
             }
+        }
+
+        /**
+         * U.S.S. Farragut (since 1.124): the creature card worth most in the hand comes in with haste, goes to the bottom
+         * of the library at the end of the turn, and that draws a card.
+         */
+        fun sneakFromHand() {
+            val c = hand.filter { it.creature }.maxByOrNull { worth(it) }?.takeIf { worth(it) >= 3 } ?: return
+            hand.remove(c)
+            enter(c, cheated = true, haste = true).bottomAtEnd = true
         }
 
         /** A card with a new name, of what [want] picks, from the library into the hand. */
@@ -3009,6 +3167,9 @@ object WinOddsCalc {
                 (!a.reanimateSacrifice || board.any { it.creature && it.card !in leaders }) ||
                 a.flicker > 0 && board.any { e -> e.creature && !e.token && e.card?.let { enterWorth(it) >= 3 } == true } ||
                 a.copies > 0 && board.any { e -> e.creature && e.card?.let { worth(it) >= 4 } == true } ||
+                // Since 1.124: Saw in Half needs a creature worth bringing back twice, Planar Genesis a card to look at.
+                a.sawInHalf && board.any { e -> e.creature && !e.token && e.card?.let { enterWorth(it) >= 3 } == true } ||
+                a.digLand > 0 ||
                 a.polymorph > 0 && board.count { it.creature && it.token } >= (if (a.polymorph == ALL) 2 else 1) ||
                 a.toHand > 0 && graveyard.any { toHandOk(it, a.toHandKind) } ||
                 a.lootDraw + a.mill + a.surveil > 0 || a.sacrificeForToken > 0 ||
@@ -3139,11 +3300,51 @@ object WinOddsCalc {
             leftGraveyard(ok)
             val back = ok.map { enter(it, cheated = true) }
             if (a.reanimateAsOne) back.forEach { it.power = 1; it.toughness = 1 }
+            // Coiling Rebirth (since 1.124): a 1/1 copy of what came back (the power is left as it was), unless legendary.
+            if (a.reanimateCopy) back.firstOrNull { it.card?.legendary != true }?.card?.let { enter(it, cheated = true, token = true) }
             if (back.isNotEmpty() && board.any { it.card?.copyReanimated == true }) back.maxByOrNull { e -> e.card?.let { worth(it) } ?: 0 }?.card?.let { enter(it, cheated = true, token = true) }
         }
 
         /** An attacker's toxic, its own and its gear's (since 1.69). */
         fun toxic(b: Entry) = b.toxic + b.gear.sumOf { it.gearToxic }
+
+        /**
+         * Station (since 1.124): creatures tap to put charge counters equal to their power on a Spacecraft or Planet that
+         * still needs some — the ones that can't attack this turn first, then the weakest attackers when that reaches the
+         * next threshold this turn and (for a Spacecraft turning into a creature) it hits at least as hard as they would.
+         */
+        fun station(t: Int) {
+            for (e in board.toList()) {
+                val c = e.card ?: continue
+                val asCreature = c.stationCreature
+                val asLands = c.stationLands
+                if (asCreature == null && asLands == null) continue
+                val next = listOfNotNull(asCreature, asLands).filter { e.charge < it }.minOrNull() ?: continue
+                fun canAttack(o: Entry) = o.turn < t || hasHaste(o)
+                fun fodder(o: Entry) = o !== e && o.creature && o.tapped != t && o.power + o.counters > 0 && o.stun == 0
+                for (o in board.filter { fodder(it) && !canAttack(it) }.sortedBy { it.power + it.counters }) {
+                    o.tapped = t
+                    e.charge += o.power + o.counters
+                }
+                if (e.charge < next) {
+                    var sum = e.charge
+                    var lost = 0
+                    val chosen = ArrayList<Entry>()
+                    for (o in board.filter { fodder(it) && canAttack(it) }.sortedBy { gearPower(it).first }) {
+                        if (sum >= next) break
+                        chosen += o
+                        sum += o.power + o.counters
+                        lost += gearPower(o).first
+                    }
+                    if (sum >= next && (asCreature == null || e.power + e.counters >= lost)) chosen.forEach { o ->
+                        o.tapped = t
+                        e.charge += o.power + o.counters
+                    }
+                }
+                // It stays an artifact creature from then on (nothing turns it back like a crewed Vehicle).
+                if (asCreature != null && e.charge >= asCreature) e.creature = true
+            }
+        }
 
         /**
          * Vehicles (since 1.69): crewed by creatures that can't attack this turn first, then by the weakest attackers when
@@ -3259,6 +3460,7 @@ object WinOddsCalc {
             if (a.drawPerCounters && user != null) draw(user.counters)
             if (a.copySelf && user?.card != null) enter(user.card, cheated = true, token = true)
             if (a.topFree) topFree()
+            if (a.digLand > 0) digLand(a.digLand)
             if (a.landFromHand) hand.firstOrNull { it.land }?.let { l -> hand.remove(l); landOnto(l, tapped = true) }
             if (a.eachPlayerDraws > 0) { draw(a.eachPlayerDraws); life.indices.filter { life[it] > 0 }.forEach { oppDraw(it, a.eachPlayerDraws) } }
             if (a.oppDraws > 0) life.indices.firstOrNull { life[it] > 0 }?.let { oppDraw(it, a.oppDraws) }
@@ -3293,8 +3495,10 @@ object WinOddsCalc {
                 board += e
                 landEntered(e)
             }
-            repeat(a.flicker) { flickerBest() }
+            val blinked = HashSet<WinCard>()
+            repeat(a.flicker) { flickerBest(blinked) }
             repeat(a.copies) { copyBest() }
+            if (a.sawInHalf) sawInHalf()
             if (a.copyArtifact) copyArtifact()
             repeat(a.populate) { populate() }
             if (a.copyArtifactToken) board.filter { it.token && "Artifact" in it.types }
@@ -3520,6 +3724,16 @@ object WinOddsCalc {
         /** Approach of the Second Sun was cast (it went back into the library seventh from the top). */
         var approached = false
 
+        /**
+         * Planar Genesis (since 1.124): among the top [n] cards, a land onto the battlefield tapped; with none, a card
+         * drawn.
+         */
+        fun digLand(n: Int) {
+            val end = minOf(drawn + n, rest.size)
+            val i = (drawn until end).firstOrNull { rest[it].land }
+            if (i == null) draw(1) else landOnto(rest.removeAt(i), tapped = true)
+        }
+
         /** A ritual's mana: Mana Geyser's from half the opponents' lands (since 1.64). */
         fun ritualOf(r: WinCard): List<Pair<Set<Char>, Int>> =
             if (r.ritualOppLands) listOf(r.ritual.first().first to life.count { it > 0 } * (turn - 1) / 2) else r.ritual
@@ -3542,12 +3756,16 @@ object WinOddsCalc {
             return ((drawn until rest.size).map { rest[it] } + (if (c.xCreatureGraveyard) graveyard else emptyList())).filter(::ok).maxByOrNull { worth(it) }
         }
 
-        /** Exiles and returns the nontoken creature worth most on entering: its enter effects happen again. */
-        fun flickerBest() {
-            val e = board.filter { it.creature && !it.token && it.card != null }.maxByOrNull { enterWorth(it.card!!) }?.takeIf { enterWorth(it.card!!) > 0 } ?: return
+        /**
+         * Exiles and returns the nontoken creature worth most on entering: its enter effects happen again. A card in
+         * [done] isn't picked again (Ghostly Flicker blinks two different creatures; since 1.124).
+         */
+        fun flickerBest(done: MutableSet<WinCard>) {
+            val e = board.filter { it.creature && !it.token && it.card != null && it.card !in done }.maxByOrNull { enterWorth(it.card!!) }?.takeIf { enterWorth(it.card!!) > 0 } ?: return
             board.remove(e)
             e.source?.let { sources.remove(it) }
             board.filter { it.on === e }.forEach { g -> g.on = null; if (g.card?.aura == true) board.remove(g) }
+            done += e.card!!
             enter(e.card!!, cheated = true)
         }
 
@@ -3580,6 +3798,19 @@ object WinOddsCalc {
         fun copyBest() {
             val e = board.filter { it.creature && it.card != null }.maxByOrNull { worth(it.card!!) - if (it.card.legendary) 4 else 0 } ?: return
             enter(e.card!!, cheated = true, token = true)
+        }
+
+        /**
+         * Saw in Half (since 1.124): our nontoken creature that does most when it enters dies, and two token copies of it
+         * enter (their power is left as it was).
+         */
+        fun sawInHalf() {
+            val e = board.filter { it.creature && !it.token && it.card != null }.maxByOrNull { enterWorth(it.card!!) } ?: return
+            val card = e.card!!
+            if (enterWorth(card) < 3) return
+            died(e)
+            enter(card, cheated = true, token = true)
+            enter(card, cheated = true, token = true)
         }
 
         /** A basic land from a ramp effect (tapped or not), with landfall. */
@@ -3892,6 +4123,11 @@ object WinOddsCalc {
                 equipFreeUsed = false
                 extraCombat = false
                 animateNow = 0
+                // Lands entering this turn start with none of Lotus Cobra's mana made (since 1.124).
+                landfallManaNow = 0
+                // Creature lands turn back into lands (since 1.124).
+                manlands.forEach { it.creature = false; it.power = 0 }
+                manlands.clear()
                 newTurn()
                 // Depletion lands without counters left, and the lands sacrificed to Lotus Field, go (since 1.69).
                 board.filter { e -> e.source?.let { it.until < t } == true }.forEach { died(it) }
@@ -3923,10 +4159,11 @@ object WinOddsCalc {
                 var mazeSpent = 0
                 if (mazeDeck) maze(pool())?.let { mazeSpent = 3 }
                 if (byMaze) return t
-                landDrops = 1 + board.sumOf { it.card?.extraLands ?: 0 }
+                landDrops = 1 + board.sumOf { it.card?.extraLands ?: 0 } +
+                    board.count { e -> e.card?.stationLands?.let { e.charge >= it } == true }
                 playLand()
-                extraLands(emptyList())
-                var pool = pool() + chapterMana
+                // Lotus Cobra (since 1.124): the mana the lands that enter this turn make comes with them.
+                var pool = extraLands(pool()) + chapterMana
                 chapterMana.clear()
                 // An ability a chapter grants (Urza's Saga's Construct): its cost and the Saga's own mana for its {T}.
                 for ((a, e) in granted) if (e in board) ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(a.cost.generic + 1, a.cost.pips))?.let { pool = it; use(a, e) }
@@ -4076,7 +4313,8 @@ object WinOddsCalc {
                 }
                 // With Mirkwood Bats or Marionette Master: Treasures, Food and Maps sacrificed (since 1.61).
                 if (f.sacrificePayoffs) pool = sacrificeForPayoffs(pool)
-                // Mutagens and Clues with the mana left, Shimmer Dragon's draws (since 1.55).
+                // Mutagens and Clues with the mana left, Shimmer Dragon's draws (since 1.55); Landers too (since 1.124).
+                if (f.landers) pool = useLanders(pool)
                 if (f.mutagens) pool = useMutagens(pool)
                 if (f.clues) pool = crackClues(pool)
                 if (f.drawnBonus && board.any { it.card?.tapTwoDraw == true }) draw(minOf(4, spareArtifacts() / 2))
@@ -4087,6 +4325,16 @@ object WinOddsCalc {
                     !e.creature && e.isA("artifact") && !e.isA("land") && e.turn < t && (kelp > 0 && e.art == "clue" || animateNow > 0 && e.source == null && !manaToken(e))
                 }
                 animated.forEach { it.creature = true; it.power = if (kelp > 0 && it.art == "clue") kelp else animateNow }
+                // Creature lands (since 1.124): the mana left over makes them creatures for the turn, one more generic
+                // than their cost (their own mana is already in the pool).
+                for (e in board.filter { it.card?.manland != null && it.turn < t && it.tapped != t }) {
+                    val (cost, power) = e.card!!.manland!!
+                    pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(cost.generic + 1, cost.pips)) ?: continue
+                    e.creature = true
+                    e.power = power
+                    manlands += e
+                }
+                station(t)
                 val crewed = crew(t)
                 val attackers = board.filter { b ->
                     b.creature && b.tapped != t && b.stun == 0 && b.stunTurn != t && (b.turn < t || hasHaste(b))
@@ -4226,6 +4474,13 @@ object WinOddsCalc {
                     for (b in attackers) b.card?.let { c -> if (c.onHit.any) use(c.onHit, b, attackers) }
                     for (b in live) b.card?.let { c -> if (c.postCombat.any && (!c.postCombatNeedsAttack || fighters.isNotEmpty())) use(c.postCombat, b) }
                     board.filter { it.sacrificeAtEnd }.forEach { e -> board.remove(e); e.source?.let { sources.remove(it) }; left(e, artifact = "Artifact" in e.types) }
+                    // U.S.S. Farragut's creature goes to the bottom of the library, which draws a card (since 1.124).
+                    board.filter { it.bottomAtEnd }.forEach { e ->
+                        board.remove(e)
+                        e.source?.let { sources.remove(it) }
+                        e.self?.let { c -> rest += c }
+                        draw(1)
+                    }
                     if (tokensThisTurn) draw(live.count { it.card?.endDrawIfToken == true })
                     if (live.any { it.card?.monarch == true }) draw(1)
                 }
@@ -4304,6 +4559,21 @@ object WinOddsCalc {
         }
 
         /**
+         * Landers (since 1.124): {2}, {T}, sacrifice for a basic land onto the battlefield tapped, with landfall, with the
+         * mana left.
+         */
+        fun useLanders(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
+            var pool = start
+            for (e in board.filter { it.art == "lander" && it.tapped != turn }.toList()) {
+                pool = ManaOddsCalc.pay(pool, ManaOddsCalc.Cost(2, emptyList())) ?: break
+                board.remove(e)
+                left(e, artifact = true)
+                rampLand(own, tapped = true)
+            }
+            return pool
+        }
+
+        /**
          * Clues: {2}, sacrifice: draw a card, with the mana left (not with Tangletrove Kelp or Mechanized Production, which
          * want them). Tireless Tracker, Ulvenwald Mysteries and the like. Since 1.55.
          */
@@ -4371,6 +4641,7 @@ object WinOddsCalc {
             a.sacrificeForToken > 0 -> board.any { it.creature && it.card !in leaders && it.power < a.sacrificeForToken }
             a.flicker > 0 -> board.any { it.creature && !it.token && it.card?.let { c -> enterWorth(c) > 0 } == true }
             a.copies > 0 -> board.any { it.creature }
+            a.sawInHalf -> board.any { e -> e.creature && !e.token && e.card?.let { c -> enterWorth(c) >= 3 } == true }
             a.copyArtifact -> board.any { it.isA("artifact") && !it.isA("land") }
             else -> a.any
         }
@@ -4380,6 +4651,8 @@ object WinOddsCalc {
             a.lootDraw + a.mill / 2 + (if (a.reanimate > 0) reanimationWorth(a) else 0) + a.toHand * 2 +
             (if (a.copyExiled) graveyard.filter { it.creature || "Artifact" in it.types }.maxOfOrNull { worth(it) } ?: 0 else 0) +
             (if (a.copyArtifactToken) 2 else 0) + (if (a.polymorph > 0) 6 else 0) + a.copies * 4 + a.flicker * 3 +
+            // Since 1.124: Saw in Half's two copies, Planar Genesis's land or card.
+            (if (a.sawInHalf) 8 else 0) + 2 * a.digLand +
             (if (a.doubleStrikeFor != null) board.filter { it.creature && it.isA(a.doubleStrikeFor!!) }.sumOf { gearPower(it).first } else 0) +
             (if (a.sacrificeForToken > 0) a.sacrificeForToken - 1 else 0) + a.exileGraveyard * (if (board.any { it.card?.leaveToken != null }) 2 else 0) +
             (if (a.copyArtifact) 2 + (board.filter { it.card != null && it.isA("artifact") }.maxOfOrNull { artifactCopyWorth(it.card!!) } ?: 0) else 0) +
@@ -4639,13 +4912,17 @@ object WinOddsCalc {
         /** The lands still to play this turn: one, and more with Azusa, Exploration or Explore (since 1.62). */
         var landDrops = 0
 
-        /** Plays the extra land drops left, with the mana of those that come in untapped added to [start]. Since 1.62. */
+        /**
+         * Plays the extra land drops left, with the mana of those that come in untapped added to [start]. Since 1.62;
+         * since 1.124 also the mana Lotus Cobra and the like make for the lands that just entered.
+         */
         fun extraLands(start: List<Pair<Set<Char>, Int>>): List<Pair<Set<Char>, Int>> {
             var pool = start
             while (landDrops > 0 && (hand.any { it.land } || board.any { it.card?.crucible == true } && graveyard.any { it.land })) {
                 val s = playLand() ?: break
                 if (s.from <= turn) pool = pool + (s.colours to s.amount)
             }
+            if (landfallManaNow > 0) { pool = pool + (own.ifEmpty { setOf('C') } to landfallManaNow); landfallManaNow = 0 }
             return pool
         }
 

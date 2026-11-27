@@ -30,7 +30,7 @@ class Release1121Test {
 
     @Test fun ratingVersionAndPlan() {
         assertEquals(5, LocalRating.RATING_VERSION)
-        assertEquals(16, WinOddsCalc.VERSION)
+        assertEquals(17, WinOddsCalc.VERSION)
         val p = WinOddsCalc.plan(
             SaltCombo(
                 listOf("High Perfect Morcant", "Isochron Scepter", "Dramatic Reversal"), results = listOf("win-game"),
