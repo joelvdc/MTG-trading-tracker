@@ -100,6 +100,13 @@ data class Deck(
      * Since 1.97. Synced.
      */
     val history: String? = null,
+    /**
+     * The deck's snapshots, newest first, as [DeckSnapshots] JSON (see [DeckSnapshots.take]).
+     * Since 1.124. Synced. Kept when reloaded from Archidekt.
+     */
+    val snapshots: String? = null,
+    /** When the snapshots were last changed (ms). Since 1.124. Synced. Kept when reloaded from Archidekt. */
+    val snapshotsAt: Long? = null,
 ) {
     /** A deck made in the app (or detached from Archidekt), kept only here: its id is below zero. Since 1.46. */
     val local get() = archidektId < 0

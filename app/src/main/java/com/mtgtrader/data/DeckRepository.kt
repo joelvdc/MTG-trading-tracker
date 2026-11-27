@@ -395,8 +395,9 @@ class DeckRepository(
 
     /**
      * Fetches the list and saves it, keeping any scores from before until new ones arrive. The primer, the cards'
-     * notes and when they changed are kept; a deck without a primer takes Archidekt's description, and a reload of a
-     * deck that was already here adds what changed to its history (since 1.97).
+     * notes and when they changed are kept, and so are the snapshots (since 1.124); a deck without a primer takes
+     * Archidekt's description, and a reload of a deck that was already here adds what changed to its history (since
+     * 1.97).
      */
     private suspend fun load(id: Long, step: (String) -> Unit, fetched: ArchidektDeck? = null): Deck {
         val a = fetched ?: readDeck(id)

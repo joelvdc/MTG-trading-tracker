@@ -122,8 +122,9 @@ data class SyncFile(
          * maybeboard of decks from Archidekt (cards added in the app), which an older version drops on a reload.
          * 15 since 1.97: deck primer, card notes, notesAt and history; prefs cardTags and deckPackages.
          * 16 since 1.103: scans' purchasePrice, paidTyped and paidCurrency.
+         * 17 since 1.124: decks' snapshots and snapshotsAt, which an older version would write back without.
          */
-        const val FORMAT = 16
+        const val FORMAT = 17
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         /**
@@ -161,6 +162,8 @@ class SyncException(message: String) : Exception(message)
  * Since 1.97 the deck's primer, its cards' notes and when they changed come from whichever copy changed
  * them last ([Deck.notesAt]; none counts as older than any time, and on a tie the list's copy wins), so
  * notes made on either phone are kept. The history comes with the list's copy, like the cards.
+ * Since 1.124 the snapshots and when they changed come from whichever copy changed them last, the same
+ * way ([Deck.snapshotsAt]).
  */
 object DeckMerge {
     private val newerList = compareBy<SyncDeck>(
@@ -183,6 +186,8 @@ object DeckMerge {
         val sv = pick(d.svAt, o.svAt)
         // The primer and the card notes belong together: whichever copy changed them last wins (a tie keeps the list's).
         val notes = if ((o.notesAt ?: Long.MIN_VALUE) > (d.notesAt ?: Long.MIN_VALUE)) o else d
+        // The snapshots and when they changed belong together too, the same way.
+        val snaps = if ((o.snapshotsAt ?: Long.MIN_VALUE) > (d.snapshotsAt ?: Long.MIN_VALUE)) o else d
         val merged = d.copy(
             saltId = salt.saltId,
             powerLevel = salt.powerLevel,
@@ -203,6 +208,8 @@ object DeckMerge {
             primer = notes.primer,
             cardNotes = notes.cardNotes,
             notesAt = notes.notesAt,
+            snapshots = snaps.snapshots,
+            snapshotsAt = snaps.snapshotsAt,
             updatedAt = maxOf(d.updatedAt, o.updatedAt),
         )
         return SyncDeck(merged, list.cards)
