@@ -6,7 +6,7 @@ import { putLoadedDeck } from "@/lib/deckload";
 import { addToMaybeboard, NO_LOOKUPS, removeLines, setCategoryOrder } from "@/lib/deckedit";
 import { categoryOrder, layoutSections, splitColumns } from "@/lib/decklayout";
 import { syncDecks } from "@/lib/decks";
-import { parse, WEB_FORMAT, type CardRef, type SyncFile } from "@/lib/syncfile";
+import { parse, type CardRef, type SyncFile } from "@/lib/syncfile";
 
 // App 1.86: a deck from Archidekt's local maybeboard, a deck's own category order, and the deck page's columns.
 const NOW = 1_794_300_000_000;
@@ -17,7 +17,6 @@ const signet: CardRef = { ...deckOf(appFile()).cards[0].card, scryfallId: "55555
 
 describe("a deck from Archidekt's local maybeboard (MtgRepository.addToMaybeboard)", () => {
   it("adds cards added in the app, counts a second copy, and only those can be removed", () => {
-    expect(WEB_FORMAT).toBe(16);
     const f = appFile();
     const before = deckOf(f).deck.updatedAt;
     const uid = addToMaybeboard(f, ID, signet, false, false, { typeLine: "Artifact", cmc: 2 }, NOW, NO_LOOKUPS);

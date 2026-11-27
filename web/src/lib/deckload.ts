@@ -106,6 +106,8 @@ export function putLoadedDeck(file: SyncFile, r: ReadDeck, now: number): SyncDec
     categoryInfo: encodeCategories(a.categories.map((c) => ({ name: c.name, included: c.includedInDeck, id: c.id }))),
     updatedAt: bump(old?.updatedAt ?? 0, now),
   };
+  // Its primer, snapshots (and when they last changed) and change history come along from the spread above, as they do
+  // in the app: reloading the list keeps them.
   // A primer the user never set (null) comes from Archidekt's description, on a reload as on a first import; an empty
   // primer means the user cleared it, so it stays empty.
   if ((old?.primer ?? null) === null) {

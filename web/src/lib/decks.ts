@@ -4,6 +4,7 @@
 import { frontName } from "./collview";
 import { categories, included } from "./deckedit";
 import { parseHistory } from "./deckhistory";
+import { parseSnapshots } from "./decksnapshots";
 import { nameKey, parseCardNotes } from "./decknotes";
 import { roleCounts, tagsOf, type RoleCard, type RoleCount } from "./deckroles";
 import { recListKey } from "./recshared";
@@ -361,6 +362,7 @@ export function deckView(
     categories: categoriesOf(sd),
     primer: d.primer ?? null,
     history: parseHistory(d.history),
+    snapshots: parseSnapshots(d.snapshots),
     roles,
     myPrintings,
     currency: cur,

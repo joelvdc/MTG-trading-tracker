@@ -6,6 +6,7 @@
 // updatedAt); a local deck has no archidektUpdatedAt, so an edit wins by moving its updatedAt on, like the app's
 // database triggers do. Its lines are written whole; each keeps its lineUid.
 import { resolveFinish } from "./cards";
+import { cardsOf, deleteSnapshot, parseSnapshots, renameSnapshot, takeSnapshot } from "./decksnapshots";
 import { encodeCardNotes, MAX_NOTE, MAX_PRIMER, nameKey, parseCardNotes } from "./decknotes";
 import { isBasicName, primaryType, type Deck, type DeckCard, type SyncDeck } from "./deckshared";
 import { finishOf, type Finish } from "./pricing";
@@ -344,6 +345,40 @@ export function setCardNote(file: SyncFile, id: number, rawName: string, rawNote
   sd.deck.updatedAt = bump(sd.deck.updatedAt ?? 0, now);
 }
 
+// ---- Snapshots -----------------------------------------------------------------------------------------------------
+
+/** Takes a snapshot of the deck as it is now (DeckSnapshots.take, app 1.124): any deck, also one from Archidekt. */
+export function takeDeckSnapshot(
+  file: SyncFile,
+  id: number,
+  name: string,
+  extras: { bracket: number | null; winTurn: string | null; eur: number | null },
+  now: number,
+): void {
+  const sd = find(file, id);
+  sd.deck.snapshots = takeSnapshot(sd.deck.snapshots, now, name, cardsOf(sd.cards), extras.bracket, extras.winTurn, extras.eur);
+  sd.deck.snapshotsAt = now;
+  sd.deck.updatedAt = bump(sd.deck.updatedAt ?? 0, now);
+}
+
+/** Gives one of the deck's snapshots another name (DeckSnapshots.rename); any deck. */
+export function renameDeckSnapshot(file: SyncFile, id: number, snapId: string, name: string, now: number): void {
+  const sd = find(file, id);
+  if (!parseSnapshots(sd.deck.snapshots).some((s) => s.id === snapId)) throw new EditError("That snapshot isn't there any more.");
+  sd.deck.snapshots = renameSnapshot(sd.deck.snapshots, snapId, name);
+  sd.deck.snapshotsAt = now;
+  sd.deck.updatedAt = bump(sd.deck.updatedAt ?? 0, now);
+}
+
+/** Drops one of the deck's snapshots (DeckSnapshots.delete); any deck. */
+export function deleteDeckSnapshot(file: SyncFile, id: number, snapId: string, now: number): void {
+  const sd = find(file, id);
+  if (!parseSnapshots(sd.deck.snapshots).some((s) => s.id === snapId)) throw new EditError("That snapshot isn't there any more.");
+  sd.deck.snapshots = deleteSnapshot(sd.deck.snapshots, snapId);
+  sd.deck.snapshotsAt = now;
+  sd.deck.updatedAt = bump(sd.deck.updatedAt ?? 0, now);
+}
+
 function moved(sd: SyncDeck, uids: Set<string>, category: string, look: Lookups, skip: string | null = null): DeckCard[] {
   const info = categories(sd.deck.categoryInfo);
   return sd.cards.map((c) => {
@@ -669,6 +704,8 @@ export function newDeck(id: number, now: number, d: Partial<Deck>): Deck {
     cardNotes: null,
     notesAt: null,
     history: null,
+    snapshots: null,
+    snapshotsAt: null,
     ...d,
   };
 }
@@ -724,7 +761,7 @@ export function newEmptyDeck(file: SyncFile, name: string, now: number): number 
   return createDeck(file, name, [], "Made on the website", "", now, NO_LOOKUPS);
 }
 
-/** A local copy of any deck: its cards, categories and maybeboard, not its scores (DeckEditor.copyOf). */
+/** A local copy of any deck: its cards, categories and maybeboard, not its scores or its snapshots (DeckEditor.copyOf). */
 export function copyDeck(file: SyncFile, id: number, name: string, now: number): number {
   const src = find(file, id);
   return createDeck(file, name, src.cards, `Copy of ${src.deck.name}`, src.deck.colorIdentity, now, NO_LOOKUPS, {

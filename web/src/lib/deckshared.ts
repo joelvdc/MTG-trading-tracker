@@ -1,6 +1,7 @@
 // What the decks pages share between the server and the browser (no server-only code here): the app's deck types,
 // scores, bracket tags, grouping and the missing-cards plan. The server side is decks.ts.
 import type { HistoryEntry } from "./deckhistory";
+import type { Snapshot } from "./decksnapshots";
 import type { RoleCount } from "./deckroles";
 import type { Currency } from "./money";
 import type { PriceType } from "./prices";
@@ -53,6 +54,10 @@ export interface Deck {
   notesAt?: number | null;
   /** The change history as JSON, newest first (Deck.history, app 1.97); null when there is none. */
   history?: string | null;
+  /** The deck's snapshots as JSON, newest first (Deck.snapshots, app 1.124); null when there are none. */
+  snapshots?: string | null;
+  /** When the snapshots last changed (Deck.snapshotsAt, app 1.124); null when never. */
+  snapshotsAt?: number | null;
 }
 
 /** One line of a deck (DeckCard). */
@@ -657,6 +662,8 @@ export interface DeckView {
   primer: string | null;
   /** Its change history, newest first. */
   history: HistoryEntry[];
+  /** Its snapshots of the decklist, newest first. */
+  snapshots: Snapshot[];
   /** Lands and the roles under the deck header (DeckRoles.counts). */
   roles: RoleCount[];
   /** Whether the deck is shown in the printings you own (the app's "Show in my printings"). */

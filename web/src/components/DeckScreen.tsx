@@ -14,6 +14,7 @@ import { DeckFilterBox, useDeckFilter } from "@/components/DeckFilter";
 import { DeckTokens } from "@/components/DeckTokens";
 import { DeckGamesCard } from "@/components/DeckGamesCard";
 import { HistoryDialog } from "@/components/DeckHistory";
+import { SnapshotsDialog } from "@/components/DeckSnapshots";
 import { PrimerSection, type PrimerCardLinks } from "@/components/DeckNotes";
 import { PackagesDialog } from "@/components/DeckPackages";
 import { DeckRolesLine } from "@/components/DeckRolesLine";
@@ -159,6 +160,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const [primerEditing, setPrimerEditing] = useState(false);
   const [packagesOpen, setPackagesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [nameDialog, setNameDialog] = useState<"RENAME" | "COPY" | null>(null);
   const [confirm, setConfirm] = useState<"DELETE" | "DETACH" | "RETIRE" | null>(null);
   // Making the precon a deck of yours ("Make it my deck").
@@ -782,6 +784,8 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
   const notRated = "Not rated yet";
   /** The salt sum of every card in the deck, lands and basic lands included (lib/localratings.ts). */
   const saltSum = view.saltSum ?? null;
+  /** The win turn label as the scores show it, which a new snapshot keeps (the first estimate while it's worked out). */
+  const winTurnLabel = win.status === "done" ? (win.win?.label ?? null) : win.status === "working" ? (win.estimate?.label ?? null) : null;
   return (
     <>
       <TopBar page={precon ? "precons" : "decks"} folder={folder} />
@@ -958,6 +962,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
                     <button onClick={openPrimer}>Primer…</button>
                     <button onClick={() => setPackagesOpen(true)}>Packages…</button>
                     <button onClick={() => setHistoryOpen(true)}>Change history</button>
+                    <button onClick={() => setSnapshotsOpen(true)}>Snapshots</button>
                     {view.local && <button onClick={() => setNameDialog("RENAME")}>Rename</button>}
                     <button onClick={() => setNameDialog("COPY")}>Copy as a local deck</button>
                     {!view.local && <button onClick={() => setConfirm("DETACH")}>Make it a local deck</button>}
@@ -1305,6 +1310,21 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
       {catsOpen && <CategoriesDialog view={view} onClose={() => setCatsOpen(false)} onChanged={(t) => reload(t)} />}
       {packagesOpen && <PackagesDialog view={view} onClose={() => setPackagesOpen(false)} onChanged={(t) => reload(t)} />}
       {historyOpen && <HistoryDialog history={view.history} onClose={() => setHistoryOpen(false)} />}
+      {snapshotsOpen && (
+        <SnapshotsDialog
+          deckId={view.id}
+          deckName={d.name}
+          readOnly={view.readOnly}
+          snapshots={view.snapshots}
+          rows={view.rows}
+          bracket={bracket}
+          winTurn={winTurnLabel}
+          eur={shaped.value}
+          money={money}
+          onDone={(text) => void reload(text)}
+          onClose={() => setSnapshotsOpen(false)}
+        />
+      )}
       {addOpen && <AddCardDialog view={view} onClose={() => setAddOpen(false)} onChanged={(t) => reload(t)} />}
       {copyOpen && <CopyTextDialog deckId={view.id} hasMaybe={shaped.maybeCount > 0} onClose={() => setCopyOpen(false)} />}
       {pasteOpen && (
