@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   act,
   chanceByTurn,
+  currentPT,
   landOdds,
   newGame,
   rng,
@@ -1184,5 +1185,137 @@ describe("bottom of the library in random order", () => {
     expect(orders.size).toBeGreaterThan(1);
     const g = playing();
     expect(act(g, { type: "bottomRandom", ids: [library(g)[0]] })).toBe(g);
+  });
+});
+
+/** A printed 1/1, so what counters and changes do to it can be read off it. */
+const skullwinder = card("Skullwinder", { power: "1", toughness: "1" });
+
+/** A game of the usual deck with that creature in it, past the opening hand. */
+function ptPlaying(): Game {
+  const cards = [...deck(), { def: skullwinder, quantity: 1 }];
+  return act(newGame(cards, { seed: SEED, freeMulligan: true, drawOnFirstTurn: false }), { type: "keep" });
+}
+
+/** Skullwinder on the battlefield, from wherever the shuffle dealt it. */
+function snakeOnBoard(): { g: Game; id: string } {
+  const g = ptPlaying();
+  const id = idOf(g, "Skullwinder");
+  return { g: act(g, { type: "move", id, to: "battlefield" }), id };
+}
+
+describe("power and toughness changes", () => {
+  it("adds a change up, and 0/0 takes it away again", () => {
+    let { g, id } = snakeOnBoard();
+    g = act(g, { type: "pt", id, power: 2, toughness: 0 });
+    expect(g.state.cards[id].pt).toEqual({ power: 2, toughness: 0 });
+    expect(g.state.log.at(-1)?.text).toBe("Skullwinder gets +2/+0.");
+    g = act(g, { type: "pt", id, power: -1, toughness: 1 });
+    expect(g.state.cards[id].pt).toEqual({ power: 1, toughness: 1 });
+    expect(g.state.log.at(-1)?.text).toBe("Skullwinder gets -1/+1.");
+    const gone = act(g, { type: "pt", id, power: -1, toughness: -1 });
+    expect(gone.state.cards[id].pt).toBeUndefined();
+  });
+
+  it("keeps the change apart from the counters", () => {
+    let { g, id } = snakeOnBoard();
+    g = act(g, { type: "counter", id, kind: "+1/+1", delta: 2 });
+    g = act(g, { type: "pt", id, power: 1, toughness: -3 });
+    expect(g.state.cards[id].counters).toEqual([{ kind: "+1/+1", amount: 2 }]);
+    expect(g.state.cards[id].pt).toEqual({ power: 1, toughness: -3 });
+    // 1/1 printed, two +1/+1 counters, then the player's own +1/-3.
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "4", toughness: "0", up: true, down: true });
+  });
+
+  it("clears the change on request, and only once", () => {
+    let { g, id } = snakeOnBoard();
+    g = act(g, { type: "pt", id, power: 3, toughness: 3 });
+    const cleared = act(g, { type: "ptClear", id });
+    expect(cleared.state.cards[id].pt).toBeUndefined();
+    expect(cleared.state.log.at(-1)?.text).toBe("Skullwinder's power and toughness changes cleared.");
+    expect(act(cleared, { type: "ptClear", id })).toBe(cleared);
+  });
+
+  it("is cleared when the card leaves the battlefield", () => {
+    let { g, id } = snakeOnBoard();
+    const steps = g.past.length;
+    g = act(g, { type: "pt", id, power: 2, toughness: 2 });
+    expect(g.past).toHaveLength(steps + 1);
+    const gone = act(g, { type: "move", id, to: "graveyard" });
+    expect(gone.state.cards[id].pt).toBeUndefined();
+    expect(currentPT(gone.state.cards[id])).toEqual({ power: "1", toughness: "1", up: false, down: false });
+  });
+
+  it("is ignored off the battlefield, for nothing and for a fraction", () => {
+    const g = ptPlaying();
+    const inHand = g.state.zones.hand[0];
+    expect(act(g, { type: "pt", id: inHand, power: 1, toughness: 1 })).toBe(g);
+    expect(act(g, { type: "ptClear", id: inHand })).toBe(g);
+    expect(act(g, { type: "pt", id: "nope", power: 1, toughness: 1 })).toBe(g);
+    const { g: board, id } = snakeOnBoard();
+    expect(act(board, { type: "pt", id, power: 0, toughness: 0 })).toBe(board);
+    expect(act(board, { type: "pt", id, power: 1.5, toughness: 0 })).toBe(board);
+  });
+
+  it("comes back with undo", () => {
+    let { g, id } = snakeOnBoard();
+    const before = g.state;
+    g = act(g, { type: "pt", id, power: 2, toughness: 2 });
+    const undone = act(g, { type: "undo" });
+    expect(undone.state).toBe(before);
+    expect(currentPT(undone.state.cards[id])).toEqual({ power: "1", toughness: "1", up: false, down: false });
+  });
+
+  it("adds counters and the change to the printed value", () => {
+    let { g, id } = snakeOnBoard();
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "1", toughness: "1", up: false, down: false });
+    g = act(g, { type: "counter", id, kind: "+1/+1", delta: 2 });
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "3", toughness: "3", up: true, down: false });
+    g = act(g, { type: "counter", id, kind: "-1/-1", delta: 4 });
+    // The counters cancel each other out first, so only the two -1/-1 that are left count.
+    expect(g.state.cards[id].counters).toEqual([{ kind: "-1/-1", amount: 2 }]);
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "-1", toughness: "-1", up: false, down: true });
+  });
+
+  it("has nothing to show for a card without power and toughness", () => {
+    let g = playing();
+    const ring = idOf(g, "Sol Ring");
+    g = act(g, { type: "move", id: ring, to: "battlefield" });
+    expect(currentPT(g.state.cards[ring])).toBeNull();
+    // A change on such a card is shown as the change alone, both sides signed.
+    g = act(g, { type: "pt", id: ring, power: 2, toughness: 0 });
+    expect(currentPT(g.state.cards[ring])).toEqual({ power: "+2", toughness: "+0", up: true, down: false });
+  });
+
+  it("shows the change after a power that is not a plain number", () => {
+    const star = card("Star", { power: "*", toughness: "4" });
+    let g = act(newGame([{ def: star, quantity: 1 }], { seed: SEED, freeMulligan: true, drawOnFirstTurn: false }), {
+      type: "keep",
+    });
+    const id = Object.values(g.state.cards)[0].id;
+    g = act(g, { type: "move", id, to: "battlefield" });
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "*", toughness: "4", up: false, down: false });
+    g = act(g, { type: "counter", id, kind: "+1/+1", delta: 2 });
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "*+2", toughness: "6", up: true, down: false });
+    // One below what it was printed at on this side, two above on the other: up and down at once.
+    const small = act(g, { type: "pt", id, power: -3, toughness: 0 });
+    expect(currentPT(small.state.cards[id])).toEqual({ power: "*-1", toughness: "6", up: true, down: true });
+  });
+
+  it("reads a made-up token's own power and toughness, and hides a face-down card", () => {
+    let g = playing();
+    const saproling = card("Saproling", {
+      typeLine: "Token Creature — Saproling",
+      custom: { colors: ["G"], power: "1", toughness: "1", text: "" },
+    });
+    g = act(g, { type: "token", def: saproling, count: 1 });
+    const id = g.state.zones.battlefield[g.state.zones.battlefield.length - 1];
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "1", toughness: "1", up: false, down: false });
+    g = act(g, { type: "pt", id, power: 2, toughness: 0 });
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "3", toughness: "1", up: true, down: false });
+    g = act(g, { type: "counter", id, kind: "-1/-1", delta: 2 });
+    expect(currentPT(g.state.cards[id])).toEqual({ power: "1", toughness: "-1", up: false, down: true });
+    const hidden = act(g, { type: "faceDown", id });
+    expect(currentPT(hidden.state.cards[id])).toBeNull();
   });
 });

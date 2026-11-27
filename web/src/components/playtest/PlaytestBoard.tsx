@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { ZONE_IDS, type Action, type CardDef, type CardInstance, type Game, type Tracker, type ZoneId } from "@/lib/playtest";
+import { ZONE_IDS, currentPT, type Action, type CardDef, type CardInstance, type Game, type Tracker, type ZoneId } from "@/lib/playtest";
 import { counterLabel } from "@/lib/playtestcounters";
 import { useCornerPreview } from "./CornerPreview";
 import type { PlaytestDialog } from "./PlaytestDialogs";
@@ -27,6 +27,14 @@ const START_PX = 6;
 const LONG_PRESS_MS = 500;
 /** Where the browser remembers whether dropped cards snap to the grid. */
 const SNAP_KEY = "mtg.playtest.snap";
+
+/** The power and toughness steps the menus offer, the same for both sides and for the pair: −3 to −1, then +1 to +6. */
+const PT_STEPS = [-3, -2, -1, 1, 2, 3, 4, 5, 6];
+
+/** A step of a power and toughness submenu as a label: "+2", "−3" (the proper minus sign, as the rest of the board has). */
+function stepLabel(step: number): string {
+  return step > 0 ? `+${step}` : `−${-step}`;
+}
 
 type Menu =
   | { kind: "card"; id: string; x: number; y: number }
@@ -1036,6 +1044,9 @@ export function PlaytestBoard({
           {menuItem("Untap", () => setTapped(false))}
           {menuItem("+1/+1 counter", () => eachSelected((id) => ({ type: "counter", id, kind: "+1/+1", delta: 1 })))}
           {menuItem("Remove +1/+1 counter", () => eachSelected((id) => ({ type: "counter", id, kind: "+1/+1", delta: -1 })))}
+          <span className="pt-menu-sep" />
+          <PtMenus ids={selectedIds()} close={() => setMenu(null)} dispatch={dispatch} openDialog={openDialog} />
+          <span className="pt-menu-sep" />
           {menuItem("Turn face down / face up", () => eachSelected((id) => ({ type: "faceDown", id })))}
           <span className="pt-menu-sep" />
           {menuItem("To graveyard", () => moveSelected("graveyard"))}
@@ -1088,6 +1099,9 @@ export function PlaytestBoard({
           card={state.cards[menu.id]}
           zone={zoneOf(menu.id)}
           tax={state.player.commanderTax[menu.id] ?? 0}
+          // A card of a bigger selection takes the power and toughness items for the whole selection, as the board's
+          // own menu does.
+          ptIds={selected.has(menu.id) ? selectedIds() : [menu.id]}
           close={() => setMenu(null)}
           dispatch={dispatch}
           openDialog={openDialog}
@@ -1195,6 +1209,7 @@ function CardMenu({
   card,
   zone,
   tax,
+  ptIds,
   close,
   dispatch,
   openDialog,
@@ -1205,6 +1220,8 @@ function CardMenu({
   card: CardInstance;
   zone: ZoneId | null;
   tax: number;
+  /** The battlefield cards the power and toughness items act on: the whole selection when this card is part of it. */
+  ptIds: string[];
   close: () => void;
   dispatch: (a: Action) => void;
   openDialog: (d: PlaytestDialog) => void;
@@ -1274,6 +1291,8 @@ function CardMenu({
           {item("Other…", () => openDialog({ kind: "counter", id: card.id }))}
           {item("Edit list…", () => openDialog({ kind: "counterList" }))}
           <span className="pt-menu-sep" />
+          <PtMenus ids={ptIds} close={close} dispatch={dispatch} openDialog={openDialog} />
+          <span className="pt-menu-sep" />
           {item("Create token copy", () => dispatch({ type: "copy", id: card.id }))}
           <span className="pt-menu-title">Move to</span>
           {to("hand", "Hand")}
@@ -1332,6 +1351,83 @@ function CardMenu({
         </>
       )}
     </FloatMenu>
+  );
+}
+
+/**
+ * The three power and toughness sections a card menu shows (Power, Toughness and +X/+X): the same items on every card
+ * in [ids], as one undo step. A card's own menu and the selection's menu both show them.
+ */
+function PtMenus({
+  ids,
+  close,
+  dispatch,
+  openDialog,
+}: {
+  /** The battlefield cards to change: one card, or the whole selection. */
+  ids: string[];
+  /** Closes the menu the sections are in, after an item has run. */
+  close: () => void;
+  dispatch: (a: Action) => void;
+  openDialog: (d: PlaytestDialog) => void;
+}) {
+  /** An item that closes the menu after it runs; [key] is for the ones a list makes. */
+  const item = (label: string, run: () => void, key?: string) => (
+    <button
+      key={key}
+      onClick={() => {
+        close();
+        run();
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  /** The player's own change, on every card, as one undo step. */
+  const change = (power: number, toughness: number) =>
+    dispatch({ type: "group", actions: ids.map((id): Action => ({ type: "pt", id, power, toughness })) });
+
+  /** Back to the printed value, on every card, as one undo step. */
+  const clear = () => dispatch({ type: "group", actions: ids.map((id): Action => ({ type: "ptClear", id })) });
+
+  /** One section: Clear, the fixed steps, then the item that asks for a number (−99 to 99). */
+  const section = (which: "power" | "toughness" | "both") => (
+    <>
+      {item("Clear", clear)}
+      {PT_STEPS.map((step) =>
+        item(
+          which === "both" ? `${stepLabel(step)}/${stepLabel(step)}` : stepLabel(step),
+          () => (which === "power" ? change(step, 0) : which === "toughness" ? change(0, step) : change(step, step)),
+          `pt${which}${step}`,
+        ),
+      )}
+      {item(which === "both" ? "±X…" : "+X…", () => openDialog({ kind: "pt", ids, which }))}
+    </>
+  );
+
+  return (
+    <>
+      <SubMenu label="Power ›">{section("power")}</SubMenu>
+      <SubMenu label="Toughness ›">{section("toughness")}</SubMenu>
+      <SubMenu label="+X/+X ›">{section("both")}</SubMenu>
+    </>
+  );
+}
+
+/**
+ * One of a card menu's submenus ("Power ›"): its items unfold under the label while the pointer is over it, or stay open
+ * after a click (a finger cannot hover).
+ */
+function SubMenu({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={"pt-sub" + (open ? " open" : "")}>
+      <button className="pt-sub-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {label}
+      </button>
+      <div className="pt-sub-items">{children}</div>
+    </div>
   );
 }
 
@@ -1486,11 +1582,15 @@ function FloatMenu({
   );
 }
 
-/** A card's picture, or its back when it is face down; with the counters and the token badge on top. */
+/** A card's picture, or its back when it is face down; with the counters, the token badge and its power and toughness on top. */
 function CardFace({ card }: { card: CardInstance }) {
   const url = card.faceDown ? null : card.flipped && card.def.backImageUrl ? card.def.backImageUrl : card.def.imageUrl;
   const custom = !card.faceDown && card.def.custom ? card.def.custom : null;
   const badges = card.counters.filter((c) => c.amount !== 0);
+  // The power and toughness a badge is needed for: the player's own change, or the counters that move it. Without either,
+  // the printed value on the picture (or the made-up token's own box) says it already.
+  const moves = card.pt !== undefined || card.counters.some((c) => (c.kind === "+1/+1" || c.kind === "-1/-1") && c.amount !== 0);
+  const pt = moves ? currentPT(card) : null;
   return (
     <>
       {custom ? (
@@ -1501,7 +1601,7 @@ function CardFace({ card }: { card: CardInstance }) {
       ) : (
         <CardBack />
       )}
-      {(badges.length > 0 || card.token) && (
+      {(badges.length > 0 || card.token || pt) && (
         <span className="pt-badges">
           {card.token && <span className="pt-badge">Token</span>}
           {badges.map((c) => (
@@ -1509,6 +1609,12 @@ function CardFace({ card }: { card: CardInstance }) {
               {counterText(c.kind, c.amount)}
             </span>
           ))}
+          {pt && (
+            // Green when either side ends up bigger than printed, red when smaller; both at once keeps the plain colour.
+            <span className={"pt-badge pt-pt" + (pt.up === pt.down ? "" : pt.up ? " up" : " down")}>
+              {pt.power}/{pt.toughness}
+            </span>
+          )}
         </span>
       )}
     </>

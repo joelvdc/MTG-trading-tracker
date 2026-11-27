@@ -32,6 +32,7 @@ export type PlaytestDialog =
   | { kind: "search" }
   | { kind: "peek" } // shown automatically while state.peek is set
   | { kind: "counter"; id: string }
+  | { kind: "pt"; ids: string[]; which: "power" | "toughness" | "both" }
   | { kind: "counterList" }
   | { kind: "trackerRename"; id: string }
   | { kind: "card"; id: string }
@@ -152,6 +153,8 @@ export function PlaytestDialogs({
       return <PeekDialog game={game} dispatch={dispatch} onClose={onClose} />;
     case "counter":
       return <CounterDialog id={dialog.id} game={game} dispatch={dispatch} onClose={onClose} />;
+    case "pt":
+      return <PtDialog ids={dialog.ids} which={dialog.which} dispatch={dispatch} onClose={onClose} />;
     case "counterList":
       return <CounterListDialog onClose={onClose} />;
     case "trackerRename":
@@ -715,6 +718,80 @@ function CounterDialog({
   );
 }
 
+/**
+ * A power and/or toughness change of any size (−99 to 99, a minus makes the card smaller) on the cards whose menu
+ * opened it: one card, or a whole selection, as one undo step.
+ */
+function PtDialog({
+  ids,
+  which,
+  dispatch,
+  onClose,
+}: {
+  ids: string[];
+  /** The side to change; the other one stays as it is. */
+  which: "power" | "toughness" | "both";
+  dispatch: (a: Action) => void;
+  onClose: () => void;
+}) {
+  const [power, setPower] = useState(which === "toughness" ? 0 : 1);
+  const [toughness, setToughness] = useState(which === "power" ? 0 : 1);
+  const title = which === "both" ? "Power and toughness" : which === "power" ? "Power" : "Toughness";
+
+  const run = () => {
+    const changePower = which === "toughness" ? 0 : whole(power, -99, 99);
+    const changeToughness = which === "power" ? 0 : whole(toughness, -99, 99);
+    dispatch({
+      type: "group",
+      actions: ids.map((id): Action => ({ type: "pt", id, power: changePower, toughness: changeToughness })),
+    });
+    onClose();
+  };
+
+  /** One of the two number fields: what the card gets on that side (or loses, with a minus). */
+  const field = (label: string, value: number, set: (n: number) => void) => (
+    <label className="inline">
+      <span className="muted">{label}</span>
+      <input
+        type="number"
+        min={-99}
+        max={99}
+        className="pt-counter-amount"
+        value={value}
+        aria-label={label}
+        onChange={(e) => set(Number(e.target.value))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            run();
+          }
+        }}
+      />
+    </label>
+  );
+
+  return (
+    <Dialog title={ids.length > 1 ? `${title} (${ids.length} cards)` : title} onClose={onClose}>
+      <div className="stack">
+        <div className="inline">
+          {which !== "toughness" && field("Power", power, setPower)}
+          {which !== "power" && field("Toughness", toughness, setToughness)}
+        </div>
+        <p className="muted small">A minus makes the card smaller. Clear in the card menu takes the change away again.</p>
+        <div className="dialog-actions">
+          <span className="spacer" />
+          <button className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn primary" onClick={run}>
+            OK
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /** The card menu's quick counter list: remove a kind, or add one. */
 function CounterListDialog({ onClose }: { onClose: () => void }) {
   const [quick, setQuick] = useQuickCounters();
@@ -1079,6 +1156,9 @@ function TokenDialog({
       manaValue: 0,
       isLand: false,
       commander: false,
+      // Its printed power and toughness, so the board can add counters and changes on top of them.
+      power: token.power ?? undefined,
+      toughness: token.toughness ?? undefined,
     });
 
   const toggleColour = (letter: string) =>

@@ -339,6 +339,23 @@
   line-height: 1.25;
 }
 
+/* The power and toughness a card has now (counters and the player's own change), at the bottom right of its badges:
+   green while either side is bigger than printed, red while smaller. */
+.pt-pt {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pt-pt.up {
+  color: #7fe08a;
+}
+
+.pt-pt.down {
+  color: #ff9d9d;
+}
+
 /* A made-up token's own card, filling its box: the frame in its colours, then name, type line, rules and power and
    toughness. Its font size follows the card size, so everything scales with the zoom buttons. */
 .pt-custom {
@@ -586,6 +603,26 @@
   height: 1px;
   margin: 4px 0;
   background: var(--line-soft);
+}
+
+/* The card menu's submenus (Power, Toughness, +X/+X): the label stays in the menu, its items unfold underneath while the
+   pointer is over it, or stay open after a click (a finger cannot hover). */
+.pt-menu .pt-sub-toggle {
+  color: var(--muted);
+}
+
+.pt-sub-items {
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  margin: 1px 0 1px 10px;
+  padding-left: 4px;
+  border-left: 1px solid var(--line-soft);
+}
+
+.pt-sub:hover > .pt-sub-items,
+.pt-sub.open > .pt-sub-items {
+  display: flex;
 }
 
 .pt-menu-row {
