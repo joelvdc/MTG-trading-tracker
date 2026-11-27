@@ -1,9 +1,13 @@
+import { after } from "next/server";
 import { errorResponse, json } from "@/lib/auth";
 import { loggedOut, needStore, phoneAccount } from "@/lib/accountweb";
 import { KEEP_DB_BACKUPS } from "@/lib/store";
 import { decode } from "@/lib/syncfile";
+import { runWinTurns } from "@/lib/winturns";
 
 export const dynamic = "force-dynamic";
+// The win turns of changed decks are worked out after the answer, for up to about four and a half minutes.
+export const maxDuration = 300;
 
 /** The largest sync file accepted (the owner's is a few hundred KB). */
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -63,6 +67,9 @@ export async function PUT(req: Request) {
     if (current && current.version === expected) await store.backupOnce(p.account.id, new Date(now).toISOString().slice(0, 10), current.bytes, KEEP_DB_BACKUPS);
     const version = await store.putSync(p.account.id, bytes, expected, now);
     if (version === null) return json({ error: "Changed meanwhile." }, 412);
+    // The decks whose list changed get their win turn worked out now, without making the phone wait (lib/winturns.ts).
+    const started = Date.now();
+    after(() => runWinTurns(p.account.id, started + 270_000).catch((e) => console.warn(`Win turns: ${e instanceof Error ? e.message : e}`)));
     return new Response(null, { status: expected === null ? 201 : 204, headers: { ETag: tag(version), "Cache-Control": "no-store" } });
   } catch (e) {
     return errorResponse(e);

@@ -205,8 +205,14 @@ class AppContainer(context: Context) {
         scryfall.onCards = { cards -> priceSources.fromScryfall(cards) }
         // Wishlist cards added offline get their details whenever the phone (re)connects.
         appScope.launch { network.reconnects.collect { runCatching { repo.completePendingWishlist() } } }
-        // The win turns kept from before, for the deck lists (since 1.122).
-        appScope.launch { runCatching { decks.fillKeptWinTurns() } }
+        // The win turns kept from before, for the deck lists (since 1.122), then those the website worked out (since 1.123),
+        // again after each sync.
+        decks.webLogin = { sync.webLogin() }
+        appScope.launch {
+            runCatching { decks.fillKeptWinTurns() }
+            runCatching { decks.readWebWinTurns() }
+        }
+        sync.afterWebSync = { appScope.launch { runCatching { decks.readWebWinTurns() } } }
         // Wishlist price alerts after each price update (since 1.37).
         updater.onPrices = { online ->
             // Received wishlist cards past the time chosen in Settings (since 1.38).

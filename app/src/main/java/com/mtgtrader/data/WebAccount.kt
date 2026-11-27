@@ -119,6 +119,51 @@ class WebAccountClient(http: OkHttpClient, private val base: String = BASE) {
     fun cardKingdomRequest(login: WebLogin, etag: String?): Request =
         authed(login, "api/app/cardkingdom").get().apply { if (etag != null) header("If-None-Match", etag) }.build()
 
+    /**
+     * A deck's win turn as the website keeps it (GET/POST /api/winturns, since 1.123): what it was worked out from (the
+     * list's [LocalRating.listKey], the simulator's version, the colours and the rating's [LocalRating.saltHash]) and
+     * the result, in [WinOddsStore.toWebJson]'s shape.
+     */
+    data class WebWinTurn(val deckId: Long, val listKey: String, val version: Int, val identity: String, val saltHash: String, val result: String)
+
+    /** Every deck's win turn the website has for its current list. */
+    suspend fun winTurns(login: WebLogin): List<WebWinTurn> = call {
+        http.newCall(authed(login, "api/winturns").get().build()).execute().use { r ->
+            if (!r.isSuccessful) throw failure(r)
+            val decks = json.parseToJsonElement(r.body!!.string()).jsonObject["decks"] as? JsonArray ?: throw IOException("The website's answer has no decks")
+            decks.mapNotNull { e ->
+                runCatching {
+                    val o = e.jsonObject
+                    WebWinTurn(
+                        o["deckId"]!!.jsonPrimitive.content.toLong(), o.str("listKey"), o["version"]!!.jsonPrimitive.content.toInt(),
+                        o.str("identity"), o.str("saltHash"), o.str("result"),
+                    )
+                }.getOrNull()
+            }
+        }
+    }
+
+    /** Sends win turns worked out on the phone, so the website doesn't play them again; answers the deck ids it kept. */
+    suspend fun sendWinTurns(login: WebLogin, turns: List<WebWinTurn>): List<Long> = call {
+        val body = buildJsonObject {
+            put("results", JsonArray(turns.map { t ->
+                buildJsonObject {
+                    put("deckId", t.deckId)
+                    put("listKey", t.listKey)
+                    put("version", t.version)
+                    put("identity", t.identity)
+                    put("saltHash", t.saltHash)
+                    put("result", t.result)
+                }
+            }))
+        }
+        val req = authed(login, "api/winturns").post(body.toString().toRequestBody("application/json".toMediaType())).build()
+        http.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) throw failure(r)
+            (json.parseToJsonElement(r.body!!.string()).jsonObject["kept"] as? JsonArray).orEmpty().mapNotNull { it.jsonPrimitive.content.toLongOrNull() }
+        }
+    }
+
     /** One day of the phone's value history, for [sendValueHistory]. */
     data class ValueDay(val day: String, val cards: Int, val values: Map<String, Double>)
 

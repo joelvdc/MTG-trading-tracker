@@ -2119,7 +2119,7 @@ internal fun ComboLine(cardName: String?, combo: SaltCombo, onOpen: ((String) ->
             Text(
                 listOfNotNull(
                     if (combo.counts) "Counts for the bracket" else "Doesn't count for the bracket",
-                    combo.tagName,
+                    combo.tagText,
                     combo.resultText.takeIf { it.isNotEmpty() },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.labelSmall,

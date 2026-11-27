@@ -213,6 +213,9 @@ data class SaltCombo(
     /** Commander Spellbook's tag as a word ("Spicy"), or null without one. Since 1.120. */
     val tagName get() = TAG_NAMES[bracketTag]
 
+    /** The tag with Commander Spellbook's bracket range ("Spicy (bracket 3-4)"), as the website's tagText. Since 1.123. */
+    val tagText get() = TAG_TEXTS[bracketTag]
+
     /** Its pieces in words ("A + B + any Man-Land that Enters Untapped"), [shown] being the cards to name. */
     fun piecesText(shown: List<String> = cards) = (shown + extras.map { "any $it" }).joinToString(" + ")
 
@@ -235,6 +238,12 @@ data class SaltCombo(
 
 /** Commander Spellbook's bracket tags as words. */
 private val TAG_NAMES = mapOf("R" to "Ruthless", "S" to "Spicy", "P" to "Powerful", "O" to "Oddball", "C" to "Core", "E" to "Exhibition", "B" to "Banned")
+
+/** The same with their bracket ranges: the texts of TAG_INFO in web/src/lib/deckshared.ts. */
+private val TAG_TEXTS = mapOf(
+    "R" to "Ruthless (bracket 4+)", "S" to "Spicy (bracket 3-4)", "P" to "Powerful (bracket 3+)", "O" to "Oddball (bracket 2-3)",
+    "C" to "Core (bracket 2+)", "E" to "Exhibition (any bracket)", "B" to "Banned in Commander",
+)
 
 /**
  * What makes a card matter for the deck's bracket, shown next to it in the decklist. [strict]: one of WotC's

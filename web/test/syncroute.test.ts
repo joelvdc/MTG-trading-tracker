@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// The win turns a save starts run "after" the answer, which needs a request scope that a plain call hasn't; the run
+// itself is covered in winturns-phone.test.ts.
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after: vi.fn() }));
+
 import { accountStore, resetMemoryStore } from "@/lib/accounts";
 import { addDevice } from "@/lib/users";
 import { encode, parse } from "@/lib/syncfile";

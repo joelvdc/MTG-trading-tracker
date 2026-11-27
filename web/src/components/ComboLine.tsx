@@ -1,4 +1,4 @@
-import { comboPiecesText, comboResultText, type SaltCombo } from "@/lib/deckshared";
+import { comboPiecesText, comboResultText, tagText, type SaltCombo } from "@/lib/deckshared";
 
 /** A combo in words: its cards (or the others than [cardName]), what it does and a link to Commander Spellbook (the app's ComboLine). */
 export function ComboLine({ combo, cardName }: { combo: SaltCombo; cardName?: string }) {
@@ -13,7 +13,7 @@ export function ComboLine({ combo, cardName }: { combo: SaltCombo; cardName?: st
         {combo.needsBoard ? " (needs more on the battlefield)" : ""}
         <br />
         <span className="muted">
-          {[combo.counts ? "Counts for the bracket" : "Doesn't count for the bracket", what].filter(Boolean).join(" · ")}
+          {[combo.counts ? "Counts for the bracket" : "Doesn't count for the bracket", tagText(combo.bracketTag), what].filter(Boolean).join(" · ")}
           {combo.prerequisites.length > 0 && ` · first: ${combo.prerequisites.join("; ")}`}
         </span>
       </span>

@@ -4903,19 +4903,41 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
             return null
         }
         // Stopped when the one asking stops waiting (the deck page was left; since 1.122): nothing is kept then.
-        val odds = kept(deckId, cards, identity, salt) ?: withContext(Dispatchers.Default) {
+        kept(deckId, cards, identity, salt)?.let { odds ->
+            WinTurns.put(deckId, odds)
+            return odds
+        }
+        val odds = withContext(Dispatchers.Default) {
             val job = coroutineContext[kotlinx.coroutines.Job]
             WinOddsCalc.calculate(cards, identity, salt?.allCombos.orEmpty(), stop = { job?.isActive == false })
                 .also { if (job?.isActive == false) throw kotlinx.coroutines.CancellationException("Win turn stopped") }
-        }?.also { odds ->
-            mutex.withLock {
-                val all = saved ?: mutableMapOf()
-                all[deckId.toString()] = Saved(fingerprint(cards, identity, salt?.allCombos.orEmpty()), odds)
-                withContext(Dispatchers.IO) { runCatching { file.writeText(json.encodeToString(serializer, all)) } }
-            }
         }
+        if (odds != null) keep(deckId, cards, identity, salt, odds)
         WinTurns.put(deckId, odds)
+        if (odds != null) onWorkedOut?.invoke(deckId, odds)
         return odds
+    }
+
+    /** Hears a win turn the phone just worked out itself (not one kept or taken from the website): sent up. Since 1.123. */
+    var onWorkedOut: ((Long, WinOdds) -> Unit)? = null
+
+    private suspend fun keep(deckId: Long, cards: List<StatsCard>, identity: String, salt: SaltCard?, odds: WinOdds) = mutex.withLock {
+        val all = saved ?: mutableMapOf()
+        all[deckId.toString()] = Saved(fingerprint(cards, identity, salt?.allCombos.orEmpty()), odds)
+        saved = all
+        withContext(Dispatchers.IO) { runCatching { file.writeText(json.encodeToString(serializer, all)) } }
+    }
+
+    /**
+     * Keeps the website's win turn for [deck] as if worked out here (its list, colours and rating were checked to be
+     * the phone's), so it isn't played again. False for a deck without a commander. Since 1.123.
+     */
+    suspend fun adopt(deck: Deck, odds: WinOdds): Boolean {
+        val cards = db.cardInfoDao().deckStats(deck.archidektId)
+        if (cards.none { it.commander }) return false
+        keep(deck.archidektId, cards, deck.colorIdentity, SaltCard.decode(deck.saltCard), odds)
+        WinTurns.put(deck.archidektId, odds)
+        return true
     }
 
     /** The win turn kept from before for exactly these cards, without working it out. */
@@ -4951,6 +4973,32 @@ class WinOddsStore(private val dir: File, private val db: AppDatabase) {
     }
 
     companion object {
+        private val webJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+        /**
+         * [odds] as the website keeps a win turn (web/winodds-kt Website.kt webWinOddsJson: the odds plus what its pages
+         * show), for sending one worked out on the phone. Since 1.123.
+         */
+        fun toWebJson(odds: WinOdds): String = kotlinx.serialization.json.buildJsonObject {
+            put("odds", webJson.encodeToJsonElement(WinOdds.serializer(), odds))
+            put("label", kotlinx.serialization.json.JsonPrimitive(odds.label))
+            put("fourInTen", kotlinx.serialization.json.JsonPrimitive(odds.fourInTen))
+            put("usual", kotlinx.serialization.json.JsonPrimitive(odds.usual))
+            put("nineInTen", kotlinx.serialization.json.JsonPrimitive(odds.nineInTen))
+            put("firstWin", kotlinx.serialization.json.JsonPrimitive(odds.firstWin))
+            put("windowStart", kotlinx.serialization.json.JsonPrimitive(odds.window.first))
+            put("windowEnd", kotlinx.serialization.json.JsonPrimitive(odds.window.last))
+            put("damageText", kotlinx.serialization.json.JsonPrimitive(odds.damageText))
+            put("comboShare", kotlinx.serialization.json.JsonPrimitive(odds.comboShare))
+            put("mazeShare", kotlinx.serialization.json.JsonPrimitive(odds.mazeShare))
+        }.toString()
+
+        /** The odds in a win turn the website kept ([toWebJson]'s shape); null when it has none or can't be read. */
+        fun fromWebJson(text: String): WinOdds? = runCatching {
+            val odds = (webJson.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject)?.get("odds") ?: return null
+            webJson.decodeFromJsonElement(WinOdds.serializer(), odds)
+        }.getOrNull()
+
         fun fingerprint(cards: List<StatsCard>, identity: String, combos: List<SaltCombo>): String {
             val text = buildString {
                 append(WinOddsCalc.VERSION).append('|').append(identity).append('|')

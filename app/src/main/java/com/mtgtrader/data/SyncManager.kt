@@ -156,6 +156,9 @@ class SyncManager(
     /** Runs before the first sync with a folder changes anything on this phone (a backup). Since 1.21. */
     var beforeFirstSync: (suspend () -> Unit)? = null
 
+    /** Called after each sync with the website account that worked (not waited for). Since 1.123. */
+    var afterWebSync: (() -> Unit)? = null
+
     /** Whether an automatic sync may run now. */
     private fun autoAllowed(): Boolean {
         val s = _status.value
@@ -393,6 +396,7 @@ class SyncManager(
             lastSyncAt = if (error == null) now else _status.value.lastSyncAt,
         )
         if (error == null && place is SyncPlace.Web) sendValueHistoryOnce(place.login)
+        if (error == null && place is SyncPlace.Web) afterWebSync?.invoke()
         error == null
     }
 

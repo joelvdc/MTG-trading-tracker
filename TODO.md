@@ -14,21 +14,23 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-27, app 1.122)
-- **Newest (2026-11-27):** app 1.122: deck page has a foldable **Combos** section (every combo, those counting for the
-  bracket first, with Spellbook tag, results and "Spellbook ↗" link). Win turn: the deck page works it out once on
-  opening and again with ↻ (the "Wins by" number greys out after an edit); edits no longer start runs, leaving the page
-  stops one. Saved win turns fill the deck lists at app start; the Decks tab's job ("Checking decks…") rates stale
-  decks and then works out missing or out-of-date win turns one deck at a time (also after "Update all decks").
-  Combos section by DeepSeek (Mistral, Vibe), the rest and review by Opus. No website change.
-- **Before:** 1.121 (blinking combo pieces, every Spellbook starting zone), 1.120 (Spellbook bracket tags).
-- **Waiting on the owner:** after updating, open the Decks tab once and let "Checking decks…" finish (it works out
-  every deck's win turn after the 1.121 change); open a deck's Combos section and a Spellbook link; edit a local deck
-  and check ↻. Also: Zur's combo share (about 11%); 1.120's "Why bracket"; the playtester checks; "Show cards I own"
-  colours. Still from before: email/"Forgot password?", the ✕ delete column in the wishlist, Compare with a real
-  Archidekt link, the email to support@moxfield.com, asking EDHREC/Archidekt for permission.
-- **Expected to look odd:** the first Decks tab visit after updating runs a longer job (every win turn is worked out
-  once). Collecting: "One win turn for the app and the website" waits until the owner comes back to it.
+## Right now (2026-11-27, app 1.123)
+- **Newest (2026-11-27):** app 1.123: logged in, the app takes the website's win turns (GET /api/winturns; matched on
+  the list's LocalRating.listKey, colours, the rating's saltHash and WinOddsCalc.VERSION) and works out only the rest,
+  which it sends up (POST /api/winturns). The website starts win turns after each phone sync. Combo lines show
+  Spellbook's tag with its bracket range (app and website). Website API by DeepSeek (Mistral, Vibe); app side, review
+  and release by Opus.
+- **Website (same day):** Blob files are kept in memory and re-downloaded only when changed (lib/blobcache.ts); the
+  phones' price and Card Kingdom checks use a head request. /api/health has blobDownloads (count, megabytes, files);
+  the health check warns above 300 a day. Watch Vercel's Usage page over the next days: Blob Data Transfer and Fast
+  Origin Transfer should drop sharply.
+- **Before:** 1.122 (Combos section, ↻ win turn), 1.121 (blinking combo pieces), 1.120 (Spellbook bracket tags).
+- **Waiting on the owner:** after updating, open the Decks tab: most win turns should appear at once (taken from the
+  website); check a combo line reads e.g. "Spicy (bracket 3-4)". Still from before: Zur's combo share; 1.120's "Why
+  bracket"; the playtester checks; "Show cards I own" colours; email/"Forgot password?"; the ✕ delete column in the
+  wishlist; Compare with a real Archidekt link; the email to support@moxfield.com; asking EDHREC/Archidekt.
+- **Expected to look odd:** a deck whose rating changed on the phone but isn't synced yet is still played on the phone
+  (its rating fingerprint differs from the website's until the next sync).
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -53,15 +55,6 @@ Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Gre
 
 (Put back on 2026-11-18: the 1.98 update had dropped this section by accident. The older items were not re-checked
 against the code since 2026-11-16.)
-
-### One win turn for the app and the website (2026-11-27)
-Owner: "If a user is logged in to the website through the app, couldn't the app just get that information from the
-website instead?" and "We will come back to how we could work out unifying the simulator for the website and app".
-The website already works out and keeps every account deck's win turn (`web/src/lib/winturns.ts`, daily job, ~45 s a
-deck); the app could ask for it first and work it out itself only when the website has none for this exact list.
-Open questions: one shared fingerprint (the app's `WinOddsStore.fingerprint` and the website's `winKey` differ); the
-same card details on both sides; what the phone does right after an edit (before the sync and the website's run);
-server time on Vercel with more users; a new address for the health check.
 
 ### Moxfield deck import (2026-11-18)
 Owner: "would it be possible for the app/website to import decks from moxfield? The same way it does with archidekt."
@@ -153,6 +146,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.123 (2026-11-27): the app takes the website's win turns and sends its own; combo lines show Spellbook's tag with its bracket range
 - 1.122 (2026-11-27): Combos section on the deck page; win turns worked out in the background and with ↻, not on every edit
 - 1.121 (2026-11-26): win turn: blinking must-enter combo pieces, every Spellbook starting zone (graveyard, library, exiled by)
 - 1.120 (2026-11-26): combo bracket floors from Commander Spellbook's tags; win turn plays combos in Spellbook's order (must-enter pieces, mana needed)

@@ -89,8 +89,9 @@ turn on two-step login with an authenticator app.
   4"), a **salt sum** like Archidekt's (lands included) with its saltiest cards, and a simulated **win turn** (combos
   played in Commander Spellbook's order, each piece starting where Spellbook says: hand, battlefield, graveyard, library
   or exile, and a piece that has to enter can be blinked to enter again; worked out for every deck in the background,
-  and on a deck's page again with ↻ after editing); also game changers, a **Combos** section with each combo's
-  Spellbook tag and link, mana stats and the chance to cast your commander on time.
+  and on a deck's page again with ↻ after editing; logged in to an account, the phone takes the win turns the website
+  already worked out and sends up its own); also game changers, a **Combos** section with each combo's Spellbook tag
+  and its bracket range ("Spicy (bracket 3-4)") and link, mana stats and the chance to cast your commander on time.
 - A **Commander legality check**: banned cards, cards outside the commander's colours, extra copies, the card count,
   and whether the commander (or a pair of partners, a Background, a Doctor and companion) may lead.
 - Recommendations with the cards you already own marked, filtered by new, owned and card type, sent straight to the

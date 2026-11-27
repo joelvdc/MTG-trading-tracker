@@ -20,6 +20,11 @@ object LocalRating {
             .map { "${it.quantity} ${nameKey(it.card.name)}${if (it.commander) "*" else ""}" }
             .sorted()
             .joinToString("\n")
+        return hash(text)
+    }
+
+    /** 32-bit FNV-1a of [text] as 8 hex digits, as the website's ratingListKey and saltHash work it out. */
+    fun hash(text: String): String {
         var h = 0x811c9dc5u
         for (c in text) {
             h = h xor c.code.toUInt()
@@ -27,6 +32,12 @@ object LocalRating {
         }
         return h.toString(16).padStart(8, '0')
     }
+
+    /**
+     * The fingerprint of a deck's rating text, so a win turn from the website is only taken when it was worked out
+     * with the same rating (and so the same combos) as the phone's (web/src/lib/winturns.ts saltHash). Since 1.123.
+     */
+    fun saltHash(saltCard: String?): String = hash(saltCard ?: "")
 
     /**
      * Ratings made before the website's full card facts were built (23 Nov 2026 17:50 UTC, as RATED_SINCE in

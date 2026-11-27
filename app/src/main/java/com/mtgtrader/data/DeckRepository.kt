@@ -53,6 +53,9 @@ class DeckRepository(
         /** A deck the website couldn't rate (offline, not logged in, or its card facts not ready). */
         const val NOT_RATED = "The bracket couldn't be worked out now (no connection to the website?)"
 
+        /** How long a win turn worked out on the phone waits before it's sent, so several go in one request. */
+        const val UPLOAD_DELAY_MS = 5_000L
+
         const val UNSENT = "This deck has changes from this phone that never reached Archidekt. Make a local copy to keep them, or discard them, then reload"
     }
 
@@ -237,6 +240,7 @@ class DeckRepository(
      */
     fun refreshRatings(): Boolean = start(DeckJob(null, "Checking decks…", canStop = true)) {
         val rated = rateStale()
+        if (!stopRequested) readWebWinTurns()
         val worked = workOutWinTurns()
         val parts = buildList {
             if (rated > 0 || worked == 0) add("Rated $rated deck" + if (rated == 1) "" else "s")
@@ -249,6 +253,70 @@ class DeckRepository(
 
     /** Shows every deck's win turn kept from before in the lists (quick; at app start, since 1.122). */
     suspend fun fillKeptWinTurns() = dao.all().forEach { d -> runCatching { winOdds.fillKept(d) } }
+
+    /** The website account the phone is logged in to, if any (set by the app: it's the sync's login). Since 1.123. */
+    var webLogin: () -> WebLogin? = { null }
+
+    init {
+        winOdds.onWorkedOut = { id, odds -> queueUpload(id, odds) }
+    }
+
+    /**
+     * Takes the win turns the website already worked out (logged in only, since 1.123): one is taken for a deck whose
+     * list ([LocalRating.listKey]), colours, rating ([LocalRating.saltHash]) and simulator version are the phone's,
+     * and which has no win turn kept here for its current list. The rest are worked out on the phone. How many were
+     * taken; quietly 0 when the website can't be reached.
+     */
+    suspend fun readWebWinTurns(): Int {
+        val login = webLogin() ?: return 0
+        // Nothing missing: the website isn't asked (this runs after every sync).
+        if (!runCatching { winTurnsStale() }.getOrDefault(true)) return 0
+        val turns = runCatching { web.winTurns(login) }.getOrNull() ?: return 0
+        val decks = dao.all().associateBy { it.archidektId }
+        var taken = 0
+        for (t in turns) {
+            val d = decks[t.deckId] ?: continue
+            if (t.version != WinOddsCalc.VERSION || t.identity != d.colorIdentity || t.saltHash != LocalRating.saltHash(d.saltCard)) continue
+            if (t.listKey != LocalRating.listKey(dao.cards(d.archidektId))) continue
+            if (runCatching { winOdds.fillKept(d) }.getOrDefault(false)) continue
+            val odds = WinOddsStore.fromWebJson(t.result) ?: continue
+            if (runCatching { winOdds.adopt(d, odds) }.getOrDefault(false)) taken++
+        }
+        return taken
+    }
+
+    private val toUpload = mutableMapOf<Long, WinOdds>()
+    private var uploading: kotlinx.coroutines.Job? = null
+
+    /** A win turn just worked out on the phone goes to the website a few seconds later, with any others meanwhile. */
+    private fun queueUpload(deckId: Long, odds: WinOdds) {
+        if (webLogin() == null) return
+        synchronized(toUpload) {
+            toUpload[deckId] = odds
+            if (uploading?.isActive == true) return
+            uploading = scope.launch {
+                kotlinx.coroutines.delay(UPLOAD_DELAY_MS)
+                runCatching { sendWinTurns() }
+            }
+        }
+    }
+
+    /**
+     * Sends the win turns waiting in [toUpload] (as kept now, with what they were worked out from); the website keeps
+     * those that still match its copy of the deck (after the next sync otherwise, it works them out itself).
+     */
+    private suspend fun sendWinTurns() {
+        val login = webLogin() ?: return
+        val waiting = synchronized(toUpload) { toUpload.toMap().also { toUpload.clear() } }
+        val turns = waiting.mapNotNull { (id, odds) ->
+            val d = dao.get(id) ?: return@mapNotNull null
+            WebAccountClient.WebWinTurn(
+                id, LocalRating.listKey(dao.cards(id)), WinOddsCalc.VERSION, d.colorIdentity, LocalRating.saltHash(d.saltCard),
+                WinOddsStore.toWebJson(odds),
+            )
+        }
+        if (turns.isNotEmpty()) web.sendWinTurns(login, turns)
+    }
 
     /** Whether a deck (not retired) has no win turn kept for its current list, rating and simulator. Since 1.122. */
     suspend fun winTurnsStale(): Boolean = dao.all().any { !it.retired && !winOdds.fillKept(it) }
