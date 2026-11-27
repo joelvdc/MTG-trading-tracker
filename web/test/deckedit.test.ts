@@ -12,6 +12,7 @@ import {
   createDeck,
   deleteCategory,
   deleteDeck,
+  deleteDeckSnapshot,
   detachDeck,
   frontIsLand,
   MAYBEBOARD,
@@ -21,6 +22,7 @@ import {
   removeLines,
   renameCategory,
   renameDeck,
+  renameDeckSnapshot,
   restoreDeck,
   setCategoryHidden,
   setFinishes,
@@ -30,13 +32,15 @@ import {
   setQuantities,
   setQuantity,
   sortLines,
+  takeDeckSnapshot,
   type Lookups,
   type NewLine,
 } from "@/lib/deckedit";
+import { parseSnapshots } from "@/lib/decksnapshots";
 import { parseDeckText, textCardCount, hasTags } from "@/lib/decktext";
 import { syncDecks } from "@/lib/decks";
 import type { DeckCard, SyncDeck } from "@/lib/deckshared";
-import { deletions, parse, prefs, type CardRef } from "@/lib/syncfile";
+import { deletions, parse, prefs, WEB_FORMAT, type CardRef } from "@/lib/syncfile";
 import { EditError } from "@/lib/wishlist";
 
 const fixture = () => parse(readFileSync(path.join(__dirname, "fixtures", "app-sync.json"), "utf8"));
@@ -420,6 +424,57 @@ describe("editing local decks (the app's DeckEditor)", () => {
     expect(deck().cards.filter((c) => c.card.name === "Island")).toHaveLength(1);
     expect(deck().cards.find((c) => c.card.name === "Lightning Bolt")).toMatchObject({ category: "Instant", types: "Instant", commander: false });
     expect(deck().cards.find((c) => c.card.name === "Island")).toMatchObject({ category: "Land", maybeboard: false });
+  });
+});
+
+describe("deck snapshots (the app's DeckSnapshots)", () => {
+  it("go in a newer sync file format, so an older app can't write the deck back without them", () => {
+    expect(WEB_FORMAT).toBe(17);
+  });
+
+  it("takes a snapshot of the main deck and keeps it through the deck's other edits", () => {
+    const { f, id, deck, uid } = withLocal();
+    takeDeckSnapshot(f, id, "Before upgrade", { bracket: 3, winTurn: "T11", eur: 263.28 }, NOW);
+    const d = deck().deck;
+    // A change to the deck moves updatedAt on; the snapshots keep a time of their own.
+    expect([d.updatedAt, d.snapshotsAt]).toEqual([NOW + 1, NOW]);
+    const list = parseSnapshots(d.snapshots);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ name: "Before upgrade", at: NOW, bracket: 3, winTurn: "T11", eur: 263.28 });
+    // The main deck only, the commander included and the maybeboard left out.
+    expect(list[0].cards.map((c) => [c.name, c.quantity, c.commander])).toEqual([
+      ["Auntie", 1, true],
+      ["Sol Ring", 1, false],
+    ]);
+    const snapId = list[0].id;
+    setQuantity(f, id, uid("Sol Ring"), 2, NOW + 5, look);
+    moveLines(f, id, [uid("Sol Ring")], "Ramp", NOW + 6, look);
+    expect(deck().deck.snapshots).toBe(d.snapshots);
+    renameDeckSnapshot(f, id, snapId, "  After upgrade ", NOW + 7);
+    expect(parseSnapshots(deck().deck.snapshots)[0].name).toBe("After upgrade");
+    expect(deck().deck.snapshotsAt).toBe(NOW + 7);
+    expect(() => renameDeckSnapshot(f, id, "nope", "x", NOW + 8)).toThrow(EditError);
+    deleteDeckSnapshot(f, id, snapId, NOW + 9);
+    expect(deck().deck.snapshots).toBeNull();
+    expect([deck().deck.snapshotsAt, deck().deck.updatedAt]).toEqual([NOW + 9, NOW + 9]);
+    expect(() => deleteDeckSnapshot(f, id, snapId, NOW + 10)).toThrow(EditError);
+  });
+
+  it("takes one for a deck from Archidekt too, keeps it when the deck is detached, and starts a copy without", () => {
+    const f = fixture();
+    const src = syncDecks(f)[0];
+    const oldId = src.deck.archidektId;
+    takeDeckSnapshot(f, oldId, "Before", { bracket: null, winTurn: null, eur: null }, NOW);
+    expect(parseSnapshots(src.deck.snapshots).map((s) => s.name)).toEqual(["Before"]);
+    const id = detachDeck(f, oldId, NOW + 1);
+    const kept = syncDecks(f).find((x) => x.deck.archidektId === id)!;
+    expect(parseSnapshots(kept.deck.snapshots).map((s) => s.name)).toEqual(["Before"]);
+    expect(kept.deck.snapshotsAt).toBe(NOW);
+    // A copy starts without snapshots.
+    const copy = copyDeck(f, id, "Copy", NOW + 2);
+    const c = syncDecks(f).find((x) => x.deck.archidektId === copy)!;
+    expect(c.deck.snapshots ?? null).toBeNull();
+    expect(c.deck.snapshotsAt ?? null).toBeNull();
   });
 });
 

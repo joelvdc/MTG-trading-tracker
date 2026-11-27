@@ -44,9 +44,13 @@ import {
   setQuantities,
   setQuantity,
   setTokenPick,
+  takeDeckSnapshot,
+  renameDeckSnapshot,
+  deleteDeckSnapshot,
   type Lookups,
   type NewLine,
 } from "@/lib/deckedit";
+import { MAX_SNAPSHOT_NAME } from "@/lib/decksnapshots";
 import { isBasicName, type DeckCard, type SyncDeck } from "@/lib/deckshared";
 import type { Finish } from "@/lib/pricing";
 import type { CardRef } from "@/lib/syncfile";
@@ -120,6 +124,11 @@ type Body = {
   /** The primer, or one card's note. */
   primer?: string;
   note?: string;
+  /** One of the deck's snapshots, and the name, bracket, win turn and price a new one is taken with. */
+  snapId?: string;
+  bracket?: number | null;
+  winTurn?: string | null;
+  eur?: number | null;
   /** A saved package to add to or remove from the deck. */
   packageId?: string;
 };
@@ -130,6 +139,15 @@ const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 /** A card's front face, lower case: how pasted lists are matched against the deck's lines. */
 const front = (name: string) => name.split(" // ")[0].trim().toLowerCase();
 const FORMATS: ExportFormat[] = ["moxfield", "archidekt", "arena", "plain"];
+
+/** What a new snapshot keeps besides the decklist: the bracket, win turn and price the page shows (bad values: unknown). */
+function snapshotExtras(body: Body): { bracket: number | null; winTurn: string | null; eur: number | null } {
+  return {
+    bracket: typeof body.bracket === "number" && Number.isFinite(body.bracket) ? Math.round(body.bracket) : null,
+    winTurn: str(body.winTurn, 20).trim() || null,
+    eur: typeof body.eur === "number" && Number.isFinite(body.eur) && body.eur >= 0 ? body.eur : null,
+  };
+}
 
 /** What an edit needs looked up before the sync file is opened: colour identities and a card's facts (Scryfall). */
 async function lookups(lines: DeckCard[], body: Body): Promise<{ look: Lookups; facts: Record<string, DeckInfo> }> {
@@ -184,8 +202,9 @@ function recordDeckChange(before: SyncDeck | null, after: SyncDeck | null, now: 
  * local deck), "hide-category", "pick" (the printing you own to show), "token-pick" (a token's printing), "delete"
  * (never on Archidekt itself), "category-order" (the deck's own category order), "add-maybe" (into the maybeboard; a
  * deck from Archidekt's local one), "remove" (on a deck from Archidekt only its local maybeboard's cards), "retire",
- * "export" (its cards as text to copy: Moxfield's, Archidekt's, Arena's or plain) and "restore" (undo: the deck back
- * as an earlier answer's `before` had it, also when it was deleted since). Local decks only: "set-quantity", "printing"
+ * "export" (its cards as text to copy: Moxfield's, Archidekt's, Arena's or plain), "snapshot-take" (a snapshot of its
+ * decklist with its name), "snapshot-rename", "snapshot-delete" and "restore" (undo: the deck back as an earlier
+ * answer's `before` had it, also when it was deleted since). Local decks only: "set-quantity", "printing"
  * (another printing of a line's card), "remove", "move", "auto-all", "add-card", "rename-category", "delete-category",
  * "add-category", "rename", the bulk edits "bulk-quantity", "bulk-finish" and "bulk-printing", and "paste-preview"
  * (what a pasted list holds, and which of its cards the deck has already) with "paste" (the list into the deck).
@@ -398,6 +417,15 @@ export async function POST(req: Request, { params }: Params) {
             return { before };
           case "set-card-note":
             setCardNote(f, id, str(body.name, 200), typeof body.note === "string" ? body.note : "", now);
+            return { before };
+          case "snapshot-take":
+            takeDeckSnapshot(f, id, str(body.name, MAX_SNAPSHOT_NAME), snapshotExtras(body), now);
+            return { before };
+          case "snapshot-rename":
+            renameDeckSnapshot(f, id, str(body.snapId, 40), str(body.name, MAX_SNAPSHOT_NAME), now);
+            return { before };
+          case "snapshot-delete":
+            deleteDeckSnapshot(f, id, str(body.snapId, 40), now);
             return { before };
           case "add-package": {
             const { pkg, found, auto } = packageAdd!;

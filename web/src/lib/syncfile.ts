@@ -4,8 +4,8 @@
 // know about) and only changes the fields it edits, so it can't drop data written by a newer app.
 import { gunzipSync, gzipSync } from "node:zlib";
 
-/** The newest file format this website understands (the app's SyncFile.FORMAT): 16 since app 1.103. */
-export const WEB_FORMAT = 16;
+/** The newest file format this website understands (the app's SyncFile.FORMAT): 17 since app 1.124. */
+export const WEB_FORMAT = 17;
 /** How the website signs the files it writes (`writtenBy`). */
 export const WRITER = "MTG Trader website";
 /** Deletions older than this are forgotten by the phones (SyncMerge.KEEP_DELETIONS_MS). */

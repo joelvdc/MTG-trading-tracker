@@ -147,6 +147,12 @@ export function labelFor(body: Record<string, unknown>): string {
       return "Primer changed";
     case "set-card-note":
       return "Card note changed";
+    case "snapshot-take":
+      return "Snapshot taken";
+    case "snapshot-rename":
+      return "Snapshot renamed";
+    case "snapshot-delete":
+      return "Snapshot deleted";
     case "add-package":
       return "Package added";
     case "remove-package":
