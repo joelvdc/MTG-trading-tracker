@@ -199,6 +199,7 @@ import com.mtgtrader.data.DeckRoles
 import com.mtgtrader.data.PackageCard
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PhotoCamera
 import java.util.UUID
 
 @Composable
@@ -267,9 +268,10 @@ fun DeckScreen(nav: NavController, deckId: Long) {
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmRetire by remember { mutableStateOf(false) }
     var sharing by remember { mutableStateOf(false) }
-    // The packages, the change history and tagging a selection (since 1.97).
+    // The packages, the change history and tagging a selection (since 1.97); the snapshots since 1.124.
     var packagesOpen by remember { mutableStateOf(false) }
     var historyOpen by remember { mutableStateOf(false) }
+    var snapshotsOpen by remember { mutableStateOf(false) }
     var bulkTagging by remember { mutableStateOf(false) }
     var packaging by remember { mutableStateOf(false) }
     // The Commander legality of the main deck. The rules kept on the phone show at once when they cover every card;
@@ -293,6 +295,8 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         }
     }
     val rows = matched.rows
+    // The deck's price (in euros), as the page's header shows it and a snapshot keeps it (since 1.124).
+    val deckEur = remember(rows, priceType, com.mtgtrader.data.Pricing.source, com.mtgtrader.data.Pricing.others, com.mtgtrader.data.Pricing.usdPerEuro) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
     // "Show cards I own" (since 1.118): green for the deck's own printing, blue for another one, by Archidekt's printings.
     val showOwned by c.settings.deckShowOwned.collectAsStateWithLifecycle()
     val ownership = remember(showOwned, archidektRows, maybeRows, owned) {
@@ -677,6 +681,11 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             leadingIcon = { Icon(Icons.Default.History, null) },
                             onClick = { menu = false; historyOpen = true },
                         )
+                        DropdownMenuItem(
+                            text = { Text("Snapshots") },
+                            leadingIcon = { Icon(Icons.Default.PhotoCamera, null) },
+                            onClick = { menu = false; snapshotsOpen = true },
+                        )
                         deck?.takeIf { !it.local }?.let { d ->
                             DropdownMenuItem(
                                 text = { Text("Open on Archidekt") },
@@ -719,7 +728,6 @@ fun DeckScreen(nav: NavController, deckId: Long) {
             Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
         }
-        val value = remember(rows, priceType, com.mtgtrader.data.Pricing.source, com.mtgtrader.data.Pricing.others, com.mtgtrader.data.Pricing.usdPerEuro) { rows.sumOf { (it.unitPrice(priceType) ?: 0.0) * it.item.quantity } }
         // Where a dragged card would go: the category of the row or heading under it (since 1.46).
         val dropTargets = remember(sections, maybeSections, groupBy, categoryInfo) {
             if (groupBy != DeckGroupBy.CATEGORY) emptyMap()
@@ -845,7 +853,7 @@ fun DeckScreen(nav: NavController, deckId: Long) {
                             TextButton(onClick = { scope.launch { c.db.deckDao().setRetired(deckId, false) } }) { Text("Bring back") }
                         }
                     }
-                    item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, value, priceType) }
+                    item(key = "header") { DeckHeader(d, rows.sumOf { it.item.quantity }, deckEur, priceType) }
                     // What the deck's cards do for it (since 1.97), then its primer: both under the header, on every deck.
                     if (archidektRows.isNotEmpty()) {
                         item(key = "roles") {
@@ -1341,6 +1349,21 @@ fun DeckScreen(nav: NavController, deckId: Long) {
         )
     }
     if (historyOpen) ChangeHistorySheet(deck?.history, onDismiss = { historyOpen = false })
+    if (snapshotsOpen) deck?.let { d ->
+        val lines = remember(archidektRows) { archidektRows.map { it.item } }
+        DeckSnapshotsSheet(
+            deck = d,
+            lines = lines,
+            bracket = d.bracket,
+            winTurn = win?.label,
+            eur = deckEur,
+            onOpenDeck = { id ->
+                snapshotsOpen = false
+                nav.navigate("deck/$id") { popUpTo("deck/{id}") { inclusive = true } }
+            },
+            onDismiss = { snapshotsOpen = false },
+        )
+    }
     if (bulkTagging) {
         val chosen = (archidektRows + maybeRows).filter { it.item.lineUid in selection }
         val names = chosen.map { it.item.card.name }.distinct()

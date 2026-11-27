@@ -65,7 +65,17 @@ class WebSyncFixtureTest {
         ),
         decks = listOf(
             SyncDeck(
-                Deck(10710772, "Vohar Danse", "joelvdc", "Vohar", null, null, "UB", 100, importedAt = 1_700_000_000_000, updatedAt = 1_700_000_000_000),
+                Deck(
+                    10710772, "Vohar Danse", "joelvdc", "Vohar", null, null, "UB", 100,
+                    importedAt = 1_700_000_000_000, updatedAt = 1_700_000_000_000,
+                    // A snapshot (since 1.124), as the app keeps it: the decklist with what it showed then.
+                    snapshots = "[" +
+                        "{\"id\":\"3fa9c2d1e07b\",\"name\":\"Before upgrade\",\"at\":1764201600000,\"cards\":[" +
+                        "{\"name\":\"Sol Ring\",\"quantity\":1,\"set\":\"c21\",\"number\":\"263\",\"commander\":false}]," +
+                        "\"bracket\":2,\"winTurn\":\"T11\",\"eur\":1.5}" +
+                        "]",
+                    snapshotsAt = 1_700_000_800_000,
+                ),
                 listOf(DeckCard(deckId = 10710772, card = solRing, quantity = 1, category = "Ramp", types = "Artifact", cmc = 1.0, commander = false, foil = false, lineUid = "d0000000-0000-0000-0000-000000000001")),
             ),
         ),

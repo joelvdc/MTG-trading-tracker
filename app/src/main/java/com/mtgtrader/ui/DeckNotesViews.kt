@@ -2,6 +2,7 @@ package com.mtgtrader.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -24,10 +25,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,12 +68,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mtgtrader.container
+import com.mtgtrader.data.Deck
 import com.mtgtrader.data.DeckCard
 import com.mtgtrader.data.DeckHistory
 import com.mtgtrader.data.DeckNotes
 import com.mtgtrader.data.DeckPackage
 import com.mtgtrader.data.DeckPackages
 import com.mtgtrader.data.DeckRoles
+import com.mtgtrader.data.DeckSnapshots
 import com.mtgtrader.data.PackageCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -790,3 +797,224 @@ private fun dayText(day: String): String =
 
 /** Where a change was made, as the sheet shows it: "Archidekt" for its reloads, else the name as it is. */
 private fun sourceName(source: String): String = if (source == DeckHistory.SOURCE_ARCHIDEKT) "Archidekt" else source
+
+// ---- Deck snapshots (since 1.124) ------------------------------------------------------------------
+
+/** A snapshot or the deck as it is now, to compare: what its row shows ([label], [bracket], [winTurn], [eur]) and its cards. */
+private data class SnapSide(
+    val label: String,
+    val bracket: Int?,
+    val winTurn: String?,
+    val eur: Double?,
+    val cards: List<DeckSnapshots.SnapCard>,
+)
+
+/**
+ * The deck's snapshots (since 1.124), newest first: take one from the field at the top, and per snapshot compare it with
+ * the deck as it is now ([lines], [bracket], [winTurn] and [eur] as the deck page shows them) or with another one,
+ * rename it, copy it as a local deck ([onOpenDeck]) or delete it. Both the app and the website write them.
+ */
+@Composable
+fun DeckSnapshotsSheet(
+    deck: Deck,
+    lines: List<DeckCard>,
+    bracket: Int?,
+    winTurn: String?,
+    eur: Double?,
+    onOpenDeck: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val c = LocalContext.current.container
+    val scope = rememberCoroutineScope()
+    val snapshots = remember(deck.snapshots) { DeckSnapshots.parse(deck.snapshots) }
+    val now = remember(lines, bracket, winTurn, eur) { SnapSide("Now", bracket, winTurn, eur, DeckSnapshots.cardsOf(lines)) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var menuFor by remember { mutableStateOf<String?>(null) }
+    // The snapshot whose "Compare with" is open, the comparison being shown, and the snapshot being renamed or deleted.
+    var picking by remember { mutableStateOf<DeckSnapshots.Snapshot?>(null) }
+    var comparison by remember { mutableStateOf<Pair<SnapSide, SnapSide>?>(null) }
+    var renaming by remember { mutableStateOf<DeckSnapshots.Snapshot?>(null) }
+    var deleting by remember { mutableStateOf<DeckSnapshots.Snapshot?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    fun side(s: DeckSnapshots.Snapshot) = SnapSide(s.name, s.bracket, s.winTurn, s.eur, s.cards)
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.navigationBarsPadding().heightIn(max = menuMaxHeight()).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
+            Text("Snapshots", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 4.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it.take(DeckSnapshots.MAX_NAME) },
+                label = { Text("Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = {
+                    val snapshotName = name
+                    scope.launch {
+                        busy = true
+                        c.deckEditor.takeSnapshot(deck.archidektId, snapshotName, bracket, winTurn, eur)
+                        busy = false
+                        name = ""
+                    }
+                },
+                enabled = !busy,
+                modifier = Modifier.padding(top = 8.dp),
+            ) { Text("Take snapshot") }
+            if (busy) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            }
+            message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            if (snapshots.isEmpty()) {
+                Text(
+                    "No snapshots yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+            snapshots.forEach { s ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            s.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            snapshotLine(s),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Box {
+                        IconButton(onClick = { menuFor = s.id }) { Icon(Icons.Default.MoreVert, "Snapshot menu") }
+                        DropdownMenu(expanded = menuFor == s.id, onDismissRequest = { menuFor = null }) {
+                            DropdownMenuItem(
+                                text = { Text("Compare") },
+                                onClick = { menuFor = null; message = null; picking = s },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Rename") },
+                                onClick = { menuFor = null; message = null; renaming = s },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Copy as a local deck") },
+                                enabled = !busy,
+                                onClick = {
+                                    menuFor = null
+                                    message = null
+                                    scope.launch {
+                                        busy = true
+                                        val id = c.deckEditor.copySnapshot(deck, s)
+                                        busy = false
+                                        if (id == null) message = "Scryfall didn't find its cards."
+                                        else onOpenDeck(id)
+                                    }
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                onClick = { menuFor = null; message = null; deleting = s },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    picking?.let { s ->
+        val others = snapshots.filter { it.id != s.id }
+        AlertDialog(
+            onDismissRequest = { picking = null },
+            title = { Text("Compare with") },
+            text = {
+                Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
+                    TextButton(onClick = { picking = null; comparison = side(s) to now }) { Text("Now") }
+                    others.forEach { other ->
+                        TextButton(onClick = { picking = null; comparison = side(s) to side(other) }) {
+                            Text(other.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { picking = null }) { Text("Cancel") } },
+        )
+    }
+    comparison?.let { (old, new) ->
+        val change = remember(old, new) { DeckSnapshots.compare(old.cards, new.cards) }
+        AlertDialog(
+            onDismissRequest = { comparison = null },
+            title = { Text("Compare") },
+            text = {
+                Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
+                    Row {
+                        Spacer(Modifier.width(72.dp))
+                        Text(old.label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        Text(new.label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    }
+                    SnapRow("Bracket", old.bracket?.toString(), new.bracket?.toString())
+                    SnapRow("Win turn", old.winTurn, new.winTurn)
+                    SnapRow("Price", old.eur?.let { Fmt.money(it) }, new.eur?.let { Fmt.money(it) })
+                    if (change.isEmpty) {
+                        Text("No change", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
+                    }
+                    if (change.added.isNotEmpty()) {
+                        Text("Added", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+                        change.added.forEach { (card, count) ->
+                            Text("+$count $card", style = MaterialTheme.typography.bodyMedium, color = TrendColors.up)
+                        }
+                    }
+                    if (change.removed.isNotEmpty()) {
+                        Text("Removed", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+                        change.removed.forEach { (card, count) ->
+                            Text("\u2212$count $card", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { comparison = null }) { Text("Close") } },
+        )
+    }
+    renaming?.let { s ->
+        TextInputDialog("Rename snapshot", "Name", s.name, "Rename", onDismiss = { renaming = null }) { newName ->
+            renaming = null
+            scope.launch { c.deckEditor.renameSnapshot(deck.archidektId, s.id, newName) }
+        }
+    }
+    deleting?.let { s ->
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text("Delete snapshot?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleting = null
+                    scope.launch { c.deckEditor.deleteSnapshot(deck.archidektId, s.id) }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** One row of a comparison: the label, then what each side says ("—" when it's not known). */
+@Composable
+private fun SnapRow(label: String, old: String?, new: String?) {
+    Row(Modifier.padding(top = 4.dp)) {
+        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(72.dp))
+        Text(old ?: "—", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(new ?: "—", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+    }
+}
+
+/** "<date> · 100 cards · B3 · T11 · €263.28" for a snapshot, leaving out what it doesn't know. */
+private fun snapshotLine(s: DeckSnapshots.Snapshot): String = buildList {
+    add(Fmt.date(s.at))
+    add("${s.cards.sumOf { it.quantity }} cards")
+    s.bracket?.let { add("B$it") }
+    s.winTurn?.let { add(it) }
+    s.eur?.let { add(Fmt.money(it)) }
+}.joinToString(" · ")

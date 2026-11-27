@@ -572,6 +572,50 @@ class DeckEditor(
         return { dao.get(deckId)?.let { dao.update(it.copy(cardNotes = old, notesAt = oldAt, updatedAt = System.currentTimeMillis())) } }
     }
 
+    // ---- Snapshots (since 1.124) ------------------------------------------------------------------
+
+    /**
+     * Takes a snapshot of the deck's list (its main-deck lines, see [DeckSnapshots.cardsOf]) under [name], with the
+     * [bracket], [winTurn] label and [eur] price the deck page shows then, on any deck. The oldest goes at
+     * [DeckSnapshots.MAX] snapshots.
+     */
+    suspend fun takeSnapshot(deckId: Long, name: String, bracket: Int?, winTurn: String?, eur: Double?) {
+        val deck = dao.get(deckId) ?: return
+        val now = System.currentTimeMillis()
+        val snapshots = DeckSnapshots.take(deck.snapshots, now, name, DeckSnapshots.cardsOf(dao.cards(deckId)), bracket, winTurn, eur)
+        dao.update(deck.copy(snapshots = snapshots, snapshotsAt = now, updatedAt = now))
+    }
+
+    /** Renames one of the deck's snapshots ([DeckSnapshots.rename]). */
+    suspend fun renameSnapshot(deckId: Long, id: String, name: String) = saveSnapshots(deckId) { DeckSnapshots.rename(it, id, name) }
+
+    /** Deletes one of the deck's snapshots ([DeckSnapshots.delete]). */
+    suspend fun deleteSnapshot(deckId: Long, id: String) = saveSnapshots(deckId) { DeckSnapshots.delete(it, id) }
+
+    /** Saves the snapshots [change] makes of the deck's ([Deck.snapshots]), with when they last changed. */
+    private suspend fun saveSnapshots(deckId: Long, change: (String?) -> String?) {
+        val deck = dao.get(deckId) ?: return
+        val snapshots = change(deck.snapshots)
+        if (snapshots == deck.snapshots) return
+        val now = System.currentTimeMillis()
+        dao.update(deck.copy(snapshots = snapshots, snapshotsAt = now, updatedAt = now))
+    }
+
+    /**
+     * A new local deck from a snapshot's list, called "<deck name> – <snapshot name>", with the snapshot's first
+     * commander as the commander. Null when Scryfall didn't find any of its cards.
+     */
+    suspend fun copySnapshot(deck: Deck, snapshot: DeckSnapshots.Snapshot): Long? {
+        val preview = previewText(DeckSnapshots.decklistText(snapshot))
+        if (preview.found.isEmpty()) return null
+        return fromText(
+            "${deck.name} – ${snapshot.name}",
+            preview,
+            useTags = false,
+            commanderOverride = snapshot.cards.firstOrNull { it.commander }?.name,
+        )
+    }
+
     // ---- Packages (since 1.97) --------------------------------------------------------------------
 
     /** What adding a package did: how many of its cards went in, how many the deck had already, and which weren't found. */
