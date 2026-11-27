@@ -5,7 +5,9 @@
 // only when that changed. Each real download is counted per day ([blobDownloads], shown by /api/health).
 import { gunzipSync } from "node:zlib";
 import { get, head } from "@vercel/blob";
-import { accountStore } from "./accounts";
+// The accounts database is loaded only when a download is counted (on the server): carddetails.ts imports this file
+// and the collection page runs part of carddetails.ts in the browser, where the database code can't load (2026-11-27).
+const accounts = () => import("./accounts").then((m) => m.accountStore());
 
 /** How long a kept file is used before its version is checked again. */
 export const CHECK_MS = 10 * 60 * 1000;
@@ -82,7 +84,7 @@ export function countDownload(path: string, bytes: number, now = Date.now()): Pr
 
 async function addDownload(path: string, bytes: number, now: number): Promise<void> {
   try {
-    const store = accountStore();
+    const store = await accounts();
     if (!store) return;
     const day = new Date(now).toISOString().slice(0, 10);
     const old = (await store.job(JOB))?.info as unknown as BlobDownloads | undefined;
@@ -98,7 +100,7 @@ async function addDownload(path: string, bytes: number, now: number): Promise<vo
 
 /** Today's downloads so far (none yet today: zero). */
 export async function blobDownloads(now = Date.now()): Promise<BlobDownloads | null> {
-  const store = accountStore();
+  const store = await accounts();
   if (!store) return null;
   const day = new Date(now).toISOString().slice(0, 10);
   const d = (await store.job(JOB).catch(() => null))?.info as unknown as BlobDownloads | undefined;
