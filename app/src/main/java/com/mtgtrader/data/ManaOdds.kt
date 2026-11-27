@@ -271,15 +271,17 @@ object ManaOddsCalc {
             val amount = if (Regex("Add \\{C\\}\\{C\\}").containsMatchIn(face)) 2 else manaAmount(face)
             return Card(if (creature) Kind.CREATURE else Kind.ROCK, produced, false, cost(c.manaCost), amount, haste = creature && hasteLine.containsMatchIn(face))
         }
-        // A Siege's lands when it enters count as a ramp spell's (since 1.63).
-        if (c.cmc <= 4 && ("Sorcery" in type || "Instant" in type || "Battle" in type) && rampSearch.containsMatchIn(face)) {
-            val what = rampSearch.find(face)!!.value.lowercase()
+        // A Siege's lands when it enters count as a ramp spell's (since 1.63). Since 1.124 reminder text is left out: a
+        // Lander token's "search your library for a basic land card" (Emergency Eject) isn't the spell's own ramp.
+        val rampFace = face.replace(Regex("\\([^)]*\\)"), "")
+        if (c.cmc <= 4 && ("Sorcery" in type || "Instant" in type || "Battle" in type) && rampSearch.containsMatchIn(rampFace)) {
+            val what = rampSearch.find(rampFace)!!.value.lowercase()
             val named = BASIC_TYPES.filterKeys { it in what }.values.filter { it in own }.toSet()
             val colours = named.ifEmpty { own }.ifEmpty { setOf('C') }
             // "Put one onto the battlefield tapped and the other into your hand" (Cultivate); else up to two lands.
             val split = "put one onto the battlefield" in what
-            val lands = if (!split && rampSearch.find(face)!!.groupValues[2].lowercase() == "two") 2 else 1
-            return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in face.lowercase(), cost(c.manaCost), lands, toHand = split)
+            val lands = if (!split && rampSearch.find(rampFace)!!.groupValues[2].lowercase() == "two") 2 else 1
+            return Card(Kind.RAMP, colours, "tapped" in what || "tapped" in rampFace.lowercase(), cost(c.manaCost), lands, toHand = split)
         }
         return Card(Kind.SPELL, emptySet(), false, Cost(0, emptyList()), 0)
     }
