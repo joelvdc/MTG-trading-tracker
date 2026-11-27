@@ -1,9 +1,9 @@
 // Card Kingdom's prices, from the slimmed-down copy of its price list that this repository's daily GitHub job makes
 // (the app reads the same copy: PriceSources.kt readCardKingdomCopy). Kept as one private Vercel Blob.
 import { gunzipSync, gzipSync } from "node:zlib";
-import { get, put } from "@vercel/blob";
+import { get, head, put } from "@vercel/blob";
+import { blobCache, countDownload, quotedEtag, sameEtag } from "./blobcache";
 import { USER_AGENT } from "./config";
-import { sameEtag } from "./pricestore";
 
 export const CARD_KINGDOM_COPY_URL =
   "https://raw.githubusercontent.com/joelvdc/MTG-trading-tracker/card-kingdom-prices/cardkingdom.tsv.gz";
@@ -38,21 +38,11 @@ export function parseCopy(text: string, now: number): CkFile {
   return { listDate: first.split("\t")[1]?.trim() ?? "", madeAt: now, rows };
 }
 
-let cache: { file: CkFile; at: number } | null = null;
-const CACHE_MS = 10 * 60 * 1000;
+// Kept in memory, downloaded again only when it changed (lib/blobcache.ts, 2026-11-27).
+const cache = blobCache<CkFile>(CK_BLOB);
 
 export async function loadCardKingdom(): Promise<CkFile | null> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.file;
-  try {
-    const res = await get(CK_BLOB, { access: "private", useCache: false });
-    if (!res || !res.stream) return cache?.file ?? null;
-    const gz = Buffer.from(await new Response(res.stream).arrayBuffer());
-    const file = JSON.parse(gunzipSync(gz).toString("utf8")) as CkFile;
-    cache = { file, at: Date.now() };
-    return file;
-  } catch {
-    return cache?.file ?? null;
-  }
+  return cache.load();
 }
 
 /** The daily job: downloads the copy and keeps it as the Blob. */
@@ -64,8 +54,8 @@ export async function buildCardKingdom(): Promise<{ rows: number; listDate: stri
   const count = Object.keys(file.rows).length;
   if (count < 10_000) throw new Error("The Card Kingdom copy looks incomplete; kept yesterday's prices.");
   const body = gzipSync(Buffer.from(JSON.stringify(file), "utf8"));
-  await put(CK_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
-  cache = { file, at: Date.now() };
+  const saved = await put(CK_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
+  cache.keep(file, saved.etag ?? null);
   return { rows: count, listDate: file.listDate, bytes: body.length };
 }
 
@@ -81,13 +71,13 @@ export async function cardKingdomBlob(
   etag: string | null,
   now = Date.now(),
 ): Promise<{ stream: ReadableStream<Uint8Array>; etag: string; size: number } | "same" | "stale" | null> {
+  // Its version first (a few bytes): a phone that has it, or a file too old, needs no download (2026-11-27).
+  const h = await head(CK_BLOB).catch(() => null);
+  if (!h) return null;
+  if (now - h.uploadedAt.getTime() > PHONE_MAX_AGE_MS) return "stale";
+  if (sameEtag(h.etag, etag)) return "same";
   const res = await get(CK_BLOB, { access: "private", useCache: false });
   if (!res || res.statusCode !== 200) return null;
-  const stale = now - res.blob.uploadedAt.getTime() > PHONE_MAX_AGE_MS;
-  const tag = `"${res.blob.etag.replace(/^W\//, "").replace(/^"|"$/g, "")}"`;
-  if (stale || sameEtag(tag, etag)) {
-    await res.stream.cancel().catch(() => undefined);
-    return stale ? "stale" : "same";
-  }
-  return { stream: res.stream, etag: tag, size: res.blob.size };
+  void countDownload(CK_BLOB, res.blob.size, now);
+  return { stream: res.stream, etag: quotedEtag(res.blob.etag), size: res.blob.size };
 }

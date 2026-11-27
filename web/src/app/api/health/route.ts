@@ -4,6 +4,7 @@ import { json } from "@/lib/auth";
 import { loadCardKingdom } from "@/lib/cardkingdom";
 import { loadDetails } from "@/lib/carddetails";
 import { accountStore } from "@/lib/accounts";
+import { blobDownloads } from "@/lib/blobcache";
 import { loadPreconIndex } from "@/lib/preconindex";
 import { loadPrices } from "@/lib/pricestore";
 import { mailReady } from "@/lib/mailer";
@@ -138,6 +139,10 @@ export async function GET() {
     // EDHREC and Archidekt aren't fetched by the health check (their terms forbid automated requests): how the website's
     // own requests for people went (since app 1.105).
     services: await serviceNotes(Date.now(), store),
+    // Real downloads of the Blob files today (UTC), by the pages and the phones (2026-11-27): how many, megabytes, per
+    // file. Normally a few dozen a day; hundreds mean the in-memory copies stopped being reused (Vercel's free Blob
+    // transfer is 10 GB a month).
+    blobDownloads: await blobDownloads().then((d) => d && { day: d.day, count: d.count, megabytes: Math.round(d.bytes / 100_000) / 10, files: d.files }).catch(() => null),
     configured: Boolean(process.env.SESSION_SECRET && process.env.NEXTCLOUD_SERVER && process.env.ALLOWED_USERS),
   });
 }

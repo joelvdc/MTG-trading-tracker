@@ -9,6 +9,7 @@ vi.mock("@vercel/blob", () => ({
     stream: new Response(blob.bytes).body,
     blob: { uploadedAt: blob.uploadedAt, etag: blob.etag, size: blob.bytes.length },
   })),
+  head: vi.fn(async () => ({ etag: blob.etag, uploadedAt: blob.uploadedAt, size: blob.bytes.length })),
   put: vi.fn(),
 }));
 

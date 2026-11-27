@@ -1,7 +1,8 @@
 // A small index of every Commander precon, for the precons page's tiles: MTGJSON's deck list has no commanders or
 // colours, so they are read from each deck once and kept in one private Vercel Blob, added to day by day.
 import { gunzipSync, gzipSync } from "node:zlib";
-import { get, put } from "@vercel/blob";
+import { put } from "@vercel/blob";
+import { blobCache } from "./blobcache";
 import { mtgjson, preconList } from "./preconfetch";
 import { deckList, deckUrl, type PreconInfo } from "./precons";
 import { lookupCollectionFull } from "./scryfall";
@@ -100,28 +101,18 @@ export function browseList(index: PreconIndex | null, list: PreconInfo[]): Preco
   return [...decks, ...bare].sort(newestFirst);
 }
 
-let cache: { file: PreconIndex; at: number } | null = null;
-const CACHE_MS = 10 * 60 * 1000;
+// Kept in memory, downloaded again only when it changed (lib/blobcache.ts, 2026-11-27).
+const cache = blobCache<PreconIndex>(INDEX_BLOB);
 
 /** The stored index, or null when there's none yet or it can't be read. */
 export async function loadPreconIndex(): Promise<PreconIndex | null> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.file;
-  try {
-    const res = await get(INDEX_BLOB, { access: "private", useCache: false });
-    if (!res || !res.stream) return cache?.file ?? null;
-    const gz = Buffer.from(await new Response(res.stream).arrayBuffer());
-    const file = JSON.parse(gunzipSync(gz).toString("utf8")) as PreconIndex;
-    cache = { file, at: Date.now() };
-    return file;
-  } catch {
-    return cache?.file ?? null;
-  }
+  return cache.load();
 }
 
 async function saveIndex(file: PreconIndex): Promise<void> {
   const body = gzipSync(Buffer.from(JSON.stringify(file), "utf8"));
-  await put(INDEX_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
-  cache = { file, at: Date.now() };
+  const r = await put(INDEX_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
+  cache.keep(file, r.etag ?? null);
 }
 
 /**

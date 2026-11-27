@@ -2,8 +2,9 @@
 // TCGplayer's prices, from Scryfall, as the app keeps them in its CardInfo table (CardInfo.kt toInfo, PriceSources.kt
 // tcgplayerRows). Kept in one private Vercel Blob for every card the website has looked up; the daily job refreshes
 // the TCGplayer prices.
-import { gunzipSync, gzipSync } from "node:zlib";
-import { get, put } from "@vercel/blob";
+import { gzipSync } from "node:zlib";
+import { put } from "@vercel/blob";
+import { blobCache } from "./blobcache";
 import { USER_AGENT } from "./config";
 import { scryFetch } from "./scrylimit";
 
@@ -118,27 +119,17 @@ export async function fetchScryfall(ids: string[]): Promise<ScryDetail[]> {
   return j.data ?? [];
 }
 
-let cache: { file: DetailsFile; at: number } | null = null;
-const CACHE_MS = 10 * 60 * 1000;
+// Kept in memory, downloaded again only when it changed (lib/blobcache.ts, 2026-11-27).
+const cache = blobCache<DetailsFile>(DETAILS_BLOB);
 
 export async function loadDetails(fresh = false): Promise<DetailsFile> {
-  if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.file;
-  try {
-    const res = await get(DETAILS_BLOB, { access: "private", useCache: false });
-    if (!res || !res.stream) return cache?.file ?? { madeAt: 0, cards: {} };
-    const gz = Buffer.from(await new Response(res.stream).arrayBuffer());
-    const file = JSON.parse(gunzipSync(gz).toString("utf8")) as DetailsFile;
-    cache = { file, at: Date.now() };
-    return file;
-  } catch {
-    return cache?.file ?? { madeAt: 0, cards: {} };
-  }
+  return (await cache.load(fresh)) ?? { madeAt: 0, cards: {} };
 }
 
 async function saveDetails(file: DetailsFile): Promise<void> {
   const body = gzipSync(Buffer.from(JSON.stringify(file), "utf8"));
-  await put(DETAILS_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
-  cache = { file, at: Date.now() };
+  const r = await put(DETAILS_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
+  cache.keep(file, r.etag ?? null);
 }
 
 /** Adds Scryfall's answer for [ids] to [file]; printings Scryfall didn't send get an empty entry. */

@@ -2,8 +2,9 @@
 // mana a card makes, rules text, tokens, power/toughness and loyalty (the app's CardInfo fields since 1.43–1.55, made
 // by CardInfo.kt toInfo). Kept in their own private Vercel Blob, filled when a deck page asks for cards it doesn't
 // have yet; rules text hardly changes, so entries are looked up again only after a while.
-import { gunzipSync, gzipSync } from "node:zlib";
-import { get, put } from "@vercel/blob";
+import { gzipSync } from "node:zlib";
+import { put } from "@vercel/blob";
+import { blobCache } from "./blobcache";
 import { BATCH, fetchScryfall, normalizeColors, validIds, type ScryDetail } from "./carddetails";
 import { FACE_BREAK, type StatsCard, type TokenPart } from "./deckstats";
 
@@ -126,27 +127,17 @@ export function unknownDeckInfo(now: number): DeckInfo {
   return { t: "", v: 0, i: "", m: "", p: "", o: null, k: null, pt: null, l: null, oi: null, g: false, at: now };
 }
 
-let cache: { file: DeckDetailsFile; at: number } | null = null;
-const CACHE_MS = 10 * 60 * 1000;
+// Kept in memory, downloaded again only when it changed (lib/blobcache.ts, 2026-11-27).
+const cache = blobCache<DeckDetailsFile>(DECK_DETAILS_BLOB);
 
 export async function loadDeckDetails(fresh = false): Promise<DeckDetailsFile> {
-  if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.file;
-  try {
-    const res = await get(DECK_DETAILS_BLOB, { access: "private", useCache: false });
-    if (!res || !res.stream) return cache?.file ?? { madeAt: 0, cards: {} };
-    const gz = Buffer.from(await new Response(res.stream).arrayBuffer());
-    const file = JSON.parse(gunzipSync(gz).toString("utf8")) as DeckDetailsFile;
-    cache = { file, at: Date.now() };
-    return file;
-  } catch {
-    return cache?.file ?? { madeAt: 0, cards: {} };
-  }
+  return (await cache.load(fresh)) ?? { madeAt: 0, cards: {} };
 }
 
 async function saveDeckDetails(file: DeckDetailsFile): Promise<void> {
   const body = gzipSync(Buffer.from(JSON.stringify(file), "utf8"));
-  await put(DECK_DETAILS_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
-  cache = { file, at: Date.now() };
+  const r = await put(DECK_DETAILS_BLOB, body, { access: "private", allowOverwrite: true, addRandomSuffix: false, contentType: "application/gzip" });
+  cache.keep(file, r.etag ?? null);
 }
 
 /** Adds Scryfall's answer for [ids] to [file]; printings Scryfall didn't send get an empty entry. */
