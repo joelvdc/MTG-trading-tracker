@@ -465,10 +465,12 @@ describe("deck snapshots (the app's DeckSnapshots)", () => {
     const src = syncDecks(f)[0];
     const oldId = src.deck.archidektId;
     takeDeckSnapshot(f, oldId, "Before", { bracket: null, winTurn: null, eur: null }, NOW);
-    expect(parseSnapshots(src.deck.snapshots).map((s) => s.name)).toEqual(["Before"]);
+    // The app's sample file already gives this deck one snapshot ("Before upgrade"); the new one goes in front.
+    const names = parseSnapshots(src.deck.snapshots).map((s) => s.name);
+    expect(names[0]).toBe("Before");
     const id = detachDeck(f, oldId, NOW + 1);
     const kept = syncDecks(f).find((x) => x.deck.archidektId === id)!;
-    expect(parseSnapshots(kept.deck.snapshots).map((s) => s.name)).toEqual(["Before"]);
+    expect(parseSnapshots(kept.deck.snapshots).map((s) => s.name)).toEqual(names);
     expect(kept.deck.snapshotsAt).toBe(NOW);
     // A copy starts without snapshots.
     const copy = copyDeck(f, id, "Copy", NOW + 2);

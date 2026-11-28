@@ -48,12 +48,6 @@ if (typeof Math.clz32 === 'undefined') {
     };
   }(Math.log, Math.LN2);
 }
-if (typeof String.prototype.startsWith === 'undefined') {
-  Object.defineProperty(String.prototype, 'startsWith', {value: function (searchString, position) {
-    position = position || 0;
-    return this.lastIndexOf(searchString, position) === position;
-  }});
-}
 if (typeof String.prototype.endsWith === 'undefined') {
   Object.defineProperty(String.prototype, 'endsWith', {value: function (searchString, position) {
     var subjectString = this.toString();
@@ -63,6 +57,12 @@ if (typeof String.prototype.endsWith === 'undefined') {
     position -= searchString.length;
     var lastIndex = subjectString.indexOf(searchString, position);
     return lastIndex !== -1 && lastIndex === position;
+  }});
+}
+if (typeof String.prototype.startsWith === 'undefined') {
+  Object.defineProperty(String.prototype, 'startsWith', {value: function (searchString, position) {
+    position = position || 0;
+    return this.lastIndexOf(searchString, position) === position;
   }});
 }
 //endregion
@@ -464,6 +464,9 @@ function toCollection(_this__u8e3s4, destination) {
   }
   return destination;
 }
+function contains_4(_this__u8e3s4, element) {
+  return indexOf_4(_this__u8e3s4, element) >= 0;
+}
 function single(_this__u8e3s4) {
   var tmp;
   switch (_this__u8e3s4.length) {
@@ -579,10 +582,24 @@ function indexOf_3(_this__u8e3s4, element) {
      while (inductionVariable <= last);
   return -1;
 }
+function indexOf_4(_this__u8e3s4, element) {
+  var inductionVariable = 0;
+  var last = _this__u8e3s4.length - 1 | 0;
+  if (inductionVariable <= last)
+    do {
+      var index = inductionVariable;
+      inductionVariable = inductionVariable + 1 | 0;
+      if (element === _this__u8e3s4[index]) {
+        return index;
+      }
+    }
+     while (inductionVariable <= last);
+  return -1;
+}
 function get_lastIndex_2(_this__u8e3s4) {
   return _this__u8e3s4.length - 1 | 0;
 }
-function contains_4(_this__u8e3s4, element) {
+function contains_5(_this__u8e3s4, element) {
   return indexOf(_this__u8e3s4, element) >= 0;
 }
 function joinToString(_this__u8e3s4, separator, prefix, postfix, limit, truncated, transform) {
@@ -866,10 +883,10 @@ function sortedWith(_this__u8e3s4, comparator) {
   sortWith_0(this_1, comparator);
   return this_1;
 }
-function contains_5(_this__u8e3s4, element) {
+function contains_6(_this__u8e3s4, element) {
   if (isInterface(_this__u8e3s4, Collection))
     return _this__u8e3s4.u(element);
-  return indexOf_4(_this__u8e3s4, element) >= 0;
+  return indexOf_5(_this__u8e3s4, element) >= 0;
 }
 function lastOrNull(_this__u8e3s4) {
   return _this__u8e3s4.r() ? null : _this__u8e3s4.q(_this__u8e3s4.p() - 1 | 0);
@@ -901,6 +918,18 @@ function sum_0(_this__u8e3s4) {
 function sortedDescending(_this__u8e3s4) {
   return sortedWith(_this__u8e3s4, reverseOrder());
 }
+function minOrNull(_this__u8e3s4) {
+  var iterator = _this__u8e3s4.m();
+  if (!iterator.n())
+    return null;
+  var min = iterator.o();
+  while (iterator.n()) {
+    var e = iterator.o();
+    if (compareTo(min, e) > 0)
+      min = e;
+  }
+  return min;
+}
 function firstOrNull_0(_this__u8e3s4) {
   if (isInterface(_this__u8e3s4, KtList)) {
     if (_this__u8e3s4.r())
@@ -913,18 +942,6 @@ function firstOrNull_0(_this__u8e3s4) {
       return null;
     return iterator.o();
   }
-}
-function minOrNull(_this__u8e3s4) {
-  var iterator = _this__u8e3s4.m();
-  if (!iterator.n())
-    return null;
-  var min = iterator.o();
-  while (iterator.n()) {
-    var e = iterator.o();
-    if (compareTo(min, e) > 0)
-      min = e;
-  }
-  return min;
 }
 function toMutableSet(_this__u8e3s4) {
   var tmp;
@@ -982,7 +999,7 @@ function first_0(_this__u8e3s4) {
     return iterator.o();
   }
 }
-function indexOf_4(_this__u8e3s4, element) {
+function indexOf_5(_this__u8e3s4, element) {
   if (isInterface(_this__u8e3s4, KtList))
     return _this__u8e3s4.x(element);
   var index = 0;
@@ -1080,7 +1097,7 @@ function coerceIn_0(_this__u8e3s4, minimumValue, maximumValue) {
 function downTo(_this__u8e3s4, to) {
   return Companion_instance_10.d1(_this__u8e3s4, to, -1);
 }
-function contains_6(_this__u8e3s4, value) {
+function contains_7(_this__u8e3s4, value) {
   // Inline function 'kotlin.let' call
   // Inline function 'kotlin.contracts.contract' call
   // Inline function 'kotlin.ranges.contains.<anonymous>' call
@@ -6560,7 +6577,7 @@ protoOf(Regex).qb = function (input, startIndex, $super) {
   return $super === VOID ? this.pb(input, startIndex) : $super.pb.call(this, input, startIndex);
 };
 protoOf(Regex).rb = function (input, replacement) {
-  if (!contains_7(replacement, _Char___init__impl__6a9atx(92)) && !contains_7(replacement, _Char___init__impl__6a9atx(36))) {
+  if (!contains_8(replacement, _Char___init__impl__6a9atx(92)) && !contains_8(replacement, _Char___init__impl__6a9atx(36))) {
     // Inline function 'kotlin.text.nativeReplace' call
     var this_0 = toString_1(input);
     var pattern = this.ib_1;
@@ -7918,7 +7935,7 @@ protoOf(ArrayAsCollection).r = function () {
   return this.nd_1.length === 0;
 };
 protoOf(ArrayAsCollection).pd = function (element) {
-  return contains_4(this.nd_1, element);
+  return contains_5(this.nd_1, element);
 };
 protoOf(ArrayAsCollection).u = function (element) {
   if (!(element == null ? true : !(element == null)))
@@ -9753,7 +9770,7 @@ function split_0(_this__u8e3s4, delimiters, ignoreCase, limit) {
 }
 function substringBefore(_this__u8e3s4, delimiter, missingDelimiterValue) {
   missingDelimiterValue = missingDelimiterValue === VOID ? _this__u8e3s4 : missingDelimiterValue;
-  var index = indexOf_6(_this__u8e3s4, delimiter);
+  var index = indexOf_7(_this__u8e3s4, delimiter);
   var tmp;
   if (index === -1) {
     tmp = missingDelimiterValue;
@@ -9766,7 +9783,7 @@ function substringBefore(_this__u8e3s4, delimiter, missingDelimiterValue) {
 }
 function substringAfter(_this__u8e3s4, delimiter, missingDelimiterValue) {
   missingDelimiterValue = missingDelimiterValue === VOID ? _this__u8e3s4 : missingDelimiterValue;
-  var index = indexOf_6(_this__u8e3s4, delimiter);
+  var index = indexOf_7(_this__u8e3s4, delimiter);
   var tmp;
   if (index === -1) {
     tmp = missingDelimiterValue;
@@ -9779,7 +9796,7 @@ function substringAfter(_this__u8e3s4, delimiter, missingDelimiterValue) {
   }
   return tmp;
 }
-function indexOf_5(_this__u8e3s4, char, startIndex, ignoreCase) {
+function indexOf_6(_this__u8e3s4, char, startIndex, ignoreCase) {
   startIndex = startIndex === VOID ? 0 : startIndex;
   ignoreCase = ignoreCase === VOID ? false : ignoreCase;
   var tmp;
@@ -9802,13 +9819,13 @@ function indexOf_5(_this__u8e3s4, char, startIndex, ignoreCase) {
   }
   return tmp;
 }
-function contains_7(_this__u8e3s4, char, ignoreCase) {
+function contains_8(_this__u8e3s4, char, ignoreCase) {
   ignoreCase = ignoreCase === VOID ? false : ignoreCase;
-  return indexOf_5(_this__u8e3s4, char, VOID, ignoreCase) >= 0;
+  return indexOf_6(_this__u8e3s4, char, VOID, ignoreCase) >= 0;
 }
 function substringBefore_0(_this__u8e3s4, delimiter, missingDelimiterValue) {
   missingDelimiterValue = missingDelimiterValue === VOID ? _this__u8e3s4 : missingDelimiterValue;
-  var index = indexOf_5(_this__u8e3s4, delimiter);
+  var index = indexOf_6(_this__u8e3s4, delimiter);
   var tmp;
   if (index === -1) {
     tmp = missingDelimiterValue;
@@ -9819,19 +9836,19 @@ function substringBefore_0(_this__u8e3s4, delimiter, missingDelimiterValue) {
   }
   return tmp;
 }
-function contains_8(_this__u8e3s4, other, ignoreCase) {
+function contains_9(_this__u8e3s4, other, ignoreCase) {
   ignoreCase = ignoreCase === VOID ? false : ignoreCase;
   var tmp;
   if (typeof other === 'string') {
-    tmp = indexOf_6(_this__u8e3s4, other, VOID, ignoreCase) >= 0;
+    tmp = indexOf_7(_this__u8e3s4, other, VOID, ignoreCase) >= 0;
   } else {
-    tmp = indexOf_7(_this__u8e3s4, other, 0, charSequenceLength(_this__u8e3s4), ignoreCase) >= 0;
+    tmp = indexOf_8(_this__u8e3s4, other, 0, charSequenceLength(_this__u8e3s4), ignoreCase) >= 0;
   }
   return tmp;
 }
 function substringAfter_0(_this__u8e3s4, delimiter, missingDelimiterValue) {
   missingDelimiterValue = missingDelimiterValue === VOID ? _this__u8e3s4 : missingDelimiterValue;
-  var index = indexOf_5(_this__u8e3s4, delimiter);
+  var index = indexOf_6(_this__u8e3s4, delimiter);
   var tmp;
   if (index === -1) {
     tmp = missingDelimiterValue;
@@ -9852,6 +9869,29 @@ function removePrefix(_this__u8e3s4, prefix) {
     return _this__u8e3s4.substring(startIndex);
   }
   return _this__u8e3s4;
+}
+function trimEnd(_this__u8e3s4, chars) {
+  // Inline function 'kotlin.text.trimEnd' call
+  var tmp$ret$1;
+  $l$block: {
+    // Inline function 'kotlin.text.trimEnd' call
+    var this_0 = isCharSequence(_this__u8e3s4) ? _this__u8e3s4 : THROW_CCE();
+    var inductionVariable = charSequenceLength(this_0) - 1 | 0;
+    if (0 <= inductionVariable)
+      do {
+        var index = inductionVariable;
+        inductionVariable = inductionVariable + -1 | 0;
+        // Inline function 'kotlin.text.trimEnd.<anonymous>' call
+        var it = charSequenceGet(this_0, index);
+        if (!contains_4(chars, it)) {
+          tmp$ret$1 = charSequenceSubSequence(this_0, 0, index + 1 | 0);
+          break $l$block;
+        }
+      }
+       while (0 <= inductionVariable);
+    tmp$ret$1 = '';
+  }
+  return toString_1(tmp$ret$1);
 }
 function removeSuffix(_this__u8e3s4, suffix) {
   if (endsWith_0(_this__u8e3s4, suffix)) {
@@ -9894,7 +9934,7 @@ function isBlank(_this__u8e3s4) {
 function split_1(_this__u8e3s4, delimiter, ignoreCase, limit) {
   requireNonNegativeLimit(limit);
   var currentOffset = 0;
-  var nextIndex = indexOf_6(_this__u8e3s4, delimiter, currentOffset, ignoreCase);
+  var nextIndex = indexOf_7(_this__u8e3s4, delimiter, currentOffset, ignoreCase);
   if (nextIndex === -1 || limit === 1) {
     return listOf(toString_1(_this__u8e3s4));
   }
@@ -9909,7 +9949,7 @@ function split_1(_this__u8e3s4, delimiter, ignoreCase, limit) {
     currentOffset = nextIndex + delimiter.length | 0;
     if (isLimited && result.p() === (limit - 1 | 0))
       break $l$loop;
-    nextIndex = indexOf_6(_this__u8e3s4, delimiter, currentOffset, ignoreCase);
+    nextIndex = indexOf_7(_this__u8e3s4, delimiter, currentOffset, ignoreCase);
   }
    while (!(nextIndex === -1));
   // Inline function 'kotlin.text.substring' call
@@ -9937,7 +9977,7 @@ function rangesDelimitedBy_0(_this__u8e3s4, delimiters, startIndex, ignoreCase, 
   requireNonNegativeLimit(limit);
   return new DelimitedRangesSequence(_this__u8e3s4, startIndex, limit, rangesDelimitedBy$lambda_0(delimiters, ignoreCase));
 }
-function indexOf_6(_this__u8e3s4, string, startIndex, ignoreCase) {
+function indexOf_7(_this__u8e3s4, string, startIndex, ignoreCase) {
   startIndex = startIndex === VOID ? 0 : startIndex;
   ignoreCase = ignoreCase === VOID ? false : ignoreCase;
   var tmp;
@@ -9948,7 +9988,7 @@ function indexOf_6(_this__u8e3s4, string, startIndex, ignoreCase) {
     tmp_0 = !(typeof _this__u8e3s4 === 'string');
   }
   if (tmp_0) {
-    tmp = indexOf_7(_this__u8e3s4, string, startIndex, charSequenceLength(_this__u8e3s4), ignoreCase);
+    tmp = indexOf_8(_this__u8e3s4, string, startIndex, charSequenceLength(_this__u8e3s4), ignoreCase);
   } else {
     // Inline function 'kotlin.text.nativeIndexOf' call
     // Inline function 'kotlin.js.asDynamic' call
@@ -10025,7 +10065,7 @@ function indexOfAny(_this__u8e3s4, chars, startIndex, ignoreCase) {
      while (!(index === last));
   return -1;
 }
-function indexOf_7(_this__u8e3s4, other, startIndex, endIndex, ignoreCase, last) {
+function indexOf_8(_this__u8e3s4, other, startIndex, endIndex, ignoreCase, last) {
   last = last === VOID ? false : last;
   var indices = !last ? numberRangeToNumber(coerceAtLeast(startIndex, 0), coerceAtMost(endIndex, charSequenceLength(_this__u8e3s4))) : downTo(coerceAtMost(startIndex, get_lastIndex_4(_this__u8e3s4)), coerceAtLeast(endIndex, 0));
   var tmp;
@@ -10205,7 +10245,7 @@ protoOf(DelimitedRangesSequence).m = function () {
 function findAnyOf(_this__u8e3s4, strings, startIndex, ignoreCase, last) {
   if (!ignoreCase && strings.p() === 1) {
     var string = single_0(strings);
-    var index = !last ? indexOf_6(_this__u8e3s4, string, startIndex) : lastIndexOf(_this__u8e3s4, string, startIndex);
+    var index = !last ? indexOf_7(_this__u8e3s4, string, startIndex) : lastIndexOf(_this__u8e3s4, string, startIndex);
     return index < 0 ? null : to(index, string);
   }
   var indices = !last ? numberRangeToNumber(coerceAtLeast(startIndex, 0), charSequenceLength(_this__u8e3s4)) : downTo(coerceAtMost(startIndex, get_lastIndex_4(_this__u8e3s4)), 0);
@@ -10292,7 +10332,7 @@ function lastIndexOf(_this__u8e3s4, string, startIndex, ignoreCase) {
     tmp_0 = !(typeof _this__u8e3s4 === 'string');
   }
   if (tmp_0) {
-    tmp = indexOf_7(_this__u8e3s4, string, startIndex, 0, ignoreCase, true);
+    tmp = indexOf_8(_this__u8e3s4, string, startIndex, 0, ignoreCase, true);
   } else {
     // Inline function 'kotlin.text.nativeLastIndexOf' call
     // Inline function 'kotlin.js.asDynamic' call
@@ -10797,7 +10837,7 @@ function parseDuration(value, strictIso) {
           if (i < value.length) {
             // Inline function 'kotlin.time.parseDuration.<anonymous>' call
             var it = charSequenceGet(value, i);
-            tmp_0 = (_Char___init__impl__6a9atx(48) <= it ? it <= _Char___init__impl__6a9atx(57) : false) || contains_7(nonDigitSymbols, it);
+            tmp_0 = (_Char___init__impl__6a9atx(48) <= it ? it <= _Char___init__impl__6a9atx(57) : false) || contains_8(nonDigitSymbols, it);
           } else {
             tmp_0 = false;
           }
@@ -10828,7 +10868,7 @@ function parseDuration(value, strictIso) {
         if (!(prevUnit == null) && prevUnit.p2(unit) <= 0)
           throw IllegalArgumentException_init_$Create$_0('Unexpected order of duration components');
         prevUnit = unit;
-        var dotIndex = indexOf_5(component, _Char___init__impl__6a9atx(46));
+        var dotIndex = indexOf_6(component, _Char___init__impl__6a9atx(46));
         if (unit.equals(DurationUnit_SECONDS_getInstance()) && dotIndex > 0) {
           // Inline function 'kotlin.text.substring' call
           // Inline function 'kotlin.js.asDynamic' call
@@ -10939,7 +10979,7 @@ function parseDuration(value, strictIso) {
             if (!(prevUnit_0 == null) && prevUnit_0.p2(unit_0) <= 0)
               throw IllegalArgumentException_init_$Create$_0('Unexpected order of duration components');
             prevUnit_0 = unit_0;
-            var dotIndex_0 = indexOf_5(component_0, _Char___init__impl__6a9atx(46));
+            var dotIndex_0 = indexOf_6(component_0, _Char___init__impl__6a9atx(46));
             if (dotIndex_0 > 0) {
               // Inline function 'kotlin.text.substring' call
               // Inline function 'kotlin.js.asDynamic' call
@@ -10999,7 +11039,7 @@ function durationOfNanos(normalNanos) {
 function parseOverLongIsoComponent(value) {
   var length = value.length;
   var startIndex = 0;
-  if (length > 0 && contains_7('+-', charSequenceGet(value, 0))) {
+  if (length > 0 && contains_8('+-', charSequenceGet(value, 0))) {
     startIndex = startIndex + 1 | 0;
   }
   var tmp;
@@ -12792,7 +12832,7 @@ export {
   checkCountOverflow as checkCountOverflow1ro2fe1r4xvgf,
   checkIndexOverflow as checkIndexOverflow3frtmheghr0th,
   collectionSizeOrDefault as collectionSizeOrDefault36dulx8yinfqm,
-  contains_5 as contains2gm06f5aa19ov,
+  contains_6 as contains2gm06f5aa19ov,
   contentEquals as contentEqualsaf55p28mnw74,
   contentHashCode as contentHashCode2i020q5tbeh2s,
   copyOf_4 as copyOf39s58md6y6rn6,
@@ -12925,7 +12965,7 @@ export {
   coerceAtLeast as coerceAtLeast2bkz8m9ik7hep,
   coerceAtMost as coerceAtMost322komnqp70ag,
   coerceIn as coerceIn10f36k81le1mm,
-  contains_6 as contains2c50nlxg7en7o,
+  contains_7 as contains2c50nlxg7en7o,
   step as step18s9qzr5xwxat,
   until as until1jbpn0z3f8lbg,
   KClass as KClass1cc9rfeybg8hs,
@@ -12938,11 +12978,11 @@ export {
   map as mapsbvh18eqox7a,
   minOrNull_0 as minOrNull1kkrm2vtp6k3w,
   Regex as Regexxgw0gjiagf4z,
-  contains_8 as contains3ue2qo8xhmpf1,
-  contains_7 as contains2el4s70rdq4ld,
+  contains_9 as contains3ue2qo8xhmpf1,
+  contains_8 as contains2el4s70rdq4ld,
   equals_0 as equals2v6cggk171b6e,
-  indexOf_6 as indexOfwa4w6635jewi,
-  indexOf_5 as indexOf1xbs558u7wr52,
+  indexOf_7 as indexOfwa4w6635jewi,
+  indexOf_6 as indexOf1xbs558u7wr52,
   isBlank as isBlank1dvkhjjvox3p0,
   get_lastIndex_4 as get_lastIndexld83bqhfgcdd,
   lastIndexOf as lastIndexOf2d52xhix5ymjr,
@@ -12973,6 +13013,7 @@ export {
   toULongOrNull as toULongOrNullojoyxi0i9tgj,
   toULong as toULong266mnyksbttkw,
   toUShort as toUShort7yqspfnhrot4,
+  trimEnd as trimEndvvzjdhan75g,
   trimIndent as trimIndent1qytc1wvt8suh,
   trim as trim11nh7r46at6sx,
   Duration as Duration5ynfiptaqcrg,

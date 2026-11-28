@@ -225,7 +225,7 @@ class Release1103Test {
         assertTrue(json, "\"paidTyped\":30.0" in json)
         assertTrue(json, "\"paidCurrency\":\"DKK\"" in json)
         // Older versions would write the price back without, so they stop syncing until updated.
-        assertEquals(16, SyncFile.FORMAT)
+        assertEquals(17, SyncFile.FORMAT)
     }
 
     @Test
