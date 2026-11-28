@@ -163,6 +163,10 @@ export function CardMenu({
   // Where the menu sits, once its size is known: flipped left or up rather than running off the window.
   const [at, setAt] = useState({ left: x, top: y, leftward: false, placed: false });
   const [submenu, setSubmenu] = useState(false);
+  // The "Move to category" item, and where its list sits: beside the menu (not inside it, which scrolls and would
+  // clip it), at the item's height, flipped left or up rather than running off the window.
+  const catRef = useRef<HTMLButtonElement | null>(null);
+  const [subAt, setSubAt] = useState<{ left: number; top: number } | null>(null);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -174,21 +178,33 @@ export function CardMenu({
     setAt({ left, top, leftward, placed: true });
   }, [x, y]);
 
+  useLayoutEffect(() => {
+    const menu = ref.current?.getBoundingClientRect();
+    const item = catRef.current?.getBoundingClientRect();
+    const sub = subRef.current?.getBoundingClientRect();
+    if (!submenu || !menu || !item || !sub) return setSubAt(null);
+    const right = menu.right + sub.width + EDGE <= window.innerWidth;
+    const left = !at.leftward && right ? menu.right : menu.left - sub.width >= EDGE ? menu.left - sub.width : right ? menu.right : EDGE;
+    const top = Math.max(EDGE, Math.min(item.top - 4, window.innerHeight - sub.height - EDGE));
+    setSubAt({ left, top });
+  }, [submenu, at]);
+
   useEffect(() => {
     // The menu has the keyboard: the arrow keys work at once.
     ref.current?.focus();
   }, []);
 
   useEffect(() => {
+    const inside = (e: Event) => !!(ref.current?.contains(e.target as Node) || subRef.current?.contains(e.target as Node));
     const away = (e: Event) => {
-      if (!ref.current?.contains(e.target as Node)) onClose();
+      if (!inside(e)) onClose();
     };
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     // Scrolling the page or turning the phone takes the menu out from under the pointer; its own scrolling doesn't.
     const moved = (e: Event) => {
-      if (!ref.current?.contains(e.target as Node)) onClose();
+      if (!inside(e)) onClose();
     };
     document.addEventListener("mousedown", away);
     document.addEventListener("touchstart", away, { passive: true });
@@ -296,6 +312,7 @@ export function CardMenu({
   const categories = view ? categoryTargets(view) : [];
 
   return (
+    <>
     <div
       ref={ref}
       className="card-menu"
@@ -305,25 +322,25 @@ export function CardMenu({
       style={{ left: at.left, top: at.top, visibility: at.placed ? "visible" : "hidden" }}
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
-      onMouseLeave={() => setSubmenu(false)}
     >
       <span className="card-menu-head">{row.name}</span>
       {entries.map((entry, i) => (
         <Fragment key={entry.key}>
           {i === firstEdit && <hr className="menu-sep" />}
           {entry.href ? (
-            <a role="menuitem" tabIndex={-1} href={entry.href} target="_blank" rel="noreferrer" onClick={() => pick(() => undefined)}>
+            <a role="menuitem" tabIndex={-1} href={entry.href} target="_blank" rel="noreferrer" onMouseEnter={() => setSubmenu(false)} onClick={() => pick(() => undefined)}>
               {entry.label}
             </a>
           ) : (
             <button
+              ref={entry.key === "category" ? catRef : undefined}
               type="button"
               role="menuitem"
               tabIndex={-1}
               className={entry.key === "remove" ? "danger-text" : undefined}
               aria-haspopup={entry.key === "category" ? "menu" : undefined}
               aria-expanded={entry.key === "category" ? submenu : undefined}
-              onMouseEnter={entry.key === "category" ? () => setSubmenu(true) : undefined}
+              onMouseEnter={() => setSubmenu(entry.key === "category")}
               onClick={entry.key === "category" ? () => setSubmenu(true) : () => pick(actionOf(entry.key))}
             >
               {entry.label}
@@ -331,13 +348,16 @@ export function CardMenu({
           )}
         </Fragment>
       ))}
+    </div>
       {submenu && view && (
         <div
           ref={subRef}
-          className={at.leftward ? "card-menu card-menu-sub flip-left" : "card-menu card-menu-sub"}
+          className="card-menu"
           role="menu"
           aria-label="Move to category"
+          style={{ left: subAt?.left ?? 0, top: subAt?.top ?? 0, visibility: subAt ? "visible" : "hidden" }}
           onKeyDown={onKeyDown}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {categories.map((name) => (
             <button key={name} type="button" role="menuitem" tabIndex={-1} onClick={() => pick(() => void edit({ action: "move", uids: [row.lineUid ?? ""], category: name }, null))}>
@@ -346,6 +366,6 @@ export function CardMenu({
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -777,7 +777,6 @@ function PtDialog({
           {which !== "toughness" && field("Power", power, setPower)}
           {which !== "power" && field("Toughness", toughness, setToughness)}
         </div>
-        <p className="muted small">A minus makes the card smaller. Clear in the card menu takes the change away again.</p>
         <div className="dialog-actions">
           <span className="spacer" />
           <button className="btn" onClick={onClose}>

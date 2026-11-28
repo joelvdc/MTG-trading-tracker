@@ -2716,17 +2716,6 @@ details.menu > summary::-webkit-details-marker {
 }
 
 /* "Move to category ›": the deck's categories beside the menu, on its other side near the window's right edge. */
-.card-menu .card-menu-sub {
-  position: absolute;
-  top: -4px;
-  left: 100%;
-}
-
-.card-menu .card-menu-sub.flip-left {
-  right: 100%;
-  left: auto;
-}
-
 .line-picture {
   width: 200px;
   max-width: 60%;

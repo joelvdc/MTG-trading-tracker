@@ -1321,7 +1321,7 @@ export function DeckScreen({ source }: { source: { kind: "deck"; id: string } | 
           winTurn={winTurnLabel}
           eur={shaped.value}
           money={money}
-          onDone={(text) => void reload(text)}
+          onDone={() => void reload(null)}
           onClose={() => setSnapshotsOpen(false)}
         />
       )}

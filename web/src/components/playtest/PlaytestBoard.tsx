@@ -1549,29 +1549,45 @@ function FloatMenu({
   useLayoutEffect(() => {
     const el = menuRef.current;
     if (!el) return;
-    const margin = 8;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // Measure the menu as it would be at the pointer, without a height cap from an earlier fit.
-    el.style.maxHeight = "";
-    el.style.overflowY = "";
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    const rect = el.getBoundingClientRect();
-    const width = Math.min(rect.width, vw - margin * 2);
-    const left = Math.max(margin, Math.min(x, vw - margin - width));
+    let seen = -1;
+    fit();
+    // A list unfolding inside the menu (Power ›, on hover or a click) changes its size without new children here:
+    // fit it again. Only a change of its content's height counts, so the fit's own height cap doesn't start another.
+    if (typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => {
+      if (el.scrollHeight !== seen) fit();
+    });
+    watch.observe(el);
+    return () => watch.disconnect();
 
-    if (rect.height > vh - margin * 2) {
-      // Taller than the window: scroll it, from the top margin, so no item stays out of reach.
-      el.style.maxHeight = `calc(100vh - ${margin * 2}px)`;
-      el.style.overflowY = "auto";
+    function fit() {
+      if (!el) return;
+      const margin = 8;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // Measure the menu as it would be at the pointer, without a height cap from an earlier fit.
+      el.style.maxHeight = "";
+      el.style.overflowY = "";
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      const rect = el.getBoundingClientRect();
+      const width = Math.min(rect.width, vw - margin * 2);
+      const left = Math.max(margin, Math.min(x, vw - margin - width));
+
+      if (rect.height > vh - margin * 2) {
+        // Taller than the window: scroll it, from the top margin, so no item stays out of reach.
+        el.style.maxHeight = `calc(100vh - ${margin * 2}px)`;
+        el.style.overflowY = "auto";
+        el.style.left = `${left}px`;
+        el.style.top = `${margin}px`;
+        seen = el.scrollHeight;
+        return;
+      }
+
       el.style.left = `${left}px`;
-      el.style.top = `${margin}px`;
-      return;
+      el.style.top = `${Math.max(margin, Math.min(y, vh - margin - rect.height))}px`;
+      seen = el.scrollHeight;
     }
-
-    el.style.left = `${left}px`;
-    el.style.top = `${Math.max(margin, Math.min(y, vh - margin - rect.height))}px`;
   }, [menuRef, x, y, children]);
 
   return (
