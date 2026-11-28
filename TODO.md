@@ -14,23 +14,20 @@ How to use this file:
 (Trimmed on 2026-11-02 and tidied on 2026-11-12: finished plans and design notes were removed; they are in the git
 history, the release notes and `web/README.md`.)
 
-## Right now (2026-11-27, app 1.123)
-- **Newest (2026-11-27):** app 1.123: logged in, the app takes the website's win turns (GET /api/winturns; matched on
-  the list's LocalRating.listKey, colours, the rating's saltHash and WinOddsCalc.VERSION) and works out only the rest,
-  which it sends up (POST /api/winturns). The website starts win turns after each phone sync. Combo lines show
-  Spellbook's tag with its bracket range (app and website). Website API by DeepSeek (Mistral, Vibe); app side, review
-  and release by Opus.
-- **Website (same day):** Blob files are kept in memory and re-downloaded only when changed (lib/blobcache.ts); the
-  phones' price and Card Kingdom checks use a head request. /api/health has blobDownloads (count, megabytes, files);
-  the health check warns above 300 a day. Watch Vercel's Usage page over the next days: Blob Data Transfer and Fast
-  Origin Transfer should drop sharply.
-- **Before:** 1.122 (Combos section, ↻ win turn), 1.121 (blinking combo pieces), 1.120 (Spellbook bracket tags).
-- **Waiting on the owner:** after updating, open the Decks tab: most win turns should appear at once (taken from the
-  website); check a combo line reads e.g. "Spicy (bracket 3-4)". Still from before: Zur's combo share; 1.120's "Why
-  bracket"; the playtester checks; "Show cards I own" colours; email/"Forgot password?"; the ✕ delete column in the
-  wishlist; Compare with a real Archidekt link; the email to support@moxfield.com; asking EDHREC/Archidekt.
-- **Expected to look odd:** a deck whose rating changed on the phone but isn't synced yet is still played on the phone
-  (its rating fingerprint differs from the website's until the next sync).
+## Right now (2026-11-28, app 1.124)
+- **Newest (2026-11-28):** app 1.124: deck snapshots (app and website, synced; sync format 17, database 32), the
+  website's right-click card menu (links-only on shared decks), playtester Power ›/Toughness ›/+X/+X › with a P/T
+  badge, and win turn version 17 (Landers, Station, Farragut, creature lands, landfall counters/mana, one landfall
+  mode, Planar Genesis, Will of the Abzan, Saw in Half, Coiling Rebirth; Emergency Eject no longer ramp). All code by
+  DeepSeek (Mistral, Vibe); review, fixes after the look-check, and release by Opus.
+- **Before:** 1.123 (website win turns on the phone, combo bracket tags), 1.122 (Combos section, ↻ win turn).
+- **Waiting on the owner:** update every phone to 1.124 (older ones stop syncing: format 17). Try Snapshots on a deck
+  (take, compare with Now, copy as deck), right-click a card on the website, and Power › in the playtester. Still
+  from before: Vercel's Usage page (Blob transfer should be down since 1.123's website change); Zur's combo share;
+  the playtester checks; "Show cards I own" colours; email/"Forgot password?"; the ✕ delete column in the wishlist;
+  Compare with a real Archidekt link; the email to support@moxfield.com; asking EDHREC/Archidekt.
+- **Expected to look odd:** every deck's win turn is worked out again (new simulator version), so win turns take a
+  while to come back and some move a turn or two (Landing Party decks most).
 
 ## Finished: deck builder parity (green light 2026-11-15, all five releases done 2026-11-16)
 Owner: "keep improving" local and imported decks against Archidekt/Moxfield. Green light for everything; DeepSeek
@@ -146,6 +143,7 @@ for later:
   full-screen pictures. The life tracker stays on the phone.
 
 ## Done
+- 1.124 (2026-11-28): deck snapshots; website right-click card menu; playtester power/toughness; win turn v17 (Landers, Station, creature lands, landfall)
 - 1.123 (2026-11-27): the app takes the website's win turns and sends its own; combo lines show Spellbook's tag with its bracket range
 - 1.122 (2026-11-27): Combos section on the deck page; win turns worked out in the background and with ↻, not on every edit
 - 1.121 (2026-11-26): win turn: blinking must-enter combo pieces, every Spellbook starting zone (graveyard, library, exiled by)

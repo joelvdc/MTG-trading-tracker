@@ -80,10 +80,13 @@ turn on two-step login with an authenticator app.
 - A **primer** per deck (on its own page in the app, at the bottom of the deck page on the website, where an AI can
   write or improve it with your own OpenCode Go, Mistral or OpenRouter key), with clickable card links (`[[Sol Ring]]`; type `/` on the website to pick a card) and a **note** per card (also on shared links; a deck's Archidekt description fills an empty
   primer), **your own tags** that count in every deck, with a role line such as "Lands 37 · Ramp 11 · Draw 9"
-  (`tag:ramp` in the search), **packages** (saved groups of cards to add to or take out of a deck) and a **change
-  history** per deck, in the app and on the website.
+  (`tag:ramp` in the search), **packages** (saved groups of cards to add to or take out of a deck), a **change
+  history** and **snapshots** per deck (a named copy of the list with its bracket, win turn and price, to compare
+  with another snapshot or the deck now, or to copy as a new deck), in the app and on the website.
 - On the website: **Undo** for every deck change, **Select** to change many cards at once (category, copies,
-  printing, finish), and a **playtester** to draw hands and goldfish the deck, with tokens, counters and odds.
+  printing, finish), a **right-click menu** on a card like Archidekt's (copy the name, its pages, and on your own
+  decks copies, printing, commander, maybeboard, category, remove), and a **playtester** to draw hands and goldfish
+  the deck, with tokens, counters, power and toughness changes, and odds.
 - Every deck gets an **estimated bracket** from its list (game changers, combos from Commander Spellbook with the
   lowest bracket of each combo's Spellbook tag as a floor, extra turns, land denial), with the reasons ("Why bracket
   4"), a **salt sum** like Archidekt's (lands included) with its saltiest cards, and a simulated **win turn** (combos
